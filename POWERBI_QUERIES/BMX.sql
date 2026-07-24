@@ -1016,7 +1016,7 @@ WHERE s.del = 'no'
 
 SELECT
     -- CheckID - BMX-DQ-017
-    -- Name - COMP.RANK_SETTINGS_NO_PARTICIPANTS
+    -- Name - COMP.RANK_NO_PARTICIPANTS
     -- What it does: Finds active BMX Comp.Rank statistics with zero active statistic_participants11 rows, with template and tournament name context, together with a coverage count of all eligible BMX statistics.
     'No_Participants' AS check_type,
     s.id AS statistic_id,
@@ -1509,3 +1509,174 @@ WHERE s.id = 58 AND s.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 ;
+SELECT
+    -- CheckID - BMX-DQ-032
+    -- Name - EVENT_RESULTS_MISSING_MEDAL_FOR_FINAL
+    -- What it does: Finds active, finished BMX events with round_typeFK=173 (Final) where at least one of gold/silver/bronze Medal (result_typeFK=501) values is absent among event participants, distinguishing events with no medals at all from events missing only specific medal type(s), together with a coverage count of all eligible Final-round finished BMX events.
+    CASE WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All' ELSE 'Missing_Specific_Medal' END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.template_name,
+    x.tournament_name,
+    x.stage_name,
+    CONCAT_WS(', ',
+        IF(x.gold_count = 0, 'gold', NULL),
+        IF(x.silver_count = 0, 'silver', NULL),
+        IF(x.bronze_count = 0, 'bronze', NULL)
+    ) AS missing_medals,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.name AS stage_name,
+        SUM(CASE WHEN LOWER(TRIM(r.value)) = 'gold' THEN 1 ELSE 0 END) AS gold_count,
+        SUM(CASE WHEN LOWER(TRIM(r.value)) = 'silver' THEN 1 ELSE 0 END) AS silver_count,
+        SUM(CASE WHEN LOWER(TRIM(r.value)) = 'bronze' THEN 1 ELSE 0 END) AS bronze_count,
+        SUM(CASE WHEN r.value IS NOT NULL AND TRIM(r.value) <> '' THEN 1 ELSE 0 END) AS total_medal_count
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    LEFT JOIN result r
+      ON r.event_participantsFK = ep.id
+     AND r.del = 'no'
+     AND r.result_typeFK = 501
+    WHERE e.del = 'no'
+      AND tt.sportFK = 58
+      AND e.round_typeFK = 173
+      AND e.status_type = 'finished'
+      AND e.status_descFK = 6
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY e.id, e.name, tt.name, t.name, ts.name
+) x
+WHERE x.gold_count = 0 OR x.silver_count = 0 OR x.bronze_count = 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 58
+  AND e.round_typeFK = 173
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+SELECT
+    -- CheckID - BMX-DQ-033
+    -- Name - COMP.RANK_SETTINGS_MISSING_MEDAL
+    -- What it does: Finds active BMX Comp.Rank statistics (statistic_typeFK=11, object_typeFK=3) where at least one of gold/silver/bronze Medal (statistic_data_typeFK=1277) values is absent among statistic participants, distinguishing statistics with no medals at all from statistics missing only specific medal type(s), together with a coverage count of all eligible BMX Comp.Rank statistics.
+    CASE WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All' ELSE 'Missing_Specific_Medal' END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    CONCAT_WS(', ',
+        IF(x.gold_count = 0, 'gold', NULL),
+        IF(x.silver_count = 0, 'silver', NULL),
+        IF(x.bronze_count = 0, 'bronze', NULL)
+    ) AS missing_medals,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        SUM(CASE WHEN LOWER(TRIM(sd.value)) = 'gold' THEN 1 ELSE 0 END) AS gold_count,
+        SUM(CASE WHEN LOWER(TRIM(sd.value)) = 'silver' THEN 1 ELSE 0 END) AS silver_count,
+        SUM(CASE WHEN LOWER(TRIM(sd.value)) = 'bronze' THEN 1 ELSE 0 END) AS bronze_count,
+        SUM(CASE WHEN sd.value IS NOT NULL AND TRIM(sd.value) <> '' THEN 1 ELSE 0 END) AS total_medal_count
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    LEFT JOIN statistic_data11 sd
+      ON sd.statistic_participants11FK = sp.id
+     AND sd.del = 'no'
+     AND sd.statistic_data_typeFK = 1277
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = 11
+      AND s.object_typeFK = 3
+      AND tt.sportFK = 58
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY s.id, s.name, tt.name, t.name
+) x
+WHERE x.gold_count = 0 OR x.silver_count = 0 OR x.bronze_count = 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+SELECT
+    -- CheckID - BMX-DQ-034
+    -- Name - EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_FINAL
+    -- What it does: Finds active, finished BMX events with round_typeFK=173 (Final) that have no active event property named medal_related with value yes, with template, tournament and stage name context, together with a coverage count of all eligible Final-round finished BMX events.
+    'Missing_Medal_Related_Property' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    NULL AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 58
+  AND e.round_typeFK = 173
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND tt.id = <tournament_template_id>
+  AND NOT EXISTS (
+      SELECT 1
+      FROM property p
+      WHERE p.object = 'event'
+        AND p.objectFK = e.id
+        AND p.del = 'no'
+        AND LOWER(TRIM(p.name)) = 'medal_related'
+        AND LOWER(TRIM(p.value)) = 'yes'
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 58
+  AND e.round_typeFK = 173
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND tt.id
