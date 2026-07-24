@@ -44,7 +44,9 @@ be SQL-escaped when the selected value contains a quote or backslash.
 ## Registry
 
 The `Description` column mirrors each statement's `-- What it does:` comment in the SQL.
-Every query is scoped to the selected `{{SPORT_ID}}`, so that phrase is omitted below.
+Every query whose `Mandatory parameters` column lists `SPORT_ID` is scoped to the selected
+`{{SPORT_ID}}`, so that phrase is omitted below. A query that omits `SPORT_ID` reads a
+reference table only and returns the same rows for every sport.
 
 | QueryID | Name | File | Description | Mandatory parameters | Applicability/prerequisite | Primary documentation destination |
 |---|---|---|---|---|---|---|
@@ -77,6 +79,8 @@ Every query is scoped to the selected `{{SPORT_ID}}`, so that phrase is omitted 
 | GLOBAL-DISCOVERY-027 | EVENT_RESULTS_VALUE_PATTERNS_DETAIL | `PATTERNS.sql` | Lists active events with at least one result matching the selected result type and value pattern from 026; one row per event. | `SPORT_ID`, `RESULT_TYPE_ID`, `VALUE_PATTERN` | Select pattern from 026 | Event result types |
 | GLOBAL-DISCOVERY-028 | STATISTIC_DATA_VALUE_PATTERNS_SUMMARY | `PATTERNS.sql` | Groups statistic-data values by a digit-normalized pattern for one confirmed statistic type, owner level, shard and data type (from 017). | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID`, `STATISTIC_DATA_TYPE_ID` | Run 015–017 first | Statistics |
 | GLOBAL-DISCOVERY-029 | STATISTIC_DATA_VALUE_PATTERNS_DETAIL | `PATTERNS.sql` | Lists statistics with at least one data value matching the selected data type and value pattern from 028; one row per statistic. | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID`, `STATISTIC_DATA_TYPE_ID`, `VALUE_PATTERN` | Select pattern from 028 | Statistics |
+| GLOBAL-DISCOVERY-030 | STATISTIC_DATA_TYPE_CATALOG | `STATISTICS.sql` | Lists the data field types declared for one statistic type, with code and data-type category. | `STATISTIC_TYPE_ID` | Run 015 first; reads the reference catalog only and is not sport-scoped | Statistics / Reference values |
+| GLOBAL-DISCOVERY-031 | STATISTIC_DATA_TYPE_DECLARED_VS_USED | `STATISTICS.sql` | Compares the data field types declared for one statistic type against their use in one confirmed owner level and physical shard, keeping declared but unused field types. | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID` | Run 015–016 first and confirm shard | Statistics / Reference values |
 
 <!-- MANUAL PASTE ZONE: GLOBAL QUERY REGISTRY — insert approved additions immediately before this marker; do not move or delete it. -->
 

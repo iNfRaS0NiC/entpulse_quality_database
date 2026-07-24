@@ -454,6 +454,44 @@ Current confirmed mechanisms include:
 
 These paths are not automatically mandatory for every statistic type.
 
+### `statistic_data_type`
+
+Reference catalog of statistic field types, selected by `statistic_dataN.statistic_data_typeFK`
+and `statistic_config.statistic_data_typeFK`.
+
+| Important column | Structural meaning |
+|---|---|
+| `id` | Field/data-type identifier |
+| `name` | Field display name |
+| `code` | Stored field code |
+| `statistic_typeFK` | Statistic type the field type is declared for |
+| `statistic_data_type_categoryFK` | Data-type category reference |
+
+`statistic_typeFK` partitions the catalog, so the declared field set must be read per
+statistic type rather than as one global list.
+
+Field names are not unique. The same `name` is declared repeatedly under different IDs,
+across statistic types and within a single category. A field type must be matched by
+`id`, never by name.
+
+A field type declared for a statistic type is not evidence that any sport fills it.
+The declared inventory and the used inventory are separate: `GLOBAL-DISCOVERY-030`
+returns the declared catalog and `GLOBAL-DISCOVERY-031` compares it against actual use,
+retaining declared-but-unused field types that `GLOBAL-DISCOVERY-017` cannot show.
+
+### `statistic_data_type_category`
+
+Reference grouping selected by `statistic_data_type.statistic_data_type_categoryFK`.
+
+| Important column | Structural meaning |
+|---|---|
+| `id` | Category identifier |
+| `name` | Category name |
+
+Category names are not unique and the used category ID range is not contiguous. Whether
+a category belongs to one statistic type or is shared across statistic types is not
+confirmed.
+
 <!-- MANUAL PASTE ZONE: DATABASE STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---
@@ -663,6 +701,7 @@ registry unless separately verified.
 | `REL-DIRECT-040` | `object_discipline.disciplineFK` | `discipline.id` | Confirmed-data |
 | `REL-DIRECT-041` | `map_sport_status_desc.sportFK` | `sport.id` | Confirmed-schema-data |
 | `REL-DIRECT-042` | `map_sport_status_desc.status_descFK` | `status_desc.id` | Confirmed-schema-data |
+| `REL-DIRECT-043` | `statistic_data_type.statistic_data_type_categoryFK` | `statistic_data_type_category.id` | Confirmed-data |
 
 `incident.ref_participantFK -> participant.id` is not registered as confirmed because
 its target was not independently verified in the active evidence.
@@ -785,6 +824,12 @@ round/event model must be documented from the sport's actual rows and reference 
 - Complete property owner/type/name taxonomy.
 - `saved_json_player` (columns: id, atp_id, name, firstname, lastname, gender, country_code, dob, active, mapped, del, ut, n) has no direct foreign key to `participant`; observed linkage is only a heuristic exact-text match on `name`. The `mapped` flag does not reliably indicate match status. Duplicate `saved_json_player` rows with the same name have been observed mapping to the same `participant.id` (name-collision risk). The table's relationship to `participant`, its canonical-vs-staging role, and its sport scope are not confirmed.
 - Universal statistic type-to-owner and type-to-shard rules, if any.
+- Target of `statistic_data_type.statistic_typeFK`. The column filters the field catalog
+  per statistic type, but its resolution against `statistic_type.id` was not independently
+  verified, and it is unknown whether the per-type field sets are disjoint.
+- Soft-delete behavior of `statistic_type`, `statistic_data_type` and
+  `statistic_data_type_category`. No `del` column was confirmed, so the reference catalogs
+  may include retired rows.
 - Schema and collation equality across all statistic data shards.
 - Complete scope import-table model and provider relation.
 - Taxonomy relationship between `scope_type` and `scope_data_type`.
