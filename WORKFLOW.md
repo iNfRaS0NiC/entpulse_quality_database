@@ -118,6 +118,86 @@ raw child-record volume.
   record count when severity ranking is more useful; never order so that one object repeats
   across rows. Keep any `COVERAGE` row last.
 
+## Query cost and result-size rule
+
+The database is very large. Assume that an unscoped statement fails. Two different
+failures occur and they need different corrections:
+
+| Symptom | Cause | Correction |
+|---|---|---|
+| `Request timed out` | Server-side cost: unbounded scan, join fan-out, filesort, a function or `REGEXP` on the filtered column, a multi-shard scan | Narrow the scanned population before the statement groups or sorts anything |
+| `Allowed memory size of 134217728 bytes exhausted` | Client-side buffering: the executor holds the whole result set in a 128 MB PHP process | Return fewer rows and fewer or narrower columns |
+
+Both are query-design failures, not infrastructure problems.
+
+### Before returning a statement
+
+1. Anchor the scope. Every statement filters on `tt.sportFK = {{SPORT_ID}}` or the
+   confirmed indexed equivalent for its relation path.
+2. For a large sport, activate at least one narrowing filter — a tournament template, a
+   half-open `startdate` range or a primary-key range — instead of leaving every
+   scope-limiting filter commented.
+3. Return the summary statement before its detail counterpart. A detail or drill-down
+   statement runs only for one ID, pattern or value already selected from that summary.
+4. When the population size is unknown, size it first with a cheap
+   `SELECT COUNT(DISTINCT <object_id>)` over the same `FROM`/`WHERE`, then narrow or
+   batch when it exceeds a few thousand objects.
+
+### Statement construction
+
+- Cap detail output with an explicit `LIMIT <n>` (default 500); see the `LIMIT` rule
+  below.
+- Select named columns only; never `SELECT *`. Return IDs and short keys, and take one
+  `MIN(...) AS sample_...` instead of streaming every name or value.
+- Use `GROUP_CONCAT` only over a small bounded `DISTINCT` set. On large groups it is the
+  most common cause of the memory error.
+- Prefer `EXISTS` over `JOIN` plus `DISTINCT` for existence tests: it stops at the first
+  matching child row and avoids fan-out.
+- Keep every filter index-usable. Compare indexed FK/PK columns directly; never wrap the
+  filtered column in a function, `REGEXP_REPLACE` or a leading-wildcard `LIKE`.
+  Digit normalization and other value shaping apply to already-scoped rows in `SELECT`
+  and `GROUP BY`, never as the driving predicate.
+- Resolve descriptive names through the smallest necessary join chain. A long `LEFT JOIN`
+  chain added only to display names belongs in a separate small lookup query.
+- Use one confirmed `{{SHARD_ID}}` per execution. Never union or scan all statistic
+  participant/data shards in one statement.
+- Run one statement per execution; do not chain heavy statements.
+
+### LIMIT
+
+`LIMIT` is the correct fix for the memory error and the right default on an ad-hoc detail
+listing. It has three boundaries.
+
+- It rarely prevents a timeout. `GROUP BY`, `DISTINCT` and `ORDER BY` on a computed column
+  are materialized in full before the limit applies, so
+  `... GROUP BY pattern ORDER BY cnt DESC LIMIT 20` still scans the whole scope. `LIMIT`
+  short-circuits only when rows can stream in the requested order — no aggregation, and
+  `ORDER BY` on an indexed column or none at all. Scope is what prevents timeouts; `LIMIT`
+  only protects the executor's memory.
+- A truncated result is not evidence. When the returned row count equals the limit, treat
+  the result as partial: it supports "these examples exist", never "this is all of them",
+  "this is not used" or any count. Raise the limit or narrow the scope before classifying
+  the evidence.
+- Page by key, never with `OFFSET`. `OFFSET n` still reads and discards n rows, and rows
+  shift between pages without a stable total order. Use
+  `WHERE e.id > <last_seen_id> ORDER BY e.id LIMIT 500` instead.
+
+`LIMIT` never replaces scope, is never the audited-scope mechanism, and never appears in a
+DQ statement — see `POWERBI.md`.
+
+### When a statement fails
+
+Do not rerun the same statement.
+
+1. State which failure occurred — timeout or memory.
+2. Narrow one dimension at a time: shorter date window or smaller primary-key batch, then
+   drop `GROUP_CONCAT` and name joins, then replace detail with summary, then a single
+   template.
+3. Return the narrowed statement and name what was narrowed.
+
+A narrowed result describes only the narrowed scope. Never report it as complete coverage
+of the sport.
+
 ## Evidence classification
 
 After a result, classify evidence as:
@@ -284,6 +364,8 @@ generated block was pasted unless it is present in the latest file.
 - [ ] Every mandatory parameter was replaced in the working copy.
 - [ ] One requested query produced one returned query.
 - [ ] Each result row is one distinct audited object; raw counts are named secondary columns only.
+- [ ] The statement is scoped by an indexed anchor, plus one active narrowing filter for a large sport.
+- [ ] Detail output is capped and columns are narrow; no `SELECT *` and no unbounded `GROUP_CONCAT`.
 - [ ] QueryID or CheckID is unique for one executable statement.
 - [ ] No structural finding was converted into DQ automatically.
 - [ ] No documentation block was emitted without an explicit update command.

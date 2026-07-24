@@ -191,6 +191,23 @@ Rules:
 - use the confirmed numeric sport ID instead of an ambiguous name search when the ID is
   documented.
 
+## Cost and result-size discipline
+
+Every DQ query follows the query cost and result-size rule in `WORKFLOW.md`. Two
+constraints are specific to DQ:
+
+- A DQ statement never uses `LIMIT`. It would truncate finding rows or drop the
+  `COVERAGE` row and invalidate the result. Control result size through the activated
+  scope filters and through audited-object aggregation instead.
+- When a batch still times out or exhausts executor memory, reduce that batch — a shorter
+  half-open date window or a smaller primary-key range — and rerun the same statement per
+  batch. Report each batch's `eligible_count` separately; never merge batches into one
+  claimed coverage figure.
+
+Prefer `EXISTS` over `JOIN` plus `DISTINCT` in the violation predicate, and keep the
+findings and coverage branches on the same indexed scope so neither branch scans more
+than the other.
+
 ## Query-file contract
 
 - Store all active approved checks for one sport in

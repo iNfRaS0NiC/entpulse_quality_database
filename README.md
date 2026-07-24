@@ -46,6 +46,8 @@ full rule.
 - Do not create one file per finding, table, query or individual DQ check.
 - Store one structural file per sport and one approved DQ SQL file per sport.
 - Store reusable discovery SQL once under `GLOBAL_QUERIES/`.
+- Scope every statement before it runs; the database is large enough that unscoped
+  queries time out or exhaust the executor's memory (`WORKFLOW.md`).
 - If the user requests one query, return only that query.
 - Do not run or return the complete GLOBAL catalog automatically.
 - Custom, random and experimental SQL requests are always permitted.

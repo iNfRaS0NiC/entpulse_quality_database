@@ -254,6 +254,63 @@ an explicitly named secondary column such as value_count or violating_record_cou
 Order by the audited object ID, or by a per-object aggregate such as the violation or
 record count when severity ranking is more useful. Keep any COVERAGE row last.
 
+QUERY COST AND RESULT SIZE
+
+The database is very large. Assume an unscoped statement fails.
+
+Request timed out means server-side cost: unbounded scan, join fan-out, filesort, a
+function or REGEXP on the filtered column, or a multi-shard scan.
+
+Allowed memory size of 134217728 bytes exhausted means the executor buffered too large a
+result set in a 128 MB PHP process.
+
+Before returning a statement:
+
+- anchor the scope on {{SPORT_ID}} or the confirmed indexed equivalent;
+- for a large sport, activate at least one narrowing filter (tournament template,
+  half-open startdate range or primary-key range) instead of leaving all of them
+  commented;
+- return the summary statement before its detail counterpart; a detail statement runs
+  only for one ID, pattern or value already selected from that summary;
+- when the population size is unknown, size it first with a cheap
+  SELECT COUNT(DISTINCT <object_id>) over the same FROM/WHERE.
+
+Statement construction:
+
+- cap non-DQ detail output with an explicit LIMIT (default 500); never as audited scope,
+  and never in a DQ statement;
+- select named columns only, never SELECT *; return IDs and one MIN(...) sample instead
+  of streaming every name or value;
+- use GROUP_CONCAT only over a small bounded DISTINCT set;
+- prefer EXISTS over JOIN plus DISTINCT for existence tests;
+- keep filters index-usable; never wrap the filtered column in a function,
+  REGEXP_REPLACE or a leading-wildcard LIKE. Digit normalization applies to already
+  scoped rows in SELECT and GROUP BY, never as the driving predicate;
+- resolve display names through the smallest necessary join chain;
+- use one confirmed {{SHARD_ID}} per execution; never scan all shards;
+- run one statement per execution.
+
+LIMIT boundaries:
+
+- LIMIT protects executor memory, not runtime. GROUP BY, DISTINCT and ORDER BY on a
+  computed column materialize in full before the limit applies. Scope prevents timeouts.
+- A result whose row count equals the limit is truncated. It supports only "these examples
+  exist" — never completeness, Not used, or any count. Raise the limit or narrow the scope
+  before classifying evidence.
+- Never page with OFFSET. Page by key:
+  WHERE e.id > <last_seen_id> ORDER BY e.id LIMIT 500.
+
+When a statement fails, do not rerun it unchanged. State which failure occurred, narrow
+one dimension at a time (date window or key batch, then GROUP_CONCAT and name joins, then
+detail to summary, then a single template), and name what was narrowed.
+
+A narrowed result describes only the narrowed scope. Never report it as complete sport
+coverage.
+
+For DQ statements, control size through the activated scope filters and audited-object
+aggregation. Reduce the batch and rerun per batch, reporting each batch's eligible_count
+separately.
+
 GLOBAL PARAMETER FORMAT
 
 Mandatory canonical parameters use uppercase double braces:

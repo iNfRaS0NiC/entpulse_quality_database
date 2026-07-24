@@ -107,6 +107,15 @@ fan-out with `GROUP BY` on the object before counting. Express counts as
 `COUNT(DISTINCT <object_id>)`; raw record counts appear only as named secondary columns.
 Order by the audited object ID, or by a per-object aggregate when ranking is more useful.
 
+## Query cost rule
+
+The database is large enough that an unscoped statement fails with a request timeout or
+with `Allowed memory size of 134217728 bytes exhausted`. Execute the smallest statement
+that answers the question: keep the sport anchor, activate a narrowing filter (template,
+half-open date range or primary-key range) for a large sport, run a summary query before
+its detail counterpart, use one confirmed `{{SHARD_ID}}` per execution, and cap ad-hoc
+detail output with `LIMIT`. The full rule is in `WORKFLOW.md`.
+
 ## BMX migration mapping
 
 The former `BMX-DQ-023` through `BMX-DQ-028` PATTERN_CATALOG identities were retired and
