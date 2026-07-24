@@ -112,6 +112,7 @@ WHERE p.del = 'no'
   );
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-002
     -- Name - PARTICIPANT_MISSING_PROFILE_FIELDS
@@ -222,6 +223,7 @@ WHERE p.del = 'no'
   );
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-003
     -- Name - PARTICIPANT_NO_EVENT_PARTICIPATION
@@ -274,6 +276,7 @@ WHERE op.object = 'sport'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-004
     -- Name - TOURNAMENT_STAGE_MISSING_AGE_CLASS
@@ -321,6 +324,7 @@ WHERE ts.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-005
     -- Name - TOURNAMENT_STAGE_NO_EVENTS
@@ -366,6 +370,7 @@ WHERE ts.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-006
     -- Name - TOURNAMENT_STAGE_DATE_RANGE_MISMATCH
@@ -428,6 +433,7 @@ WHERE ts.del = 'no'
   );
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-007
     -- Name - TOURNAMENT_STAGE_MISSING_START_OR_END_DATE
@@ -473,6 +479,7 @@ WHERE ts.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-008
     -- Name - TEMPLATE_MISSING_SET_SUBSET_GENDER_NAME
@@ -585,6 +592,7 @@ WHERE tt.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-009
     -- Name - TOURNAMENT_STAGE_MISSING_CORE_FIELDS
@@ -695,6 +703,7 @@ WHERE ts.del = 'no'
   -- AND tt.id = <tournament_template_id>
 ;
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-010
     -- Name - EVENT_SETTINGS_MISSING_DISCIPLINE
@@ -737,6 +746,7 @@ WHERE e.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-011
     -- Name - EVENT_MISSING_ROUND_TYPE
@@ -781,6 +791,7 @@ WHERE e.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-012
     -- Name - EVENT_SETTINGS_MISSING_GENDER
@@ -822,6 +833,7 @@ WHERE e.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-013
     -- Name - TEMPLATE_NO_TOURNAMENTS_OR_STAGES
@@ -869,6 +881,7 @@ WHERE tt.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-014
     -- Name - EVENT_RESULTS_MISSING_FOR_FINISHED
@@ -920,6 +933,7 @@ WHERE e.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-015
     -- Name - EVENT_RESULTS_UNEXPECTED_FOR_NOT_STARTED
@@ -970,6 +984,7 @@ WHERE e.del = 'no'
   -- AND tt.id = <tournament_template_id>
 ;
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-016
     -- Name - COMP.RANK_SETTINGS_MISSING_AGE_CLASS
@@ -1014,6 +1029,7 @@ WHERE s.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-017
     -- Name - COMP.RANK_NO_PARTICIPANTS
@@ -1056,6 +1072,7 @@ WHERE s.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-018
     -- Name - COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_STAGE
@@ -1106,6 +1123,7 @@ WHERE s.del = 'no'
   );
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-019
     -- Name - COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_EVENTS
@@ -1158,6 +1176,7 @@ WHERE s.del = 'no'
   );
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-020
     -- Name - COMP.RANK_SETTINGS_MISSING_START_OR_END_DATE
@@ -1218,6 +1237,7 @@ WHERE s.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-021
     -- Name - COMP.RANK_SETTINGS_MISSING_CORE_FIELDS
@@ -1302,6 +1322,7 @@ WHERE s.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-022
     -- Name - COMP.RANK_SETTINGS_MISSING_DISCIPLINE
@@ -1355,6 +1376,7 @@ WHERE s.del = 'no'
   -- AND tt.id = <tournament_template_id>
 ;
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-029
     -- Name - TEMPLATE_STAGE_GENDER_MISMATCH
@@ -1393,6 +1415,7 @@ WHERE ts.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-030
     -- Name - EVENT_PARTICIPANTS_GENDER_MISMATCH
@@ -1444,6 +1467,7 @@ WHERE ep.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-031
     -- Name - COMP.RANK_RESULTS_GENDER_MISMATCH
@@ -1509,6 +1533,7 @@ WHERE s.id = 58 AND s.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 ;
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-032
     -- Name - EVENT_RESULTS_MISSING_MEDAL_FOR_FINAL
@@ -1574,6 +1599,7 @@ WHERE e.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-033
     -- Name - COMP.RANK_SETTINGS_MISSING_MEDAL
@@ -1633,6 +1659,7 @@ WHERE s.del = 'no'
 ;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - BMX-DQ-034
     -- Name - EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_FINAL
