@@ -43,37 +43,40 @@ be SQL-escaped when the selected value contains a quote or backslash.
 
 ## Registry
 
-| QueryID | Name | File | Mandatory parameters | Applicability/prerequisite | Primary documentation destination |
-|---|---|---|---|---|---|
-| GLOBAL-DISCOVERY-001 | SPORT_IDENTITY | `CORE.sql` | `SPORT_ID` | None | `SPORTS/<SportSlug>.md` Identity |
-| GLOBAL-DISCOVERY-002 | CORE_HIERARCHY_USAGE | `CORE.sql` | `SPORT_ID` | None | Structural coverage / Tables and relations |
-| GLOBAL-DISCOVERY-003 | EVENT_STATUS_USAGE | `CORE.sql` | `SPORT_ID` | Active hierarchy events | Event and round representation |
-| GLOBAL-DISCOVERY-004 | EVENT_PARTICIPANT_TYPES_GENDERS | `PARTICIPANTS.sql` | `SPORT_ID` | Active event participants | Participant and lineup structure |
-| GLOBAL-DISCOVERY-005 | LINEUP_TYPES_PARTICIPANT_TYPES | `PARTICIPANTS.sql` | `SPORT_ID` | Active lineups | Participant and lineup structure |
-| GLOBAL-DISCOVERY-006 | SPORT_REGISTRY_PARTICIPANT_TYPES | `PARTICIPANTS.sql` | `SPORT_ID` | Active sport registry rows | Participant and lineup structure |
-| GLOBAL-DISCOVERY-007 | EVENT_RESULTS_TYPES_CODES | `EVENT_DATA.sql` | `SPORT_ID` | Active event result rows | Event result types |
-| GLOBAL-DISCOVERY-008 | INCIDENT_TYPES_CODES | `EVENT_DATA.sql` | `SPORT_ID` | Active incidents | Incident types |
-| GLOBAL-DISCOVERY-009 | SCOPE_TYPES | `EVENT_DATA.sql` | `SPORT_ID` | Active event-scope containers | Scope types and data types |
-| GLOBAL-DISCOVERY-010 | SCOPE_DATA_TYPES_AND_LAYERS | `EVENT_DATA.sql` | `SPORT_ID` | Active scope value rows | Scope types and data types |
-| GLOBAL-DISCOVERY-011 | PROPERTY_USAGE_BY_OWNER | `METADATA.sql` | `SPORT_ID` | Known sport hierarchy and participant owner paths | Properties |
-| GLOBAL-DISCOVERY-012 | OBJECT_RELATION_USAGE | `METADATA.sql` | `SPORT_ID` | Known hierarchy owner paths | Generic relations and disciplines |
-| GLOBAL-DISCOVERY-013 | OBJECT_DISCIPLINE_USAGE | `METADATA.sql` | `SPORT_ID` | Known hierarchy/statistic owner paths | Generic relations and disciplines |
-| GLOBAL-DISCOVERY-014 | TOURNAMENT_STAGE_REFERENCE_STORAGE | `METADATA.sql` | `SPORT_ID` | Active stages | Tables and relations / Storage semantics |
-| GLOBAL-DISCOVERY-015 | STATISTIC_TYPES_AND_OWNERS | `STATISTICS.sql` | `SPORT_ID` | Known owner paths 1,2,3,4,5,6,15 | Statistics |
-| GLOBAL-DISCOVERY-016 | STATISTIC_PARTICIPANT_SHARD_USAGE | `STATISTICS.sql` | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID` | Run 015 first; test one physical shard | Statistics |
-| GLOBAL-DISCOVERY-017 | STATISTIC_DATA_AND_CONFIG_FIELDS | `STATISTICS.sql` | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID` | Run 016 first and confirm shard | Statistics / Reference values |
-| GLOBAL-DISCOVERY-018 | EVENT_ROUND_TYPE_USAGE_SUMMARY | `PATTERNS.sql` | `SPORT_ID` | Active events | Event and round representation |
-| GLOBAL-DISCOVERY-019 | EVENT_ROUND_TYPE_USAGE_DETAIL | `PATTERNS.sql` | `SPORT_ID`, `ROUND_TYPE_ID` | Select ID from 018 | Event and round representation |
-| GLOBAL-DISCOVERY-020 | EVENT_NAME_PATTERNS_SUMMARY | `PATTERNS.sql` | `SPORT_ID` | Active events | Event and round representation |
-| GLOBAL-DISCOVERY-021 | EVENT_NAME_PATTERNS_DETAIL | `PATTERNS.sql` | `SPORT_ID`, `NAME_PATTERN` | Select pattern from 020 | Event and round representation |
-| GLOBAL-DISCOVERY-022 | TOURNAMENT_STAGE_NAME_PATTERNS_SUMMARY | `PATTERNS.sql` | `SPORT_ID` | Active stages | Event and round representation |
-| GLOBAL-DISCOVERY-023 | TOURNAMENT_STAGE_NAME_PATTERNS_DETAIL | `PATTERNS.sql` | `SPORT_ID`, `NAME_PATTERN` | Select pattern from 022 | Event and round representation |
-| GLOBAL-DISCOVERY-024 | STATISTIC_NAME_PATTERNS_SUMMARY | `PATTERNS.sql` | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID` | Run 015 first | Statistics |
-| GLOBAL-DISCOVERY-025 | STATISTIC_NAME_PATTERNS_DETAIL | `PATTERNS.sql` | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `NAME_PATTERN` | Select pattern from 024 | Statistics |
-| GLOBAL-DISCOVERY-026 | EVENT_RESULTS_VALUE_PATTERNS_SUMMARY | `PATTERNS.sql` | `SPORT_ID`, `RESULT_TYPE_ID` | Run 007 first | Event result types |
-| GLOBAL-DISCOVERY-027 | EVENT_RESULTS_VALUE_PATTERNS_DETAIL | `PATTERNS.sql` | `SPORT_ID`, `RESULT_TYPE_ID`, `VALUE_PATTERN` | Select pattern from 026 | Event result types |
-| GLOBAL-DISCOVERY-028 | STATISTIC_DATA_VALUE_PATTERNS_SUMMARY | `PATTERNS.sql` | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID`, `STATISTIC_DATA_TYPE_ID` | Run 015–017 first | Statistics |
-| GLOBAL-DISCOVERY-029 | STATISTIC_DATA_VALUE_PATTERNS_DETAIL | `PATTERNS.sql` | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID`, `STATISTIC_DATA_TYPE_ID`, `VALUE_PATTERN` | Select pattern from 028 | Statistics |
+The `Description` column mirrors each statement's `-- What it does:` comment in the SQL.
+Every query is scoped to the selected `{{SPORT_ID}}`, so that phrase is omitted below.
+
+| QueryID | Name | File | Description | Mandatory parameters | Applicability/prerequisite | Primary documentation destination |
+|---|---|---|---|---|---|---|
+| GLOBAL-DISCOVERY-001 | SPORT_IDENTITY | `CORE.sql` | Returns the sport identity (id, name, enet code) for the numeric sport ID. | `SPORT_ID` | None | `SPORTS/<SportSlug>.md` Identity |
+| GLOBAL-DISCOVERY-002 | CORE_HIERARCHY_USAGE | `CORE.sql` | Summarizes active templates, tournaments, stages, events and event participants under the sport. | `SPORT_ID` | None | Structural coverage / Tables and relations |
+| GLOBAL-DISCOVERY-003 | EVENT_STATUS_USAGE | `CORE.sql` | Lists coarse and detailed status combinations used by active events. | `SPORT_ID` | Active hierarchy events | Event and round representation |
+| GLOBAL-DISCOVERY-004 | EVENT_PARTICIPANT_TYPES_GENDERS | `PARTICIPANTS.sql` | Lists participant types and genders used by active event participants. | `SPORT_ID` | Active event participants | Participant and lineup structure |
+| GLOBAL-DISCOVERY-005 | LINEUP_TYPES_PARTICIPANT_TYPES | `PARTICIPANTS.sql` | Lists active lineup types and member participant types and genders. | `SPORT_ID` | Active lineups | Participant and lineup structure |
+| GLOBAL-DISCOVERY-006 | SPORT_REGISTRY_PARTICIPANT_TYPES | `PARTICIPANTS.sql` | Lists participant roles, types, genders and active flags from the sport's object_participants registry. | `SPORT_ID` | Active sport registry rows | Participant and lineup structure |
+| GLOBAL-DISCOVERY-007 | EVENT_RESULTS_TYPES_CODES | `EVENT_DATA.sql` | Lists active result type and result code combinations used by event participants. | `SPORT_ID` | Active event result rows | Event result types |
+| GLOBAL-DISCOVERY-008 | INCIDENT_TYPES_CODES | `EVENT_DATA.sql` | Lists active incident type and incident code combinations used by event participants. | `SPORT_ID` | Active incidents | Incident types |
+| GLOBAL-DISCOVERY-009 | SCOPE_TYPES | `EVENT_DATA.sql` | Lists active event-scope container types used by events. | `SPORT_ID` | Active event-scope containers | Scope types and data types |
+| GLOBAL-DISCOVERY-010 | SCOPE_DATA_TYPES_AND_LAYERS | `EVENT_DATA.sql` | Lists participant-owned, lineup-owned and detail value layers used under event scopes. | `SPORT_ID` | Active scope value rows | Scope types and data types |
+| GLOBAL-DISCOVERY-011 | PROPERTY_USAGE_BY_OWNER | `METADATA.sql` | Lists active property types and names used by known hierarchy and participant owners. | `SPORT_ID` | Known sport hierarchy and participant owner paths | Properties |
+| GLOBAL-DISCOVERY-012 | OBJECT_RELATION_USAGE | `METADATA.sql` | Lists active source/target object-type combinations used by hierarchy and tournament-owned statistic paths. | `SPORT_ID` | Known hierarchy owner paths | Generic relations and disciplines |
+| GLOBAL-DISCOVERY-013 | OBJECT_DISCIPLINE_USAGE | `METADATA.sql` | Lists disciplines attached to active events and tournament-owned statistics. | `SPORT_ID` | Known hierarchy/statistic owner paths | Generic relations and disciplines |
+| GLOBAL-DISCOVERY-014 | TOURNAMENT_STAGE_REFERENCE_STORAGE | `METADATA.sql` | Shows direct country, host-country relation, city link and age-class relation storage for active stages. | `SPORT_ID` | Active stages | Tables and relations / Storage semantics |
+| GLOBAL-DISCOVERY-015 | STATISTIC_TYPES_AND_OWNERS | `STATISTICS.sql` | Lists statistic types and owner levels reachable through known sport hierarchy and sport-registry paths. | `SPORT_ID` | Known owner paths 1,2,3,4,5,6,15 | Statistics |
+| GLOBAL-DISCOVERY-016 | STATISTIC_PARTICIPANT_SHARD_USAGE | `STATISTICS.sql` | Tests one physical participant shard for a confirmed statistic type and owner level. | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID` | Run 015 first; test one physical shard | Statistics |
+| GLOBAL-DISCOVERY-017 | STATISTIC_DATA_AND_CONFIG_FIELDS | `STATISTICS.sql` | Lists active data and config field types for a confirmed statistic type, owner level and physical shard. | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID` | Run 016 first and confirm shard | Statistics / Reference values |
+| GLOBAL-DISCOVERY-018 | EVENT_ROUND_TYPE_USAGE_SUMMARY | `PATTERNS.sql` | Summarizes round_typeFK values and names used by active events. | `SPORT_ID` | Active events | Event and round representation |
+| GLOBAL-DISCOVERY-019 | EVENT_ROUND_TYPE_USAGE_DETAIL | `PATTERNS.sql` | Lists active events using one round_typeFK selected from 018. | `SPORT_ID`, `ROUND_TYPE_ID` | Select ID from 018 | Event and round representation |
+| GLOBAL-DISCOVERY-020 | EVENT_NAME_PATTERNS_SUMMARY | `PATTERNS.sql` | Groups active event names by a digit-normalized pattern. | `SPORT_ID` | Active events | Event and round representation |
+| GLOBAL-DISCOVERY-021 | EVENT_NAME_PATTERNS_DETAIL | `PATTERNS.sql` | Lists active events matching one digit-normalized name pattern selected from 020. | `SPORT_ID`, `NAME_PATTERN` | Select pattern from 020 | Event and round representation |
+| GLOBAL-DISCOVERY-022 | TOURNAMENT_STAGE_NAME_PATTERNS_SUMMARY | `PATTERNS.sql` | Groups active tournament-stage names by a digit-normalized pattern. | `SPORT_ID` | Active stages | Event and round representation |
+| GLOBAL-DISCOVERY-023 | TOURNAMENT_STAGE_NAME_PATTERNS_DETAIL | `PATTERNS.sql` | Lists active stages matching one digit-normalized name pattern selected from 022. | `SPORT_ID`, `NAME_PATTERN` | Select pattern from 022 | Event and round representation |
+| GLOBAL-DISCOVERY-024 | STATISTIC_NAME_PATTERNS_SUMMARY | `PATTERNS.sql` | Groups statistic names by a digit-normalized pattern for a confirmed statistic type and owner level. | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID` | Run 015 first | Statistics |
+| GLOBAL-DISCOVERY-025 | STATISTIC_NAME_PATTERNS_DETAIL | `PATTERNS.sql` | Lists statistics matching one digit-normalized name pattern selected from 024. | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `NAME_PATTERN` | Select pattern from 024 | Statistics |
+| GLOBAL-DISCOVERY-026 | EVENT_RESULTS_VALUE_PATTERNS_SUMMARY | `PATTERNS.sql` | Groups active event-result values by a digit-normalized pattern across all result codes for one confirmed result type (from 007). | `SPORT_ID`, `RESULT_TYPE_ID` | Run 007 first | Event result types |
+| GLOBAL-DISCOVERY-027 | EVENT_RESULTS_VALUE_PATTERNS_DETAIL | `PATTERNS.sql` | Lists active events with at least one result matching the selected result type and value pattern from 026; one row per event. | `SPORT_ID`, `RESULT_TYPE_ID`, `VALUE_PATTERN` | Select pattern from 026 | Event result types |
+| GLOBAL-DISCOVERY-028 | STATISTIC_DATA_VALUE_PATTERNS_SUMMARY | `PATTERNS.sql` | Groups statistic-data values by a digit-normalized pattern for one confirmed statistic type, owner level, shard and data type (from 017). | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID`, `STATISTIC_DATA_TYPE_ID` | Run 015–017 first | Statistics |
+| GLOBAL-DISCOVERY-029 | STATISTIC_DATA_VALUE_PATTERNS_DETAIL | `PATTERNS.sql` | Lists statistics with at least one data value matching the selected data type and value pattern from 028; one row per statistic. | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID`, `STATISTIC_DATA_TYPE_ID`, `VALUE_PATTERN` | Select pattern from 028 | Statistics |
 
 <!-- MANUAL PASTE ZONE: GLOBAL QUERY REGISTRY — insert approved additions immediately before this marker; do not move or delete it. -->
 
