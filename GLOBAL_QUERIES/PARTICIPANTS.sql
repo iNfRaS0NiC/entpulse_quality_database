@@ -36,6 +36,7 @@ ORDER BY
     p.gender;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-005
     -- Name - LINEUP_TYPES_PARTICIPANT_TYPES
@@ -87,6 +88,7 @@ ORDER BY
     member_p.gender;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-006
     -- Name - SPORT_REGISTRY_PARTICIPANT_TYPES

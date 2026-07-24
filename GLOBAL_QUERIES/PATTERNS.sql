@@ -30,6 +30,7 @@ ORDER BY
     e.round_typeFK;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-019
     -- Name - EVENT_ROUND_TYPE_USAGE_DETAIL
@@ -62,6 +63,7 @@ LEFT JOIN round_type rt
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (
+      -- {{ROUND_TYPE_ID}}: select round_type_id from GLOBAL-DISCOVERY-018 (EVENT_ROUND_TYPE_USAGE_SUMMARY)
       e.round_typeFK = {{ROUND_TYPE_ID}}
       OR (e.round_typeFK IS NULL AND {{ROUND_TYPE_ID}} IS NULL)
   )
@@ -74,6 +76,7 @@ ORDER BY
     e.id;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-020
     -- Name - EVENT_NAME_PATTERNS_SUMMARY
@@ -103,6 +106,7 @@ ORDER BY
     name_pattern;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-021
     -- Name - EVENT_NAME_PATTERNS_DETAIL
@@ -131,7 +135,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  AND REGEXP_REPLACE(e.name, '[0-9]+', '#') = '{{NAME_PATTERN}}'
+  AND REGEXP_REPLACE(e.name, '[0-9]+', '#') = '{{NAME_PATTERN}}'  -- select name_pattern from GLOBAL-DISCOVERY-020 (EVENT_NAME_PATTERNS_SUMMARY)
   -- AND tt.id = <tournament_template_id>
 ORDER BY
     tt.name,
@@ -141,6 +145,7 @@ ORDER BY
     e.id;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-022
     -- Name - TOURNAMENT_STAGE_NAME_PATTERNS_SUMMARY
@@ -169,6 +174,7 @@ ORDER BY
     name_pattern;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-023
     -- Name - TOURNAMENT_STAGE_NAME_PATTERNS_DETAIL
@@ -192,7 +198,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  AND REGEXP_REPLACE(ts.name, '[0-9]+', '#') = '{{NAME_PATTERN}}'
+  AND REGEXP_REPLACE(ts.name, '[0-9]+', '#') = '{{NAME_PATTERN}}'  -- select name_pattern from GLOBAL-DISCOVERY-022 (TOURNAMENT_STAGE_NAME_PATTERNS_SUMMARY)
   -- AND tt.id = <tournament_template_id>
 ORDER BY
     tt.name,
@@ -201,6 +207,7 @@ ORDER BY
     ts.id;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-024
     -- Name - STATISTIC_NAME_PATTERNS_SUMMARY
@@ -274,8 +281,8 @@ LEFT JOIN object_participants op15
  AND op15.participantFK = p15.id
  AND op15.del = 'no'
 WHERE st.del = 'no'
-  AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}
+  AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- select statistic_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
+  AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}  -- select statistic_owner_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
   AND (
       sport_owner.id = {{SPORT_ID}}
       OR tt2.sportFK = {{SPORT_ID}}
@@ -292,6 +299,7 @@ ORDER BY
     name_pattern;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-025
     -- Name - STATISTIC_NAME_PATTERNS_DETAIL
@@ -365,9 +373,9 @@ LEFT JOIN object_participants op15
  AND op15.participantFK = p15.id
  AND op15.del = 'no'
 WHERE st.del = 'no'
-  AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}
-  AND REGEXP_REPLACE(st.name, '[0-9]+', '#') = '{{NAME_PATTERN}}'
+  AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- select statistic_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
+  AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}  -- select statistic_owner_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
+  AND REGEXP_REPLACE(st.name, '[0-9]+', '#') = '{{NAME_PATTERN}}'  -- select name_pattern from GLOBAL-DISCOVERY-024 (STATISTIC_NAME_PATTERNS_SUMMARY)
   AND (
       sport_owner.id = {{SPORT_ID}}
       OR tt2.sportFK = {{SPORT_ID}}
@@ -382,23 +390,20 @@ ORDER BY
     st.id;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-026
     -- Name - EVENT_RESULTS_VALUE_PATTERNS_SUMMARY
-    -- What it does: Classifies active event-result values by shape for each result type used in the selected sport.
+    -- What it does: Groups active event-result values by a digit-normalized pattern across all result codes for one confirmed result type selected from the event-result inventory (GLOBAL-DISCOVERY-007) in the selected sport.
     r.result_typeFK AS result_type_id,
     rt.name AS result_type_name,
-    r.result_code,
     CASE
-        WHEN r.value IS NULL THEN 'null'
-        WHEN TRIM(r.value) = '' THEN 'empty'
-        WHEN r.value REGEXP '^[+-]?[0-9]+$' THEN 'integer'
-        WHEN r.value REGEXP '^[+-]?[0-9]+\\.[0-9]+$' THEN 'decimal'
-        WHEN r.value REGEXP '^[+-]?[0-9]{1,3}:[0-9]{2}(:[0-9]{2})?(\\.[0-9]+)?$' THEN 'time_format'
-        ELSE 'text_or_other'
-    END AS value_shape,
+        WHEN r.value IS NULL THEN '<NULL>'
+        WHEN TRIM(r.value) = '' THEN '<EMPTY>'
+        ELSE REGEXP_REPLACE(r.value, '[0-9]+', '#')
+    END AS value_pattern,
     COUNT(DISTINCT r.id) AS value_count,
-    MIN(r.value) AS sample_value
+    COUNT(DISTINCT e.id) AS event_count
 FROM result r
 JOIN event_participants ep
   ON ep.id = r.event_participantsFK
@@ -419,96 +424,96 @@ LEFT JOIN result_type rt
   ON rt.id = r.result_typeFK
 WHERE r.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
+  AND r.result_typeFK = {{RESULT_TYPE_ID}}  -- select result_type_id from GLOBAL-DISCOVERY-007 (EVENT_RESULTS_TYPES_CODES)
   -- AND tt.id = <tournament_template_id>
 GROUP BY
     r.result_typeFK,
     rt.name,
-    r.result_code,
-    value_shape
+    value_pattern
 ORDER BY
-    r.result_typeFK,
-    r.result_code,
-    value_count DESC;
+    value_count DESC,
+    value_pattern;
 
 
+-- ================================================================================
 SELECT
--- CheckID - GLOBAL-DISCOVERY-027
--- Name - EVENT_RESULTS_VALUE_PATTERNS_DETAIL
--- What it does: Lists active event-result rows for one result type, result code and selected value shape.
-r.id AS result_id,
-r.result_typeFK AS result_type_id,
-rt.name AS result_type_name,
-r.result_code,
-r.value,
-CASE
-WHEN r.value IS NULL THEN 'null'
-WHEN TRIM(r.value) = '' THEN 'empty'
-WHEN r.value REGEXP '^[+-]?[0-9]+$' THEN 'integer'
-WHEN r.value REGEXP '^[+-]?[0-9]+\.[0-9]+$' THEN 'decimal'
-WHEN r.value REGEXP '^[+-]?[0-9]{1,3}:[0-9]{2}(:[0-9]{2})?(\.[0-9]+)?$' THEN 'time_format'
-ELSE 'text_or_other'
-END AS value_shape,
-ep.id AS event_participant_id,
-ep.participantFK AS participant_id,
-e.id AS event_id,
-e.name AS event_name,
-ts.id AS tournament_stage_id,
-ts.name AS tournament_stage_name,
-t.id AS tournament_id,
-t.name AS tournament_name,
-tt.id AS tournament_template_id,
-tt.name AS tournament_template_name
+    -- CheckID - GLOBAL-DISCOVERY-027
+    -- Name - EVENT_RESULTS_VALUE_PATTERNS_DETAIL
+    -- What it does: Lists active events with at least one result matching the selected result type and digit-normalized value pattern, selected from the corresponding GLOBAL summary query; one row per event, ordered by event ID.
+    e.id AS event_id,
+    e.name AS event_name,
+    ts.id AS tournament_stage_id,
+    ts.name AS tournament_stage_name,
+    t.id AS tournament_id,
+    t.name AS tournament_name,
+    tt.id AS tournament_template_id,
+    tt.name AS tournament_template_name,
+    r.result_typeFK AS result_type_id,
+    rt.name AS result_type_name,
+    COUNT(DISTINCT r.id) AS matching_result_count,
+    COUNT(DISTINCT ep.id) AS matching_participant_count,
+    GROUP_CONCAT(DISTINCT r.result_code ORDER BY r.result_code SEPARATOR ', ') AS matching_result_codes,
+    GROUP_CONCAT(DISTINCT r.value ORDER BY r.value SEPARATOR ', ') AS sample_values
 FROM result r
 JOIN event_participants ep
-ON ep.id = r.event_participantsFK
-AND ep.del = 'no'
+  ON ep.id = r.event_participantsFK
+ AND ep.del = 'no'
 JOIN event e
-ON e.id = ep.eventFK
-AND e.del = 'no'
+  ON e.id = ep.eventFK
+ AND e.del = 'no'
 JOIN tournament_stage ts
-ON ts.id = e.tournament_stageFK
-AND ts.del = 'no'
+  ON ts.id = e.tournament_stageFK
+ AND ts.del = 'no'
 JOIN tournament t
-ON t.id = ts.tournamentFK
-AND t.del = 'no'
+  ON t.id = ts.tournamentFK
+ AND t.del = 'no'
 JOIN tournament_template tt
-ON tt.id = t.tournament_templateFK
-AND tt.del = 'no'
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
 LEFT JOIN result_type rt
-ON rt.id = r.result_typeFK
+  ON rt.id = r.result_typeFK
 WHERE r.del = 'no'
-AND tt.sportFK = {{SPORT_ID}}
-AND r.result_typeFK = {{RESULT_TYPE_ID}}
-AND r.result_code = '{{RESULT_CODE}}'
--- Optional scope filter:
--- AND tt.id = {{TOURNAMENT_TEMPLATE_ID}}
-HAVING value_shape = '{{VALUE_SHAPE}}'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND r.result_typeFK = {{RESULT_TYPE_ID}}  -- select result_type_id from GLOBAL-DISCOVERY-007 (EVENT_RESULTS_TYPES_CODES)
+  AND (
+      CASE
+          WHEN r.value IS NULL THEN '<NULL>'
+          WHEN TRIM(r.value) = '' THEN '<EMPTY>'
+          ELSE REGEXP_REPLACE(r.value, '[0-9]+', '#')
+      END
+  ) = '{{VALUE_PATTERN}}'  -- select value_pattern from GLOBAL-DISCOVERY-026 (EVENT_RESULTS_VALUE_PATTERNS_SUMMARY)
+  -- Optional scope filter:
+  -- AND tt.id = {{TOURNAMENT_TEMPLATE_ID}}
+GROUP BY
+    e.id,
+    e.name,
+    ts.id,
+    ts.name,
+    t.id,
+    t.name,
+    tt.id,
+    tt.name,
+    r.result_typeFK,
+    rt.name
 ORDER BY
-tt.name,
-t.name,
-ts.name,
-e.id,
-ep.id,
-r.id;
+    e.id;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-028
     -- Name - STATISTIC_DATA_VALUE_PATTERNS_SUMMARY
-    -- What it does: Classifies statistic-data values by shape for one confirmed type, owner level and physical shard in the selected sport.
+    -- What it does: Groups statistic-data values by a digit-normalized pattern for one confirmed statistic type, owner level, physical shard and data type selected from the statistic field inventory (GLOBAL-DISCOVERY-017) in the selected sport.
     sd.statistic_data_typeFK AS statistic_data_type_id,
     sdt.name AS statistic_data_type_name,
     CASE
-        WHEN sd.value IS NULL THEN 'null'
-        WHEN TRIM(sd.value) = '' THEN 'empty'
-        WHEN sd.value REGEXP '^[+-]?[0-9]+$' THEN 'integer'
-        WHEN sd.value REGEXP '^[+-]?[0-9]+\\.[0-9]+$' THEN 'decimal'
-        WHEN sd.value REGEXP '^[+-]?[0-9]{1,3}:[0-9]{2}(:[0-9]{2})?(\\.[0-9]+)?$' THEN 'time_format'
-        ELSE 'text_or_other'
-    END AS value_shape,
+        WHEN sd.value IS NULL THEN '<NULL>'
+        WHEN TRIM(sd.value) = '' THEN '<EMPTY>'
+        ELSE REGEXP_REPLACE(sd.value, '[0-9]+', '#')
+    END AS value_pattern,
     COUNT(DISTINCT sd.id) AS value_count,
-    COUNT(DISTINCT st.id) AS statistic_count,
-    MIN(sd.value) AS sample_value
+    COUNT(DISTINCT st.id) AS statistic_count
+-- {{SHARD_ID}}: confirmed physical shard number from GLOBAL-DISCOVERY-016 (STATISTIC_PARTICIPANT_SHARD_USAGE)
 FROM statistic_data{{SHARD_ID}} sd
 JOIN statistic_participants{{SHARD_ID}} sp
   ON sp.id = sd.statistic_participants{{SHARD_ID}}FK
@@ -581,8 +586,9 @@ LEFT JOIN object_participants op15
  AND op15.participantFK = p15.id
  AND op15.del = 'no'
 WHERE sd.del = 'no'
-  AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}
+  AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- select statistic_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
+  AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}  -- select statistic_owner_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
+  AND sd.statistic_data_typeFK = {{STATISTIC_DATA_TYPE_ID}}  -- select statistic_data_type_id from GLOBAL-DISCOVERY-017 (STATISTIC_DATA_AND_CONFIG_FIELDS)
   AND (
       sport_owner.id = {{SPORT_ID}}
       OR tt2.sportFK = {{SPORT_ID}}
@@ -595,28 +601,28 @@ WHERE sd.del = 'no'
 GROUP BY
     sd.statistic_data_typeFK,
     sdt.name,
-    value_shape
+    value_pattern
 ORDER BY
-    sd.statistic_data_typeFK,
-    value_count DESC;
+    value_count DESC,
+    value_pattern;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-029
     -- Name - STATISTIC_DATA_VALUE_PATTERNS_DETAIL
-    -- What it does: Lists statistic-data rows for one data type selected from the corresponding GLOBAL summary query.
-    sd.id AS statistic_data_id,
-    sd.statistic_data_typeFK AS statistic_data_type_id,
-    sdt.name AS statistic_data_type_name,
-    sd.statistic_data_type_detailFK,
-    sd.value,
-    sp.id AS statistic_participant_id,
-    sp.participantFK AS participant_id,
+    -- What it does: Lists statistics with at least one data value matching the selected data type and digit-normalized value pattern selected from the corresponding GLOBAL summary query (GLOBAL-DISCOVERY-028); one row per statistic, ordered by statistic ID.
     st.id AS statistic_id,
     st.name AS statistic_name,
     st.statistic_typeFK AS statistic_type_id,
     st.object_typeFK AS statistic_owner_type_id,
-    st.objectFK AS statistic_owner_id
+    st.objectFK AS statistic_owner_id,
+    sd.statistic_data_typeFK AS statistic_data_type_id,
+    sdt.name AS statistic_data_type_name,
+    COUNT(DISTINCT sd.id) AS matching_value_count,
+    COUNT(DISTINCT sp.id) AS matching_participant_count,
+    GROUP_CONCAT(DISTINCT sd.value ORDER BY sd.value SEPARATOR ', ') AS sample_values
+-- {{SHARD_ID}}: confirmed physical shard number from GLOBAL-DISCOVERY-016 (STATISTIC_PARTICIPANT_SHARD_USAGE)
 FROM statistic_data{{SHARD_ID}} sd
 JOIN statistic_participants{{SHARD_ID}} sp
   ON sp.id = sd.statistic_participants{{SHARD_ID}}FK
@@ -689,9 +695,9 @@ LEFT JOIN object_participants op15
  AND op15.participantFK = p15.id
  AND op15.del = 'no'
 WHERE sd.del = 'no'
-  AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}
-  AND sd.statistic_data_typeFK = {{STATISTIC_DATA_TYPE_ID}}
+  AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- select statistic_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
+  AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}  -- select statistic_owner_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
+  AND sd.statistic_data_typeFK = {{STATISTIC_DATA_TYPE_ID}}  -- select statistic_data_type_id from GLOBAL-DISCOVERY-017 (STATISTIC_DATA_AND_CONFIG_FIELDS)
   AND (
       sport_owner.id = {{SPORT_ID}}
       OR tt2.sportFK = {{SPORT_ID}}
@@ -701,13 +707,20 @@ WHERE sd.del = 'no'
       OR tt6.sportFK = {{SPORT_ID}}
       OR op15.objectFK = {{SPORT_ID}}
   )
-  -- Optional: uncomment one value-shape filter.
-  -- AND sd.value REGEXP '^[+-]?[0-9]+$'
-  -- AND sd.value REGEXP '^[+-]?[0-9]+\\.[0-9]+$'
-  -- AND sd.value REGEXP '^[+-]?[0-9]{1,3}:[0-9]{2}(:[0-9]{2})?(\\.[0-9]+)?$'
-  -- AND sd.value IS NULL
-  -- AND TRIM(sd.value) = ''
-ORDER BY
+  AND (
+      CASE
+          WHEN sd.value IS NULL THEN '<NULL>'
+          WHEN TRIM(sd.value) = '' THEN '<EMPTY>'
+          ELSE REGEXP_REPLACE(sd.value, '[0-9]+', '#')
+      END
+  ) = '{{VALUE_PATTERN}}'  -- select value_pattern from GLOBAL-DISCOVERY-028 (STATISTIC_DATA_VALUE_PATTERNS_SUMMARY)
+GROUP BY
     st.id,
-    sp.id,
-    sd.id;
+    st.name,
+    st.statistic_typeFK,
+    st.object_typeFK,
+    st.objectFK,
+    sd.statistic_data_typeFK,
+    sdt.name
+ORDER BY
+    st.id;

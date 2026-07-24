@@ -103,6 +103,7 @@ ORDER BY
     st.object_typeFK;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-016
     -- Name - STATISTIC_PARTICIPANT_SHARD_USAGE
@@ -178,12 +179,13 @@ LEFT JOIN object_participants op15
   ON op15.object = 'sport'
  AND op15.participantFK = p15.id
  AND op15.del = 'no'
+-- {{SHARD_ID}}: physical shard number being tested here; confirm it, then reuse the same value in GLOBAL-DISCOVERY-017/028/029
 LEFT JOIN statistic_participants{{SHARD_ID}} sp
   ON sp.statisticFK = st.id
  AND sp.del = 'no'
 WHERE st.del = 'no'
-  AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}
+  AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- select statistic_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
+  AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}  -- select statistic_owner_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
   AND (
       sport_owner.id = {{SPORT_ID}}
       OR tt2.sportFK = {{SPORT_ID}}
@@ -203,6 +205,7 @@ ORDER BY
     st.id;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-017
     -- Name - STATISTIC_DATA_AND_CONFIG_FIELDS
@@ -214,6 +217,7 @@ SELECT
     COUNT(*) AS value_row_count,
     COUNT(DISTINCT x.statistic_id) AS statistic_count,
     MIN(x.value) AS sample_value
+-- {{SHARD_ID}}: confirmed physical shard number from GLOBAL-DISCOVERY-016 (STATISTIC_PARTICIPANT_SHARD_USAGE)
 FROM (
     SELECT
         'statistic_data{{SHARD_ID}}' AS storage_layer,
@@ -294,8 +298,8 @@ FROM (
      AND op15.participantFK = p15.id
      AND op15.del = 'no'
     WHERE sd.del = 'no'
-      AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-      AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}
+      AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- select statistic_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
+      AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}  -- select statistic_owner_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
       AND (
           sport_owner.id = {{SPORT_ID}}
           OR tt2.sportFK = {{SPORT_ID}}
@@ -384,8 +388,8 @@ FROM (
      AND op15.participantFK = p15.id
      AND op15.del = 'no'
     WHERE sc.del = 'no'
-      AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-      AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}
+      AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- select statistic_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
+      AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}  -- select statistic_owner_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
       AND (
           sport_owner.id = {{SPORT_ID}}
           OR tt2.sportFK = {{SPORT_ID}}

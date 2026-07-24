@@ -10,6 +10,7 @@ WHERE s.id = {{SPORT_ID}}
   AND s.del = 'no';
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-002
     -- Name - CORE_HIERARCHY_USAGE
@@ -46,6 +47,7 @@ ORDER BY
     tt.id;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-003
     -- Name - EVENT_STATUS_USAGE

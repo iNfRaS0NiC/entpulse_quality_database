@@ -33,6 +33,7 @@ unreplaced makes the statement intentionally non-executable.
 | `{{STATISTIC_OWNER_TYPE_ID}}` | Confirmed `statistic.object_typeFK` |
 | `{{SHARD_ID}}` | Confirmed physical statistic participant/data shard number |
 | `{{STATISTIC_DATA_TYPE_ID}}` | Data type selected from the statistic field inventory |
+| `{{VALUE_PATTERN}}` | Digit-normalized value pattern (or `<NULL>`/`<EMPTY>`) selected from the corresponding value-pattern summary query |
 
 `{{SHARD_ID}}` is textual substitution inside table and parent-column names. It is not
 an SQL bind variable. Never infer it from `statistic_typeFK`.
@@ -69,10 +70,10 @@ be SQL-escaped when the selected value contains a quote or backslash.
 | GLOBAL-DISCOVERY-023 | TOURNAMENT_STAGE_NAME_PATTERNS_DETAIL | `PATTERNS.sql` | `SPORT_ID`, `NAME_PATTERN` | Select pattern from 022 | Event and round representation |
 | GLOBAL-DISCOVERY-024 | STATISTIC_NAME_PATTERNS_SUMMARY | `PATTERNS.sql` | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID` | Run 015 first | Statistics |
 | GLOBAL-DISCOVERY-025 | STATISTIC_NAME_PATTERNS_DETAIL | `PATTERNS.sql` | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `NAME_PATTERN` | Select pattern from 024 | Statistics |
-| GLOBAL-DISCOVERY-026 | EVENT_RESULTS_VALUE_PATTERNS_SUMMARY | `PATTERNS.sql` | `SPORT_ID` | Active result rows | Event result types |
-| GLOBAL-DISCOVERY-027 | EVENT_RESULTS_VALUE_PATTERNS_DETAIL | `PATTERNS.sql` | `SPORT_ID`, `RESULT_TYPE_ID` | Select type from 026 | Event result types |
-| GLOBAL-DISCOVERY-028 | STATISTIC_DATA_VALUE_PATTERNS_SUMMARY | `PATTERNS.sql` | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID` | Run 015–017 first | Statistics |
-| GLOBAL-DISCOVERY-029 | STATISTIC_DATA_VALUE_PATTERNS_DETAIL | `PATTERNS.sql` | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID`, `STATISTIC_DATA_TYPE_ID` | Select type from 028 | Statistics |
+| GLOBAL-DISCOVERY-026 | EVENT_RESULTS_VALUE_PATTERNS_SUMMARY | `PATTERNS.sql` | `SPORT_ID`, `RESULT_TYPE_ID` | Run 007 first | Event result types |
+| GLOBAL-DISCOVERY-027 | EVENT_RESULTS_VALUE_PATTERNS_DETAIL | `PATTERNS.sql` | `SPORT_ID`, `RESULT_TYPE_ID`, `VALUE_PATTERN` | Select pattern from 026 | Event result types |
+| GLOBAL-DISCOVERY-028 | STATISTIC_DATA_VALUE_PATTERNS_SUMMARY | `PATTERNS.sql` | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID`, `STATISTIC_DATA_TYPE_ID` | Run 015–017 first | Statistics |
+| GLOBAL-DISCOVERY-029 | STATISTIC_DATA_VALUE_PATTERNS_DETAIL | `PATTERNS.sql` | `SPORT_ID`, `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID`, `SHARD_ID`, `STATISTIC_DATA_TYPE_ID`, `VALUE_PATTERN` | Select pattern from 028 | Statistics |
 
 <!-- MANUAL PASTE ZONE: GLOBAL QUERY REGISTRY — insert approved additions immediately before this marker; do not move or delete it. -->
 

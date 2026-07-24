@@ -118,6 +118,7 @@ ORDER BY
     x.property_name;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-012
     -- Name - OBJECT_RELATION_USAGE
@@ -229,6 +230,7 @@ ORDER BY
     x.related_object_type_id;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-013
     -- Name - OBJECT_DISCIPLINE_USAGE
@@ -302,6 +304,7 @@ ORDER BY
     x.discipline_id;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-014
     -- Name - TOURNAMENT_STAGE_REFERENCE_STORAGE

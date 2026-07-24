@@ -39,6 +39,7 @@ ORDER BY
     r.result_code;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-008
     -- Name - INCIDENT_TYPES_CODES
@@ -79,6 +80,7 @@ ORDER BY
     i.incident_code;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-009
     -- Name - SCOPE_TYPES
@@ -115,6 +117,7 @@ ORDER BY
     es.scope_typeFK;
 
 
+-- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-010
     -- Name - SCOPE_DATA_TYPES_AND_LAYERS
