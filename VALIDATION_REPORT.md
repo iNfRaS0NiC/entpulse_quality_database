@@ -18,7 +18,6 @@ Project 1.x remains unchanged and is the rollback package.
 | Duplicate active SQL CheckIDs | 0 |
 | GLOBAL registry versus executable SQL | PASS |
 | PowerBI registry versus active BMX SQL | PASS |
-| Deprecated BMX DQ SQL still executable | 0 |
 | Required manual-paste markers | PASS |
 | Required Project 2.0 routing references | PASS |
 
@@ -31,16 +30,16 @@ Project 1.x remains unchanged and is the rollback package.
 | MySQL parser failures | 0 |
 | UNION column-count mismatches | 0 |
 | GLOBAL discovery statements | 29 |
-| Active BMX DQ statements | 25 |
-| Reserved deprecated BMX DQ IDs | 6 |
+| Active BMX DQ statements | 29 |
 
 All GLOBAL statements use `{{SPORT_ID}}`; none contains a hard-coded BMX sport ID.
 Parameter-dependent GLOBAL statements declare their additional placeholders in
 `GLOBAL_QUERIES/README.md`.
 
 Every active BMX DQ statement remains represented by one `Approved` registry row and
-contains an `eligible_count` coverage output. `BMX-DQ-023` through `BMX-DQ-028` remain
-reserved as `Deprecated` and have no active executable statement.
+contains an `eligible_count` coverage output. The former `BMX-DQ-023` through
+`BMX-DQ-028` PATTERN_CATALOG rows were removed and the CheckIDs after them renumbered
+to close the gap.
 
 ## Important boundary
 

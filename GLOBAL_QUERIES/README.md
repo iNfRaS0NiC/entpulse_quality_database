@@ -97,9 +97,10 @@ stable mechanism, IDs, usage or value shapes—not transient counts or example r
 
 ## BMX migration mapping
 
-The former `BMX-DQ-023` through `BMX-DQ-028` PATTERN_CATALOG identities are deprecated.
-Their reusable purposes are represented by `GLOBAL-DISCOVERY-018` through
-`GLOBAL-DISCOVERY-029`. The old DQ IDs remain reserved and are never reused.
+The former `BMX-DQ-023` through `BMX-DQ-028` PATTERN_CATALOG identities were retired and
+removed from the PowerBI registry; their CheckIDs were reclaimed by renumbering the
+remaining rows. Their reusable purposes are represented by `GLOBAL-DISCOVERY-018`
+through `GLOBAL-DISCOVERY-029`.
 
 ## Manual registry-rule additions
 

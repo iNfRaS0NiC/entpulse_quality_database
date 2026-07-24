@@ -1378,7 +1378,7 @@ WHERE s.del = 'no'
 
 -- ================================================================================
 SELECT
-    -- CheckID - BMX-DQ-029
+    -- CheckID - BMX-DQ-023
     -- Name - TEMPLATE_STAGE_GENDER_MISMATCH
     -- What it does: Finds active BMX tournament stages whose gender differs from their parent template gender, excluding cases where either side is mixed or empty, together with a coverage count of eligible stages.
     'Gender_Mismatch' AS check_type,
@@ -1417,7 +1417,7 @@ WHERE ts.del = 'no'
 
 -- ================================================================================
 SELECT
-    -- CheckID - BMX-DQ-030
+    -- CheckID - BMX-DQ-024
     -- Name - EVENT_PARTICIPANTS_GENDER_MISMATCH
     -- What it does: Finds active BMX events whose athlete event participants include at least one gender different from the parent tournament stage gender, with per-event male/female/other participant counts, excluding stages with mixed or empty gender, together with a coverage count of eligible events.
     'Gender_Mismatch' AS check_type,
@@ -1469,7 +1469,7 @@ WHERE ep.del = 'no'
 
 -- ================================================================================
 SELECT
-    -- CheckID - BMX-DQ-031
+    -- CheckID - BMX-DQ-025
     -- Name - COMP.RANK_RESULTS_GENDER_MISMATCH
     -- What it does: Finds active BMX Comp.Rank statistics whose Gender config value does not match the gender composition of their statistic participants, classifying each violation type, together with a coverage count of all eligible statistics.
     'Gender_Mismatch' AS check_type,
@@ -1535,7 +1535,7 @@ WHERE s.id = 58 AND s.del = 'no'
 ;
 -- ================================================================================
 SELECT
-    -- CheckID - BMX-DQ-032
+    -- CheckID - BMX-DQ-026
     -- Name - EVENT_RESULTS_MISSING_MEDAL_FOR_FINAL
     -- What it does: Finds active, finished BMX events with round_typeFK=173 (Final) where at least one of gold/silver/bronze Medal (result_typeFK=501) values is absent among event participants, distinguishing events with no medals at all from events missing only specific medal type(s), together with a coverage count of all eligible Final-round finished BMX events.
     CASE WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All' ELSE 'Missing_Specific_Medal' END AS check_type,
@@ -1601,7 +1601,7 @@ WHERE e.del = 'no'
 
 -- ================================================================================
 SELECT
-    -- CheckID - BMX-DQ-033
+    -- CheckID - BMX-DQ-027
     -- Name - COMP.RANK_SETTINGS_MISSING_MEDAL
     -- What it does: Finds active BMX Comp.Rank statistics (statistic_typeFK=11, object_typeFK=3) where at least one of gold/silver/bronze Medal (statistic_data_typeFK=1277) values is absent among statistic participants, distinguishing statistics with no medals at all from statistics missing only specific medal type(s), together with a coverage count of all eligible BMX Comp.Rank statistics.
     CASE WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All' ELSE 'Missing_Specific_Medal' END AS check_type,
@@ -1661,7 +1661,7 @@ WHERE s.del = 'no'
 
 -- ================================================================================
 SELECT
-    -- CheckID - BMX-DQ-034
+    -- CheckID - BMX-DQ-028
     -- Name - EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_FINAL
     -- What it does: Finds active, finished BMX events with round_typeFK=173 (Final) that have no active event property named medal_related with value yes, with template, tournament and stage name context, together with a coverage count of all eligible Final-round finished BMX events.
     'Missing_Medal_Related_Property' AS check_type,
@@ -1706,4 +1706,61 @@ WHERE e.del = 'no'
   AND e.round_typeFK = 173
   AND e.status_type = 'finished'
   AND e.status_descFK = 6
-  -- AND tt.id
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - BMX-DQ-029
+    -- Name - EVENT_RESULTS_UNEXPECTED_MEDAL_FOR_NON_FINAL
+    -- What it does: Finds active, finished BMX events with round_typeFK other than 173 (Final) that have at least one active, non-empty Medal (result_typeFK=501) result row for any event participant, with template, tournament, stage name and round-type context, together with a coverage count of all eligible non-Final finished BMX events.
+    'Unexpected_Medal_For_Non_Final' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    e.round_typeFK AS round_type_id,
+    rt.name AS round_type_name,
+    NULL AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+WHERE e.del = 'no'
+  AND tt.sportFK = 58
+  AND (e.round_typeFK IS NULL OR e.round_typeFK <> 173)
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND tt.id = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result r ON r.event_participantsFK = ep.id
+        AND r.del = 'no'
+        AND r.result_typeFK = 501
+        AND r.value IS NOT NULL
+        AND TRIM(r.value) <> ''
+      WHERE ep.eventFK = e.id
+        AND ep.del = 'no'
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 58
+  AND (e.round_typeFK IS NULL OR e.round_typeFK <> 173)
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND tt.id = <tournament_template_id>
+;
