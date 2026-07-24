@@ -432,59 +432,64 @@ ORDER BY
 
 
 SELECT
-    -- CheckID - GLOBAL-DISCOVERY-027
-    -- Name - EVENT_RESULTS_VALUE_PATTERNS_DETAIL
-    -- What it does: Lists active event-result rows for one result type selected from the corresponding GLOBAL summary query.
-    r.id AS result_id,
-    r.result_typeFK AS result_type_id,
-    rt.name AS result_type_name,
-    r.result_code,
-    r.value,
-    ep.id AS event_participant_id,
-    ep.participantFK AS participant_id,
-    e.id AS event_id,
-    e.name AS event_name,
-    ts.id AS tournament_stage_id,
-    ts.name AS tournament_stage_name,
-    t.id AS tournament_id,
-    t.name AS tournament_name,
-    tt.id AS tournament_template_id,
-    tt.name AS tournament_template_name
+-- CheckID - GLOBAL-DISCOVERY-027
+-- Name - EVENT_RESULTS_VALUE_PATTERNS_DETAIL
+-- What it does: Lists active event-result rows for one result type, result code and selected value shape.
+r.id AS result_id,
+r.result_typeFK AS result_type_id,
+rt.name AS result_type_name,
+r.result_code,
+r.value,
+CASE
+WHEN r.value IS NULL THEN 'null'
+WHEN TRIM(r.value) = '' THEN 'empty'
+WHEN r.value REGEXP '^[+-]?[0-9]+$' THEN 'integer'
+WHEN r.value REGEXP '^[+-]?[0-9]+\.[0-9]+$' THEN 'decimal'
+WHEN r.value REGEXP '^[+-]?[0-9]{1,3}:[0-9]{2}(:[0-9]{2})?(\.[0-9]+)?$' THEN 'time_format'
+ELSE 'text_or_other'
+END AS value_shape,
+ep.id AS event_participant_id,
+ep.participantFK AS participant_id,
+e.id AS event_id,
+e.name AS event_name,
+ts.id AS tournament_stage_id,
+ts.name AS tournament_stage_name,
+t.id AS tournament_id,
+t.name AS tournament_name,
+tt.id AS tournament_template_id,
+tt.name AS tournament_template_name
 FROM result r
 JOIN event_participants ep
-  ON ep.id = r.event_participantsFK
- AND ep.del = 'no'
+ON ep.id = r.event_participantsFK
+AND ep.del = 'no'
 JOIN event e
-  ON e.id = ep.eventFK
- AND e.del = 'no'
+ON e.id = ep.eventFK
+AND e.del = 'no'
 JOIN tournament_stage ts
-  ON ts.id = e.tournament_stageFK
- AND ts.del = 'no'
+ON ts.id = e.tournament_stageFK
+AND ts.del = 'no'
 JOIN tournament t
-  ON t.id = ts.tournamentFK
- AND t.del = 'no'
+ON t.id = ts.tournamentFK
+AND t.del = 'no'
 JOIN tournament_template tt
-  ON tt.id = t.tournament_templateFK
- AND tt.del = 'no'
+ON tt.id = t.tournament_templateFK
+AND tt.del = 'no'
 LEFT JOIN result_type rt
-  ON rt.id = r.result_typeFK
+ON rt.id = r.result_typeFK
 WHERE r.del = 'no'
-  AND tt.sportFK = {{SPORT_ID}}
-  AND r.result_typeFK = {{RESULT_TYPE_ID}}
-  -- Optional: uncomment one value-shape filter.
-  -- AND r.value REGEXP '^[+-]?[0-9]+$'
-  -- AND r.value REGEXP '^[+-]?[0-9]+\\.[0-9]+$'
-  -- AND r.value REGEXP '^[+-]?[0-9]{1,3}:[0-9]{2}(:[0-9]{2})?(\\.[0-9]+)?$'
-  -- AND r.value IS NULL
-  -- AND TRIM(r.value) = ''
-  -- AND tt.id = <tournament_template_id>
+AND tt.sportFK = {{SPORT_ID}}
+AND r.result_typeFK = {{RESULT_TYPE_ID}}
+AND r.result_code = '{{RESULT_CODE}}'
+-- Optional scope filter:
+-- AND tt.id = {{TOURNAMENT_TEMPLATE_ID}}
+HAVING value_shape = '{{VALUE_SHAPE}}'
 ORDER BY
-    tt.name,
-    t.name,
-    ts.name,
-    e.id,
-    ep.id,
-    r.id;
+tt.name,
+t.name,
+ts.name,
+e.id,
+ep.id,
+r.id;
 
 
 SELECT
