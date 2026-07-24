@@ -32,8 +32,8 @@ DQ work starts only after the user explicitly names:
 1. the sport;
 2. the requested category or problem area.
 
-Examples such as `MISSING_VALUES` and `WRONG_RESULTS` are category examples, not
-active requests. Do not propose, name, number or generate DQ checks outside the category
+Examples such as `MISSING_VALUES`, `NO_RELATED_RECORDS`, `DATE_RANGE_MISMATCH`,
+`WRONG_GENDER` and `WRONG_RESULTS` are category examples, not active requests. Do not propose, name, number or generate DQ checks outside the category
 opened by the user.
 
 ## Approval and identity workflow
