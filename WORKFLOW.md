@@ -101,6 +101,23 @@ Rules:
 - optional filters remain commented and use angle-bracket examples;
 - a query that needs an undeclared sport-specific assumption is not GLOBAL.
 
+## Aggregation and ordering rule
+
+Every discovery and DQ statement is counted and ordered by its audited object, never by
+raw child-record volume.
+
+- Each returned row represents one distinct subject — an object ID, a value pattern or a
+  value — never one row per raw child record (`result`, `statistic_data`, property, etc.).
+- Detail, drill-down and DQ finding statements return exactly one row per distinct audited
+  object (event, statistic, stage, participant …); collapse any join fan-out with
+  `GROUP BY` on the object or `EXISTS` before counting or listing.
+- Express every count as `COUNT(DISTINCT <object_id>)`. A raw record count may appear only
+  as an explicitly named secondary column (`value_count`, `violating_record_count`), never
+  as the reported object total.
+- Order by the audited object ID, or by a per-object aggregate such as the violation or
+  record count when severity ranking is more useful; never order so that one object repeats
+  across rows. Keep any `COVERAGE` row last.
+
 ## Evidence classification
 
 After a result, classify evidence as:
@@ -266,6 +283,7 @@ generated block was pasted unless it is present in the latest file.
 - [ ] A matching GLOBAL query was reused when appropriate.
 - [ ] Every mandatory parameter was replaced in the working copy.
 - [ ] One requested query produced one returned query.
+- [ ] Each result row is one distinct audited object; raw counts are named secondary columns only.
 - [ ] QueryID or CheckID is unique for one executable statement.
 - [ ] No structural finding was converted into DQ automatically.
 - [ ] No documentation block was emitted without an explicit update command.

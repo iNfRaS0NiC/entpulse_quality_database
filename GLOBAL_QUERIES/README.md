@@ -99,6 +99,14 @@ discovery exception.
 Counts and samples returned by discovery queries are operational evidence. Document the
 stable mechanism, IDs, usage or value shapes—not transient counts or example row IDs.
 
+## Aggregation and ordering rule
+
+Every registered query returns one row per distinct audited object (event, statistic,
+stage, participant, value pattern) — never one row per raw child record. Collapse join
+fan-out with `GROUP BY` on the object before counting. Express counts as
+`COUNT(DISTINCT <object_id>)`; raw record counts appear only as named secondary columns.
+Order by the audited object ID, or by a per-object aggregate when ranking is more useful.
+
 ## BMX migration mapping
 
 The former `BMX-DQ-023` through `BMX-DQ-028` PATTERN_CATALOG identities were retired and

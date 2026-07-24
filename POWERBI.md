@@ -136,6 +136,19 @@ Interpretation:
 Coverage values are operational evidence only. They are not structural findings and do
 not belong in `DATABASE.md` or `SPORTS/<SportSlug>.md`.
 
+## Audited-object granularity
+
+Finding rows report the audited object, not raw child records.
+
+- Return one finding row per distinct audited object; collapse join fan-out with
+  `GROUP BY` on that object or `EXISTS` before listing or counting, so the same object
+  never repeats across finding rows.
+- Express counts as `COUNT(DISTINCT <object_id>)`. A raw violating-record count may appear
+  only as an explicitly named secondary column such as `violating_record_count`, alongside
+  the specific violation breakdown when useful.
+- Order finding rows by the audited object ID or by a per-object aggregate such as
+  `violating_record_count`; keep the `COVERAGE` row last.
+
 ## Mandatory scope-limiting contract
 
 Every approved query must include at least one safe commented filter suitable for
