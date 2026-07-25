@@ -1,0 +1,5 @@
+# Local credentials picked up by TOOLS/Run-Query.ps1 - never commit these.
+*.local.ps1
+
+# Query result exports.
+output/
