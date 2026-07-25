@@ -47,6 +47,20 @@ Return ready-to-paste content only after the applicable explicit update command.
 Treat the latest uploaded matching-version files as the only current source of truth.
 Never assume that an earlier generated block was pasted unless it is present.
 
+VSCODE DIRECT EDITING EXCEPTION
+
+The read-only rule above governs uploaded chat attachments. When this assistant runs
+inside VSCode or another local IDE with direct access to the workspace files, it MAY edit,
+create or replace project files directly, but only after the user explicitly confirms the
+specific change. In that mode:
+
+- apply the change only after explicit user confirmation of what will be written;
+- still follow every identity, coverage, scope, aggregation and statistics rule in these
+  instructions and in POWERBI.md, and keep CheckID and registry order intact;
+- report exactly which files, CheckIDs and rules were changed after writing;
+- when not running in a local IDE, or when the user has not confirmed, fall back to
+  returning ready-to-paste COPY/PASTE blocks and never claim a file was changed.
+
 PROJECT 2.0 SOURCE-OF-TRUTH MAP
 
 - README.md
@@ -503,6 +517,18 @@ Never use LIMIT/OFFSET as audited-scope batching.
 
 Use template, half-open event-date or stable primary-key range filters only when valid
 for the audited path.
+
+STATISTICS (COMP.RANK) QUERY RULES
+
+Every DQ or discovery query whose audited object is a statistic, statistic_participants11
+or statistic_data11 row must:
+
+- project template_name (tt.name), and tournament_name (t.name) when a tournament is in
+  scope, as context columns;
+- exclude IOC-purpose templates in both the findings and coverage branch with
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%'), applied identically in every
+  UNION ALL branch and before eligible_count is computed. IOC templates carry structurally
+  different data and are out of scope for statistics checks.
 
 POWERBI STORAGE
 

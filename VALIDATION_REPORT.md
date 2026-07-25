@@ -50,3 +50,22 @@ queries were not executed against the production database.
 Before final cutover, follow the activation tests in `PROJECT_2.0_MIGRATION.md` and
 run a small approved database smoke-test sample.
 
+## Pending re-validation (changes after 2026-07-24)
+
+The PASS result and metrics above are a static snapshot as of the validation date. The
+changes below were made afterwards and have **not** been re-checked by the parser and
+package-check tooling, so the metrics no longer match the current files. Re-run the static
+validation (SQL parse, UNION column-count, registry-versus-SQL, manual-paste markers) and
+refresh the metrics before cutover:
+
+- BMX DQ checks added: `BMX-DQ-034` through `BMX-DQ-038` (Comp.Rank result checks), each
+  with a matching `Approved` row in `POWERBI_REGISTRY.md`. The active BMX registry now runs
+  `BMX-DQ-001` through `BMX-DQ-038`.
+- IOC-purpose templates are now excluded in both the findings and coverage branches of the
+  existing Comp.Rank checks `BMX-DQ-016` through `BMX-DQ-022` and `BMX-DQ-027`.
+- New `Statistics (Comp.Rank) query rules` added to `POWERBI.md` and `AI_INSTRUCTIONS.md`.
+- New VSCode direct-editing exception added to `AI_INSTRUCTIONS.md` and referenced from
+  `POWERBI.md`.
+- `README.md` source-of-truth map corrected to reference `AI_INSTRUCTIONS.md` instead of the
+  non-existent `BOT_INSTRUCTIONS_PROJECT_2.0.txt`.
+

@@ -1002,6 +1002,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
   AND NOT EXISTS (
       SELECT 1
@@ -1025,6 +1026,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 ;
 
@@ -1047,6 +1049,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
   AND NOT EXISTS (
       SELECT 1
@@ -1068,6 +1071,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 ;
 
@@ -1095,6 +1099,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 GROUP BY s.id, s.name, tt.name, t.name
 HAVING (
@@ -1116,6 +1121,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM statistic_config sc3
@@ -1147,6 +1153,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 GROUP BY s.id, s.name, tt.name, t.name
 HAVING (
@@ -1169,6 +1176,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM statistic_config sc3
@@ -1206,6 +1214,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
   AND (
       NOT EXISTS (
@@ -1233,6 +1242,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 ;
 
@@ -1279,6 +1289,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
   AND (
       s.name IS NULL OR TRIM(s.name) = ''
@@ -1318,6 +1329,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 ;
 
@@ -1340,6 +1352,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
   AND (
       NOT EXISTS (
@@ -1373,6 +1386,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 ;
 
@@ -1637,6 +1651,7 @@ FROM (
       AND s.statistic_typeFK = 11
       AND s.object_typeFK = 3
       AND tt.sportFK = 58
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       -- AND tt.id = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
 ) x
@@ -1655,6 +1670,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = 11
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 ;
 
@@ -1762,5 +1778,625 @@ WHERE e.del = 'no'
   AND (e.round_typeFK IS NULL OR e.round_typeFK <> 173)
   AND e.status_type = 'finished'
   AND e.status_descFK = 6
+  -- AND tt.id = <tournament_template_id>
+;
+
+-- ================================================================================
+SELECT
+    -- CheckID - BMX-DQ-030
+    -- Name - EVENT_DURATION_FORMAT_MISMATCH_TO_RANK
+    -- What it does: Finds active BMX events containing at least one participant whose duration result format does not match the expected shape for their rank result (rank 1 must be a plain full time with no plus sign; every other rank must be a plus-prefixed gap value with no colon), together with the count, type and per-participant detail of mismatching values per event and a coverage count of all eligible BMX events with at least one participant having both an active rank and an active duration result.
+    'Duration_Format_Mismatch_Events' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    COUNT(DISTINCT ep.id) AS mismatching_participants_count,
+    GROUP_CONCAT(DISTINCT
+        CASE
+            WHEN TRIM(rk.value) = '1' AND TRIM(dur.value) REGEXP '^\\+' THEN 'RANK1_HAS_PLUS'
+            WHEN TRIM(rk.value) = '1' THEN 'RANK1_WRONG_FORMAT'
+            WHEN TRIM(rk.value) <> '1' AND TRIM(dur.value) NOT REGEXP '^\\+' THEN 'NON_RANK1_MISSING_PLUS'
+            ELSE 'NON_RANK1_WRONG_FORMAT'
+        END
+        ORDER BY 1 SEPARATOR ', '
+    ) AS mismatch_types,
+    GROUP_CONCAT(
+        CONCAT(
+            'rank=', TRIM(rk.value),
+            ' value=''', TRIM(dur.value), '''',
+            ' reason=',
+            CASE
+                WHEN TRIM(rk.value) = '1' AND TRIM(dur.value) REGEXP '^\\+' THEN 'rank 1 stored with leading + (should be plain full time)'
+                WHEN TRIM(rk.value) = '1' THEN 'rank 1 value is not a plain numeric/mm:ss full time'
+                WHEN TRIM(rk.value) <> '1' AND TRIM(dur.value) NOT REGEXP '^\\+' THEN 'stored as absolute time instead of a + gap value'
+                ELSE 'value has + but wrong shape (colon or trailing +)'
+            END
+        )
+        ORDER BY CAST(TRIM(rk.value) AS UNSIGNED)
+        SEPARATOR ' | '
+    ) AS mismatch_details,
+    NULL AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result rk ON rk.event_participantsFK = ep.id AND rk.result_typeFK = 100 AND rk.del = 'no'
+JOIN result dur ON dur.event_participantsFK = ep.id AND dur.result_typeFK = 101 AND dur.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = 58
+  -- AND tt.id = <tournament_template_id>
+  AND TRIM(rk.value) <> ''
+  AND TRIM(dur.value) <> ''
+  AND (
+      (TRIM(rk.value) = '1' AND TRIM(dur.value) NOT REGEXP '^[0-9]+(:[0-9]+)?\\.[0-9]+$')
+      OR
+      (TRIM(rk.value) <> '1' AND TRIM(dur.value) NOT REGEXP '^\\+[0-9]+\\.[0-9]+$')
+  )
+GROUP BY e.id, e.name, e.startdate
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result rk ON rk.event_participantsFK = ep.id AND rk.result_typeFK = 100 AND rk.del = 'no'
+JOIN result dur ON dur.event_participantsFK = ep.id AND dur.result_typeFK = 101 AND dur.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = 58
+  -- AND tt.id = <tournament_template_id>
+  AND TRIM(rk.value) <> ''
+  AND TRIM(dur.value) <> ''
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - BMX-DQ-031
+    -- Name - EVENT_RESULTS_RANK_INVALID_OR_MISSING
+    -- What it does: Finds active BMX event-participant rows in finished events where the Rank value is not a plain positive integer up to 200 (non-integer, negative, text, or over 200), or where Rank is missing/empty and no active Comment value exists either, together with a coverage count of all eligible BMX event-participants in finished events.
+    CASE
+        WHEN r_rank_value IS NOT NULL AND r_rank_value NOT REGEXP '^[0-9]+$' THEN 'RANK_NOT_INTEGER'
+        WHEN r_rank_value IS NOT NULL AND r_rank_value REGEXP '^[0-9]+$' AND CAST(r_rank_value AS UNSIGNED) > 200 THEN 'RANK_OVER_200'
+        WHEN r_rank_value IS NULL AND r_comment_value IS NULL THEN 'RANK_AND_COMMENT_BOTH_MISSING'
+    END AS check_type,
+    x.event_participants_id,
+    x.event_id,
+    x.event_name,
+    x.participant_name,
+    x.r_rank_value AS rank_value,
+    x.r_comment_value AS comment_value,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        p.name AS participant_name,
+        (
+            SELECT r1.value
+            FROM result r1
+            WHERE r1.event_participantsFK = ep.id
+              AND r1.result_typeFK = 100
+              AND r1.del = 'no'
+              AND r1.value IS NOT NULL
+              AND TRIM(r1.value) <> ''
+            LIMIT 1
+        ) AS r_rank_value,
+        (
+            SELECT r2.value
+            FROM result r2
+            WHERE r2.event_participantsFK = ep.id
+              AND r2.result_typeFK = 104
+              AND r2.del = 'no'
+              AND r2.value IS NOT NULL
+              AND TRIM(r2.value) <> ''
+            LIMIT 1
+        ) AS r_comment_value
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = 58
+      AND e.status_type = 'finished'
+      AND e.status_descFK = 6
+      -- AND tt.id = <tournament_template_id>
+) x
+WHERE
+    (x.r_rank_value IS NOT NULL AND x.r_rank_value NOT REGEXP '^[0-9]+$')
+    OR (x.r_rank_value IS NOT NULL AND x.r_rank_value REGEXP '^[0-9]+$' AND CAST(x.r_rank_value AS UNSIGNED) > 200)
+    OR (x.r_rank_value IS NULL AND x.r_comment_value IS NULL)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = 58
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - BMX-DQ-032
+    -- Name - EVENT_RESULTS_MEDAL_INVALID_VALUE
+    -- What it does: Finds active BMX event-participant rows with an active, non-empty Medal (result_typeFK=501) value that is not gold, silver or bronze, together with a coverage count of all eligible BMX event-participants with an active, non-empty Medal value.
+    'Medal_Invalid_Value' AS check_type,
+    ep.id AS event_participants_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    p.name AS participant_name,
+    r.value AS medal_value,
+    NULL AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.result_typeFK = 501 AND r.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = 58
+  -- AND tt.id = <tournament_template_id>
+  AND r.value IS NOT NULL
+  AND TRIM(r.value) <> ''
+  AND LOWER(TRIM(r.value)) NOT IN ('gold', 'silver', 'bronze')
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.result_typeFK = 501 AND r.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = 58
+  -- AND tt.id = <tournament_template_id>
+  AND r.value IS NOT NULL
+  AND TRIM(r.value) <> ''
+;
+
+-- ================================================================================
+SELECT
+    -- CheckID - BMX-DQ-033
+    -- Name - EVENT_DURATION_FULL_TIME_MISMATCH_TO_RANK
+    -- What it does: Finds active BMX finished Racing/Time Trial events containing at least one participant whose Duration_full_time (result_typeFK=557) is missing despite an active Rank, present without an active Rank, or present with an invalid format, together with the count and type of mismatching participants per event and a coverage count of all eligible BMX events with at least one such participant.
+    e.id AS event_id,
+    e.name AS event_name,
+    COUNT(*) AS mismatching_participants_count,
+    GROUP_CONCAT(DISTINCT x.violation_type ORDER BY x.violation_type SEPARATOR ', ') AS violation_types,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        ep.eventFK AS event_id,
+        CASE
+            WHEN COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) = 0 THEN 'RANK_PRESENT_DURATION_FULL_TIME_MISSING'
+            WHEN COUNT(DISTINCT rk.id) = 0 AND COUNT(DISTINCT dft.id) > 0 THEN 'DURATION_FULL_TIME_PRESENT_WITHOUT_RANK'
+            WHEN COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) > 0
+                 AND MAX(dft.value) NOT REGEXP '^[0-9]+(:[0-9]+)?\\.[0-9]+$' THEN 'DURATION_FULL_TIME_INVALID_FORMAT'
+        END AS violation_type
+    FROM event_participants ep
+    JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e2.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN result rk
+      ON rk.event_participantsFK = ep.id AND rk.result_typeFK = 100 AND rk.del = 'no'
+     AND rk.value IS NOT NULL AND TRIM(rk.value) <> ''
+    LEFT JOIN result dft
+      ON dft.event_participantsFK = ep.id AND dft.result_typeFK = 557 AND dft.del = 'no'
+     AND dft.value IS NOT NULL AND TRIM(dft.value) <> ''
+    WHERE ep.del = 'no'
+      AND tt.sportFK = 58
+      AND e2.status_type = 'finished'
+      AND e2.status_descFK = 6
+      -- AND tt.id = <tournament_template_id>
+      AND EXISTS (
+          SELECT 1 FROM object_discipline od
+          WHERE od.object_typeFK = 5 AND od.objectFK = e2.id
+            AND od.disciplineFK IN (429, 776) AND od.del = 'no'
+      )
+    GROUP BY ep.id, ep.eventFK
+    HAVING
+        (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) = 0)
+        OR (COUNT(DISTINCT rk.id) = 0 AND COUNT(DISTINCT dft.id) > 0)
+        OR (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) > 0
+            AND MAX(dft.value) NOT REGEXP '^[0-9]+(:[0-9]+)?\\.[0-9]+$')
+) x
+JOIN event e ON e.id = x.event_id
+GROUP BY e.id, e.name
+
+UNION ALL
+
+SELECT
+    NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = 58
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND tt.id = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1 FROM object_discipline od
+      WHERE od.object_typeFK = 5 AND od.objectFK = e.id
+        AND od.disciplineFK IN (429, 776) AND od.del = 'no'
+  )
+
+ORDER BY sort_order, mismatching_participants_count DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - BMX-DQ-034
+    -- Name - COMP.RANK_RESULTS_TIME_DIFFERENCE_FORMAT_MISMATCH_TO_RANK
+    -- What it does: Finds active BMX Comp.Rank statistics, excluding IOC-purpose templates, containing at least one participant whose Time Difference value (statistic_data_typeFK=1427) does not match the expected shape for their Rank (statistic_data_typeFK=1270): rank 1 must be a plain full time with no plus sign while every other rank must be a plus-prefixed gap value, together with the count, type and per-participant detail of mismatching values per statistic and a coverage count of all eligible BMX Comp.Rank statistics with at least one participant having both an active rank and an active time-difference value.
+    'Time_Difference_Format_Mismatch' AS check_type,
+    s.id AS statistic_id,
+    s.name AS statistic_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    COUNT(DISTINCT sp.id) AS violating_record_count,
+    GROUP_CONCAT(DISTINCT
+        CASE
+            WHEN TRIM(rk.value) = '1' AND TRIM(td.value) REGEXP '^\\+' THEN 'RANK1_HAS_PLUS'
+            WHEN TRIM(rk.value) = '1' THEN 'RANK1_WRONG_FORMAT'
+            WHEN TRIM(rk.value) <> '1' AND TRIM(td.value) NOT REGEXP '^\\+' THEN 'NON_RANK1_MISSING_PLUS'
+            ELSE 'NON_RANK1_WRONG_FORMAT'
+        END
+        ORDER BY 1 SEPARATOR ', '
+    ) AS mismatch_types,
+    GROUP_CONCAT(
+        CONCAT('rank=', TRIM(rk.value), ' value=''', TRIM(td.value), '''')
+        ORDER BY CAST(TRIM(rk.value) AS UNSIGNED) SEPARATOR ' | '
+    ) AS mismatch_details,
+    NULL AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN statistic_data11 rk ON rk.statistic_participants11FK = sp.id AND rk.statistic_data_typeFK = 1270 AND rk.del = 'no'
+JOIN statistic_data11 td ON td.statistic_participants11FK = sp.id AND td.statistic_data_typeFK = 1427 AND td.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND TRIM(rk.value) <> ''
+  AND TRIM(td.value) <> ''
+  AND (
+      (TRIM(rk.value) = '1' AND TRIM(td.value) NOT REGEXP '^[0-9]+(:[0-9]+)?(\\.[0-9]+)?$')
+      OR
+      (TRIM(rk.value) <> '1' AND TRIM(td.value) NOT REGEXP '^\\+[0-9]+(:[0-9]+)?(\\.[0-9]+)?$')
+  )
+GROUP BY s.id, s.name, tt.name, t.name
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN statistic_data11 rk ON rk.statistic_participants11FK = sp.id AND rk.statistic_data_typeFK = 1270 AND rk.del = 'no'
+JOIN statistic_data11 td ON td.statistic_participants11FK = sp.id AND td.statistic_data_typeFK = 1427 AND td.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND TRIM(rk.value) <> ''
+  AND TRIM(td.value) <> ''
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - BMX-DQ-035
+    -- Name - COMP.RANK_RESULTS_RANK_INVALID_OR_MISSING
+    -- What it does: Finds active BMX Comp.Rank statistic-participant rows, excluding IOC-purpose templates, where the Rank value (statistic_data_typeFK=1270) is not a plain positive integer up to 200 (non-integer, negative, text, or over 200), or where Rank is missing/empty and no active Comment value (statistic_data_typeFK=1273) exists either, together with a coverage count of all eligible BMX Comp.Rank statistic-participant rows.
+    CASE
+        WHEN r_rank_value IS NOT NULL AND r_rank_value NOT REGEXP '^[0-9]+$' THEN 'RANK_NOT_INTEGER'
+        WHEN r_rank_value IS NOT NULL AND r_rank_value REGEXP '^[0-9]+$' AND CAST(r_rank_value AS UNSIGNED) > 200 THEN 'RANK_OVER_200'
+        WHEN r_rank_value IS NULL AND r_comment_value IS NULL THEN 'RANK_AND_COMMENT_BOTH_MISSING'
+    END AS check_type,
+    x.statistic_participants_id,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.participant_name,
+    x.r_rank_value AS rank_value,
+    x.r_comment_value AS comment_value,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        sp.id AS statistic_participants_id,
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        p.name AS participant_name,
+        (
+            SELECT sd1.value
+            FROM statistic_data11 sd1
+            WHERE sd1.statistic_participants11FK = sp.id
+              AND sd1.statistic_data_typeFK = 1270
+              AND sd1.del = 'no'
+              AND sd1.value IS NOT NULL
+              AND TRIM(sd1.value) <> ''
+            LIMIT 1
+        ) AS r_rank_value,
+        (
+            SELECT sd2.value
+            FROM statistic_data11 sd2
+            WHERE sd2.statistic_participants11FK = sp.id
+              AND sd2.statistic_data_typeFK = 1273
+              AND sd2.del = 'no'
+              AND sd2.value IS NOT NULL
+              AND TRIM(sd2.value) <> ''
+            LIMIT 1
+        ) AS r_comment_value
+    FROM statistic_participants11 sp
+    JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    WHERE sp.del = 'no'
+      AND s.statistic_typeFK = 11
+      AND s.object_typeFK = 3
+      AND tt.sportFK = 58
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+) x
+WHERE
+    (x.r_rank_value IS NOT NULL AND x.r_rank_value NOT REGEXP '^[0-9]+$')
+    OR (x.r_rank_value IS NOT NULL AND x.r_rank_value REGEXP '^[0-9]+$' AND CAST(x.r_rank_value AS UNSIGNED) > 200)
+    OR (x.r_rank_value IS NULL AND x.r_comment_value IS NULL)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sp.id) AS eligible_count
+FROM statistic_participants11 sp
+JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE sp.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - BMX-DQ-036
+    -- Name - COMP.RANK_RESULTS_MEDAL_INVALID_VALUE
+    -- What it does: Finds active BMX Comp.Rank statistic-participant Medal rows (statistic_data_typeFK=1277), excluding IOC-purpose templates, whose value is present but not one of the accepted values gold, silver or bronze (case-insensitive), together with a coverage count of all eligible BMX Comp.Rank statistic-participant rows carrying any active, non-empty Medal value.
+    'Medal_Invalid_Value' AS check_type,
+    s.id AS statistic_id,
+    s.name AS statistic_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    p.name AS participant_name,
+    sd.value AS medal_value,
+    NULL AS eligible_count
+FROM statistic_data11 sd
+JOIN statistic_participants11 sp ON sp.id = sd.statistic_participants11FK AND sp.del = 'no'
+JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+WHERE sd.del = 'no'
+  AND sd.statistic_data_typeFK = 1277
+  AND sd.value IS NOT NULL
+  AND TRIM(sd.value) <> ''
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND LOWER(TRIM(sd.value)) NOT IN ('gold', 'silver', 'bronze')
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sp.id) AS eligible_count
+FROM statistic_data11 sd
+JOIN statistic_participants11 sp ON sp.id = sd.statistic_participants11FK AND sp.del = 'no'
+JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE sd.del = 'no'
+  AND sd.statistic_data_typeFK = 1277
+  AND sd.value IS NOT NULL
+  AND TRIM(sd.value) <> ''
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - BMX-DQ-037
+    -- Name - COMP.RANK_RESULTS_TIME_FULL_TIME_MISMATCH_TO_RANK
+    -- What it does: Finds active BMX Comp.Rank statistics, excluding IOC-purpose templates and restricted to Racing/Time Trial disciplines (429, 776), containing at least one participant whose time storage is inconsistent with their Rank (1270): Time full time (1426) or Time Difference (1427) missing despite an active rank, either present without an active rank, or Time full time present with an invalid format, together with the distinct violation types and count of mismatching participants per statistic and a coverage count of all eligible BMX Comp.Rank statistics in those disciplines.
+    s.id AS statistic_id,
+    s.name AS statistic_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    COUNT(DISTINCT x.statistic_participants_id) AS violating_record_count,
+    CONCAT_WS(', ',
+        IF(MAX(x.f_rank_time_missing) = 1, 'RANK_PRESENT_TIME_MISSING', NULL),
+        IF(MAX(x.f_rank_td_missing) = 1, 'RANK_PRESENT_TIME_DIFFERENCE_MISSING', NULL),
+        IF(MAX(x.f_time_no_rank) = 1, 'TIME_PRESENT_WITHOUT_RANK', NULL),
+        IF(MAX(x.f_td_no_rank) = 1, 'TIME_DIFFERENCE_PRESENT_WITHOUT_RANK', NULL),
+        IF(MAX(x.f_time_invalid) = 1, 'TIME_INVALID_FORMAT', NULL)
+    ) AS violation_types,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        sp.id AS statistic_participants_id,
+        sp.statisticFK AS statistic_id,
+        (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT tm.id) = 0) AS f_rank_time_missing,
+        (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT td.id) = 0) AS f_rank_td_missing,
+        (COUNT(DISTINCT rk.id) = 0 AND COUNT(DISTINCT tm.id) > 0) AS f_time_no_rank,
+        (COUNT(DISTINCT rk.id) = 0 AND COUNT(DISTINCT td.id) > 0) AS f_td_no_rank,
+        (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT tm.id) > 0
+             AND MAX(tm.value) NOT REGEXP '^[0-9]+(:[0-9]+)?(\\.[0-9]+)?$') AS f_time_invalid
+    FROM statistic_participants11 sp
+    JOIN statistic s2 ON s2.id = sp.statisticFK AND s2.del = 'no'
+    JOIN tournament t ON t.id = s2.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN statistic_data11 rk
+      ON rk.statistic_participants11FK = sp.id AND rk.statistic_data_typeFK = 1270 AND rk.del = 'no'
+     AND rk.value IS NOT NULL AND TRIM(rk.value) <> ''
+    LEFT JOIN statistic_data11 tm
+      ON tm.statistic_participants11FK = sp.id AND tm.statistic_data_typeFK = 1426 AND tm.del = 'no'
+     AND tm.value IS NOT NULL AND TRIM(tm.value) <> ''
+    LEFT JOIN statistic_data11 td
+      ON td.statistic_participants11FK = sp.id AND td.statistic_data_typeFK = 1427 AND td.del = 'no'
+     AND td.value IS NOT NULL AND TRIM(td.value) <> ''
+    WHERE sp.del = 'no'
+      AND s2.statistic_typeFK = 11
+      AND s2.object_typeFK = 3
+      AND tt.sportFK = 58
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+      AND EXISTS (
+          SELECT 1 FROM object_discipline od
+          WHERE od.object_typeFK = 83 AND od.objectFK = s2.id
+            AND od.disciplineFK IN (429, 776) AND od.del = 'no'
+      )
+    GROUP BY sp.id, sp.statisticFK
+    HAVING f_rank_time_missing OR f_rank_td_missing OR f_time_no_rank OR f_td_no_rank OR f_time_invalid
+) x
+JOIN statistic s ON s.id = x.statistic_id
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+GROUP BY s.id, s.name, tt.name, t.name
+
+UNION ALL
+
+SELECT
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic_participants11 sp
+JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE sp.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1 FROM object_discipline od
+      WHERE od.object_typeFK = 83 AND od.objectFK = s.id
+        AND od.disciplineFK IN (429, 776) AND od.del = 'no'
+  )
+
+ORDER BY sort_order, violating_record_count DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - BMX-DQ-038
+    -- Name - COMP.RANK_RESULTS_DEPRECATED_DURATION_USED
+    -- What it does: Finds active BMX Comp.Rank statistics, excluding IOC-purpose templates, where at least one participant still stores an active, non-empty value in the deprecated Duration field (statistic_data_typeFK=1272), reporting the count of participants using it and which of the current time fields Time (1426) and Time Difference (1427) are also populated in the same statistic, together with a coverage count of all eligible BMX Comp.Rank statistics.
+    'Deprecated_Duration_Used' AS check_type,
+    s.id AS statistic_id,
+    s.name AS statistic_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    COUNT(DISTINCT CASE WHEN sd.statistic_data_typeFK = 1272 THEN sp.id END) AS deprecated_duration_participant_count,
+    CONCAT_WS(', ',
+        IF(MAX(CASE WHEN sd.statistic_data_typeFK = 1426 THEN 1 ELSE 0 END) = 1, 'Time(1426)', NULL),
+        IF(MAX(CASE WHEN sd.statistic_data_typeFK = 1427 THEN 1 ELSE 0 END) = 1, 'Time_Difference(1427)', NULL)
+    ) AS other_time_fields_used,
+    NULL AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN statistic_data11 sd
+  ON sd.statistic_participants11FK = sp.id
+ AND sd.del = 'no'
+ AND sd.statistic_data_typeFK IN (1272, 1426, 1427)
+ AND sd.value IS NOT NULL
+ AND TRIM(sd.value) <> ''
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+GROUP BY s.id, s.name, tt.name, t.name
+HAVING deprecated_duration_participant_count > 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 ;

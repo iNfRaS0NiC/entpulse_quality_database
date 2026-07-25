@@ -32,7 +32,7 @@ copied into a separate SQL file for every sport.
 | `WORKFLOW.md` | Operational commands, routing and update workflow |
 | `CHANGELOG.md` | Short audit of material project changes |
 | `VALIDATION_REPORT.md` | Static package, registry and SQL-parser validation result |
-| `BOT_INSTRUCTIONS_PROJECT_2.0.txt` | Matching behavior instructions for the user-operated assistant |
+| `AI_INSTRUCTIONS.md` | Matching behavior instructions for the user-operated assistant |
 
 Each rule has one canonical owner. Other files may link to it but must not restate the
 full rule.
@@ -52,6 +52,9 @@ full rule.
 - Do not run or return the complete GLOBAL catalog automatically.
 - Custom, random and experimental SQL requests are always permitted.
 - Documentation and PowerBI paste blocks require their explicit update commands.
+- Inside a local IDE such as VSCode the assistant may apply approved changes to project
+  files directly, but only after explicit user confirmation; otherwise it returns
+  ready-to-paste blocks. The canonical rule lives in `AI_INSTRUCTIONS.md`.
 - Builder documentation, automatic audit tooling, legacy QA logic and the `standing`,
   `standing_participants` and `standing_data` family remain out of scope.
 

@@ -149,6 +149,20 @@ Finding rows report the audited object, not raw child records.
 - Order finding rows by the audited object ID or by a per-object aggregate such as
   `violating_record_count`; keep the `COVERAGE` row last.
 
+## Statistics (Comp.Rank) query rules
+
+These rules are mandatory for every DQ or discovery query whose audited object is a
+`statistic`, `statistic_participants11` or `statistic_data11` row.
+
+- Always project `template_name` (`tt.name`) — and, when a tournament is in scope,
+  `tournament_name` (`t.name`) — as context columns, so every finding is traceable to its
+  template without a second lookup.
+- Always exclude IOC-purpose templates from both the findings and the coverage branch with
+  `AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')`. IOC templates carry structurally
+  different data and are out of scope for statistics checks. The exclusion is a base-scope
+  filter, so it must appear identically in every `UNION ALL` branch and be applied before
+  `eligible_count` is computed.
+
 ## Mandatory scope-limiting contract
 
 Every approved query must include at least one safe commented filter suitable for
@@ -270,7 +284,9 @@ When this command is received:
 9. for an existing sport query file, identify the exact CheckID statement to replace or
    the exact CheckID after which a new statement is inserted;
 10. never add full SQL to `POWERBI.md`;
-11. never edit project files directly.
+11. never edit project files directly, except under the VSCode direct-editing exception
+    in `AI_INSTRUCTIONS.md`, when running inside a local IDE and the user has explicitly
+    confirmed the specific change.
 
 The registry block uses `POWERBI_REGISTRY.md`. The SQL block uses the exact
 `POWERBI_QUERIES/<SportSlug>.sql` path. DQ observations, violation counts, unapproved
