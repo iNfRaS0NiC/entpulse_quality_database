@@ -440,108 +440,111 @@ SELECT
     sdt.name AS statistic_data_type_name,
     sdt.code AS statistic_data_type_code,
     sdt.statistic_data_type_categoryFK AS statistic_data_type_category_id,
-    COUNT(DISTINCT used.statistic_id) AS statistic_count,
-    COUNT(DISTINCT used.statistic_participants_id) AS statistic_participant_count,
-    COUNT(used.statistic_data_id) AS value_row_count,
-    MIN(used.value) AS sample_value
+    COALESCE(used.statistic_count, 0) AS statistic_count,
+    COALESCE(used.statistic_participant_count, 0) AS statistic_participant_count,
+    COALESCE(used.value_row_count, 0) AS value_row_count,
+    used.sample_value AS sample_value
 FROM statistic_data_type sdt
 -- {{SHARD_ID}}: confirmed physical shard number from GLOBAL-DISCOVERY-016 (STATISTIC_PARTICIPANT_SHARD_USAGE)
+-- Two things keep this statement inside its budget, and both matter. The sport scope is
+-- resolved over `statistic` first, so the owner-path joins run once per statistic rather
+-- than once per value row. And the usage side is aggregated here, so the outer join meets
+-- one row per data type instead of every value row in the shard.
 LEFT JOIN (
     SELECT
-        sd.id AS statistic_data_id,
         sd.statistic_data_typeFK AS statistic_data_type_id,
-        sd.value,
-        sp.id AS statistic_participants_id,
-        st.id AS statistic_id
-    FROM statistic_data{{SHARD_ID}} sd
+        COUNT(DISTINCT sp.statisticFK) AS statistic_count,
+        COUNT(DISTINCT sp.id) AS statistic_participant_count,
+        COUNT(sd.id) AS value_row_count,
+        MIN(sd.value) AS sample_value
+    FROM (
+        SELECT DISTINCT st.id AS statistic_id
+        FROM statistic st
+        LEFT JOIN sport sport_owner
+          ON st.object_typeFK = 1
+         AND sport_owner.id = st.objectFK
+         AND sport_owner.del = 'no'
+        LEFT JOIN tournament_template tt2
+          ON st.object_typeFK = 2
+         AND tt2.id = st.objectFK
+         AND tt2.del = 'no'
+        LEFT JOIN tournament t3
+          ON st.object_typeFK = 3
+         AND t3.id = st.objectFK
+         AND t3.del = 'no'
+        LEFT JOIN tournament_template tt3
+          ON tt3.id = t3.tournament_templateFK
+         AND tt3.del = 'no'
+        LEFT JOIN tournament_stage ts4
+          ON st.object_typeFK = 4
+         AND ts4.id = st.objectFK
+         AND ts4.del = 'no'
+        LEFT JOIN tournament t4
+          ON t4.id = ts4.tournamentFK
+         AND t4.del = 'no'
+        LEFT JOIN tournament_template tt4
+          ON tt4.id = t4.tournament_templateFK
+         AND tt4.del = 'no'
+        LEFT JOIN event e5
+          ON st.object_typeFK = 5
+         AND e5.id = st.objectFK
+         AND e5.del = 'no'
+        LEFT JOIN tournament_stage ts5
+          ON ts5.id = e5.tournament_stageFK
+         AND ts5.del = 'no'
+        LEFT JOIN tournament t5
+          ON t5.id = ts5.tournamentFK
+         AND t5.del = 'no'
+        LEFT JOIN tournament_template tt5
+          ON tt5.id = t5.tournament_templateFK
+         AND tt5.del = 'no'
+        LEFT JOIN event_participants ep6
+          ON st.object_typeFK = 6
+         AND ep6.id = st.objectFK
+         AND ep6.del = 'no'
+        LEFT JOIN event e6
+          ON e6.id = ep6.eventFK
+         AND e6.del = 'no'
+        LEFT JOIN tournament_stage ts6
+          ON ts6.id = e6.tournament_stageFK
+         AND ts6.del = 'no'
+        LEFT JOIN tournament t6
+          ON t6.id = ts6.tournamentFK
+         AND t6.del = 'no'
+        LEFT JOIN tournament_template tt6
+          ON tt6.id = t6.tournament_templateFK
+         AND tt6.del = 'no'
+        LEFT JOIN participant p15
+          ON st.object_typeFK = 15
+         AND p15.id = st.objectFK
+         AND p15.del = 'no'
+        LEFT JOIN object_participants op15
+          ON op15.object = 'sport'
+         AND op15.participantFK = p15.id
+         AND op15.del = 'no'
+        WHERE st.del = 'no'
+          AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- select statistic_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
+          AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}  -- select statistic_owner_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
+          AND (
+              sport_owner.id = {{SPORT_ID}}
+              OR tt2.sportFK = {{SPORT_ID}}
+              OR tt3.sportFK = {{SPORT_ID}}
+              OR tt4.sportFK = {{SPORT_ID}}
+              OR tt5.sportFK = {{SPORT_ID}}
+              OR tt6.sportFK = {{SPORT_ID}}
+              OR op15.objectFK = {{SPORT_ID}}
+          )
+    ) scoped
     JOIN statistic_participants{{SHARD_ID}} sp
-      ON sp.id = sd.statistic_participants{{SHARD_ID}}FK
+      ON sp.statisticFK = scoped.statistic_id
      AND sp.del = 'no'
-    JOIN statistic st
-      ON st.id = sp.statisticFK
-     AND st.del = 'no'
-    LEFT JOIN sport sport_owner
-      ON st.object_typeFK = 1
-     AND sport_owner.id = st.objectFK
-     AND sport_owner.del = 'no'
-    LEFT JOIN tournament_template tt2
-      ON st.object_typeFK = 2
-     AND tt2.id = st.objectFK
-     AND tt2.del = 'no'
-    LEFT JOIN tournament t3
-      ON st.object_typeFK = 3
-     AND t3.id = st.objectFK
-     AND t3.del = 'no'
-    LEFT JOIN tournament_template tt3
-      ON tt3.id = t3.tournament_templateFK
-     AND tt3.del = 'no'
-    LEFT JOIN tournament_stage ts4
-      ON st.object_typeFK = 4
-     AND ts4.id = st.objectFK
-     AND ts4.del = 'no'
-    LEFT JOIN tournament t4
-      ON t4.id = ts4.tournamentFK
-     AND t4.del = 'no'
-    LEFT JOIN tournament_template tt4
-      ON tt4.id = t4.tournament_templateFK
-     AND tt4.del = 'no'
-    LEFT JOIN event e5
-      ON st.object_typeFK = 5
-     AND e5.id = st.objectFK
-     AND e5.del = 'no'
-    LEFT JOIN tournament_stage ts5
-      ON ts5.id = e5.tournament_stageFK
-     AND ts5.del = 'no'
-    LEFT JOIN tournament t5
-      ON t5.id = ts5.tournamentFK
-     AND t5.del = 'no'
-    LEFT JOIN tournament_template tt5
-      ON tt5.id = t5.tournament_templateFK
-     AND tt5.del = 'no'
-    LEFT JOIN event_participants ep6
-      ON st.object_typeFK = 6
-     AND ep6.id = st.objectFK
-     AND ep6.del = 'no'
-    LEFT JOIN event e6
-      ON e6.id = ep6.eventFK
-     AND e6.del = 'no'
-    LEFT JOIN tournament_stage ts6
-      ON ts6.id = e6.tournament_stageFK
-     AND ts6.del = 'no'
-    LEFT JOIN tournament t6
-      ON t6.id = ts6.tournamentFK
-     AND t6.del = 'no'
-    LEFT JOIN tournament_template tt6
-      ON tt6.id = t6.tournament_templateFK
-     AND tt6.del = 'no'
-    LEFT JOIN participant p15
-      ON st.object_typeFK = 15
-     AND p15.id = st.objectFK
-     AND p15.del = 'no'
-    LEFT JOIN object_participants op15
-      ON op15.object = 'sport'
-     AND op15.participantFK = p15.id
-     AND op15.del = 'no'
-    WHERE sd.del = 'no'
-      AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- select statistic_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
-      AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}  -- select statistic_owner_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
-      AND (
-          sport_owner.id = {{SPORT_ID}}
-          OR tt2.sportFK = {{SPORT_ID}}
-          OR tt3.sportFK = {{SPORT_ID}}
-          OR tt4.sportFK = {{SPORT_ID}}
-          OR tt5.sportFK = {{SPORT_ID}}
-          OR tt6.sportFK = {{SPORT_ID}}
-          OR op15.objectFK = {{SPORT_ID}}
-      )
+    JOIN statistic_data{{SHARD_ID}} sd
+      ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+     AND sd.del = 'no'
+    GROUP BY sd.statistic_data_typeFK
 ) used
   ON used.statistic_data_type_id = sdt.id
 WHERE sdt.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- same statistic_type_id as the inner filter
-GROUP BY
-    sdt.id,
-    sdt.name,
-    sdt.code,
-    sdt.statistic_data_type_categoryFK
 ORDER BY
     value_row_count DESC,
     sdt.id
