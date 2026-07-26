@@ -59,6 +59,9 @@ $env:EP_QB_PASSWORD = 'your-password'
 
 # A different Content Query Builder instance:
 # $env:EP_QB_URL = 'http://spcdev.enetpulse.com:19080'
+
+# Where result files are written. Default: D:\SQL's Output
+# $env:EP_QB_OUTPUT = 'C:\SQL Output'
 ```
 
 Every value may come from the environment instead. The file simply saves typing. When
@@ -76,8 +79,11 @@ This reads only local `.sql` files, so it proves the catalogue is found before a
 credential is used. Then run one real statement:
 
 ```powershell
-.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-001 -SportId 58
+.\TOOLS\Run-Query.ps1 BMX-DQ-003
 ```
+
+If the machine has no `D:` drive, set `EP_QB_OUTPUT` to where results should be written
+before running anything that produces files; see "Where results are written".
 
 ### 5. Optional: call it from anywhere
 
@@ -110,9 +116,9 @@ the account in use. The summary:
 |---|---|
 | `-ListChecks` | Every CheckID with its name, source file and line |
 | `-ListChecks BMX-DQ-0*` | The same list, filtered by wildcard |
-| `BMX-DQ-003 -SportId 58` | One check to the screen |
-| `BMX-DQ-001,BMX-DQ-005 -SportId 58` | A chosen few |
-| `BMX-DQ-* -SportId 58` | Every match; more than one switches to batch mode |
+| `BMX-DQ-003` | One check to the screen |
+| `BMX-DQ-001,BMX-DQ-005` | A chosen few |
+| `BMX-DQ-*` | Every match; more than one switches to batch mode |
 | `-MaxChecks 10` | Cap how many matched checks actually run |
 | `-Preview 200` | Show more than the default 50 screen rows |
 | `-OutFile .\out.csv` | Write one check to a file |
@@ -124,10 +130,21 @@ the account in use. The summary:
 
 ### Parameters
 
-`{{SPORT_ID}}` appears in nearly every statement and has a dedicated switch. Other
-declared tokens go through `-Params`, in either form:
+**A sport check takes no parameters.** `POWERBI_QUERIES/<SportSlug>.sql` statements are
+approved against one confirmed sport and carry its numeric ID directly, so
+`BMX-DQ-003` runs on its own:
 
 ```powershell
+.\TOOLS\Run-Query.ps1 BMX-DQ-003
+```
+
+Only `GLOBAL-DISCOVERY-NNN` statements declare `{{...}}` tokens, because a GLOBAL query is
+reusable across sports by design. `{{SPORT_ID}}` has a dedicated switch; every other
+declared token goes through `-Params`, in either form:
+
+```powershell
+.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-001 -SportId 58
+
 .\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-016 -SportId 58 `
     -Params STATISTIC_TYPE_ID=11,STATISTIC_OWNER_TYPE_ID=3,SHARD_ID=11
 
@@ -136,8 +153,9 @@ declared tokens go through `-Params`, in either form:
 ```
 
 An unreplaced token stops the run before anything is sent, and the error names the
-missing tokens. Parameter meanings are declared in `GLOBAL_QUERIES/README.md`; the runner
-substitutes them textually and validates nothing about their values.
+missing tokens. A parameter passed to a statement that declares none is simply unused.
+Parameter meanings are declared in `GLOBAL_QUERIES/README.md`; the runner substitutes them
+textually and validates nothing about their values.
 
 ## Output
 
@@ -156,25 +174,52 @@ else to record which check produced it. Files are named after the CheckID —
 `-Format xlsx` collects a whole batch into one file, which is the shape to upload to
 Google Drive and open as Sheets.
 
-- One tab per check, named after its `-- Name -` header.
-- `_summary` is the first tab: every check with its row count, duration and status,
-  including the ones that returned nothing or failed and therefore have no tab.
-- On each check tab the identity sits on row 1 instead of on every data row: **A1** the
-  CheckID, **B1** the name, **C1** the exact SQL that was sent, with placeholders already
-  substituted. Row 2 is blank and the result table starts on row 3, so the table stays a
-  self-contained block for sorting and filtering.
+`Overview` is the first tab:
+
+| Sport | CheckID | Check Name | Result Rows | Status |
+|---|---|---|---:|---|
+| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 1064 | OK |
+
+Every check appears, including those that returned nothing or failed and therefore have
+no tab of their own. `Sport` is taken from the CheckID prefix. Each **Result Rows** cell
+is a link to that check's tab. `Status` is not in the requested column set but is kept
+deliberately: without it a failed check and a clean one both read as `0`.
+
+Then one tab per check, named after its `-- Name -` header. There the identity sits on
+row 1 instead of on every data row: **A1** the CheckID, **B1** the name, **C1** the exact
+SQL that was sent, with placeholders already substituted. Row 2 is blank and the result
+table starts on row 3, so the table stays a self-contained block for sorting and
+filtering.
 
 Two format limits apply. Tab names are capped at 31 characters, so longer check names are
-truncated and the run reports which ones; the full name remains in B1. A cell cannot
-exceed 32 767 characters, so an unusually long statement in C1 is trimmed with a
-`...[truncated]` marker.
+truncated and the run reports which ones; the full name remains in B1 and in the Overview.
+A cell cannot exceed 32 767 characters, so an unusually long statement in C1 is trimmed
+with a `...[truncated]` marker.
+
+## Where results are written
+
+Results are kept outside the working copy. Every run gets its own folder, named after the
+sport and the moment it started:
+
+```text
+D:\SQL's Output\BMX 26.07.2026 09-09-47\BMX.xlsx
+D:\SQL's Output\GLOBAL 26.07.2026 09-10-24\GLOBAL-DISCOVERY-001.csv
+D:\SQL's Output\MIXED 26.07.2026 09-10-25\...
+```
+
+The sport comes from the CheckID prefix; a run mixing prefixes is `MIXED`. The run time
+uses hyphens rather than colons because Windows rejects `:` in a path.
+
+`EP_QB_OUTPUT` overrides the root. On a machine without a `D:` drive the runner falls
+back to `output\` inside the repository, which `.gitignore` excludes. `-OutDir` and
+`-OutFile` override the whole scheme for one run.
 
 ## Batch behaviour
 
 More than one matched CheckID switches to batch mode.
 
-- Default target: `output\run_<timestamp>\` for per-file formats, `output\checks_<timestamp>.xlsx`
-  for a workbook. `.gitignore` excludes `output/`.
+- Per-file formats write one file per CheckID plus `_summary.csv`; a workbook writes one
+  `<Sport>.xlsx`.
 - A failing check is recorded as `ERROR: <server message>` in the summary and the run
   continues. Nothing is retried automatically.
 - Statements are sent one at a time with a short pause between them.
@@ -222,7 +267,7 @@ Adding `POWERBI_QUERIES/<NewSport>.sql` therefore needs no change to the runner:
 | `Login failed for '<email>': <reason>` | The server's own validation message, verbatim |
 | `Query failed (HTTP 500): SQL must start with SELECT!` | The server accepts only `SELECT`/`WITH` |
 | `Query failed (HTTP 500): SQLSTATE[...]` | The MySQL error for the statement, verbatim |
-| `Missing parameter value(s): X` | A declared `{{X}}` token had no value |
+| `Missing parameter value(s): X` | A declared `{{X}}` token had no value. Only GLOBAL statements declare tokens |
 | `No CheckID matches 'X'` | Wrong ID or pattern; check `-ListChecks` |
 | `Request timed out` / `Allowed memory size ... exhausted` | Query-design failures. `WORKFLOW.md` owns the correction |
 

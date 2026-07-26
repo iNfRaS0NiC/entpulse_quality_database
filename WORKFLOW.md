@@ -388,6 +388,15 @@ substitutes the declared `{{...}}` parameters and writes results to the screen, 
 CSV/JSON, or to one `.xlsx` workbook with a tab per check. It discovers new statements
 from disk on every invocation, so a new sport query file needs no registration.
 
+Parameters follow the identity namespaces above. A `<SportSlug>-DQ-NNN` statement is
+approved against one confirmed sport and carries that sport ID directly, so it executes
+without arguments. Only `GLOBAL-DISCOVERY-NNN` statements declare `{{...}}` tokens, which
+is what makes them reusable across sports.
+
+Results are written outside the working copy, one folder per run named for the sport and
+the run time. They are execution output, never evidence: a documentation update still
+requires the classification and command sequence defined in this file.
+
 `TOOLS/README.md` is the canonical owner of its setup, command set and output shapes. Do
 not restate them here.
 

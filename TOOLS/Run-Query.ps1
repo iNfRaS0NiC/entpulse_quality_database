@@ -7,16 +7,24 @@
     {{PLACEHOLDER}} parameters, authenticates against the Content Query Builder and posts
     each statement to /api/relation-manager/execute-sql.
 
+    A sport check needs no parameters: POWERBI_QUERIES statements are approved against one
+    confirmed sport and carry its ID directly. Only GLOBAL-DISCOVERY statements declare
+    {{...}} tokens, filled with -SportId and -Params.
+
     One CheckID prints to the screen or to -OutFile. Several CheckIDs switch to batch mode:
-    one file per check under -OutDir plus a _summary.csv, and a failing check no longer stops
-    the run. Files are named after the CheckID, for example BMX-DQ-003.csv. Rows written to a
+    one file per check plus a _summary.csv, and a failing check no longer stops the run.
+    Files are named after the CheckID, for example BMX-DQ-003.csv. Rows written to a flat
     file carry check_id and check_name as their first two columns.
 
-    -Format xlsx collects a whole batch into a single workbook instead, one tab per check
-    named after its "-- Name -" header and a _summary tab first. There the identity sits on
-    row 1 rather than on every data row: A1 the CheckID, B1 the name, C1 the exact SQL that
-    was sent, with the result table starting on row 3. Upload that file to Google Drive and
-    open it as Sheets to get every check as its own tab.
+    -Format xlsx collects a whole batch into a single workbook instead. Its first tab,
+    Overview, lists Sport, CheckID, Check Name, Result Rows and Status for every check, and
+    each Result Rows cell links to that check's tab. The check tabs are named after the
+    "-- Name -" header, and there the identity sits on row 1 rather than on every data row:
+    A1 the CheckID, B1 the name, C1 the exact SQL that was sent, with the result table
+    starting on row 3. Upload that file to Google Drive and open it as Sheets.
+
+    Each run writes into its own folder under "D:\SQL's Output", named for the sport and the
+    run time. EP_QB_OUTPUT overrides the root; -OutDir and -OutFile override it entirely.
 
     Credentials are never stored in this file. They are read from the environment:
         EP_QB_EMAIL     login email
@@ -31,20 +39,20 @@
     until the server rejects it.
 
 .EXAMPLE
-    .\TOOLS\Run-Query.ps1 BMX-DQ-003 -SportId 58
+    .\TOOLS\Run-Query.ps1 BMX-DQ-003
 
 .EXAMPLE
-    .\TOOLS\Run-Query.ps1 BMX-DQ-* -SportId 58
-    Runs the whole BMX catalogue into output\run_<timestamp>, one CSV per check.
+    .\TOOLS\Run-Query.ps1 BMX-DQ-* -Format xlsx
+    Runs the whole BMX catalogue into one workbook under "D:\SQL's Output".
 
 .EXAMPLE
-    .\TOOLS\Run-Query.ps1 BMX-DQ-001,BMX-DQ-002,BMX-DQ-003 -SportId 58 -OutDir .\out
+    .\TOOLS\Run-Query.ps1 BMX-DQ-001,BMX-DQ-002,BMX-DQ-003 -OutDir .\out
 
 .EXAMPLE
-    .\TOOLS\Run-Query.ps1 BMX-DQ-* -SportId 58 -MaxChecks 5
+    .\TOOLS\Run-Query.ps1 BMX-DQ-* -MaxChecks 5
 
 .EXAMPLE
-    .\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-015 -Params SPORT_ID=58 -Format csv -OutFile .\out.csv
+    .\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-015 -SportId 58 -Format csv -OutFile .\out.csv
 
 .EXAMPLE
     .\TOOLS\Run-Query.ps1 -Sql "SELECT COUNT(*) AS c FROM sport;" -Format json
@@ -59,7 +67,8 @@ param(
 
     [string]$Sql,
 
-    # Shorthand for the {{SPORT_ID}} placeholder, which nearly every check uses.
+    # Shorthand for the {{SPORT_ID}} placeholder. GLOBAL statements need it; a sport
+    # check carries its own sport ID and ignores it.
     [int]$SportId,
 
     # Remaining placeholders, either NAME=VALUE strings or a hashtable.
@@ -107,6 +116,15 @@ $LoginPageUrl = "$BaseUrl/app/pool"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $StateDir = Join-Path $env:LOCALAPPDATA 'entpulse-qb'
 $StatePath = Join-Path $StateDir 'session.xml'
+
+# Results land outside the working copy. EP_QB_OUTPUT overrides the default; a machine
+# without that drive falls back into the repository, which .gitignore already excludes.
+$OutputRoot = $env:EP_QB_OUTPUT
+if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
+    $OutputRoot = "D:\SQL's Output"
+    $drive = (Split-Path -Qualifier $OutputRoot) + '\'
+    if (-not (Test-Path $drive)) { $OutputRoot = Join-Path $RepoRoot 'output' }
+}
 
 # Small pause between statements in a batch, so a long catalogue does not hammer the API.
 $BatchDelayMs = 250
@@ -520,6 +538,31 @@ function Add-CheckColumns {
     return , $tagged
 }
 
+function Get-SportFromCheckId {
+    # CheckIDs are <SportSlug>-DQ-NNN or GLOBAL-DISCOVERY-NNN, so the prefix names the sport.
+    param([string]$CheckId)
+
+    if ([string]::IsNullOrWhiteSpace($CheckId)) { return 'AD-HOC' }
+    if ($CheckId -match '^(.+?)-(?:DQ|DISCOVERY)-\d+$') { return $matches[1] }
+    return ($CheckId -split '-')[0]
+}
+
+function Get-RunSport {
+    param($Jobs)
+
+    $sports = @($Jobs | ForEach-Object { Get-SportFromCheckId -CheckId $_.CheckId } | Select-Object -Unique)
+    if ($sports.Count -eq 1) { return $sports[0] }
+    return 'MIXED'
+}
+
+function Get-RunFolder {
+    param($Jobs)
+
+    # Windows rejects ':' in a path, so the run time separates with hyphens.
+    $stamp = Get-Date -Format 'dd.MM.yyyy HH-mm-ss'
+    return Join-Path $OutputRoot ('{0} {1}' -f (Get-RunSport -Jobs $Jobs), $stamp)
+}
+
 function Get-SafeFileName {
     param([string]$CheckId)
 
@@ -583,14 +626,18 @@ function ConvertTo-SheetName {
 }
 
 function Get-CellXml {
-    param([string]$Reference, $Value)
+    # Style 1 is the hyperlink look defined in Get-StylesXml; 0 is the default.
+    param([string]$Reference, $Value, [int]$Style = 0)
 
     if ($null -eq $Value) { return '' }
+
+    $styleAttribute = if ($Style -gt 0) { ' s="{0}"' -f $Style } else { '' }
 
     if ($XlsxNumericTypes -contains $Value.GetType()) {
         # Invariant formatting, or a bg-BG decimal comma would make Excel read
         # the number as text.
-        return '<c r="{0}"><v>{1}</v></c>' -f $Reference, [string]::Format($XlsxInvariant, '{0}', $Value)
+        return '<c r="{0}"{1}><v>{2}</v></c>' -f `
+            $Reference, $styleAttribute, [string]::Format($XlsxInvariant, '{0}', $Value)
     }
 
     $raw = [string]$Value
@@ -602,8 +649,31 @@ function Get-CellXml {
         $raw = $raw.Substring(0, $XlsxCellLimit - 20) + ' ...[truncated]'
     }
 
-    return '<c r="{0}" t="inlineStr"><is><t xml:space="preserve">{1}</t></is></c>' -f `
-        $Reference, (ConvertTo-XmlText -Text $raw)
+    return '<c r="{0}"{1} t="inlineStr"><is><t xml:space="preserve">{2}</t></is></c>' -f `
+        $Reference, $styleAttribute, (ConvertTo-XmlText -Text $raw)
+}
+
+function Get-StylesXml {
+    # The smallest style sheet Excel accepts. Font 1 is the blue underline that makes a
+    # navigation cell read as a link; the two fills and the border are mandatory entries.
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
+    '<fonts count="2">' +
+    '<font><sz val="11"/><name val="Calibri"/></font>' +
+    '<font><u/><color rgb="FF0563C1"/><sz val="11"/><name val="Calibri"/></font>' +
+    '</fonts>' +
+    '<fills count="2">' +
+    '<fill><patternFill patternType="none"/></fill>' +
+    '<fill><patternFill patternType="gray125"/></fill>' +
+    '</fills>' +
+    '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
+    '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
+    '<cellXfs count="2">' +
+    '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
+    '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+    '</cellXfs>' +
+    '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
+    '</styleSheet>'
 }
 
 function Add-ZipTextEntry {
@@ -677,19 +747,38 @@ function Save-Workbook {
             }
             [void]$xml.Append('</row>')
 
+            # Cells carrying a jump to another tab are drawn as links.
+            $links = if ($null -eq $sheet.Links) { @() } else { @($sheet.Links) }
+            $linked = @{}
+            foreach ($link in $links) { $linked[$link.Ref] = $true }
+
             foreach ($row in $rows) {
                 $rowNumber++
                 [void]$xml.Append(('<row r="{0}">' -f $rowNumber))
 
                 for ($c = 0; $c -lt $columns.Count; $c++) {
                     $ref = (Get-ExcelColumnName -Index ($c + 1)) + $rowNumber
-                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $row.($columns[$c])))
+                    $style = if ($linked.ContainsKey($ref)) { 1 } else { 0 }
+                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $row.($columns[$c]) -Style $style))
                 }
 
                 [void]$xml.Append('</row>')
             }
 
-            [void]$xml.Append('</sheetData></worksheet>')
+            [void]$xml.Append('</sheetData>')
+
+            if ($links.Count -gt 0) {
+                [void]$xml.Append('<hyperlinks>')
+                foreach ($link in $links) {
+                    # An internal target is quoted, and an apostrophe inside a tab name doubled.
+                    $location = "'" + ($link.Target -replace "'", "''") + "'!A1"
+                    [void]$xml.Append(('<hyperlink ref="{0}" location="{1}" display="{1}"/>' -f `
+                                $link.Ref, (ConvertTo-XmlText -Text $location)))
+                }
+                [void]$xml.Append('</hyperlinks>')
+            }
+
+            [void]$xml.Append('</worksheet>')
             Add-ZipTextEntry -Zip $zip -Name "xl/worksheets/sheet$index.xml" -Content $xml.ToString()
 
             [void]$overrides.Append(('<Override PartName="/xl/worksheets/sheet{0}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>' -f $index))
@@ -697,12 +786,17 @@ function Save-Workbook {
             [void]$relTags.Append(('<Relationship Id="rId{0}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet{0}.xml"/>' -f $index))
         }
 
+        $stylesRelId = 'rId' + ($index + 1)
+        Add-ZipTextEntry -Zip $zip -Name 'xl/styles.xml' -Content (Get-StylesXml)
+        [void]$relTags.Append(('<Relationship Id="{0}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' -f $stylesRelId))
+
         Add-ZipTextEntry -Zip $zip -Name '[Content_Types].xml' -Content (
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
             '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
             '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
             '<Default Extension="xml" ContentType="application/xml"/>' +
             '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+            '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>' +
             $overrides.ToString() + '</Types>')
 
         Add-ZipTextEntry -Zip $zip -Name '_rels/.rels' -Content (
@@ -793,25 +887,26 @@ if ($Info) {
     Write-Line "$Entry -ListChecks BMX-DQ-0*" 'filter the list by wildcard'
 
     Write-Section 'RUN ONE'
-    Write-Line "$Entry BMX-DQ-003 -SportId 58" 'to the screen'
-    Write-Line "$Entry BMX-DQ-003 -SportId 58 -Preview 200" 'show more than the default 50 rows'
-    Write-Line "$Entry BMX-DQ-003 -SportId 58 -OutFile .\out.csv" 'to a file, tagged with check_id'
-    Write-Line "$Entry BMX-DQ-003 -SportId 58 -DryRun" 'print the SQL, send nothing'
+    Write-Line "$Entry BMX-DQ-003" 'to the screen'
+    Write-Line "$Entry BMX-DQ-003 -Preview 200" 'show more than the default 50 rows'
+    Write-Line "$Entry BMX-DQ-003 -OutFile .\out.csv" 'to a file, tagged with check_id'
+    Write-Line "$Entry BMX-DQ-003 -DryRun" 'print the SQL, send nothing'
 
     Write-Section 'RUN MANY'
-    Write-Line "$Entry BMX-DQ-001,BMX-DQ-005 -SportId 58" 'a chosen few'
-    Write-Line "$Entry BMX-DQ-* -SportId 58" 'the whole BMX catalogue'
-    Write-Line "$Entry BMX-DQ-* -SportId 58 -MaxChecks 10" 'only the first 10 matches'
-    Write-Line "$Entry * -SportId 58" 'everything'
-    Write-Line "$Entry BMX-DQ-* -SportId 58 -OutDir .\out" 'choose the target folder'
-    Write-Line "$Entry BMX-DQ-* -SportId 58 -Format xlsx" 'one workbook, one tab per check'
-    Write-Host '  Batch mode writes one file per check plus _summary.csv, and keeps' -ForegroundColor DarkGray
-    Write-Host '  going when a check fails. Default folder: output\run_<timestamp>' -ForegroundColor DarkGray
+    Write-Line "$Entry BMX-DQ-001,BMX-DQ-005" 'a chosen few'
+    Write-Line "$Entry BMX-DQ-*" 'the whole BMX catalogue'
+    Write-Line "$Entry BMX-DQ-* -MaxChecks 10" 'only the first 10 matches'
+    Write-Line "$Entry BMX-DQ-* -Format xlsx" 'one workbook, one tab per check'
+    Write-Line "$Entry BMX-DQ-* -OutDir .\out" 'choose the target folder'
+    Write-Host '  Batch mode keeps going when a check fails. Results land in' -ForegroundColor DarkGray
+    Write-Host "  $OutputRoot\<Sport> <dd.MM.yyyy HH-mm-ss>" -ForegroundColor DarkGray
 
     Write-Section 'PARAMETERS'
-    Write-Line '-SportId 58' 'fills {{SPORT_ID}}, which nearly every check uses'
-    Write-Line '-Params FROM_ID=100,TO_ID=200' 'any other {{PLACEHOLDER}}'
-    Write-Line '-Params @{ SPORT_ID = 58 }' 'the hashtable form also works'
+    Write-Host '  A sport check carries its own sport ID and needs no parameter.' -ForegroundColor DarkGray
+    Write-Host '  Only GLOBAL-DISCOVERY statements declare {{PLACEHOLDER}} tokens.' -ForegroundColor DarkGray
+    Write-Line "$Entry GLOBAL-DISCOVERY-001 -SportId 58" 'fills {{SPORT_ID}}'
+    Write-Line '-Params STATISTIC_TYPE_ID=11,SHARD_ID=11' 'any other declared token'
+    Write-Line '-Params @{ SHARD_ID = 11 }' 'the hashtable form also works'
 
     Write-Section 'AD-HOC SQL'
     Write-Line "$Entry -Sql `"SELECT COUNT(*) AS c FROM sport;`"" 'run a literal statement'
@@ -822,9 +917,11 @@ if ($Info) {
     Write-Line '-Format table' 'default, on-screen preview'
     Write-Line '-Format csv' 'CSV, with check_id and check_name columns'
     Write-Line '-Format json' 'JSON, with check_id and check_name fields'
-    Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, _summary first'
-    Write-Host '  In a workbook A1/B1/C1 hold the CheckID, the name and the SQL that ran,' -ForegroundColor DarkGray
-    Write-Host '  and the result table starts on row 3. CSV and JSON keep check_id and' -ForegroundColor DarkGray
+    Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, Overview first'
+    Write-Host '  Overview lists Sport, CheckID, Check Name, Result Rows and Status;' -ForegroundColor DarkGray
+    Write-Host '  clicking a Result Rows cell jumps to that check tab. On a check tab' -ForegroundColor DarkGray
+    Write-Host '  A1/B1/C1 hold the CheckID, the name and the SQL that ran, and the' -ForegroundColor DarkGray
+    Write-Host '  result table starts on row 3. CSV and JSON keep check_id and' -ForegroundColor DarkGray
     Write-Host '  check_name as columns, having nowhere else to put them.' -ForegroundColor DarkGray
     Write-Host '  Files are named after the CheckID: BMX-DQ-003.csv' -ForegroundColor DarkGray
     Write-Host '  Upload the .xlsx to Google Drive and open it as Sheets to get the tabs.' -ForegroundColor DarkGray
@@ -913,19 +1010,17 @@ if ($null -eq $script:Session) { $script:Session = New-AuthenticatedSession }
 # ----- batch run -----------------------------------------------------------------------
 
 if ($isBatch) {
-    $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
-
     if ($isWorkbook) {
         # One workbook for the whole run, so it can be uploaded as a single file.
         $workbookPath = $OutFile
         if (-not $workbookPath) {
-            $folder = if ($OutDir) { $OutDir } else { Join-Path $RepoRoot 'output' }
-            $workbookPath = Join-Path $folder "checks_$stamp.xlsx"
+            $folder = if ($OutDir) { $OutDir } else { Get-RunFolder -Jobs $jobs }
+            $workbookPath = Join-Path $folder ((Get-RunSport -Jobs $jobs) + '.xlsx')
         }
         Write-Host "Running $($jobs.Count) checks into $workbookPath" -ForegroundColor DarkGray
     }
     else {
-        if (-not $OutDir) { $OutDir = Join-Path $RepoRoot "output\run_$stamp" }
+        if (-not $OutDir) { $OutDir = Get-RunFolder -Jobs $jobs }
         if (-not (Test-Path $OutDir)) { New-Item -ItemType Directory -Path $OutDir -Force | Out-Null }
         $extension = if ($Format -eq 'json') { '.json' } else { '.csv' }
         Write-Host "Running $($jobs.Count) checks into $OutDir" -ForegroundColor DarkGray
@@ -988,24 +1083,55 @@ if ($isBatch) {
     if ($isWorkbook) {
         # The summary leads, so a clean or failed check is still visible in the
         # workbook even though it has no tab of its own.
+        # Overview is reserved first, so a check named the same cannot take the name and
+        # leave the links pointing at the wrong tab.
         $used = @{}
-        $sheets = @([pscustomobject]@{
-                Name   = (ConvertTo-SheetName -Preferred '_summary' -Fallback '_summary' -Used $used)
-                Rows   = $summary
-                Header = $null
-            })
+        $overviewName = ConvertTo-SheetName -Preferred 'Overview' -Fallback 'Overview' -Used $used
 
+        $tabOf = @{}
         $shortened = @()
         foreach ($item in $collected) {
             $preferred = if ($item.Job.Name) { $item.Job.Name } else { $item.Job.CheckId }
             $sheetName = ConvertTo-SheetName -Preferred $preferred -Fallback $item.Job.CheckId -Used $used
+            $tabOf[$item.Job.CheckId] = $sheetName
             if ($sheetName -ne $preferred) {
                 $shortened += [pscustomobject]@{ CheckId = $item.Job.CheckId; Wanted = $preferred; Tab = $sheetName }
             }
+        }
+
+        # Row 1 holds the column headings, so the first check sits on row 2 and its
+        # Result Rows cell is column D.
+        $overviewRows = @()
+        $links = @()
+        $overviewRow = 1
+
+        foreach ($entry in $summary) {
+            $overviewRow++
+            $overviewRows += [pscustomobject]@{
+                'Sport'       = Get-SportFromCheckId -CheckId $entry.CheckId
+                'CheckID'     = $entry.CheckId
+                'Check Name'  = $entry.Name
+                'Result Rows' = $entry.Rows
+                'Status'      = $entry.Status
+            }
+            if ($tabOf.ContainsKey($entry.CheckId)) {
+                $links += [pscustomobject]@{ Ref = "D$overviewRow"; Target = $tabOf[$entry.CheckId] }
+            }
+        }
+
+        $sheets = @([pscustomobject]@{
+                Name   = $overviewName
+                Rows   = $overviewRows
+                Header = $null
+                Links  = $links
+            })
+
+        foreach ($item in $collected) {
             $sheets += [pscustomobject]@{
-                Name   = $sheetName
+                Name   = $tabOf[$item.Job.CheckId]
                 Rows   = $item.Rows
                 Header = @($item.Job.CheckId, $item.Job.Name, $item.Job.Sql)
+                Links  = $null
             }
         }
 
@@ -1050,7 +1176,7 @@ Write-Host ("Rows: {0}   Elapsed: {1:n1}s" -f $count, $elapsed.TotalSeconds) -Fo
 
 # A workbook cannot be printed, so it always lands somewhere on disk.
 if ($isWorkbook -and -not $OutFile) {
-    $folder = if ($OutDir) { $OutDir } else { Join-Path $RepoRoot 'output' }
+    $folder = if ($OutDir) { $OutDir } else { Get-RunFolder -Jobs $jobs }
     $OutFile = Join-Path $folder ((Get-SafeFileName -CheckId $job.CheckId) + '.xlsx')
 }
 
