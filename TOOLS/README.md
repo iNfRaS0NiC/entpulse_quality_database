@@ -206,11 +206,15 @@ The identity sits on rows 1 and 2 rather than on every data row. Row 3 holds the
 to Overview, and row 4 is blank so the result table below stays a self-contained block for
 sorting and filtering.
 
-**No cell holding data is ever a link.** Google Sheets rewrites an imported internal link
-into a `HYPERLINK` formula whose visible label is the link target, replacing whatever the
-cell contained — which is why `Rows` and the tab's `Check ID` are not the links, and why
-`Go to tab` and `Return to Overview` are. Excel keeps the cell's own text, so this only
-shows up after upload.
+**A linked cell in Google Sheets is labelled from the hyperlink record, not from its own
+value.** With a `display` attribute Sheets shows that text; without one it falls back to
+the raw `#gid=...` target. So `display` carries the label the cell should read, and must
+never be set to the location — that was the original defect, and removing the attribute
+only traded one wrong label for another. Excel takes its label from the cell value, which
+is written identically, so the two agree.
+
+Data cells are still kept out of the links: `Rows` and the tab's `Check ID` hold values
+worth reading, so the navigation lives in `Go to tab` and `Return to Overview` instead.
 
 ### Tab names
 

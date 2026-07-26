@@ -819,7 +819,9 @@ function Save-Workbook {
             $headerRow = ($header.Count -gt 0)
 
             $links = @(if ($null -eq $sheet.Links) { @() } else { $sheet.Links })
-            if ($sheet.BackTo) { $links += [pscustomobject]@{ Ref = 'A3'; Target = $sheet.BackTo } }
+            if ($sheet.BackTo) {
+                $links += [pscustomobject]@{ Ref = 'A3'; Target = $sheet.BackTo; Text = 'Return to Overview' }
+            }
             $linked = @{}
             foreach ($link in $links) { $linked[$link.Ref] = $true }
 
@@ -883,15 +885,17 @@ function Save-Workbook {
                             $sheet.Validation.Sqref, (ConvertTo-XmlText -Text $sheet.Validation.Values)))
             }
 
-            # A link cell never keeps its own text in Google Sheets, which rewrites the
-            # import into a HYPERLINK formula labelled with the target. Only cells whose
-            # text is expendable are ever linked.
+            # Google Sheets ignores a linked cell's own value and labels it from the
+            # hyperlink record: with a display attribute it shows that, without one it
+            # falls back to the raw "#gid=..." target. So display carries the label the
+            # cell should read, and must never be set to the location. Excel takes its
+            # label from the cell value, which is kept identical.
             if ($links.Count -gt 0) {
                 [void]$xml.Append('<hyperlinks>')
                 foreach ($link in $links) {
                     $location = "'" + ($link.Target -replace "'", "''") + "'!A1"
-                    [void]$xml.Append(('<hyperlink ref="{0}" location="{1}"/>' -f `
-                                $link.Ref, (ConvertTo-XmlText -Text $location)))
+                    [void]$xml.Append(('<hyperlink ref="{0}" location="{1}" display="{2}"/>' -f `
+                                $link.Ref, (ConvertTo-XmlText -Text $location), (ConvertTo-XmlText -Text $link.Text)))
                 }
                 [void]$xml.Append('</hyperlinks>')
             }
@@ -1241,7 +1245,7 @@ if ($isBatch) {
                 'Status'     = 'Not Started'
             }
             if ($tabOf.ContainsKey($entry.CheckId)) {
-                $links += [pscustomobject]@{ Ref = "E$overviewRow"; Target = $tabOf[$entry.CheckId] }
+                $links += [pscustomobject]@{ Ref = "E$overviewRow"; Target = $tabOf[$entry.CheckId]; Text = 'open' }
             }
         }
 
