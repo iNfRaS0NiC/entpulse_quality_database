@@ -147,6 +147,7 @@ $XlsxCellLimit = 32767
 function Get-QuerySourceFiles {
     $dirs = @(
         (Join-Path $RepoRoot 'GLOBAL_QUERIES'),
+        (Join-Path $RepoRoot 'GLOBAL_DQ'),
         (Join-Path $RepoRoot 'POWERBI_QUERIES')
     )
     $files = @()
@@ -509,6 +510,42 @@ function Get-SqlLiteral {
     param([string]$Text)
 
     return "'" + (($Text -replace '\\', '\\\\') -replace "'", "''") + "'"
+}
+
+# The parameters Resolve-SportParameters can read from the database. Anything else has to
+# come from SPORTS/params.json or the command line: a value the runner cannot confirm is
+# never guessed.
+$DiscoverableParameters = @('SPORT_ID', 'STATISTIC_TYPE_ID', 'STATISTIC_OWNER_TYPE_ID', 'SHARD_ID')
+
+function Get-SportFileParameters {
+    # Values a sport has already had confirmed and recorded. These outrank discovery: the
+    # file holds documented evidence, discovery holds a heuristic (the busiest type/owner
+    # pair). GLOBAL_DQ/README.md owns the file's shape.
+    param([string]$SportName)
+
+    $resolved = @{}
+    $path = Join-Path (Split-Path -Parent $PSScriptRoot) 'SPORTS\params.json'
+    if (-not (Test-Path -LiteralPath $path)) { return $resolved }
+
+    try {
+        $params = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+    catch {
+        Write-Host "  SPORTS/params.json could not be read: $($_.Exception.Message)" -ForegroundColor Yellow
+        return $resolved
+    }
+
+    $entry = $params.PSObject.Properties | Where-Object { $_.Name -eq $SportName }
+    if (-not $entry) {
+        Write-Host "  '$SportName' is not in SPORTS/params.json; falling back to discovery." -ForegroundColor DarkGray
+        return $resolved
+    }
+
+    foreach ($property in $entry.Value.PSObject.Properties) {
+        $resolved[$property.Name] = $property.Value
+        Write-Host ("  {0,-30} {1}  (SPORTS/params.json)" -f $property.Name, $property.Value) -ForegroundColor DarkGray
+    }
+    return $resolved
 }
 
 function Resolve-SportParameters {
@@ -1217,15 +1254,36 @@ if ($MaxChecks -gt 0 -and $jobs.Count -gt $MaxChecks) {
 
 $paramTable = ConvertTo-ParamTable -Value $Params
 
-# Discovery runs first so an explicit value always wins over a discovered one.
+# Precedence, widest trust last: an explicit -Params or -SportId wins, then the values the
+# sport has had confirmed and recorded, then live discovery for whatever is still missing.
+# Each step fills only keys the earlier ones left empty.
 if ($Sport) {
-    if ($Relogin -and (Test-Path $StatePath)) { Remove-Item -LiteralPath $StatePath -Force }
-    $script:Session = $null
-    if (-not $Relogin) { $script:Session = Restore-SessionState }
-    if ($null -eq $script:Session) { $script:Session = New-AuthenticatedSession }
-
-    foreach ($entry in (Resolve-SportParameters -SportName $Sport).GetEnumerator()) {
+    Write-Host "Resolving parameters for '$Sport'..." -ForegroundColor DarkGray
+    foreach ($entry in (Get-SportFileParameters -SportName $Sport).GetEnumerator()) {
         if (-not $paramTable.ContainsKey($entry.Key)) { $paramTable[$entry.Key] = $entry.Value }
+    }
+
+    # Discovery costs several executions, so it runs only when it can actually supply
+    # something still missing. A drill-down placeholder is not discoverable and is skipped
+    # further down instead.
+    $stillMissing = @()
+    foreach ($job in $jobs) {
+        $stillMissing += Get-MissingPlaceholders -Text $job.Sql -Values $paramTable
+    }
+    $stillMissing = @($stillMissing | Select-Object -Unique | Where-Object { $DiscoverableParameters -contains $_ })
+
+    if ($stillMissing.Count -gt 0) {
+        if ($Relogin -and (Test-Path $StatePath)) { Remove-Item -LiteralPath $StatePath -Force }
+        $script:Session = $null
+        if (-not $Relogin) { $script:Session = Restore-SessionState }
+        if ($null -eq $script:Session) { $script:Session = New-AuthenticatedSession }
+
+        foreach ($entry in (Resolve-SportParameters -SportName $Sport).GetEnumerator()) {
+            if (-not $paramTable.ContainsKey($entry.Key)) { $paramTable[$entry.Key] = $entry.Value }
+        }
+    }
+    else {
+        Write-Host '  nothing left to discover; no discovery query sent.' -ForegroundColor DarkGray
     }
     Write-Host ''
 }

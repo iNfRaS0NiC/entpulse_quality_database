@@ -50,9 +50,12 @@ Never assume that an earlier generated block was pasted unless it is present.
 VSCODE DIRECT EDITING EXCEPTION
 
 The read-only rule above governs uploaded chat attachments. When this assistant runs
-inside VSCode or another local IDE with direct access to the workspace files, it MAY edit,
-create or replace project files directly, but only after the user explicitly confirms the
-specific change. In that mode:
+inside VSCode or another local IDE with direct access to the workspace files, CLAUDE.md is
+the entry point loaded automatically and governs local work; this file remains the full
+contract and every rule below still applies.
+
+In local-IDE mode the assistant MAY edit, create or replace project files directly, but
+only after the user explicitly confirms the specific change. In that mode:
 
 - apply the change only after explicit user confirmation of what will be written;
 - still follow every identity, coverage, scope, aggregation and statistics rule in these
@@ -85,14 +88,23 @@ PROJECT 2.0 SOURCE-OF-TRUTH MAP
 - GLOBAL_QUERIES/*.sql
   Canonical reusable structural discovery SQL grouped by domain.
 
+- GLOBAL_DQ/README.md
+  GLOBAL-DQ template registry, mandatory parameters, applicability and promotion rules.
+
+- GLOBAL_DQ/*.sql
+  Canonical reusable DQ check templates grouped by domain.
+
+- SPORTS/params.json
+  Confirmed per-sport parameter values used to run those templates.
+
 - POWERBI.md
   DQ authorization, identity, coverage, scope and storage contract.
 
 - POWERBI_REGISTRY.md
-  Assigned DQ CheckIDs and statuses.
+  Assigned DQ CheckIDs, logical families and statuses.
 
 - POWERBI_QUERIES/<SportSlug>.sql
-  Active approved DQ SQL for one sport.
+  Active approved sport-authored DQ SQL for one sport.
 
 - WORKFLOW.md
   Operational query, promotion and documentation-update process.
@@ -189,7 +201,9 @@ Before promotion:
 - assign the next unused GLOBAL-DISCOVERY-NNN;
 - ensure one executable statement has one unique QueryID;
 - add one statement in the correct domain file and one registry row with every column
-  filled, including Description copied from the statement's "-- What it does:" line.
+  filled. Description mirrors the statement's "-- What it does:" line; per
+  GLOBAL_QUERIES/README.md it omits the sport-scoping phrase for a query that declares
+  SPORT_ID, so it is a mirror rather than a literal copy.
 
 Return these artifacts through PREPARE_GLOBAL_UPDATE.
 
@@ -289,7 +303,8 @@ Before returning a statement:
 Statement construction:
 
 - cap non-DQ detail output with an explicit LIMIT (default 500); never as audited scope,
-  and never in a DQ statement;
+  and never applied to a DQ statement's result. LIMIT 1 inside a scalar subquery that picks
+  one value per audited object is allowed;
 - select named columns only, never SELECT *; return IDs and one MIN(...) sample instead
   of streaming every name or value;
 - use GROUP_CONCAT only over a small bounded DISTINCT set;
@@ -531,17 +546,45 @@ POWERBI STORAGE
 
 POWERBI_REGISTRY.md uses:
 
-| CheckID | Sport | Category | Object | Name | Query file | Status |
+| CheckID | Sport | Family | Category | Object | Name | Query file | Status |
 
-Approved rows must point to the active sport SQL file.
+Family names the logical check: a GLOBAL-DQ-NNN template ID, or — when no template
+expresses it. It is what groups one check across sports, whose CheckIDs differ because
+numbering restarts per sport. Set it whenever a template expresses the same logical check,
+even when the sport runs its own statement.
+
+Query file answers a different question: which file holds the executable statement. An
+Approved row points either to a GLOBAL_DQ/ template, meaning the row is an instantiation
+with no per-sport statement, or to POWERBI_QUERIES/<SportSlug>.sql, which must then contain
+that CheckID. Never both.
 
 Deprecated rows remain reserved and may use Query file = — when executable SQL was
 intentionally removed.
 
-POWERBI_QUERIES/<SportSlug>.sql contains all active approved checks for that sport in
-CheckID order.
+POWERBI_QUERIES/<SportSlug>.sql contains all active approved sport-authored checks for that
+sport in CheckID order, separated by the -- ==== banner line.
 
 Do not store discovery SQL in PowerBI query files.
+
+REUSABLE DQ TEMPLATES
+
+Before authoring a sport DQ statement, read GLOBAL_DQ/README.md. Inside a category the user
+has opened, prefer instantiating a template: an approved instantiation is a registry row
+plus, when needed, parameter values in SPORTS/params.json — not a new statement.
+
+Author a sport statement only when the violation condition cannot be expressed through the
+template's declared parameters.
+
+A template is not permission to check a sport. The authorization gate is unchanged.
+
+PACKAGE VALIDATION
+
+TOOLS/Test-Package.ps1 mechanically checks identity headers, CheckID uniqueness, the
+coverage contract, UNION ALL column counts, result-level LIMIT, registry-versus-SQL
+agreement, declared parameters, paste markers, the sport index and params.json.
+
+In local-IDE mode, run it after changing any .sql file, registry row or paste marker, and
+report its result. VALIDATION_REPORT.md is its generated output; never hand-edit that file.
 
 POWERBI UPDATE
 

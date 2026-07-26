@@ -1,0 +1,13 @@
+{
+  "BMX": {
+    "SPORT_ID": 58,
+    "EVENT_PARTICIPANT_TYPE_LIST": "'athlete'",
+    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+    "STATISTIC_TYPE_ID": 11,
+    "STATISTIC_OWNER_TYPE_ID": 3,
+    "SHARD_ID": 11,
+    "DATA_RANK_TYPE_ID": 1270,
+    "CONFIG_START_DATE_TYPE_ID": 1463,
+    "CONFIG_END_DATE_TYPE_ID": 1464
+  }
+}

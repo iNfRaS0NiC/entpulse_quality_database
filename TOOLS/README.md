@@ -5,12 +5,18 @@ Builder without opening the Pool UI. It resolves SQL by CheckID, substitutes the
 `{{...}}` parameters, authenticates, posts one statement per execution and writes the
 result to the screen, to CSV/JSON, or to a single `.xlsx` workbook.
 
-The tool changes only how a statement reaches the server. Every rule about what a
+`Test-Package.ps1` is the companion: it parses the same catalogue without sending anything
+and fails when the package contradicts its own rules. Run it after changing SQL, a registry
+row or a paste marker; see "Package validation" below.
+
+The tools change only how a statement reaches the server. Every rule about what a
 statement may contain still lives where it did:
 
 | Question | Canonical owner |
 |---|---|
-| Which query to select, and its parameters | `GLOBAL_QUERIES/README.md` |
+| Which discovery query to select, and its parameters | `GLOBAL_QUERIES/README.md` |
+| Which DQ template to select, and its parameters | `GLOBAL_DQ/README.md` |
+| Confirmed per-sport parameter values | `SPORTS/params.json` |
 | Scope, cost, `LIMIT` and failure handling | `WORKFLOW.md` |
 | DQ identity, coverage and approval | `POWERBI.md` |
 
@@ -139,9 +145,9 @@ approved against one confirmed sport and carry its numeric ID directly, so
 .\TOOLS\Run-Query.ps1 BMX-DQ-003
 ```
 
-Only `GLOBAL-DISCOVERY-NNN` statements declare `{{...}}` tokens, because a GLOBAL query is
-reusable across sports by design. `{{SPORT_ID}}` has a dedicated switch; every other
-declared token goes through `-Params`, in either form:
+`GLOBAL-DISCOVERY-NNN` and `GLOBAL-DQ-NNN` statements declare `{{...}}` tokens, because a
+GLOBAL statement is reusable across sports by design. `{{SPORT_ID}}` has a dedicated switch;
+every other declared token goes through `-Params`, in either form:
 
 ```powershell
 .\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-001 -SportId 58
@@ -167,7 +173,21 @@ sport that has never been queried needs one command:
 .\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-* -Sport BMX -Format xlsx
 ```
 
-Discovery is three lookups against the database, none of them assumed:
+`-Sport` resolves parameters from three sources, widest trust last:
+
+1. an explicit `-SportId` or `-Params` on the command line;
+2. the sport's entry in `SPORTS/params.json` — values already confirmed and documented;
+3. live discovery against the database, for whatever the first two left empty.
+
+Recorded values outrank discovery because the file holds evidence while discovery holds a
+heuristic. When nothing discoverable is still missing, no discovery query is sent at all, so
+a documented sport runs its templates without a single extra round trip:
+
+```powershell
+.\TOOLS\Run-Query.ps1 GLOBAL-DQ-* -Sport BMX -Format xlsx
+```
+
+Discovery, when it does run, is three lookups against the database, none of them assumed:
 
 1. the sport name resolves to `SPORT_ID`;
 2. `GLOBAL-DISCOVERY-015` reports the statistic types and owner levels the sport uses, and
@@ -278,11 +298,14 @@ object and condition words are therefore abbreviated first — `PARTICIPANT` to 
 `COMP.RANK` to `CR`, `MISSING` to `MISS`, and so on — which leaves
 `CR_SET_DATE_RANGE_MISM_STG` and `CR_SET_DATE_RANGE_MISM_EVENTS` distinct.
 
-Over the current catalogue of 70 statements this takes the count needing truncation from
-44 to 3, with every tab name still unique. The map lives in `$XlsxNameAbbreviations` in the
-script; extend it when a new recurring word appears. A name that still overruns is cut and
-reported at the end of the run, and duplicates gain a `~2` suffix. The full name is always
-in the Overview and in B2.
+Abbreviating first leaves the great majority of names inside the limit with every tab name
+still unique, where plain truncation collapsed dozens of them. The map lives in
+`$XlsxNameAbbreviations` in the script; extend it when a new recurring word appears. A name
+that still overruns is cut and reported at the end of the run, and duplicates gain a `~2`
+suffix. The full name is always in the Overview and in B2.
+
+Catalogue sizes are deliberately not quoted here: `-ListChecks` reports the current count,
+and a hand-maintained number in prose drifts the moment a sport is added.
 
 C2 holds the statement on a single line. Its newlines would otherwise make the row as tall
 as the whole query and push the sheet out of shape. Collapsing them requires the SQL
@@ -351,14 +374,47 @@ execute-sql route is separate, so it has no effect on the runner.
 The catalogue is read from disk on every invocation; nothing is cached or registered. A
 new statement is picked up as soon as three conditions hold:
 
-1. it lives in a `.sql` file under `GLOBAL_QUERIES/` or `POWERBI_QUERIES/` — no other
-   directory is scanned;
+1. it lives in a `.sql` file under `GLOBAL_QUERIES/`, `GLOBAL_DQ/` or `POWERBI_QUERIES/` —
+   no other directory is scanned;
 2. statements are separated by the `-- =====...` banner lines used across the repository;
 3. it carries `-- CheckID - <id>`, and preferably `-- Name - <NAME>`, which becomes the
    workbook tab name.
 
 Adding `POWERBI_QUERIES/<NewSport>.sql` therefore needs no change to the runner:
 `<NewSport>-DQ-*` works immediately.
+
+A sport that runs GLOBAL DQ templates instead needs no `.sql` file at all — only its entry
+in `SPORTS/params.json` and its registry rows. Run the templates directly:
+
+```powershell
+.\TOOLS\Run-Query.ps1 GLOBAL-DQ-* -Sport Curling -Format xlsx
+```
+
+Because the CheckIDs are then `GLOBAL-DQ-*`, the run folder is named `GLOBAL` rather than
+the sport. Pass `-OutDir` when a sport-named folder matters.
+
+## Package validation
+
+```powershell
+.\TOOLS\Test-Package.ps1
+```
+
+Parses every `.sql` file and registry in the repository and reports one line per check:
+identity headers, CheckID uniqueness, the DQ coverage contract, `UNION ALL` column counts,
+result-level `LIMIT`, registry-versus-SQL agreement, declared parameters, paste markers, the
+sport index and `SPORTS/params.json`. Exit code 1 on any failure, so it drops into a hook or
+a pre-commit step unchanged.
+
+It needs no credentials and sends nothing, because it parses rather than executes. That is
+also its boundary: it cannot prove live permissions, runtime cost or result semantics.
+
+`-ReportPath` refreshes the tracked report:
+
+```powershell
+.\TOOLS\Test-Package.ps1 -ReportPath .\VALIDATION_REPORT.md
+```
+
+`VALIDATION_REPORT.md` is generated output. Fix the script or the package, never the report.
 
 ## Troubleshooting
 

@@ -126,10 +126,14 @@ detail output with `LIMIT`. The full rule is in `WORKFLOW.md`.
 
 ## BMX migration mapping
 
-The former `BMX-DQ-023` through `BMX-DQ-028` PATTERN_CATALOG identities were retired and
-removed from the PowerBI registry; their CheckIDs were reclaimed by renumbering the
-remaining rows. Their reusable purposes are represented by `GLOBAL-DISCOVERY-018`
-through `GLOBAL-DISCOVERY-029`.
+Historical record of a one-time migration performed before the current identity rule. The
+former `BMX-DQ-023` through `BMX-DQ-028` PATTERN_CATALOG identities were retired, removed
+from the PowerBI registry, and their CheckIDs reclaimed by renumbering the remaining rows.
+Their reusable purposes are represented by `GLOBAL-DISCOVERY-018` through
+`GLOBAL-DISCOVERY-029`.
+
+That renumbering is not a precedent. `POWERBI.md` now forbids renumbering, deleting or
+reusing an assigned CheckID; a deprecated check keeps its row and its ID.
 
 ## Manual registry-rule additions
 

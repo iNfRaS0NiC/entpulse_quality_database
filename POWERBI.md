@@ -10,8 +10,9 @@ The PowerBI layer is split into three responsibilities:
 | Location | Responsibility |
 |---|---|
 | `POWERBI.md` | Stable policy, query contract and update workflow |
-| `POWERBI_REGISTRY.md` | Compact source of truth for assigned CheckIDs, categories, objects, names, query paths and statuses |
-| `POWERBI_QUERIES/<SportSlug>.sql` | Full approved SQL for one sport, ordered by CheckID |
+| `POWERBI_REGISTRY.md` | Compact source of truth for assigned CheckIDs, families, categories, objects, names, query paths and statuses |
+| `GLOBAL_DQ/` | Reusable DQ check templates and their parameter contract |
+| `POWERBI_QUERIES/<SportSlug>.sql` | Full approved SQL authored for one sport, ordered by CheckID |
 
 Do not copy registry rows or full sport queries back into this file.
 
@@ -210,9 +211,12 @@ Rules:
 Every DQ query follows the query cost and result-size rule in `WORKFLOW.md`. Two
 constraints are specific to DQ:
 
-- A DQ statement never uses `LIMIT`. It would truncate finding rows or drop the
-  `COVERAGE` row and invalidate the result. Control result size through the activated
-  scope filters and through audited-object aggregation instead.
+- A DQ statement never applies `LIMIT` to its result. On the outer statement or on a
+  `UNION ALL` branch it would truncate finding rows or drop the `COVERAGE` row and
+  invalidate the result. Control result size through the activated scope filters and
+  through audited-object aggregation instead. `LIMIT` inside a scalar subquery that picks
+  one value per audited object — `(SELECT r.value FROM result r WHERE ... LIMIT 1)` — does
+  not limit the result and is allowed.
 - When a batch still times out or exhausts executor memory, reduce that batch — a shorter
   half-open date window or a smaller primary-key range — and rerun the same statement per
   batch. Report each batch's `eligible_count` separately; never merge batches into one
@@ -222,15 +226,33 @@ Prefer `EXISTS` over `JOIN` plus `DISTINCT` in the violation predicate, and keep
 findings and coverage branches on the same indexed scope so neither branch scans more
 than the other.
 
+## Reusable templates
+
+Before authoring a sport statement, check `GLOBAL_DQ/README.md`. A check whose violation
+condition holds for every applicable sport belongs there once, parameterized, rather than
+copied per sport: at 110 sports a hand-copied check means 110 places to fix and no way to
+detect the copies that drifted.
+
+Instantiating a template for a sport produces a registry row and, when needed, parameter
+values in `SPORTS/params.json` — not a new statement. The authorization gate above is
+unchanged: a template is not permission to check a sport.
+
+A check stays sport-authored when its condition cannot be expressed through declared
+parameters. `GLOBAL_DQ/README.md` owns the qualification rule and the promotion sequence.
+
 ## Query-file contract
 
-- Store all active approved checks for one sport in
+- Store all active approved sport-authored checks for one sport in
   `POWERBI_QUERIES/<SportSlug>.sql`.
 - Never create one SQL file per check.
 - Order statements by CheckID.
 - The file begins with the first query's `SELECT`; do not add a file header before it.
 - Keep each check as one complete statement ending in `;`.
-- Separate statements with blank lines only; do not wrap SQL in Markdown fences.
+- Separate consecutive statements with the
+  `-- ================================================================================`
+  banner line used across the repository. `TOOLS/Run-Query.ps1` and
+  `TOOLS/Test-Package.ps1` split the file on that banner, so a missing one merges two
+  statements into a single unrunnable block. Do not wrap SQL in Markdown fences.
 - Execute or paste one statement at a time because the Pool accepts one statement per
   execution. `TOOLS/Run-Query.ps1` observes the same constraint and can run a sport's
   approved checks in one pass; see `TOOLS/README.md`.
@@ -242,15 +264,28 @@ than the other.
 `POWERBI_REGISTRY.md` uses this exact column order:
 
 ```markdown
-| CheckID | Sport | Category | Object | Name | Query file | Status |
+| CheckID | Sport | Family | Category | Object | Name | Query file | Status |
 ```
 
-`Category` identifies the DQ family. `Object` identifies the canonical object or logical
-storage layer. `Name` must match the SQL identity header exactly.
+`Category` identifies the DQ problem family. `Object` identifies the canonical object or
+logical storage layer. `Name` must match the SQL identity header exactly.
 
-For `Approved` rows, `Query file` points to the sport file containing the full active
-statement. For `Deprecated` rows, `Query file` may be `—` when executable SQL was
-intentionally removed; the CheckID remains permanently reserved.
+`Family` and `Query file` answer two independent questions and must not be conflated:
+
+| Column | Question |
+|---|---|
+| `Family` | Which logical check is this? A `GLOBAL-DQ-NNN` template ID, or `—` when the check has no template |
+| `Query file` | Which file holds the executable statement? |
+
+`Family` is what lets PowerBI group and compare one check across sports, whose own CheckIDs
+differ because numbering restarts per sport. Assign it whenever a template expresses the
+same logical check, even when the sport runs its own statement.
+
+For `Approved` rows, `Query file` points either to a `GLOBAL_DQ/` template — the row is an
+instantiation and no per-sport statement exists — or to `POWERBI_QUERIES/<SportSlug>.sql`,
+which must then contain a statement with that CheckID. A row cannot have both. For
+`Deprecated` rows, `Query file` may be `—` when executable SQL was intentionally removed;
+the CheckID remains permanently reserved.
 
 The registry is the authority for assigned IDs and statuses. The sport SQL file is the
 authority for executable query text. If the two disagree, treat the PowerBI update as

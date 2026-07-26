@@ -20,19 +20,24 @@ copied into a separate SQL file for every sport.
 | Location | Canonical responsibility |
 |---|---|
 | `README.md` | Project boundary, file map and start-here rules |
+| `CLAUDE.md` | Working rules loaded automatically by an assistant in a local IDE |
 | `DATABASE.md` | Global tables, columns, relations, storage mechanisms and semantics |
 | `SPORTS.md` | Compact index of sport structural files and their status |
 | `SPORTS/_TEMPLATE.md` | Template for one new sport structural file |
 | `SPORTS/<SportSlug>.md` | Confirmed structural usage and open questions for one sport |
+| `SPORTS/params.json` | Confirmed per-sport parameter values used to run GLOBAL DQ templates |
 | `GLOBAL_QUERIES/README.md` | Registry, parameter contract and applicability of reusable discovery SQL |
 | `GLOBAL_QUERIES/*.sql` | Canonical reusable structural discovery statements grouped by domain |
+| `GLOBAL_DQ/README.md` | Registry, parameter contract and applicability of reusable DQ templates |
+| `GLOBAL_DQ/*.sql` | Canonical reusable DQ check templates grouped by domain |
 | `POWERBI.md` | Stable DQ authorization, identity, coverage, scope and storage policy |
-| `POWERBI_REGISTRY.md` | Compact index of assigned DQ CheckIDs and statuses |
-| `POWERBI_QUERIES/<SportSlug>.sql` | Approved executable DQ SQL for one sport |
+| `POWERBI_REGISTRY.md` | Compact index of assigned DQ CheckIDs, families and statuses |
+| `POWERBI_QUERIES/<SportSlug>.sql` | Approved executable DQ SQL authored for one sport |
 | `WORKFLOW.md` | Operational commands, routing and update workflow |
 | `TOOLS/README.md` | Query-runner setup, command set, output shapes and troubleshooting |
 | `TOOLS/Run-Query.ps1` | Executes registered statements against the Content Query Builder |
-| `VALIDATION_REPORT.md` | Static package, registry and SQL-parser validation result |
+| `TOOLS/Test-Package.ps1` | Static package, registry and SQL-shape validation |
+| `VALIDATION_REPORT.md` | Generated output of the latest `TOOLS/Test-Package.ps1` run |
 | `AI_INSTRUCTIONS.md` | Matching behavior instructions for the user-operated assistant |
 
 Each rule has one canonical owner. Other files may link to it but must not restate the
@@ -46,7 +51,9 @@ full rule.
 - Do not assign a DQ CheckID before the user approves a concrete check.
 - Do not create one file per finding, table, query or individual DQ check.
 - Store one structural file per sport and one approved DQ SQL file per sport.
-- Store reusable discovery SQL once under `GLOBAL_QUERIES/`.
+- Store reusable discovery SQL once under `GLOBAL_QUERIES/` and reusable DQ checks once
+  under `GLOBAL_DQ/`. Prefer instantiating a template for a new sport over copying SQL.
+- Run `TOOLS/Test-Package.ps1` after changing any SQL file, registry row or paste marker.
 - Scope every statement before it runs; the database is large enough that unscoped
   queries time out or exhaust the executor's memory (`WORKFLOW.md`).
 - If the user requests one query, return only that query.

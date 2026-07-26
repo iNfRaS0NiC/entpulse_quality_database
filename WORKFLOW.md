@@ -49,6 +49,12 @@ An ordinary one-time ad-hoc query does not require a permanent discovery ID.
 Activate DQ rules only when the user explicitly opens a sport and category/problem
 area. `POWERBI.md` is the only canonical source for the DQ contract.
 
+Inside an opened category, prefer a `GLOBAL_DQ/` template over new SQL. Instantiating one
+produces a registry row and, when needed, parameter values in `SPORTS/params.json`; it does
+not produce a statement. Author a sport statement only when the condition cannot be
+expressed through the template's declared parameters. `GLOBAL_DQ/README.md` owns the
+registry, the parameter contract and the promotion sequence.
+
 ## SQL identity contract
 
 Every executable or template SQL statement starts with `SELECT` as its first word.
@@ -71,8 +77,15 @@ Identity namespaces:
 | Namespace | Use |
 |---|---|
 | `GLOBAL-DISCOVERY-NNN` | Canonical reusable structural discovery statement |
+| `GLOBAL-DQ-NNN` | Canonical reusable DQ check template |
 | `<SportSlug>-DISCOVERY-NNN` | Reusable sport-specific discovery exception |
-| `<SportSlug>-DQ-NNN` | User-approved PowerBI/DQ check |
+| `<SportSlug>-DQ-NNN` | User-approved PowerBI/DQ check for one sport |
+
+`<SportSlug>` is the sport's name as it appears in `SPORTS.md`: the documented English name
+with spaces replaced by hyphens, restricted to `A-Z`, `a-z`, `0-9`, `.` and `-`. It is also
+the sport file's base name, so the slug, `SPORTS/<SportSlug>.md`,
+`POWERBI_QUERIES/<SportSlug>.sql` and the CheckID prefix always agree. `SPORTS.md` owns the
+normalization rule.
 
 Summary and detail statements are separate executable queries and must have different
 IDs.
@@ -182,8 +195,9 @@ listing. It has three boundaries.
   shift between pages without a stable total order. Use
   `WHERE e.id > <last_seen_id> ORDER BY e.id LIMIT 500` instead.
 
-`LIMIT` never replaces scope, is never the audited-scope mechanism, and never appears in a
-DQ statement — see `POWERBI.md`.
+`LIMIT` never replaces scope and is never the audited-scope mechanism. A DQ statement never
+applies it to its result, though `LIMIT 1` inside a scalar subquery is allowed — see
+`POWERBI.md`.
 
 ### When a statement fails
 
@@ -331,15 +345,25 @@ Results are execution output, not evidence. They enter the repository only throu
 2. create one complete `SPORTS/<SportSlug>.md` file from `SPORTS/_TEMPLATE.md`;
 3. replace every `<SPORT_ID>` placeholder with the confirmed numeric sport ID;
 4. fill confirmed areas only;
-5. leave every other area `Not checked`.
+5. leave every other area `Not checked`;
+6. add the sport's confirmed parameter values to `SPORTS/params.json`, so a GLOBAL DQ
+   template can run for it without rediscovery. Record only values the sport file now
+   documents as confirmed.
 
 Later updates target only the smallest relevant part of that sport file.
+
+Run `TOOLS/Test-Package.ps1` afterwards. It checks that the index row, the sport file and
+`params.json` agree, which is the cheapest place to catch a slug or sport-ID mismatch.
 
 ### 4. Open DQ work
 
 Only after the sport file records a confirmed structure, and only for a category the user
 opens. `POWERBI.md` owns the DQ contract. A structural finding never becomes a DQ check
 automatically.
+
+For a sport whose structure matches an existing template's prerequisite, the approved check
+is a registry row with `Family` set, not a new statement. That is the whole point of the
+template layer: opening sport 40 should cost a row, not 60 lines of SQL.
 
 ## Promoting an ad-hoc query
 
@@ -360,6 +384,28 @@ Only after explicit approval:
 ### Promote to DQ
 
 Follow `POWERBI.md`. Do not reuse a discovery ID as a DQ CheckID.
+
+### Promote a sport check to a GLOBAL DQ template
+
+Follow `GLOBAL_DQ/README.md`. The sport check keeps its CheckID; `Family` records that the
+two are the same logical check.
+
+## Package validation
+
+`TOOLS/Test-Package.ps1` is the mechanical check on everything this file and `POWERBI.md`
+assert: identity headers, CheckID uniqueness, the coverage contract, `UNION ALL` column
+counts, result-level `LIMIT`, registry-versus-SQL agreement, declared parameters, paste
+markers, the sport index and `params.json`.
+
+Run it after changing any `.sql` file, registry row or paste marker:
+
+```powershell
+.\TOOLS\Test-Package.ps1
+```
+
+It parses and does not execute, so it proves package consistency, never runtime cost or
+result semantics. `VALIDATION_REPORT.md` is its output, refreshed with `-ReportPath`; edit
+the script rather than the report.
 
 ## PowerBI update command
 

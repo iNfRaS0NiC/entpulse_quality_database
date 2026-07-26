@@ -27,6 +27,32 @@ pending. When `PREPARE_DOC_UPDATE SPORT=<Sport>` is requested:
 4. leave every uninvestigated area as `Not checked`;
 5. never create one file per finding, table or query.
 
+## Sport slug rule
+
+One slug identifies a sport everywhere: the `Sport` column below, `SPORTS/<SportSlug>.md`,
+`POWERBI_QUERIES/<SportSlug>.sql`, the `<SportSlug>-DQ-NNN` CheckID prefix and the key in
+`SPORTS/params.json`. `TOOLS/Test-Package.ps1` fails when they disagree, and
+`TOOLS/Run-Query.ps1` derives the run folder from the CheckID prefix, so a slug that is only
+almost right silently scatters output.
+
+Derive it from the documented English sport name:
+
+| Rule | Example |
+|---|---|
+| Keep the name's own capitalization | `BMX`, `Curling` |
+| Replace each space with a single hyphen | `Water Polo` → `Water-Polo` |
+| Keep an existing period | `3x3 Basketball` → `3x3-Basketball` |
+| Drop any other character | `Cycling (Road)` → `Cycling-Road` |
+| Strip diacritics to their ASCII base | `Pétanque` → `Petanque` |
+
+The result contains only `A-Z`, `a-z`, `0-9`, `.` and `-`. Multi-word slugs are parsed
+correctly: the CheckID prefix is everything before `-DQ-`, so `Water-Polo-DQ-001` resolves
+to `Water-Polo`.
+
+The slug is not required to equal the database's `sport.name`. `-Sport` takes the exact
+database name, while the slug names the repository's files; the index row below records both
+so the mapping is never inferred.
+
 ## Status meanings
 
 | Status | Meaning |
