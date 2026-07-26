@@ -393,6 +393,13 @@ approved against one confirmed sport and carries that sport ID directly, so it e
 without arguments. Only `GLOBAL-DISCOVERY-NNN` statements declare `{{...}}` tokens, which
 is what makes them reusable across sports.
 
+Those tokens divide along the summary-before-detail rule above. The sport ID, statistic
+type, owner level and physical shard are structural facts, so the runner can read them
+from the database and fill them in for a named sport. A round type, name pattern, result
+type, statistic data type or value pattern is a selection the reader makes from a summary
+result; the runner reports and skips those statements rather than choosing for them, and
+their output is marked skipped so a run is never mistaken for full catalogue coverage.
+
 Results are written outside the working copy, one folder per run named for the sport and
 the run time. They are execution output, never evidence: a documentation update still
 requires the classification and command sequence defined in this file.

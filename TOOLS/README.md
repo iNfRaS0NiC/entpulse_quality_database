@@ -116,6 +116,7 @@ the account in use. The summary:
 |---|---|
 | `-ListChecks` | Every CheckID with its name, source file and line |
 | `-ListChecks BMX-DQ-0*` | The same list, filtered by wildcard |
+| `-Sport BMX` | Discover the structural parameters and fill them in |
 | `BMX-DQ-003` | One check to the screen |
 | `BMX-DQ-001,BMX-DQ-005` | A chosen few |
 | `BMX-DQ-*` | Every match; more than one switches to batch mode |
@@ -156,6 +157,50 @@ An unreplaced token stops the run before anything is sent, and the error names t
 missing tokens. A parameter passed to a statement that declares none is simply unused.
 Parameter meanings are declared in `GLOBAL_QUERIES/README.md`; the runner substitutes them
 textually and validates nothing about their values.
+
+### Opening a new sport
+
+`-Sport <name>` discovers the parameters that are structural facts and fills them in, so a
+sport that has never been queried needs one command:
+
+```powershell
+.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-* -Sport BMX -Format xlsx
+```
+
+Discovery is three lookups against the database, none of them assumed:
+
+1. the sport name resolves to `SPORT_ID`;
+2. `GLOBAL-DISCOVERY-015` reports the statistic types and owner levels the sport uses, and
+   the busiest pair becomes `STATISTIC_TYPE_ID` and `STATISTIC_OWNER_TYPE_ID`. Any other
+   pair is printed rather than silently dropped;
+3. `SHARD_ID` is confirmed by probing each `statistic_participantsN` table, one execution
+   apiece, for a statistic the inventory just attributed to this sport.
+
+The shard is probed rather than derived because `DATABASE.md` `DB-SEM-006` records that
+the statistic type does not determine the physical shard.
+
+That covers 23 of the 31 GLOBAL statements. The remaining 8 are drill-downs whose
+parameter is a value the reader picks out of a summary result — a round type, a name
+pattern, a result type, a statistic data type. Choosing one automatically would produce a
+sample dressed up as coverage, so they are listed and skipped instead:
+
+```text
+Skipping 8 statement(s) that need a value selected from a summary result:
+  GLOBAL-DISCOVERY-019  needs ROUND_TYPE_ID
+  GLOBAL-DISCOVERY-021  needs NAME_PATTERN
+  ...
+```
+
+They appear in the workbook's Overview as `SKIPPED`, so a run never reads as full coverage
+of the catalogue. Run them afterwards with the value chosen from its summary:
+
+```powershell
+.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-019 -Sport BMX -Params ROUND_TYPE_ID=5
+```
+
+An explicit `-SportId` or `-Params` always overrides a discovered value. Skipping applies
+only under `-Sport` and only to a batch: elsewhere an unfilled placeholder still stops the
+run, because there it is a mistake rather than a deferred choice.
 
 ## Output
 

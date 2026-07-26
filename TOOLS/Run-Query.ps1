@@ -72,6 +72,11 @@ param(
     # check carries its own sport ID and ignores it.
     [int]$SportId,
 
+    # Sport name. Discovers the parameters that are structural facts - the sport ID, the
+    # statistic type and owner, the physical shard - and fills them in. Statements still
+    # needing an investigative selection are reported and skipped rather than guessed.
+    [string]$Sport,
+
     # Remaining placeholders, either NAME=VALUE strings or a hashtable.
     [object]$Params,
 
@@ -254,6 +259,15 @@ function ConvertTo-ParamTable {
     }
 
     return $table
+}
+
+function Get-MissingPlaceholders {
+    param([string]$Text, [hashtable]$Values)
+
+    return @([regex]::Matches($Text, '\{\{\s*(\w+)\s*\}\}') |
+        ForEach-Object { $_.Groups[1].Value } |
+        Where-Object { -not $Values.ContainsKey($_) } |
+        Select-Object -Unique)
 }
 
 function Expand-Placeholders {
@@ -489,6 +503,104 @@ function Invoke-SqlWithRetry {
         if ($detail) { throw "Query failed (HTTP $status): $detail" }
         throw
     }
+}
+
+function Get-SqlLiteral {
+    param([string]$Text)
+
+    return "'" + (($Text -replace '\\', '\\\\') -replace "'", "''") + "'"
+}
+
+function Resolve-SportParameters {
+    # Fills the placeholders that are structural facts about a sport. Everything here is
+    # read from the database rather than assumed: DATABASE.md DB-SEM-006 records that the
+    # statistic type does not determine the physical shard, so the shard is probed.
+    param([string]$SportName)
+
+    $resolved = @{}
+    Write-Host "Discovering parameters for '$SportName'..." -ForegroundColor DarkGray
+
+    $literal = Get-SqlLiteral -Text $SportName
+    $response = Invoke-SqlWithRetry -Statement `
+        "SELECT id AS sport_id, name AS sport_name FROM sport WHERE del = 'no' AND name = $literal ORDER BY id;"
+    # Get-ResultRows returns its array comma-wrapped so a single row is not unrolled.
+    # Wrapping the call in @() would therefore nest it, not flatten it; assign it plain.
+    $hits = Get-ResultRows -Content $response.Content
+
+    if ($hits.Count -eq 0) {
+        throw "No active sport is named '$SportName'. Names are exact; list them with -Sql ""SELECT id, name FROM sport WHERE del='no' ORDER BY name;"""
+    }
+    if ($hits.Count -gt 1) {
+        throw "'$SportName' matches $($hits.Count) active sports. Pass -SportId instead."
+    }
+
+    $sportId = [int]$hits[0].sport_id
+    $resolved['SPORT_ID'] = $sportId
+    Write-Host ("  SPORT_ID                 {0}" -f $sportId) -ForegroundColor DarkGray
+
+    # The statistic type and owner come from the catalogue's own discovery statement, so
+    # the runner cannot drift from what the documented query reports.
+    $inventory = @(Get-CheckCatalogue | Where-Object { $_.CheckId -eq 'GLOBAL-DISCOVERY-015' })
+    if ($inventory.Count -ne 1) {
+        Write-Host '  GLOBAL-DISCOVERY-015 not found; statistic parameters stay unresolved.' -ForegroundColor DarkGray
+        return $resolved
+    }
+
+    $statement = Expand-Placeholders -Text $inventory[0].Sql -Values @{ SPORT_ID = $sportId }
+    $rows = Get-ResultRows -Content (Invoke-SqlWithRetry -Statement $statement).Content
+    if ($rows.Count -eq 0) {
+        Write-Host '  the sport has no statistics; statistic parameters stay unresolved.' -ForegroundColor DarkGray
+        return $resolved
+    }
+
+    # More than one type/owner pair is possible. The busiest is the useful default, and the
+    # others are named so the choice is visible rather than silent.
+    $ranked = @($rows | Sort-Object { [int]$_.statistic_count } -Descending)
+    $chosen = $ranked[0]
+    $resolved['STATISTIC_TYPE_ID'] = [int]$chosen.statistic_type_id
+    $resolved['STATISTIC_OWNER_TYPE_ID'] = [int]$chosen.statistic_owner_type_id
+
+    Write-Host ("  STATISTIC_TYPE_ID        {0}  ({1})" -f $chosen.statistic_type_id, $chosen.statistic_type_name) -ForegroundColor DarkGray
+    Write-Host ("  STATISTIC_OWNER_TYPE_ID  {0}  ({1}, {2} statistics)" -f `
+            $chosen.statistic_owner_type_id, $chosen.owner_path, $chosen.statistic_count) -ForegroundColor DarkGray
+
+    if ($ranked.Count -gt 1) {
+        $others = ($ranked | Select-Object -Skip 1 | ForEach-Object {
+                'type {0} / owner {1} ({2})' -f $_.statistic_type_id, $_.statistic_owner_type_id, $_.statistic_count
+            }) -join '; '
+        Write-Host "  other pairs not used: $others" -ForegroundColor DarkGray
+    }
+
+    # Shard: probe one table per execution, as WORKFLOW.md requires, using a statistic the
+    # inventory already confirmed belongs to this sport.
+    $sample = $chosen.sample_statistic_id
+    if (-not $sample) { return $resolved }
+
+    $shardRows = Get-ResultRows -Content (Invoke-SqlWithRetry -Statement (
+            "SELECT table_name AS shard_table FROM information_schema.tables " +
+            "WHERE table_schema = DATABASE() AND table_name REGEXP '^statistic_participants[0-9]+$' " +
+            "ORDER BY CAST(SUBSTRING(table_name, 23) AS UNSIGNED);")).Content
+
+    foreach ($shardRow in $shardRows) {
+        $table = [string]$shardRow.shard_table
+        $number = [regex]::Match($table, '(\d+)$').Groups[1].Value
+        if (-not $number) { continue }
+
+        $probe = Get-ResultRows -Content (Invoke-SqlWithRetry -Statement (
+                "SELECT COUNT(*) AS c FROM $table WHERE statisticFK = $sample AND del = 'no';")).Content
+
+        if ($probe.Count -gt 0 -and [int]$probe[0].c -gt 0) {
+            $resolved['SHARD_ID'] = [int]$number
+            Write-Host ("  SHARD_ID                 {0}  (confirmed on {1})" -f $number, $table) -ForegroundColor DarkGray
+            break
+        }
+    }
+
+    if (-not $resolved.ContainsKey('SHARD_ID')) {
+        Write-Host '  no shard holds rows for the sample statistic; SHARD_ID stays unresolved.' -ForegroundColor DarkGray
+    }
+
+    return $resolved
 }
 
 function Get-ResultRows {
@@ -1032,6 +1144,13 @@ if ($Info) {
     Write-Line '-Params STATISTIC_TYPE_ID=11,SHARD_ID=11' 'any other declared token'
     Write-Line '-Params @{ SHARD_ID = 11 }' 'the hashtable form also works'
 
+    Write-Section 'OPEN A NEW SPORT'
+    Write-Line "$Entry GLOBAL-DISCOVERY-* -Sport BMX -Format xlsx" 'discover the parameters, then run'
+    Write-Host '  -Sport resolves the sport ID, the statistic type and owner, and probes' -ForegroundColor DarkGray
+    Write-Host '  for the physical shard. Statements needing a value picked from a summary' -ForegroundColor DarkGray
+    Write-Host '  result are listed and skipped, never guessed. An explicit -SportId or' -ForegroundColor DarkGray
+    Write-Host '  -Params wins over a discovered value.' -ForegroundColor DarkGray
+
     Write-Section 'AD-HOC SQL'
     Write-Line "$Entry -Sql `"SELECT COUNT(*) AS c FROM sport;`"" 'run a literal statement'
     Write-Line "$Entry -File .\scratch.sql" 'run a file'
@@ -1097,12 +1216,48 @@ if ($MaxChecks -gt 0 -and $jobs.Count -gt $MaxChecks) {
 # ----- parameters ----------------------------------------------------------------------
 
 $paramTable = ConvertTo-ParamTable -Value $Params
-if ($PSBoundParameters.ContainsKey('SportId')) { $paramTable['SPORT_ID'] = $SportId }
 
-foreach ($job in $jobs) {
-    $job.Sql = Expand-Placeholders -Text $job.Sql -Values $paramTable
+# Discovery runs first so an explicit value always wins over a discovered one.
+if ($Sport) {
+    if ($Relogin -and (Test-Path $StatePath)) { Remove-Item -LiteralPath $StatePath -Force }
+    $script:Session = $null
+    if (-not $Relogin) { $script:Session = Restore-SessionState }
+    if ($null -eq $script:Session) { $script:Session = New-AuthenticatedSession }
+
+    foreach ($entry in (Resolve-SportParameters -SportName $Sport).GetEnumerator()) {
+        if (-not $paramTable.ContainsKey($entry.Key)) { $paramTable[$entry.Key] = $entry.Value }
+    }
+    Write-Host ''
 }
 
+if ($PSBoundParameters.ContainsKey('SportId')) { $paramTable['SPORT_ID'] = $SportId }
+
+# A statement still short of a value is skipped rather than guessed, but only under -Sport:
+# without it an unfilled placeholder is a mistake worth stopping for.
+$skipped = @()
+$runnable = @()
+
+foreach ($job in $jobs) {
+    $missing = Get-MissingPlaceholders -Text $job.Sql -Values $paramTable
+    if ($Sport -and $missing.Count -gt 0 -and $jobs.Count -gt 1) {
+        $skipped += [pscustomobject]@{ Job = $job; Missing = ($missing -join ', ') }
+        continue
+    }
+    $job.Sql = Expand-Placeholders -Text $job.Sql -Values $paramTable
+    $runnable += $job
+}
+
+if ($skipped.Count -gt 0) {
+    Write-Host "Skipping $($skipped.Count) statement(s) that need a value selected from a summary result:" -ForegroundColor DarkGray
+    $skipped | ForEach-Object { "  {0}  needs {1}" -f $_.Job.CheckId, $_.Missing } | Write-Host -ForegroundColor DarkGray
+    Write-Host ''
+}
+
+if ($runnable.Count -eq 0) {
+    throw "Nothing left to run: every matched statement needs a value that must be selected from a summary result."
+}
+
+$jobs = $runnable
 $isBatch = $jobs.Count -gt 1
 
 if ($DryRun) {
@@ -1125,11 +1280,12 @@ if ($isBatch -and $OutFile -and -not $isWorkbook) {
 
 # ----- session -------------------------------------------------------------------------
 
-if ($Relogin -and (Test-Path $StatePath)) { Remove-Item -LiteralPath $StatePath -Force }
-
-$script:Session = $null
-if (-not $Relogin) { $script:Session = Restore-SessionState }
-if ($null -eq $script:Session) { $script:Session = New-AuthenticatedSession }
+# -Sport has to reach the database to discover anything, so the session may already exist.
+if (-not $script:Session) {
+    if ($Relogin -and (Test-Path $StatePath)) { Remove-Item -LiteralPath $StatePath -Force }
+    if (-not $Relogin) { $script:Session = Restore-SessionState }
+    if ($null -eq $script:Session) { $script:Session = New-AuthenticatedSession }
+}
 
 # ----- batch run -----------------------------------------------------------------------
 
@@ -1204,6 +1360,18 @@ if ($isBatch) {
 
     Save-SessionState -Session $script:Session
 
+    # Statements that could not be filled belong in the record too, or the run would look
+    # like it covered the whole catalogue.
+    foreach ($item in $skipped) {
+        $summary += [pscustomobject]@{
+            CheckId = $item.Job.CheckId
+            Name    = $item.Job.Name
+            Rows    = 0
+            Seconds = 0
+            Status  = "SKIPPED: needs $($item.Missing)"
+        }
+    }
+
     if ($isWorkbook) {
         # The summary leads, so a clean or failed check is still visible in the
         # workbook even though it has no tab of its own.
@@ -1235,16 +1403,22 @@ if ($isBatch) {
 
         foreach ($entry in $summary) {
             $overviewRow++
-            $failed = $entry.Status -like 'ERROR*'
+            # A check that failed or never ran would otherwise read as a clean zero.
+            $rowsCell = switch -Wildcard ($entry.Status) {
+                'ERROR*' { 'ERROR' }
+                'SKIPPED*' { 'SKIPPED' }
+                default { $entry.Rows }
+            }
+            $ran = ($rowsCell -isnot [string])
+
             $overviewRows += [pscustomobject]@{
                 'Sport'      = Get-SportFromCheckId -CheckId $entry.CheckId
                 'CheckID'    = $entry.CheckId
                 'Check Name' = $entry.Name
-                # A failed check would otherwise read as a clean zero.
-                'Rows'       = if ($failed) { 'ERROR' } else { $entry.Rows }
+                'Rows'       = $rowsCell
                 'Status'     = 'Not Started'
             }
-            if (-not $failed -and $tabOf.ContainsKey($entry.CheckId)) {
+            if ($ran -and $tabOf.ContainsKey($entry.CheckId)) {
                 $links += [pscustomobject]@{
                     Ref    = "D$overviewRow"
                     Target = $tabOf[$entry.CheckId]
