@@ -1489,6 +1489,8 @@ SELECT
     'Gender_Mismatch' AS check_type,
     st.id AS statistic_id,
     st.name AS statistic_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
     sg.value AS statistic_gender,
     MAX(p.type) AS participant_type_seen,
     COUNT(DISTINCT CASE WHEN p.gender = 'male' THEN p.id END) AS male_cnt,
@@ -1527,13 +1529,13 @@ JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
 WHERE s.id = 58 AND s.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
-GROUP BY st.id, st.name, sg.value
+GROUP BY st.id, st.name, tt.name, t.name, sg.value
 HAVING violation_type <> 'OK'
 
 UNION ALL
 
 SELECT
-    'COVERAGE', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    'COVERAGE', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT st.id) AS eligible_count
 FROM sport s
 JOIN tournament_template tt ON tt.sportFK = s.id AND tt.del = 'no'
@@ -1986,6 +1988,7 @@ SELECT
     -- CheckID - BMX-DQ-033
     -- Name - EVENT_DURATION_FULL_TIME_MISMATCH_TO_RANK
     -- What it does: Finds active BMX finished Racing/Time Trial events containing at least one participant whose Duration_full_time (result_typeFK=557) is missing despite an active Rank, present without an active Rank, or present with an invalid format, together with the count and type of mismatching participants per event and a coverage count of all eligible BMX events with at least one such participant.
+    'Duration_Full_Time_Mismatch_Events' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
     COUNT(*) AS mismatching_participants_count,
@@ -2036,6 +2039,7 @@ GROUP BY e.id, e.name
 UNION ALL
 
 SELECT
+    'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
@@ -2268,6 +2272,7 @@ SELECT
     -- CheckID - BMX-DQ-037
     -- Name - COMP.RANK_RESULTS_TIME_FULL_TIME_MISMATCH_TO_RANK
     -- What it does: Finds active BMX Comp.Rank statistics, excluding IOC-purpose templates and restricted to Racing/Time Trial disciplines (429, 776), containing at least one participant whose time storage is inconsistent with their Rank (1270): Time full time (1426) or Time Difference (1427) missing despite an active rank, either present without an active rank, or Time full time present with an invalid format, together with the distinct violation types and count of mismatching participants per statistic and a coverage count of all eligible BMX Comp.Rank statistics in those disciplines.
+    'Time_Full_Time_Mismatch_Statistics' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
     tt.name AS template_name,
@@ -2327,6 +2332,7 @@ GROUP BY s.id, s.name, tt.name, t.name
 UNION ALL
 
 SELECT
+    'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT s.id) AS eligible_count,
     1 AS sort_order

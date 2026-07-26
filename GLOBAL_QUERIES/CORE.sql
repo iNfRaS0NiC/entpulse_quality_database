@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-001
     -- Name - SPORT_IDENTITY
-    -- What it does: Returns the active sport identity for the selected numeric sport ID.
+    -- What it does: Returns the active sport identity (id, name, enet code) for the selected numeric sport ID.
     s.id AS sport_id,
     s.name AS sport_name,
     s.enetSportCode AS enet_sport_code

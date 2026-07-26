@@ -483,7 +483,7 @@ WHERE r.del = 'no'
       END
   ) = '{{VALUE_PATTERN}}'  -- select value_pattern from GLOBAL-DISCOVERY-026 (EVENT_RESULTS_VALUE_PATTERNS_SUMMARY)
   -- Optional scope filter:
-  -- AND tt.id = {{TOURNAMENT_TEMPLATE_ID}}
+  -- AND tt.id = <tournament_template_id>
 GROUP BY
     e.id,
     e.name,
