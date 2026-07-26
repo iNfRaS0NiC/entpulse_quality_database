@@ -304,7 +304,28 @@ Never include the marker itself in `Text`.
 
 ## Starting a new sport
 
-When `PREPARE_DOC_UPDATE SPORT=<Sport>` is requested for an undocumented sport:
+An undocumented sport is opened in four stages. Nothing enters the repository before the
+third, and no DQ check is written before the fourth.
+
+### 1. Run the GLOBAL catalogue
+
+The runner resolves the structural parameters for a named sport and executes every GLOBAL
+statement that needs only those; the rest are reported and skipped. `TOOLS/README.md` owns
+the command and its output. Cap the batch on a large sport — the cost rule above is not
+weakened by running many statements at once.
+
+### 2. Run the drill-downs the findings justify
+
+A skipped statement needs a value chosen from a summary result. Read the summary, select
+the value, run the paired detail statement with it. `GLOBAL_QUERIES/README.md` records
+which summary each detail statement depends on.
+
+Stop when the structural question is answered. A full catalogue sweep is not the goal.
+
+### 3. Record what was confirmed
+
+Results are execution output, not evidence. They enter the repository only through
+`PREPARE_DOC_UPDATE SPORT=<Sport>`, which for an undocumented sport means:
 
 1. add one index row to `SPORTS.md`;
 2. create one complete `SPORTS/<SportSlug>.md` file from `SPORTS/_TEMPLATE.md`;
@@ -313,6 +334,12 @@ When `PREPARE_DOC_UPDATE SPORT=<Sport>` is requested for an undocumented sport:
 5. leave every other area `Not checked`.
 
 Later updates target only the smallest relevant part of that sport file.
+
+### 4. Open DQ work
+
+Only after the sport file records a confirmed structure, and only for a category the user
+opens. `POWERBI.md` owns the DQ contract. A structural finding never becomes a DQ check
+automatically.
 
 ## Promoting an ad-hoc query
 

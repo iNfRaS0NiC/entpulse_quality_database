@@ -202,6 +202,13 @@ An explicit `-SportId` or `-Params` always overrides a discovered value. Skippin
 only under `-Sport` and only to a batch: elsewhere an unfilled placeholder still stops the
 run, because there it is a mistake rather than a deferred choice.
 
+On a sport with a large event or statistic volume, run a capped batch first —
+`-MaxChecks 8` — and read what it costs before letting the whole catalogue go.
+
+What a run produces is execution output, never evidence. `WORKFLOW.md` "Starting a new
+sport" owns the sequence around these commands: which drill-downs to run, how a confirmed
+finding reaches `SPORTS.md` and the sport file, and when DQ work may begin.
+
 ## Output
 
 ### Screen
