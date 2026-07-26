@@ -226,10 +226,12 @@ More than one matched CheckID switches to batch mode.
 
 - Per-file formats write one file per CheckID plus `_summary.csv`; a workbook writes one
   `<Sport>.xlsx`.
-- A failing check is recorded as `ERROR: <server message>` in the summary and the run
-  continues. Nothing is retried automatically.
+- A failing check is recorded as `ERROR: <server message>` and the run continues. Nothing
+  is retried automatically.
 - Statements are sent one at a time with a short pause between them.
-- Row counts and durations are printed per check and collected in `_summary`.
+- Row counts and durations are printed per check as the run proceeds. `_summary.csv` keeps
+  both, plus the server's message for a failure; the workbook's Overview tab keeps the row
+  count and marks a failure `ERROR`.
 
 A batch inherits the cost constraints in `WORKFLOW.md`. Running the whole catalogue for a
 large sport can time out check by check; narrow the scope in the statement rather than
