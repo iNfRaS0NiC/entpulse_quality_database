@@ -8,7 +8,25 @@
       "Bash(git checkout *)",
       "Bash(git commit -m '@ *)",
       "Bash(git commit *)",
-      "Bash(git merge *)"
+      "Bash(git merge *)",
+      "Bash(grep -n \"statistic_type\\\\b\\\\|### \\\\`statistic\" DATABASE.md)",
+      "PowerShell($r = Test-NetConnection -ComputerName spcdev.enetpulse.com -Port 19080 -WarningAction SilentlyContinue; \"19080 open: $\\($r.TcpTestSucceeded\\) ip: $\\($r.RemoteAddress\\)\"; $r2 = Test-NetConnection -ComputerName spcdev.enetpulse.com -Port 3306 -WarningAction SilentlyContinue; \"3306 open: $\\($r2.TcpTestSucceeded\\)\")",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://spcdev.enetpulse.com:19080/app/pool\" -UseBasicParsing -TimeoutSec 20 -MaximumRedirection 0 -ErrorAction Stop; \"STATUS: $\\($r.StatusCode\\)\"; \"SERVER: $\\($r.Headers['Server']\\)\"; \"CT: $\\($r.Headers['Content-Type']\\)\"; \"LEN: $\\($r.RawContentLength\\)\"; $r.Content.Substring\\(0, [Math]::Min\\(1200, $r.Content.Length\\)\\) } catch { \"ERR: $\\($_.Exception.Message\\)\"; if \\($_.Exception.Response\\) { \"CODE: $\\([int]$_.Exception.Response.StatusCode\\)\"; \"LOC: $\\($_.Exception.Response.Headers['Location']\\)\" } })",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://spcdev.enetpulse.com:19080/app/pool\" -UseBasicParsing -TimeoutSec 25 -ErrorAction Stop; \"STATUS: $\\($r.StatusCode\\)\"; \"SERVER: $\\($r.Headers['Server']\\)\"; \"CT: $\\($r.Headers['Content-Type']\\)\"; \"LEN: $\\($r.RawContentLength\\)\"; $r.Content.Substring\\(0,[Math]::Min\\(1500,$r.Content.Length\\)\\) } catch { \"ERR: $\\($_.Exception.Message\\)\" })",
+      "PowerShell($b = \"sql=\" + [uri]::EscapeDataString\\(\"SELECT 1 AS probe, DATABASE\\(\\) AS db, VERSION\\(\\) AS ver;\"\\); try { $r = Invoke-WebRequest -Uri \"http://spcdev.enetpulse.com:19080/api/relation-manager/execute-sql\" -Method POST -Body $b -ContentType \"application/x-www-form-urlencoded\" -Headers @{accept=\"application/json\"} -UseBasicParsing -TimeoutSec 30; \"STATUS: $\\($r.StatusCode\\)\"; \"CT: $\\($r.Headers['Content-Type']\\)\"; $r.Content.Substring\\(0,[Math]::Min\\(800,$r.Content.Length\\)\\) } catch { \"ERR: $\\($_.Exception.Message\\)\" })",
+      "Bash(grep -n \"^---\\\\|^-- =\\\\|^/\\\\*\\\\|^SELECT\\\\|CheckID - \" GLOBAL_QUERIES/STATISTICS.sql)",
+      "PowerShell(& \"d:\\\\VSCode\\\\entpulse_quality_database\\\\TOOLS\\\\Run-Query.ps1\" -ListChecks | Select-Object -First 12; \"...\"; \\(& \"d:\\\\VSCode\\\\entpulse_quality_database\\\\TOOLS\\\\Run-Query.ps1\" -ListChecks | Measure-Object -Line\\).Lines)",
+      "PowerShell(& \"d:\\\\VSCode\\\\entpulse_quality_database\\\\TOOLS\\\\Run-Query.ps1\" GLOBAL-DISCOVERY-015 -Params @{ SPORT_ID = 58 } -DryRun | Select-Object -First 8; \"=== missing param case ===\"; try { & \"d:\\\\VSCode\\\\entpulse_quality_database\\\\TOOLS\\\\Run-Query.ps1\" GLOBAL-DISCOVERY-017 -DryRun -ErrorAction Stop | Out-Null } catch { \"CAUGHT: $\\($_.Exception.Message\\)\" })",
+      "PowerShell(\"Policy\\(Process\\): $\\(Get-ExecutionPolicy -Scope Process\\)\"; \"Policy\\(CurrentUser\\): $\\(Get-ExecutionPolicy -Scope CurrentUser\\)\"; \"Policy\\(Effective\\): $\\(Get-ExecutionPolicy\\)\"; \"PSVersion: $\\($PSVersionTable.PSVersion\\)\")",
+      "PowerShell(\"LocalMachine: $\\(Get-ExecutionPolicy -Scope LocalMachine\\)\"; \"MachinePolicy: $\\(Get-ExecutionPolicy -Scope MachinePolicy\\)\"; \"UserPolicy: $\\(Get-ExecutionPolicy -Scope UserPolicy\\)\")",
+      "PowerShell(& \"d:\\\\VSCode\\\\entpulse_quality_database\\\\TOOLS\\\\Run-Query.ps1\" -ListChecks)",
+      "PowerShell(& \"d:\\\\VSCode\\\\entpulse_quality_database\\\\TOOLS\\\\Run-Query.ps1\" GLOBAL-DISCOVERY-015 -Params @{ SPORT_ID = 58 } -DryRun)",
+      "PowerShell(& \"d:\\\\VSCode\\\\entpulse_quality_database\\\\TOOLS\\\\Run-Query.ps1\" BMX-DQ-003 -Params @{ SPORT_ID = 58 } -DryRun)",
+      "Read(//c/Users/igeor/AppData/Local/Temp/claude/d--VSCode-entpulse-quality-database/6781239a-fa2e-4221-b4d3-2c420574bf25/scratchpad/**)",
+      "Bash(sed -n '/^function Get-QuerySourceFiles/,/^function ConvertTo-ParamTable/p' \"d:/VSCode/entpulse_quality_database/TOOLS/Run-Query.ps1\")"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\igeor\\Documents\\WindowsPowerShell"
     ]
   }
 }
