@@ -13,8 +13,10 @@
     file carry check_id and check_name as their first two columns.
 
     -Format xlsx collects a whole batch into a single workbook instead, one tab per check
-    named after its "-- Name -" header and a _summary tab first. Upload that file to Google
-    Drive and open it as Sheets to get every check as its own tab.
+    named after its "-- Name -" header and a _summary tab first. There the identity sits on
+    row 1 rather than on every data row: A1 the CheckID, B1 the name, C1 the exact SQL that
+    was sent, with the result table starting on row 3. Upload that file to Google Drive and
+    open it as Sheets to get every check as its own tab.
 
     Credentials are never stored in this file. They are read from the environment:
         EP_QB_EMAIL     login email
@@ -108,6 +110,11 @@ $StatePath = Join-Path $StateDir 'session.xml'
 
 # Small pause between statements in a batch, so a long catalogue does not hammer the API.
 $BatchDelayMs = 250
+
+# Hoisted out of the cell writer, which runs once per cell across thousands of rows.
+$XlsxNumericTypes = @([int], [long], [double], [decimal], [single], [int16], [uint16], [uint32], [uint64], [byte], [sbyte])
+$XlsxInvariant = [Globalization.CultureInfo]::InvariantCulture
+$XlsxCellLimit = 32767
 
 # --------------------------------------------------------------------------------------
 # Query resolution
@@ -575,6 +582,30 @@ function ConvertTo-SheetName {
     return $name
 }
 
+function Get-CellXml {
+    param([string]$Reference, $Value)
+
+    if ($null -eq $Value) { return '' }
+
+    if ($XlsxNumericTypes -contains $Value.GetType()) {
+        # Invariant formatting, or a bg-BG decimal comma would make Excel read
+        # the number as text.
+        return '<c r="{0}"><v>{1}</v></c>' -f $Reference, [string]::Format($XlsxInvariant, '{0}', $Value)
+    }
+
+    $raw = [string]$Value
+    if ($raw -eq '') { return '' }
+
+    # Excel refuses to open a file containing an over-long cell. Trim the text
+    # itself, before escaping inflates it.
+    if ($raw.Length -gt $XlsxCellLimit) {
+        $raw = $raw.Substring(0, $XlsxCellLimit - 20) + ' ...[truncated]'
+    }
+
+    return '<c r="{0}" t="inlineStr"><is><t xml:space="preserve">{1}</t></is></c>' -f `
+        $Reference, (ConvertTo-XmlText -Text $raw)
+}
+
 function Add-ZipTextEntry {
     param($Zip, [string]$Name, [string]$Content)
 
@@ -593,9 +624,6 @@ function Save-Workbook {
     $dir = Split-Path -Parent $Path
     if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
     if (Test-Path $Path) { Remove-Item -LiteralPath $Path -Force }
-
-    $invariant = [Globalization.CultureInfo]::InvariantCulture
-    $numericTypes = @([int], [long], [double], [decimal], [single], [int16], [uint16], [uint32], [uint64], [byte], [sbyte])
 
     $stream = [IO.File]::Create($Path)
     $zip = New-Object IO.Compression.ZipArchive($stream, [IO.Compression.ZipArchiveMode]::Create)
@@ -623,36 +651,39 @@ function Save-Workbook {
             [void]$xml.Append('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>')
             [void]$xml.Append('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>')
 
-            [void]$xml.Append('<row r="1">')
+            # Identity lives once on row 1 rather than repeated down every data row.
+            # Row 2 is deliberately skipped: sheetData tolerates gaps, and the blank
+            # line keeps the table below a self-contained block for sorting and
+            # filtering. OOXML row numbering must still ascend.
+            # @($null) yields a one-element array, so test for the null before wrapping,
+            # or a sheet without metadata gains a blank row 1.
+            $header = if ($null -eq $sheet.Header) { @() } else { @($sheet.Header) }
+            $headerRow = ($header.Count -gt 0)
+
+            if ($headerRow) {
+                [void]$xml.Append('<row r="1">')
+                for ($c = 0; $c -lt $header.Count; $c++) {
+                    [void]$xml.Append((Get-CellXml -Reference ((Get-ExcelColumnName -Index ($c + 1)) + '1') -Value $header[$c]))
+                }
+                [void]$xml.Append('</row>')
+            }
+
+            $rowNumber = if ($headerRow) { 3 } else { 1 }
+
+            [void]$xml.Append(('<row r="{0}">' -f $rowNumber))
             for ($c = 0; $c -lt $columns.Count; $c++) {
-                $ref = (Get-ExcelColumnName -Index ($c + 1)) + '1'
-                [void]$xml.Append(('<c r="{0}" t="inlineStr"><is><t xml:space="preserve">{1}</t></is></c>' -f `
-                            $ref, (ConvertTo-XmlText -Text $columns[$c])))
+                $ref = (Get-ExcelColumnName -Index ($c + 1)) + $rowNumber
+                [void]$xml.Append((Get-CellXml -Reference $ref -Value $columns[$c]))
             }
             [void]$xml.Append('</row>')
 
-            $rowNumber = 1
             foreach ($row in $rows) {
                 $rowNumber++
                 [void]$xml.Append(('<row r="{0}">' -f $rowNumber))
 
                 for ($c = 0; $c -lt $columns.Count; $c++) {
-                    $value = $row.($columns[$c])
-                    if ($null -eq $value) { continue }
-
                     $ref = (Get-ExcelColumnName -Index ($c + 1)) + $rowNumber
-
-                    if ($numericTypes -contains $value.GetType()) {
-                        # Invariant formatting, or a bg-BG decimal comma would make
-                        # Excel read the number as text.
-                        [void]$xml.Append(('<c r="{0}"><v>{1}</v></c>' -f `
-                                    $ref, [string]::Format($invariant, '{0}', $value)))
-                        continue
-                    }
-
-                    $text = ConvertTo-XmlText -Text ([string]$value)
-                    if ($text -eq '') { continue }
-                    [void]$xml.Append(('<c r="{0}" t="inlineStr"><is><t xml:space="preserve">{1}</t></is></c>' -f $ref, $text))
+                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $row.($columns[$c])))
                 }
 
                 [void]$xml.Append('</row>')
@@ -698,13 +729,17 @@ function Save-Workbook {
 }
 
 function Save-Rows {
-    param($Rows, [string]$Path, [string]$Fmt, [string]$SheetName = 'data')
+    param($Rows, [string]$Path, [string]$Fmt, [string]$SheetName = 'data', $Header)
 
     $dir = Split-Path -Parent $Path
     if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
 
     if ($Fmt -eq 'xlsx') {
-        Save-Workbook -Sheets @([pscustomobject]@{ Name = $SheetName; Rows = $Rows }) -Path $Path
+        Save-Workbook -Path $Path -Sheets @([pscustomobject]@{
+                Name   = $SheetName
+                Rows   = $Rows
+                Header = $Header
+            })
     }
     elseif ($Fmt -eq 'json') {
         $Rows | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $Path -Encoding utf8
@@ -788,6 +823,9 @@ if ($Info) {
     Write-Line '-Format csv' 'CSV, with check_id and check_name columns'
     Write-Line '-Format json' 'JSON, with check_id and check_name fields'
     Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, _summary first'
+    Write-Host '  In a workbook A1/B1/C1 hold the CheckID, the name and the SQL that ran,' -ForegroundColor DarkGray
+    Write-Host '  and the result table starts on row 3. CSV and JSON keep check_id and' -ForegroundColor DarkGray
+    Write-Host '  check_name as columns, having nowhere else to put them.' -ForegroundColor DarkGray
     Write-Host '  Files are named after the CheckID: BMX-DQ-003.csv' -ForegroundColor DarkGray
     Write-Host '  Upload the .xlsx to Google Drive and open it as Sheets to get the tabs.' -ForegroundColor DarkGray
 
@@ -905,17 +943,20 @@ if ($isBatch) {
 
         try {
             $response = Invoke-SqlWithRetry -Statement $job.Sql
-            $rows = Add-CheckColumns -Rows (Get-ResultRows -Content $response.Content) `
-                -CheckId $job.CheckId -Name $job.Name
+            $rows = Get-ResultRows -Content $response.Content
             $rowCount = @($rows).Count
 
             if ($rowCount -gt 0) {
                 if ($isWorkbook) {
+                    # A workbook names the check on the tab and on row 1, so the rows
+                    # themselves stay clean.
                     $collected += [pscustomobject]@{ Job = $job; Rows = $rows }
                 }
                 else {
+                    # A flat file has nowhere else to record which check a row came from.
+                    $tagged = Add-CheckColumns -Rows $rows -CheckId $job.CheckId -Name $job.Name
                     $target = Join-Path $OutDir ((Get-SafeFileName -CheckId $job.CheckId) + $extension)
-                    Save-Rows -Rows $rows -Path $target -Fmt $Format
+                    Save-Rows -Rows $tagged -Path $target -Fmt $Format
                 }
             }
             else {
@@ -949,8 +990,9 @@ if ($isBatch) {
         # workbook even though it has no tab of its own.
         $used = @{}
         $sheets = @([pscustomobject]@{
-                Name = (ConvertTo-SheetName -Preferred '_summary' -Fallback '_summary' -Used $used)
-                Rows = $summary
+                Name   = (ConvertTo-SheetName -Preferred '_summary' -Fallback '_summary' -Used $used)
+                Rows   = $summary
+                Header = $null
             })
 
         $shortened = @()
@@ -960,7 +1002,11 @@ if ($isBatch) {
             if ($sheetName -ne $preferred) {
                 $shortened += [pscustomobject]@{ CheckId = $item.Job.CheckId; Wanted = $preferred; Tab = $sheetName }
             }
-            $sheets += [pscustomobject]@{ Name = $sheetName; Rows = $item.Rows }
+            $sheets += [pscustomobject]@{
+                Name   = $sheetName
+                Rows   = $item.Rows
+                Header = @($item.Job.CheckId, $item.Job.Name, $item.Job.Sql)
+            }
         }
 
         Save-Workbook -Sheets $sheets -Path $workbookPath
@@ -1009,13 +1055,19 @@ if ($isWorkbook -and -not $OutFile) {
 }
 
 if ($OutFile) {
-    $rows = Add-CheckColumns -Rows $rows -CheckId $job.CheckId -Name $job.Name
-
     $used = @{}
     $preferred = if ($job.Name) { $job.Name } else { $job.CheckId }
     $sheetName = ConvertTo-SheetName -Preferred $preferred -Fallback 'data' -Used $used
 
-    Save-Rows -Rows $rows -Path $OutFile -Fmt $Format -SheetName $sheetName
+    if ($isWorkbook) {
+        Save-Rows -Rows $rows -Path $OutFile -Fmt $Format -SheetName $sheetName `
+            -Header @($job.CheckId, $job.Name, $job.Sql)
+    }
+    else {
+        $tagged = Add-CheckColumns -Rows $rows -CheckId $job.CheckId -Name $job.Name
+        Save-Rows -Rows $tagged -Path $OutFile -Fmt $Format -SheetName $sheetName
+    }
+
     Write-Host "Written: $OutFile" -ForegroundColor DarkGray
     return
 }
