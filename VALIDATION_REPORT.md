@@ -68,4 +68,11 @@ refresh the metrics before cutover:
   `POWERBI.md`.
 - `README.md` source-of-truth map corrected to reference `AI_INSTRUCTIONS.md` instead of the
   non-existent `BOT_INSTRUCTIONS_PROJECT_2.0.txt`.
+- New `TOOLS/` directory: `Run-Query.ps1` executes registered statements against the Content
+  Query Builder, documented in `TOOLS/README.md`. Both are listed in the `README.md`
+  source-of-truth map and referenced from `WORKFLOW.md`, `POWERBI.md` and
+  `GLOBAL_QUERIES/README.md`. The expected-files and routing-reference package checks above
+  predate them.
+- New `.gitignore` excluding `*.local.ps1` (runner credentials) and `output/` (query results).
+  Neither is part of the documented package.
 

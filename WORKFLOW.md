@@ -373,6 +373,33 @@ generated block was pasted unless it is present in the latest file.
 - [ ] Every replacement identifies exact existing content.
 - [ ] No unrelated sport file or query file was loaded or changed.
 
+## Query execution
+
+A statement reaches the database in one of two ways. Both send one statement per
+execution and neither changes any rule above.
+
+| Route | Use |
+|---|---|
+| Content Query Builder Pool UI | Single exploratory statement, inspecting the result in the browser |
+| `TOOLS/Run-Query.ps1` | Executing a registered CheckID, and any run producing files |
+
+The runner resolves SQL by CheckID from `GLOBAL_QUERIES/` and `POWERBI_QUERIES/`,
+substitutes the declared `{{...}}` parameters and writes results to the screen, to
+CSV/JSON, or to one `.xlsx` workbook with a tab per check. It discovers new statements
+from disk on every invocation, so a new sport query file needs no registration.
+
+`TOOLS/README.md` is the canonical owner of its setup, command set and output shapes. Do
+not restate them here.
+
+Two boundaries matter for this workflow:
+
+- The runner substitutes parameters textually. It does not validate scope, cost or
+  identity; the rules in this file and in `POWERBI.md` still apply to every statement it
+  sends.
+- A batch run does not weaken the cost rule above. When a check fails, the runner records
+  the server's message and continues; correcting the statement remains a query-design
+  step, and a failed check is `Not checked`, never `Not used`.
+
 ## Manual workflow additions
 
 User-approved workflow changes are inserted immediately before the marker below.

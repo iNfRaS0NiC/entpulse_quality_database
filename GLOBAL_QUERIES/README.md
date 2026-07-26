@@ -21,6 +21,10 @@ reusable and has no undocumented sport-specific assumption.
 Optional commented filters may be activated when needed. A mandatory placeholder left
 unreplaced makes the statement intentionally non-executable.
 
+Steps 2 and 3 may be performed by `TOOLS/Run-Query.ps1`, which copies the statement by
+QueryID and substitutes the declared parameters without persisting the result. The
+execution contract is unchanged; see `TOOLS/README.md`.
+
 ## Parameter meanings
 
 | Parameter | Meaning |

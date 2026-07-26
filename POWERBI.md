@@ -232,7 +232,8 @@ than the other.
 - Keep each check as one complete statement ending in `;`.
 - Separate statements with blank lines only; do not wrap SQL in Markdown fences.
 - Execute or paste one statement at a time because the Pool accepts one statement per
-  execution.
+  execution. `TOOLS/Run-Query.ps1` observes the same constraint and can run a sport's
+  approved checks in one pass; see `TOOLS/README.md`.
 - Event-result and statistic-result checks remain separate unless the user explicitly
   approves a combined query.
 

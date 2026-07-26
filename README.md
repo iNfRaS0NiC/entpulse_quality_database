@@ -30,6 +30,8 @@ copied into a separate SQL file for every sport.
 | `POWERBI_REGISTRY.md` | Compact index of assigned DQ CheckIDs and statuses |
 | `POWERBI_QUERIES/<SportSlug>.sql` | Approved executable DQ SQL for one sport |
 | `WORKFLOW.md` | Operational commands, routing and update workflow |
+| `TOOLS/README.md` | Query-runner setup, command set, output shapes and troubleshooting |
+| `TOOLS/Run-Query.ps1` | Executes registered statements against the Content Query Builder |
 | `CHANGELOG.md` | Short audit of material project changes |
 | `VALIDATION_REPORT.md` | Static package, registry and SQL-parser validation result |
 | `AI_INSTRUCTIONS.md` | Matching behavior instructions for the user-operated assistant |
