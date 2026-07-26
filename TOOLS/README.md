@@ -176,34 +176,46 @@ Google Drive and open as Sheets.
 
 `Overview` is the first tab:
 
-| Sport | CheckID | Check Name | Rows | Seconds |
-|---|---|---|---:|---:|
-| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 1064 | 1.5 |
+| Sport | CheckID | Check Name | Rows |
+|---|---|---|---:|
+| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 1064 |
 
 Every check appears, including those that returned nothing or failed and therefore have
-no tab of their own. `Sport` is taken from the CheckID prefix. Each **Rows** cell links to
-that check's tab. A check that failed shows `ERROR` rather than a row count, so it cannot
-be misread as a clean zero; the reason is on the console and in `_summary.csv`.
+no tab of their own. `Sport` is taken from the CheckID prefix. `Rows` is the count the
+console printed, as a number. A check that failed shows `ERROR` instead, so it cannot be
+misread as a clean zero; the reason is on the console and in `_summary.csv`. Durations
+stay on the console and in `_summary.csv`.
 
-The link records carry no `display` attribute. Excel ignores that attribute in favour of
-the cell value, but Google Sheets renders it instead, which puts the target reference
-where the row count belongs.
+Then one tab per check, named after its `-- Name -` header:
 
-Then one tab per check, named after its `-- Name -` header. There the identity sits on
-row 1 instead of on every data row: **A1** the CheckID, **B1** the name, **C1** the SQL
-that was sent, with placeholders already substituted. **A1 links back to Overview**, so
-navigation works in both directions. Row 2 is blank and the result table starts on row 3,
-so the table stays a self-contained block for sorting and filtering.
+```text
+     A                  B                    C
+1    Check ID           Check Name           SQL Used
+2    BMX-DQ-001         PARTICIPANT_MIS...   SELECT 'Missing_DOB' AS check_type, ...
+3    Back to Overview
+4
+5    check_type         participant_id       participant_name   ...
+6    Missing_DOB        1473234              Jude Jones         ...
+```
 
-C1 holds the statement on a single line. Its newlines would otherwise make row 1 as tall
+The identity sits on rows 1 and 2 rather than on every data row. Row 3 holds the only link
+in the workbook, back to Overview, and row 4 is blank so the result table below stays a
+self-contained block for sorting and filtering.
+
+**No cell holding data is ever a link.** Google Sheets rewrites an imported internal link
+into a `HYPERLINK` formula whose visible label is the link target, replacing whatever the
+cell contained. Excel does not, which makes this easy to miss. Navigation therefore runs
+one way only, from a dedicated cell whose text is expendable.
+
+C2 holds the statement on a single line. Its newlines would otherwise make the row as tall
 as the whole query and push the sheet out of shape. Collapsing them requires the SQL
 comments to be removed first — everything after a `--` would otherwise be commented out —
 so the cell holds a comment-free one-line form that still runs when copied out. The
 formatted original stays in the repository `.sql` file.
 
 Two format limits apply. Tab names are capped at 31 characters, so longer check names are
-truncated and the run reports which ones; the full name remains in B1 and in the Overview.
-A cell cannot exceed 32 767 characters, so an unusually long statement in C1 is trimmed
+truncated and the run reports which ones; the full name remains in B2 and in the Overview.
+A cell cannot exceed 32 767 characters, so an unusually long statement in C2 is trimmed
 with a `...[truncated]` marker.
 
 ## Where results are written

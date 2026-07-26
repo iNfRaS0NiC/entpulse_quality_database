@@ -17,12 +17,11 @@
     file carry check_id and check_name as their first two columns.
 
     -Format xlsx collects a whole batch into a single workbook instead. Its first tab,
-    Overview, lists Sport, CheckID, Check Name, Rows and Seconds for every check, and each
-    Rows cell links to that check's tab. The check tabs are named after the "-- Name -" header, and
-    there the identity sits on row 1 rather than on every data row: A1 the CheckID and the
-    link back to Overview, B1 the name, C1 the statement that ran as a single line, with
-    the result table starting on row 3. Upload that file to Google Drive and open it as
-    Sheets.
+    Overview, lists Sport, CheckID, Check Name and Rows for every check. The check tabs are
+    named after the "-- Name -" header, and there the identity sits above the data rather
+    than on every row: row 1 the labels, row 2 the CheckID, the name and the statement that
+    ran as a single line, row 3 the link back to Overview, and the result table from row 5.
+    Upload that file to Google Drive and open it as Sheets.
 
     Each run writes into its own folder under "D:\SQL's Output", named for the sport and the
     run time. EP_QB_OUTPUT overrides the root; -OutDir and -OutFile override it entirely.
@@ -783,31 +782,44 @@ function Save-Workbook {
             # Row 2 is deliberately skipped: sheetData tolerates gaps, and the blank
             # line keeps the table below a self-contained block for sorting and
             # filtering. OOXML row numbering must still ascend.
-            # Two PowerShell traps meet on these two lines. @($null) yields a one-element
-            # array, so the null is tested before wrapping, or a sheet without metadata
-            # would gain a blank row 1. And the result of an if statement is enumerated,
-            # so a one-element array inside it collapses to the element and loses .Count
-            # unless the whole statement is wrapped.
+            # @($null) yields a one-element array, so the null is tested before wrapping,
+            # and the result of an if statement is enumerated, so a one-element array
+            # inside it would collapse to the element and lose .Count unless the whole
+            # statement is wrapped.
             $header = @(if ($null -eq $sheet.Header) { @() } else { $sheet.Header })
             $headerRow = ($header.Count -gt 0)
 
-            # Resolved before row 1 is written, because A1 there can itself be a link.
-            $links = @(if ($null -eq $sheet.Links) { @() } else { $sheet.Links })
-            $linked = @{}
-            foreach ($link in $links) { $linked[$link.Ref] = $true }
-
+            # A check tab opens with a labelled identity block:
+            #   row 1  Check ID | Check Name | SQL Used
+            #   row 2  the values
+            #   row 3  the link back to Overview, in a cell of its own
+            #   row 4  blank, so the result table below stays its own block
             if ($headerRow) {
-                # A fixed height keeps the long statement in C1 from stretching row 1.
-                [void]$xml.Append('<row r="1" ht="15" customHeight="1">')
+                $labels = @('Check ID', 'Check Name', 'SQL Used')
+
+                [void]$xml.Append('<row r="1">')
                 for ($c = 0; $c -lt $header.Count; $c++) {
                     $ref = (Get-ExcelColumnName -Index ($c + 1)) + '1'
-                    $style = if ($linked.ContainsKey($ref)) { 1 } else { 0 }
-                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $header[$c] -Style $style))
+                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $labels[$c]))
                 }
                 [void]$xml.Append('</row>')
+
+                # A fixed height keeps the one-line statement in C2 from stretching the row.
+                [void]$xml.Append('<row r="2" ht="15" customHeight="1">')
+                for ($c = 0; $c -lt $header.Count; $c++) {
+                    $ref = (Get-ExcelColumnName -Index ($c + 1)) + '2'
+                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $header[$c]))
+                }
+                [void]$xml.Append('</row>')
+
+                if ($sheet.BackTo) {
+                    [void]$xml.Append('<row r="3">')
+                    [void]$xml.Append((Get-CellXml -Reference 'A3' -Value 'Back to Overview' -Style 1))
+                    [void]$xml.Append('</row>')
+                }
             }
 
-            $rowNumber = if ($headerRow) { 3 } else { 1 }
+            $rowNumber = if ($headerRow) { 5 } else { 1 }
 
             [void]$xml.Append(('<row r="{0}">' -f $rowNumber))
             for ($c = 0; $c -lt $columns.Count; $c++) {
@@ -822,8 +834,7 @@ function Save-Workbook {
 
                 for ($c = 0; $c -lt $columns.Count; $c++) {
                     $ref = (Get-ExcelColumnName -Index ($c + 1)) + $rowNumber
-                    $style = if ($linked.ContainsKey($ref)) { 1 } else { 0 }
-                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $row.($columns[$c]) -Style $style))
+                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $row.($columns[$c])))
                 }
 
                 [void]$xml.Append('</row>')
@@ -831,18 +842,13 @@ function Save-Workbook {
 
             [void]$xml.Append('</sheetData>')
 
-            if ($links.Count -gt 0) {
-                [void]$xml.Append('<hyperlinks>')
-                foreach ($link in $links) {
-                    # An internal target is quoted, and an apostrophe inside a tab name doubled.
-                    # No display attribute: Excel ignores it in favour of the cell value, but
-                    # Google Sheets renders it instead, which would show the target reference
-                    # where the row count belongs.
-                    $location = "'" + ($link.Target -replace "'", "''") + "'!A1"
-                    [void]$xml.Append(('<hyperlink ref="{0}" location="{1}"/>' -f `
-                                $link.Ref, (ConvertTo-XmlText -Text $location)))
-                }
-                [void]$xml.Append('</hyperlinks>')
+            # Only A3 is ever a link. Google Sheets rewrites an imported internal link into
+            # a HYPERLINK formula whose label is the target, replacing whatever text the
+            # cell held, so no cell carrying data may be one.
+            if ($headerRow -and $sheet.BackTo) {
+                $location = "'" + ($sheet.BackTo -replace "'", "''") + "'!A1"
+                [void]$xml.Append(('<hyperlinks><hyperlink ref="A3" location="{0}"/></hyperlinks>' -f `
+                            (ConvertTo-XmlText -Text $location)))
             }
 
             [void]$xml.Append('</worksheet>')
@@ -896,10 +902,12 @@ function Save-Rows {
     if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
 
     if ($Fmt -eq 'xlsx') {
+        # A single-sheet workbook has no Overview to link back to.
         Save-Workbook -Path $Path -Sheets @([pscustomobject]@{
                 Name   = $SheetName
                 Rows   = $Rows
                 Header = $Header
+                BackTo = $null
             })
     }
     elseif ($Fmt -eq 'json') {
@@ -985,11 +993,11 @@ if ($Info) {
     Write-Line '-Format csv' 'CSV, with check_id and check_name columns'
     Write-Line '-Format json' 'JSON, with check_id and check_name fields'
     Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, Overview first'
-    Write-Host '  Overview lists Sport, CheckID, Check Name, Rows and Seconds; a Rows' -ForegroundColor DarkGray
-    Write-Host '  cell jumps to that check tab, and A1 there jumps back. A1/B1/C1 hold' -ForegroundColor DarkGray
-    Write-Host '  the CheckID, the name and the one-line SQL that ran, with the result' -ForegroundColor DarkGray
-    Write-Host '  table starting on row 3. CSV and JSON keep check_id and check_name' -ForegroundColor DarkGray
-    Write-Host '  as columns, having nowhere else to put them.' -ForegroundColor DarkGray
+    Write-Host '  Overview lists Sport, CheckID, Check Name and Rows. On a check tab' -ForegroundColor DarkGray
+    Write-Host '  row 2 holds the CheckID, the name and the one-line SQL that ran, A3' -ForegroundColor DarkGray
+    Write-Host '  links back to Overview, and the result table starts on row 5. CSV' -ForegroundColor DarkGray
+    Write-Host '  and JSON keep check_id and check_name as columns instead, having' -ForegroundColor DarkGray
+    Write-Host '  nowhere else to put them.' -ForegroundColor DarkGray
     Write-Host '  Files are named after the CheckID: BMX-DQ-003.csv' -ForegroundColor DarkGray
     Write-Host '  Upload the .xlsx to Google Drive and open it as Sheets to get the tabs.' -ForegroundColor DarkGray
 
@@ -1166,24 +1174,17 @@ if ($isBatch) {
             }
         }
 
-        # Row 1 holds the column headings, so the first check sits on row 2 and its
-        # Rows cell is column D.
+        # Rows stays a plain number so it reads as the count the console printed. Making it
+        # a link would cost that: Google Sheets shows an imported link's target in place of
+        # the cell's own value. Navigation therefore runs one way, from each tab's A3.
         $overviewRows = @()
-        $links = @()
-        $overviewRow = 1
-
         foreach ($entry in $summary) {
-            $overviewRow++
             $overviewRows += [pscustomobject]@{
                 'Sport'      = Get-SportFromCheckId -CheckId $entry.CheckId
                 'CheckID'    = $entry.CheckId
                 'Check Name' = $entry.Name
                 # A failed check would otherwise read as a clean zero.
                 'Rows'       = if ($entry.Status -like 'ERROR*') { 'ERROR' } else { $entry.Rows }
-                'Seconds'    = $entry.Seconds
-            }
-            if ($tabOf.ContainsKey($entry.CheckId)) {
-                $links += [pscustomobject]@{ Ref = "D$overviewRow"; Target = $tabOf[$entry.CheckId] }
             }
         }
 
@@ -1191,7 +1192,7 @@ if ($isBatch) {
                 Name   = $overviewName
                 Rows   = $overviewRows
                 Header = $null
-                Links  = $links
+                BackTo = $null
             })
 
         foreach ($item in $collected) {
@@ -1199,8 +1200,7 @@ if ($isBatch) {
                 Name   = $tabOf[$item.Job.CheckId]
                 Rows   = $item.Rows
                 Header = @($item.Job.CheckId, $item.Job.Name, (ConvertTo-SingleLineSql -Sql $item.Job.Sql))
-                # A1 carries the CheckID and doubles as the way back to Overview.
-                Links  = @([pscustomobject]@{ Ref = 'A1'; Target = $overviewName })
+                BackTo = $overviewName
             }
         }
 
