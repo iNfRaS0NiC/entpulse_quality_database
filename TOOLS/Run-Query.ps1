@@ -17,11 +17,12 @@
     file carry check_id and check_name as their first two columns.
 
     -Format xlsx collects a whole batch into a single workbook instead. Its first tab,
-    Overview, lists Sport, CheckID, Check Name, Result Rows and Status for every check, and
-    each Result Rows cell links to that check's tab. The check tabs are named after the
-    "-- Name -" header, and there the identity sits on row 1 rather than on every data row:
-    A1 the CheckID, B1 the name, C1 the exact SQL that was sent, with the result table
-    starting on row 3. Upload that file to Google Drive and open it as Sheets.
+    Overview, lists Sport, CheckID, Check Name and Rows for every check, and each Rows cell
+    links to that check's tab. The check tabs are named after the "-- Name -" header, and
+    there the identity sits on row 1 rather than on every data row: A1 the CheckID and the
+    link back to Overview, B1 the name, C1 the statement that ran as a single line, with
+    the result table starting on row 3. Upload that file to Google Drive and open it as
+    Sheets.
 
     Each run writes into its own folder under "D:\SQL's Output", named for the sport and the
     run time. EP_QB_OUTPUT overrides the root; -OutDir and -OutFile override it entirely.
@@ -653,6 +654,63 @@ function Get-CellXml {
         $Reference, $styleAttribute, (ConvertTo-XmlText -Text $raw)
 }
 
+function ConvertTo-SingleLineSql {
+    # C1 records the statement that ran, but its newlines make row 1 as tall as the whole
+    # query and push the sheet out of shape. Collapsing them requires removing the line
+    # comments first: otherwise everything after a "--" ends up commented out and the
+    # copied statement no longer runs. Quote state is tracked so a "--" or "#" inside a
+    # string literal survives.
+    param([string]$Sql)
+
+    $out = New-Object Text.StringBuilder
+    $quote = $null
+    $i = 0
+    $n = $Sql.Length
+
+    while ($i -lt $n) {
+        $ch = $Sql[$i]
+
+        if ($quote) {
+            [void]$out.Append($ch)
+            if ($ch -eq '\' -and $i + 1 -lt $n) {
+                [void]$out.Append($Sql[$i + 1])
+                $i += 2
+                continue
+            }
+            if ($ch -eq $quote) { $quote = $null }
+            $i++
+            continue
+        }
+
+        if ($ch -eq "'" -or $ch -eq '"' -or $ch -eq '`') {
+            $quote = $ch
+            [void]$out.Append($ch)
+            $i++
+            continue
+        }
+
+        if (($ch -eq '-' -and $i + 1 -lt $n -and $Sql[$i + 1] -eq '-') -or $ch -eq '#') {
+            $end = $Sql.IndexOf("`n", $i)
+            if ($end -lt 0) { break }
+            $i = $end + 1
+            [void]$out.Append(' ')
+            continue
+        }
+
+        if ($ch -eq '/' -and $i + 1 -lt $n -and $Sql[$i + 1] -eq '*') {
+            $end = $Sql.IndexOf('*/', $i)
+            $i = if ($end -lt 0) { $n } else { $end + 2 }
+            [void]$out.Append(' ')
+            continue
+        }
+
+        [void]$out.Append($ch)
+        $i++
+    }
+
+    return (($out.ToString() -replace '\s+', ' ').Trim())
+}
+
 function Get-StylesXml {
     # The smallest style sheet Excel accepts. Font 1 is the blue underline that makes a
     # navigation cell read as a link; the two fills and the border are mandatory entries.
@@ -725,15 +783,26 @@ function Save-Workbook {
             # Row 2 is deliberately skipped: sheetData tolerates gaps, and the blank
             # line keeps the table below a self-contained block for sorting and
             # filtering. OOXML row numbering must still ascend.
-            # @($null) yields a one-element array, so test for the null before wrapping,
-            # or a sheet without metadata gains a blank row 1.
-            $header = if ($null -eq $sheet.Header) { @() } else { @($sheet.Header) }
+            # Two PowerShell traps meet on these two lines. @($null) yields a one-element
+            # array, so the null is tested before wrapping, or a sheet without metadata
+            # would gain a blank row 1. And the result of an if statement is enumerated,
+            # so a one-element array inside it collapses to the element and loses .Count
+            # unless the whole statement is wrapped.
+            $header = @(if ($null -eq $sheet.Header) { @() } else { $sheet.Header })
             $headerRow = ($header.Count -gt 0)
 
+            # Resolved before row 1 is written, because A1 there can itself be a link.
+            $links = @(if ($null -eq $sheet.Links) { @() } else { $sheet.Links })
+            $linked = @{}
+            foreach ($link in $links) { $linked[$link.Ref] = $true }
+
             if ($headerRow) {
-                [void]$xml.Append('<row r="1">')
+                # A fixed height keeps the long statement in C1 from stretching row 1.
+                [void]$xml.Append('<row r="1" ht="15" customHeight="1">')
                 for ($c = 0; $c -lt $header.Count; $c++) {
-                    [void]$xml.Append((Get-CellXml -Reference ((Get-ExcelColumnName -Index ($c + 1)) + '1') -Value $header[$c]))
+                    $ref = (Get-ExcelColumnName -Index ($c + 1)) + '1'
+                    $style = if ($linked.ContainsKey($ref)) { 1 } else { 0 }
+                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $header[$c] -Style $style))
                 }
                 [void]$xml.Append('</row>')
             }
@@ -746,11 +815,6 @@ function Save-Workbook {
                 [void]$xml.Append((Get-CellXml -Reference $ref -Value $columns[$c]))
             }
             [void]$xml.Append('</row>')
-
-            # Cells carrying a jump to another tab are drawn as links.
-            $links = if ($null -eq $sheet.Links) { @() } else { @($sheet.Links) }
-            $linked = @{}
-            foreach ($link in $links) { $linked[$link.Ref] = $true }
 
             foreach ($row in $rows) {
                 $rowNumber++
@@ -918,11 +982,11 @@ if ($Info) {
     Write-Line '-Format csv' 'CSV, with check_id and check_name columns'
     Write-Line '-Format json' 'JSON, with check_id and check_name fields'
     Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, Overview first'
-    Write-Host '  Overview lists Sport, CheckID, Check Name, Result Rows and Status;' -ForegroundColor DarkGray
-    Write-Host '  clicking a Result Rows cell jumps to that check tab. On a check tab' -ForegroundColor DarkGray
-    Write-Host '  A1/B1/C1 hold the CheckID, the name and the SQL that ran, and the' -ForegroundColor DarkGray
-    Write-Host '  result table starts on row 3. CSV and JSON keep check_id and' -ForegroundColor DarkGray
-    Write-Host '  check_name as columns, having nowhere else to put them.' -ForegroundColor DarkGray
+    Write-Host '  Overview lists Sport, CheckID, Check Name and Rows; clicking a Rows' -ForegroundColor DarkGray
+    Write-Host '  cell jumps to that check tab, and A1 there jumps back. A1/B1/C1 hold' -ForegroundColor DarkGray
+    Write-Host '  the CheckID, the name and the one-line SQL that ran, with the result' -ForegroundColor DarkGray
+    Write-Host '  table starting on row 3. CSV and JSON keep check_id and check_name' -ForegroundColor DarkGray
+    Write-Host '  as columns, having nowhere else to put them.' -ForegroundColor DarkGray
     Write-Host '  Files are named after the CheckID: BMX-DQ-003.csv' -ForegroundColor DarkGray
     Write-Host '  Upload the .xlsx to Google Drive and open it as Sheets to get the tabs.' -ForegroundColor DarkGray
 
@@ -1100,7 +1164,7 @@ if ($isBatch) {
         }
 
         # Row 1 holds the column headings, so the first check sits on row 2 and its
-        # Result Rows cell is column D.
+        # Rows cell is column D.
         $overviewRows = @()
         $links = @()
         $overviewRow = 1
@@ -1108,11 +1172,11 @@ if ($isBatch) {
         foreach ($entry in $summary) {
             $overviewRow++
             $overviewRows += [pscustomobject]@{
-                'Sport'       = Get-SportFromCheckId -CheckId $entry.CheckId
-                'CheckID'     = $entry.CheckId
-                'Check Name'  = $entry.Name
-                'Result Rows' = $entry.Rows
-                'Status'      = $entry.Status
+                'Sport'      = Get-SportFromCheckId -CheckId $entry.CheckId
+                'CheckID'    = $entry.CheckId
+                'Check Name' = $entry.Name
+                # A failed check would otherwise read as a clean zero.
+                'Rows'       = if ($entry.Status -like 'ERROR*') { 'ERROR' } else { $entry.Rows }
             }
             if ($tabOf.ContainsKey($entry.CheckId)) {
                 $links += [pscustomobject]@{ Ref = "D$overviewRow"; Target = $tabOf[$entry.CheckId] }
@@ -1130,8 +1194,9 @@ if ($isBatch) {
             $sheets += [pscustomobject]@{
                 Name   = $tabOf[$item.Job.CheckId]
                 Rows   = $item.Rows
-                Header = @($item.Job.CheckId, $item.Job.Name, $item.Job.Sql)
-                Links  = $null
+                Header = @($item.Job.CheckId, $item.Job.Name, (ConvertTo-SingleLineSql -Sql $item.Job.Sql))
+                # A1 carries the CheckID and doubles as the way back to Overview.
+                Links  = @([pscustomobject]@{ Ref = 'A1'; Target = $overviewName })
             }
         }
 
@@ -1187,7 +1252,7 @@ if ($OutFile) {
 
     if ($isWorkbook) {
         Save-Rows -Rows $rows -Path $OutFile -Fmt $Format -SheetName $sheetName `
-            -Header @($job.CheckId, $job.Name, $job.Sql)
+            -Header @($job.CheckId, $job.Name, (ConvertTo-SingleLineSql -Sql $job.Sql))
     }
     else {
         $tagged = Add-CheckColumns -Rows $rows -CheckId $job.CheckId -Name $job.Name

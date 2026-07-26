@@ -176,20 +176,26 @@ Google Drive and open as Sheets.
 
 `Overview` is the first tab:
 
-| Sport | CheckID | Check Name | Result Rows | Status |
-|---|---|---|---:|---|
-| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 1064 | OK |
+| Sport | CheckID | Check Name | Rows |
+|---|---|---|---:|
+| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 1064 |
 
 Every check appears, including those that returned nothing or failed and therefore have
-no tab of their own. `Sport` is taken from the CheckID prefix. Each **Result Rows** cell
-is a link to that check's tab. `Status` is not in the requested column set but is kept
-deliberately: without it a failed check and a clean one both read as `0`.
+no tab of their own. `Sport` is taken from the CheckID prefix. Each **Rows** cell links to
+that check's tab. A check that failed shows `ERROR` rather than a row count, so it cannot
+be misread as a clean zero; the reason is on the console and in `_summary.csv`.
 
 Then one tab per check, named after its `-- Name -` header. There the identity sits on
-row 1 instead of on every data row: **A1** the CheckID, **B1** the name, **C1** the exact
-SQL that was sent, with placeholders already substituted. Row 2 is blank and the result
-table starts on row 3, so the table stays a self-contained block for sorting and
-filtering.
+row 1 instead of on every data row: **A1** the CheckID, **B1** the name, **C1** the SQL
+that was sent, with placeholders already substituted. **A1 links back to Overview**, so
+navigation works in both directions. Row 2 is blank and the result table starts on row 3,
+so the table stays a self-contained block for sorting and filtering.
+
+C1 holds the statement on a single line. Its newlines would otherwise make row 1 as tall
+as the whole query and push the sheet out of shape. Collapsing them requires the SQL
+comments to be removed first — everything after a `--` would otherwise be commented out —
+so the cell holds a comment-free one-line form that still runs when copied out. The
+formatted original stays in the repository `.sql` file.
 
 Two format limits apply. Tab names are capped at 31 characters, so longer check names are
 truncated and the run reports which ones; the full name remains in B1 and in the Overview.
