@@ -176,14 +176,18 @@ Google Drive and open as Sheets.
 
 `Overview` is the first tab:
 
-| Sport | CheckID | Check Name | Rows |
-|---|---|---|---:|
-| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 1064 |
+| Sport | CheckID | Check Name | Rows | Seconds |
+|---|---|---|---:|---:|
+| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 1064 | 1.5 |
 
 Every check appears, including those that returned nothing or failed and therefore have
 no tab of their own. `Sport` is taken from the CheckID prefix. Each **Rows** cell links to
 that check's tab. A check that failed shows `ERROR` rather than a row count, so it cannot
 be misread as a clean zero; the reason is on the console and in `_summary.csv`.
+
+The link records carry no `display` attribute. Excel ignores that attribute in favour of
+the cell value, but Google Sheets renders it instead, which puts the target reference
+where the row count belongs.
 
 Then one tab per check, named after its `-- Name -` header. There the identity sits on
 row 1 instead of on every data row: **A1** the CheckID, **B1** the name, **C1** the SQL

@@ -17,8 +17,8 @@
     file carry check_id and check_name as their first two columns.
 
     -Format xlsx collects a whole batch into a single workbook instead. Its first tab,
-    Overview, lists Sport, CheckID, Check Name and Rows for every check, and each Rows cell
-    links to that check's tab. The check tabs are named after the "-- Name -" header, and
+    Overview, lists Sport, CheckID, Check Name, Rows and Seconds for every check, and each
+    Rows cell links to that check's tab. The check tabs are named after the "-- Name -" header, and
     there the identity sits on row 1 rather than on every data row: A1 the CheckID and the
     link back to Overview, B1 the name, C1 the statement that ran as a single line, with
     the result table starting on row 3. Upload that file to Google Drive and open it as
@@ -835,8 +835,11 @@ function Save-Workbook {
                 [void]$xml.Append('<hyperlinks>')
                 foreach ($link in $links) {
                     # An internal target is quoted, and an apostrophe inside a tab name doubled.
+                    # No display attribute: Excel ignores it in favour of the cell value, but
+                    # Google Sheets renders it instead, which would show the target reference
+                    # where the row count belongs.
                     $location = "'" + ($link.Target -replace "'", "''") + "'!A1"
-                    [void]$xml.Append(('<hyperlink ref="{0}" location="{1}" display="{1}"/>' -f `
+                    [void]$xml.Append(('<hyperlink ref="{0}" location="{1}"/>' -f `
                                 $link.Ref, (ConvertTo-XmlText -Text $location)))
                 }
                 [void]$xml.Append('</hyperlinks>')
@@ -982,7 +985,7 @@ if ($Info) {
     Write-Line '-Format csv' 'CSV, with check_id and check_name columns'
     Write-Line '-Format json' 'JSON, with check_id and check_name fields'
     Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, Overview first'
-    Write-Host '  Overview lists Sport, CheckID, Check Name and Rows; clicking a Rows' -ForegroundColor DarkGray
+    Write-Host '  Overview lists Sport, CheckID, Check Name, Rows and Seconds; a Rows' -ForegroundColor DarkGray
     Write-Host '  cell jumps to that check tab, and A1 there jumps back. A1/B1/C1 hold' -ForegroundColor DarkGray
     Write-Host '  the CheckID, the name and the one-line SQL that ran, with the result' -ForegroundColor DarkGray
     Write-Host '  table starting on row 3. CSV and JSON keep check_id and check_name' -ForegroundColor DarkGray
@@ -1177,6 +1180,7 @@ if ($isBatch) {
                 'Check Name' = $entry.Name
                 # A failed check would otherwise read as a clean zero.
                 'Rows'       = if ($entry.Status -like 'ERROR*') { 'ERROR' } else { $entry.Rows }
+                'Seconds'    = $entry.Seconds
             }
             if ($tabOf.ContainsKey($entry.CheckId)) {
                 $links += [pscustomobject]@{ Ref = "D$overviewRow"; Target = $tabOf[$entry.CheckId] }
