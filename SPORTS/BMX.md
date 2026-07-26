@@ -11,7 +11,7 @@ correction is required.
 
 ## Identity and evidence
 - First discovery date: 2026-07-20
-- Latest evidence date: 2026-07-22
+- Latest evidence date: 2026-07-25
 - Verification boundary: sport identity, event participants, event results, incidents, lineups, scope layer, properties, object_relation, object_discipline, statistics, reference values and event status mapping all confirmed from active data.
 
 ## Structural coverage
@@ -27,7 +27,7 @@ correction is required.
 | object_relation | Used | (2â†’152) template subset, (4â†’151) stage age class |
 | object_discipline | Used | Owner type 5 (event); disciplineFK 429, 430 and 776 |
 | Statistics | Used | statistic_typeFK=11, object_typeFK=3 (tournament-level) confirmed |
-| Reference values | Used | result_type, scope_type and discipline names confirmed |
+| Reference values | Used | result_type, scope_type, discipline, statistic_type and statistic_data_type names confirmed |
 | Other tables | Used | event.status_type/status_descFK mapping confirmed |
 
 ## Tables and relation paths used
@@ -98,7 +98,7 @@ Confirmed active `tournament_age_class` values linked via `object_relation` (4â†
 ## Statistics
 | statistic_typeFK | Owner type | Participant shard | Data shard | Fields/config | Evidence |
 |---:|---:|---:|---:|---|---|
-| 11 | tournament (object_typeFK=3) | statistic_participants11 | statistic_data11 | Data: Rank(1270), Points(1271), Duration(1272), Comment(1273), Pair(1276), Medal(1277), Time(1426), Time Difference(1427), Team(1429). Config: Start date(1463), End date(1464), Gender(1470), Event id(1471) | Confirmed-data |
+| 11 (Competition Stats) | tournament (object_typeFK=3) | statistic_participants11 | statistic_data11 | Data: Rank(1270), Points(1271), Duration(1272), Comment(1273), Pair(1276), Medal(1277), Time(1426), Time Difference(1427), Team(1429). Config: Start date(1463), End date(1464), Gender(1470), Event id(1471) | Confirmed-data |
 
 <!-- MANUAL PASTE ZONE: 58 STATISTICS â€” insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -119,6 +119,16 @@ Confirmed active `tournament_age_class` values linked via `object_relation` (4â†
 | discipline | 429 | Racing |
 | discipline | 430 | Freestyle |
 | discipline | 776 | Time Trial |
+| statistic_type | 11 | Competition Stats |
+| statistic_data_type (data) | 1270 | Rank |
+| statistic_data_type (data) | 1271 | Points |
+| statistic_data_type (data) | 1272 | Duration |
+| statistic_data_type (data) | 1273 | Comment |
+| statistic_data_type (data) | 1276 | Pair |
+| statistic_data_type (data) | 1277 | Medal |
+| statistic_data_type (data) | 1426 | Time |
+| statistic_data_type (data) | 1427 | Time Difference |
+| statistic_data_type (data) | 1429 | Team |
 | statistic_data_type (config) | 1463 | Start date |
 | statistic_data_type (config) | 1464 | End date |
 | statistic_data_type (config) | 1470 | Gender |
