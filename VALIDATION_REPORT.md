@@ -47,8 +47,7 @@ This report proves package consistency and static MySQL syntax parsing. It does 
 prove live database permissions, runtime cost or result semantics because the
 queries were not executed against the production database.
 
-Before final cutover, follow the activation tests in `PROJECT_2.0_MIGRATION.md` and
-run a small approved database smoke-test sample.
+Before final cutover, run a small approved database smoke-test sample.
 
 ## Pending re-validation (changes after 2026-07-24)
 

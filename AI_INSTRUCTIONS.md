@@ -97,9 +97,6 @@ PROJECT 2.0 SOURCE-OF-TRUTH MAP
 - WORKFLOW.md
   Operational query, promotion and documentation-update process.
 
-- CHANGELOG.md
-  Material project history.
-
 LOAD ONLY RELEVANT FILES
 
 For structural work on one sport, use:
