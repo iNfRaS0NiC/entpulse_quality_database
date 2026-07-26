@@ -176,36 +176,56 @@ Google Drive and open as Sheets.
 
 `Overview` is the first tab:
 
-| Sport | CheckID | Check Name | Rows |
-|---|---|---|---:|
-| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 1064 |
+| Sport | CheckID | Check Name | Rows | Go to tab | Status |
+|---|---|---|---:|---|---|
+| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 1064 | open | Not Started |
 
 Every check appears, including those that returned nothing or failed and therefore have
 no tab of their own. `Sport` is taken from the CheckID prefix. `Rows` is the count the
-console printed, as a number. A check that failed shows `ERROR` instead, so it cannot be
-misread as a clean zero; the reason is on the console and in `_summary.csv`. Durations
-stay on the console and in `_summary.csv`.
+console printed, as a number; a check that failed shows `ERROR` instead, so it cannot be
+misread as a clean zero. Durations and the server's error message stay on the console and
+in `_summary.csv`.
 
-Then one tab per check, named after its `-- Name -` header:
+`Go to tab` jumps to that check's tab. `Status` is a manual tracking field, seeded to
+`Not Started` with a dropdown offering `In Progress` and `Completed`; nothing in the
+runner reads it back.
+
+Then one tab per check:
 
 ```text
-     A                  B                    C
-1    Check ID           Check Name           SQL Used
-2    BMX-DQ-001         PARTICIPANT_MIS...   SELECT 'Missing_DOB' AS check_type, ...
-3    Back to Overview
+     A                     B                    C
+1    Check ID              Check Name           SQL Used
+2    BMX-DQ-001            PARTICIPANT_MIS...   SELECT 'Missing_DOB' AS check_type, ...
+3    Return to Overview
 4
-5    check_type         participant_id       participant_name   ...
-6    Missing_DOB        1473234              Jude Jones         ...
+5    check_type            participant_id       participant_name   ...
+6    Missing_DOB           1473234              Jude Jones         ...
 ```
 
-The identity sits on rows 1 and 2 rather than on every data row. Row 3 holds the only link
-in the workbook, back to Overview, and row 4 is blank so the result table below stays a
-self-contained block for sorting and filtering.
+The identity sits on rows 1 and 2 rather than on every data row. Row 3 holds the link back
+to Overview, and row 4 is blank so the result table below stays a self-contained block for
+sorting and filtering.
 
 **No cell holding data is ever a link.** Google Sheets rewrites an imported internal link
 into a `HYPERLINK` formula whose visible label is the link target, replacing whatever the
-cell contained. Excel does not, which makes this easy to miss. Navigation therefore runs
-one way only, from a dedicated cell whose text is expendable.
+cell contained — which is why `Rows` and the tab's `Check ID` are not the links, and why
+`Go to tab` and `Return to Overview` are. Excel keeps the cell's own text, so this only
+shows up after upload.
+
+### Tab names
+
+Check names routinely run past Excel's 31-character tab limit, and they differ in their
+suffix, so plain truncation hides the distinguishing part: `..._DATE_RANGE_MISMATCH_STAGE`
+and `..._DATE_RANGE_MISMATCH_EVENTS` used to collapse onto the same tab name. Recurring
+object and condition words are therefore abbreviated first — `PARTICIPANT` to `PTC`,
+`COMP.RANK` to `CR`, `MISSING` to `MISS`, and so on — which leaves
+`CR_SET_DATE_RANGE_MISM_STG` and `CR_SET_DATE_RANGE_MISM_EVENTS` distinct.
+
+Over the current catalogue of 70 statements this takes the count needing truncation from
+44 to 3, with every tab name still unique. The map lives in `$XlsxNameAbbreviations` in the
+script; extend it when a new recurring word appears. A name that still overruns is cut and
+reported at the end of the run, and duplicates gain a `~2` suffix. The full name is always
+in the Overview and in B2.
 
 C2 holds the statement on a single line. Its newlines would otherwise make the row as tall
 as the whole query and push the sheet out of shape. Collapsing them requires the SQL

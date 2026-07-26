@@ -17,10 +17,11 @@
     file carry check_id and check_name as their first two columns.
 
     -Format xlsx collects a whole batch into a single workbook instead. Its first tab,
-    Overview, lists Sport, CheckID, Check Name and Rows for every check. The check tabs are
-    named after the "-- Name -" header, and there the identity sits above the data rather
-    than on every row: row 1 the labels, row 2 the CheckID, the name and the statement that
-    ran as a single line, row 3 the link back to Overview, and the result table from row 5.
+    Overview, lists Sport, CheckID, Check Name, Rows, a Go to tab link and a Status field
+    for every check. The check tabs are named after the "-- Name -" header, abbreviated to
+    fit Excel's 31-character limit, and there the identity sits above the data rather than
+    on every row: row 1 the labels, row 2 the CheckID, the name and the statement that ran
+    as a single line, row 3 the link back to Overview, and the result table from row 5.
     Upload that file to Google Drive and open it as Sheets.
 
     Each run writes into its own folder under "D:\SQL's Output", named for the sport and the
@@ -601,6 +602,34 @@ function ConvertTo-XmlText {
     return [Security.SecurityElement]::Escape($clean)
 }
 
+# Check names run past Excel's 31-character tab limit far more often than not, and they
+# differ in their suffix, so plain truncation hides exactly the distinguishing part. Word
+# level abbreviation of the recurring object and condition terms fixes almost all of it:
+# over the current catalogue of 70 statements it takes the count needing truncation from
+# 44 down to 3, with every resulting tab name still unique.
+$XlsxNameAbbreviations = @{
+    'COMP.RANK' = 'CR'; 'PARTICIPANTS' = 'PTCS'; 'PARTICIPANT' = 'PTC'; 'PARTICIPATION' = 'PART'
+    'TOURNAMENTS' = 'TRNS'; 'TOURNAMENT' = 'TRN'; 'TEMPLATE' = 'TPL'; 'STAGES' = 'STGS'
+    'STAGE' = 'STG'; 'RESULTS' = 'RES'; 'SETTINGS' = 'SET'; 'MISSING' = 'MISS'
+    'MISMATCH' = 'MISM'; 'UNEXPECTED' = 'UNEXP'; 'INVALID' = 'INVLD'; 'DEPRECATED' = 'DEPR'
+    'DURATION' = 'DUR'; 'DIFFERENCE' = 'DIFF'; 'FORMAT' = 'FMT'; 'RELATED' = 'REL'
+    'DISCIPLINE' = 'DISC'; 'GENDER' = 'GEN'; 'SUBSET' = 'SUBS'; 'EVENT' = 'EV'
+    'REFERENCE' = 'REF'; 'STATISTIC' = 'STAT'; 'REGISTRY' = 'REG'; 'PATTERNS' = 'PTRN'
+    'SUMMARY' = 'SUM'; 'DETAIL' = 'DET'; 'DECLARED' = 'DECL'; 'STORAGE' = 'STOR'
+    'PROFILE' = 'PROF'; 'FIELDS' = 'FLDS'
+}
+
+function Get-ShortSheetName {
+    param([string]$Name)
+
+    if ([string]::IsNullOrWhiteSpace($Name)) { return $Name }
+
+    $tokens = $Name -split '_' | ForEach-Object {
+        if ($XlsxNameAbbreviations.ContainsKey($_)) { $XlsxNameAbbreviations[$_] } else { $_ }
+    }
+    return ($tokens -join '_')
+}
+
 function ConvertTo-SheetName {
     # Excel caps sheet names at 31 characters, forbids : \ / ? * [ ] and demands
     # uniqueness. Google Sheets keeps whatever names the file carries.
@@ -789,6 +818,11 @@ function Save-Workbook {
             $header = @(if ($null -eq $sheet.Header) { @() } else { $sheet.Header })
             $headerRow = ($header.Count -gt 0)
 
+            $links = @(if ($null -eq $sheet.Links) { @() } else { $sheet.Links })
+            if ($sheet.BackTo) { $links += [pscustomobject]@{ Ref = 'A3'; Target = $sheet.BackTo } }
+            $linked = @{}
+            foreach ($link in $links) { $linked[$link.Ref] = $true }
+
             # A check tab opens with a labelled identity block:
             #   row 1  Check ID | Check Name | SQL Used
             #   row 2  the values
@@ -814,7 +848,7 @@ function Save-Workbook {
 
                 if ($sheet.BackTo) {
                     [void]$xml.Append('<row r="3">')
-                    [void]$xml.Append((Get-CellXml -Reference 'A3' -Value 'Back to Overview' -Style 1))
+                    [void]$xml.Append((Get-CellXml -Reference 'A3' -Value 'Return to Overview' -Style 1))
                     [void]$xml.Append('</row>')
                 }
             }
@@ -834,7 +868,8 @@ function Save-Workbook {
 
                 for ($c = 0; $c -lt $columns.Count; $c++) {
                     $ref = (Get-ExcelColumnName -Index ($c + 1)) + $rowNumber
-                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $row.($columns[$c])))
+                    $style = if ($linked.ContainsKey($ref)) { 1 } else { 0 }
+                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $row.($columns[$c]) -Style $style))
                 }
 
                 [void]$xml.Append('</row>')
@@ -842,13 +877,23 @@ function Save-Workbook {
 
             [void]$xml.Append('</sheetData>')
 
-            # Only A3 is ever a link. Google Sheets rewrites an imported internal link into
-            # a HYPERLINK formula whose label is the target, replacing whatever text the
-            # cell held, so no cell carrying data may be one.
-            if ($headerRow -and $sheet.BackTo) {
-                $location = "'" + ($sheet.BackTo -replace "'", "''") + "'!A1"
-                [void]$xml.Append(('<hyperlinks><hyperlink ref="A3" location="{0}"/></hyperlinks>' -f `
-                            (ConvertTo-XmlText -Text $location)))
+            # The schema fixes this order: dataValidations before hyperlinks.
+            if ($sheet.Validation) {
+                [void]$xml.Append(('<dataValidations count="1"><dataValidation type="list" allowBlank="1" showInputMessage="1" showErrorMessage="1" sqref="{0}"><formula1>"{1}"</formula1></dataValidation></dataValidations>' -f `
+                            $sheet.Validation.Sqref, (ConvertTo-XmlText -Text $sheet.Validation.Values)))
+            }
+
+            # A link cell never keeps its own text in Google Sheets, which rewrites the
+            # import into a HYPERLINK formula labelled with the target. Only cells whose
+            # text is expendable are ever linked.
+            if ($links.Count -gt 0) {
+                [void]$xml.Append('<hyperlinks>')
+                foreach ($link in $links) {
+                    $location = "'" + ($link.Target -replace "'", "''") + "'!A1"
+                    [void]$xml.Append(('<hyperlink ref="{0}" location="{1}"/>' -f `
+                                $link.Ref, (ConvertTo-XmlText -Text $location)))
+                }
+                [void]$xml.Append('</hyperlinks>')
             }
 
             [void]$xml.Append('</worksheet>')
@@ -993,11 +1038,11 @@ if ($Info) {
     Write-Line '-Format csv' 'CSV, with check_id and check_name columns'
     Write-Line '-Format json' 'JSON, with check_id and check_name fields'
     Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, Overview first'
-    Write-Host '  Overview lists Sport, CheckID, Check Name and Rows. On a check tab' -ForegroundColor DarkGray
-    Write-Host '  row 2 holds the CheckID, the name and the one-line SQL that ran, A3' -ForegroundColor DarkGray
-    Write-Host '  links back to Overview, and the result table starts on row 5. CSV' -ForegroundColor DarkGray
-    Write-Host '  and JSON keep check_id and check_name as columns instead, having' -ForegroundColor DarkGray
-    Write-Host '  nowhere else to put them.' -ForegroundColor DarkGray
+    Write-Host '  Overview lists Sport, CheckID, Check Name, Rows, a Go to tab link and' -ForegroundColor DarkGray
+    Write-Host '  a Status field to fill in. On a check tab row 2 holds the CheckID, the' -ForegroundColor DarkGray
+    Write-Host '  name and the one-line SQL that ran, A3 returns to Overview, and the' -ForegroundColor DarkGray
+    Write-Host '  result table starts on row 5. CSV and JSON keep check_id and' -ForegroundColor DarkGray
+    Write-Host '  check_name as columns instead, having nowhere else to put them.' -ForegroundColor DarkGray
     Write-Host '  Files are named after the CheckID: BMX-DQ-003.csv' -ForegroundColor DarkGray
     Write-Host '  Upload the .xlsx to Google Drive and open it as Sheets to get the tabs.' -ForegroundColor DarkGray
 
@@ -1167,32 +1212,49 @@ if ($isBatch) {
         $shortened = @()
         foreach ($item in $collected) {
             $preferred = if ($item.Job.Name) { $item.Job.Name } else { $item.Job.CheckId }
-            $sheetName = ConvertTo-SheetName -Preferred $preferred -Fallback $item.Job.CheckId -Used $used
+            $abbreviated = Get-ShortSheetName -Name $preferred
+            $sheetName = ConvertTo-SheetName -Preferred $abbreviated -Fallback $item.Job.CheckId -Used $used
             $tabOf[$item.Job.CheckId] = $sheetName
-            if ($sheetName -ne $preferred) {
+            # Abbreviation is lossless enough to pass unreported; only a name that still had
+            # to be cut is worth flagging.
+            if ($sheetName -ne $abbreviated) {
                 $shortened += [pscustomobject]@{ CheckId = $item.Job.CheckId; Wanted = $preferred; Tab = $sheetName }
             }
         }
 
-        # Rows stays a plain number so it reads as the count the console printed. Making it
-        # a link would cost that: Google Sheets shows an imported link's target in place of
-        # the cell's own value. Navigation therefore runs one way, from each tab's A3.
+        # Rows stays a plain number so it reads as the count the console printed. The jump to
+        # a tab lives in its own column instead, where losing the cell text to Google Sheets'
+        # link rewriting costs nothing. Status is a manual tracking field the reader fills in.
         $overviewRows = @()
+        $links = @()
+        $overviewRow = 1
+
         foreach ($entry in $summary) {
+            $overviewRow++
             $overviewRows += [pscustomobject]@{
                 'Sport'      = Get-SportFromCheckId -CheckId $entry.CheckId
                 'CheckID'    = $entry.CheckId
                 'Check Name' = $entry.Name
                 # A failed check would otherwise read as a clean zero.
                 'Rows'       = if ($entry.Status -like 'ERROR*') { 'ERROR' } else { $entry.Rows }
+                'Go to tab'  = if ($tabOf.ContainsKey($entry.CheckId)) { 'open' } else { $null }
+                'Status'     = 'Not Started'
+            }
+            if ($tabOf.ContainsKey($entry.CheckId)) {
+                $links += [pscustomobject]@{ Ref = "E$overviewRow"; Target = $tabOf[$entry.CheckId] }
             }
         }
 
         $sheets = @([pscustomobject]@{
-                Name   = $overviewName
-                Rows   = $overviewRows
-                Header = $null
-                BackTo = $null
+                Name       = $overviewName
+                Rows       = $overviewRows
+                Header     = $null
+                BackTo     = $null
+                Links      = $links
+                Validation = @{
+                    Sqref  = "F2:F$overviewRow"
+                    Values = 'Not Started,In Progress,Completed'
+                }
             })
 
         foreach ($item in $collected) {
