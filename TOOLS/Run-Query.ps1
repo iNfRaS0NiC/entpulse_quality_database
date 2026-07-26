@@ -17,12 +17,12 @@
     file carry check_id and check_name as their first two columns.
 
     -Format xlsx collects a whole batch into a single workbook instead. Its first tab,
-    Overview, lists Sport, CheckID, Check Name, Rows, a Go to tab link and a Status field
-    for every check. The check tabs are named after the "-- Name -" header, abbreviated to
-    fit Excel's 31-character limit, and there the identity sits above the data rather than
-    on every row: row 1 the labels, row 2 the CheckID, the name and the statement that ran
-    as a single line, row 3 the link back to Overview, and the result table from row 5.
-    Upload that file to Google Drive and open it as Sheets.
+    Overview, lists Sport, CheckID, Check Name, Rows and a Status field for every check,
+    with each row count linking to its tab. The check tabs are named after the "-- Name -"
+    header, abbreviated to fit Excel's 31-character limit, and there the identity sits above
+    the data rather than on every row: row 1 the labels, row 2 the CheckID, the name and the
+    statement that ran as a single line, row 3 the link back to Overview, and the result
+    table from row 5. Upload that file to Google Drive and open it as Sheets.
 
     Each run writes into its own folder under "D:\SQL's Output", named for the sport and the
     run time. EP_QB_OUTPUT overrides the root; -OutDir and -OutFile override it entirely.
@@ -1042,11 +1042,11 @@ if ($Info) {
     Write-Line '-Format csv' 'CSV, with check_id and check_name columns'
     Write-Line '-Format json' 'JSON, with check_id and check_name fields'
     Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, Overview first'
-    Write-Host '  Overview lists Sport, CheckID, Check Name, Rows, a Go to tab link and' -ForegroundColor DarkGray
-    Write-Host '  a Status field to fill in. On a check tab row 2 holds the CheckID, the' -ForegroundColor DarkGray
-    Write-Host '  name and the one-line SQL that ran, A3 returns to Overview, and the' -ForegroundColor DarkGray
-    Write-Host '  result table starts on row 5. CSV and JSON keep check_id and' -ForegroundColor DarkGray
-    Write-Host '  check_name as columns instead, having nowhere else to put them.' -ForegroundColor DarkGray
+    Write-Host '  Overview lists Sport, CheckID, Check Name, Rows and a Status field to' -ForegroundColor DarkGray
+    Write-Host '  fill in; each row count links to its tab. On a check tab row 2 holds' -ForegroundColor DarkGray
+    Write-Host '  the CheckID, the name and the one-line SQL that ran, A3 returns to' -ForegroundColor DarkGray
+    Write-Host '  Overview, and the result table starts on row 5. CSV and JSON keep' -ForegroundColor DarkGray
+    Write-Host '  check_id and check_name as columns, having nowhere else to put them.' -ForegroundColor DarkGray
     Write-Host '  Files are named after the CheckID: BMX-DQ-003.csv' -ForegroundColor DarkGray
     Write-Host '  Upload the .xlsx to Google Drive and open it as Sheets to get the tabs.' -ForegroundColor DarkGray
 
@@ -1226,26 +1226,30 @@ if ($isBatch) {
             }
         }
 
-        # Rows stays a plain number so it reads as the count the console printed. The jump to
-        # a tab lives in its own column instead, where losing the cell text to Google Sheets'
-        # link rewriting costs nothing. Status is a manual tracking field the reader fills in.
+        # Rows is both the count and the jump to its tab: the display attribute keeps the
+        # number readable in Google Sheets, so the link costs the cell nothing. A check that
+        # failed has no tab and stays unlinked. Status is a manual tracking field.
         $overviewRows = @()
         $links = @()
         $overviewRow = 1
 
         foreach ($entry in $summary) {
             $overviewRow++
+            $failed = $entry.Status -like 'ERROR*'
             $overviewRows += [pscustomobject]@{
                 'Sport'      = Get-SportFromCheckId -CheckId $entry.CheckId
                 'CheckID'    = $entry.CheckId
                 'Check Name' = $entry.Name
                 # A failed check would otherwise read as a clean zero.
-                'Rows'       = if ($entry.Status -like 'ERROR*') { 'ERROR' } else { $entry.Rows }
-                'Go to tab'  = if ($tabOf.ContainsKey($entry.CheckId)) { 'open' } else { $null }
+                'Rows'       = if ($failed) { 'ERROR' } else { $entry.Rows }
                 'Status'     = 'Not Started'
             }
-            if ($tabOf.ContainsKey($entry.CheckId)) {
-                $links += [pscustomobject]@{ Ref = "E$overviewRow"; Target = $tabOf[$entry.CheckId]; Text = 'open' }
+            if (-not $failed -and $tabOf.ContainsKey($entry.CheckId)) {
+                $links += [pscustomobject]@{
+                    Ref    = "D$overviewRow"
+                    Target = $tabOf[$entry.CheckId]
+                    Text   = [string]$entry.Rows
+                }
             }
         }
 
@@ -1256,7 +1260,7 @@ if ($isBatch) {
                 BackTo     = $null
                 Links      = $links
                 Validation = @{
-                    Sqref  = "F2:F$overviewRow"
+                    Sqref  = "E2:E$overviewRow"
                     Values = 'Not Started,In Progress,Completed'
                 }
             })

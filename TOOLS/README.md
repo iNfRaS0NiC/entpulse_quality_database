@@ -176,19 +176,20 @@ Google Drive and open as Sheets.
 
 `Overview` is the first tab:
 
-| Sport | CheckID | Check Name | Rows | Go to tab | Status |
-|---|---|---|---:|---|---|
-| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 1064 | open | Not Started |
+| Sport | CheckID | Check Name | Rows | Status |
+|---|---|---|---:|---|
+| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 1064 | Not Started |
 
 Every check appears, including those that returned nothing or failed and therefore have
-no tab of their own. `Sport` is taken from the CheckID prefix. `Rows` is the count the
-console printed, as a number; a check that failed shows `ERROR` instead, so it cannot be
-misread as a clean zero. Durations and the server's error message stay on the console and
-in `_summary.csv`.
+no tab of their own. `Sport` is taken from the CheckID prefix.
 
-`Go to tab` jumps to that check's tab. `Status` is a manual tracking field, seeded to
-`Not Started` with a dropdown offering `In Progress` and `Completed`; nothing in the
-runner reads it back.
+`Rows` is the count the console printed, and doubles as the jump to that check's tab. A
+check that failed shows `ERROR` instead, so it cannot be misread as a clean zero, and is
+left unlinked because it has no tab; the reason is on the console and in `_summary.csv`,
+along with the durations.
+
+`Status` is a manual tracking field, seeded to `Not Started` with a dropdown offering
+`In Progress` and `Completed`. Nothing in the runner reads it back.
 
 Then one tab per check:
 
@@ -213,8 +214,8 @@ never be set to the location — that was the original defect, and removing the 
 only traded one wrong label for another. Excel takes its label from the cell value, which
 is written identically, so the two agree.
 
-Data cells are still kept out of the links: `Rows` and the tab's `Check ID` hold values
-worth reading, so the navigation lives in `Go to tab` and `Return to Overview` instead.
+This is what lets `Rows` be both a number and a link: its `display` is the row count. Any
+new link must set `display` to whatever the cell is meant to read.
 
 ### Tab names
 
