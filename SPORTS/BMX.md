@@ -175,10 +175,17 @@ and result-row count when building coverage or ratio-based checks.
 
 Confirmed active `tournament_stage.gender` values for BMX stages with active events: `male`, `female`, `mixed` — no `NULL`, empty or `undefined` values observed in this evidence.
 
+BMX Rank (`result_typeFK=100`) values within one event are not a contiguous `1..N` sequence. A participant who did not start or did not finish keeps an active Rank row holding a sentinel value outside the finishing order, paired with an active `comment` (`result_typeFK=104`) value such as `DNS` or `DNF`. The same convention produces duplicate Rank values, where several non-finishing participants share one sentinel. Confirmed positive control: event 5124031 stores ranks `1,2,3,4,5,7,7,10`, where both `7` rows carry `DNF` and the `10` row carries `DNS`. A check asserting rank-sequence completeness must exclude participants carrying an active comment value, or it reports this convention as a defect.
+
+Confirmed active BMX `comment` (`result_typeFK=104`) values: `DNS` and `DNF` for non-finishing participants, and `Q` marking a participant who advanced from a qualifying heat. `Q` accompanies a normal finishing rank and is not a non-finishing marker.
+
+A BMX event's Rank sequence may legitimately exceed its own participant count when the event stores competition-wide classification positions rather than within-event finishing order. Confirmed positive control: event 5221729 holds 114 active participants ranked `1..121` with interior gaps. Rank magnitude alone therefore does not identify a defect; an invalid rank is one that is both above the event's participant count and disconnected from the next lower rank in the same event.
+
 <!-- MANUAL PASTE ZONE: 58 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
 
 - Whether BMX `event.round_typeFK=0` (unmapped to any `round_type` row) is an intended sentinel value for "not assigned", or represents bad/legacy data — not yet confirmed.
 - Some BMX Comp.Rank statistics (statistic_typeFK=11, object_typeFK=3) have no reliable path to a discipline: neither `statistic_config` Event id (1471) → event → `object_discipline`, nor a direct `object_discipline` relation (owner type=83) on the statistic itself, is guaranteed to exist. A statistic can be fully discipline-orphaned from both mechanisms (confirmed example: statistic_id=166712, name "Female Park"). Discipline-scoped checks and analysis for BMX Comp.Rank statistics must not assume either path is universal.
+- Whether the sentinel Rank value paired with a `DNS` or `DNF` comment follows a fixed rule is not confirmed. Observed values do not resolve to one: in event 5124031 `DNF` maps to `7` and `DNS` to `10` within an eight-participant heat. Until the rule is confirmed, a check must recognise a non-finishing participant by the presence of an active comment, never by the rank value itself.
 <!-- MANUAL PASTE ZONE: 58 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

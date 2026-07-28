@@ -1862,11 +1862,12 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - BMX-DQ-031
     -- Name - EVENT_RESULTS_RANK_INVALID_OR_MISSING
-    -- What it does: Finds active BMX event-participant rows in finished events where the Rank value is not a plain positive integer up to 200 (non-integer, negative, text, or over 200), or where Rank is missing/empty and no active Comment value exists either, together with a coverage count of all eligible BMX event-participants in finished events.
+    -- What it does: Finds active BMX event-participant rows in finished events where the Rank value is not a plain positive integer up to 200 (non-integer, negative, text, or over 200), or where Rank is missing/empty and no active Comment value exists either, separating participants that hold no active result row of any type from those that hold some other result, together with a coverage count of all eligible BMX event-participants in finished events.
     CASE
         WHEN r_rank_value IS NOT NULL AND r_rank_value NOT REGEXP '^[0-9]+$' THEN 'RANK_NOT_INTEGER'
         WHEN r_rank_value IS NOT NULL AND r_rank_value REGEXP '^[0-9]+$' AND CAST(r_rank_value AS UNSIGNED) > 200 THEN 'RANK_OVER_200'
-        WHEN r_rank_value IS NULL AND r_comment_value IS NULL THEN 'RANK_AND_COMMENT_BOTH_MISSING'
+        WHEN r_rank_value IS NULL AND r_comment_value IS NULL AND x.has_any_result = 0 THEN 'NO_RESULT_OF_ANY_TYPE'
+        WHEN r_rank_value IS NULL AND r_comment_value IS NULL THEN 'RANK_AND_COMMENT_MISSING_OTHER_RESULT_PRESENT'
     END AS check_type,
     x.event_participants_id,
     x.event_id,
@@ -1900,7 +1901,15 @@ FROM (
               AND r2.value IS NOT NULL
               AND TRIM(r2.value) <> ''
             LIMIT 1
-        ) AS r_comment_value
+        ) AS r_comment_value,
+        EXISTS (
+            SELECT 1
+            FROM result r3
+            WHERE r3.event_participantsFK = ep.id
+              AND r3.del = 'no'
+              AND r3.value IS NOT NULL
+              AND TRIM(r3.value) <> ''
+        ) AS has_any_result
     FROM event_participants ep
     JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -2404,5 +2413,211 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = 58
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - BMX-DQ-039
+    -- Name - EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE
+    -- What it does: Finds active BMX event-participant rows in finished events whose numeric Rank exceeds the event's active participant count and is disconnected from the next lower Rank in the same event, while carrying no active Comment value that would mark a non-finishing participant, with template and event name context, together with a coverage count of all eligible BMX event-participants holding an active numeric Rank in a finished event.
+    'RANK_OUTLIER_ABOVE_FIELD_SIZE' AS check_type,
+    y.event_participants_id,
+    y.event_id,
+    y.event_name,
+    y.template_name,
+    y.participant_name,
+    y.rank_value,
+    y.participant_count,
+    y.next_lower_rank,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        x.event_participants_id,
+        x.event_id,
+        x.event_name,
+        x.template_name,
+        x.participant_name,
+        x.rank_value,
+        x.participant_count,
+        (
+            SELECT MAX(CAST(r2.value AS UNSIGNED))
+            FROM event_participants ep3
+            JOIN result r2 ON r2.event_participantsFK = ep3.id
+                 AND r2.result_typeFK = 100
+                 AND r2.del = 'no'
+                 AND r2.value REGEXP '^[0-9]+$'
+            WHERE ep3.eventFK = x.event_id
+              AND ep3.del = 'no'
+              AND CAST(r2.value AS UNSIGNED) < x.rank_value
+        ) AS next_lower_rank
+    FROM (
+        SELECT
+            ep.id AS event_participants_id,
+            e.id AS event_id,
+            e.name AS event_name,
+            tt.name AS template_name,
+            p.name AS participant_name,
+            CAST(r.value AS UNSIGNED) AS rank_value,
+            (
+                SELECT COUNT(*)
+                FROM event_participants ep2
+                WHERE ep2.eventFK = e.id
+                  AND ep2.del = 'no'
+            ) AS participant_count
+        FROM event_participants ep
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN result r ON r.event_participantsFK = ep.id
+             AND r.result_typeFK = 100
+             AND r.del = 'no'
+             AND r.value REGEXP '^[0-9]+$'
+        WHERE ep.del = 'no'
+          AND tt.sportFK = 58
+          AND e.status_type = 'finished'
+          AND e.status_descFK = 6
+          -- AND tt.id = <tournament_template_id>
+          AND NOT EXISTS (
+              SELECT 1
+              FROM result rc
+              WHERE rc.event_participantsFK = ep.id
+                AND rc.result_typeFK = 104
+                AND rc.del = 'no'
+                AND rc.value IS NOT NULL
+                AND TRIM(rc.value) <> ''
+          )
+    ) x
+    WHERE x.rank_value > x.participant_count
+) y
+WHERE y.next_lower_rank IS NULL
+   OR y.rank_value > y.next_lower_rank + 1
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id
+     AND r.result_typeFK = 100
+     AND r.del = 'no'
+     AND r.value REGEXP '^[0-9]+$'
+WHERE ep.del = 'no'
+  AND tt.sportFK = 58
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - BMX-DQ-040
+    -- Name - EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT
+    -- What it does: Finds active BMX event-participant rows in finished events sharing one numeric Rank value with at least one other participant of the same event where neither row carries an active Comment value, so the shared rank is not explained by the DNS/DNF sentinel convention, with template and event name context and the count of participants sharing that rank unexplained, together with a coverage count of all eligible BMX event-participants holding an active numeric Rank in a finished event.
+    'RANK_DUPLICATE_WITHOUT_COMMENT' AS check_type,
+    ep.id AS event_participants_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    tt.name AS template_name,
+    p.name AS participant_name,
+    CAST(r.value AS UNSIGNED) AS rank_value,
+    (
+        SELECT COUNT(DISTINCT ep2.id)
+        FROM event_participants ep2
+        JOIN result r2 ON r2.event_participantsFK = ep2.id
+             AND r2.result_typeFK = 100
+             AND r2.del = 'no'
+             AND r2.value REGEXP '^[0-9]+$'
+        WHERE ep2.eventFK = e.id
+          AND ep2.del = 'no'
+          AND CAST(r2.value AS UNSIGNED) = CAST(r.value AS UNSIGNED)
+          AND NOT EXISTS (
+              SELECT 1
+              FROM result rc2
+              WHERE rc2.event_participantsFK = ep2.id
+                AND rc2.result_typeFK = 104
+                AND rc2.del = 'no'
+                AND rc2.value IS NOT NULL
+                AND TRIM(rc2.value) <> ''
+          )
+    ) AS unexplained_duplicate_count,
+    NULL AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id
+     AND r.result_typeFK = 100
+     AND r.del = 'no'
+     AND r.value REGEXP '^[0-9]+$'
+WHERE ep.del = 'no'
+  AND tt.sportFK = 58
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND tt.id = <tournament_template_id>
+  AND NOT EXISTS (
+      SELECT 1
+      FROM result rc
+      WHERE rc.event_participantsFK = ep.id
+        AND rc.result_typeFK = 104
+        AND rc.del = 'no'
+        AND rc.value IS NOT NULL
+        AND TRIM(rc.value) <> ''
+  )
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep3
+      JOIN result r3 ON r3.event_participantsFK = ep3.id
+           AND r3.result_typeFK = 100
+           AND r3.del = 'no'
+           AND r3.value REGEXP '^[0-9]+$'
+      WHERE ep3.eventFK = e.id
+        AND ep3.del = 'no'
+        AND ep3.id <> ep.id
+        AND CAST(r3.value AS UNSIGNED) = CAST(r.value AS UNSIGNED)
+        AND NOT EXISTS (
+            SELECT 1
+            FROM result rc3
+            WHERE rc3.event_participantsFK = ep3.id
+              AND rc3.result_typeFK = 104
+              AND rc3.del = 'no'
+              AND rc3.value IS NOT NULL
+              AND TRIM(rc3.value) <> ''
+        )
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id
+     AND r.result_typeFK = 100
+     AND r.del = 'no'
+     AND r.value REGEXP '^[0-9]+$'
+WHERE ep.del = 'no'
+  AND tt.sportFK = 58
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
   -- AND tt.id = <tournament_template_id>
 ;
