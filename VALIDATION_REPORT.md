@@ -31,14 +31,14 @@ output, not a hand-written claim: re-run the script rather than editing it.
 | Metric | Value |
 |---|---:|
 | SQL files parsed | 10 |
-| SQL statements parsed | 83 |
+| SQL statements parsed | 86 |
 | GLOBAL discovery statements | 31 |
 | GLOBAL DQ templates | 12 |
-| Sport DQ statements | 40 |
+| Sport DQ statements | 43 |
 | Manual-paste markers found | 45 |
 | Duplicate active SQL CheckIDs | 0 |
 | UNION column-count mismatches | 0 |
-| PowerBI registry rows | 40 |
+| PowerBI registry rows | 43 |
 | Sports indexed | 1 |
 
 ## Boundary

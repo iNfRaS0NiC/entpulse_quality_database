@@ -144,10 +144,16 @@ event.round_typeFK is confirmed active for BMX events, referencing the round_typ
 
 A single round_typeFK value can be attached to events representing logically different rounds. Confirmed for round_typeFK=189 (Seeding), which is used by events named as Time Trial Superfinal, Seeding Run and Semifinal Heat across different tournament templates. Round type identity must not be treated as a reliable indicator of the actual round an event represents
 
+BMX Comp.Rank participants carry a Phase through `object_round` (object_typeFK=138, type='phase'), recording the round the participant's rank was taken from. Phase is not universal: a large share of active BMX Comp.Rank participant rows carry no phase row at all.
+
+The round types used by BMX Phase values are not the set BMX events use, and the split follows the knockout flag (`DB-SEM-012`). BMX events use the **non-knockout** variants — 176 Quarter Finals, 178 Semi Finals, 184 1/8, 185 1/16, 188 1/32, 173 Final — while the majority of Phase values use the **knockout** variants of the same names: 3, 2, 4, 5, 6, 9. Phase additionally carries round types BMX events never use, confirmed for 19 (Small Final) and 152 (Qualifier), both knockout; and BMX events use round types that never appear as a Phase, confirmed for 189 (Seeding) and the unmapped 0. Comparing a BMX Phase against its event's round_typeFK by ID alone reports nearly the whole population as mismatched and is not a valid check.
+
 <!-- MANUAL PASTE ZONE: 58 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
 City for a BMX tournament stage is stored via `city_object` (object_typeFK=4, objectFK=tournament_stage.id) linking to `city`, not via a direct column.
+
+Venue is `Not used` for BMX. `venue_object` holds no active row for any BMX tournament stage (object_typeFK=4), event (5) or Comp.Rank statistic (83), and the venue field visible on the Comp.Rank edit form is unpopulated for the sport. The layer was queried complete at all three levels and returned zero active links.
 
 Host Country for a BMX tournament stage is stored via `object_relation` (object_typeFK=4 → rel_object_typeFK=33), distinct from the direct `tournament_stage.countryFK` column. Confirmed active and functional for BMX via manual positive control (stage 920060).
 
@@ -165,7 +171,11 @@ BMX (sport_id=58) covers three disciplines with distinct result_type and scope_t
 
 Structural and DQ checks for BMX should be scoped per discipline (via `object_discipline`), not only per sport_id, since result_type and scope_type usage vary by discipline.
 
-A tournament-level Comp.Rank statistic (statistic_typeFK=11, object_typeFK=3) is not necessarily scoped to a single discipline. Some BMX statistics span events from two disciplines within the same tournament (e.g. Racing+Time Trial, or Racing+Freestyle). Checks must not assume one statistic maps to exactly one discipline; discipline scoping must be verified per event via `object_discipline`, not inferred from the owning statistic alone.
+Sport 58 carries two editorially distinct sports across its three disciplines: Racing and Time Trial together form BMX Racing, while Freestyle is BMX Freestyle. A structure spanning Racing and Time Trial therefore stays inside one sport; one spanning Racing and Freestyle would cross both, which is why the two cases must not be treated as the same condition.
+
+Every BMX tournament-level Comp.Rank statistic (statistic_typeFK=11, object_typeFK=3) that reaches a discipline resolves to exactly one. Measured independently through both confirmed paths — `statistic_config` Event id (1471) → event → `object_discipline` (owner type 5), and the direct `object_discipline` relation on the statistic (owner type 83) — no statistic maps to more than one discipline. This replaces an earlier conclusion that some BMX statistics span two disciplines, which the current data does not reproduce through either path.
+
+The measurement is bounded by the discipline-orphan open question below. The two paths cover a similar but not identical population, and a substantial minority of active BMX Comp.Rank statistics reach neither, so they are outside this evidence and remain unclassified. A discipline-scoped check must verify that a path exists rather than assume it.
 
 `statistic.name` for BMX tournament-level Comp.Rank statistics has no fixed taxonomy — it is a free-text label typically embedding tournament, discipline and round context. Do not treat `statistic.name` as an enum when writing checks.
 
@@ -177,7 +187,9 @@ Confirmed active `tournament_stage.gender` values for BMX stages with active eve
 
 BMX Rank (`result_typeFK=100`) values within one event are not a contiguous `1..N` sequence. A participant who did not start or did not finish keeps an active Rank row holding a sentinel value outside the finishing order, paired with an active `comment` (`result_typeFK=104`) value such as `DNS` or `DNF`. The same convention produces duplicate Rank values, where several non-finishing participants share one sentinel. Confirmed positive control: event 5124031 stores ranks `1,2,3,4,5,7,7,10`, where both `7` rows carry `DNF` and the `10` row carries `DNS`. A check asserting rank-sequence completeness must exclude participants carrying an active comment value, or it reports this convention as a defect.
 
-Confirmed active BMX `comment` (`result_typeFK=104`) values: `DNS` and `DNF` for non-finishing participants, and `Q` marking a participant who advanced from a qualifying heat. `Q` accompanies a normal finishing rank and is not a non-finishing marker.
+Confirmed active BMX `comment` (`result_typeFK=104`) values: `Q`, `DNF`, `DNS`, `DISQ.`, `REL`, `DISQUALIFIED`, `DSQ` and `DNF/Q`. `Q` marks a participant who advanced from a qualifying heat; it accompanies a normal finishing rank and is not a non-finishing marker.
+
+The comment field is free text with no normalized vocabulary. Disqualification alone is written four ways — `DISQ.`, `DISQUALIFIED`, `DSQ` and, in one case, the compound `DNF/Q`. Any logic that classifies a participant status by comment must match a confirmed value set, never a single token, and must be re-derived from data when the sport's evidence is refreshed.
 
 A BMX event's Rank sequence may legitimately exceed its own participant count when the event stores competition-wide classification positions rather than within-event finishing order. Confirmed positive control: event 5221729 holds 114 active participants ranked `1..121` with interior gaps. Rank magnitude alone therefore does not identify a defect; an invalid rank is one that is both above the event's participant count and disconnected from the next lower rank in the same event.
 

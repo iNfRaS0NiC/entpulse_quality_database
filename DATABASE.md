@@ -367,6 +367,62 @@ owner object:
 
 Confirmed active owner types: `15` (participant), `83` (statistic), `4` (tournament_stage).
 
+#### `object_round`
+
+Numeric polymorphic bridge attaching a `round_type` to an owner object. A `type` column
+discriminates what the attachment means, so one table serves several unrelated purposes.
+
+| Important column | Structural meaning |
+|---|---|
+| `id` | Link identifier |
+| `object_typeFK`, `objectFK` | Owner type and owner ID |
+| `round_typeFK` | Attached round type |
+| `type` | Purpose of the attachment |
+| `del` | Soft-delete flag |
+
+Confirmed active combinations:
+
+| `object_typeFK` | `type` | Meaning |
+|---:|---|---|
+| `138` | `phase` | The round a Comp.Rank participant's rank was taken from |
+| `4` | `indicator` | Round attachment on a tournament stage |
+| `4` | `schedule` | Round attachment on a tournament stage |
+| `5` | `week` | Round attachment on an event |
+
+`type = 'phase'` is exclusive to Comp.Rank and is the only storage for the Phase concept.
+Across every active `phase` row, the owner resolves to a `statistic_participants11` row
+whose parent statistic is `statistic_typeFK = 11`, with no exception and no orphan, and
+`objectFK` is unique per row. No sibling object type exists for any other
+`statistic_participantsN` shard, so a Comp.Rank held in another shard has nowhere to record
+a Phase.
+
+Phase is not a copy of the owning event's `round_typeFK`. It records the round the rank was
+*derived from*, which for a participant ranked by an earlier round is not the last round
+they took part in.
+
+#### `venue_object`
+
+Numeric polymorphic bridge linking a `venue` to an owner object, structurally parallel to
+`city_object`.
+
+| Important column | Structural meaning |
+|---|---|
+| `id` | Link identifier |
+| `object_typeFK`, `objectFK` | Owner type and owner ID |
+| `venueFK` | Linked venue |
+| `neutral` | Whether the venue is neutral for the owner |
+| `del` | Soft-delete flag |
+
+Confirmed active owner types, by population: `5` (event), `4` (tournament_stage), `1`
+(sport), `43` (city), `2` (tournament_template), `83` (statistic).
+
+`venue` is a reference table (`id`, `name`, `countryFK`, `venue_typeFK`, `del`) carrying its
+own EAV attribute pair `venue_data` / `venue_data_type`.
+
+There is no `venueFK` column anywhere outside the `venue*` tables, so `venue_object` is the
+only mechanism attaching a venue to a hierarchy or statistic object. `object_relation` does
+not carry it: the only relation targeting `venue` (`19`) is venue-to-venue.
+
 <!-- MANUAL PASTE ZONE: DATABASE GENERIC OBJECT MODELS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---
@@ -387,6 +443,32 @@ Statistic definition owned through the numeric polymorphic model.
 
 A statistic type is not globally tied to one owner level. Owner type and owner ID must
 be discovered together for each sport/statistic type.
+
+### `statistic_type`
+
+Reference catalog selected by `statistic.statistic_typeFK`. Seventeen types exist:
+
+| ID | Name | ID | Name |
+|---:|---|---:|---|
+| 1 | Player Stats | 10 | Team Performance Statistics |
+| 2 | Tennis Stats | 11 | **Competition Stats** |
+| 3 | Team Stats | 12 | Player Action Zone Stats |
+| 4 | Player Stats Extended | 13 | Team Action Zone Stats |
+| 5 | Team Stats Extended | 14 | Player Stats Ratings |
+| 6 | Fun Facts Stats | 15 | Team Stats Ratings |
+| 7 | Tennis Doubles Stats | 16 | Expected Players stats |
+| 8 | Tennis Event Stats | 17 | Expected Team stats |
+| 9 | Player Performance Statistics | | |
+
+Type `11` is the only one whose subject is the competition itself; every other type
+describes the performance of a player or a team. This project calls it **Comp.Rank**; the
+database name is `Competition Stats` and both refer to `statistic.statistic_typeFK = 11`.
+
+`statistic_type.id` and `statistic_data_type.id` are separate catalogs whose numbers
+collide. `statistic_data_type.id = 11` is `Total games without goal` (`noscorings`),
+declared for statistic type `3`. Writing `statistic_data_typeFK = 11` where
+`statistic_typeFK = 11` is meant does not fail — it returns an empty result, which reads as
+"no data" rather than as a mistake. The field types belonging to type `11` start at `1270`.
 
 ### `statistic_participants1` … `statistic_participants17`
 
@@ -635,10 +717,12 @@ The behavior attached to a concrete status detail is sport-specific until confir
 | 15 | `participant` | Confirmed-data |
 | 19 | `venue` | Confirmed-data |
 | 33 | `country` | Confirmed-data |
+| 43 | `city` | Confirmed-schema-data |
 | 54 | `language` | Confirmed-data |
 | 59 | `object_participants` | Confirmed-data |
 | 73 | `lineup` | Confirmed-data |
 | 83 | `statistic` | Confirmed-data |
+| 138 | `statistic_participants11` | Confirmed-schema-data |
 | 148 | `discipline` | Confirmed-data |
 | 151 | `tournament_age_class` | Confirmed-data |
 | 152 | `tournament_sub_set` | Confirmed-data |
@@ -647,6 +731,12 @@ The behavior attached to a concrete status detail is sport-specific until confir
 | 159 | `object_relation` | Confirmed-data |
 
 Only IDs currently relevant to the active sports-content scope are listed.
+
+`object_type` is a real reference table (`id`, `name`), so a numeric owner type can be
+resolved by querying it rather than inferred from the owner's ID range or from the table a
+join happens to succeed against. Its `name` is the physical table name, which is what makes
+`138` unambiguous: the type is bound to one physical shard, not to statistic participants in
+general.
 
 <!-- MANUAL PASTE ZONE: DATABASE OBJECT TYPES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -810,6 +900,97 @@ different type/gender context. Their relationship and meaning are sport-specific
 An event row may represent a match, race, heat, round or another competition unit. The
 round/event model must be documented from the sport's actual rows and reference IDs.
 
+### `DB-SEM-011` — Comp.Rank and event results are different aggregation levels
+
+An event's `result` rows rank participants within one start: a single heat, quarter-final,
+semi-final or final, each stored as its own `event`. A Comp.Rank statistic
+(`statistic_typeFK = 11`) ranks participants across the whole competition, collecting the
+participants of many events into one ordered classification.
+
+The two are therefore not duplicates of each other and neither is derivable from the other
+by copying. A Comp.Rank position is ordinal by round reached first and by result within that
+round second, so it cannot be validated by comparing it numerically against event results:
+a participant eliminated earlier ranks below one eliminated later regardless of the times or
+points either recorded.
+
+The ordering unit is the discipline within a stage, not the tournament. One stage can hold
+several Comp.Rank statistics, one per competition it contains.
+
+No foreign key joins a Comp.Rank to the events it summarizes, but the two levels are not
+unlinked. Both sides identify people through the same `participant` table, and a
+tournament-owned Comp.Rank reaches its events through its own owner:
+
+```text
+statistic (11) → objectFK = tournament → tournament_stage → event → event_participants → participant
+statistic_participantsN → participantFK ───────────────────────────────────────────────────┘
+```
+
+`statistic_config` Event id (`1471`) additionally enumerates the specific events a statistic
+covers, where the sport populates it. The ownership path is the coarser of the two: it
+reaches every event of the tournament rather than only the competition the statistic ranks,
+so it supports asking whether a ranked participant appears in the tournament at all, but not
+whether every event participant was ranked.
+
+### `DB-SEM-012` — One round name exists as a knockout and a non-knockout round type
+
+`round_type.knockout` is the discriminator that separates two rows sharing one `name`. Of
+the active round type names, 104 carry both a `knockout = 'yes'` and a `knockout = 'no'`
+row under different IDs; 97 names exist only as knockout and 69 only as non-knockout. A
+round type is therefore identified by `id`, and a name plus the knockout flag — never a name
+alone.
+
+Confirmed pairs include Final (`9` yes, `173` no), Semi Finals (`2` yes, `178` no), Quarter
+Finals (`3` yes, `176` no), 1/8 (`4` yes, `184` no), 1/16 (`5` yes, `185` no) and 1/32
+(`6` yes, `188` no).
+
+Which variant a sport uses is a per-sport fact and must be recorded per sport. The two sides
+of one relation can disagree: a sport's events may carry the non-knockout variant while the
+Phase attached to that sport's Comp.Rank participants carries the knockout one, so both
+describe the same round while holding different IDs. A check comparing a Phase against an
+event's `round_typeFK` must treat the pair as equivalent, or it reports the whole population
+as mismatched.
+
+`round_type.value` is populated only on the main-bracket knockout rounds, where it holds the
+bracket size — Final `1`, Semi Finals `2`, Quarter Finals `4`, 1/8 `8`, 1/16 `16`, 1/32
+`32`. It is `0` on the non-knockout variants and on knockout rounds outside the main bracket
+such as Small Final, bronze and Qualifier.
+
+`round_type` carries no round-order column — its columns are `id`, `name`, `value`,
+`knockout`, `n`, `ut` and `del` — and `value` is not one: it *decreases* as the competition
+advances and is `0` for most rows. Round order therefore cannot be read from `round_type`.
+A process that needs rounds in competition order must carry that order itself. Ordering by
+name is equally unsafe, because names vary by sport and competition (`Final`, `Final A`,
+`Gold Medal Match`, `Main Final`) and are not unique across IDs.
+
+### `DB-SEM-013` — A Comp.Rank is identified by tournament, discipline and gender
+
+`tournament` is a season — `2002`, `2003/2004` — always reached from a sport and a
+tournament template. A Comp.Rank never spans more than one of them: a season-long series
+holds one Comp.Rank per stop and per unique competition within that season, not one covering
+several seasons.
+
+The attributes intended to identify a Comp.Rank are tournament, discipline and gender; age
+class does not distinguish two otherwise identical statistics, because a differing age class
+is not expected alongside an identical gender.
+
+Those three do not form a unique key in practice. A season holds one Comp.Rank per stop, all
+sharing the same tournament, and a single stage can hold several competitions of the same
+discipline and gender. What additionally separates two such statistics is not yet confirmed
+and is recorded as an open question below.
+
+Every event carrying a Final round type is expected to have its own Comp.Rank. The relation
+between the two is not stored as a foreign key, so this is an expectation about population
+completeness rather than a constraint the schema enforces.
+
+The owner is normally `tournament` (`object_typeFK = 3`). A minority of statistics are owned
+by `tournament_stage` (`4`) instead; this is a per-sport exception and must be confirmed for
+a sport before a check assumes either owner level.
+
+Discipline granularity varies by sport and is not a reliable proxy for "one competition".
+For Ski Jumping the disciplines are Ski Jumping, Team Ski Jumping and Super Team Ski Jumping,
+so two competitions of the same discipline and gender — a normal-hill and a large-hill
+event — are distinguished by neither. Uniqueness checks must therefore be written per sport.
+
 <!-- MANUAL PASTE ZONE: DATABASE STRUCTURAL SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---
@@ -833,5 +1014,13 @@ round/event model must be documented from the sport's actual rows and reference 
 - Schema and collation equality across all statistic data shards.
 - Complete scope import-table model and provider relation.
 - Taxonomy relationship between `scope_type` and `scope_data_type`.
+- What distinguishes two Comp.Rank statistics sharing one tournament, discipline and gender.
+  Those three are the intended identifying attributes (`DB-SEM-013`), but a season holds one
+  statistic per stop and a stage can hold several competitions of the same discipline and
+  gender, so no uniqueness check can be built on them until the additional discriminator is
+  confirmed.
+- Where the relation between a Comp.Rank and the events it covers will be stored once
+  `statistic_config` Event id (`1471`) becomes mandatory. It is populated for part of the
+  current data only, and statistics without it currently declare no event scope at all.
 
 <!-- MANUAL PASTE ZONE: DATABASE OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
