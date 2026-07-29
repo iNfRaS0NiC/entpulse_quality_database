@@ -2820,3 +2820,310 @@ WHERE e.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 ;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - BMX-DQ-044
+    -- Name - COMP.RANK_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE
+    -- What it does: Finds active BMX Comp.Rank statistic-participant rows, excluding IOC-purpose templates, whose numeric Rank value exceeds the number of active participants in their own statistic and is disconnected from the next lower Rank in that statistic, while carrying no active Comment value, with template and tournament name context, together with a coverage count of all eligible BMX Comp.Rank statistic-participant rows holding an active numeric Rank.
+    'RANK_OUTLIER_ABOVE_FIELD_SIZE' AS check_type,
+    sp.id AS statistic_participants_id,
+    f.statistic_id,
+    f.template_name,
+    f.tournament_name,
+    p.name AS participant_name,
+    CAST(sd.value AS UNSIGNED) AS rank_value,
+    f.participant_count,
+    (
+        SELECT MAX(CAST(sd2.value AS UNSIGNED))
+        FROM statistic_participants11 sp2
+        JOIN statistic_data11 sd2 ON sd2.statistic_participants11FK = sp2.id
+             AND sd2.statistic_data_typeFK = 1270
+             AND sd2.del = 'no'
+             AND sd2.value REGEXP '^[0-9]+$'
+        WHERE sp2.statisticFK = f.statistic_id
+          AND sp2.del = 'no'
+          AND CAST(sd2.value AS UNSIGNED) < CAST(sd.value AS UNSIGNED)
+    ) AS next_lower_rank,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(DISTINCT spf.id) AS participant_count
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_participants11 spf ON spf.statisticFK = s.id AND spf.del = 'no'
+    LEFT JOIN statistic_data11 sdf ON sdf.statistic_participants11FK = spf.id
+         AND sdf.statistic_data_typeFK = 1270
+         AND sdf.del = 'no'
+         AND sdf.value REGEXP '^[0-9]+$'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = 11
+      AND s.object_typeFK = 3
+      AND tt.sportFK = 58
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY s.id, tt.name, t.name
+    HAVING MAX(CAST(sdf.value AS UNSIGNED)) > COUNT(DISTINCT spf.id)
+) f
+JOIN statistic_participants11 sp ON sp.statisticFK = f.statistic_id AND sp.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+JOIN statistic_data11 sd ON sd.statistic_participants11FK = sp.id
+     AND sd.statistic_data_typeFK = 1270
+     AND sd.del = 'no'
+     AND sd.value REGEXP '^[0-9]+$'
+WHERE CAST(sd.value AS UNSIGNED) > f.participant_count
+  AND NOT EXISTS (
+      SELECT 1
+      FROM statistic_data11 sdc
+      WHERE sdc.statistic_participants11FK = sp.id
+        AND sdc.statistic_data_typeFK = 1273
+        AND sdc.del = 'no'
+        AND sdc.value IS NOT NULL
+        AND TRIM(sdc.value) <> ''
+  )
+HAVING next_lower_rank IS NULL
+    OR rank_value > next_lower_rank + 1
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sp.id) AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN statistic_data11 sd ON sd.statistic_participants11FK = sp.id
+     AND sd.statistic_data_typeFK = 1270
+     AND sd.del = 'no'
+     AND sd.value REGEXP '^[0-9]+$'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - BMX-DQ-045
+    -- Name - COMP.RANK_RESULTS_MEDAL_ON_NON_FINAL_PHASE
+    -- What it does: Finds active BMX Comp.Rank statistic-participant rows, excluding IOC-purpose templates, carrying an active non-empty Medal value while their object_round phase names a round type other than Final (9 or 173), with template and tournament name context and the offending phase, together with a coverage count of all eligible BMX Comp.Rank statistic-participant rows carrying an active non-empty Medal value.
+    'MEDAL_ON_NON_FINAL_PHASE' AS check_type,
+    sp.id AS statistic_participants_id,
+    s.id AS statistic_id,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    p.name AS participant_name,
+    sd.value AS medal_value,
+    orr.round_typeFK AS phase_round_type_id,
+    rt.name AS phase_round_name,
+    NULL AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+JOIN statistic_data11 sd ON sd.statistic_participants11FK = sp.id
+     AND sd.statistic_data_typeFK = 1277
+     AND sd.del = 'no'
+     AND sd.value IS NOT NULL
+     AND TRIM(sd.value) <> ''
+JOIN object_round orr ON orr.objectFK = sp.id
+     AND orr.object_typeFK = 138
+     AND orr.type = 'phase'
+     AND orr.del = 'no'
+LEFT JOIN round_type rt ON rt.id = orr.round_typeFK
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND orr.round_typeFK NOT IN (9, 173)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sp.id) AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN statistic_data11 sd ON sd.statistic_participants11FK = sp.id
+     AND sd.statistic_data_typeFK = 1277
+     AND sd.del = 'no'
+     AND sd.value IS NOT NULL
+     AND TRIM(sd.value) <> ''
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - BMX-DQ-046
+    -- Name - COMP.RANK_RESULTS_NO_RANK_DATA_FOR_PARTICIPANTS
+    -- What it does: Finds active BMX Comp.Rank statistics, excluding IOC-purpose templates, that hold at least one active participant but no active non-empty Rank data value for any of them, separating statistics holding no data value of any type from those holding other data but no Rank, with template and tournament name context, together with a coverage count of all eligible BMX Comp.Rank statistics holding at least one active participant.
+    CASE
+        WHEN y.data_rows = 0 THEN 'PARTICIPANTS_BUT_NO_DATA_AT_ALL'
+        ELSE 'DATA_BUT_NO_RANK_AT_ALL'
+    END AS check_type,
+    y.statistic_id,
+    y.statistic_name,
+    y.template_name,
+    y.tournament_name,
+    y.participant_count,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(DISTINCT sp.id) AS participant_count,
+        COUNT(sd.id) AS data_rows,
+        COUNT(CASE WHEN sd.statistic_data_typeFK = 1270 THEN sd.id END) AS rank_rows
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    LEFT JOIN statistic_data11 sd ON sd.statistic_participants11FK = sp.id
+         AND sd.del = 'no'
+         AND sd.value IS NOT NULL
+         AND TRIM(sd.value) <> ''
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = 11
+      AND s.object_typeFK = 3
+      AND tt.sportFK = 58
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY s.id, s.name, tt.name, t.name
+) y
+WHERE y.rank_rows = 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 58
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - BMX-DQ-047
+    -- Name - EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK
+    -- What it does: Finds active BMX event-participant rows in Final-round events (9 or 173), excluding IOC-purpose templates, whose participant appears in none of the populated Comp.Rank statistics that reference their event through statistic_config Event id (1471), with template, tournament and event name context, together with a coverage count of all eligible BMX Final-round event-participants whose event is referenced by at least one populated Comp.Rank statistic.
+    'FINAL_PARTICIPANT_NOT_IN_COMP.RANK' AS check_type,
+    ep.id AS event_participants_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    p.name AS participant_name,
+    NULL AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 58
+  AND e.round_typeFK IN (9, 173)
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM statistic_config sc2
+      JOIN statistic s2 ON s2.id = sc2.statisticFK
+           AND s2.del = 'no'
+           AND s2.statistic_typeFK = 11
+           AND s2.object_typeFK = 3
+      WHERE sc2.statistic_data_typeFK = 1471
+        AND sc2.del = 'no'
+        AND CAST(sc2.value AS UNSIGNED) = e.id
+        AND EXISTS (
+            SELECT 1
+            FROM statistic_participants11 spx
+            WHERE spx.statisticFK = s2.id AND spx.del = 'no'
+        )
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM statistic_config sc
+      JOIN statistic s ON s.id = sc.statisticFK
+           AND s.del = 'no'
+           AND s.statistic_typeFK = 11
+           AND s.object_typeFK = 3
+      JOIN statistic_participants11 sp ON sp.statisticFK = s.id
+           AND sp.del = 'no'
+           AND sp.participantFK = ep.participantFK
+      WHERE sc.statistic_data_typeFK = 1471
+        AND sc.del = 'no'
+        AND CAST(sc.value AS UNSIGNED) = e.id
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 58
+  AND e.round_typeFK IN (9, 173)
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM statistic_config sc2
+      JOIN statistic s2 ON s2.id = sc2.statisticFK
+           AND s2.del = 'no'
+           AND s2.statistic_typeFK = 11
+           AND s2.object_typeFK = 3
+      WHERE sc2.statistic_data_typeFK = 1471
+        AND sc2.del = 'no'
+        AND CAST(sc2.value AS UNSIGNED) = e.id
+        AND EXISTS (
+            SELECT 1
+            FROM statistic_participants11 spx
+            WHERE spx.statisticFK = s2.id AND spx.del = 'no'
+        )
+  )
+;
