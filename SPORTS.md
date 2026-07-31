@@ -13,6 +13,7 @@ mechanisms from `DATABASE.md`.
 | Sport ID | Sport | Structural file | Structural status | Last evidence date |
 |---:|---|---|---|---|
 | 58 | BMX | `SPORTS/BMX.md` | In progress | 2026-07-22 |
+| 50 | Triathlon | `SPORTS/Triathlon.md` | In progress | 2026-07-30 |
 
 <!-- MANUAL PASTE ZONE: SPORT INDEX — insert approved additions immediately before this marker; do not move or delete it. -->
 
