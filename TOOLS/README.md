@@ -127,6 +127,7 @@ the account in use. The summary:
 | `BMX-DQ-001,BMX-DQ-005` | A chosen few |
 | `BMX-DQ-*` | Every match; more than one switches to batch mode |
 | `-MaxChecks 10` | Cap how many matched checks actually run |
+| `-WithPatterns` | Add the round-type and name-pattern statements to the run |
 | `-Preview 200` | Show more than the default 50 screen rows |
 | `-OutFile .\out.csv` | Write one check to a file |
 | `-OutDir .\out` | Batch target folder |
@@ -224,6 +225,39 @@ run, because there it is a mistake rather than a deferred choice.
 
 On a sport with a large event or statistic volume, run a capped batch first —
 `-MaxChecks 8` — and read what it costs before letting the whole catalogue go.
+
+### Patterns alongside a DQ run
+
+A DQ finding is read against the names and round types the sport actually uses, so
+`-WithPatterns` carries both in one workbook:
+
+```powershell
+.\TOOLS\Run-Query.ps1 GLOBAL-DQ-* -Sport BMX -WithPatterns -Format xlsx
+```
+
+Which statements qualify is derived from their parameters rather than listed by ID: every
+`GLOBAL_QUERIES/PATTERNS.sql` statement whose placeholders `-Sport` can supply — the sport
+ID, the statistic type and owner, the physical shard. Today that is the four summaries,
+`018`, `020`, `022` and `024`. A pattern statement added later needs no change here; it is
+picked up or left out on its own parameters.
+
+Note that `024` is included although it declares more than `SPORT_ID`: it also needs
+`STATISTIC_TYPE_ID` and `STATISTIC_OWNER_TYPE_ID`, and those are structural facts `-Sport`
+resolves from `SPORTS/params.json` or discovers. What decides is whether a parameter can be
+resolved without a human reading a result, not how many there are.
+
+A drill-down is deliberately left out on the same test. Its parameter is a round type, a
+name pattern or a result type — a value picked out of a summary — and choosing one
+automatically would produce a sample dressed up as coverage. Run it afterwards by the
+normal path, with the value chosen from its summary:
+
+```powershell
+.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-021 -Sport Triathlon -Params NAME_PATTERN="Triathlon"
+```
+
+Anything the run already matched is not added twice, and the switch applies after
+`-MaxChecks`, because the cap exists to trim the matched set while these were asked for by
+name. Without `-Sport`, an unfilled placeholder stops the run as it always does.
 
 What a run produces is execution output, never evidence. `WORKFLOW.md` "Starting a new
 sport" owns the sequence around these commands: which drill-downs to run, how a confirmed

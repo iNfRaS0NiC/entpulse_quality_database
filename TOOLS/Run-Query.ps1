@@ -52,6 +52,12 @@
     Runs the whole BMX catalogue into one workbook under "D:\SQL's Output".
 
 .EXAMPLE
+    .\TOOLS\Run-Query.ps1 GLOBAL-DQ-* -Sport BMX -WithPatterns -Format xlsx
+    The sport's DQ templates plus every PATTERNS.sql statement whose parameters -Sport can
+    supply, in one workbook, so a finding can be read against the names and round types
+    actually in use. A drill-down needs a value picked out of a summary and is left out.
+
+.EXAMPLE
     .\TOOLS\Run-Query.ps1 BMX-DQ-001,BMX-DQ-002,BMX-DQ-003 -OutDir .\out
 
 .EXAMPLE
@@ -96,6 +102,11 @@ param(
 
     # Cap how many of the matched checks actually run. 0 means no cap.
     [int]$MaxChecks,
+
+    # Adds the pattern statements to whatever else the run matched, typically a whole
+    # sport's DQ catalogue, so one workbook carries the findings together with the round
+    # types and the name patterns they have to be read against.
+    [switch]$WithPatterns,
 
     [int]$Preview = 50,
 
@@ -1345,6 +1356,12 @@ if ($Info) {
     Write-Host '  result are listed and skipped, never guessed. An explicit -SportId or' -ForegroundColor DarkGray
     Write-Host '  -Params wins over a discovered value.' -ForegroundColor DarkGray
 
+    Write-Section 'PATTERNS ALONGSIDE A RUN'
+    Write-Line "$Entry GLOBAL-DQ-* -Sport BMX -WithPatterns -Format xlsx" 'DQ plus the patterns'
+    Write-Host '  Adds every PATTERNS.sql statement whose parameters -Sport can supply:' -ForegroundColor DarkGray
+    Write-Host '  the round-type and name-pattern summaries. A drill-down is left out,' -ForegroundColor DarkGray
+    Write-Host '  its value being one you pick out of a summary and run separately.' -ForegroundColor DarkGray
+
     Write-Section 'AD-HOC SQL'
     Write-Line "$Entry -Sql `"SELECT COUNT(*) AS c FROM sport;`"" 'run a literal statement'
     Write-Line "$Entry -File .\scratch.sql" 'run a file'
@@ -1405,6 +1422,42 @@ else {
 if ($MaxChecks -gt 0 -and $jobs.Count -gt $MaxChecks) {
     Write-Host "Matched $($jobs.Count) checks, running the first $MaxChecks." -ForegroundColor DarkGray
     $jobs = $jobs[0..($MaxChecks - 1)]
+}
+
+# The pattern statements answer "which round types and names does this sport actually
+# use", which is the context a DQ finding is read against, so they are worth carrying in
+# the same workbook.
+#
+# Which of them qualify is derived rather than listed: a statement is automatic when every
+# placeholder it declares is one -Sport can supply. That is exactly what separates a
+# pattern summary from a drill-down, whose parameter is a value read out of a summary
+# result and would be a sample dressed up as coverage if it were chosen automatically. No
+# list of IDs to keep in step with PATTERNS.sql, and a pattern statement added later is
+# picked up or left out on its own parameters.
+#
+# Applied after -MaxChecks: the cap exists to trim the matched set, and these were asked
+# for by name rather than matched. Injected before the parameters are resolved, so -Sport
+# discovers whatever they need on a sport that has none recorded yet.
+if ($WithPatterns) {
+    $automatic = @{}
+    foreach ($name in $DiscoverableParameters) { $automatic[$name] = $true }
+
+    $alreadyMatched = @{}
+    foreach ($job in $jobs) {
+        if ($job.CheckId) { $alreadyMatched[$job.CheckId] = $true }
+    }
+
+    $added = @(Get-CheckCatalogue |
+        Where-Object { $_.File -eq 'PATTERNS.sql' } |
+        Where-Object { -not $alreadyMatched.ContainsKey($_.CheckId) } |
+        Where-Object { (Get-MissingPlaceholders -Text $_.Sql -Values $automatic).Count -eq 0 } |
+        Sort-Object CheckId)
+
+    if ($added.Count -gt 0) {
+        $jobs = @($jobs) + $added
+        Write-Host ("Adding {0} pattern statement(s): {1}" -f `
+                $added.Count, (($added | ForEach-Object { $_.CheckId }) -join ', ')) -ForegroundColor DarkGray
+    }
 }
 
 # ----- parameters ----------------------------------------------------------------------
