@@ -151,6 +151,7 @@ Full SQL never belongs here. It is stored in one sport-scoped file under
 | Triathlon-DQ-055 | Triathlon | GLOBAL-DQ-049 | MALFORMED_NAME | EVENT | EVENT_NAME_FORMAT_INVALID | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
 | Triathlon-DQ-056 | Triathlon | GLOBAL-DQ-050 | MALFORMED_NAME | TOURNAMENT_STAGE | TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
 | Triathlon-DQ-057 | Triathlon | GLOBAL-DQ-051 | MALFORMED_NAME | COMP.RANK | COMP.RANK_NAME_FORMAT_INVALID | `GLOBAL_DQ/STATISTICS.sql` | Approved |
+| Triathlon-DQ-058 | Triathlon | GLOBAL-DQ-058 | NO_RELATED_RECORDS | EVENT | EVENT_TEAM_PARTICIPANT_WITHOUT_LINEUP | `GLOBAL_DQ/PARTICIPANTS.sql` | Approved |
 
 
 <!-- MANUAL PASTE ZONE: POWERBI DQ REGISTRY — insert approved additions immediately before this marker; do not move or delete it. -->
