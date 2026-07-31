@@ -1371,42 +1371,38 @@ ORDER BY sort_order, violating_record_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-051
     -- Name - COMP.RANK_NAME_FORMAT_INVALID
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type whose name breaks at least one text-hygiene rule - edge or doubled spacing, a control or non-ASCII character, a hyphen without surrounding spaces, a year glued to a word, or a capitalisation shape a proof-read name does not take - naming every rule the name breaks, with template and tournament name context, together with a coverage count of all eligible named statistics.
+    -- What it does: Finds each distinct active tournament-owned statistic name that breaks at least one text-hygiene rule - edge or doubled spacing, a control or non-ASCII character, a hyphen without surrounding spaces, a year glued to a word, or a capitalisation shape a proof-read name does not take - naming every rule the name breaks and how many objects carry it, reporting one row per offending name rather than one per object repeating it, together with a coverage count of all distinct eligible names.
     'Name_Format_Invalid' AS check_type,
-    x.statistic_id,
-    x.statistic_name,
-    x.template_name,
-    x.tournament_name,
-    CONCAT_WS(', ',
-        IF(x.f_edge_space, 'LEADING_OR_TRAILING_SPACE', NULL),
-        IF(x.f_double_space, 'DOUBLE_SPACE', NULL),
-        IF(x.f_control, 'CONTROL_CHARACTER', NULL),
-        IF(x.f_non_ascii, 'NON_ASCII_CHARACTER', NULL),
-        IF(x.f_hyphen, 'HYPHEN_WITHOUT_SPACES', NULL),
-        IF(x.f_year_glued, 'YEAR_GLUED_TO_WORD', NULL),
-        IF(x.f_double_capital, 'DOUBLE_CAPITAL', NULL),
-        IF(x.f_all_uppercase, 'ALL_UPPERCASE', NULL),
-        IF(x.f_starts_lowercase, 'STARTS_LOWERCASE', NULL)
-    ) AS violation_types,
+    MIN(x.object_name) AS statistic_name,
+    x.violation_types,
+    COUNT(DISTINCT x.object_id) AS affected_object_count,
+    MIN(x.object_id) AS sample_object_id,
+    MIN(x.template_name) AS template_name,
+    MIN(x.tournament_name) AS sample_tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
 FROM (
     SELECT
-        s.id AS statistic_id,
-        s.name AS statistic_name,
+        s.id AS object_id,
+        s.name AS object_name,
+        -- The grouping key is binary: under the column's case-insensitive collation two
+        -- spellings that differ only in case would collapse into one group, which is the
+        -- distinction GLOBAL-DQ-050 exists to report.
+        (CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) AS name_bin,
         tt.name AS template_name,
         t.name AS tournament_name,
-        -- The nine rules are identical to GLOBAL-DQ-048; their reasoning is recorded there.
-        (CHAR_LENGTH(s.name) <> CHAR_LENGTH(TRIM(s.name))) AS f_edge_space,
-        (s.name LIKE '%  %') AS f_double_space,
-        (s.name REGEXP '[[:cntrl:]]') AS f_control,
-        (LENGTH(s.name) <> CHAR_LENGTH(s.name)) AS f_non_ascii,
-        (s.name REGEXP '[^ ]-|-[^ ]') AS f_hyphen,
-        ((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z][12][0-9][0-9][0-9]|[12][0-9][0-9][0-9][A-Za-z]') AS f_year_glued,
-        ((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Z][A-Z][a-z]') AS f_double_capital,
-        ((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z]'
-            AND (CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) NOT REGEXP '[a-z]') AS f_all_uppercase,
-        ((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '^[a-z]') AS f_starts_lowercase
+        CONCAT_WS(', ',
+            IF(CHAR_LENGTH(s.name) <> CHAR_LENGTH(TRIM(s.name)), 'LEADING_OR_TRAILING_SPACE', NULL),
+            IF(s.name LIKE '%  %', 'DOUBLE_SPACE', NULL),
+            IF(s.name REGEXP '[[:cntrl:]]', 'CONTROL_CHARACTER', NULL),
+            IF(LENGTH(s.name) <> CHAR_LENGTH(s.name), 'NON_ASCII_CHARACTER', NULL),
+            IF(s.name REGEXP '[^ ]-|-[^ ]', 'HYPHEN_WITHOUT_SPACES', NULL),
+            IF((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z][12][0-9][0-9][0-9]|[12][0-9][0-9][0-9][A-Za-z]', 'YEAR_GLUED_TO_WORD', NULL),
+            IF((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Z][A-Z][a-z]', 'DOUBLE_CAPITAL', NULL),
+            IF((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z]'
+               AND (CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) NOT REGEXP '[a-z]', 'ALL_UPPERCASE', NULL),
+            IF((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '^[a-z]', 'STARTS_LOWERCASE', NULL)
+        ) AS violation_types
     FROM statistic s
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -1415,20 +1411,19 @@ FROM (
       AND s.object_typeFK = 3
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- A statistic with no name at all is GLOBAL-DQ-035's finding, not this one.
       AND s.name IS NOT NULL
       AND TRIM(s.name) <> ''
       -- AND tt.id = <tournament_template_id>
 ) x
-WHERE x.f_edge_space OR x.f_double_space OR x.f_control OR x.f_non_ascii OR x.f_hyphen
-   OR x.f_year_glued OR x.f_double_capital OR x.f_all_uppercase OR x.f_starts_lowercase
+WHERE x.violation_types <> ''
+GROUP BY x.name_bin, x.violation_types
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT s.id) AS eligible_count,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT (CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin)) AS eligible_count,
     1 AS sort_order
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
