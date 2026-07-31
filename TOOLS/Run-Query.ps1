@@ -24,6 +24,11 @@
     statement that ran as a single line, row 3 the link back to Overview, and the result
     table from row 5. Upload that file to Google Drive and open it as Sheets.
 
+    A batch is written to survive being cut short. Each statement runs under a wall-clock
+    watchdog, so a connection the server half-closes is abandoned as a failed check instead
+    of stalling the run, and a workbook is re-written every minute with the checks completed
+    so far. Interrupting a run therefore costs at most the last minute of it, not all of it.
+
     Each run writes into its own folder under "D:\SQL's Output", named for the sport and the
     run time. EP_QB_OUTPUT overrides the root; -OutDir and -OutFile override it entirely.
 
@@ -134,6 +139,23 @@ if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
 
 # Small pause between statements in a batch, so a long catalogue does not hammer the API.
 $BatchDelayMs = 250
+
+# How long a single statement may take before the runner stops waiting for it. The first
+# value is what the HTTP stack is told; the second is the wall clock the watchdog holds it
+# to, because -TimeoutSec has been observed not to fire at all when the server half-closes
+# the connection instead of answering. The grace between them lets a request that is merely
+# slow fail with the server's own message rather than as an abandoned one.
+$StatementTimeoutSec = 300
+$WatchdogGraceSec = 30
+
+# An abandoned request keeps its connection until the process exits, and the default limit
+# of two per endpoint would let a couple of them stall every statement that follows.
+[Net.ServicePointManager]::DefaultConnectionLimit = 64
+
+# How often a batch writing a workbook re-writes it with the checks completed so far.
+# Rebuilding costs real time on a large catalogue, so this trades a bounded slowdown for
+# never losing more than this much of a run.
+$SnapshotIntervalSec = 60
 
 # Hoisted out of the cell writer, which runs once per cell across thousands of rows.
 $XlsxNumericTypes = @([int], [long], [double], [decimal], [single], [int16], [uint16], [uint32], [uint64], [byte], [sbyte])
@@ -430,6 +452,23 @@ function Get-XsrfHeaderValue {
 # Execution
 # --------------------------------------------------------------------------------------
 
+# Runs in a runspace of its own so the caller can walk away from it. A failure is returned
+# as data rather than thrown: the ErrorRecord has to cross the runspace boundary intact for
+# Get-ErrorDetail to read the MySQL message off the response body.
+$RemoteSqlScript = @'
+param($Session, $Url, $Body, $Headers, $TimeoutSec)
+$ErrorActionPreference = 'Stop'
+try {
+    $response = Invoke-WebRequest -Uri $Url -Method POST -Body $Body `
+        -ContentType 'application/x-www-form-urlencoded' -Headers $Headers `
+        -WebSession $Session -UseBasicParsing -TimeoutSec $TimeoutSec
+    [pscustomobject]@{ Response = $response; Failure = $null }
+}
+catch {
+    [pscustomobject]@{ Response = $null; Failure = $_ }
+}
+'@
+
 function Invoke-RemoteSql {
     param($Session, [string]$Statement)
 
@@ -443,9 +482,31 @@ function Invoke-RemoteSql {
 
     $body = 'sql=' + [uri]::EscapeDataString($Statement)
 
-    return Invoke-WebRequest -Uri $ExecuteUrl -Method POST -Body $body `
-        -ContentType 'application/x-www-form-urlencoded' -Headers $headers `
-        -WebSession $Session -UseBasicParsing -TimeoutSec 300
+    $shell = [powershell]::Create()
+    [void]$shell.AddScript($RemoteSqlScript)
+    [void]$shell.AddArgument($Session)
+    [void]$shell.AddArgument($ExecuteUrl)
+    [void]$shell.AddArgument($body)
+    [void]$shell.AddArgument($headers)
+    [void]$shell.AddArgument($StatementTimeoutSec)
+
+    $async = $shell.BeginInvoke()
+    $limit = $StatementTimeoutSec + $WatchdogGraceSec
+
+    if (-not $async.AsyncWaitHandle.WaitOne([timespan]::FromSeconds($limit))) {
+        # Stop() would block on the very call that is stuck, and Dispose() waits for Stop,
+        # so the runspace is signalled asynchronously and then left behind. It holds one
+        # thread and one dead socket until the process exits; the run carries on.
+        [void]$shell.BeginStop($null, $null)
+        throw ("No response after {0}s. The connection wedged rather than failing, " -f $limit) +
+        'so the statement was abandoned. Nothing ran twice; re-run this check on its own.'
+    }
+
+    try { $result = @($shell.EndInvoke($async)) } finally { $shell.Dispose() }
+
+    if ($result.Count -eq 0) { throw 'The request ended without returning anything.' }
+    if ($result[0].Failure) { throw $result[0].Failure }
+    return $result[0].Response
 }
 
 function Get-ErrorDetail {
@@ -944,11 +1005,17 @@ function Save-Workbook {
             $rows = @($sheet.Rows)
 
             # Columns are unioned across rows, because a later row may carry a key
-            # the first one lacked.
+            # the first one lacked. Membership goes through a hashtable rather than
+            # -notcontains: this runs once per cell, and the interim snapshots repeat
+            # the whole build several times per run.
             $columns = @()
+            $seenColumn = @{}
             foreach ($row in $rows) {
                 foreach ($property in $row.PSObject.Properties) {
-                    if ($columns -notcontains $property.Name) { $columns += $property.Name }
+                    if (-not $seenColumn.ContainsKey($property.Name)) {
+                        $seenColumn[$property.Name] = $true
+                        $columns += $property.Name
+                    }
                 }
             }
 
@@ -1114,6 +1181,96 @@ function Save-Rows {
     else {
         $Rows | Export-Csv -LiteralPath $Path -NoTypeInformation -Encoding UTF8
     }
+}
+
+function Save-RunWorkbook {
+    # Builds the whole workbook out of what the run has produced so far, so one piece of
+    # code writes both the interim snapshots and the final file. Returns the checks whose
+    # tab name still had to be cut.
+    param($Summary, $Collected, [string]$Path)
+
+    # The summary leads, so a clean or failed check is still visible in the
+    # workbook even though it has no tab of its own.
+    # Overview is reserved first, so a check named the same cannot take the name and
+    # leave the links pointing at the wrong tab.
+    $used = @{}
+    $overviewName = ConvertTo-SheetName -Preferred 'Overview' -Fallback 'Overview' -Used $used
+
+    $tabOf = @{}
+    $shortened = @()
+    foreach ($item in $Collected) {
+        $preferred = if ($item.Job.Name) { $item.Job.Name } else { $item.Job.CheckId }
+        $abbreviated = Get-ShortSheetName -Name $preferred
+        $sheetName = ConvertTo-SheetName -Preferred $abbreviated -Fallback $item.Job.CheckId -Used $used
+        $tabOf[$item.Job.CheckId] = $sheetName
+        # Abbreviation is lossless enough to pass unreported; only a name that still had
+        # to be cut is worth flagging.
+        if ($sheetName -ne $abbreviated) {
+            $shortened += [pscustomobject]@{ CheckId = $item.Job.CheckId; Wanted = $preferred; Tab = $sheetName }
+        }
+    }
+
+    # Rows is both the count and the jump to its tab: the display attribute keeps the
+    # number readable in Google Sheets, so the link costs the cell nothing. A check that
+    # failed has no tab and stays unlinked. Status is a manual tracking field.
+    $overviewRows = @()
+    $links = @()
+    $overviewRow = 1
+
+    foreach ($entry in $Summary) {
+        $overviewRow++
+        # A check that failed or never ran would otherwise read as a clean zero.
+        $rowsCell = switch -Wildcard ($entry.Status) {
+            'ERROR*' { 'ERROR' }
+            'SKIPPED*' { 'SKIPPED' }
+            default { $entry.Rows }
+        }
+        $ran = ($rowsCell -isnot [string])
+
+        $overviewRows += [pscustomobject]@{
+            'Sport'      = Get-SportFromCheckId -CheckId $entry.CheckId
+            'CheckID'    = $entry.CheckId
+            'Check Name' = $entry.Name
+            'Rows'       = $rowsCell
+            'Status'     = 'Not Started'
+        }
+        if ($ran -and $tabOf.ContainsKey($entry.CheckId)) {
+            $links += [pscustomobject]@{
+                Ref    = "D$overviewRow"
+                Target = $tabOf[$entry.CheckId]
+                Text   = [string]$entry.Rows
+            }
+        }
+    }
+
+    $sheets = @([pscustomobject]@{
+            Name       = $overviewName
+            Rows       = $overviewRows
+            Header     = $null
+            BackTo     = $null
+            Links      = $links
+            Validation = @{
+                Sqref  = "E2:E$overviewRow"
+                Values = 'Not Started,In Progress,Completed'
+            }
+        })
+
+    foreach ($item in $Collected) {
+        $sheets += [pscustomobject]@{
+            Name   = $tabOf[$item.Job.CheckId]
+            Rows   = $item.Rows
+            Header = @($item.Job.CheckId, $item.Job.Name, (ConvertTo-SingleLineSql -Sql $item.Job.Sql))
+            BackTo = $overviewName
+        }
+    }
+
+    # Written aside and moved into place, so a snapshot interrupted halfway cannot leave a
+    # truncated zip where the last good one was.
+    $writing = $Path + '.writing'
+    Save-Workbook -Sheets $sheets -Path $writing
+    Move-Item -LiteralPath $writing -Destination $Path -Force
+
+    return $shortened
 }
 
 # --------------------------------------------------------------------------------------
@@ -1367,6 +1524,7 @@ if ($isBatch) {
     $summary = @()
     $collected = @()
     $index = 0
+    $lastSnapshot = Get-Date
 
     foreach ($job in $jobs) {
         $index++
@@ -1413,6 +1571,22 @@ if ($isBatch) {
         Write-Host ("[{0}/{1}] {2}  rows={3}  {4:n1}s  {5}" -f `
                 $index, $jobs.Count, $job.CheckId, $rowCount, $elapsed, $status) -ForegroundColor $colour
 
+        # A run that wedges or is interrupted must not cost the checks that already
+        # succeeded. Flat files are written per check as they come, so only the workbook
+        # needs this. A snapshot that cannot be written - the file open in Excel, most
+        # likely - is reported and skipped: it must never end the run it exists to protect.
+        if ($isWorkbook -and $collected.Count -gt 0 -and $index -lt $jobs.Count -and
+            ((Get-Date) - $lastSnapshot).TotalSeconds -ge $SnapshotIntervalSec) {
+            try {
+                Save-RunWorkbook -Summary $summary -Collected $collected -Path $workbookPath | Out-Null
+                Write-Host ("        snapshot: {0} of {1} checks saved" -f $index, $jobs.Count) -ForegroundColor DarkGray
+            }
+            catch {
+                Write-Host "        snapshot failed: $($_.Exception.Message)" -ForegroundColor Yellow
+            }
+            $lastSnapshot = Get-Date
+        }
+
         if ($index -lt $jobs.Count) { Start-Sleep -Milliseconds $BatchDelayMs }
     }
 
@@ -1431,82 +1605,7 @@ if ($isBatch) {
     }
 
     if ($isWorkbook) {
-        # The summary leads, so a clean or failed check is still visible in the
-        # workbook even though it has no tab of its own.
-        # Overview is reserved first, so a check named the same cannot take the name and
-        # leave the links pointing at the wrong tab.
-        $used = @{}
-        $overviewName = ConvertTo-SheetName -Preferred 'Overview' -Fallback 'Overview' -Used $used
-
-        $tabOf = @{}
-        $shortened = @()
-        foreach ($item in $collected) {
-            $preferred = if ($item.Job.Name) { $item.Job.Name } else { $item.Job.CheckId }
-            $abbreviated = Get-ShortSheetName -Name $preferred
-            $sheetName = ConvertTo-SheetName -Preferred $abbreviated -Fallback $item.Job.CheckId -Used $used
-            $tabOf[$item.Job.CheckId] = $sheetName
-            # Abbreviation is lossless enough to pass unreported; only a name that still had
-            # to be cut is worth flagging.
-            if ($sheetName -ne $abbreviated) {
-                $shortened += [pscustomobject]@{ CheckId = $item.Job.CheckId; Wanted = $preferred; Tab = $sheetName }
-            }
-        }
-
-        # Rows is both the count and the jump to its tab: the display attribute keeps the
-        # number readable in Google Sheets, so the link costs the cell nothing. A check that
-        # failed has no tab and stays unlinked. Status is a manual tracking field.
-        $overviewRows = @()
-        $links = @()
-        $overviewRow = 1
-
-        foreach ($entry in $summary) {
-            $overviewRow++
-            # A check that failed or never ran would otherwise read as a clean zero.
-            $rowsCell = switch -Wildcard ($entry.Status) {
-                'ERROR*' { 'ERROR' }
-                'SKIPPED*' { 'SKIPPED' }
-                default { $entry.Rows }
-            }
-            $ran = ($rowsCell -isnot [string])
-
-            $overviewRows += [pscustomobject]@{
-                'Sport'      = Get-SportFromCheckId -CheckId $entry.CheckId
-                'CheckID'    = $entry.CheckId
-                'Check Name' = $entry.Name
-                'Rows'       = $rowsCell
-                'Status'     = 'Not Started'
-            }
-            if ($ran -and $tabOf.ContainsKey($entry.CheckId)) {
-                $links += [pscustomobject]@{
-                    Ref    = "D$overviewRow"
-                    Target = $tabOf[$entry.CheckId]
-                    Text   = [string]$entry.Rows
-                }
-            }
-        }
-
-        $sheets = @([pscustomobject]@{
-                Name       = $overviewName
-                Rows       = $overviewRows
-                Header     = $null
-                BackTo     = $null
-                Links      = $links
-                Validation = @{
-                    Sqref  = "E2:E$overviewRow"
-                    Values = 'Not Started,In Progress,Completed'
-                }
-            })
-
-        foreach ($item in $collected) {
-            $sheets += [pscustomobject]@{
-                Name   = $tabOf[$item.Job.CheckId]
-                Rows   = $item.Rows
-                Header = @($item.Job.CheckId, $item.Job.Name, (ConvertTo-SingleLineSql -Sql $item.Job.Sql))
-                BackTo = $overviewName
-            }
-        }
-
-        Save-Workbook -Sheets $sheets -Path $workbookPath
+        $shortened = @(Save-RunWorkbook -Summary $summary -Collected $collected -Path $workbookPath)
         $destination = $workbookPath
     }
     else {
