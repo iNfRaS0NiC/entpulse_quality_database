@@ -707,3 +707,232 @@ WHERE e.del = 'no'
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-048
+    -- Name - TOURNAMENT_STAGE_NAME_FORMAT_INVALID
+    -- What it does: Finds active tournament stages whose name breaks at least one text-hygiene rule - edge or doubled spacing, a control or non-ASCII character, a hyphen without surrounding spaces, a year glued to a word, or a capitalisation shape a proof-read name does not take - naming every rule the name breaks, together with a coverage count of all eligible named stages.
+    'Name_Format_Invalid' AS check_type,
+    x.stage_id AS tournament_stage_id,
+    x.stage_name,
+    x.template_name,
+    x.tournament_name,
+    CONCAT_WS(', ',
+        IF(x.f_edge_space, 'LEADING_OR_TRAILING_SPACE', NULL),
+        IF(x.f_double_space, 'DOUBLE_SPACE', NULL),
+        IF(x.f_control, 'CONTROL_CHARACTER', NULL),
+        IF(x.f_non_ascii, 'NON_ASCII_CHARACTER', NULL),
+        IF(x.f_hyphen, 'HYPHEN_WITHOUT_SPACES', NULL),
+        IF(x.f_year_glued, 'YEAR_GLUED_TO_WORD', NULL),
+        IF(x.f_double_capital, 'DOUBLE_CAPITAL', NULL),
+        IF(x.f_all_uppercase, 'ALL_UPPERCASE', NULL),
+        IF(x.f_starts_lowercase, 'STARTS_LOWERCASE', NULL)
+    ) AS violation_types,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        ts.id AS stage_id,
+        ts.name AS stage_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        -- CHAR_LENGTH rather than a comparison against TRIM: the text collations are
+        -- PAD SPACE, so 'name ' = 'name' and a trailing space would never be reported.
+        (CHAR_LENGTH(ts.name) <> CHAR_LENGTH(TRIM(ts.name))) AS f_edge_space,
+        (ts.name LIKE '%  %') AS f_double_space,
+        (ts.name REGEXP '[[:cntrl:]]') AS f_control,
+        -- Every non-ASCII character occupies more than one byte in a UTF-8 column, so the
+        -- two lengths disagree. This also catches the en-dash and the non-breaking space,
+        -- which read as an ordinary hyphen and an ordinary space on screen.
+        (LENGTH(ts.name) <> CHAR_LENGTH(ts.name)) AS f_non_ascii,
+        (ts.name REGEXP '[^ ]-|-[^ ]') AS f_hyphen,
+        -- Only a four-digit year, so that '100m', 'U23' and '3x3' are left alone.
+        ((CONVERT(ts.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z][12][0-9][0-9][0-9]|[12][0-9][0-9][0-9][A-Za-z]') AS f_year_glued,
+        -- The case rules force a binary collation. The column is utf8mb4_unicode_ci, under
+        -- which '[A-Z]' matches a lowercase letter as well, so all three would fire on
+        -- every row. CONVERT ahead of COLLATE keeps the pair legal on a column stored in
+        -- another character set; a bare CAST to BINARY is rejected outright by regexp_like.
+        ((CONVERT(ts.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Z][A-Z][a-z]') AS f_double_capital,
+        ((CONVERT(ts.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z]'
+            AND (CONVERT(ts.name USING utf8mb4) COLLATE utf8mb4_bin) NOT REGEXP '[a-z]') AS f_all_uppercase,
+        ((CONVERT(ts.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '^[a-z]') AS f_starts_lowercase
+    FROM tournament_stage ts
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE ts.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      -- A stage with no name at all is GLOBAL-DQ-034's finding, not this one.
+      AND ts.name IS NOT NULL
+      AND TRIM(ts.name) <> ''
+      -- AND tt.id = <tournament_template_id>
+) x
+WHERE x.f_edge_space OR x.f_double_space OR x.f_control OR x.f_non_ascii OR x.f_hyphen
+   OR x.f_year_glued OR x.f_double_capital OR x.f_all_uppercase OR x.f_starts_lowercase
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ts.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament_stage ts
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE ts.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND ts.name IS NOT NULL
+  AND TRIM(ts.name) <> ''
+  -- AND tt.id = <tournament_template_id>
+
+ORDER BY sort_order, violation_types, stage_name;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-049
+    -- Name - EVENT_NAME_FORMAT_INVALID
+    -- What it does: Finds active events whose name breaks at least one text-hygiene rule - edge or doubled spacing, a control or non-ASCII character, a hyphen without surrounding spaces, a year glued to a word, or a capitalisation shape a proof-read name does not take - naming every rule the name breaks, with template, tournament and stage name context, together with a coverage count of all eligible named events.
+    'Name_Format_Invalid' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.template_name,
+    x.tournament_name,
+    x.stage_name,
+    CONCAT_WS(', ',
+        IF(x.f_edge_space, 'LEADING_OR_TRAILING_SPACE', NULL),
+        IF(x.f_double_space, 'DOUBLE_SPACE', NULL),
+        IF(x.f_control, 'CONTROL_CHARACTER', NULL),
+        IF(x.f_non_ascii, 'NON_ASCII_CHARACTER', NULL),
+        IF(x.f_hyphen, 'HYPHEN_WITHOUT_SPACES', NULL),
+        IF(x.f_year_glued, 'YEAR_GLUED_TO_WORD', NULL),
+        IF(x.f_double_capital, 'DOUBLE_CAPITAL', NULL),
+        IF(x.f_all_uppercase, 'ALL_UPPERCASE', NULL),
+        IF(x.f_starts_lowercase, 'STARTS_LOWERCASE', NULL)
+    ) AS violation_types,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.name AS stage_name,
+        -- The nine rules are identical to GLOBAL-DQ-048; their reasoning is recorded there.
+        (CHAR_LENGTH(e.name) <> CHAR_LENGTH(TRIM(e.name))) AS f_edge_space,
+        (e.name LIKE '%  %') AS f_double_space,
+        (e.name REGEXP '[[:cntrl:]]') AS f_control,
+        (LENGTH(e.name) <> CHAR_LENGTH(e.name)) AS f_non_ascii,
+        (e.name REGEXP '[^ ]-|-[^ ]') AS f_hyphen,
+        ((CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z][12][0-9][0-9][0-9]|[12][0-9][0-9][0-9][A-Za-z]') AS f_year_glued,
+        ((CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Z][A-Z][a-z]') AS f_double_capital,
+        ((CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z]'
+            AND (CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) NOT REGEXP '[a-z]') AS f_all_uppercase,
+        ((CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '^[a-z]') AS f_starts_lowercase
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND e.name IS NOT NULL
+      AND TRIM(e.name) <> ''
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+) x
+WHERE x.f_edge_space OR x.f_double_space OR x.f_control OR x.f_non_ascii OR x.f_hyphen
+   OR x.f_year_glued OR x.f_double_capital OR x.f_all_uppercase OR x.f_starts_lowercase
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.name IS NOT NULL
+  AND TRIM(e.name) <> ''
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, violation_types, event_name;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-050
+    -- Name - TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT
+    -- What it does: Finds active tournament stages whose name is written in more than one way within the sport - identical once case and spacing are ignored, different byte for byte - with the number of competing spellings and the normalised form that groups them, together with a coverage count of all eligible named stages.
+    'Name_Case_Inconsistent' AS check_type,
+    x.stage_id AS tournament_stage_id,
+    x.stage_name,
+    x.template_name,
+    x.tournament_name,
+    x.name_normalized,
+    g.variant_count,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        ts.id AS stage_id,
+        ts.name AS stage_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        LOWER(REPLACE(TRIM(ts.name), ' ', '')) AS name_normalized
+    FROM tournament_stage ts
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE ts.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND ts.name IS NOT NULL
+      AND TRIM(ts.name) <> ''
+      -- AND tt.id = <tournament_template_id>
+) x
+JOIN (
+    -- The same population grouped by its normalised name. LOWER is applied even though the
+    -- collation already folds case, so the grouping states its own rule rather than
+    -- inheriting one. Counting distinct spellings needs the binary cast for the opposite
+    -- reason: under that collation DISTINCT would fold the very variants being counted.
+    SELECT
+        LOWER(REPLACE(TRIM(ts.name), ' ', '')) AS name_normalized,
+        COUNT(DISTINCT (CONVERT(ts.name USING utf8mb4) COLLATE utf8mb4_bin)) AS variant_count
+    FROM tournament_stage ts
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE ts.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND ts.name IS NOT NULL
+      AND TRIM(ts.name) <> ''
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY LOWER(REPLACE(TRIM(ts.name), ' ', ''))
+    HAVING COUNT(DISTINCT (CONVERT(ts.name USING utf8mb4) COLLATE utf8mb4_bin)) > 1
+) g ON g.name_normalized = x.name_normalized
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ts.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament_stage ts
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE ts.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND ts.name IS NOT NULL
+  AND TRIM(ts.name) <> ''
+  -- AND tt.id = <tournament_template_id>
+
+ORDER BY sort_order, name_normalized, stage_name;
