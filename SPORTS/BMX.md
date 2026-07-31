@@ -56,12 +56,47 @@ separate, already-confirmed direct column.
 | result_code | result_typeFK | Value shape | Confirmed meaning | Evidence |
 |---|---:|---|---|---|
 | rank | 100 | | Rank | Confirmed-data |
-| duration | 101 | | Duration | Confirmed-data |
+| duration | 101 | Bare seconds: `+0.038` gap, or plain `98.455` for the leader | Duration | Confirmed-data |
 | points | 102 | | Points | Confirmed-data |
-| comment | 104 | | Comment | Confirmed-data |
+| comment | 104 | Closed set of status codes | Comment | Confirmed-data |
 | medal | 501 | | Medal | Confirmed-data |
-| duration_full_time | 557 | | Full-time duration | Confirmed-data |
+| duration_full_time | 557 | `m:ss.f` or bare seconds; populated in 9 events only | Full-time duration | Confirmed-data |
 | wave_1 | 547 | | Wave 1 | Confirmed-data |
+
+`101 Duration` carries the sport's times and follows the leader/gap convention, but it
+stores them as bare seconds with no colon: `+0.038` for a gap, `98.455` for a leader. This
+is what `BMX-DQ-030` exists for, the colon-tolerant global shape being too loose here.
+
+`557 Full-time duration` is the opposite case. It is present but effectively unused: 421
+participant rows across 9 events, against 61 463 rows in 7 994 events for `101`. Its values
+take both `m:ss.f` and bare-second shapes. A check whose eligible population requires an
+active full time therefore audits nine events for this sport and its coverage count says so
+- the finding to read is the coverage, not the absence of violations.
+
+`104 Comment` is not free text. Its whole active population resolves to a closed set of
+status codes:
+
+| Value | Meaning | Note |
+|---|---|---|
+| `Q` | Qualified to the next round | The dominant value by a wide margin; a progression marker, not an invalid result |
+| `DNF` | Did not finish | |
+| `DNS` | Did not start | |
+| `Disq.` | Disqualified | The most common of three spellings of one status |
+| `Disqualified` | Disqualified | |
+| `DSQ` | Disqualified | |
+| `REL` | Relegated | A placing penalty; a relegated rider still holds a classification |
+| `DNF/Q` | — | A single row combining two markers; no confirmed meaning |
+
+Three spellings of Disqualified are in use, and which one dominates depends on the layer:
+`Disq.` at event level, `DSQ` among Comp.Rank data. Neither is a rare typo of the other, so
+the sport stores one status under three spellings rather than mistyping one of them.
+
+`Q` is the sport's dominant Comment value because the format qualifies riders out of heats.
+That is the opposite of a sport where the same value appears a handful of times and reads as
+leakage, which is why the accepted set is recorded per sport rather than globally.
+
+`REL` marks a placing penalty and not the absence of a result, so a relegated rider is
+expected to carry a rank.
 
 <!-- MANUAL PASTE ZONE: 58 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -99,6 +134,20 @@ Confirmed active `tournament_age_class` values linked via `object_relation` (4�
 | statistic_typeFK | Owner type | Participant shard | Data shard | Fields/config | Evidence |
 |---:|---:|---:|---:|---|---|
 | 11 (Competition Stats) | tournament (object_typeFK=3) | statistic_participants11 | statistic_data11 | Data: Rank(1270), Points(1271), Duration(1272), Comment(1273), Pair(1276), Medal(1277), Time(1426), Time Difference(1427), Team(1429). Config: Start date(1463), End date(1464), Gender(1470), Event id(1471) | Confirmed-data |
+
+The `1273 Comment` data field holds its own closed set of status codes, and it is not the
+same set the event layer uses: `DNF`, `DNS`, `No Time`, `DSQ`, `Disqualified`, `Disq.`,
+`REL`, and empty values.
+
+Two differences from the event layer are structural rather than incidental. `Q`, the
+dominant event-level Comment value, does not occur here at all, consistent with Comp.Rank
+being built from a final classification rather than from round-by-round progression.
+`No Time` occurs only here: the source carried no time for a rider who is nonetheless
+expected to have finished, so it marks a missing measurement and not a missing result.
+
+The three spellings of Disqualified are present in this layer too, but `DSQ` dominates here
+while `Disq.` dominates at event level. A check reading either layer must take its accepted
+set from that layer's own inventory.
 
 <!-- MANUAL PASTE ZONE: 58 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 

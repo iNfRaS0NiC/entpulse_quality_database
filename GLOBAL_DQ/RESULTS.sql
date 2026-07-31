@@ -934,13 +934,15 @@ FROM (
            CAST(TRIM(rr.value) AS UNSIGNED) AS rank_num,
            TRIM(rf.value) AS time_value,
            CASE
-               WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}:[0-9]{2}(\.[0-9]+)?$'
+               WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$'
                    THEN CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', 1) AS DECIMAL(14,3)) * 3600
                       + CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(TRIM(rf.value), ':', 2), ':', -1) AS DECIMAL(14,3)) * 60
                       + CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', -1) AS DECIMAL(14,3))
-               WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}(\.[0-9]+)?$'
+               WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}(\\.[0-9]+)?$'
                    THEN CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', 1) AS DECIMAL(14,3)) * 60
                       + CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', -1) AS DECIMAL(14,3))
+               WHEN TRIM(rf.value) REGEXP '^[0-9]+(\\.[0-9]+)?$'
+                   THEN CAST(TRIM(rf.value) AS DECIMAL(14,3))
                ELSE NULL
            END AS secs
     FROM event_participants ep
@@ -968,13 +970,15 @@ JOIN (
            CAST(TRIM(rr.value) AS UNSIGNED) AS rank_num,
            TRIM(rf.value) AS time_value,
            CASE
-               WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}:[0-9]{2}(\.[0-9]+)?$'
+               WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$'
                    THEN CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', 1) AS DECIMAL(14,3)) * 3600
                       + CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(TRIM(rf.value), ':', 2), ':', -1) AS DECIMAL(14,3)) * 60
                       + CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', -1) AS DECIMAL(14,3))
-               WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}(\.[0-9]+)?$'
+               WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}(\\.[0-9]+)?$'
                    THEN CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', 1) AS DECIMAL(14,3)) * 60
                       + CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', -1) AS DECIMAL(14,3))
+               WHEN TRIM(rf.value) REGEXP '^[0-9]+(\\.[0-9]+)?$'
+                   THEN CAST(TRIM(rf.value) AS DECIMAL(14,3))
                ELSE NULL
            END AS secs
     FROM event_participants ep
@@ -1018,7 +1022,7 @@ FROM (
     WHERE ep.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
       AND TRIM(rr.value) REGEXP '^[0-9]+$'
-      AND TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}(:[0-9]{2})?(\.[0-9]+)?$'
+      AND TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$|^[0-9]+:[0-9]{2}(\\.[0-9]+)?$|^[0-9]+(\\.[0-9]+)?$'
       -- AND tt.id = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -1121,6 +1125,8 @@ FROM (
                    WHEN TRIM(LEADING '+' FROM TRIM(rd.value)) REGEXP '^[0-9]+:[0-9]{2}(\\.[0-9]+)?$'
                        THEN CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM TRIM(rd.value)), ':', 1) AS DECIMAL(14,3)) * 60
                           + CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM TRIM(rd.value)), ':', -1) AS DECIMAL(14,3))
+                   WHEN TRIM(LEADING '+' FROM TRIM(rd.value)) REGEXP '^[0-9]+(\\.[0-9]+)?$'
+                       THEN CAST(TRIM(LEADING '+' FROM TRIM(rd.value)) AS DECIMAL(14,3))
                    ELSE NULL
                END AS expected_secs,
            CASE
@@ -1131,6 +1137,8 @@ FROM (
                WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}(\\.[0-9]+)?$'
                    THEN CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', 1) AS DECIMAL(14,3)) * 60
                       + CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', -1) AS DECIMAL(14,3))
+               WHEN TRIM(rf.value) REGEXP '^[0-9]+(\\.[0-9]+)?$'
+                   THEN CAST(TRIM(rf.value) AS DECIMAL(14,3))
                ELSE NULL
            END AS actual_secs
     FROM event_participants ep
@@ -1153,6 +1161,8 @@ FROM (
                    WHEN TRIM(rf2.value) REGEXP '^[0-9]+:[0-9]{2}(\\.[0-9]+)?$'
                        THEN CAST(SUBSTRING_INDEX(TRIM(rf2.value), ':', 1) AS DECIMAL(14,3)) * 60
                           + CAST(SUBSTRING_INDEX(TRIM(rf2.value), ':', -1) AS DECIMAL(14,3))
+                   WHEN TRIM(rf2.value) REGEXP '^[0-9]+(\\.[0-9]+)?$'
+                       THEN CAST(TRIM(rf2.value) AS DECIMAL(14,3))
                    ELSE NULL
                END) AS leader_secs
         FROM event_participants ep2
