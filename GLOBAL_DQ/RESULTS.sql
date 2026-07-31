@@ -212,7 +212,7 @@ FROM (
             JOIN result r2 ON r2.event_participantsFK = ep3.id
                  AND r2.result_typeFK = {{RESULT_RANK_TYPE_ID}}
                  AND r2.del = 'no'
-                 AND r2.value REGEXP '^[0-9]+$'
+                 AND r2.value REGEXP '^[1-9][0-9]*$'
             WHERE ep3.eventFK = x.event_id
               AND ep3.del = 'no'
               AND CAST(r2.value AS UNSIGNED) < x.rank_value
@@ -240,7 +240,7 @@ FROM (
         JOIN result r ON r.event_participantsFK = ep.id
              AND r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
              AND r.del = 'no'
-             AND r.value REGEXP '^[0-9]+$'
+             AND r.value REGEXP '^[1-9][0-9]*$'
         WHERE ep.del = 'no'
           AND tt.sportFK = {{SPORT_ID}}
           AND e.status_type = 'finished'
@@ -277,7 +277,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 JOIN result r ON r.event_participantsFK = ep.id
      AND r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
      AND r.del = 'no'
-     AND r.value REGEXP '^[0-9]+$'
+     AND r.value REGEXP '^[1-9][0-9]*$'
 WHERE ep.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.status_type = 'finished'
@@ -306,7 +306,7 @@ SELECT
         JOIN result r2 ON r2.event_participantsFK = ep2.id
              AND r2.result_typeFK = {{RESULT_RANK_TYPE_ID}}
              AND r2.del = 'no'
-             AND r2.value REGEXP '^[0-9]+$'
+             AND r2.value REGEXP '^[1-9][0-9]*$'
         WHERE ep2.eventFK = e.id
           AND ep2.del = 'no'
           AND CAST(r2.value AS UNSIGNED) = CAST(r.value AS UNSIGNED)
@@ -330,7 +330,7 @@ JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
 JOIN result r ON r.event_participantsFK = ep.id
      AND r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
      AND r.del = 'no'
-     AND r.value REGEXP '^[0-9]+$'
+     AND r.value REGEXP '^[1-9][0-9]*$'
 WHERE ep.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.status_type = 'finished'
@@ -353,7 +353,7 @@ WHERE ep.del = 'no'
       JOIN result r3 ON r3.event_participantsFK = ep3.id
            AND r3.result_typeFK = {{RESULT_RANK_TYPE_ID}}
            AND r3.del = 'no'
-           AND r3.value REGEXP '^[0-9]+$'
+           AND r3.value REGEXP '^[1-9][0-9]*$'
       WHERE ep3.eventFK = e.id
         AND ep3.del = 'no'
         AND ep3.id <> ep.id
@@ -383,7 +383,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 JOIN result r ON r.event_participantsFK = ep.id
      AND r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
      AND r.del = 'no'
-     AND r.value REGEXP '^[0-9]+$'
+     AND r.value REGEXP '^[1-9][0-9]*$'
 WHERE ep.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.status_type = 'finished'
@@ -400,8 +400,8 @@ SELECT
     -- Name - EVENT_RESULTS_RANK_INVALID_OR_MISSING
     -- What it does: Finds active event-participant rows in finished events where the Rank value is not a plain positive integer up to the sport's plausible maximum (non-integer, negative, text, or above the maximum), or where Rank is missing and no active Comment value exists either, separating participants that hold no active result row of any type from those that hold some other result, together with a coverage count of all eligible event-participants in finished events.
     CASE
-        WHEN r_rank_value IS NOT NULL AND r_rank_value NOT REGEXP '^[0-9]+$' THEN 'RANK_NOT_INTEGER'
-        WHEN r_rank_value IS NOT NULL AND r_rank_value REGEXP '^[0-9]+$' AND CAST(r_rank_value AS UNSIGNED) > {{RANK_MAX_PLAUSIBLE}} THEN 'RANK_OVER_MAX'
+        WHEN r_rank_value IS NOT NULL AND r_rank_value NOT REGEXP '^[1-9][0-9]*$' THEN 'RANK_NOT_INTEGER'
+        WHEN r_rank_value IS NOT NULL AND r_rank_value REGEXP '^[1-9][0-9]*$' AND CAST(r_rank_value AS UNSIGNED) > {{RANK_MAX_PLAUSIBLE}} THEN 'RANK_OVER_MAX'
         WHEN r_rank_value IS NULL AND r_comment_value IS NULL AND x.has_any_result = 0 THEN 'NO_RESULT_OF_ANY_TYPE'
         WHEN r_rank_value IS NULL AND r_comment_value IS NULL THEN 'RANK_AND_COMMENT_MISSING_OTHER_RESULT_PRESENT'
     END AS check_type,
@@ -461,8 +461,8 @@ FROM (
       -- AND e.startdate <  '<to_datetime>'
 ) x
 WHERE
-    (x.r_rank_value IS NOT NULL AND x.r_rank_value NOT REGEXP '^[0-9]+$')
-    OR (x.r_rank_value IS NOT NULL AND x.r_rank_value REGEXP '^[0-9]+$' AND CAST(x.r_rank_value AS UNSIGNED) > {{RANK_MAX_PLAUSIBLE}})
+    (x.r_rank_value IS NOT NULL AND x.r_rank_value NOT REGEXP '^[1-9][0-9]*$')
+    OR (x.r_rank_value IS NOT NULL AND x.r_rank_value REGEXP '^[1-9][0-9]*$' AND CAST(x.r_rank_value AS UNSIGNED) > {{RANK_MAX_PLAUSIBLE}})
     OR (x.r_rank_value IS NULL AND x.r_comment_value IS NULL)
 
 UNION ALL

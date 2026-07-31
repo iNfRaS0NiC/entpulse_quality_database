@@ -950,6 +950,13 @@ describe the same round while holding different IDs. A check comparing a Phase a
 event's `round_typeFK` must treat the pair as equivalent, or it reports the whole population
 as mismatched.
 
+A check asking whether a round is a Final therefore accepts every variant of it. The Final
+round set is a declared parameter rather than a literal, and a sport records both IDs of the
+pair even when its own events use only one, so the check is unaffected by which side a given
+row carries. Which variant is stored where is a known inconsistency in the data, tracked for
+cleanup rather than reported by the checks; a check that distinguished the two would report
+the inconsistency instead of the defect it was written for.
+
 `round_type.value` is populated only on the main-bracket knockout rounds, where it holds the
 bracket size — Final `1`, Semi Finals `2`, Quarter Finals `4`, 1/8 `8`, 1/16 `16`, 1/32
 `32`. It is `0` on the non-knockout variants and on knockout rounds outside the main bracket
@@ -990,6 +997,25 @@ Discipline granularity varies by sport and is not a reliable proxy for "one comp
 For Ski Jumping the disciplines are Ski Jumping, Team Ski Jumping and Super Team Ski Jumping,
 so two competitions of the same discipline and gender — a normal-hill and a large-hill
 event — are distinguished by neither. Uniqueness checks must therefore be written per sport.
+
+### `DB-SEM-014` — A rank is a strictly positive integer
+
+Rank is stored as text in both layers that carry it: `result` rows of the sport's rank result
+type, and `statistic_data<N>` rows of the rank data type. Neither column constrains the
+value, so a value is a rank only by convention.
+
+The convention is a strictly positive integer with no leading zeros, no sign, no decimal part
+and no surrounding text. `0` is not a rank, and `007` is not the same stored value as `7`
+even though both denote seventh place. A check testing rank validity therefore matches
+`^[1-9][0-9]*$`, and so does any filter selecting the rows that hold a numeric rank.
+The two must agree: a looser filter makes a check reason about values that a stricter
+validity check reports as invalid, so the same value is treated as a rank in one statement
+and as a defect in another.
+
+How a sport marks a participant that did not finish is a separate, per-sport fact. Some
+sports issue a sentinel rank outside the finishing order alongside a comment value. That rank
+is still a positive integer, so the convention above is not weakened by it: what a rank
+*means* is per-sport, what shape it has is not.
 
 <!-- MANUAL PASTE ZONE: DATABASE STRUCTURAL SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 

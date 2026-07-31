@@ -691,7 +691,7 @@ SELECT
         JOIN statistic_data{{SHARD_ID}} sd2 ON sd2.statistic_participants{{SHARD_ID}}FK = sp2.id
              AND sd2.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
              AND sd2.del = 'no'
-             AND sd2.value REGEXP '^[0-9]+$'
+             AND sd2.value REGEXP '^[1-9][0-9]*$'
         WHERE sp2.statisticFK = f.statistic_id
           AND sp2.del = 'no'
           AND CAST(sd2.value AS UNSIGNED) < CAST(sd.value AS UNSIGNED)
@@ -710,7 +710,7 @@ FROM (
     LEFT JOIN statistic_data{{SHARD_ID}} sdf ON sdf.statistic_participants{{SHARD_ID}}FK = spf.id
          AND sdf.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
          AND sdf.del = 'no'
-         AND sdf.value REGEXP '^[0-9]+$'
+         AND sdf.value REGEXP '^[1-9][0-9]*$'
     WHERE s.del = 'no'
       AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
       AND s.object_typeFK = 3
@@ -725,7 +725,7 @@ JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
 JOIN statistic_data{{SHARD_ID}} sd ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
      AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
      AND sd.del = 'no'
-     AND sd.value REGEXP '^[0-9]+$'
+     AND sd.value REGEXP '^[1-9][0-9]*$'
 WHERE CAST(sd.value AS UNSIGNED) > f.participant_count
   AND NOT EXISTS (
       SELECT 1
@@ -752,7 +752,7 @@ JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del =
 JOIN statistic_data{{SHARD_ID}} sd ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
      AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
      AND sd.del = 'no'
-     AND sd.value REGEXP '^[0-9]+$'
+     AND sd.value REGEXP '^[1-9][0-9]*$'
 WHERE s.del = 'no'
   AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
   AND s.object_typeFK = 3

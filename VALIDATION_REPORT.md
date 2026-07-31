@@ -31,10 +31,10 @@ output, not a hand-written claim: re-run the script rather than editing it.
 | Metric | Value |
 |---|---:|
 | SQL files parsed | 11 |
-| SQL statements parsed | 82 |
+| SQL statements parsed | 79 |
 | GLOBAL discovery statements | 31 |
 | GLOBAL DQ templates | 47 |
-| Sport DQ statements | 4 |
+| Sport DQ statements | 1 |
 | Manual-paste markers found | 57 |
 | Duplicate active SQL CheckIDs | 0 |
 | UNION column-count mismatches | 0 |
