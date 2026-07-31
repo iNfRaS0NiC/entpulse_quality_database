@@ -29,7 +29,9 @@
     "DATA_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'dsq', 'disq.', 'disqualified'",
     "FULL_TIME_TOLERANCE_SECONDS": 0.01,
     "RESULT_MEDAL_TYPE_ID": 501,
-    "RESULT_FULL_TIME_TYPE_ID": 557
+    "RESULT_FULL_TIME_TYPE_ID": 557,
+    "STALE_NOT_STARTED_DAYS": 30,
+    "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'"
   },
   "Triathlon": {
     "SPORT_ID": 50,
@@ -61,6 +63,8 @@
     "DATA_COMMENT_NO_RESULT_LIST": "'dnf', 'lap', 'dns', 'dsq', 'disq.'",
     "FULL_TIME_TOLERANCE_SECONDS": 1,
     "RESULT_MEDAL_TYPE_ID": 501,
-    "RESULT_FULL_TIME_TYPE_ID": 557
+    "RESULT_FULL_TIME_TYPE_ID": 557,
+    "STALE_NOT_STARTED_DAYS": 30,
+    "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'"
   }
 }

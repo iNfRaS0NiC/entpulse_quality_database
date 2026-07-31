@@ -886,7 +886,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-035
     -- Name - COMP.RANK_SETTINGS_MISSING_CORE_FIELDS
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type missing name, an active non-empty Gender config value, an active country relation (object_relation 83->33), or an active city relation (city_object owner type=83), with template and tournament name context, together with a coverage count of all eligible statistics.
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type missing name, an active non-empty Gender config value, an active country relation (object_relation 83->33), or an active city relation (city_object owner type=83), or carrying a country relation that resolves only to a placeholder row and therefore reads as populated, with template and tournament name context, together with a coverage count of all eligible statistics.
     'Missing_Statistic_Field' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -908,6 +908,17 @@ SELECT
               AND orl.rel_object_typeFK = 33
               AND orl.del = 'no'
         ), 'country', NULL),
+        -- A country that resolves to a placeholder row reads as populated to every
+        -- IS NULL test, so it is named separately rather than counted as clean.
+        IF(EXISTS (
+            SELECT 1 FROM object_relation orl
+            JOIN country c ON c.id = orl.rel_objectFK AND c.del = 'no'
+            WHERE orl.object_typeFK = 83
+              AND orl.objectFK = s.id
+              AND orl.rel_object_typeFK = 33
+              AND orl.del = 'no'
+              AND c.name IN ({{PLACEHOLDER_COUNTRY_LIST}})
+        ), 'country_placeholder', NULL),
         IF(NOT EXISTS (
             SELECT 1 FROM city_object co
             JOIN city ci ON ci.id = co.cityFK AND ci.del = 'no'
@@ -941,6 +952,15 @@ WHERE s.del = 'no'
             AND orl.objectFK = s.id
             AND orl.rel_object_typeFK = 33
             AND orl.del = 'no'
+      )
+      OR EXISTS (
+          SELECT 1 FROM object_relation orl
+          JOIN country c ON c.id = orl.rel_objectFK AND c.del = 'no'
+          WHERE orl.object_typeFK = 83
+            AND orl.objectFK = s.id
+            AND orl.rel_object_typeFK = 33
+            AND orl.del = 'no'
+            AND c.name IN ({{PLACEHOLDER_COUNTRY_LIST}})
       )
       OR NOT EXISTS (
           SELECT 1 FROM city_object co
@@ -1371,7 +1391,7 @@ ORDER BY sort_order, violating_record_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-051
     -- Name - COMP.RANK_NAME_FORMAT_INVALID
-    -- What it does: Finds each distinct active tournament-owned statistic name that breaks at least one text-hygiene rule - edge or doubled spacing, a control or non-ASCII character, a hyphen without surrounding spaces, a year glued to a word, or a capitalisation shape a proof-read name does not take - naming every rule the name breaks and how many objects carry it, reporting one row per offending name rather than one per object repeating it, together with a coverage count of all distinct eligible names.
+    -- What it does: Finds each distinct active tournament-owned statistic name that breaks at least one text-hygiene rule - edge or doubled spacing, a control character, a definite text corruption such as an HTML entity, a replacement character, a non-breaking or zero-width space or a double-encoded byte sequence, a non-ASCII character, a hyphen without surrounding spaces, a year glued to a word, a capitalisation shape a proof-read name does not take, a placeholder name or a numeric-only name - naming every rule the name breaks and how many objects carry it, reporting one row per offending name rather than one per object repeating it, together with a coverage count of all distinct eligible names.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS statistic_name,
     x.violation_types,
@@ -1395,13 +1415,23 @@ FROM (
             IF(CHAR_LENGTH(s.name) <> CHAR_LENGTH(TRIM(s.name)), 'LEADING_OR_TRAILING_SPACE', NULL),
             IF(s.name LIKE '%  %', 'DOUBLE_SPACE', NULL),
             IF(s.name REGEXP '[[:cntrl:]]', 'CONTROL_CHARACTER', NULL),
+            -- The five rules below name a definite corruption. NON_ASCII_CHARACTER
+            -- that follows cannot: it fires on a legitimate diacritic just as readily,
+            -- so a corrupted name is reported under its own verdict as well.
+            IF(s.name LIKE '%&#%' OR LOWER(s.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp);', 'HTML_ENTITY', NULL),
+            IF(HEX(s.name) LIKE '%EFBFBD%', 'REPLACEMENT_CHARACTER', NULL),
+            IF(HEX(s.name) LIKE '%C2A0%', 'NON_BREAKING_SPACE', NULL),
+            IF(HEX(s.name) LIKE '%E2808B%', 'ZERO_WIDTH_SPACE', NULL),
+            IF(HEX(s.name) LIKE '%C383%' OR HEX(s.name) LIKE '%C382%', 'MOJIBAKE_DOUBLE_ENCODED', NULL),
             IF(LENGTH(s.name) <> CHAR_LENGTH(s.name), 'NON_ASCII_CHARACTER', NULL),
             IF(s.name REGEXP '[^ ]-|-[^ ]', 'HYPHEN_WITHOUT_SPACES', NULL),
             IF((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z][12][0-9][0-9][0-9]|[12][0-9][0-9][0-9][A-Za-z]', 'YEAR_GLUED_TO_WORD', NULL),
             IF((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Z][A-Z][a-z]', 'DOUBLE_CAPITAL', NULL),
             IF((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z]'
                AND (CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) NOT REGEXP '[a-z]', 'ALL_UPPERCASE', NULL),
-            IF((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '^[a-z]', 'STARTS_LOWERCASE', NULL)
+            IF((CONVERT(s.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '^[a-z]', 'STARTS_LOWERCASE', NULL),
+            IF(LOWER(TRIM(s.name)) IN ('test','testing','temp','tmp','xxx','asd','qwe','tbd','tba','n/a','undefined','event','new event'), 'PLACEHOLDER_NAME', NULL),
+            IF(TRIM(s.name) REGEXP '^[0-9]+$', 'NUMERIC_ONLY_NAME', NULL)
         ) AS violation_types
     FROM statistic s
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
@@ -1520,6 +1550,73 @@ WHERE sd.del = 'no'
   AND TRIM(sd.value) <> ''
   AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
   AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-060
+    -- Name - COMP.RANK_RESULTS_DUPLICATE_ROWS
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, holding more than one active data row for the same statistic participant and data type, separating a duplicate repeating the same value from one storing conflicting values, with template and tournament name context, the number of affected participants and a sample group, together with a coverage count of all eligible statistics holding at least one active data row.
+    'Comp_Rank_Duplicate_Rows' AS check_type,
+    d.statistic_id,
+    d.statistic_name,
+    d.template_name,
+    d.tournament_name,
+    CASE WHEN SUM(d.distinct_values > 1) > 0 THEN 'CONFLICTING_VALUES' ELSE 'DUPLICATE_IDENTICAL' END AS duplicate_kind,
+    COUNT(*) AS duplicated_group_count,
+    COUNT(DISTINCT d.statistic_participants_id) AS affected_participant_count,
+    SUM(d.row_count) AS duplicated_row_count,
+    MIN(CONCAT('sp=', d.statistic_participants_id, ' type=', d.statistic_data_typeFK, ' values=', d.value_list)) AS sample_group,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        st.id AS statistic_id,
+        st.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        sp.id AS statistic_participants_id,
+        sd.statistic_data_typeFK,
+        COUNT(*) AS row_count,
+        COUNT(DISTINCT TRIM(sd.value)) AS distinct_values,
+        SUBSTRING(GROUP_CONCAT(DISTINCT TRIM(sd.value) ORDER BY TRIM(sd.value) SEPARATOR '|'), 1, 100) AS value_list
+    FROM statistic_data{{SHARD_ID}} sd
+    JOIN statistic_participants{{SHARD_ID}} sp
+      ON sp.id = sd.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
+    JOIN statistic st
+      ON st.id = sp.statisticFK AND st.del = 'no'
+     AND st.object_typeFK = 3
+     AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+    JOIN tournament t ON t.id = st.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE sd.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY st.id, st.name, tt.name, t.name, sp.id, sd.statistic_data_typeFK
+    HAVING COUNT(*) > 1
+) d
+GROUP BY d.statistic_id, d.statistic_name, d.template_name, d.tournament_name
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT st.id) AS eligible_count
+FROM statistic_data{{SHARD_ID}} sd
+JOIN statistic_participants{{SHARD_ID}} sp
+  ON sp.id = sd.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
+JOIN statistic st
+  ON st.id = sp.statisticFK AND st.del = 'no'
+ AND st.object_typeFK = 3
+ AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+JOIN tournament t ON t.id = st.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE sd.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
