@@ -122,6 +122,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# What the run was aimed at, which a GLOBAL CheckID cannot say for itself. Read by
+# Get-SportFromCheckId for the workbook's Sport column and the run folder name.
+$script:RunSportName = $Sport
+
 # Local, git-ignored credential file. Loaded before anything reads EP_QB_*, so it
 # can supply the login, a session cookie or a different base URL.
 $SecretsPath = Join-Path $PSScriptRoot 'secrets.local.ps1'
@@ -762,11 +766,18 @@ function Add-CheckColumns {
 
 function Get-SportFromCheckId {
     # CheckIDs are <SportSlug>-DQ-NNN or GLOBAL-DISCOVERY-NNN, so the prefix names the sport.
+    # A GLOBAL statement is the exception: its prefix names the catalogue it lives in, not
+    # what it was run against. Under -Sport that answer is known, and it is the one the
+    # reader of the workbook wants, so it wins over the prefix.
     param([string]$CheckId)
 
     if ([string]::IsNullOrWhiteSpace($CheckId)) { return 'AD-HOC' }
-    if ($CheckId -match '^(.+?)-(?:DQ|DISCOVERY)-\d+$') { return $matches[1] }
-    return ($CheckId -split '-')[0]
+
+    $prefix = if ($CheckId -match '^(.+?)-(?:DQ|DISCOVERY)-\d+$') { $matches[1] } else { ($CheckId -split '-')[0] }
+    if ($prefix -eq 'GLOBAL' -and -not [string]::IsNullOrWhiteSpace($script:RunSportName)) {
+        return $script:RunSportName
+    }
+    return $prefix
 }
 
 function Get-RunSport {

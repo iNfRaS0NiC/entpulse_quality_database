@@ -424,8 +424,9 @@ in `SPORTS/params.json` and its registry rows. Run the templates directly:
 .\TOOLS\Run-Query.ps1 GLOBAL-DQ-* -Sport Curling -Format xlsx
 ```
 
-Because the CheckIDs are then `GLOBAL-DQ-*`, the run folder is named `GLOBAL` rather than
-the sport. Pass `-OutDir` when a sport-named folder matters.
+A GLOBAL CheckID names the catalogue it lives in, not what it was run against, so under
+`-Sport` that name is what the Overview's `Sport` column and the run folder are named
+after. Without `-Sport` there is nothing better to fall back on and both read `GLOBAL`.
 
 ## Package validation
 
