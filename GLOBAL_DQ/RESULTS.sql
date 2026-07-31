@@ -1223,3 +1223,64 @@ WHERE ep.del = 'no'
       WHERE ep3.eventFK = e.id AND ep3.del = 'no' AND TRIM(rr3.value) = '1'
   )
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-059
+    -- Name - EVENT_RESULTS_DUPLICATE_ROWS
+    -- What it does: Finds active events holding more than one active result row for the same event participant and result type, separating a duplicate repeating the same value from one storing conflicting values, with the number of affected participants and a sample group, together with a coverage count of all eligible events holding at least one active result.
+    'Result_Duplicate_Rows' AS check_type,
+    d.event_id,
+    d.event_name,
+    d.tournament_template_name,
+    CASE WHEN SUM(d.distinct_values > 1) > 0 THEN 'CONFLICTING_VALUES' ELSE 'DUPLICATE_IDENTICAL' END AS duplicate_kind,
+    COUNT(*) AS duplicated_group_count,
+    COUNT(DISTINCT d.event_participants_id) AS affected_participant_count,
+    SUM(d.row_count) AS duplicated_row_count,
+    MIN(CONCAT('ep=', d.event_participants_id, ' type=', d.result_typeFK, ' values=', d.value_list)) AS sample_group,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        tt.name AS tournament_template_name,
+        ep.id AS event_participants_id,
+        r.result_typeFK,
+        COUNT(*) AS row_count,
+        COUNT(DISTINCT TRIM(r.value)) AS distinct_values,
+        SUBSTRING(GROUP_CONCAT(DISTINCT TRIM(r.value) ORDER BY TRIM(r.value) SEPARATOR '|'), 1, 100) AS value_list
+    FROM result r
+    JOIN event_participants ep ON ep.id = r.event_participantsFK AND ep.del = 'no'
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE r.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, tt.name, ep.id, r.result_typeFK
+    HAVING COUNT(*) > 1
+) d
+GROUP BY d.event_id, d.event_name, d.tournament_template_name
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM result r
+JOIN event_participants ep ON ep.id = r.event_participantsFK AND ep.del = 'no'
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE r.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+;
