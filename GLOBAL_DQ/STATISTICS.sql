@@ -1443,3 +1443,89 @@ WHERE s.del = 'no'
   -- AND tt.id = <tournament_template_id>
 
 ORDER BY sort_order, violation_types, statistic_name;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-057
+    -- Name - COMP.RANK_RESULTS_COMMENT_INVALID_OR_CONTRADICTED
+    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, whose Comment data value is outside the sport's confirmed set of status codes, or whose Comment marks a participant as having no classified result while a Rank, a Time or a Medal is stored for that same participant, together with a coverage count of all eligible statistic-participant rows carrying an active, non-empty Comment value.
+    CASE
+        WHEN LOWER(TRIM(x.comment_value)) IN ({{DATA_COMMENT_NO_RESULT_LIST}}) AND x.medal_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_MEDAL'
+        WHEN LOWER(TRIM(x.comment_value)) IN ({{DATA_COMMENT_NO_RESULT_LIST}}) AND x.rank_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_RANK'
+        WHEN LOWER(TRIM(x.comment_value)) IN ({{DATA_COMMENT_NO_RESULT_LIST}}) AND x.time_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_TIME'
+        ELSE 'COMMENT_INVALID_VALUE'
+    END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.participant_name,
+    x.comment_value,
+    x.rank_value,
+    x.time_value,
+    x.medal_value,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        p.name AS participant_name,
+        sd.value AS comment_value,
+        (SELECT NULLIF(TRIM(sd2.value), '') FROM statistic_data{{SHARD_ID}} sd2
+          WHERE sd2.statistic_participants{{SHARD_ID}}FK = sp.id
+            AND sd2.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+            AND sd2.del = 'no' AND sd2.value IS NOT NULL LIMIT 1) AS rank_value,
+        (SELECT NULLIF(TRIM(sd3.value), '') FROM statistic_data{{SHARD_ID}} sd3
+          WHERE sd3.statistic_participants{{SHARD_ID}}FK = sp.id
+            AND sd3.statistic_data_typeFK = {{DATA_TIME_TYPE_ID}}
+            AND sd3.del = 'no' AND sd3.value IS NOT NULL LIMIT 1) AS time_value,
+        (SELECT NULLIF(TRIM(sd4.value), '') FROM statistic_data{{SHARD_ID}} sd4
+          WHERE sd4.statistic_participants{{SHARD_ID}}FK = sp.id
+            AND sd4.statistic_data_typeFK = {{DATA_MEDAL_TYPE_ID}}
+            AND sd4.del = 'no' AND sd4.value IS NOT NULL LIMIT 1) AS medal_value
+    FROM statistic_data{{SHARD_ID}} sd
+    JOIN statistic_participants{{SHARD_ID}} sp ON sp.id = sd.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
+    JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    WHERE sd.del = 'no'
+      AND sd.statistic_data_typeFK = {{DATA_COMMENT_TYPE_ID}}
+      AND sd.value IS NOT NULL
+      AND TRIM(sd.value) <> ''
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+) x
+WHERE LOWER(TRIM(x.comment_value)) NOT IN ({{DATA_COMMENT_VALUE_LIST}})
+   OR (
+        LOWER(TRIM(x.comment_value)) IN ({{DATA_COMMENT_NO_RESULT_LIST}})
+        AND (x.rank_value IS NOT NULL OR x.time_value IS NOT NULL OR x.medal_value IS NOT NULL)
+      )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sp.id) AS eligible_count
+FROM statistic_data{{SHARD_ID}} sd
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.id = sd.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
+JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE sd.del = 'no'
+  AND sd.statistic_data_typeFK = {{DATA_COMMENT_TYPE_ID}}
+  AND sd.value IS NOT NULL
+  AND TRIM(sd.value) <> ''
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+;

@@ -51,6 +51,10 @@
     "RESULT_DURATION_TYPE_ID": 101,
     "RESULT_COMMENT_TYPE_ID": 104,
     "RESULT_COMMENT_VALUE_LIST": "'dnf', 'lap', 'dns', 'dsq', 'nc'",
+    "RESULT_COMMENT_NO_RESULT_LIST": "'dnf', 'lap', 'dns', 'dsq', 'disq.'",
+    "DATA_COMMENT_VALUE_LIST": "'dnf', 'lap', 'dns', 'dsq', 'nc'",
+    "DATA_COMMENT_NO_RESULT_LIST": "'dnf', 'lap', 'dns', 'dsq', 'disq.'",
+    "FULL_TIME_TOLERANCE_SECONDS": 1,
     "RESULT_MEDAL_TYPE_ID": 501,
     "RESULT_FULL_TIME_TYPE_ID": 557
   }
