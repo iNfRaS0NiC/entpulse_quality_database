@@ -91,7 +91,7 @@ substantiates a team's declared gender, and a gender check that stops at
 |---|---:|---|---|---|
 | rank | 100 | Positive integer | Rank | Confirmed-data |
 | duration | 101 | `+m:ss.f` gap, or plain full time for the leader | Duration | Confirmed-schema-data |
-| comment | 104 | Free text | Comment | Confirmed-data |
+| comment | 104 | Closed set of status codes | Comment | Confirmed-data |
 | medal | 501 | `gold` / `silver` / `bronze` | Medal | Confirmed-data |
 | duration_full_time | 557 | `h:mm:ss.f` or `m:ss.f`, never plus-prefixed | Full-time duration | Confirmed-schema-data |
 
@@ -102,6 +102,26 @@ plus-prefixed patterns occur many times per event.
 
 `557 Full-time duration` is never plus-prefixed in any confirmed pattern; it always holds an
 absolute time.
+
+`104 Comment` is not free text. Its whole active population resolves to a closed set of
+status codes marking a participant who did not finish in the classified order:
+
+| Value | Meaning | Note |
+|---|---|---|
+| `DNF` | Did not finish | The dominant value by a wide margin |
+| `LAP` | Lapped | |
+| `DNS` | Did not start | |
+| `DSQ` | Disqualified | |
+| `Disq.` | Disqualified | A second spelling of `DSQ`, not a distinct status |
+| `NC` | Not classified | |
+| `Q` | Qualified | A progression marker rather than an invalid-result status; a negligible number of rows |
+
+`DSQ` and `Disq.` carry the same meaning and occur in comparable volume, so neither is a
+rare typo of the other; the sport stores one status under two spellings. A check reading
+the Comment value must therefore treat the pair as one status, and the closed set is what
+makes an allowed-value check legitimate for this field at all.
+
+`NE` does not occur. A check keyed on it would audit an empty population.
 
 <!-- MANUAL PASTE ZONE: 50 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
