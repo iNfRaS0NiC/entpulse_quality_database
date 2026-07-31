@@ -359,3 +359,67 @@ WHERE ep.del = 'no'
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-058
+    -- Name - EVENT_TEAM_PARTICIPANT_WITHOUT_LINEUP
+    -- What it does: Finds active events holding at least one team event participant where the lineup layer is missing, separating an event in which no team resolves to any lineup member from one in which some teams do and others do not, with the number of teams on each side, together with a coverage count of all eligible events holding at least one active team event participant.
+    CASE
+        WHEN x.teams_with_lineup = 0 THEN 'EVENT_NO_TEAM_HAS_LINEUP'
+        ELSE 'EVENT_SOME_TEAMS_MISSING_LINEUP'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.tournament_template_name,
+    x.team_count,
+    x.teams_with_lineup,
+    x.team_count - x.teams_with_lineup AS teams_without_lineup,
+    x.teams_missing_lineup_names,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        tt.name AS tournament_template_name,
+        COUNT(DISTINCT ep.id) AS team_count,
+        COUNT(DISTINCT CASE WHEN l.id IS NOT NULL THEN ep.id END) AS teams_with_lineup,
+        GROUP_CONCAT(DISTINCT CASE WHEN l.id IS NULL THEN p.name END
+                     ORDER BY 1 SEPARATOR ', ') AS teams_missing_lineup_names
+    FROM event_participants ep
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN lineup l ON l.event_participantsFK = ep.id AND l.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND p.type = 'team'
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, tt.name
+) x
+WHERE x.teams_with_lineup < x.team_count
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event_participants ep
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND p.type = 'team'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+;
