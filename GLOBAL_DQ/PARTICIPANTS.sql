@@ -423,3 +423,84 @@ WHERE ep.del = 'no'
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-067
+    -- Name - EVENT_MIXED_TEAM_LINEUP_GENDER_BALANCE_UNEVEN
+    -- What it does: Finds active event-participant rows of mixed-gender teams whose lineup holds both male and female members in unequal numbers, with event, stage and participant context and the lineup gender counts, together with a coverage count of all eligible event-participants of mixed-gender teams whose lineup holds at least one member of each gender.
+    'MIXED_TEAM_LINEUP_GENDER_COUNT_UNEVEN' AS check_type,
+    x.event_participants_id,
+    x.event_id,
+    x.event_name,
+    x.stage_name,
+    x.participant_name,
+    x.lineup_rows,
+    x.lineup_male,
+    x.lineup_female,
+    x.lineup_unusable_gender,
+    ABS(x.lineup_male - x.lineup_female) AS gender_gap,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        ts.name AS stage_name,
+        p.name AS participant_name,
+        COUNT(l.id) AS lineup_rows,
+        SUM(CASE WHEN LOWER(TRIM(lp.gender)) = 'male' THEN 1 ELSE 0 END) AS lineup_male,
+        SUM(CASE WHEN LOWER(TRIM(lp.gender)) = 'female' THEN 1 ELSE 0 END) AS lineup_female,
+        SUM(CASE WHEN lp.gender IS NULL
+                   OR LOWER(TRIM(lp.gender)) NOT IN ('male', 'female') THEN 1 ELSE 0 END) AS lineup_unusable_gender
+    FROM event_participants ep
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+         AND p.type = 'team' AND LOWER(TRIM(p.gender)) = 'mixed'
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN lineup l ON l.event_participantsFK = ep.id AND l.del = 'no'
+    JOIN participant lp ON lp.id = l.participantFK AND lp.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY ep.id, e.id, e.name, ts.name, p.name
+) x
+WHERE x.lineup_male > 0
+  AND x.lineup_female > 0
+  AND x.lineup_male <> x.lineup_female
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT y.event_participants_id) AS eligible_count
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        SUM(CASE WHEN LOWER(TRIM(lp.gender)) = 'male' THEN 1 ELSE 0 END) AS lineup_male,
+        SUM(CASE WHEN LOWER(TRIM(lp.gender)) = 'female' THEN 1 ELSE 0 END) AS lineup_female
+    FROM event_participants ep
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+         AND p.type = 'team' AND LOWER(TRIM(p.gender)) = 'mixed'
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN lineup l ON l.event_participantsFK = ep.id AND l.del = 'no'
+    JOIN participant lp ON lp.id = l.participantFK AND lp.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY ep.id
+) y
+WHERE y.lineup_male > 0
+  AND y.lineup_female > 0
+;

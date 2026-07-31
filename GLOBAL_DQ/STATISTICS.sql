@@ -1621,3 +1621,314 @@ WHERE sd.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-064
+    -- Name - COMP.RANK_ATHLETE_TEAM_MISSING_OR_INVALID
+    -- What it does: Finds active athlete statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, inside a statistic that uses the Team data field, whose own Team value is absent, does not resolve to an active team participant, is stored more than once with conflicting values, or is stored more than once repeating one value, separating the four cases, with statistic, template and tournament name context, together with a coverage count of all eligible athlete statistic-participant rows inside statistics that use the Team data field.
+    CASE
+        WHEN x.team_value IS NULL   THEN 'TEAM_VALUE_MISSING'
+        WHEN tp.id IS NULL          THEN 'TEAM_VALUE_UNRESOLVED'
+        WHEN x.team_value_count > 1 THEN 'TEAM_VALUE_CONFLICTING'
+        ELSE                             'TEAM_VALUE_DUPLICATED'
+    END AS check_type,
+    x.statistic_participants_id,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.participant_id,
+    x.participant_name,
+    x.team_value,
+    x.team_row_count,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        sp.id AS statistic_participants_id,
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        p.id AS participant_id,
+        p.name AS participant_name,
+        (SELECT MIN(TRIM(td.value))
+           FROM statistic_data{{SHARD_ID}} td
+          WHERE td.statistic_participants{{SHARD_ID}}FK = sp.id
+            AND td.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+            AND td.del = 'no'
+            AND td.value IS NOT NULL
+            AND TRIM(td.value) <> '') AS team_value,
+        (SELECT COUNT(*)
+           FROM statistic_data{{SHARD_ID}} td
+          WHERE td.statistic_participants{{SHARD_ID}}FK = sp.id
+            AND td.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+            AND td.del = 'no'
+            AND td.value IS NOT NULL
+            AND TRIM(td.value) <> '') AS team_row_count,
+        (SELECT COUNT(DISTINCT TRIM(td.value))
+           FROM statistic_data{{SHARD_ID}} td
+          WHERE td.statistic_participants{{SHARD_ID}}FK = sp.id
+            AND td.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+            AND td.del = 'no'
+            AND td.value IS NOT NULL
+            AND TRIM(td.value) <> '') AS team_value_count
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND p.type = 'athlete'
+      AND EXISTS (
+          SELECT 1
+          FROM statistic_participants{{SHARD_ID}} sp2
+          JOIN statistic_data{{SHARD_ID}} td2
+            ON td2.statistic_participants{{SHARD_ID}}FK = sp2.id
+           AND td2.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+           AND td2.del = 'no'
+           AND td2.value IS NOT NULL
+           AND TRIM(td2.value) <> ''
+          WHERE sp2.statisticFK = s.id AND sp2.del = 'no'
+      )
+      -- AND tt.id = <tournament_template_id>
+) x
+LEFT JOIN participant tp
+       ON x.team_value REGEXP '^[0-9]+$'
+      AND tp.id = CAST(x.team_value AS UNSIGNED)
+      AND tp.del = 'no'
+      AND tp.type = 'team'
+WHERE x.team_value IS NULL
+   OR tp.id IS NULL
+   OR x.team_row_count > 1
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sp.id) AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND p.type = 'athlete'
+  AND EXISTS (
+      SELECT 1
+      FROM statistic_participants{{SHARD_ID}} sp2
+      JOIN statistic_data{{SHARD_ID}} td2
+        ON td2.statistic_participants{{SHARD_ID}}FK = sp2.id
+       AND td2.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+       AND td2.del = 'no'
+       AND td2.value IS NOT NULL
+       AND TRIM(td2.value) <> ''
+      WHERE sp2.statisticFK = s.id AND sp2.del = 'no'
+  )
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-065
+    -- Name - COMP.RANK_TEAM_ATHLETE_COUNT_UNEVEN
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, whose athletes are assigned to teams through the Team data field in unequal numbers, so one team fields fewer athletes than another inside one statistic, separating a shortfall of one athlete from a larger one, with the team by team breakdown and template and tournament name context, together with a coverage count of all eligible statistics holding at least one athlete assigned to a resolvable team.
+    CASE
+        WHEN a.max_athletes_per_team - a.min_athletes_per_team = 1 THEN 'TEAM_SIZE_UNEVEN_BY_ONE'
+        ELSE 'TEAM_SIZE_UNEVEN_BY_MORE'
+    END AS check_type,
+    a.statistic_id,
+    a.statistic_name,
+    a.template_name,
+    a.tournament_name,
+    a.team_count,
+    a.assigned_athlete_count,
+    a.min_athletes_per_team,
+    a.max_athletes_per_team,
+    a.max_athletes_per_team - a.min_athletes_per_team AS size_gap,
+    a.team_size_breakdown,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        g.statistic_id,
+        g.statistic_name,
+        g.template_name,
+        g.tournament_name,
+        COUNT(*) AS team_count,
+        SUM(g.athlete_count) AS assigned_athlete_count,
+        MIN(g.athlete_count) AS min_athletes_per_team,
+        MAX(g.athlete_count) AS max_athletes_per_team,
+        GROUP_CONCAT(CONCAT(g.team_participant_name, '=', g.athlete_count)
+                     ORDER BY g.athlete_count DESC, g.team_participant_name
+                     SEPARATOR ', ') AS team_size_breakdown
+    FROM (
+        SELECT
+            s.id AS statistic_id,
+            s.name AS statistic_name,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            tp.id AS team_participant_id,
+            tp.name AS team_participant_name,
+            COUNT(DISTINCT sp.id) AS athlete_count
+        FROM statistic s
+        JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+        JOIN participant p ON p.id = sp.participantFK AND p.del = 'no' AND p.type = 'athlete'
+        JOIN statistic_data{{SHARD_ID}} td
+          ON td.statistic_participants{{SHARD_ID}}FK = sp.id
+         AND td.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+         AND td.del = 'no'
+         AND td.value REGEXP '^[0-9]+$'
+        JOIN participant tp ON tp.id = CAST(TRIM(td.value) AS UNSIGNED) AND tp.del = 'no' AND tp.type = 'team'
+        WHERE s.del = 'no'
+          AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+          AND s.object_typeFK = 3
+          AND tt.sportFK = {{SPORT_ID}}
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          -- AND tt.id = <tournament_template_id>
+        GROUP BY s.id, s.name, tt.name, t.name, tp.id, tp.name
+    ) g
+    GROUP BY g.statistic_id, g.statistic_name, g.template_name, g.tournament_name
+) a
+WHERE a.min_athletes_per_team <> a.max_athletes_per_team
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no' AND p.type = 'athlete'
+JOIN statistic_data{{SHARD_ID}} td
+  ON td.statistic_participants{{SHARD_ID}}FK = sp.id
+ AND td.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+ AND td.del = 'no'
+ AND td.value REGEXP '^[0-9]+$'
+JOIN participant tp ON tp.id = CAST(TRIM(td.value) AS UNSIGNED) AND tp.del = 'no' AND tp.type = 'team'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-066
+    -- Name - COMP.RANK_TEAM_GENDER_BALANCE_UNEVEN
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type whose Gender config value is mixed, excluding IOC-purpose templates, holding at least one team whose athletes assigned through the Team data field are not an equal number of male and female, separating a team fielding one gender only from one fielding both in unequal numbers, with the offending teams and their gender counts and template and tournament name context, together with a coverage count of all eligible mixed statistics holding at least one athlete assigned to a resolvable team.
+    CASE
+        WHEN a.teams_missing_a_gender > 0 THEN 'STATISTIC_TEAM_MISSING_A_GENDER'
+        ELSE 'STATISTIC_TEAM_GENDER_COUNT_UNEVEN'
+    END AS check_type,
+    a.statistic_id,
+    a.statistic_name,
+    a.template_name,
+    a.tournament_name,
+    a.statistic_gender,
+    a.team_count,
+    a.teams_with_uneven_gender,
+    a.teams_missing_a_gender,
+    a.athletes_with_unusable_gender,
+    a.uneven_team_breakdown,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        g.statistic_id,
+        g.statistic_name,
+        g.template_name,
+        g.tournament_name,
+        g.statistic_gender,
+        COUNT(*) AS team_count,
+        SUM(g.male_cnt <> g.female_cnt) AS teams_with_uneven_gender,
+        SUM(g.male_cnt = 0 OR g.female_cnt = 0) AS teams_missing_a_gender,
+        SUM(g.other_cnt) AS athletes_with_unusable_gender,
+        GROUP_CONCAT(CASE WHEN g.male_cnt <> g.female_cnt
+                          THEN CONCAT(g.team_participant_name, '=M', g.male_cnt, '/F', g.female_cnt)
+                     END
+                     ORDER BY ABS(g.male_cnt - g.female_cnt) DESC, g.team_participant_name
+                     SEPARATOR ', ') AS uneven_team_breakdown
+    FROM (
+        SELECT
+            s.id AS statistic_id,
+            s.name AS statistic_name,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            LOWER(TRIM(sg.value)) AS statistic_gender,
+            tp.id AS team_participant_id,
+            tp.name AS team_participant_name,
+            COUNT(DISTINCT CASE WHEN LOWER(TRIM(p.gender)) = 'male' THEN sp.id END) AS male_cnt,
+            COUNT(DISTINCT CASE WHEN LOWER(TRIM(p.gender)) = 'female' THEN sp.id END) AS female_cnt,
+            COUNT(DISTINCT CASE WHEN p.gender IS NULL
+                                  OR LOWER(TRIM(p.gender)) NOT IN ('male', 'female') THEN sp.id END) AS other_cnt
+        FROM statistic s
+        JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN statistic_config sg ON sg.statisticFK = s.id AND sg.del = 'no'
+             AND sg.statistic_data_typeFK = {{CONFIG_GENDER_TYPE_ID}}
+             AND LOWER(TRIM(sg.value)) = 'mixed'
+        JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+        JOIN participant p ON p.id = sp.participantFK AND p.del = 'no' AND p.type = 'athlete'
+        JOIN statistic_data{{SHARD_ID}} td
+          ON td.statistic_participants{{SHARD_ID}}FK = sp.id
+         AND td.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+         AND td.del = 'no'
+         AND td.value REGEXP '^[0-9]+$'
+        JOIN participant tp ON tp.id = CAST(TRIM(td.value) AS UNSIGNED) AND tp.del = 'no' AND tp.type = 'team'
+        WHERE s.del = 'no'
+          AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+          AND s.object_typeFK = 3
+          AND tt.sportFK = {{SPORT_ID}}
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          -- AND tt.id = <tournament_template_id>
+        GROUP BY s.id, s.name, tt.name, t.name, sg.value, tp.id, tp.name
+    ) g
+    GROUP BY g.statistic_id, g.statistic_name, g.template_name, g.tournament_name, g.statistic_gender
+) a
+WHERE a.teams_with_uneven_gender > 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_config sg ON sg.statisticFK = s.id AND sg.del = 'no'
+     AND sg.statistic_data_typeFK = {{CONFIG_GENDER_TYPE_ID}}
+     AND LOWER(TRIM(sg.value)) = 'mixed'
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no' AND p.type = 'athlete'
+JOIN statistic_data{{SHARD_ID}} td
+  ON td.statistic_participants{{SHARD_ID}}FK = sp.id
+ AND td.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+ AND td.del = 'no'
+ AND td.value REGEXP '^[0-9]+$'
+JOIN participant tp ON tp.id = CAST(TRIM(td.value) AS UNSIGNED) AND tp.del = 'no' AND tp.type = 'team'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+;
