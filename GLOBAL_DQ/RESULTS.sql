@@ -753,3 +753,54 @@ WHERE e.del = 'no'
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-052
+    -- Name - EVENT_RESULTS_COMMENT_INVALID_VALUE
+    -- What it does: Finds active event-participant rows with an active, non-empty Comment result value outside the sport's confirmed set of status codes, catching a second spelling of a status the sport already stores as well as a value belonging to a different vocabulary, together with a coverage count of all eligible event-participants with an active, non-empty Comment value.
+    'Comment_Invalid_Value' AS check_type,
+    ep.id AS event_participants_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    p.name AS participant_name,
+    r.value AS comment_value,
+    tt.name AS tournament_template_name,
+    NULL AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.result_typeFK = {{RESULT_COMMENT_TYPE_ID}} AND r.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND r.value IS NOT NULL
+  AND TRIM(r.value) <> ''
+  AND LOWER(TRIM(r.value)) NOT IN ({{RESULT_COMMENT_VALUE_LIST}})
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.result_typeFK = {{RESULT_COMMENT_TYPE_ID}} AND r.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND r.value IS NOT NULL
+  AND TRIM(r.value) <> ''
+;

@@ -131,6 +131,7 @@ Full SQL never belongs here. It is stored in one sport-scoped file under
 | Triathlon-DQ-045 | Triathlon | GLOBAL-DQ-045 | WRONG_RESULTS | EVENT_RESULTS | EVENT_DURATION_FULL_TIME_MISMATCH_TO_RANK | `GLOBAL_DQ/RESULTS.sql` | Approved |
 | Triathlon-DQ-046 | Triathlon | GLOBAL-DQ-046 | WRONG_RESULTS | COMP.RANK | COMP.RANK_RESULTS_TIME_FULL_TIME_MISMATCH_TO_RANK | `GLOBAL_DQ/STATISTICS.sql` | Approved |
 | Triathlon-DQ-047 | Triathlon | GLOBAL-DQ-047 | WRONG_RESULTS | EVENT_RESULTS | EVENT_RESULTS_UNEXPECTED_FOR_NOT_STARTED | `GLOBAL_DQ/RESULTS.sql` | Approved |
+| Triathlon-DQ-048 | Triathlon | GLOBAL-DQ-052 | WRONG_RESULTS | EVENT_RESULTS | EVENT_RESULTS_COMMENT_INVALID_VALUE | `GLOBAL_DQ/RESULTS.sql` | Approved |
 
 
 <!-- MANUAL PASTE ZONE: POWERBI DQ REGISTRY — insert approved additions immediately before this marker; do not move or delete it. -->
