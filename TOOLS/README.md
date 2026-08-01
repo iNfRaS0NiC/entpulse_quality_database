@@ -207,10 +207,11 @@ pattern, a result type, a statistic data type. Choosing one automatically would 
 sample dressed up as coverage, so they are listed and skipped instead:
 
 ```text
-Skipping 8 statement(s) that need a value selected from a summary result:
-  GLOBAL-DISCOVERY-019  needs ROUND_TYPE_ID
-  GLOBAL-DISCOVERY-021  needs NAME_PATTERN
-  ...
+Skipping 8 statement(s):
+  needs a value selected from a summary result (8):
+    GLOBAL-DISCOVERY-019  needs ROUND_TYPE_ID
+    GLOBAL-DISCOVERY-021  needs NAME_PATTERN
+    ...
 ```
 
 They appear in the workbook's Overview as `SKIPPED`, so a run never reads as full coverage
@@ -223,6 +224,41 @@ of the catalogue. Run them afterwards with the value chosen from its summary:
 An explicit `-SportId` or `-Params` always overrides a discovered value. Skipping applies
 only under `-Sport` and only to a batch: elsewhere an unfilled placeholder still stops the
 run, because there it is a mistake rather than a deferred choice.
+
+### A parameter the sport can never supply
+
+A deferred choice and an impossible one look identical to the placeholder scanner: both are
+an unfilled `{{TOKEN}}`. They are not the same thing, and reporting them alike sends the
+reader to the sport file to find out which is which. A sport records the difference in its
+`SPORTS/params.json` entry, under the one key that is not itself a parameter:
+
+```json
+"Triathlon": {
+  "SPORT_ID": 50,
+  "_notApplicable": {
+    "NUMERIC_RESULT_TYPE_LIST": "no result type carries a measured quantity; every confirmed type is a place, a time, a status vocabulary or a medal code"
+  }
+}
+```
+
+The reason travels with the skip, in the run output and in the workbook's Overview:
+
+```text
+Skipping 2 statement(s):
+  not applicable to this sport (1):
+    GLOBAL-DQ-076  NUMERIC_RESULT_TYPE_LIST - no result type carries a measured quantity; ...
+  needs a value selected from a summary result (1):
+    GLOBAL-DQ-019  needs RESULT_TYPE_ID
+```
+
+One impossible parameter is enough to classify a statement as not applicable, because one is
+enough to make it permanently unrunnable for that sport. `Test-Package.ps1` holds the block
+to its contract: every key is a parameter name, every reason is non-empty, no parameter is
+both recorded and declared impossible, and no `Approved` registry row instantiates a template
+whose parameter the sport has declared it cannot supply.
+
+Record a parameter here only after the sport file documents why. The block is the runner's
+copy of a conclusion, never the place the conclusion is reached.
 
 On a sport with a large event or statistic volume, run a capped batch first —
 `-MaxChecks 8` — and read what it costs before letting the whole catalogue go.

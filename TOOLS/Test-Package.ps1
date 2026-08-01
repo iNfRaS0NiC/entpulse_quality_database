@@ -37,6 +37,10 @@ $ErrorActionPreference = 'Stop'
 # The character still has to be produced, because a deprecated registry row uses it.
 $EmDash = [string][char]0x2014
 
+# The one key inside a sport's SPORTS/params.json entry that is not itself a parameter.
+# Run-Query.ps1 declares the same name; both files are the contract for that block.
+$NotApplicableKey = '_notApplicable'
+
 if (-not $RepoRoot) { $RepoRoot = Split-Path -Parent $PSScriptRoot }
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 
@@ -284,8 +288,17 @@ $missing = @($expected | Where-Object { -not (Test-Path -LiteralPath (Join-Path 
     ForEach-Object { "missing: $_" })
 Add-Result -Group 'Package' -Name 'Expected Project 2.0 files present' -Findings $missing
 
-$textFiles = @(Get-ChildItem -LiteralPath $RepoRoot -Recurse -File -Include *.md, *.sql, *.ps1, *.json |
-    Where-Object { $_.FullName -notmatch '\\\.git\\' -and $_.Name -notlike '*.local.ps1' })
+# -Include is silently ignored when -Recurse is combined with -LiteralPath, so the extension
+# filter has to be a predicate. output/ is excluded because it holds query result exports the
+# runner writes there by default, and .gitignore keeps them out of the repository.
+$textExtensions = @('.md', '.sql', '.ps1', '.json')
+$textFiles = @(Get-ChildItem -LiteralPath $RepoRoot -Recurse -File |
+    Where-Object {
+        $textExtensions -contains $_.Extension -and
+        $_.FullName -notmatch '\\\.git\\' -and
+        $_.FullName -notmatch '\\output\\' -and
+        $_.Name -notlike '*.local.ps1'
+    })
 
 $newlineFindings = @()
 $whitespaceFindings = @()
@@ -655,10 +668,21 @@ $sportFindings = @()
 $indexRows = Get-MarkdownTableRow -Path (Join-Path $RepoRoot 'SPORTS.md') -FirstCell '^\d+$'
 $indexed = @{}
 
+# Columns: sport id, slug, competition model, structural file, status, last evidence date.
+# The model is validated against the vocabulary DATABASE.md DB-SEM-015 defines, so a value
+# invented in the index fails here rather than travelling as if it were a confirmed fact.
+$competitionModels = @(
+    'H2H (team)', 'H2H (individual)', 'H2H (individual and team)',
+    'Listing (team)', 'Listing (individual)', 'Listing (individual and team)',
+    'Hybrid (team)', 'Hybrid (individual)', 'Hybrid (individual and team)',
+    'Not checked'
+)
+
 foreach ($row in $indexRows) {
-    if ($row.Cells.Count -lt 3) { continue }
+    if ($row.Cells.Count -lt 4) { continue }
     $sport = $row.Cells[1]
-    $file = Remove-Backtick $row.Cells[2]
+    $model = $row.Cells[2]
+    $file = Remove-Backtick $row.Cells[3]
     $indexed[$sport] = [pscustomobject]@{ SportId = [int]$row.Cells[0]; File = $file }
 
     if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot $file))) {
@@ -669,6 +693,9 @@ foreach ($row in $indexRows) {
     }
     if ($sport -match '[^A-Za-z0-9.\-]') {
         $sportFindings += "SPORTS.md:$($row.Line): sport slug '$sport' contains a character outside [A-Za-z0-9.-]"
+    }
+    if ($competitionModels -notcontains $model) {
+        $sportFindings += "SPORTS.md:$($row.Line): '$sport' competition model '$model' is not one DB-SEM-015 defines"
     }
 }
 
@@ -703,6 +730,26 @@ if (Test-Path -LiteralPath $paramsPath) {
             elseif ([int]$declaredId -ne $indexed[$sport].SportId) {
                 $sportFindings += "SPORTS/params.json: '$sport' SPORT_ID $declaredId disagrees with SPORTS.md ($($indexed[$sport].SportId))"
             }
+
+            # A parameter is either recorded or documented as impossible, never both, and an
+            # impossible one is only useful with the reason attached: the runner prints it in
+            # place of "needs X" so the reader never has to open the sport file to tell a
+            # missing value from one that will never exist.
+            $block = $property.Value.PSObject.Properties | Where-Object { $_.Name -eq $NotApplicableKey }
+            if ($block) {
+                $recordedHere = @($property.Value.PSObject.Properties.Name | Where-Object { $_ -ne $NotApplicableKey })
+                foreach ($entry in $block.Value.PSObject.Properties) {
+                    if ($entry.Name -cnotmatch '^[A-Z][A-Z0-9_]*$') {
+                        $sportFindings += "SPORTS/params.json: '$sport' $NotApplicableKey key '$($entry.Name)' is not a parameter name"
+                    }
+                    if ([string]::IsNullOrWhiteSpace([string]$entry.Value)) {
+                        $sportFindings += "SPORTS/params.json: '$sport' $NotApplicableKey records no reason for $($entry.Name)"
+                    }
+                    if ($recordedHere -contains $entry.Name) {
+                        $sportFindings += "SPORTS/params.json: '$sport' records $($entry.Name) and also declares it not applicable"
+                    }
+                }
+            }
         }
 
         # A row that actually runs a template is only executable if the sport records every
@@ -721,11 +768,17 @@ if (Test-Path -LiteralPath $paramsPath) {
             $needed = @([regex]::Matches($template.Sql, '\{\{([A-Z_]+)\}\}') |
                 ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
             $recorded = @()
+            $unsupplied = @()
             if ($params.PSObject.Properties.Name -contains $sport) {
-                $recorded = @($params.$sport.PSObject.Properties.Name)
+                $recorded = @($params.$sport.PSObject.Properties.Name | Where-Object { $_ -ne $NotApplicableKey })
+                $naBlock = $params.$sport.PSObject.Properties | Where-Object { $_.Name -eq $NotApplicableKey }
+                if ($naBlock) { $unsupplied = @($naBlock.Value.PSObject.Properties.Name) }
             }
             foreach ($token in $needed) {
-                if ($recorded -notcontains $token) {
+                if ($unsupplied -contains $token) {
+                    $sportFindings += "SPORTS/params.json: '$sport' instantiates $family as Approved but declares $token not applicable"
+                }
+                elseif ($recorded -notcontains $token) {
                     $sportFindings += "SPORTS/params.json: '$sport' instantiates $family but records no $token"
                 }
             }

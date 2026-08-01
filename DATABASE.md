@@ -1017,6 +1017,38 @@ sports issue a sentinel rank outside the finishing order alongside a comment val
 is still a positive integer, so the convention above is not weakened by it: what a rank
 *means* is per-sport, what shape it has is not.
 
+### `DB-SEM-015` — A sport's competition model decides which checks can apply to it
+
+How a sport resolves a result governs which storage it fills, and therefore which checks have
+an eligible population at all. The model is not an editorial label: each one is stated below
+as a condition on rows, so a sport's model is measured from its data rather than asserted, and
+a wrong classification is contradicted by the sport's own tables.
+
+| Model | Observable condition |
+|---|---|
+| `H2H` | An event holds exactly two event participants, and each result type the sport scores carries one value per participant. The classification is the pair, so no event-level rank result type is populated. |
+| `LISTING` | An event holds the whole field competing at once, so its event-participant count varies with entries rather than being fixed at two, and the sport populates an event-level rank result type. |
+| `HYBRID` | Both conditions hold inside one competition: some of the sport's stages resolve a field into a ranked listing and others resolve pairs head to head, and both event shapes occur under the same tournament template. |
+
+`H2H` is additionally recorded as `H2H Team` or `H2H Individual` by the participant type its
+event participants carry, and `LISTING` likewise. That distinction changes which participant
+and lineup checks apply, not which result checks do.
+
+Three things this rule is not:
+
+- **It is not a scoring mechanism.** A field judged into points is `LISTING` exactly as a
+  field timed into seconds is: everyone competes, everyone is scored, the field is ranked. The
+  model describes how a result is resolved, never how a value is produced.
+- **It is not a discipline-level property.** A sport whose disciplines resolve results
+  differently is `HYBRID` at sport level, because one competition contains both. A sport whose
+  disciplines are separate competitions that each resolve the same way is not.
+- **It does not follow from one `sport` row.** A single `sport.id` can carry two editorially
+  distinct sports across its disciplines, and each is classified on its own condition. Where
+  that happens the sport file records the split; `SPORTS/BMX.md` is the confirmed case.
+
+`SPORTS.md` records the model per sport. A model is recorded only once the sport file
+documents the evidence for it, on the same terms as any other confirmed structure.
+
 <!-- MANUAL PASTE ZONE: DATABASE STRUCTURAL SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---

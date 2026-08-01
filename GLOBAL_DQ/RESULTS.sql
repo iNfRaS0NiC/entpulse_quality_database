@@ -1452,3 +1452,187 @@ WHERE ep.del = 'no'
   AND r.value IS NOT NULL
   AND TRIM(r.value) <> ''
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-084
+    -- Name - EVENT_RESULT_SCORE_TIED
+    -- What it does: Finds active events of a head-to-head sport whose two participants hold an identical value in the deciding score result type, so no winner can be read from the pair, separating a tie on a zero score from a tie on a played score, with the shared value and template, tournament, stage and round context, together with a coverage count of all eligible active events holding exactly two active non-empty values of that result type.
+    CASE
+        WHEN CAST(TRIM(x.min_value) AS SIGNED) = 0 THEN 'TIED_SCORE_BOTH_ZERO'
+        ELSE 'TIED_SCORE_PLAYED'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    e.round_typeFK,
+    x.min_value AS shared_value,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+-- Aggregated inside the sport's own hierarchy so the statement stays scoped, and keyed on
+-- exactly two values because a pair is what a head-to-head result is: an event holding one
+-- or three of them is a different defect and GLOBAL-DQ-083 is the check that names it.
+JOIN (
+    SELECT
+        ep.eventFK AS event_id,
+        MIN(TRIM(r.value)) AS min_value
+    FROM result r
+    JOIN event_participants ep ON ep.id = r.event_participantsFK AND ep.del = 'no'
+    JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    WHERE r.del = 'no'
+      AND r.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND r.value IS NOT NULL
+      AND TRIM(r.value) <> ''
+      AND TRIM(r.value) REGEXP '^-?[0-9]+$'
+    GROUP BY ep.eventFK
+    HAVING COUNT(*) = 2 AND MIN(TRIM(r.value)) = MAX(TRIM(r.value))
+) x ON x.event_id = e.id
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT x.event_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT ep.eventFK AS event_id
+    FROM result r
+    JOIN event_participants ep ON ep.id = r.event_participantsFK AND ep.del = 'no'
+    JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    WHERE r.del = 'no'
+      AND r.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND r.value IS NOT NULL
+      AND TRIM(r.value) <> ''
+      AND TRIM(r.value) REGEXP '^-?[0-9]+$'
+    GROUP BY ep.eventFK
+    HAVING COUNT(*) = 2
+) x
+
+ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-085
+    -- Name - EVENT_SCOPE_PERIOD_SUM_MISMATCH_TOTAL
+    -- What it does: Finds active event participants whose period-by-period scope values do not add up to the total they hold in the deciding score result type, so the two storage layers disagree about the same competitor, separating a total above the sum of its periods from one below it, with both figures, the number of periods carrying a value and event context, together with a coverage count of all eligible event participants holding both a numeric total and at least one numeric period value.
+    CASE
+        WHEN CAST(TRIM(r.value) AS SIGNED) > x.period_sum THEN 'TOTAL_ABOVE_PERIOD_SUM'
+        ELSE 'TOTAL_BELOW_PERIOD_SUM'
+    END AS check_type,
+    ep.id AS event_participants_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    p.name AS participant_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    CAST(TRIM(r.value) AS SIGNED) AS stored_total,
+    x.period_sum,
+    x.period_count,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM result r
+JOIN event_participants ep ON ep.id = r.event_participantsFK AND ep.del = 'no'
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+-- The periods are summed per owning event participant, inside the sport's own hierarchy.
+-- Only plainly numeric values are added: a period holding text would otherwise cast to zero
+-- and turn a storage defect into an arithmetic one, reporting the wrong thing about it.
+JOIN (
+    SELECT
+        sr.event_participantsFK AS event_participants_id,
+        SUM(CAST(TRIM(sr.value) AS SIGNED)) AS period_sum,
+        COUNT(*) AS period_count
+    FROM scope_result sr
+    JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+                       AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+    JOIN event e2 ON e2.id = es.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    WHERE sr.del = 'no'
+      AND sr.scope_data_typeFK IN ({{SCOPE_PERIOD_DATA_TYPE_LIST}})
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND sr.value IS NOT NULL
+      AND TRIM(sr.value) <> ''
+      AND TRIM(sr.value) REGEXP '^-?[0-9]+$'
+    GROUP BY sr.event_participantsFK
+) x ON x.event_participants_id = ep.id
+WHERE r.del = 'no'
+  AND r.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND r.value IS NOT NULL
+  AND TRIM(r.value) <> ''
+  AND TRIM(r.value) REGEXP '^-?[0-9]+$'
+  AND CAST(TRIM(r.value) AS SIGNED) <> x.period_sum
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM result r
+JOIN event_participants ep ON ep.id = r.event_participantsFK AND ep.del = 'no'
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN (
+    SELECT sr.event_participantsFK AS event_participants_id
+    FROM scope_result sr
+    JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+                       AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+    JOIN event e2 ON e2.id = es.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    WHERE sr.del = 'no'
+      AND sr.scope_data_typeFK IN ({{SCOPE_PERIOD_DATA_TYPE_LIST}})
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND sr.value IS NOT NULL
+      AND TRIM(sr.value) <> ''
+      AND TRIM(sr.value) REGEXP '^-?[0-9]+$'
+    GROUP BY sr.event_participantsFK
+) x ON x.event_participants_id = ep.id
+WHERE r.del = 'no'
+  AND r.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND r.value IS NOT NULL
+  AND TRIM(r.value) <> ''
+  AND TRIM(r.value) REGEXP '^-?[0-9]+$'
+
+ORDER BY sort_order, event_startdate DESC;

@@ -10,10 +10,11 @@ mechanisms from `DATABASE.md`.
 
 ## Sport index
 
-| Sport ID | Sport | Structural file | Structural status | Last evidence date |
-|---:|---|---|---|---|
-| 58 | BMX | `SPORTS/BMX.md` | In progress | 2026-07-22 |
-| 50 | Triathlon | `SPORTS/Triathlon.md` | In progress | 2026-07-30 |
+| Sport ID | Sport | Competition model | Structural file | Structural status | Last evidence date |
+|---:|---|---|---|---|---|
+| 58 | BMX | Listing (individual) | `SPORTS/BMX.md` | In progress | 2026-07-22 |
+| 50 | Triathlon | Listing (individual and team) | `SPORTS/Triathlon.md` | In progress | 2026-07-30 |
+| 10 | Curling | H2H (team) | `SPORTS/Curling.md` | In progress | 2026-08-01 |
 
 <!-- MANUAL PASTE ZONE: SPORT INDEX — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -27,6 +28,21 @@ pending. When `PREPARE_DOC_UPDATE SPORT=<Sport>` is requested:
 3. fill only confirmed areas;
 4. leave every uninvestigated area as `Not checked`;
 5. never create one file per finding, table or query.
+
+## Competition model rule
+
+The `Competition model` column above records how a sport resolves a result: `H2H`, `Listing`
+or `Hybrid`, with the participant type its events carry in brackets. `DATABASE.md`
+`DB-SEM-015` owns the definitions and states each one as a condition on rows, so the value is
+measured from the sport's data rather than assigned by judgement.
+
+The column exists because the model, not the sport, is what decides which checks can have an
+eligible population. A sport with no event-level rank cannot run a rank check; a sport whose
+events hold exactly two participants can run pairwise checks no listing sport can. Recording
+the model once explains a whole group of skipped checks that would otherwise look unrelated.
+
+Fill it only after the sport file documents the evidence. An unclassified sport leaves the
+cell `Not checked`, on the same terms as any other unverified area.
 
 ## Sport slug rule
 

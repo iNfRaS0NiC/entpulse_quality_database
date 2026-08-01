@@ -657,3 +657,67 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-083
+    -- Name - EVENT_PARTICIPANT_COUNT_NOT_TWO
+    -- What it does: Finds active events of a head-to-head sport that hold participants but not exactly two, separating an event short of the pair from one holding more than two, with the participant count and template, tournament, stage and status context, together with a coverage count of all eligible active events holding at least one active participant.
+    CASE
+        WHEN x.participant_count < 2 THEN 'FEWER_THAN_TWO_PARTICIPANTS'
+        ELSE 'MORE_THAN_TWO_PARTICIPANTS'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    e.status_type,
+    x.participant_count,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+-- The count is aggregated inside the sport's own hierarchy rather than over the whole
+-- event_participants table, so the statement stays scoped the way WORKFLOW.md requires.
+JOIN (
+    SELECT ep.eventFK AS event_id, COUNT(*) AS participant_count
+    FROM event_participants ep
+    JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt2.sportFK = {{SPORT_ID}}
+    GROUP BY ep.eventFK
+    HAVING COUNT(*) <> 2
+) x ON x.event_id = e.id
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;

@@ -36,7 +36,10 @@
     "ROUND_TYPE_LIST": "3, 9, 38, 171, 173, 176, 178, 179, 180, 184, 185, 188, 189, 204, 320",
     "NUMERIC_RESULT_TYPE_LIST": "102",
     "SERIES_MIN_YEARS": 3,
-    "SERIES_SKIP_YEARS": "2020"
+    "SERIES_SKIP_YEARS": "2020",
+    "_notApplicable": {
+      "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes"
+    }
   },
   "Triathlon": {
     "SPORT_ID": 50,
@@ -74,6 +77,54 @@
     "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
     "ROUND_TYPE_LIST": "9, 173, 178, 179, 180, 204, 267, 283, 284",
     "SERIES_MIN_YEARS": 3,
-    "SERIES_SKIP_YEARS": "2020"
+    "SERIES_SKIP_YEARS": "2020",
+    "_notApplicable": {
+      "NUMERIC_RESULT_TYPE_LIST": "no result type carries a measured quantity; every confirmed type is a place, a time, a status vocabulary or a medal code",
+      "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes"
+    }
+  },
+  "Curling": {
+    "SPORT_ID": 10,
+    "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
+    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach'",
+    "STATISTIC_TYPE_ID": 11,
+    "STATISTIC_OWNER_TYPE_ID": 3,
+    "SHARD_ID": 11,
+    "DATA_RANK_TYPE_ID": 1270,
+    "DATA_COMMENT_TYPE_ID": 1273,
+    "DATA_MEDAL_TYPE_ID": 1277,
+    "DATA_TEAM_TYPE_ID": 1429,
+    "DATA_COMMENT_VALUE_LIST": "'dnf'",
+    "DATA_COMMENT_NO_RESULT_LIST": "'dnf'",
+    "CONFIG_START_DATE_TYPE_ID": 1463,
+    "CONFIG_END_DATE_TYPE_ID": 1464,
+    "CONFIG_GENDER_TYPE_ID": 1470,
+    "RESULT_MEDAL_TYPE_ID": 501,
+    "RESULT_COMMENT_VALUE_LIST": "''",
+    "NUMERIC_RESULT_TYPE_LIST": "4, 6",
+    "PLACEHOLDER_COUNTRY_LIST": "''",
+    "SERIES_MIN_YEARS": 3,
+    "SERIES_SKIP_YEARS": "0",
+    "RESULT_FINAL_SCORE_TYPE_ID": 4,
+    "SCOPE_TYPE_ID": 305,
+    "SCOPE_PERIOD_DATA_TYPE_LIST": "282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292",
+    "FINAL_ROUND_TYPE_LIST": "9, 173",
+    "ROUND_TYPE_LIST": "2, 3, 4, 5, 9, 19, 22, 23, 24, 25, 26, 38, 39, 40, 41, 134, 136, 138, 152, 171, 172, 173, 176, 178, 179, 181, 184, 185, 227, 253, 262, 303, 304, 305",
+    "_notApplicable": {
+      "RESULT_RANK_TYPE_ID": "no Rank result type; the score in Final Result and Running score carries the classification",
+      "RESULT_DURATION_TYPE_ID": "the sport stores no time on a result",
+      "RESULT_FULL_TIME_TYPE_ID": "the sport stores no time on a result",
+      "FULL_TIME_TOLERANCE_SECONDS": "the sport stores no time on a result",
+      "RESULT_COMMENT_TYPE_ID": "no Comment result type; the sport uses no status vocabulary on a result",
+      "RESULT_COMMENT_NO_RESULT_LIST": "no Comment result type; the sport uses no status vocabulary on a result",
+      "DATA_TIME_TYPE_ID": "Comp.Rank stores no time field",
+      "DATA_TIME_DIFFERENCE_TYPE_ID": "Comp.Rank stores no time field",
+      "DATA_DEPRECATED_DURATION_TYPE_ID": "Comp.Rank stores no time field",
+      "TIMED_DISCIPLINE_LIST": "neither 2aSide nor 4aSide is a timed discipline",
+      "CONFIG_EVENT_ID_TYPE_ID": "statistic_config records no Event id, so a Comp.Rank statistic cannot be resolved to its event through that path",
+      "NOT_STARTED_DESC_LIST": "every active event resolves to a finished status; no not-started status occurs",
+      "STALE_NOT_STARTED_DAYS": "every active event resolves to a finished status; no not-started status occurs",
+      "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes"
+    }
   }
 }

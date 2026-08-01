@@ -610,6 +610,10 @@ function Get-SqlLiteral {
 # never guessed.
 $DiscoverableParameters = @('SPORT_ID', 'STATISTIC_TYPE_ID', 'STATISTIC_OWNER_TYPE_ID', 'SHARD_ID')
 
+# The one key inside a sport's SPORTS/params.json entry that is not itself a parameter. It
+# holds the parameters the sport is documented as unable to supply, mapped to the reason.
+$NotApplicableKey = '_notApplicable'
+
 function Get-SportFileParameters {
     # Values a sport has already had confirmed and recorded. These outrank discovery: the
     # file holds documented evidence, discovery holds a heuristic (the busiest type/owner
@@ -635,8 +639,39 @@ function Get-SportFileParameters {
     }
 
     foreach ($property in $entry.Value.PSObject.Properties) {
+        if ($property.Name -eq $NotApplicableKey) { continue }
         $resolved[$property.Name] = $property.Value
         Write-Host ("  {0,-30} {1}  (SPORTS/params.json)" -f $property.Name, $property.Value) -ForegroundColor DarkGray
+    }
+    return $resolved
+}
+
+function Get-SportNotApplicable {
+    # Parameters the sport is documented as never being able to supply, each with the reason
+    # it cannot. A missing value and an impossible one look identical to the placeholder
+    # scanner, so without this the runner reports "needs X" for a sport that will never have
+    # an X, and the reader has to open the sport file to learn which of the two it is.
+    param([string]$SportName)
+
+    $resolved = @{}
+    $path = Join-Path (Split-Path -Parent $PSScriptRoot) 'SPORTS\params.json'
+    if (-not (Test-Path -LiteralPath $path)) { return $resolved }
+
+    try {
+        $params = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+    catch {
+        return $resolved
+    }
+
+    $entry = $params.PSObject.Properties | Where-Object { $_.Name -eq $SportName }
+    if (-not $entry) { return $resolved }
+
+    $block = $entry.Value.PSObject.Properties | Where-Object { $_.Name -eq $NotApplicableKey }
+    if (-not $block) { return $resolved }
+
+    foreach ($property in $block.Value.PSObject.Properties) {
+        $resolved[$property.Name] = [string]$property.Value
     }
     return $resolved
 }
@@ -1570,10 +1605,37 @@ if ($PSBoundParameters.ContainsKey('SportId')) { $paramTable['SPORT_ID'] = $Spor
 $skipped = @()
 $runnable = @()
 
+$notApplicable = @{}
+if ($Sport) { $notApplicable = Get-SportNotApplicable -SportName $Sport }
+
 foreach ($job in $jobs) {
     $missing = Get-MissingPlaceholders -Text $job.Sql -Values $paramTable
     if ($Sport -and $missing.Count -gt 0 -and $jobs.Count -gt 1) {
-        $skipped += [pscustomobject]@{ Job = $job; Missing = ($missing -join ', ') }
+        # One impossible parameter is enough: the statement can never run for this sport, so
+        # it is reported as not applicable even when other placeholders are merely unfilled.
+        $blocked = @($missing | Where-Object { $notApplicable.ContainsKey($_) })
+        if ($blocked.Count -gt 0) {
+            # One cause commonly blocks several parameters - a sport storing no time fails
+            # three of them at once - so the reason is printed once with its parameters
+            # listed, rather than repeated until the line is unreadable.
+            $reason = (($blocked | Group-Object { $notApplicable[$_] } | ForEach-Object {
+                        "{0} - {1}" -f (($_.Group | Sort-Object) -join ', '), $_.Name
+                    }) -join '; ')
+            $skipped += [pscustomobject]@{
+                Job     = $job
+                Missing = ($missing -join ', ')
+                Kind    = 'NOT_APPLICABLE'
+                Reason  = $reason
+            }
+        }
+        else {
+            $skipped += [pscustomobject]@{
+                Job     = $job
+                Missing = ($missing -join ', ')
+                Kind    = 'NEEDS_SELECTION'
+                Reason  = ''
+            }
+        }
         continue
     }
     $job.Sql = Expand-Placeholders -Text $job.Sql -Values $paramTable
@@ -1581,13 +1643,24 @@ foreach ($job in $jobs) {
 }
 
 if ($skipped.Count -gt 0) {
-    Write-Host "Skipping $($skipped.Count) statement(s) that need a value selected from a summary result:" -ForegroundColor DarkGray
-    $skipped | ForEach-Object { "  {0}  needs {1}" -f $_.Job.CheckId, $_.Missing } | Write-Host -ForegroundColor DarkGray
+    $impossible = @($skipped | Where-Object { $_.Kind -eq 'NOT_APPLICABLE' })
+    $unselected = @($skipped | Where-Object { $_.Kind -ne 'NOT_APPLICABLE' })
+
+    Write-Host "Skipping $($skipped.Count) statement(s):" -ForegroundColor DarkGray
+
+    if ($impossible.Count -gt 0) {
+        Write-Host "  not applicable to this sport ($($impossible.Count)):" -ForegroundColor DarkGray
+        $impossible | ForEach-Object { "    {0}  {1}" -f $_.Job.CheckId, $_.Reason } | Write-Host -ForegroundColor DarkGray
+    }
+    if ($unselected.Count -gt 0) {
+        Write-Host "  needs a value selected from a summary result ($($unselected.Count)):" -ForegroundColor DarkGray
+        $unselected | ForEach-Object { "    {0}  needs {1}" -f $_.Job.CheckId, $_.Missing } | Write-Host -ForegroundColor DarkGray
+    }
     Write-Host ''
 }
 
 if ($runnable.Count -eq 0) {
-    throw "Nothing left to run: every matched statement needs a value that must be selected from a summary result."
+    throw "Nothing left to run: every matched statement is either not applicable to this sport or needs a value that must be selected from a summary result."
 }
 
 $jobs = $runnable
@@ -1720,7 +1793,12 @@ if ($isBatch) {
             What    = $item.Job.What
             Rows    = 0
             Seconds = 0
-            Status  = "SKIPPED: needs $($item.Missing)"
+            Status  = if ($item.Kind -eq 'NOT_APPLICABLE') {
+                "SKIPPED: not applicable - $($item.Reason)"
+            }
+            else {
+                "SKIPPED: needs $($item.Missing)"
+            }
         }
     }
 
