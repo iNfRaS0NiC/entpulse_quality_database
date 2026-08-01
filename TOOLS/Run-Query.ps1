@@ -17,12 +17,13 @@
     file carry check_id and check_name as their first two columns.
 
     -Format xlsx collects a whole batch into a single workbook instead. Its first tab,
-    Overview, lists Sport, CheckID, Check Name, Rows and a Status field for every check,
-    with each row count linking to its tab. The check tabs are named after the "-- Name -"
-    header, abbreviated to fit Excel's 31-character limit, and there the identity sits above
-    the data rather than on every row: row 1 the labels, row 2 the CheckID, the name and the
-    statement that ran as a single line, row 3 the link back to Overview, and the result
-    table from row 5. Upload that file to Google Drive and open it as Sheets.
+    Overview, lists Sport, CheckID, Check Name, What it does, Rows and a Status field for
+    every check, with each row count linking to its tab. The check tabs are named after the
+    "-- Name -" header, abbreviated to fit Excel's 31-character limit, and there the identity
+    sits above the data rather than on every row: row 1 the labels, row 2 the CheckID, the
+    name, the statement that ran as a single line and what the check asserts, with an empty
+    Comment cell for the reviewer, row 3 the link back to Overview, and the result table from
+    row 5. Upload that file to Google Drive and open it as Sheets.
 
     A batch is written to survive being cut short. Each statement runs under a wall-clock
     watchdog, so a connection the server half-closes is abandoned as a failed check instead
@@ -56,6 +57,12 @@
     The sport's DQ templates plus every PATTERNS.sql statement whose parameters -Sport can
     supply, in one workbook, so a finding can be read against the names and round types
     actually in use. A drill-down needs a value picked out of a summary and is left out.
+
+.EXAMPLE
+    .\TOOLS\Run-Query.ps1 -Sport Triathlon -RunAll
+    The same, plus everything the sport authored for itself, in one command. Equivalent to
+    GLOBAL-DQ-*,Triathlon-DQ-* -Sport Triathlon -WithPatterns -Format xlsx, and it does not
+    fail on a sport that has no file of its own.
 
 .EXAMPLE
     .\TOOLS\Run-Query.ps1 BMX-DQ-001,BMX-DQ-002,BMX-DQ-003 -OutDir .\out
@@ -107,6 +114,11 @@ param(
     # sport's DQ catalogue, so one workbook carries the findings together with the round
     # types and the name patterns they have to be read against.
     [switch]$WithPatterns,
+
+    # One command for a whole sport: every GLOBAL DQ template, every statement the sport
+    # authored for itself, and the pattern statements, collected into one workbook. Needs
+    # -Sport. Implies -WithPatterns and -Format xlsx unless a format is given.
+    [switch]$RunAll,
 
     [int]$Preview = 50,
 
@@ -221,10 +233,15 @@ function Get-CheckCatalogue {
 
             $id = $idMatch.Groups[1].Value
             $nameMatch = [regex]::Match($block, '(?m)^\s*--\s*Name\s*[-:]\s*(.+?)\s*$')
+            # The third identity comment. Carried through the run so the workbook can say
+            # what a check asserts beside what it found, rather than sending the reader
+            # back to the registry to look it up.
+            $whatMatch = [regex]::Match($block, '(?m)^\s*--\s*What it does:\s*(.+?)\s*$')
 
             $catalogue += [pscustomobject]@{
                 CheckId = $id
                 Name    = $(if ($nameMatch.Success) { $nameMatch.Groups[1].Value } else { '' })
+                What    = $(if ($whatMatch.Success) { $whatMatch.Groups[1].Value } else { '' })
                 File    = $f.Name
                 Line    = $(if ($lineOf.ContainsKey($id)) { $lineOf[$id] } else { 0 })
                 Path    = $f.FullName
@@ -1064,12 +1081,12 @@ function Save-Workbook {
             foreach ($link in $links) { $linked[$link.Ref] = $true }
 
             # A check tab opens with a labelled identity block:
-            #   row 1  Check ID | Check Name | SQL Used
-            #   row 2  the values
+            #   row 1  Check ID | Check Name | SQL Used | What it does | Comment
+            #   row 2  the values, with Comment left empty for the reviewer
             #   row 3  the link back to Overview, in a cell of its own
             #   row 4  blank, so the result table below stays its own block
             if ($headerRow) {
-                $labels = @('Check ID', 'Check Name', 'SQL Used')
+                $labels = @('Check ID', 'Check Name', 'SQL Used', 'What it does', 'Comment')
 
                 [void]$xml.Append('<row r="1">')
                 for ($c = 0; $c -lt $header.Count; $c++) {
@@ -1250,15 +1267,17 @@ function Save-RunWorkbook {
         $ran = ($rowsCell -isnot [string])
 
         $overviewRows += [pscustomobject]@{
-            'Sport'      = Get-SportFromCheckId -CheckId $entry.CheckId
-            'CheckID'    = $entry.CheckId
-            'Check Name' = $entry.Name
-            'Rows'       = $rowsCell
-            'Status'     = 'Not Started'
+            'Sport'         = Get-SportFromCheckId -CheckId $entry.CheckId
+            'CheckID'       = $entry.CheckId
+            'Check Name'    = $entry.Name
+            'What it does'  = $entry.What
+            'Rows'          = $rowsCell
+            'Status'        = 'Not Started'
         }
+        # Rows carries the jump to the tab, so its column moves with it.
         if ($ran -and $tabOf.ContainsKey($entry.CheckId)) {
             $links += [pscustomobject]@{
-                Ref    = "D$overviewRow"
+                Ref    = "E$overviewRow"
                 Target = $tabOf[$entry.CheckId]
                 Text   = [string]$entry.Rows
             }
@@ -1272,16 +1291,18 @@ function Save-RunWorkbook {
             BackTo     = $null
             Links      = $links
             Validation = @{
-                Sqref  = "E2:E$overviewRow"
+                Sqref  = "F2:F$overviewRow"
                 Values = 'Not Started,In Progress,Completed'
             }
         })
 
+    # Comment is written empty on purpose: the column is the reviewer's, and the workbook
+    # only supplies its heading.
     foreach ($item in $Collected) {
         $sheets += [pscustomobject]@{
             Name   = $tabOf[$item.Job.CheckId]
             Rows   = $item.Rows
-            Header = @($item.Job.CheckId, $item.Job.Name, (ConvertTo-SingleLineSql -Sql $item.Job.Sql))
+            Header = @($item.Job.CheckId, $item.Job.Name, (ConvertTo-SingleLineSql -Sql $item.Job.Sql), $item.Job.What, '')
             BackTo = $overviewName
         }
     }
@@ -1373,6 +1394,13 @@ if ($Info) {
     Write-Host '  the round-type and name-pattern summaries. A drill-down is left out,' -ForegroundColor DarkGray
     Write-Host '  its value being one you pick out of a summary and run separately.' -ForegroundColor DarkGray
 
+    Write-Section 'EVERYTHING FOR ONE SPORT'
+    Write-Line "$Entry -Sport Triathlon -RunAll" 'the whole sport in one command'
+    Write-Host '  Every GLOBAL DQ template, every statement the sport authored for itself' -ForegroundColor DarkGray
+    Write-Host '  and the patterns, in one workbook under the output root. Implies' -ForegroundColor DarkGray
+    Write-Host '  -WithPatterns and -Format xlsx; an explicit -Format or -OutDir still wins.' -ForegroundColor DarkGray
+    Write-Host '  A template the sport cannot parameterise is listed as SKIPPED, not run.' -ForegroundColor DarkGray
+
     Write-Section 'AD-HOC SQL'
     Write-Line "$Entry -Sql `"SELECT COUNT(*) AS c FROM sport;`"" 'run a literal statement'
     Write-Line "$Entry -File .\scratch.sql" 'run a file'
@@ -1383,9 +1411,10 @@ if ($Info) {
     Write-Line '-Format csv' 'CSV, with check_id and check_name columns'
     Write-Line '-Format json' 'JSON, with check_id and check_name fields'
     Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, Overview first'
-    Write-Host '  Overview lists Sport, CheckID, Check Name, Rows and a Status field to' -ForegroundColor DarkGray
-    Write-Host '  fill in; each row count links to its tab. On a check tab row 2 holds' -ForegroundColor DarkGray
-    Write-Host '  the CheckID, the name and the one-line SQL that ran, A3 returns to' -ForegroundColor DarkGray
+    Write-Host '  Overview lists Sport, CheckID, Check Name, What it does, Rows and a' -ForegroundColor DarkGray
+    Write-Host '  Status field to fill in; each row count links to its tab. On a check tab' -ForegroundColor DarkGray
+    Write-Host '  row 2 holds the CheckID, the name, the one-line SQL that ran and what' -ForegroundColor DarkGray
+    Write-Host '  the check asserts, with an empty Comment cell beside them; A3 returns to' -ForegroundColor DarkGray
     Write-Host '  Overview, and the result table starts on row 5. CSV and JSON keep' -ForegroundColor DarkGray
     Write-Host '  check_id and check_name as columns, having nowhere else to put them.' -ForegroundColor DarkGray
     Write-Host '  Files are named after the CheckID: BMX-DQ-003.csv' -ForegroundColor DarkGray
@@ -1413,13 +1442,38 @@ if ($ListChecks) {
 
 # ----- what to run ---------------------------------------------------------------------
 
-if ($Sql) {
-    $jobs = @([pscustomobject]@{ CheckId = ''; Name = ''; Sql = $Sql })
+if ($RunAll) {
+    # Everything one sport can be asked, in one command: its DQ templates, whatever it
+    # authored for itself, and the patterns those findings have to be read against. The
+    # selection is built from the catalogue rather than from wildcards, because a sport with
+    # no file of its own would otherwise fail on a pattern that matches nothing.
+    if ([string]::IsNullOrWhiteSpace($Sport)) {
+        throw '-RunAll needs -Sport <name>: it selects that sport''s checks, and a GLOBAL template has no sport of its own.'
+    }
+    $jobs = @(Get-CheckCatalogue |
+        Where-Object { $_.CheckId -like 'GLOBAL-DQ-*' -or $_.CheckId -like "$Sport-DQ-*" } |
+        Sort-Object CheckId)
+    if ($jobs.Count -eq 0) {
+        throw "No GLOBAL-DQ template and no $Sport-DQ statement found. Use -ListChecks to see what is registered."
+    }
+
+    $own = @($jobs | Where-Object { $_.CheckId -like "$Sport-DQ-*" }).Count
+    Write-Host ("-RunAll: {0} GLOBAL template(s) and {1} {2} statement(s), plus the patterns." -f `
+        ($jobs.Count - $own), $own, $Sport) -ForegroundColor DarkGray
+
+    $WithPatterns = $true
+    # A workbook is the only shape that holds a whole catalogue together; an explicit
+    # -Format still wins, for the reader who wants the flat files instead.
+    if (-not $PSBoundParameters.ContainsKey('Format')) { $Format = 'xlsx' }
+}
+elseif ($Sql) {
+    $jobs = @([pscustomobject]@{ CheckId = ''; Name = ''; What = ''; Sql = $Sql })
 }
 elseif ($File) {
     $jobs = @([pscustomobject]@{
             CheckId = [IO.Path]::GetFileNameWithoutExtension($File)
             Name    = ''
+            What    = ''
             Sql     = (Get-Content -LiteralPath $File -Raw)
         })
 }
@@ -1427,7 +1481,7 @@ elseif ($CheckId) {
     $jobs = @(Select-Checks -Patterns $CheckId)
 }
 else {
-    throw 'Nothing to run. Pass a CheckID, -File or -Sql. Use -ListChecks to list registered CheckIDs.'
+    throw 'Nothing to run. Pass a CheckID, -File, -Sql or -RunAll with -Sport. Use -ListChecks to list registered CheckIDs.'
 }
 
 if ($MaxChecks -gt 0 -and $jobs.Count -gt $MaxChecks) {
@@ -1626,6 +1680,7 @@ if ($isBatch) {
         $summary += [pscustomobject]@{
             CheckId = $job.CheckId
             Name    = $job.Name
+            What    = $job.What
             Rows    = $rowCount
             Seconds = [math]::Round($elapsed, 1)
             Status  = $status
@@ -1662,6 +1717,7 @@ if ($isBatch) {
         $summary += [pscustomobject]@{
             CheckId = $item.Job.CheckId
             Name    = $item.Job.Name
+            What    = $item.Job.What
             Rows    = 0
             Seconds = 0
             Status  = "SKIPPED: needs $($item.Missing)"

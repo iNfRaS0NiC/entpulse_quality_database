@@ -123,6 +123,7 @@ the account in use. The summary:
 | `-ListChecks` | Every CheckID with its name, source file and line |
 | `-ListChecks BMX-DQ-0*` | The same list, filtered by wildcard |
 | `-Sport BMX` | Discover the structural parameters and fill them in |
+| `-Sport BMX -RunAll` | Everything for one sport: its GLOBAL DQ templates, its own statements and the patterns, in one workbook |
 | `BMX-DQ-003` | One check to the screen |
 | `BMX-DQ-001,BMX-DQ-005` | A chosen few |
 | `BMX-DQ-*` | Every match; more than one switches to batch mode |
@@ -259,6 +260,23 @@ Anything the run already matched is not added twice, and the switch applies afte
 `-MaxChecks`, because the cap exists to trim the matched set while these were asked for by
 name. Without `-Sport`, an unfilled placeholder stops the run as it always does.
 
+### Everything for one sport
+
+```powershell
+.\TOOLS\Run-Query.ps1 -Sport Triathlon -RunAll
+```
+
+One command for the whole picture: every `GLOBAL-DQ-*` template, every `<Sport>-DQ-*`
+statement the sport authored for itself, and the pattern statements, collected into one
+workbook under the output root. It implies `-WithPatterns` and `-Format xlsx`; an explicit
+`-Format`, `-OutDir` or `-MaxChecks` still wins.
+
+The selection is read from the catalogue rather than from wildcards, so a sport that has no
+file of its own runs the templates alone instead of failing on a pattern that matches
+nothing. A template the sport cannot fill — because a parameter is not recorded for it — is
+listed as `SKIPPED` in the Overview exactly as it is under any other batch, so the workbook
+never reads as full coverage when it is not.
+
 What a run produces is execution output, never evidence. `WORKFLOW.md` "Starting a new
 sport" owns the sequence around these commands: which drill-downs to run, how a confirmed
 finding reaches `SPORTS.md` and the sport file, and when DQ work may begin.
@@ -282,12 +300,14 @@ Google Drive and open as Sheets.
 
 `Overview` is the first tab:
 
-| Sport | CheckID | Check Name | Rows | Status |
-|---|---|---|---:|---|
-| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 1064 | Not Started |
+| Sport | CheckID | Check Name | What it does | Rows | Status |
+|---|---|---|---|---:|---|
+| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | Finds active participants of the selected types that … | 1064 | Not Started |
 
 Every check appears, including those that returned nothing or failed and therefore have
-no tab of their own. `Sport` is taken from the CheckID prefix.
+no tab of their own. `Sport` is taken from the CheckID prefix. `What it does` is the
+statement's own `-- What it does:` line, carried through the run so a reader can see what
+a check asserts beside what it found, without going back to the registry for it.
 
 `Rows` is the count the console printed, and doubles as the jump to that check's tab. A
 check that failed shows `ERROR` instead, so it cannot be misread as a clean zero, and is
@@ -300,9 +320,9 @@ along with the durations.
 Then one tab per check:
 
 ```text
-     A                     B                    C
-1    Check ID              Check Name           SQL Used
-2    BMX-DQ-001            PARTICIPANT_MIS...   SELECT 'Missing_DOB' AS check_type, ...
+     A                     B                    C              D                E
+1    Check ID              Check Name           SQL Used       What it does     Comment
+2    BMX-DQ-001            PARTICIPANT_MIS...   SELECT 'Mis... Finds active ...
 3    Return to Overview
 4
 5    check_type            participant_id       participant_name   ...
@@ -312,6 +332,11 @@ Then one tab per check:
 The identity sits on rows 1 and 2 rather than on every data row. Row 3 holds the link back
 to Overview, and row 4 is blank so the result table below stays a self-contained block for
 sorting and filtering.
+
+`Comment` is written as a heading and nothing else: the column belongs to whoever reads the
+workbook, and the runner never puts a value in it. `What it does` beside it is the same
+sentence the Overview carries, so a tab opened from a link explains itself without the
+reader going back.
 
 **A linked cell in Google Sheets is labelled from the hyperlink record, not from its own
 value.** With a `display` attribute Sheets shows that text; without one it falls back to
