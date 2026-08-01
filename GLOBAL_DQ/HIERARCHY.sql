@@ -1472,125 +1472,284 @@ ORDER BY sort_order, violation_types, template_name;
 SELECT
     -- CheckID - GLOBAL-DQ-080
     -- Name - TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES
-    -- What it does: Finds active tournaments, excluding IOC-purpose templates, whose name carries a year that none of their own events falls in, or whose name carries a two-year season span while every one of their events falls in a single calendar year, separating the two, with the years the events actually occupy and template name context, together with a coverage count of all eligible tournaments whose name carries a year and that hold at least one dated active event.
+    -- What it does: Finds active tournaments, excluding IOC-purpose templates, whose name disagrees with the calendar years their own tournament stages occupy: a season span in the name while the stages sit inside one year, a single year in the name while the stages cross into a second, a span naming years the stages do not occupy, a year the stages never reach, or stages spread over more than two calendar years, separating the five, with the stage years and template name context, together with a coverage count of all eligible tournaments holding at least one dated stage.
     CASE
-        WHEN x.name_has_season = 1 AND x.event_years = 1 THEN 'SEASON_NAME_ON_SINGLE_YEAR'
-        ELSE 'NAME_YEAR_MATCHES_NO_EVENT'
+        WHEN x.stage_span > 2 THEN 'STAGES_SPAN_MORE_THAN_TWO_YEARS'
+        WHEN x.stage_span = 2 AND x.name_has_span = 0 THEN 'SINGLE_YEAR_NAME_ON_SEASON'
+        WHEN x.stage_span = 2 THEN 'NAME_SPAN_DOES_NOT_MATCH_STAGE_YEARS'
+        WHEN x.name_has_span = 1 THEN 'SEASON_NAME_ON_SINGLE_YEAR'
+        ELSE 'NAME_YEAR_MATCHES_NO_STAGE'
     END AS check_type,
     x.tournament_id,
     x.tournament_name,
     x.template_name,
-    x.years_present,
-    x.event_count,
-    NULL AS eligible_count
+    x.first_stage_year,
+    x.last_stage_year,
+    x.stage_span,
+    x.stages,
+    NULL AS eligible_count,
+    0 AS sort_order
 FROM (
     SELECT
         t.id AS tournament_id,
         t.name AS tournament_name,
         tt.name AS template_name,
-        COUNT(DISTINCT YEAR(e.startdate)) AS event_years,
-        COUNT(DISTINCT e.id) AS event_count,
-        GROUP_CONCAT(DISTINCT YEAR(e.startdate) ORDER BY 1 SEPARATOR ', ') AS years_present,
-        -- REGEXP_SUBSTR is not assumed to exist, so the name is tested for a shape rather
-        -- than parsed. A season span is two four-digit years joined by a separator.
-        (t.name REGEXP '[12][0-9][0-9][0-9][/-][12][0-9][0-9][0-9]') AS name_has_season,
-        MAX(t.name LIKE CONCAT('%', YEAR(e.startdate), '%')) AS name_matches_an_event_year
+        COUNT(DISTINCT ts.id) AS stages,
+        MIN(YEAR(ts.startdate)) AS first_stage_year,
+        MAX(YEAR(COALESCE(ts.enddate, ts.startdate))) AS last_stage_year,
+        MAX(YEAR(COALESCE(ts.enddate, ts.startdate))) - MIN(YEAR(ts.startdate)) + 1 AS stage_span,
+        -- The season a tournament belongs to is decided by the stages it holds, not by the
+        -- events under them: an event dated outside its own stage is a different defect and
+        -- belongs to GLOBAL-DQ-004. The name is tested for a shape rather than parsed,
+        -- because REGEXP_SUBSTR is not assumed to exist.
+        (t.name REGEXP '[12][0-9][0-9][0-9]') AS name_has_year,
+        (t.name REGEXP '[12][0-9][0-9][0-9][/-]([12][0-9][0-9][0-9]|[0-9][0-9])') AS name_has_span
     FROM tournament t
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
     JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
-    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no' AND e.startdate IS NOT NULL
+     AND ts.startdate IS NOT NULL
     WHERE t.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      AND t.name REGEXP '[12][0-9][0-9][0-9]'
       -- AND tt.id = <tournament_template_id>
     GROUP BY t.id, t.name, tt.name
 ) x
-WHERE x.name_matches_an_event_year = 0
-   OR (x.name_has_season = 1 AND x.event_years = 1)
+-- A name carrying no year at all is left alone: there is no season label to contradict, and
+-- asking for one is a different request from checking the label that exists.
+WHERE x.stage_span > 2
+   OR (
+        x.name_has_year = 1
+        AND (
+            (x.stage_span = 2 AND (
+                x.name_has_span = 0
+                OR x.tournament_name NOT LIKE CONCAT('%', x.first_stage_year, '%')
+                OR x.tournament_name NOT LIKE CONCAT('%', x.last_stage_year, '%')
+            ))
+            OR (x.stage_span = 1 AND (
+                x.name_has_span = 1
+                OR x.tournament_name NOT LIKE CONCAT('%', x.first_stage_year, '%')
+            ))
+        )
+      )
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT t.id) AS eligible_count
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT t.id) AS eligible_count,
+    1 AS sort_order
 FROM tournament t
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
-JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no' AND e.startdate IS NOT NULL
+ AND ts.startdate IS NOT NULL
 WHERE t.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  AND t.name REGEXP '[12][0-9][0-9][0-9]'
   -- AND tt.id = <tournament_template_id>
-;
+
+ORDER BY sort_order, first_stage_year;
 
 
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-081
     -- Name - TEMPLATE_TOURNAMENT_YEAR_GAP
-    -- What it does: Finds active tournament templates, excluding IOC-purpose templates, that run annually by holding a dated event in more than half the calendar years they span and reach the confirmed minimum number of years, yet have at least one interior year with no event at all, with the first and last year, the number of years present, the span, the number missing and the years themselves, together with a coverage count of all eligible templates reaching that minimum.
-    'Template_Year_Gap' AS check_type,
-    x.template_id,
-    x.template_name,
-    x.first_year,
-    x.last_year,
-    x.years_with_tournaments,
-    x.span_years,
-    x.span_years - x.years_with_tournaments AS years_missing,
-    x.years_present,
-    NULL AS eligible_count
+    -- What it does: Finds active tournament templates, excluding IOC-purpose templates, holding editions that are not consecutive in the template's own rhythm, where an edition is a calendar year its stages start in, the rhythm is the interval those editions most often keep so that a four-yearly series is measured against four years rather than one, and an interval is shortened by any year the sport is recorded as not having run, reporting every remaining break with the year on each side of it and how many editions it skips, together with the rhythm, the edition count and a coverage count of all eligible templates reaching the confirmed minimum number of editions.
+    'Template_Edition_Gap' AS check_type,
+    r.template_id,
+    r.template_name,
+    r.editions,
+    r.first_year,
+    r.last_year,
+    r.rhythm_years,
+    COUNT(*) AS breaks_found,
+    SUM((g.gap DIV r.rhythm_years) - 1) AS editions_skipped,
+    GROUP_CONCAT(CONCAT(g.y, ' -> ', g.y_next) ORDER BY g.y SEPARATOR ' | ') AS break_detail,
+    NULL AS eligible_count,
+    0 AS sort_order
 FROM (
+        SELECT
+            g0.template_id,
+            g0.y,
+            g0.y_next,
+            g0.y_next - g0.y - (
+                SELECT COUNT(*)
+                FROM (
+                SELECT DISTINCT YEAR(ts9.startdate) AS sy
+                FROM tournament_template tt9
+                JOIN tournament t9 ON t9.tournament_templateFK = tt9.id AND t9.del = 'no'
+                JOIN tournament_stage ts9 ON ts9.tournamentFK = t9.id AND ts9.del = 'no'
+                 AND ts9.startdate IS NOT NULL
+                WHERE tt9.del = 'no'
+                  AND tt9.sportFK = {{SPORT_ID}}
+                  AND YEAR(ts9.startdate) IN ({{SERIES_SKIP_YEARS}})
+                ) sk
+                WHERE sk.sy > g0.y AND sk.sy < g0.y_next
+            ) AS gap
+        FROM (
+            SELECT
+                a.template_id,
+                a.y,
+                MIN(b.y) AS y_next
+            FROM (
+            SELECT
+                tt.id AS template_id,
+                tt.name AS template_name,
+                YEAR(ts.startdate) AS y
+            FROM tournament_template tt
+            JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+            JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+             AND ts.startdate IS NOT NULL
+            WHERE tt.del = 'no'
+              AND tt.sportFK = {{SPORT_ID}}
+              AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+              -- AND tt.id = <tournament_template_id>
+            GROUP BY tt.id, tt.name, YEAR(ts.startdate)
+            ) a
+            JOIN (
+            SELECT
+                tt.id AS template_id,
+                tt.name AS template_name,
+                YEAR(ts.startdate) AS y
+            FROM tournament_template tt
+            JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+            JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+             AND ts.startdate IS NOT NULL
+            WHERE tt.del = 'no'
+              AND tt.sportFK = {{SPORT_ID}}
+              AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+              -- AND tt.id = <tournament_template_id>
+            GROUP BY tt.id, tt.name, YEAR(ts.startdate)
+            ) b ON b.template_id = a.template_id AND b.y > a.y
+            GROUP BY a.template_id, a.y
+        ) g0
+) g
+JOIN (
     SELECT
-        tt.id AS template_id,
-        tt.name AS template_name,
-        MIN(YEAR(e.startdate)) AS first_year,
-        MAX(YEAR(e.startdate)) AS last_year,
-        COUNT(DISTINCT YEAR(e.startdate)) AS years_with_tournaments,
-        MAX(YEAR(e.startdate)) - MIN(YEAR(e.startdate)) + 1 AS span_years,
-        GROUP_CONCAT(DISTINCT YEAR(e.startdate) ORDER BY 1 SEPARATOR ', ') AS years_present
-    FROM tournament_template tt
-    JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
-    JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
-    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no' AND e.startdate IS NOT NULL
-    WHERE tt.del = 'no'
-      AND tt.sportFK = {{SPORT_ID}}
-      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
-    GROUP BY tt.id, tt.name
-) x
--- Absence is not provable from inside the database, but a hole in a series that is
--- otherwise annual is. Annual is defined here rather than parameterised: a series holding
--- an event in more than half the years it spans runs every year, while a biennial or
--- quadrennial one cannot reach that ratio and is therefore never reported.
-WHERE x.years_with_tournaments >= {{SERIES_MIN_YEARS}}
-  AND x.years_with_tournaments < x.span_years
-  AND x.years_with_tournaments * 2 > x.span_years
+        e.template_id,
+        MIN(e.template_name) AS template_name,
+        COUNT(*) AS editions,
+        MIN(e.y) AS first_year,
+        MAX(e.y) AS last_year,
+        -- The rhythm is read from the series rather than assumed: the interval its editions
+        -- most often keep, and the smaller one where two are equally common, which reports
+        -- less. Without it an every-fourth-year series reads as three editions missing
+        -- between each pair it actually held.
+        (SELECT gm.gap
+         FROM (
+        SELECT
+            g0.template_id,
+            g0.y,
+            g0.y_next,
+            g0.y_next - g0.y - (
+                SELECT COUNT(*)
+                FROM (
+                SELECT DISTINCT YEAR(ts9.startdate) AS sy
+                FROM tournament_template tt9
+                JOIN tournament t9 ON t9.tournament_templateFK = tt9.id AND t9.del = 'no'
+                JOIN tournament_stage ts9 ON ts9.tournamentFK = t9.id AND ts9.del = 'no'
+                 AND ts9.startdate IS NOT NULL
+                WHERE tt9.del = 'no'
+                  AND tt9.sportFK = {{SPORT_ID}}
+                  AND YEAR(ts9.startdate) IN ({{SERIES_SKIP_YEARS}})
+                ) sk
+                WHERE sk.sy > g0.y AND sk.sy < g0.y_next
+            ) AS gap
+        FROM (
+            SELECT
+                a.template_id,
+                a.y,
+                MIN(b.y) AS y_next
+            FROM (
+            SELECT
+                tt.id AS template_id,
+                tt.name AS template_name,
+                YEAR(ts.startdate) AS y
+            FROM tournament_template tt
+            JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+            JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+             AND ts.startdate IS NOT NULL
+            WHERE tt.del = 'no'
+              AND tt.sportFK = {{SPORT_ID}}
+              AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+              -- AND tt.id = <tournament_template_id>
+            GROUP BY tt.id, tt.name, YEAR(ts.startdate)
+            ) a
+            JOIN (
+            SELECT
+                tt.id AS template_id,
+                tt.name AS template_name,
+                YEAR(ts.startdate) AS y
+            FROM tournament_template tt
+            JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+            JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+             AND ts.startdate IS NOT NULL
+            WHERE tt.del = 'no'
+              AND tt.sportFK = {{SPORT_ID}}
+              AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+              -- AND tt.id = <tournament_template_id>
+            GROUP BY tt.id, tt.name, YEAR(ts.startdate)
+            ) b ON b.template_id = a.template_id AND b.y > a.y
+            GROUP BY a.template_id, a.y
+        ) g0
+         ) gm
+         WHERE gm.template_id = e.template_id
+         GROUP BY gm.gap
+         ORDER BY COUNT(*) DESC, gm.gap ASC
+         LIMIT 1) AS rhythm_years
+    FROM (
+            SELECT
+                tt.id AS template_id,
+                tt.name AS template_name,
+                YEAR(ts.startdate) AS y
+            FROM tournament_template tt
+            JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+            JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+             AND ts.startdate IS NOT NULL
+            WHERE tt.del = 'no'
+              AND tt.sportFK = {{SPORT_ID}}
+              AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+              -- AND tt.id = <tournament_template_id>
+            GROUP BY tt.id, tt.name, YEAR(ts.startdate)
+    ) e
+    GROUP BY e.template_id
+    HAVING COUNT(*) >= {{SERIES_MIN_YEARS}}
+) r ON r.template_id = g.template_id
+WHERE g.gap > r.rhythm_years
+GROUP BY r.template_id, r.template_name, r.editions, r.first_year, r.last_year, r.rhythm_years
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT y.template_id) AS eligible_count
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT c.template_id) AS eligible_count,
+    1 AS sort_order
 FROM (
     SELECT
-        tt.id AS template_id,
-        COUNT(DISTINCT YEAR(e.startdate)) AS years_with_tournaments
-    FROM tournament_template tt
-    JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
-    JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
-    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no' AND e.startdate IS NOT NULL
-    WHERE tt.del = 'no'
-      AND tt.sportFK = {{SPORT_ID}}
-      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
-    GROUP BY tt.id
-) y
-WHERE y.years_with_tournaments >= {{SERIES_MIN_YEARS}}
-;
+        e2.template_id,
+        COUNT(*) AS editions
+    FROM (
+            SELECT
+                tt.id AS template_id,
+                tt.name AS template_name,
+                YEAR(ts.startdate) AS y
+            FROM tournament_template tt
+            JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+            JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+             AND ts.startdate IS NOT NULL
+            WHERE tt.del = 'no'
+              AND tt.sportFK = {{SPORT_ID}}
+              AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+              -- AND tt.id = <tournament_template_id>
+            GROUP BY tt.id, tt.name, YEAR(ts.startdate)
+    ) e2
+    GROUP BY e2.template_id
+    HAVING COUNT(*) >= {{SERIES_MIN_YEARS}}
+) c
+
+ORDER BY sort_order, editions_skipped DESC;
 
 
 -- ================================================================================
