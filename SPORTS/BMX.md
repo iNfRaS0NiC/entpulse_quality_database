@@ -202,9 +202,17 @@ inventory: 3 (Quarter Finals), 9 (Final), 38, 171 (Preliminary), 173 (Final), 17
 Finals), 178 (Semi Finals), 179 (Qualifier), 180 (Repechage), 184 (1/8), 185 (1/16), 188
 (1/32), 189 (Seeding), 204 (Heats), 320 (Heats), plus the unmapped 0. Three names occur under
 two IDs each - Heats as 204 and 320, Quarter Finals as 176 and 3, Final as 173 and 9 - which
-is the duplication the paragraph above warns about, now quantified. `38` resolves to a
-`round_type` row named `1` and is carried by a large share of events; its meaning is not
-confirmed, and it is inside the contested set on volume rather than on evidence.
+is the duplication the paragraph above warns about, now quantified.
+
+`38` resolves to a `round_type` row named `1`, and the round it stands for is **Round 1**,
+the first racing round. Confirmed two ways. Every one of the 37 distinct event names carried
+by `38` has the shape `Men's Racing Round 1 Heat 4` or `Women's Racing Round 1 Heat 1`, with
+no other shape present, across 3 templates and the years 2017 to 2025. And 138 tournament
+stages carry `38` beside the full bracket in the same stage - `173`, `176`, `178`, `180`,
+`184`, `185` and `188` - which places it before the 1/32 rather than beside it.
+
+The bare `1` is therefore a weakness of the `round_type` reference row, not of the events
+using it: the name does not say which round it is, while the events do.
 
 <!-- MANUAL PASTE ZONE: 58 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
