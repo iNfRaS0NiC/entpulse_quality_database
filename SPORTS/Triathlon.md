@@ -145,6 +145,11 @@ discipline and of tens of minutes in another, so a stored time can be judged onl
 the discipline it was raced in. `Aquathlon` is the clearest case: it stores `ss.f` and
 `m:ss.f` only, in both time types.
 
+No confirmed result type carries a measured quantity. Every type the sport uses is a place,
+a time, a status vocabulary or a medal code, so a check auditing a numeric result field has
+nothing to read here. `GLOBAL-DQ-076` is skipped for this sport because its prerequisite is
+absent, not because a parameter is unrecorded, and `NUMERIC_RESULT_TYPE_LIST` stays empty.
+
 <!-- MANUAL PASTE ZONE: 50 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
@@ -273,6 +278,13 @@ layer's `104 Comment`, including the duplicated `DSQ` / `Disq.` spelling pair an
 progression marker. The two layers are inventoried separately because nothing guarantees
 they share a vocabulary, but for this sport they do, so one confirmed value set describes
 both.
+
+`1271 Points` is the only data field carrying a measured quantity, and it is an IOC-purpose
+field. Outside IOC templates the field is present but holds no value at all; every value it
+carries sits under an IOC template. A statistics check excludes IOC-purpose templates by
+contract, so `GLOBAL-DQ-077` has an empty eligible population here by construction and
+`NUMERIC_DATA_TYPE_LIST` stays empty. Recording the field would add a check whose coverage
+is permanently zero, which reads as misdirected scope rather than as clean data.
 
 <!-- MANUAL PASTE ZONE: 50 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 

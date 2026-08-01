@@ -149,6 +149,19 @@ The three spellings of Disqualified are present in this layer too, but `DSQ` dom
 while `Disq.` dominates at event level. A check reading either layer must take its accepted
 set from that layer's own inventory.
 
+`1271 Points` is the only data field carrying a measured quantity, and it occurs under
+IOC-purpose templates only. A statistics check excludes those templates by contract, so
+`GLOBAL-DQ-077` has an empty eligible population here and `NUMERIC_DATA_TYPE_LIST` stays
+empty. The event layer is not affected by this: `GLOBAL-DQ-076` does not exclude IOC-purpose
+templates, and the event-level `102 Points` result type is recorded in
+`NUMERIC_RESULT_TYPE_LIST`.
+
+The sport stores its Comp.Rank times in the deprecated `1272 Duration` field together with
+`1427 Time Difference`, leaving the current `1426 Time` field empty. `GLOBAL-DQ-029` is the
+check that names this. `GLOBAL-DQ-046` reads the same absence as a rank/time mismatch and
+therefore reports its whole eligible population for this sport; it has to be read after
+`GLOBAL-DQ-029` and not as an independent finding.
+
 <!-- MANUAL PASTE ZONE: 58 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values
