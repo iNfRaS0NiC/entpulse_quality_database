@@ -121,7 +121,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-012
     -- Name - COMP.RANK_RESULTS_RANK_INVALID_OR_MISSING
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type holding at least one participant whose Rank data value is missing, empty, non-numeric or not a positive integer, with template and tournament name context and the count of affected participant rows, together with a coverage count of all eligible statistics.
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type holding at least one participant whose Rank data value is non-numeric or not a positive integer, or whose Rank is missing or empty while no active Comment value explains it, with template and tournament name context and the count of affected participant rows, together with a coverage count of all eligible statistics.
     'Rank_Invalid_Or_Missing' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -144,10 +144,27 @@ WHERE s.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
   AND (
-      sd.id IS NULL
-      OR sd.value IS NULL
-      OR TRIM(sd.value) = ''
-      OR TRIM(sd.value) NOT REGEXP '^[1-9][0-9]*$'
+      -- A Rank that is absent or empty is explained by a Comment naming the status the
+      -- participant finished under, which is how a sport records a non-finisher; the
+      -- event layer already reads it that way in GLOBAL-DQ-036. An invalid value is
+      -- explained by nothing, so it is reported whether a Comment exists or not.
+      (
+          (sd.id IS NULL OR sd.value IS NULL OR TRIM(sd.value) = '')
+          AND NOT EXISTS (
+              SELECT 1
+              FROM statistic_data{{SHARD_ID}} cm
+              WHERE cm.statistic_participants{{SHARD_ID}}FK = sp.id
+                AND cm.statistic_data_typeFK = {{DATA_COMMENT_TYPE_ID}}
+                AND cm.del = 'no'
+                AND cm.value IS NOT NULL
+                AND TRIM(cm.value) <> ''
+          )
+      )
+      OR (
+          sd.value IS NOT NULL
+          AND TRIM(sd.value) <> ''
+          AND TRIM(sd.value) NOT REGEXP '^[1-9][0-9]*$'
+      )
   )
 GROUP BY s.id, s.name, tt.name, t.name
 
@@ -385,9 +402,18 @@ WHERE s.del = 'no'
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-026
-    -- Name - COMP.RANK_SETTINGS_MISSING_MEDAL
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type where at least one of the gold, silver or bronze Medal values is absent among statistic participants, distinguishing statistics with no medals at all from statistics missing only specific medal types, together with a coverage count of all eligible statistics.
-    CASE WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All' ELSE 'Missing_Specific_Medal' END AS check_type,
+    -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type whose set of Medal values is not one gold, one silver and one bronze, because a medal type is absent among statistic participants or because one is held more than once, counting the holders of each medal per team wherever the statistic assigns athletes to one through the Team data field, and otherwise over distinct participants, and reporting a duplicate only where the medals present are not held by an equal number of participants each, so a relay whose members each carry their team's medal is not read as a duplicate whether or not the team assignment exists, separating a statistic with no medals at all, a duplicate contradicted by the place below it, a duplicate shaped like a tie, a duplicated bronze and a missing medal type, together with a coverage count of all eligible statistics.
+    CASE
+        WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All'
+        -- A shared place removes the place below it, so a second gold beside a silver is a
+        -- contradiction, while a second gold without one is the shape a tie actually takes.
+        WHEN x.medal_counts_uniform = 0 AND x.gold_count > 1 AND x.silver_count > 0 THEN 'Duplicate_Gold_With_Silver_Present'
+        WHEN x.medal_counts_uniform = 0 AND x.silver_count > 1 AND x.bronze_count > 0 THEN 'Duplicate_Silver_With_Bronze_Present'
+        WHEN x.medal_counts_uniform = 0 AND (x.gold_count > 1 OR x.silver_count > 1) THEN 'Duplicate_Medal_Tie_Shape'
+        WHEN x.medal_counts_uniform = 0 AND x.bronze_count > 1 THEN 'Duplicate_Bronze'
+        ELSE 'Missing_Specific_Medal'
+    END AS check_type,
     x.statistic_id,
     x.statistic_name,
     x.template_name,
@@ -397,16 +423,43 @@ SELECT
         IF(x.silver_count = 0, 'silver', NULL),
         IF(x.bronze_count = 0, 'bronze', NULL)
     ) AS missing_medals,
+    CONCAT_WS(', ',
+        IF(x.medal_counts_uniform = 0 AND x.gold_count > 1, CONCAT('gold x', x.gold_count), NULL),
+        IF(x.medal_counts_uniform = 0 AND x.silver_count > 1, CONCAT('silver x', x.silver_count), NULL),
+        IF(x.medal_counts_uniform = 0 AND x.bronze_count > 1, CONCAT('bronze x', x.bronze_count), NULL)
+    ) AS duplicated_medals,
     NULL AS eligible_count
 FROM (
+    SELECT
+        y.*,
+        -- Second guard, for the relay whose athletes carry no team at all. Such a statistic
+        -- gives every medalled place the same number of holders, because the places are
+        -- teams of one size; a duplicate breaks that symmetry. Measured over the medals
+        -- that are present, so a missing medal is still a missing medal rather than proof
+        -- of a duplicate. The statistic that fields relays without a team assignment is
+        -- the reason this is needed, and GLOBAL-DQ-064 does not see it either: its
+        -- population is the statistic that uses the Team field at all.
+        (
+            (y.gold_count = 0 OR y.silver_count = 0 OR y.gold_count = y.silver_count)
+            AND (y.gold_count = 0 OR y.bronze_count = 0 OR y.gold_count = y.bronze_count)
+            AND (y.silver_count = 0 OR y.bronze_count = 0 OR y.silver_count = y.bronze_count)
+        ) AS medal_counts_uniform
+    FROM (
     SELECT
         s.id AS statistic_id,
         s.name AS statistic_name,
         tt.name AS template_name,
         t.name AS tournament_name,
-        SUM(CASE WHEN LOWER(TRIM(sd.value)) = 'gold' THEN 1 ELSE 0 END) AS gold_count,
-        SUM(CASE WHEN LOWER(TRIM(sd.value)) = 'silver' THEN 1 ELSE 0 END) AS silver_count,
-        SUM(CASE WHEN LOWER(TRIM(sd.value)) = 'bronze' THEN 1 ELSE 0 END) AS bronze_count,
+        -- A place is held by one competitor, and in a relay that competitor is the team.
+        -- Counting medal rows instead would read every member of a winning relay as a
+        -- duplicate gold, so each medal is counted over distinct teams where the statistic
+        -- assigns one, and over distinct participants where it does not.
+        COUNT(DISTINCT CASE WHEN LOWER(TRIM(sd.value)) = 'gold'
+             THEN COALESCE(TRIM(tmd.value), CONCAT('p', sp.id)) END) AS gold_count,
+        COUNT(DISTINCT CASE WHEN LOWER(TRIM(sd.value)) = 'silver'
+             THEN COALESCE(TRIM(tmd.value), CONCAT('p', sp.id)) END) AS silver_count,
+        COUNT(DISTINCT CASE WHEN LOWER(TRIM(sd.value)) = 'bronze'
+             THEN COALESCE(TRIM(tmd.value), CONCAT('p', sp.id)) END) AS bronze_count,
         SUM(CASE WHEN sd.value IS NOT NULL AND TRIM(sd.value) <> '' THEN 1 ELSE 0 END) AS total_medal_count
     FROM statistic s
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
@@ -416,6 +469,12 @@ FROM (
       ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
      AND sd.del = 'no'
      AND sd.statistic_data_typeFK = {{DATA_MEDAL_TYPE_ID}}
+    LEFT JOIN statistic_data{{SHARD_ID}} tmd
+      ON tmd.statistic_participants{{SHARD_ID}}FK = sp.id
+     AND tmd.del = 'no'
+     AND tmd.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+     AND tmd.value IS NOT NULL
+     AND TRIM(tmd.value) <> ''
     WHERE s.del = 'no'
       AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
       AND s.object_typeFK = 3
@@ -423,14 +482,19 @@ FROM (
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       -- AND tt.id = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
+    ) y
 ) x
 WHERE x.gold_count = 0 OR x.silver_count = 0 OR x.bronze_count = 0
+   OR (
+        x.medal_counts_uniform = 0
+        AND (x.gold_count > 1 OR x.silver_count > 1 OR x.bronze_count > 1)
+      )
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT s.id) AS eligible_count
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
@@ -1303,7 +1367,7 @@ WHERE st.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-046
     -- Name - COMP.RANK_RESULTS_TIME_FULL_TIME_MISMATCH_TO_RANK
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type restricted to the sport's timed disciplines, containing at least one participant whose time storage is inconsistent with their Rank: Time or Time Difference missing despite an active rank, either present without an active rank, or Time present with an invalid format, together with the distinct violation types and count of mismatching participants per statistic and a coverage count of all eligible statistics in those disciplines.
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type restricted to the sport's timed disciplines, containing at least one participant whose time storage is inconsistent with their Rank: Time missing despite an active rank, Time Difference missing despite an active rank other than the leader's, either present without an active rank, or Time present with an invalid format or as a zero time, together with the distinct violation types and count of mismatching participants per statistic and a coverage count of all eligible statistics in those disciplines.
     'Time_Full_Time_Mismatch_Statistics' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -1315,7 +1379,8 @@ SELECT
         IF(MAX(x.f_rank_td_missing) = 1, 'RANK_PRESENT_TIME_DIFFERENCE_MISSING', NULL),
         IF(MAX(x.f_time_no_rank) = 1, 'TIME_PRESENT_WITHOUT_RANK', NULL),
         IF(MAX(x.f_td_no_rank) = 1, 'TIME_DIFFERENCE_PRESENT_WITHOUT_RANK', NULL),
-        IF(MAX(x.f_time_invalid) = 1, 'TIME_INVALID_FORMAT', NULL)
+        IF(MAX(x.f_time_invalid) = 1, 'TIME_INVALID_FORMAT', NULL),
+        IF(MAX(x.f_time_non_positive) = 1, 'TIME_NON_POSITIVE', NULL)
     ) AS violation_types,
     NULL AS eligible_count,
     0 AS sort_order
@@ -1324,11 +1389,19 @@ FROM (
         sp.id AS statistic_participants_id,
         sp.statisticFK AS statistic_id,
         (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT tm.id) = 0) AS f_rank_time_missing,
-        (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT td.id) = 0) AS f_rank_td_missing,
+        -- The leader carries no gap to anybody, so rank 1 owes no Time Difference. Asserting
+        -- it there reports every winner in the sport rather than a defect.
+        (COUNT(DISTINCT rk.id) > 0 AND MAX(TRIM(rk.value)) <> '1'
+             AND COUNT(DISTINCT td.id) = 0) AS f_rank_td_missing,
         (COUNT(DISTINCT rk.id) = 0 AND COUNT(DISTINCT tm.id) > 0) AS f_time_no_rank,
         (COUNT(DISTINCT rk.id) = 0 AND COUNT(DISTINCT td.id) > 0) AS f_td_no_rank,
         (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT tm.id) > 0
-             AND MAX(tm.value) NOT REGEXP '^[0-9]+(:[0-9]+)*(\\.[0-9]+)?$') AS f_time_invalid
+             AND MAX(tm.value) NOT REGEXP '^[0-9]+(:[0-9]+)*(\\.[0-9]+)?$') AS f_time_invalid,
+        -- A value that passes the shape test but holds no non-zero digit is a zero time:
+        -- '0', '0:00' and '00:00.00' all read as valid until this is asked separately.
+        (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT tm.id) > 0
+             AND MAX(tm.value) REGEXP '^[0-9]+(:[0-9]+)*(\\.[0-9]+)?$'
+             AND MAX(tm.value) NOT REGEXP '[1-9]') AS f_time_non_positive
     FROM statistic_participants{{SHARD_ID}} sp
     JOIN statistic s2 ON s2.id = sp.statisticFK AND s2.del = 'no'
     JOIN tournament t ON t.id = s2.objectFK AND t.del = 'no'
@@ -1354,7 +1427,8 @@ FROM (
             AND od.disciplineFK IN ({{TIMED_DISCIPLINE_LIST}}) AND od.del = 'no'
       )
     GROUP BY sp.id, sp.statisticFK
-    HAVING f_rank_time_missing OR f_rank_td_missing OR f_time_no_rank OR f_td_no_rank OR f_time_invalid
+    HAVING f_rank_time_missing OR f_rank_td_missing OR f_time_no_rank OR f_td_no_rank
+        OR f_time_invalid OR f_time_non_positive
 ) x
 JOIN statistic s ON s.id = x.statistic_id
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
@@ -1926,6 +2000,171 @@ JOIN statistic_data{{SHARD_ID}} td
  AND td.value REGEXP '^[0-9]+$'
 JOIN participant tp ON tp.id = CAST(TRIM(td.value) AS UNSIGNED) AND tp.del = 'no' AND tp.type = 'team'
 WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-070
+    -- Name - COMP.RANK_RESULTS_VALUE_BLANK
+    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, holding at least one active data row whose value is neither empty nor readable, being made only of ordinary spacing or only of invisible characters such as a non-breaking or zero-width space, separating the two, with the data fields affected and template and tournament name context, together with a coverage count of all eligible statistic-participant rows holding at least one active data row.
+    CASE
+        WHEN x.invisible_count > 0 THEN 'BLANK_INVISIBLE_CHARACTER'
+        ELSE 'BLANK_WHITESPACE_ONLY'
+    END AS check_type,
+    x.statistic_participants_id,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.participant_name,
+    x.blank_data_fields,
+    x.blank_data_count,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        sp.id AS statistic_participants_id,
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        p.name AS participant_name,
+        COUNT(DISTINCT sd.id) AS blank_data_count,
+        -- A field name is not unique in statistic_data_type, so the ID is carried beside it.
+        GROUP_CONCAT(DISTINCT CONCAT(COALESCE(sdt.name, 'unnamed'), ' #', sd.statistic_data_typeFK)
+                     ORDER BY 1 SEPARATOR ', ') AS blank_data_fields,
+        -- The class boundary is the one GLOBAL-DQ-069 states for the event layer: the
+        -- invisible-character class survives TRIM() and therefore reaches the other data
+        -- checks as a false value, while ordinary spacing is dropped by their findings and
+        -- their coverage alike.
+        SUM(CASE WHEN TRIM(sd.value) <> '' THEN 1 ELSE 0 END) AS invisible_count,
+        SUM(CASE WHEN TRIM(sd.value) = '' THEN 1 ELSE 0 END) AS whitespace_count
+    FROM statistic_data{{SHARD_ID}} sd
+    JOIN statistic_participants{{SHARD_ID}} sp ON sp.id = sd.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
+    JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    LEFT JOIN statistic_data_type sdt ON sdt.id = sd.statistic_data_typeFK
+    WHERE sd.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+      -- NULL and '' are one state in DATABASE.md, the active empty row, which is how this
+      -- layer records that a field does not apply to a participant - a Comp.Rank field set
+      -- is declared per statistic type, not per participant. Both are out of scope.
+      AND sd.value IS NOT NULL
+      AND sd.value <> ''
+      AND TRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(sd.value,
+              UNHEX('C2A0'), ' '), UNHEX('E2808B'), ' '), UNHEX('EFBBBF'), ' '),
+              CHAR(9), ' '), CHAR(10), ' '), CHAR(13), ' ')) = ''
+    GROUP BY sp.id, s.id, s.name, tt.name, t.name, p.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sp.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic_data{{SHARD_ID}} sd
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.id = sd.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
+JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE sd.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+
+ORDER BY sort_order, blank_data_count DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-072
+    -- Name - COMP.RANK_RESULTS_MEDAL_RANK_MISMATCH
+    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, carrying an active non-empty Medal value whose Rank does not match the place the medal stands for, or that carry no Rank at all, with template and tournament name context, together with a coverage count of all eligible statistic-participant rows carrying an active non-empty Medal value.
+    CASE
+        WHEN x.rank_value IS NULL THEN 'MEDAL_WITHOUT_RANK'
+        ELSE 'MEDAL_RANK_MISMATCH'
+    END AS check_type,
+    x.statistic_participants_id,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.participant_name,
+    x.medal_value,
+    x.rank_value,
+    x.expected_rank,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        sp.id AS statistic_participants_id,
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        p.name AS participant_name,
+        sm.value AS medal_value,
+        CASE LOWER(TRIM(sm.value))
+            WHEN 'gold' THEN '1'
+            WHEN 'silver' THEN '2'
+            WHEN 'bronze' THEN '3'
+            ELSE NULL
+        END AS expected_rank,
+        (SELECT NULLIF(TRIM(sd2.value), '') FROM statistic_data{{SHARD_ID}} sd2
+          WHERE sd2.statistic_participants{{SHARD_ID}}FK = sp.id
+            AND sd2.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+            AND sd2.del = 'no' AND sd2.value IS NOT NULL LIMIT 1) AS rank_value
+    FROM statistic_data{{SHARD_ID}} sm
+    JOIN statistic_participants{{SHARD_ID}} sp ON sp.id = sm.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
+    JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    WHERE sm.del = 'no'
+      AND sm.statistic_data_typeFK = {{DATA_MEDAL_TYPE_ID}}
+      AND sm.value IS NOT NULL
+      AND TRIM(sm.value) <> ''
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+) x
+-- A value outside gold, silver and bronze resolves to no expected rank and is left to
+-- GLOBAL-DQ-027, so the two do not report the same row under different verdicts.
+WHERE x.expected_rank IS NOT NULL
+  AND (x.rank_value IS NULL OR x.rank_value <> x.expected_rank)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sp.id) AS eligible_count
+FROM statistic_data{{SHARD_ID}} sm
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.id = sm.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
+JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE sm.del = 'no'
+  AND sm.statistic_data_typeFK = {{DATA_MEDAL_TYPE_ID}}
+  AND sm.value IS NOT NULL
+  AND TRIM(sm.value) <> ''
   AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}

@@ -489,9 +489,18 @@ WHERE ep.del = 'no'
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-037
-    -- Name - EVENT_RESULTS_MISSING_MEDAL_FOR_FINAL
-    -- What it does: Finds active, finished events on a Final round type where at least one of the gold, silver or bronze Medal result values is absent among event participants, distinguishing events with no medals at all from events missing only specific medal types, together with a coverage count of all eligible Final-round finished events.
-    CASE WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All' ELSE 'Missing_Specific_Medal' END AS check_type,
+    -- Name - EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL
+    -- What it does: Finds active, finished events on a Final round type whose set of Medal result values is not one gold, one silver and one bronze, because a medal type is absent among event participants or because one is awarded more than once, separating an event with no medals at all, a duplicate contradicted by the place below it, a duplicate shaped like a tie, a duplicated bronze and a missing medal type, together with a coverage count of all eligible Final-round finished events.
+    CASE
+        WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All'
+        -- A shared place removes the place below it, so a second gold beside a silver is a
+        -- contradiction, while a second gold without one is the shape a tie actually takes.
+        WHEN x.gold_count > 1 AND x.silver_count > 0 THEN 'Duplicate_Gold_With_Silver_Present'
+        WHEN x.silver_count > 1 AND x.bronze_count > 0 THEN 'Duplicate_Silver_With_Bronze_Present'
+        WHEN x.gold_count > 1 OR x.silver_count > 1 THEN 'Duplicate_Medal_Tie_Shape'
+        WHEN x.bronze_count > 1 THEN 'Duplicate_Bronze'
+        ELSE 'Missing_Specific_Medal'
+    END AS check_type,
     x.event_id,
     x.event_name,
     x.template_name,
@@ -502,6 +511,11 @@ SELECT
         IF(x.silver_count = 0, 'silver', NULL),
         IF(x.bronze_count = 0, 'bronze', NULL)
     ) AS missing_medals,
+    CONCAT_WS(', ',
+        IF(x.gold_count > 1, CONCAT('gold x', x.gold_count), NULL),
+        IF(x.silver_count > 1, CONCAT('silver x', x.silver_count), NULL),
+        IF(x.bronze_count > 1, CONCAT('bronze x', x.bronze_count), NULL)
+    ) AS duplicated_medals,
     NULL AS eligible_count
 FROM (
     SELECT
@@ -534,12 +548,13 @@ FROM (
     GROUP BY e.id, e.name, tt.name, t.name, ts.name
 ) x
 WHERE x.gold_count = 0 OR x.silver_count = 0 OR x.bronze_count = 0
+   OR x.gold_count > 1 OR x.silver_count > 1 OR x.bronze_count > 1
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -620,7 +635,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-045
     -- Name - EVENT_DURATION_FULL_TIME_MISMATCH_TO_RANK
-    -- What it does: Finds active finished events in the sport's timed disciplines containing at least one participant whose full-time duration result is missing despite an active Rank, present without an active Rank, or present with an invalid time format, together with the count and type of mismatching participants per event and a coverage count of all eligible events.
+    -- What it does: Finds active finished events in the sport's timed disciplines containing at least one participant whose full-time duration result is missing despite an active Rank, present without an active Rank, present with an invalid time format, or present as a zero time, together with the count and type of mismatching participants per event and a coverage count of all eligible events.
     'Duration_Full_Time_Mismatch_Events' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -637,6 +652,10 @@ FROM (
             WHEN COUNT(DISTINCT rk.id) = 0 AND COUNT(DISTINCT dft.id) > 0 THEN 'DURATION_FULL_TIME_PRESENT_WITHOUT_RANK'
             WHEN COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) > 0
                  AND MAX(dft.value) NOT REGEXP '^[0-9]+(:[0-9]+)*(\\.[0-9]+)?$' THEN 'DURATION_FULL_TIME_INVALID_FORMAT'
+            -- A negative value already fails the shape test above. A zero time passes it,
+            -- so '0', '0:00' and '00:00.00' are only reachable by asking separately.
+            WHEN COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) > 0
+                 AND MAX(dft.value) NOT REGEXP '[1-9]' THEN 'DURATION_FULL_TIME_NON_POSITIVE'
         END AS violation_type
     FROM event_participants ep
     JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
@@ -667,6 +686,8 @@ FROM (
         OR (COUNT(DISTINCT rk.id) = 0 AND COUNT(DISTINCT dft.id) > 0)
         OR (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) > 0
             AND MAX(dft.value) NOT REGEXP '^[0-9]+(:[0-9]+)*(\\.[0-9]+)?$')
+        OR (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) > 0
+            AND MAX(dft.value) NOT REGEXP '[1-9]')
 ) x
 JOIN event e ON e.id = x.event_id
 GROUP BY e.id, e.name
@@ -1284,3 +1305,85 @@ WHERE r.del = 'no'
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-069
+    -- Name - EVENT_RESULTS_VALUE_BLANK
+    -- What it does: Finds active event-participant rows holding at least one active result row whose value is neither empty nor readable, being made only of ordinary spacing or only of invisible characters such as a non-breaking or zero-width space, separating the two, with the result types affected and the number of such rows, together with a coverage count of all eligible event-participants holding at least one active result row.
+    CASE
+        WHEN x.invisible_count > 0 THEN 'BLANK_INVISIBLE_CHARACTER'
+        ELSE 'BLANK_WHITESPACE_ONLY'
+    END AS check_type,
+    x.event_participants_id,
+    x.event_id,
+    x.event_name,
+    x.participant_name,
+    x.blank_result_type_ids,
+    x.blank_result_count,
+    x.tournament_template_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        p.name AS participant_name,
+        tt.name AS tournament_template_name,
+        COUNT(DISTINCT r.id) AS blank_result_count,
+        -- result_type carries no confirmed name column in DATABASE.md, so the field is
+        -- named by the ID the sport's parameters already resolve.
+        GROUP_CONCAT(DISTINCT r.result_typeFK ORDER BY 1 SEPARATOR ', ') AS blank_result_type_ids,
+        -- The two classes differ in how they reach the rest of the catalogue. An invisible
+        -- character survives TRIM(), so every value check reads it as populated and blames
+        -- its content. Ordinary spacing is removed by TRIM(), which puts it outside both
+        -- the findings and the coverage of those checks - the blind spot this statement
+        -- exists to close.
+        SUM(CASE WHEN TRIM(r.value) <> '' THEN 1 ELSE 0 END) AS invisible_count,
+        SUM(CASE WHEN TRIM(r.value) = '' THEN 1 ELSE 0 END) AS whitespace_count
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      -- NULL and '' are one state in DATABASE.md, the active empty row, and a sport uses
+      -- it to record that a field does not apply to a participant. Both are therefore out
+      -- of scope. What is asserted here is narrower: a value that is neither of them must
+      -- carry content, so spacing and invisible characters are the only findings.
+      AND r.value IS NOT NULL
+      AND r.value <> ''
+      AND TRIM(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(r.value,
+              UNHEX('C2A0'), ' '), UNHEX('E2808B'), ' '), UNHEX('EFBBBF'), ' '),
+              CHAR(9), ' '), CHAR(10), ' '), CHAR(13), ' ')) = ''
+    GROUP BY ep.id, e.id, e.name, p.name, tt.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, blank_result_count DESC;

@@ -31,9 +31,9 @@ output, not a hand-written claim: re-run the script rather than editing it.
 | Metric | Value |
 |---|---:|
 | SQL files parsed | 12 |
-| SQL statements parsed | 103 |
+| SQL statements parsed | 108 |
 | GLOBAL discovery statements | 31 |
-| GLOBAL DQ templates | 68 |
+| GLOBAL DQ templates | 73 |
 | Sport DQ statements | 4 |
 | Manual-paste markers found | 57 |
 | Duplicate active SQL CheckIDs | 0 |

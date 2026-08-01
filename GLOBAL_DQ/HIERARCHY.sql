@@ -1160,3 +1160,59 @@ WHERE t.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-073
+    -- Name - EVENT_SETTINGS_UNEXPECTED_MEDAL_RELATED_FOR_NON_FINAL
+    -- What it does: Finds active, finished events whose round type is not a Final that carry an active event property named medal_related with value yes, with round type, template, tournament and stage name context, together with a coverage count of all eligible non-Final finished events.
+    'Unexpected_Medal_Related_Property' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.round_typeFK,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    NULL AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.round_typeFK NOT IN ({{FINAL_ROUND_TYPE_LIST}})
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM property p
+      WHERE p.object = 'event'
+        AND p.objectFK = e.id
+        AND p.del = 'no'
+        AND LOWER(TRIM(p.name)) = 'medal_related'
+        AND LOWER(TRIM(p.value)) = 'yes'
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.round_typeFK NOT IN ({{FINAL_ROUND_TYPE_LIST}})
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+;

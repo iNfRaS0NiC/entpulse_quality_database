@@ -597,3 +597,63 @@ FROM (
 WHERE y.teams_measured > 1
 
 ORDER BY sort_order, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-071
+    -- Name - EVENT_NO_PARTICIPANTS
+    -- What it does: Finds active events holding no active event-participant row at all, separating a finished event from one that has not finished, with the number of soft-deleted participant rows the event still carries and template, tournament, stage and status context, together with a coverage count of all eligible active events.
+    CASE
+        WHEN e.status_type = 'finished' AND e.status_descFK = 6 THEN 'NO_PARTICIPANTS_FINISHED_EVENT'
+        ELSE 'NO_PARTICIPANTS_NOT_FINISHED_EVENT'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    e.status_type,
+    e.status_descFK,
+    -- An event whose entries were all soft-deleted is a different history from one that
+    -- never had any, and the two are repaired differently, so the count is carried rather
+    -- than left to a second query.
+    (SELECT COUNT(*) FROM event_participants epd
+      WHERE epd.eventFK = e.id AND epd.del = 'yes') AS deleted_participant_count,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      WHERE ep.eventFK = e.id
+        AND ep.del = 'no'
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;
