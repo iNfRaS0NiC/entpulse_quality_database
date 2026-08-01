@@ -387,3 +387,33 @@ ORDER BY
     t.name,
     ts.name,
     ts.id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DISCOVERY-032
+    -- Name - EVENT_DISCIPLINE_GENDER_PARTICIPANT_MATRIX
+    -- What it does: Lists every combination of discipline, stage gender and event-participant type the selected sport has ever contested, with the number of events, the number of distinct templates carrying it and the first and last year it was seen, so a combination the sport does not contest is read off the matrix rather than asserted by a rule.
+    d.name AS discipline_name,
+    od.disciplineFK AS discipline_id,
+    COALESCE(ts.gender, 'null') AS stage_gender,
+    p.type AS participant_type,
+    COUNT(DISTINCT e.id) AS event_count,
+    COUNT(DISTINCT tt.id) AS template_count,
+    MIN(YEAR(e.startdate)) AS first_year,
+    MAX(YEAR(e.startdate)) AS last_year
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+GROUP BY d.name, od.disciplineFK, ts.gender, p.type
+ORDER BY event_count;

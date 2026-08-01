@@ -1387,3 +1387,64 @@ WHERE ep.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, blank_result_count DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-076
+    -- Name - EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC
+    -- What it does: Finds active event-participant rows holding a value in one of the sport's numeric result fields that is not a number, separating a value that is one of the sport's own status codes, a value that is a sentinel standing for no data such as nan or n/a, and any other text, with the result type, the value and event context, together with a coverage count of all eligible event-participants holding an active non-empty value in one of those fields.
+    CASE
+        WHEN LOWER(TRIM(r.value)) IN ({{RESULT_COMMENT_VALUE_LIST}}) THEN 'STATUS_CODE_IN_NUMERIC_FIELD'
+        WHEN LOWER(TRIM(r.value)) IN ('nan', 'null', 'n/a', 'na', '-', '--', '?', 'none') THEN 'SENTINEL_IN_NUMERIC_FIELD'
+        ELSE 'TEXT_IN_NUMERIC_FIELD'
+    END AS check_type,
+    ep.id AS event_participants_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    p.name AS participant_name,
+    r.result_typeFK,
+    r.value AS stored_value,
+    tt.name AS tournament_template_name,
+    NULL AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+ AND r.result_typeFK IN ({{NUMERIC_RESULT_TYPE_LIST}})
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND r.value IS NOT NULL
+  AND TRIM(r.value) <> ''
+  -- The mirror of GLOBAL-DQ-052, which asks whether the status vocabulary holds a value it
+  -- should not. This asks the opposite: whether a status leaked into a field that carries
+  -- a measured quantity, where no reader of that field will look for one.
+  AND TRIM(r.value) NOT REGEXP '^-?[0-9]+([.,][0-9]+)?$'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+ AND r.result_typeFK IN ({{NUMERIC_RESULT_TYPE_LIST}})
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND r.value IS NOT NULL
+  AND TRIM(r.value) <> ''
+;

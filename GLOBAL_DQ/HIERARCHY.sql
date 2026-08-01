@@ -1216,3 +1216,438 @@ WHERE e.del = 'no'
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-074
+    -- Name - EVENT_MISSING_VENUE
+    -- What it does: Finds active events that resolve to no active venue, either because neither the event nor its tournament stage carries a venue_object link or because a link they do carry names a venue that does not resolve, separating the two, with template, tournament and stage name context, together with a coverage count of all eligible active events.
+    CASE
+        WHEN x.broken_links > 0 THEN 'VENUE_LINK_UNRESOLVABLE'
+        ELSE 'NO_VENUE_ON_EVENT_OR_STAGE'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.stage_name,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.name AS stage_name,
+        -- venue_object is the only mechanism attaching a venue to a hierarchy object, per
+        -- DATABASE.md: no venueFK column exists outside the venue tables and object_relation
+        -- does not carry one. The stage is read as well as the event, because a championship
+        -- held at one site records it once on the stage rather than on every event under it.
+        -- Joined rather than asked per event: a correlated count over venue_object scans it
+        -- once for every event in the sport and times the statement out.
+        COUNT(DISTINCT ve.id) + COUNT(DISTINCT vt.id) AS resolved_venues,
+        COUNT(DISTINCT CASE WHEN ve.id IS NULL THEN voe.id END)
+            + COUNT(DISTINCT CASE WHEN vt.id IS NULL THEN vot.id END) AS broken_links
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN venue_object voe ON voe.object_typeFK = 5 AND voe.objectFK = e.id AND voe.del = 'no'
+    LEFT JOIN venue ve ON ve.id = voe.venueFK AND ve.del = 'no'
+    LEFT JOIN venue_object vot ON vot.object_typeFK = 4 AND vot.objectFK = ts.id AND vot.del = 'no'
+    LEFT JOIN venue vt ON vt.id = vot.venueFK AND vt.del = 'no'
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ts.name
+) x
+WHERE x.resolved_venues = 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-075
+    -- Name - EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET
+    -- What it does: Finds active events whose round_typeFK resolves to a real round type that is outside the set the sport is confirmed to contest, with the offending round type and its name, template, tournament and stage name context, together with a coverage count of all eligible active events carrying a resolvable round type.
+    'Round_Type_Not_Expected' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.round_typeFK,
+    rt.name AS round_type_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    NULL AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN round_type rt ON rt.id = e.round_typeFK
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  -- A NULL or dangling round_typeFK is GLOBAL-DQ-006's finding, so the join to round_type
+  -- keeps this statement to the different question: the value resolves, but to a round the
+  -- sport does not contest.
+  AND e.round_typeFK NOT IN ({{ROUND_TYPE_LIST}})
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN round_type rt ON rt.id = e.round_typeFK
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-078
+    -- Name - TOURNAMENT_NAME_FORMAT_INVALID
+    -- What it does: Finds each distinct active tournament name, excluding IOC-purpose templates, that breaks at least one text-hygiene rule - edge or doubled spacing, a control character, a definite text corruption such as an HTML entity, a replacement character, a non-breaking or zero-width space or a double-encoded byte sequence, a non-ASCII character, a hyphen without surrounding spaces, a year glued to a word, a capitalisation shape a proof-read name does not take, a placeholder name or a numeric-only name that is not a bare season year - naming every rule the name breaks and how many objects carry it, reporting one row per offending name rather than one per object repeating it, together with a coverage count of all distinct eligible names.
+    'Name_Format_Invalid' AS check_type,
+    MIN(x.object_name) AS tournament_name,
+    x.violation_types,
+    COUNT(DISTINCT x.object_id) AS affected_object_count,
+    MIN(x.object_id) AS sample_object_id,
+    MIN(x.template_name) AS sample_template_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        t.id AS object_id,
+        t.name AS object_name,
+        (CONVERT(t.name USING utf8mb4) COLLATE utf8mb4_bin) AS name_bin,
+        tt.name AS template_name,
+        CONCAT_WS(', ',
+            IF(CHAR_LENGTH(t.name) <> CHAR_LENGTH(TRIM(t.name)), 'LEADING_OR_TRAILING_SPACE', NULL),
+            IF(t.name LIKE '%  %', 'DOUBLE_SPACE', NULL),
+            IF(t.name REGEXP '[[:cntrl:]]', 'CONTROL_CHARACTER', NULL),
+            IF(t.name LIKE '%&#%' OR LOWER(t.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp);', 'HTML_ENTITY', NULL),
+            IF(HEX(t.name) LIKE '%EFBFBD%', 'REPLACEMENT_CHARACTER', NULL),
+            IF(HEX(t.name) LIKE '%C2A0%', 'NON_BREAKING_SPACE', NULL),
+            IF(HEX(t.name) LIKE '%E2808B%', 'ZERO_WIDTH_SPACE', NULL),
+            IF(HEX(t.name) LIKE '%C383%' OR HEX(t.name) LIKE '%C382%', 'MOJIBAKE_DOUBLE_ENCODED', NULL),
+            IF(LENGTH(t.name) <> CHAR_LENGTH(t.name), 'NON_ASCII_CHARACTER', NULL),
+            IF(t.name REGEXP '[^ ]-|-[^ ]', 'HYPHEN_WITHOUT_SPACES', NULL),
+            IF((CONVERT(t.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z][12][0-9][0-9][0-9]|[12][0-9][0-9][0-9][A-Za-z]', 'YEAR_GLUED_TO_WORD', NULL),
+            IF((CONVERT(t.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Z][A-Z][a-z]', 'DOUBLE_CAPITAL', NULL),
+            IF((CONVERT(t.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z]'
+               AND (CONVERT(t.name USING utf8mb4) COLLATE utf8mb4_bin) NOT REGEXP '[a-z]', 'ALL_UPPERCASE', NULL),
+            IF((CONVERT(t.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '^[a-z]', 'STARTS_LOWERCASE', NULL),
+            IF(LOWER(TRIM(t.name)) IN ('test','testing','temp','tmp','xxx','asd','qwe','tbd','tba','n/a','undefined','tournament','new tournament'), 'PLACEHOLDER_NAME', NULL),
+            -- A tournament named for its season alone is the norm in this database, so a
+            -- bare year is left out of the rule that catches a numeric-only stage name.
+            IF(TRIM(t.name) REGEXP '^[0-9]+$' AND TRIM(t.name) NOT REGEXP '^[12][0-9][0-9][0-9]$', 'NUMERIC_ONLY_NAME', NULL)
+        ) AS violation_types
+    FROM tournament t
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE t.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND t.name IS NOT NULL
+      AND TRIM(t.name) <> ''
+      -- AND tt.id = <tournament_template_id>
+) x
+WHERE x.violation_types <> ''
+GROUP BY x.name_bin, x.violation_types
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT (CONVERT(t.name USING utf8mb4) COLLATE utf8mb4_bin)) AS eligible_count,
+    1 AS sort_order
+FROM tournament t
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE t.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.name IS NOT NULL
+  AND TRIM(t.name) <> ''
+  -- AND tt.id = <tournament_template_id>
+
+ORDER BY sort_order, violation_types, tournament_name;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-079
+    -- Name - TEMPLATE_NAME_FORMAT_INVALID
+    -- What it does: Finds each distinct active tournament template name, excluding IOC-purpose templates, that breaks at least one text-hygiene rule - edge or doubled spacing, a control character, a definite text corruption such as an HTML entity, a replacement character, a non-breaking or zero-width space or a double-encoded byte sequence, a non-ASCII character, a hyphen without surrounding spaces, a year glued to a word, a capitalisation shape a proof-read name does not take, a placeholder name or a numeric-only name - naming every rule the name breaks and how many objects carry it, reporting one row per offending name rather than one per object repeating it, together with a coverage count of all distinct eligible names.
+    'Name_Format_Invalid' AS check_type,
+    MIN(x.object_name) AS template_name,
+    x.violation_types,
+    COUNT(DISTINCT x.object_id) AS affected_object_count,
+    MIN(x.object_id) AS sample_object_id,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        tt.id AS object_id,
+        tt.name AS object_name,
+        (CONVERT(tt.name USING utf8mb4) COLLATE utf8mb4_bin) AS name_bin,
+        CONCAT_WS(', ',
+            IF(CHAR_LENGTH(tt.name) <> CHAR_LENGTH(TRIM(tt.name)), 'LEADING_OR_TRAILING_SPACE', NULL),
+            IF(tt.name LIKE '%  %', 'DOUBLE_SPACE', NULL),
+            IF(tt.name REGEXP '[[:cntrl:]]', 'CONTROL_CHARACTER', NULL),
+            IF(tt.name LIKE '%&#%' OR LOWER(tt.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp);', 'HTML_ENTITY', NULL),
+            IF(HEX(tt.name) LIKE '%EFBFBD%', 'REPLACEMENT_CHARACTER', NULL),
+            IF(HEX(tt.name) LIKE '%C2A0%', 'NON_BREAKING_SPACE', NULL),
+            IF(HEX(tt.name) LIKE '%E2808B%', 'ZERO_WIDTH_SPACE', NULL),
+            IF(HEX(tt.name) LIKE '%C383%' OR HEX(tt.name) LIKE '%C382%', 'MOJIBAKE_DOUBLE_ENCODED', NULL),
+            IF(LENGTH(tt.name) <> CHAR_LENGTH(tt.name), 'NON_ASCII_CHARACTER', NULL),
+            IF(tt.name REGEXP '[^ ]-|-[^ ]', 'HYPHEN_WITHOUT_SPACES', NULL),
+            IF((CONVERT(tt.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z][12][0-9][0-9][0-9]|[12][0-9][0-9][0-9][A-Za-z]', 'YEAR_GLUED_TO_WORD', NULL),
+            IF((CONVERT(tt.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Z][A-Z][a-z]', 'DOUBLE_CAPITAL', NULL),
+            IF((CONVERT(tt.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z]'
+               AND (CONVERT(tt.name USING utf8mb4) COLLATE utf8mb4_bin) NOT REGEXP '[a-z]', 'ALL_UPPERCASE', NULL),
+            IF((CONVERT(tt.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '^[a-z]', 'STARTS_LOWERCASE', NULL),
+            IF(LOWER(TRIM(tt.name)) IN ('test','testing','temp','tmp','xxx','asd','qwe','tbd','tba','n/a','undefined','template','new template'), 'PLACEHOLDER_NAME', NULL),
+            IF(TRIM(tt.name) REGEXP '^[0-9]+$', 'NUMERIC_ONLY_NAME', NULL)
+        ) AS violation_types
+    FROM tournament_template tt
+    WHERE tt.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND TRIM(tt.name) <> ''
+      -- AND tt.id = <tournament_template_id>
+) x
+WHERE x.violation_types <> ''
+GROUP BY x.name_bin, x.violation_types
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT (CONVERT(tt.name USING utf8mb4) COLLATE utf8mb4_bin)) AS eligible_count,
+    1 AS sort_order
+FROM tournament_template tt
+WHERE tt.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND TRIM(tt.name) <> ''
+  -- AND tt.id = <tournament_template_id>
+
+ORDER BY sort_order, violation_types, template_name;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-080
+    -- Name - TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES
+    -- What it does: Finds active tournaments, excluding IOC-purpose templates, whose name carries a year that none of their own events falls in, or whose name carries a two-year season span while every one of their events falls in a single calendar year, separating the two, with the years the events actually occupy and template name context, together with a coverage count of all eligible tournaments whose name carries a year and that hold at least one dated active event.
+    CASE
+        WHEN x.name_has_season = 1 AND x.event_years = 1 THEN 'SEASON_NAME_ON_SINGLE_YEAR'
+        ELSE 'NAME_YEAR_MATCHES_NO_EVENT'
+    END AS check_type,
+    x.tournament_id,
+    x.tournament_name,
+    x.template_name,
+    x.years_present,
+    x.event_count,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        t.id AS tournament_id,
+        t.name AS tournament_name,
+        tt.name AS template_name,
+        COUNT(DISTINCT YEAR(e.startdate)) AS event_years,
+        COUNT(DISTINCT e.id) AS event_count,
+        GROUP_CONCAT(DISTINCT YEAR(e.startdate) ORDER BY 1 SEPARATOR ', ') AS years_present,
+        -- REGEXP_SUBSTR is not assumed to exist, so the name is tested for a shape rather
+        -- than parsed. A season span is two four-digit years joined by a separator.
+        (t.name REGEXP '[12][0-9][0-9][0-9][/-][12][0-9][0-9][0-9]') AS name_has_season,
+        MAX(t.name LIKE CONCAT('%', YEAR(e.startdate), '%')) AS name_matches_an_event_year
+    FROM tournament t
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no' AND e.startdate IS NOT NULL
+    WHERE t.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND t.name REGEXP '[12][0-9][0-9][0-9]'
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY t.id, t.name, tt.name
+) x
+WHERE x.name_matches_an_event_year = 0
+   OR (x.name_has_season = 1 AND x.event_years = 1)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT t.id) AS eligible_count
+FROM tournament t
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no' AND e.startdate IS NOT NULL
+WHERE t.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.name REGEXP '[12][0-9][0-9][0-9]'
+  -- AND tt.id = <tournament_template_id>
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-081
+    -- Name - TEMPLATE_TOURNAMENT_YEAR_GAP
+    -- What it does: Finds active tournament templates, excluding IOC-purpose templates, that run annually by holding a dated event in more than half the calendar years they span and reach the confirmed minimum number of years, yet have at least one interior year with no event at all, with the first and last year, the number of years present, the span, the number missing and the years themselves, together with a coverage count of all eligible templates reaching that minimum.
+    'Template_Year_Gap' AS check_type,
+    x.template_id,
+    x.template_name,
+    x.first_year,
+    x.last_year,
+    x.years_with_tournaments,
+    x.span_years,
+    x.span_years - x.years_with_tournaments AS years_missing,
+    x.years_present,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        tt.id AS template_id,
+        tt.name AS template_name,
+        MIN(YEAR(e.startdate)) AS first_year,
+        MAX(YEAR(e.startdate)) AS last_year,
+        COUNT(DISTINCT YEAR(e.startdate)) AS years_with_tournaments,
+        MAX(YEAR(e.startdate)) - MIN(YEAR(e.startdate)) + 1 AS span_years,
+        GROUP_CONCAT(DISTINCT YEAR(e.startdate) ORDER BY 1 SEPARATOR ', ') AS years_present
+    FROM tournament_template tt
+    JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+    JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no' AND e.startdate IS NOT NULL
+    WHERE tt.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY tt.id, tt.name
+) x
+-- Absence is not provable from inside the database, but a hole in a series that is
+-- otherwise annual is. Annual is defined here rather than parameterised: a series holding
+-- an event in more than half the years it spans runs every year, while a biennial or
+-- quadrennial one cannot reach that ratio and is therefore never reported.
+WHERE x.years_with_tournaments >= {{SERIES_MIN_YEARS}}
+  AND x.years_with_tournaments < x.span_years
+  AND x.years_with_tournaments * 2 > x.span_years
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT y.template_id) AS eligible_count
+FROM (
+    SELECT
+        tt.id AS template_id,
+        COUNT(DISTINCT YEAR(e.startdate)) AS years_with_tournaments
+    FROM tournament_template tt
+    JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+    JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no' AND e.startdate IS NOT NULL
+    WHERE tt.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY tt.id
+) y
+WHERE y.years_with_tournaments >= {{SERIES_MIN_YEARS}}
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-082
+    -- Name - TOURNAMENT_STAGE_EVENT_DISCIPLINE_INCONSISTENT
+    -- What it does: Finds active tournament stages whose own active events do not agree on a discipline, so one stage groups events contested in more than one, with the disciplines involved, the number of events and template and tournament name context, together with a coverage count of all eligible stages holding at least one active event that carries a discipline.
+    'Stage_Event_Discipline_Inconsistent' AS check_type,
+    x.stage_id,
+    x.stage_name,
+    x.template_name,
+    x.tournament_name,
+    x.distinct_disciplines,
+    x.discipline_list,
+    x.event_count,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        ts.id AS stage_id,
+        ts.name AS stage_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(DISTINCT od.disciplineFK) AS distinct_disciplines,
+        COUNT(DISTINCT e.id) AS event_count,
+        GROUP_CONCAT(DISTINCT d.name ORDER BY 1 SEPARATOR ', ') AS discipline_list
+    FROM tournament_stage ts
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+    WHERE ts.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY ts.id, ts.name, tt.name, t.name
+) x
+-- Asks whether a discipline is right, where GLOBAL-DQ-015 only asks whether one is there.
+-- The stage is what makes the question answerable without a vocabulary: its own events
+-- disagree with each other, which needs no judgement about which of them is correct.
+WHERE x.distinct_disciplines > 1
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ts.id) AS eligible_count
+FROM tournament_stage ts
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+WHERE ts.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+;
