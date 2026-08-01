@@ -32,7 +32,10 @@
     "RESULT_MEDAL_TYPE_ID": 501,
     "RESULT_FULL_TIME_TYPE_ID": 557,
     "STALE_NOT_STARTED_DAYS": 30,
-    "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'"
+    "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+    "ROUND_TYPE_LIST": "3, 9, 38, 171, 173, 176, 178, 179, 180, 184, 185, 188, 189, 204, 320",
+    "NUMERIC_RESULT_TYPE_LIST": "102",
+    "SERIES_MIN_YEARS": 5
   },
   "Triathlon": {
     "SPORT_ID": 50,
@@ -67,6 +70,8 @@
     "RESULT_MEDAL_TYPE_ID": 501,
     "RESULT_FULL_TIME_TYPE_ID": 557,
     "STALE_NOT_STARTED_DAYS": 30,
-    "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'"
+    "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+    "ROUND_TYPE_LIST": "9, 173, 178, 179, 180, 204, 267, 283, 284",
+    "SERIES_MIN_YEARS": 5
   }
 }

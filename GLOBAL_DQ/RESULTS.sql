@@ -1393,10 +1393,14 @@ ORDER BY sort_order, blank_result_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-076
     -- Name - EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC
-    -- What it does: Finds active event-participant rows holding a value in one of the sport's numeric result fields that is not a number, separating a value that is one of the sport's own status codes, a value that is a sentinel standing for no data such as nan or n/a, and any other text, with the result type, the value and event context, together with a coverage count of all eligible event-participants holding an active non-empty value in one of those fields.
+    -- What it does: Finds active event-participant rows holding a value in one of the sport's numeric result fields that is not a number, separating a value that is one of the sport's own status codes, a value that is a sentinel standing for no data such as nan or n/a, a number written with thousands separators, and any other text, with the result type, the value and event context, together with a coverage count of all eligible event-participants holding an active non-empty value in one of those fields.
     CASE
         WHEN LOWER(TRIM(r.value)) IN ({{RESULT_COMMENT_VALUE_LIST}}) THEN 'STATUS_CODE_IN_NUMERIC_FIELD'
         WHEN LOWER(TRIM(r.value)) IN ('nan', 'null', 'n/a', 'na', '-', '--', '?', 'none') THEN 'SENTINEL_IN_NUMERIC_FIELD'
+        -- A grouped number is a number that was written for a reader rather than stored for
+        -- one, and it needs a different repair from text: the digits are right and only the
+        -- separators have to go.
+        WHEN TRIM(r.value) REGEXP '^-?[0-9]{1,3}(,[0-9]{3})+([.][0-9]+)?$' THEN 'GROUPED_NUMBER_IN_NUMERIC_FIELD'
         ELSE 'TEXT_IN_NUMERIC_FIELD'
     END AS check_type,
     ep.id AS event_participants_id,

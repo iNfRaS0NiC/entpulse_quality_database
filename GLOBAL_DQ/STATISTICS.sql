@@ -2188,10 +2188,13 @@ WHERE sm.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-077
     -- Name - COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC
-    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, holding a value in one of the sport's numeric data fields that is not a number, separating a value that is one of the sport's own status codes, a value that is a sentinel standing for no data such as nan or n/a, and any other text, with the data field, the value and template and tournament name context, together with a coverage count of all eligible statistic-participant rows holding an active non-empty value in one of those fields.
+    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, holding a value in one of the sport's numeric data fields that is not a number, separating a value that is one of the sport's own status codes, a value that is a sentinel standing for no data such as nan or n/a, a number written with thousands separators, and any other text, with the data field, the value and template and tournament name context, together with a coverage count of all eligible statistic-participant rows holding an active non-empty value in one of those fields.
     CASE
         WHEN LOWER(TRIM(sd.value)) IN ({{DATA_COMMENT_VALUE_LIST}}) THEN 'STATUS_CODE_IN_NUMERIC_FIELD'
         WHEN LOWER(TRIM(sd.value)) IN ('nan', 'null', 'n/a', 'na', '-', '--', '?', 'none') THEN 'SENTINEL_IN_NUMERIC_FIELD'
+        -- As in GLOBAL-DQ-076: a grouped number is a number written for a reader, and the
+        -- repair is to drop the separators rather than to find the value again.
+        WHEN TRIM(sd.value) REGEXP '^-?[0-9]{1,3}(,[0-9]{3})+([.][0-9]+)?$' THEN 'GROUPED_NUMBER_IN_NUMERIC_FIELD'
         ELSE 'TEXT_IN_NUMERIC_FIELD'
     END AS check_type,
     sp.id AS statistic_participants_id,

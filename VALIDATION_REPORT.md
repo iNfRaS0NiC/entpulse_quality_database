@@ -38,7 +38,7 @@ output, not a hand-written claim: re-run the script rather than editing it.
 | Manual-paste markers found | 57 |
 | Duplicate active SQL CheckIDs | 0 |
 | UNION column-count mismatches | 0 |
-| PowerBI registry rows | 133 |
+| PowerBI registry rows | 158 |
 | Sports indexed | 2 |
 
 ## Boundary

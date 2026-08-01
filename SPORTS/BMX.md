@@ -197,6 +197,15 @@ BMX Comp.Rank participants carry a Phase through `object_round` (object_typeFK=1
 
 The round types used by BMX Phase values are not the set BMX events use, and the split follows the knockout flag (`DB-SEM-012`). BMX events use the **non-knockout** variants — 176 Quarter Finals, 178 Semi Finals, 184 1/8, 185 1/16, 188 1/32, 173 Final — while the majority of Phase values use the **knockout** variants of the same names: 3, 2, 4, 5, 6, 9. Phase additionally carries round types BMX events never use, confirmed for 19 (Small Final) and 152 (Qualifier), both knockout; and BMX events use round types that never appear as a Phase, confirmed for 189 (Seeding) and the unmapped 0. Comparing a BMX Phase against its event's round_typeFK by ID alone reports nearly the whole population as mismatched and is not a valid check.
 
+The complete set of `event.round_typeFK` values BMX events currently carry, confirmed by
+inventory: 3 (Quarter Finals), 9 (Final), 38, 171 (Preliminary), 173 (Final), 176 (Quarter
+Finals), 178 (Semi Finals), 179 (Qualifier), 180 (Repechage), 184 (1/8), 185 (1/16), 188
+(1/32), 189 (Seeding), 204 (Heats), 320 (Heats), plus the unmapped 0. Three names occur under
+two IDs each - Heats as 204 and 320, Quarter Finals as 176 and 3, Final as 173 and 9 - which
+is the duplication the paragraph above warns about, now quantified. `38` resolves to a
+`round_type` row named `1` and is carried by a large share of events; its meaning is not
+confirmed, and it is inside the contested set on volume rather than on evidence.
+
 <!-- MANUAL PASTE ZONE: 58 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics

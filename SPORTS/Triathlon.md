@@ -332,6 +332,10 @@ type='phase'). Two facts distinguish the sport from one where the parallel-varia
 
 A minority of statistic-participant rows carry no phase row at all.
 
+A ninth value, `204 Heats`, is carried by two events in November 2023. It is absent from the
+table above because the inventory that built the table did not reach it; it is inside the
+sport's contested set, so `GLOBAL-DQ-075` does not report it.
+
 <!-- MANUAL PASTE ZONE: 50 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
