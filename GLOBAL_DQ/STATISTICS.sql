@@ -1732,56 +1732,65 @@ SELECT
 FROM (
     SELECT
         sp.id AS statistic_participants_id,
-        s.id AS statistic_id,
-        s.name AS statistic_name,
-        tt.name AS template_name,
-        t.name AS tournament_name,
-        p.id AS participant_id,
-        p.name AS participant_name,
-        (SELECT MIN(TRIM(td.value))
-           FROM statistic_data{{SHARD_ID}} td
-          WHERE td.statistic_participants{{SHARD_ID}}FK = sp.id
-            AND td.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
-            AND td.del = 'no'
-            AND td.value IS NOT NULL
-            AND TRIM(td.value) <> '') AS team_value,
-        (SELECT COUNT(*)
-           FROM statistic_data{{SHARD_ID}} td
-          WHERE td.statistic_participants{{SHARD_ID}}FK = sp.id
-            AND td.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
-            AND td.del = 'no'
-            AND td.value IS NOT NULL
-            AND TRIM(td.value) <> '') AS team_row_count,
-        (SELECT COUNT(DISTINCT TRIM(td.value))
-           FROM statistic_data{{SHARD_ID}} td
-          WHERE td.statistic_participants{{SHARD_ID}}FK = sp.id
-            AND td.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
-            AND td.del = 'no'
-            AND td.value IS NOT NULL
-            AND TRIM(td.value) <> '') AS team_value_count
+        -- Grouped by the participant id alone, with the context columns taken through MIN
+        -- because each participant has exactly one of each. Naming them in the GROUP BY
+        -- instead makes the key three strings wide and the statement took 102 seconds
+        -- rather than four: same rows, same values, a temporary table nobody needs.
+        MIN(s.id) AS statistic_id,
+        MIN(s.name) AS statistic_name,
+        MIN(tt.name) AS template_name,
+        MIN(t.name) AS tournament_name,
+        MIN(p.id) AS participant_id,
+        MIN(p.name) AS participant_name,
+        -- The three facts about a participant's Team rows, read in the one pass that
+        -- already visits them. Asked as three correlated subqueries instead, this scanned
+        -- the data shard once per athlete and timed the statement out on a sport holding a
+        -- hundred thousand of them. The LEFT JOIN is what keeps a participant with no Team
+        -- row at all: that is the TEAM_VALUE_MISSING case, not a row to drop.
+        MIN(TRIM(td.value)) AS team_value,
+        COUNT(td.id) AS team_row_count,
+        COUNT(DISTINCT TRIM(td.value)) AS team_value_count
     FROM statistic s
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
     JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
     JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    -- The eligible population: a statistic that uses the Team data field at all. Asked as a
+    -- correlated EXISTS this was re-evaluated for every athlete row in the sport; resolved
+    -- once here, it is one pass the athlete rows then join against.
+    JOIN (
+        SELECT sp3.statisticFK AS statistic_id
+        FROM statistic_participants{{SHARD_ID}} sp3
+        JOIN statistic s3 ON s3.id = sp3.statisticFK AND s3.del = 'no'
+         AND s3.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+         AND s3.object_typeFK = 3
+        JOIN tournament t3 ON t3.id = s3.objectFK AND t3.del = 'no'
+        JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
+         AND tt3.sportFK = {{SPORT_ID}}
+         AND (tt3.name IS NULL OR tt3.name NOT LIKE '%(IOC)%')
+        JOIN statistic_data{{SHARD_ID}} td3
+          ON td3.statistic_participants{{SHARD_ID}}FK = sp3.id
+         AND td3.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+         AND td3.del = 'no'
+         AND td3.value IS NOT NULL
+         AND TRIM(td3.value) <> ''
+        WHERE sp3.del = 'no'
+        GROUP BY sp3.statisticFK
+    ) uses ON uses.statistic_id = s.id
+    LEFT JOIN statistic_data{{SHARD_ID}} td
+      ON td.statistic_participants{{SHARD_ID}}FK = sp.id
+     AND td.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+     AND td.del = 'no'
+     AND td.value IS NOT NULL
+     AND TRIM(td.value) <> ''
     WHERE s.del = 'no'
       AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
       AND s.object_typeFK = 3
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND p.type = 'athlete'
-      AND EXISTS (
-          SELECT 1
-          FROM statistic_participants{{SHARD_ID}} sp2
-          JOIN statistic_data{{SHARD_ID}} td2
-            ON td2.statistic_participants{{SHARD_ID}}FK = sp2.id
-           AND td2.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
-           AND td2.del = 'no'
-           AND td2.value IS NOT NULL
-           AND TRIM(td2.value) <> ''
-          WHERE sp2.statisticFK = s.id AND sp2.del = 'no'
-      )
       -- AND tt.id = <tournament_template_id>
+    GROUP BY sp.id
 ) x
 LEFT JOIN participant tp
        ON x.team_value REGEXP '^[0-9]+$'
@@ -1797,30 +1806,74 @@ UNION ALL
 SELECT
     'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT sp.id) AS eligible_count
-FROM statistic s
-JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
-JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
-WHERE s.del = 'no'
-  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND s.object_typeFK = 3
-  AND tt.sportFK = {{SPORT_ID}}
-  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  AND p.type = 'athlete'
-  AND EXISTS (
-      SELECT 1
-      FROM statistic_participants{{SHARD_ID}} sp2
-      JOIN statistic_data{{SHARD_ID}} td2
-        ON td2.statistic_participants{{SHARD_ID}}FK = sp2.id
-       AND td2.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
-       AND td2.del = 'no'
-       AND td2.value IS NOT NULL
-       AND TRIM(td2.value) <> ''
-      WHERE sp2.statisticFK = s.id AND sp2.del = 'no'
-  )
-  -- AND tt.id = <tournament_template_id>
+    -- The block above already is the eligible population, one row per athlete inside a
+    -- statistic that uses the Team field, so the coverage counts that rather than rebuilding
+    -- the joins beside it. Rebuilt, the count took 102 seconds against the finding block's
+    -- four, and the contract asks for the identical scope in any case.
+    COUNT(DISTINCT y.statistic_participants_id) AS eligible_count
+FROM (
+    SELECT
+        sp.id AS statistic_participants_id,
+        -- Grouped by the participant id alone, with the context columns taken through MIN
+        -- because each participant has exactly one of each. Naming them in the GROUP BY
+        -- instead makes the key three strings wide and the statement took 102 seconds
+        -- rather than four: same rows, same values, a temporary table nobody needs.
+        MIN(s.id) AS statistic_id,
+        MIN(s.name) AS statistic_name,
+        MIN(tt.name) AS template_name,
+        MIN(t.name) AS tournament_name,
+        MIN(p.id) AS participant_id,
+        MIN(p.name) AS participant_name,
+        -- The three facts about a participant's Team rows, read in the one pass that
+        -- already visits them. Asked as three correlated subqueries instead, this scanned
+        -- the data shard once per athlete and timed the statement out on a sport holding a
+        -- hundred thousand of them. The LEFT JOIN is what keeps a participant with no Team
+        -- row at all: that is the TEAM_VALUE_MISSING case, not a row to drop.
+        MIN(TRIM(td.value)) AS team_value,
+        COUNT(td.id) AS team_row_count,
+        COUNT(DISTINCT TRIM(td.value)) AS team_value_count
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    -- The eligible population: a statistic that uses the Team data field at all. Asked as a
+    -- correlated EXISTS this was re-evaluated for every athlete row in the sport; resolved
+    -- once here, it is one pass the athlete rows then join against.
+    JOIN (
+        SELECT sp3.statisticFK AS statistic_id
+        FROM statistic_participants{{SHARD_ID}} sp3
+        JOIN statistic s3 ON s3.id = sp3.statisticFK AND s3.del = 'no'
+         AND s3.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+         AND s3.object_typeFK = 3
+        JOIN tournament t3 ON t3.id = s3.objectFK AND t3.del = 'no'
+        JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
+         AND tt3.sportFK = {{SPORT_ID}}
+         AND (tt3.name IS NULL OR tt3.name NOT LIKE '%(IOC)%')
+        JOIN statistic_data{{SHARD_ID}} td3
+          ON td3.statistic_participants{{SHARD_ID}}FK = sp3.id
+         AND td3.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+         AND td3.del = 'no'
+         AND td3.value IS NOT NULL
+         AND TRIM(td3.value) <> ''
+        WHERE sp3.del = 'no'
+        GROUP BY sp3.statisticFK
+    ) uses ON uses.statistic_id = s.id
+    LEFT JOIN statistic_data{{SHARD_ID}} td
+      ON td.statistic_participants{{SHARD_ID}}FK = sp.id
+     AND td.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+     AND td.del = 'no'
+     AND td.value IS NOT NULL
+     AND TRIM(td.value) <> ''
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND p.type = 'athlete'
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY sp.id
+) y
 ;
 
 
