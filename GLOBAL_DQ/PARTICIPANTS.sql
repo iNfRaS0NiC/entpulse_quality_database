@@ -504,3 +504,96 @@ FROM (
 WHERE y.lineup_male > 0
   AND y.lineup_female > 0
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-068
+    -- Name - EVENT_TEAM_LINEUP_SIZE_UNEVEN
+    -- What it does: Finds active events in which the team event participants that resolve to a lineup do not all field the same number of members, so one team enters fewer competitors than another inside the same event, separating a shortfall of one member from a larger one, with the smallest and largest lineup, the number of teams measured and the per-team breakdown, together with a coverage count of all eligible events holding at least two team event participants that each resolve to at least one active lineup member.
+    CASE
+        WHEN x.max_size - x.min_size = 1 THEN 'EVENT_TEAM_LINEUP_SIZE_SHORT_BY_ONE'
+        ELSE 'EVENT_TEAM_LINEUP_SIZE_SHORT_BY_MORE'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.stage_name,
+    x.tournament_template_name,
+    x.teams_measured,
+    x.min_size,
+    x.max_size,
+    x.team_breakdown,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        b.event_id,
+        b.event_name,
+        b.stage_name,
+        b.tournament_template_name,
+        COUNT(*) AS teams_measured,
+        MIN(b.lineup_rows) AS min_size,
+        MAX(b.lineup_rows) AS max_size,
+        GROUP_CONCAT(CONCAT(b.participant_name, '=', b.lineup_rows)
+                     ORDER BY b.lineup_rows, b.participant_name SEPARATOR ' | ') AS team_breakdown
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            ts.name AS stage_name,
+            tt.name AS tournament_template_name,
+            p.name AS participant_name,
+            COUNT(l.id) AS lineup_rows
+        FROM event_participants ep
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no' AND p.type = 'team'
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN lineup l ON l.event_participantsFK = ep.id AND l.del = 'no'
+        WHERE ep.del = 'no'
+          AND tt.sportFK = {{SPORT_ID}}
+          -- AND tt.id = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+        GROUP BY ep.id, e.id, e.name, ts.name, tt.name, p.name
+    ) b
+    GROUP BY b.event_id, b.event_name, b.stage_name, b.tournament_template_name
+) x
+WHERE x.teams_measured > 1
+  AND x.max_size > x.min_size
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT y.event_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT
+        c.event_id,
+        COUNT(*) AS teams_measured
+    FROM (
+        SELECT
+            e.id AS event_id,
+            ep.id AS event_participants_id
+        FROM event_participants ep
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no' AND p.type = 'team'
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN lineup l ON l.event_participantsFK = ep.id AND l.del = 'no'
+        WHERE ep.del = 'no'
+          AND tt.sportFK = {{SPORT_ID}}
+          -- AND tt.id = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+        GROUP BY e.id, ep.id
+    ) c
+    GROUP BY c.event_id
+) y
+WHERE y.teams_measured > 1
+
+ORDER BY sort_order, event_id;

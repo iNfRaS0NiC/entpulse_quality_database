@@ -166,6 +166,10 @@ Full SQL never belongs here. It is stored in one sport-scoped file under
 | Triathlon-DQ-065 | Triathlon | GLOBAL-DQ-065 | WRONG_RESULTS | COMP.RANK | COMP.RANK_TEAM_ATHLETE_COUNT_UNEVEN | `GLOBAL_DQ/STATISTICS.sql` | Approved |
 | Triathlon-DQ-066 | Triathlon | GLOBAL-DQ-066 | WRONG_GENDER | COMP.RANK | COMP.RANK_TEAM_GENDER_BALANCE_UNEVEN | `GLOBAL_DQ/STATISTICS.sql` | Approved |
 | Triathlon-DQ-067 | Triathlon | GLOBAL-DQ-067 | WRONG_GENDER | EVENT | EVENT_MIXED_TEAM_LINEUP_GENDER_BALANCE_UNEVEN | `GLOBAL_DQ/PARTICIPANTS.sql` | Approved |
+| Triathlon-DQ-068 | Triathlon | — | WRONG_DISCIPLINE | EVENT | EVENT_SETTINGS_DISCIPLINE_NAME_MISMATCH | `POWERBI_QUERIES/Triathlon.sql` | Approved |
+| Triathlon-DQ-069 | Triathlon | — | WRONG_RESULTS | EVENT_RESULTS | EVENT_RESULTS_FULL_TIME_OUT_OF_DISCIPLINE_BAND | `POWERBI_QUERIES/Triathlon.sql` | Approved |
+| Triathlon-DQ-070 | Triathlon | — | WRONG_RESULTS | EVENT_RESULTS | EVENT_RESULTS_DURATION_SHAPE_UNCONFIRMED | `POWERBI_QUERIES/Triathlon.sql` | Approved |
+| Triathlon-DQ-071 | Triathlon | GLOBAL-DQ-068 | WRONG_RESULTS | EVENT | EVENT_TEAM_LINEUP_SIZE_UNEVEN | `GLOBAL_DQ/PARTICIPANTS.sql` | Approved |
 
 
 <!-- MANUAL PASTE ZONE: POWERBI DQ REGISTRY — insert approved additions immediately before this marker; do not move or delete it. -->

@@ -83,6 +83,16 @@ male athletes and a `female` team's only female. The lineup is therefore the lay
 substantiates a team's declared gender, and a gender check that stops at
 `event_participants` cannot see a violation of it.
 
+Lineup size is not fixed by discipline. `Team Relay` fields both three-member and
+four-member lineups, in separate events rather than mixed inside one, which is consistent
+with the sport running more than one relay format under a single discipline. `Mixed Relay`
+fields four. An expectation of one size per discipline therefore contradicts the confirmed
+data, and size unevenness is meaningful only when measured between the teams of one event.
+
+Team event participants are not confined to the relay disciplines. `Sprint Distance` also
+carries team entries with full lineups, so the participant type of an entry cannot be
+inferred from its discipline.
+
 <!-- MANUAL PASTE ZONE: 50 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types
@@ -123,6 +133,18 @@ makes an allowed-value check legitimate for this field at all.
 
 `NE` does not occur. A check keyed on it would audit an empty population.
 
+The confirmed shape set of both time types is wider than the two forms named above. `557`
+also occurs as `ss.f` with no colon at all, and `101` occurs as a plus-prefixed `ss.f` gap,
+so the colon count varies from zero to two inside one result type. A check reading either
+type must accept `h:mm:ss.f`, `m:ss.f` and `ss.f` alike rather than keying on a fixed number
+of colons. A fractional part is present in effectively every value of both types; a value
+without one is the exception rather than a parallel convention.
+
+Shape does not imply scale. The same `ss.f` form carries a value of a few seconds in one
+discipline and of tens of minutes in another, so a stored time can be judged only against
+the discipline it was raced in. `Aquathlon` is the clearest case: it stores `ss.f` and
+`m:ss.f` only, in both time types.
+
 <!-- MANUAL PASTE ZONE: 50 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
@@ -157,6 +179,13 @@ agree with the structural columns; which one is authoritative is an open questio
 `date_of_birth` is present for a small minority of the sport's active athletes, so a check
 over that property covers a much smaller population than the athlete count suggests.
 
+The `discipline` event property is not authoritative and is not a second spelling of the
+`object_discipline` relation. It is absent from the majority of active events; where it is
+present it disagrees with the relation on part of the population; and it carries at least
+one value, `Olympic distance`, naming no row in the `discipline` catalogue at all. The
+relation is the source. The property may be projected as context for a reader, but no check
+may assert against it.
+
 <!-- MANUAL PASTE ZONE: 50 PROPERTIES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Generic relations and disciplines
@@ -184,6 +213,18 @@ dominates the statistic layer while Sprint Distance is well represented among ev
 almost absent among statistics, and Aquathlon reaches events only. A discipline-scoped check
 must therefore be written against the layer it audits and must not infer one layer's
 discipline population from the other.
+
+`Aquathlon` (806) is out of DQ scope by decision of 2026-07-31. It stays documented here
+because its structural evidence is confirmed; what the decision withdraws is the writing of
+checks against it. A discipline-scoped check therefore names the six remaining disciplines
+explicitly rather than excluding one, so a discipline added later is absent by default
+instead of silently audited.
+
+The decision is not expressed through `TIMED_DISCIPLINE_LIST`, which keeps 806. That
+parameter records whether the sport measures a time in the discipline, not whether the
+discipline is in scope, and narrowing it would silently restrict the already approved
+`GLOBAL-DQ-045`, `-054` and `-056` instantiations. The statistic layer is unaffected in
+either case: Aquathlon reaches events only.
 
 <!-- MANUAL PASTE ZONE: 50 GENERIC RELATIONS AND DISCIPLINES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -226,6 +267,12 @@ Team-holding statistics declaring gender `mixed` carry only teams of gender `mix
 
 A minority of statistics declare no Gender config value at all, at both the team and the
 athlete level.
+
+The `1273 Comment` data field resolves to the same closed set of status codes as the event
+layer's `104 Comment`, including the duplicated `DSQ` / `Disq.` spelling pair and the `Q`
+progression marker. The two layers are inventoried separately because nothing guarantees
+they share a vocabulary, but for this sport they do, so one confirmed value set describes
+both.
 
 <!-- MANUAL PASTE ZONE: 50 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -306,15 +353,20 @@ require different treatment.
 - Whether the `Round` and `Type` event properties are authoritative, derived from
   `event.round_typeFK` and the template gender, or independently maintained. They cover
   almost every active event, so a disagreement between the property and the structural column
-  would be systematic rather than incidental.
+  would be systematic rather than incidental. Their sibling `discipline` property is now
+  confirmed not to be authoritative, which makes independent maintenance the more likely
+  reading for the property family as a whole but does not settle it for these two.
 - Why `Sprint Distance` (799) is well represented among events but almost absent among
   Comp.Rank statistics, while `Standard Distance` (144) dominates the statistic layer. Whether
   this is a real editorial difference or missing statistic coverage is not confirmed.
 - Whether `Aquathlon` (806) is expected to have Comp.Rank statistics at all; it currently
   reaches the event layer only.
 - Whether the `101 Duration` values that carry no plus prefix and no decimal fraction are a
-  distinct storage convention or a defect. They occur many times within a small number of
-  events, which is inconsistent with the one-leader-per-event convention confirmed above.
+  distinct storage convention or a defect. Across the six disciplines inside the sport's DQ
+  scope the shape is now confirmed to be near-absent rather than frequent, so the earlier
+  reading of many occurrences within a few events does not describe them. The measurement
+  required an active `object_discipline` relation, so events carrying none were outside it
+  and the question stays open for that remainder.
 - Which round types the sport treats as decisive for a Comp.Rank, given that `267 Final Phase`
   splits one final across several events and that both Final variants `173` and `9` are in use.
 

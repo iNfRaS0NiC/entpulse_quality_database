@@ -489,6 +489,32 @@ Two boundaries matter for this workflow:
   the server's message and continues; correcting the statement remains a query-design
   step, and a failed check is `Not checked`, never `Not used`.
 
+## Zero findings never retires a check
+
+A sport is ongoing. Its data is edited daily, and a rule that no row breaks today is broken
+by the row entered tomorrow. So the number of findings a check returns is a statement about
+the data at one moment, never about whether the check is worth having.
+
+- Never drop, decline to write or deprecate a check because it returns no finding rows,
+  few finding rows, or because a discovery query sized its violating population as small.
+- A check returning no findings over a positive `eligible_count` has succeeded. It is the
+  regression guard for the rule it asserts, and it is the only thing that will notice when
+  that rule starts being broken.
+- Size a population before writing a statement to choose its scope, its cost and its
+  branches — never to decide whether the rule deserves a CheckID.
+- The one thing a small population does change is priority. Say so plainly and write the
+  check anyway; the user decides what to run first.
+
+This is distinct from the two cases that genuinely exclude a check, and they are excluded
+on structure rather than on volume:
+
+| Case | Why it is different |
+|---|---|
+| `eligible_count = 0` | The scope is empty or misdirected. The statement audits nothing, so it proves nothing. Correct the scope; do not read it as clean. |
+| The applicability prerequisite is absent | The sport does not use the structure the rule asserts, so the rule has no meaning for it. `GLOBAL_DQ/README.md` owns this column. |
+
+A deprecated check keeps its row and its ID either way; `POWERBI.md` owns that rule.
+
 ## Manual workflow additions
 
 User-approved workflow changes are inserted immediately before the marker below.
