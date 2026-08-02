@@ -187,16 +187,16 @@ records, so it does not make an event resolve to a venue.
 documented before this one.
 
 `object_discipline` is used on owner type 5 (event) and owner type 83 (statistic), with two
-disciplines: 752 `2aSide` and 753 `4aSide`.
+disciplines: 752 `Mixed Doubles` and 753 `4aSide`.
 
 The discipline, stage gender and participant-type combinations the sport has contested:
 
 | Discipline | Stage genders contested | Participant type |
 |---|---|---|
-| 752 `2aSide` | mixed only | team |
+| 752 `Mixed Doubles` | mixed only | team |
 | 753 `4aSide` | male, female, mixed | team |
 
-`2aSide` is contested as a mixed format only. A check that expects every discipline to appear
+`Mixed Doubles` is contested as a mixed format only. A check that expects every discipline to appear
 under every gender would be wrong here, and the matrix rather than a rule is what says so.
 
 <!-- MANUAL PASTE ZONE: 10 GENERIC RELATIONS AND DISCIPLINES — insert approved additions immediately before this marker; do not move or delete it. -->
@@ -251,7 +251,7 @@ alone.
 | scope_type | 305 | final_result |
 | scope_data_type | 282–292 | end_1 … end_10, end_extra |
 | lineup_type | 14 | Starter |
-| discipline | 752 | 2aSide |
+| discipline | 752 | Mixed Doubles |
 | discipline | 753 | 4aSide |
 | statistic_type | 11 | Competition Stats |
 | statistic_data_type (data) | 1270 | Rank |
@@ -319,6 +319,35 @@ extra-end column and never a period count.
 `Finished after awarded win` describes how the game ended rather than whether it went to an
 extra end, and both live in `status_descFK`. A game that went to an extra end and was then
 awarded can carry only one of the two, so the field cannot express both at once.
+
+**The sport awards its medals across two events, not one.** The Final settles gold and
+silver between the two teams contesting it, and a separate bronze match settles bronze.
+Both rounds are stored under the knockout/non-knockout pair `DB-SEM-012` records: Final
+`9`/`173` and bronze `181`/`138`. `MEDAL_ROUND_TYPE_LIST` is therefore the four ids
+`9, 138, 173, 181`, and it is a wider set than `FINAL_ROUND_TYPE_LIST` rather than a copy
+of it. `BRONZE_ROUND_TYPE_LIST` records the other half of that split, `138, 181`, because
+knowing where a medal may occur is not the same as knowing which one: the Final decides gold
+and silver, the bronze match decides bronze, and only the two lists together say so.
+
+The split is measured rather than assumed. Every active Medal result in the sport sits on one
+of those four rounds, gold and silver only on `9` and `173` and bronze only on `138` and
+`181`, with a single silver on `138` as the lone exception - which is a defect the medal
+checks report, not a second convention.
+
+Two consequences follow, and both are about which object a medal rule can be asserted on:
+
+- no single event can hold the full set of three medals, because a head-to-head event holds
+  two participants. `GLOBAL-DQ-037` asserts exactly that of one event, so its finding branch
+  reports every Final in the sport as missing bronze by construction, before any data is
+  read. It is uninstantiable here, and `Curling-DQ-030` is deprecated for that reason; the
+  ID stays reserved. Completeness of the medal set is asserted instead in the Comp.Rank
+  layer, per statistic, by `GLOBAL-DQ-026`;
+- a rule about where a medal may occur is keyed on the medal rounds and never on the Final
+  alone. `GLOBAL-DQ-038`, `-039`, `-041` and `-073` read `MEDAL_ROUND_TYPE_LIST` for that
+  reason; keyed on the Final alone, all four report every bronze match in the sport.
+
+A stage is not the object either. It carries no medal of its own — the medal is a result row
+on an event participant — so the round the event sits on is what identifies a medal event.
 
 <!-- MANUAL PASTE ZONE: 10 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 

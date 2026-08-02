@@ -541,7 +541,6 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
       AND e.status_type = 'finished'
-      AND e.status_descFK = 6
       -- AND tt.id = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -564,7 +563,6 @@ WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
   AND e.status_type = 'finished'
-  AND e.status_descFK = 6
   -- AND tt.id = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -574,9 +572,9 @@ WHERE e.del = 'no'
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-039
-    -- Name - EVENT_RESULTS_UNEXPECTED_MEDAL_FOR_NON_FINAL
-    -- What it does: Finds active, finished events whose round type is not a Final that have at least one active, non-empty Medal result row for any event participant, with template, tournament, stage name and round-type context, together with a coverage count of all eligible non-Final finished events.
-    'Unexpected_Medal_For_Non_Final' AS check_type,
+    -- Name - EVENT_RESULTS_UNEXPECTED_MEDAL_FOR_NON_MEDAL_ROUND
+    -- What it does: Finds active, finished events whose round type is none of the sport's medal round types that have at least one active, non-empty Medal result row for any event participant, with template, tournament, stage name and round-type context, together with a coverage count of all eligible non-medal-round finished events.
+    'Unexpected_Medal_For_Non_Medal_Round' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
     tt.name AS template_name,
@@ -592,9 +590,8 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 LEFT JOIN round_type rt ON rt.id = e.round_typeFK
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  AND (e.round_typeFK IS NULL OR e.round_typeFK NOT IN ({{FINAL_ROUND_TYPE_LIST}}))
+  AND (e.round_typeFK IS NULL OR e.round_typeFK NOT IN ({{MEDAL_ROUND_TYPE_LIST}}))
   AND e.status_type = 'finished'
-  AND e.status_descFK = 6
   -- AND tt.id = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -622,9 +619,8 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  AND (e.round_typeFK IS NULL OR e.round_typeFK NOT IN ({{FINAL_ROUND_TYPE_LIST}}))
+  AND (e.round_typeFK IS NULL OR e.round_typeFK NOT IN ({{MEDAL_ROUND_TYPE_LIST}}))
   AND e.status_type = 'finished'
-  AND e.status_descFK = 6
   -- AND tt.id = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -1642,9 +1638,10 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-086
     -- Name - EVENT_SCOPE_PERIOD_VALUE_UNRECOGNISED
-    -- What it does: Finds active event participants holding a scope period value that is neither a number nor one of the sport's confirmed sentinels, separating a participant whose offending values are all empty active rows from one holding an unrecognised token, with the offending values, how many rows carry them and event context, together with a coverage count of all eligible event participants holding at least one active period row.
+    -- What it does: Finds active event participants holding a scope period value that is neither a non-negative number nor one of the sport's confirmed sentinels, separating a participant whose offending values are all empty active rows, one whose offending values are all negative numbers, and one holding an unrecognised token, with the offending values, how many rows carry them and event context, together with a coverage count of all eligible event participants holding at least one active period row.
     CASE
         WHEN bad.empty_count = bad.unrecognised_count THEN 'EMPTY_PERIOD_VALUE'
+        WHEN bad.negative_count = bad.unrecognised_count THEN 'NEGATIVE_PERIOD_VALUE'
         ELSE 'UNRECOGNISED_PERIOD_VALUE'
     END AS check_type,
     ep.id AS event_participants_id,
@@ -1674,6 +1671,7 @@ JOIN (
         sr.event_participantsFK AS event_participants_id,
         COUNT(*) AS unrecognised_count,
         SUM(CASE WHEN sr.value IS NULL OR TRIM(sr.value) = '' THEN 1 ELSE 0 END) AS empty_count,
+        SUM(CASE WHEN TRIM(sr.value) REGEXP '^-[0-9]+$' THEN 1 ELSE 0 END) AS negative_count,
         GROUP_CONCAT(DISTINCT sr.value ORDER BY sr.value SEPARATOR ', ') AS unrecognised_values
     FROM scope_result sr
     JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
@@ -1688,6 +1686,12 @@ JOIN (
       AND (
           sr.value IS NULL
           OR TRIM(sr.value) = ''
+          -- A negative period is caught here rather than left to the arithmetic, because it
+          -- passes every numeric test and would be summed as a real value: the sum check
+          -- would then report a total that disagrees with its periods and say nothing about
+          -- why. A period holds a score, and a score is not negative in any sport that
+          -- stores one this way.
+          OR TRIM(sr.value) REGEXP '^-[0-9]+$'
           OR (
               TRIM(sr.value) NOT REGEXP '^-?[0-9]+$'
               AND LOWER(TRIM(sr.value)) NOT IN ({{SCOPE_PERIOD_SENTINEL_LIST}})
@@ -1892,6 +1896,469 @@ JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
              AND r.result_typeFK IN ({{RESULT_FINAL_SCORE_TYPE_ID}}, {{RESULT_MIRROR_SCORE_TYPE_ID}})
 WHERE ep.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-091
+    -- Name - EVENT_SCOPE_PERIOD_NOT_STORED_FOR_BOTH_SIDES
+    -- What it does: Finds active events in which a competition period is stored for some of their participants but not for all of them, or is stored more than once for one participant, so the two sides of the same contest disagree about which periods exist, separating the two, with the offending periods named, the number of participants the event holds and template, tournament and stage name context, together with a coverage count of all eligible active events holding at least one active period row in the selected scope type.
+    CASE
+        WHEN x.short_period_count > 0 THEN 'PERIOD_MISSING_FOR_SOME_PARTICIPANTS'
+        ELSE 'PERIOD_STORED_MORE_THAN_ONCE'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    x.event_participant_count,
+    x.short_period_count,
+    x.short_periods,
+    x.duplicated_period_count,
+    x.duplicated_periods,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+-- Measured per period rather than per participant, because the defect is an asymmetry
+-- between the two sides of one contest and neither side is wrong on its own. The event's
+-- own participant count is the expected number of rows, so an event holding other than the
+-- usual number of entries is judged against itself: that defect is GLOBAL-DQ-083 and is not
+-- restated here. A period no participant stores at all is silent by construction, which is
+-- correct - an unplayed period is absence, not disagreement.
+JOIN (
+    SELECT
+        p.event_id,
+        p.event_participant_count,
+        SUM(CASE WHEN p.sides_with_row < p.event_participant_count THEN 1 ELSE 0 END) AS short_period_count,
+        GROUP_CONCAT(CASE WHEN p.sides_with_row < p.event_participant_count THEN p.period_name END
+                     ORDER BY p.scope_data_type_id SEPARATOR ', ') AS short_periods,
+        SUM(CASE WHEN p.row_count > p.sides_with_row THEN 1 ELSE 0 END) AS duplicated_period_count,
+        GROUP_CONCAT(CASE WHEN p.row_count > p.sides_with_row THEN p.period_name END
+                     ORDER BY p.scope_data_type_id SEPARATOR ', ') AS duplicated_periods
+    FROM (
+        SELECT
+            es.eventFK AS event_id,
+            sr.scope_data_typeFK AS scope_data_type_id,
+            COALESCE(sdt.name, CAST(sr.scope_data_typeFK AS CHAR)) AS period_name,
+            COUNT(DISTINCT sr.event_participantsFK) AS sides_with_row,
+            COUNT(*) AS row_count,
+            (
+                SELECT COUNT(*)
+                FROM event_participants epc
+                WHERE epc.eventFK = es.eventFK AND epc.del = 'no'
+            ) AS event_participant_count
+        FROM scope_result sr
+        JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+                           AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+        JOIN event e2 ON e2.id = es.eventFK AND e2.del = 'no'
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+        LEFT JOIN scope_data_type sdt ON sdt.id = sr.scope_data_typeFK
+        WHERE sr.del = 'no'
+          AND sr.scope_data_typeFK IN ({{SCOPE_PERIOD_DATA_TYPE_LIST}})
+          AND tt2.sportFK = {{SPORT_ID}}
+        GROUP BY es.eventFK, sr.scope_data_typeFK, sdt.name
+    ) p
+    GROUP BY p.event_id, p.event_participant_count
+    HAVING short_period_count > 0 OR duplicated_period_count > 0
+) x ON x.event_id = e.id
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_scope es ON es.eventFK = e.id AND es.del = 'no'
+                   AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+JOIN scope_result sr ON sr.event_scopeFK = es.id AND sr.del = 'no'
+                    AND sr.scope_data_typeFK IN ({{SCOPE_PERIOD_DATA_TYPE_LIST}})
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-092
+    -- Name - EVENT_SCOPE_PERIOD_SENTINEL_NOT_TRAILING
+    -- What it does: Finds active events whose sentinel for a period that was not played is contradicted by the periods around it, either because a participant stores a scored period after their own first sentinel or because one side marks a period unplayed while the other stores a value for it, separating the two, with the number of participants carrying a trailing defect, the periods the two sides disagree about and template, tournament and stage name context, together with a coverage count of all eligible active events holding at least one active sentinel value in the selected scope type.
+    CASE
+        WHEN tr.trailing_defect_sides > 0 THEN 'SENTINEL_FOLLOWED_BY_SCORE'
+        ELSE 'SENTINEL_NOT_MATCHED_BY_OPPONENT'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    COALESCE(tr.trailing_defect_sides, 0) AS trailing_defect_sides,
+    COALESCE(um.unmatched_period_count, 0) AS unmatched_period_count,
+    um.unmatched_periods,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+-- The sentinel means the period was not played, and two things follow from that alone. A
+-- participant cannot score after their own first sentinel, and the opponent cannot have
+-- played a period their opponent did not: both sides of one contest play the same periods.
+-- Playing order is read from the ascending period data type id, which is what makes the
+-- first comparison possible; a sport whose ids do not ascend in playing order cannot
+-- instantiate this. The two verdicts are separated because they are repaired differently -
+-- one is a stray value, the other a disagreement about where the contest ended.
+LEFT JOIN (
+    SELECT
+        s.event_id,
+        COUNT(*) AS trailing_defect_sides
+    FROM (
+        SELECT
+            es.eventFK AS event_id,
+            sr.event_participantsFK AS event_participants_id,
+            MIN(CASE WHEN LOWER(TRIM(sr.value)) IN ({{SCOPE_PERIOD_SENTINEL_LIST}})
+                     THEN sr.scope_data_typeFK END) AS first_sentinel_id,
+            MAX(CASE WHEN TRIM(sr.value) REGEXP '^-?[0-9]+$'
+                     THEN sr.scope_data_typeFK END) AS last_scored_id
+        FROM scope_result sr
+        JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+                           AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+        JOIN event e2 ON e2.id = es.eventFK AND e2.del = 'no'
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+        WHERE sr.del = 'no'
+          AND sr.scope_data_typeFK IN ({{SCOPE_PERIOD_DATA_TYPE_LIST}})
+          AND tt2.sportFK = {{SPORT_ID}}
+        GROUP BY es.eventFK, sr.event_participantsFK
+    ) s
+    WHERE s.first_sentinel_id IS NOT NULL
+      AND s.last_scored_id IS NOT NULL
+      AND s.last_scored_id > s.first_sentinel_id
+    GROUP BY s.event_id
+) tr ON tr.event_id = e.id
+LEFT JOIN (
+    SELECT
+        q.event_id,
+        COUNT(*) AS unmatched_period_count,
+        GROUP_CONCAT(q.period_name ORDER BY q.scope_data_type_id SEPARATOR ', ') AS unmatched_periods
+    FROM (
+        SELECT
+            es.eventFK AS event_id,
+            sr.scope_data_typeFK AS scope_data_type_id,
+            COALESCE(sdt.name, CAST(sr.scope_data_typeFK AS CHAR)) AS period_name,
+            COUNT(DISTINCT CASE WHEN LOWER(TRIM(sr.value)) IN ({{SCOPE_PERIOD_SENTINEL_LIST}})
+                                THEN sr.event_participantsFK END) AS sentinel_sides,
+            COUNT(DISTINCT sr.event_participantsFK) AS sides_with_row
+        FROM scope_result sr
+        JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+                           AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+        JOIN event e2 ON e2.id = es.eventFK AND e2.del = 'no'
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+        LEFT JOIN scope_data_type sdt ON sdt.id = sr.scope_data_typeFK
+        WHERE sr.del = 'no'
+          AND sr.scope_data_typeFK IN ({{SCOPE_PERIOD_DATA_TYPE_LIST}})
+          AND tt2.sportFK = {{SPORT_ID}}
+        GROUP BY es.eventFK, sr.scope_data_typeFK, sdt.name
+    ) q
+    WHERE q.sentinel_sides > 0
+      AND q.sentinel_sides < q.sides_with_row
+    GROUP BY q.event_id
+) um ON um.event_id = e.id
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND (tr.event_id IS NOT NULL OR um.event_id IS NOT NULL)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_scope es ON es.eventFK = e.id AND es.del = 'no'
+                   AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+JOIN scope_result sr ON sr.event_scopeFK = es.id AND sr.del = 'no'
+                    AND sr.scope_data_typeFK IN ({{SCOPE_PERIOD_DATA_TYPE_LIST}})
+                    AND LOWER(TRIM(sr.value)) IN ({{SCOPE_PERIOD_SENTINEL_LIST}})
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-093
+    -- Name - EVENT_RESULTS_MEDAL_SET_INVALID_FOR_MEDAL_ROUND
+    -- What it does: Finds active finished events on one of the sport's medal rounds whose set of Medal result values is not the set that round decides, being one gold and one silver on a Final and one bronze on a bronze match, separating an event carrying no medal at all, one carrying a medal the round does not decide, one carrying a medal type more than once and one missing a medal type, with the medal counts, the round type and template, tournament and stage name context, together with a coverage count of all eligible finished medal-round events.
+    CASE
+        WHEN x.is_final = 1 AND x.total_medal_count = 0 THEN 'FINAL_NO_MEDALS_AT_ALL'
+        WHEN x.is_final = 1 AND x.bronze_count > 0 THEN 'FINAL_UNEXPECTED_BRONZE'
+        WHEN x.is_final = 1 AND (x.gold_count > 1 OR x.silver_count > 1) THEN 'FINAL_MEDAL_DUPLICATED'
+        WHEN x.is_final = 1 THEN 'FINAL_MISSING_GOLD_OR_SILVER'
+        WHEN x.total_medal_count = 0 THEN 'BRONZE_ROUND_NO_MEDALS_AT_ALL'
+        WHEN x.gold_count > 0 OR x.silver_count > 0 THEN 'BRONZE_ROUND_UNEXPECTED_MEDAL'
+        WHEN x.bronze_count > 1 THEN 'BRONZE_ROUND_MEDAL_DUPLICATED'
+        ELSE 'BRONZE_ROUND_MISSING_BRONZE'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.stage_name,
+    x.round_typeFK,
+    x.gold_count,
+    x.silver_count,
+    x.bronze_count,
+    x.participant_count,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The medal set is asserted per round rather than per event or per stage, because a
+-- head-to-head sport decides its medals in more than one match: the Final settles gold and
+-- silver between its two participants and a bronze match settles bronze. No single event can
+-- hold all three, which is why GLOBAL-DQ-037 cannot be used here, and a stage holds no medal
+-- of its own - the value is a result row on an event participant, so the round the event sits
+-- on is what says which medal it should carry. The detailed status is deliberately not
+-- narrowed to the plain finished code: a Final decided in an extra period or awarded is
+-- still a Final, and narrowing would drop it from the audit without saying so.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.name AS stage_name,
+        e.round_typeFK,
+        CASE WHEN e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}}) THEN 1 ELSE 0 END AS is_final,
+        COUNT(DISTINCT ep.id) AS participant_count,
+        SUM(CASE WHEN LOWER(TRIM(r.value)) = 'gold' THEN 1 ELSE 0 END) AS gold_count,
+        SUM(CASE WHEN LOWER(TRIM(r.value)) = 'silver' THEN 1 ELSE 0 END) AS silver_count,
+        SUM(CASE WHEN LOWER(TRIM(r.value)) = 'bronze' THEN 1 ELSE 0 END) AS bronze_count,
+        SUM(CASE WHEN r.value IS NOT NULL AND TRIM(r.value) <> '' THEN 1 ELSE 0 END) AS total_medal_count
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    LEFT JOIN result r
+      ON r.event_participantsFK = ep.id
+     AND r.del = 'no'
+     AND r.result_typeFK = {{RESULT_MEDAL_TYPE_ID}}
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND e.status_type = 'finished'
+      AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}}, {{BRONZE_ROUND_TYPE_LIST}})
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ts.name, e.round_typeFK
+) x
+WHERE (x.is_final = 1 AND NOT (x.gold_count = 1 AND x.silver_count = 1 AND x.bronze_count = 0))
+   OR (x.is_final = 0 AND NOT (x.bronze_count = 1 AND x.gold_count = 0 AND x.silver_count = 0))
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}}, {{BRONZE_ROUND_TYPE_LIST}})
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-094
+    -- Name - EVENT_RESULTS_MEDAL_CONTRADICTS_SCORE
+    -- What it does: Finds active event participants on one of the sport's medal rounds whose stored Medal does not match the place their own score gives them, the winner of a Final taking gold and the loser silver, the winner of a bronze match taking bronze and the loser none, separating a medal that is missing, one that is stored where the round awards none and one naming the wrong place, with both scores, the expected and the stored medal and event context, together with a coverage count of all eligible event participants in finished medal-round events holding exactly two numeric scores that differ.
+    CASE
+        WHEN m.stored_medal = '' THEN 'MEDAL_MISSING_FOR_PLACE'
+        WHEN m.expected_medal = '' THEN 'MEDAL_UNEXPECTED_FOR_PLACE'
+        ELSE 'MEDAL_WRONG_FOR_PLACE'
+    END AS check_type,
+    m.event_participants_id,
+    m.event_id,
+    m.event_name,
+    m.event_startdate,
+    m.participant_name,
+    m.template_name,
+    m.tournament_name,
+    m.round_typeFK,
+    m.own_score,
+    m.opponent_score,
+    m.expected_medal,
+    m.stored_medal,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The winner is read from the pair of scores, never from a stored rank or a Winner property:
+-- a head-to-head sport that stores neither still decides its medals, and the score is what
+-- decides them. A tie is excluded rather than judged, because no place can be read from it -
+-- GLOBAL-DQ-084 is the check that names a tie. The medal is read through an aggregate so a
+-- participant carrying two Medal rows still produces one row here; that duplication is
+-- GLOBAL-DQ-059 and is not restated.
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        p.name AS participant_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        e.round_typeFK,
+        CAST(TRIM(rs.value) AS SIGNED) AS own_score,
+        CASE WHEN CAST(TRIM(rs.value) AS SIGNED) = sc.max_score
+             THEN sc.min_score ELSE sc.max_score END AS opponent_score,
+        CASE
+            WHEN e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
+                 AND CAST(TRIM(rs.value) AS SIGNED) = sc.max_score THEN 'gold'
+            WHEN e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}}) THEN 'silver'
+            WHEN CAST(TRIM(rs.value) AS SIGNED) = sc.max_score THEN 'bronze'
+            ELSE ''
+        END AS expected_medal,
+        COALESCE((
+            SELECT MIN(LOWER(TRIM(rm.value)))
+            FROM result rm
+            WHERE rm.event_participantsFK = ep.id
+              AND rm.del = 'no'
+              AND rm.result_typeFK = {{RESULT_MEDAL_TYPE_ID}}
+              AND rm.value IS NOT NULL
+              AND TRIM(rm.value) <> ''
+        ), '') AS stored_medal
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN result rs ON rs.event_participantsFK = ep.id AND rs.del = 'no'
+                  AND rs.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+                  AND rs.value IS NOT NULL
+                  AND TRIM(rs.value) REGEXP '^-?[0-9]+$'
+    JOIN (
+        SELECT
+            ep2.eventFK AS event_id,
+            MIN(CAST(TRIM(r2.value) AS SIGNED)) AS min_score,
+            MAX(CAST(TRIM(r2.value) AS SIGNED)) AS max_score
+        FROM result r2
+        JOIN event_participants ep2 ON ep2.id = r2.event_participantsFK AND ep2.del = 'no'
+        JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+        WHERE r2.del = 'no'
+          AND r2.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+          AND tt2.sportFK = {{SPORT_ID}}
+          AND e2.status_type = 'finished'
+          AND e2.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}}, {{BRONZE_ROUND_TYPE_LIST}})
+          AND r2.value IS NOT NULL
+          AND TRIM(r2.value) REGEXP '^-?[0-9]+$'
+        GROUP BY ep2.eventFK
+        HAVING COUNT(*) = 2
+           AND MIN(CAST(TRIM(r2.value) AS SIGNED)) <> MAX(CAST(TRIM(r2.value) AS SIGNED))
+    ) sc ON sc.event_id = e.id
+    WHERE ep.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND e.status_type = 'finished'
+      AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}}, {{BRONZE_ROUND_TYPE_LIST}})
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+) m
+WHERE m.expected_medal <> m.stored_medal
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result rs ON rs.event_participantsFK = ep.id AND rs.del = 'no'
+              AND rs.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+              AND rs.value IS NOT NULL
+              AND TRIM(rs.value) REGEXP '^-?[0-9]+$'
+JOIN (
+    SELECT ep2.eventFK AS event_id
+    FROM result r2
+    JOIN event_participants ep2 ON ep2.id = r2.event_participantsFK AND ep2.del = 'no'
+    JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    WHERE r2.del = 'no'
+      AND r2.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND e2.status_type = 'finished'
+      AND e2.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}}, {{BRONZE_ROUND_TYPE_LIST}})
+      AND r2.value IS NOT NULL
+      AND TRIM(r2.value) REGEXP '^-?[0-9]+$'
+    GROUP BY ep2.eventFK
+    HAVING COUNT(*) = 2
+       AND MIN(CAST(TRIM(r2.value) AS SIGNED)) <> MAX(CAST(TRIM(r2.value) AS SIGNED))
+) sc ON sc.event_id = e.id
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}}, {{BRONZE_ROUND_TYPE_LIST}})
   -- AND tt.id = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'

@@ -697,8 +697,8 @@ WHERE ts.del = 'no'
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-038
-    -- Name - EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_FINAL
-    -- What it does: Finds active, finished events on a Final round type that have no active event property named medal_related with value yes, with template, tournament and stage name context, together with a coverage count of all eligible Final-round finished events.
+    -- Name - EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_MEDAL_ROUND
+    -- What it does: Finds active, finished events on one of the sport's medal round types that have no active event property named medal_related with value yes, with template, tournament and stage name context, together with a coverage count of all eligible medal-round finished events.
     'Missing_Medal_Related_Property' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -712,9 +712,8 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
+  AND e.round_typeFK IN ({{MEDAL_ROUND_TYPE_LIST}})
   AND e.status_type = 'finished'
-  AND e.status_descFK = 6
   -- AND tt.id = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -740,9 +739,8 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
+  AND e.round_typeFK IN ({{MEDAL_ROUND_TYPE_LIST}})
   AND e.status_type = 'finished'
-  AND e.status_descFK = 6
   -- AND tt.id = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -1046,14 +1044,18 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-062
     -- Name - EVENT_DUPLICATE_BY_METADATA
-    -- What it does: Finds groups of more than one active event sharing the same tournament stage, discipline set, exact start date, name and identical participant set, separating a group of empty event shells from one repeating the same competitors, so parallel heats that legitimately share a name and slot are excluded by their disjoint participant sets, together with a coverage count of all eligible named events.
-    'Event_Duplicate_By_Metadata' AS check_type,
+    -- What it does: Finds groups of more than one active event sharing the same tournament stage, discipline set, calendar day, identical participant set and, where the sport's event names carry information beyond the participants, the same name, separating a group sharing one exact timestamp from one spread across different times of the same day, and each of those into empty event shells and a repetition of the same competitors, so parallel heats that legitimately share a name and slot are excluded by their disjoint participant sets, with the names and start times seen, together with a coverage count of all eligible named events.
+    CASE
+        WHEN COUNT(DISTINCT d.startdate) = 1 THEN 'DUPLICATE_SAME_TIMESTAMP'
+        ELSE 'DUPLICATE_SAME_DAY_DIFFERENT_TIME'
+    END AS check_type,
     CASE WHEN d.participant_key = '' THEN 'EMPTY_SHELLS' ELSE 'IDENTICAL_PARTICIPANTS' END AS duplicate_kind,
     d.tournament_template_name,
     d.tournament_stage_id,
     d.tournament_stage_name,
-    d.event_name,
-    CAST(d.startdate AS CHAR) AS startdate,
+    GROUP_CONCAT(DISTINCT d.event_name ORDER BY d.event_name SEPARATOR ' | ') AS event_names,
+    CAST(MIN(DATE(d.startdate)) AS CHAR) AS event_date,
+    GROUP_CONCAT(DISTINCT TIME(d.startdate) ORDER BY TIME(d.startdate) SEPARATOR ', ') AS start_times,
     d.discipline_key,
     COUNT(*) AS duplicate_event_count,
     GROUP_CONCAT(d.event_id ORDER BY d.event_id) AS event_ids,
@@ -1094,15 +1096,33 @@ FROM (
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
 ) d
+-- Two parts of the key are facts about the sport rather than about duplicates, and both are
+-- declared because getting either wrong turns the check into noise in one direction or
+-- silence in the other.
+-- Whether the name belongs in it: a sport whose event name is the pairing that plays it -
+-- the sports GLOBAL-DQ-096 applies to - carries nothing in the name that the participant set
+-- does not, and its ordering is arbitrary, so the same meeting appears as "A-B" in one row
+-- and "B-A" in the other and the name splits apart what the participant key has matched.
+-- Those sports record 0. A sport whose names distinguish one entry from another records 1.
+-- Whether the slot is the day or the exact moment: a sport that runs the same competitors
+-- several times in one day - three motos of one field, all named alike - is separated only
+-- by the time they started, so it records 0 and keeps the timestamp. A sport in which one
+-- meeting happens once a day records 1, because there a re-import carries a different
+-- kick-off and a timestamp key lets every one of those through: the pair differs in a field
+-- the key contains, so it never forms a group at all. The exact-timestamp case stays
+-- separable either way, and is the stronger of the two, so it keeps its own verdict.
 GROUP BY d.tournament_template_name, d.tournament_stage_id, d.tournament_stage_name,
-         d.event_name, d.startdate, d.discipline_key, d.participant_key
+         CASE WHEN {{DUPLICATE_KEY_INCLUDES_EVENT_NAME}} = 1 THEN d.event_name ELSE '' END,
+         CASE WHEN {{DUPLICATE_KEY_USES_CALENDAR_DAY}} = 1
+              THEN CAST(DATE(d.startdate) AS CHAR) ELSE CAST(d.startdate AS CHAR) END,
+         d.discipline_key, d.participant_key
 HAVING COUNT(*) > 1
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -1165,8 +1185,8 @@ WHERE t.del = 'no'
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-073
-    -- Name - EVENT_SETTINGS_UNEXPECTED_MEDAL_RELATED_FOR_NON_FINAL
-    -- What it does: Finds active, finished events whose round type is not a Final that carry an active event property named medal_related with value yes, with round type, template, tournament and stage name context, together with a coverage count of all eligible non-Final finished events.
+    -- Name - EVENT_SETTINGS_UNEXPECTED_MEDAL_RELATED_FOR_NON_MEDAL_ROUND
+    -- What it does: Finds active, finished events whose round type is none of the sport's medal round types that carry an active event property named medal_related with value yes, with round type, template, tournament and stage name context, together with a coverage count of all eligible non-medal-round finished events.
     'Unexpected_Medal_Related_Property' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -1181,9 +1201,8 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  AND e.round_typeFK NOT IN ({{FINAL_ROUND_TYPE_LIST}})
+  AND e.round_typeFK NOT IN ({{MEDAL_ROUND_TYPE_LIST}})
   AND e.status_type = 'finished'
-  AND e.status_descFK = 6
   -- AND tt.id = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -1209,9 +1228,8 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  AND e.round_typeFK NOT IN ({{FINAL_ROUND_TYPE_LIST}})
+  AND e.round_typeFK NOT IN ({{MEDAL_ROUND_TYPE_LIST}})
   AND e.status_type = 'finished'
-  AND e.status_descFK = 6
   -- AND tt.id = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -1954,3 +1972,162 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-096
+    -- Name - EVENT_NAME_DOES_NOT_NAME_ITS_PARTICIPANTS
+    -- What it does: Finds active events whose name is built from the names of the competitors that play them but does not contain the name of one of its own active participants, separating an event none of whose participants it names from one that names some but not all, with the participants it fails to name, the number it holds and template, tournament and stage name context, together with a coverage count of all eligible active named events holding at least one active participant with a usable name.
+    CASE
+        WHEN x.named_participant_count = 0 THEN 'NAMES_NO_PARTICIPANT'
+        ELSE 'NAMES_SOME_PARTICIPANTS_NOT_ALL'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.stage_name,
+    x.participant_count,
+    x.named_participant_count,
+    x.unnamed_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Containment rather than reconstruction. A sport whose event name is the pairing joins its
+-- sides with a separator that varies - a hyphen, a slash inside a side made of two countries
+-- - and rebuilding the name from the participants would need that convention as a parameter
+-- and would break on the first competition that spells it differently. Asking only whether
+-- each participant's name appears somewhere in the event name needs no convention at all,
+-- and is exactly strict enough to catch the case worth catching: a side stored under one
+-- name and printed under another. A participant with an empty name is left out rather than
+-- reported, because there is nothing to look for; that gap is GLOBAL-DQ-008.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.name AS stage_name,
+        COUNT(*) AS participant_count,
+        SUM(CASE WHEN LOCATE(LOWER(TRIM(p.name)), LOWER(e.name)) > 0 THEN 1 ELSE 0 END) AS named_participant_count,
+        GROUP_CONCAT(CASE WHEN LOCATE(LOWER(TRIM(p.name)), LOWER(e.name)) = 0
+                          THEN p.name END ORDER BY p.name SEPARATOR ', ') AS unnamed_participants
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND e.name IS NOT NULL
+      AND TRIM(e.name) <> ''
+      AND p.name IS NOT NULL
+      AND TRIM(p.name) <> ''
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ts.name
+) x
+WHERE x.named_participant_count < x.participant_count
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.name IS NOT NULL
+  AND TRIM(e.name) <> ''
+  AND p.name IS NOT NULL
+  AND TRIM(p.name) <> ''
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-097
+    -- Name - EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND
+    -- What it does: Finds each round type the sport contests whose knockout flag contradicts what the round is, an elimination round in which some entries go out and others go on being marked as not knockout, or a round in which nobody goes out being marked as one, separating the two, with the flag stored, the flag the round calls for, how many active events carry it and the templates it occurs under, reporting one row per offending round type rather than one per event repeating it, together with a coverage count of all distinct round types the sport contests whose name is one the lists name.
+    CASE
+        WHEN LOWER(TRIM(rt.name)) IN ({{ELIMINATION_ROUND_NAME_LIST}}) THEN 'ELIMINATION_ROUND_NOT_MARKED_KNOCKOUT'
+        ELSE 'NON_ELIMINATION_ROUND_MARKED_KNOCKOUT'
+    END AS check_type,
+    rt.id AS round_type_id,
+    rt.name AS round_type_name,
+    rt.knockout AS knockout_stored,
+    CASE
+        WHEN LOWER(TRIM(rt.name)) IN ({{ELIMINATION_ROUND_NAME_LIST}}) THEN 'yes'
+        ELSE 'no'
+    END AS knockout_expected,
+    COUNT(DISTINCT e.id) AS event_count,
+    SUBSTRING(GROUP_CONCAT(DISTINCT tt.name ORDER BY tt.name SEPARATOR ', '), 1, 200) AS templates,
+    MIN(e.startdate) AS first_event_startdate,
+    MAX(e.startdate) AS last_event_startdate,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Reported per round type rather than per event, because that is where the defect lives and
+-- where it is repaired: every event pointing at one round type carries it identically, so a
+-- row per event would repeat one fact thousands of times. The count travels with the row so
+-- the size of the exposure is still visible.
+-- What a round is cannot be read from the database - `round_type` carries a name, a bracket
+-- value and the flag, and nothing that says whether entries go out - so the two lists are
+-- the judgement this check rests on. A name in neither list is silent rather than assumed,
+-- which is what keeps a placement or qualification round, where the answer depends on the
+-- format rather than the name, out of the finding.
+-- `DB-SEM-012` records that one round name exists under both a knockout and a non-knockout
+-- id, so a sport storing the wrong member of a pair reports the whole population that uses
+-- it. That is the finding, not noise: the pair exists so that a round can be marked
+-- correctly, and using the wrong side is the defect this names.
+FROM round_type rt
+JOIN event e ON e.round_typeFK = rt.id AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND (
+      (LOWER(TRIM(rt.name)) IN ({{ELIMINATION_ROUND_NAME_LIST}}) AND rt.knockout = 'no')
+      OR (LOWER(TRIM(rt.name)) IN ({{GROUP_ROUND_NAME_LIST}}) AND rt.knockout = 'yes')
+  )
+GROUP BY rt.id, rt.name, rt.knockout
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT rt.id) AS eligible_count,
+    1 AS sort_order
+FROM round_type rt
+JOIN event e ON e.round_typeFK = rt.id AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND (
+      LOWER(TRIM(rt.name)) IN ({{ELIMINATION_ROUND_NAME_LIST}})
+      OR LOWER(TRIM(rt.name)) IN ({{GROUP_ROUND_NAME_LIST}})
+  )
+
+ORDER BY sort_order, event_count DESC;

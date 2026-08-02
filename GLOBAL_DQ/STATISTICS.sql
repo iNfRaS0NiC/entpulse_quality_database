@@ -1151,9 +1151,9 @@ WHERE e.del = 'no'
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-041
-    -- Name - COMP.RANK_RESULTS_MEDAL_ON_NON_FINAL_PHASE
-    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, carrying an active non-empty Medal value while their object_round phase names a round type that is not a Final, with template and tournament name context and the offending phase, together with a coverage count of all eligible statistic-participant rows carrying an active non-empty Medal value.
-    'MEDAL_ON_NON_FINAL_PHASE' AS check_type,
+    -- Name - COMP.RANK_RESULTS_MEDAL_ON_NON_MEDAL_ROUND_PHASE
+    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, carrying an active non-empty Medal value while their object_round phase names a round type that is none of the sport's medal round types, with template and tournament name context and the offending phase, together with a coverage count of all eligible statistic-participant rows carrying an active non-empty Medal value.
+    'MEDAL_ON_NON_MEDAL_ROUND_PHASE' AS check_type,
     sp.id AS statistic_participants_id,
     s.id AS statistic_id,
     tt.name AS template_name,
@@ -1184,7 +1184,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
-  AND orr.round_typeFK NOT IN ({{FINAL_ROUND_TYPE_LIST}})
+  AND orr.round_typeFK NOT IN ({{MEDAL_ROUND_TYPE_LIST}})
 
 UNION ALL
 
@@ -2299,3 +2299,172 @@ WHERE sd.del = 'no'
   AND sd.value IS NOT NULL
   AND TRIM(sd.value) <> ''
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-095
+    -- Name - COMP.RANK_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, in which one Rank value is held by more participants than the statistic's own teams field athletes, where the sport assigns them, no Comment value explains the sharing, and the statistic still awards one of the places that sharing consumes, so the place is occupied twice over rather than being the joint place a competition stops ranking at, separating a statistic repeating one place from one repeating several, with the repeated ranks, how many participants hold each and template and tournament name context, together with a coverage count of all eligible statistics holding at least one active numeric Rank.
+    CASE
+        WHEN x.duplicated_rank_count = 1 THEN 'ONE_RANK_HELD_TWICE'
+        ELSE 'SEVERAL_RANKS_HELD_TWICE'
+    END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.holders_per_place,
+    x.duplicated_rank_count,
+    x.duplicated_ranks,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The statistic-layer twin of GLOBAL-DQ-021, which reads the event layer and cannot see a
+-- Comp.Rank. The layer forces two differences, and both are what keep it usable.
+-- An event enters a team as one participant while a Comp.Rank lists it athlete by athlete,
+-- so a place is legitimately held by as many participants as a team fields. That number is
+-- read from the statistic itself - the largest team the Team data field assigns, and one
+-- where it assigns none - rather than assumed, which is what stops every relay from being
+-- reported.
+-- And a Comp.Rank ranks a whole competition rather than one contest, so it stops ranking
+-- individually where the play-offs begin and enters everyone below as one joint place. A
+-- place shared by k entries consumes the k-1 places under it, so a well-formed sharing
+-- leaves them empty and the next place stored is R+k; a place stored inside that span is the
+-- contradiction. Without that condition the check reports the convention and buries the
+-- defect inside it - and a whole second sequence of places, which is what a statistic
+-- holding two competitions at once looks like, is exactly what the condition finds.
+-- Every subquery carries the sport filter rather than inheriting it from the outer join,
+-- because the participant and data shards are shared by every sport and a subquery without
+-- it scans all of them.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        v.holders_per_place,
+        COUNT(*) AS duplicated_rank_count,
+        GROUP_CONCAT(CONCAT('rank ', v.rank_value, ' x', v.holder_count)
+                     ORDER BY v.rank_value SEPARATOR ', ') AS duplicated_ranks
+    FROM (
+        SELECT DISTINCT
+            r.statistic_id,
+            r.rank_value,
+            r.holder_count,
+            h.holders_per_place
+        FROM (
+            SELECT
+                sp.statisticFK AS statistic_id,
+                CAST(TRIM(sd.value) AS SIGNED) AS rank_value,
+                COUNT(DISTINCT sp.id) AS holder_count
+            FROM statistic sx
+            JOIN tournament tx ON tx.id = sx.objectFK AND tx.del = 'no'
+            JOIN tournament_template ttx ON ttx.id = tx.tournament_templateFK AND ttx.del = 'no'
+            JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = sx.id AND sp.del = 'no'
+            JOIN statistic_data{{SHARD_ID}} sd ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+                 AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+                 AND sd.del = 'no'
+                 AND sd.value IS NOT NULL
+                 AND TRIM(sd.value) REGEXP '^[1-9][0-9]*$'
+            WHERE sx.del = 'no'
+              AND sx.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+              AND sx.object_typeFK = 3
+              AND ttx.sportFK = {{SPORT_ID}}
+              AND (ttx.name IS NULL OR ttx.name NOT LIKE '%(IOC)%')
+              -- AND ttx.id = <tournament_template_id>
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM statistic_data{{SHARD_ID}} sc
+                  WHERE sc.statistic_participants{{SHARD_ID}}FK = sp.id
+                    AND sc.statistic_data_typeFK = {{DATA_COMMENT_TYPE_ID}}
+                    AND sc.del = 'no'
+                    AND sc.value IS NOT NULL
+                    AND TRIM(sc.value) <> ''
+              )
+            GROUP BY sp.statisticFK, CAST(TRIM(sd.value) AS SIGNED)
+        ) r
+        JOIN (
+            SELECT
+                sy.id AS statistic_id,
+                COALESCE(MAX(tm.team_size), 1) AS holders_per_place
+            FROM statistic sy
+            JOIN tournament ty ON ty.id = sy.objectFK AND ty.del = 'no'
+            JOIN tournament_template tty ON tty.id = ty.tournament_templateFK AND tty.del = 'no'
+            LEFT JOIN (
+                SELECT
+                    sp3.statisticFK AS statistic_id,
+                    sd3.value AS team_id,
+                    COUNT(DISTINCT sp3.id) AS team_size
+                FROM statistic sz
+                JOIN tournament tz ON tz.id = sz.objectFK AND tz.del = 'no'
+                JOIN tournament_template ttz ON ttz.id = tz.tournament_templateFK AND ttz.del = 'no'
+                JOIN statistic_participants{{SHARD_ID}} sp3 ON sp3.statisticFK = sz.id AND sp3.del = 'no'
+                JOIN statistic_data{{SHARD_ID}} sd3 ON sd3.statistic_participants{{SHARD_ID}}FK = sp3.id
+                     AND sd3.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+                     AND sd3.del = 'no'
+                     AND sd3.value IS NOT NULL
+                     AND TRIM(sd3.value) <> ''
+                WHERE sz.del = 'no'
+                  AND sz.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+                  AND sz.object_typeFK = 3
+                  AND ttz.sportFK = {{SPORT_ID}}
+                GROUP BY sp3.statisticFK, sd3.value
+            ) tm ON tm.statistic_id = sy.id
+            WHERE sy.del = 'no'
+              AND sy.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+              AND sy.object_typeFK = 3
+              AND tty.sportFK = {{SPORT_ID}}
+            GROUP BY sy.id
+        ) h ON h.statistic_id = r.statistic_id
+        JOIN (
+            SELECT DISTINCT
+                sp4.statisticFK AS statistic_id,
+                CAST(TRIM(sd4.value) AS SIGNED) AS rank_value
+            FROM statistic sw
+            JOIN tournament tw ON tw.id = sw.objectFK AND tw.del = 'no'
+            JOIN tournament_template ttw ON ttw.id = tw.tournament_templateFK AND ttw.del = 'no'
+            JOIN statistic_participants{{SHARD_ID}} sp4 ON sp4.statisticFK = sw.id AND sp4.del = 'no'
+            JOIN statistic_data{{SHARD_ID}} sd4 ON sd4.statistic_participants{{SHARD_ID}}FK = sp4.id
+                 AND sd4.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+                 AND sd4.del = 'no'
+                 AND sd4.value IS NOT NULL
+                 AND TRIM(sd4.value) REGEXP '^[1-9][0-9]*$'
+            WHERE sw.del = 'no'
+              AND sw.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+              AND sw.object_typeFK = 3
+              AND ttw.sportFK = {{SPORT_ID}}
+        ) allr ON allr.statistic_id = r.statistic_id
+              AND allr.rank_value > r.rank_value
+              AND allr.rank_value < r.rank_value + (r.holder_count DIV h.holders_per_place)
+        WHERE r.holder_count > h.holders_per_place
+    ) v
+    JOIN statistic s ON s.id = v.statistic_id AND s.del = 'no'
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    GROUP BY s.id, s.name, tt.name, t.name, v.holders_per_place
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN statistic_data{{SHARD_ID}} sd ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+     AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+     AND sd.del = 'no'
+     AND sd.value IS NOT NULL
+     AND TRIM(sd.value) REGEXP '^[1-9][0-9]*$'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+
+ORDER BY sort_order;
