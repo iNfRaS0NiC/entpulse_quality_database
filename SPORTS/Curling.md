@@ -120,10 +120,30 @@ end-by-end scoring in the `scope_result` layer:
 | 291 | `end_10` |
 | 292 | `end_extra` |
 
-`end_1` through `end_8` are present in effectively every container, `end_9` and `end_10` in a
-substantial majority but not all, and `end_extra` in a small minority. Two game lengths
-therefore coexist in the active data, and an extra end is the exception rather than a parallel
-convention. A check keyed on a fixed number of ends would be wrong for one of the two lengths.
+Two things vary independently here, and conflating them misreads the layer.
+
+**Which end columns exist.** `end_1` through `end_8` carry a value in effectively every
+container, `end_9` and `end_10` in a substantial majority but not all, and `end_extra` in a
+small minority. Two scheduled game lengths therefore coexist, eight ends and ten, and the
+extra end is the exception rather than a parallel convention.
+
+**How many ends were actually scored.** That is not the scheduled length. A conceded game
+stops early, and the count of ends holding a number runs across the whole range from six to
+eleven rather than clustering on eight and ten. Ten and nine are the most common, then eight,
+seven and six, with eleven the extra end; a handful of events hold fewer than five, which are
+abandoned games rather than a format.
+
+A check keyed on a fixed number of ends is therefore wrong twice over: wrong for one of the
+two scheduled lengths, and wrong for every conceded game of either.
+
+An end that was not played is not stored as an empty row. It carries the sentinel `X`, and
+`X` is the only non-numeric value the layer holds anywhere in the sport: every active period
+row across the whole population is either a plain integer or `X`, with no null, no empty
+string and no second symbol. The sentinel is what makes the arithmetic work — a conceded game
+whose ends read `5-0-4-5-3-3-X-X` sums to its stored total exactly, because the sentinel is
+skipped rather than counted as zero. `GLOBAL-DQ-085` sums only plainly numeric values for that
+reason, and `GLOBAL-DQ-086` guards the assumption by reporting any period value that is
+neither a number nor a confirmed sentinel, before it can reach the sum as a silent zero.
 
 <!-- MANUAL PASTE ZONE: 10 SCOPES — insert approved additions immediately before this marker; do not move or delete it. -->
 

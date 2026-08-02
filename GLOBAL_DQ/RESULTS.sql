@@ -1636,3 +1636,91 @@ WHERE r.del = 'no'
   AND TRIM(r.value) REGEXP '^-?[0-9]+$'
 
 ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-086
+    -- Name - EVENT_SCOPE_PERIOD_VALUE_UNRECOGNISED
+    -- What it does: Finds active event participants holding a scope period value that is neither a number nor one of the sport's confirmed sentinels, separating a participant whose offending values are all empty active rows from one holding an unrecognised token, with the offending values, how many rows carry them and event context, together with a coverage count of all eligible event participants holding at least one active period row.
+    CASE
+        WHEN bad.empty_count = bad.unrecognised_count THEN 'EMPTY_PERIOD_VALUE'
+        ELSE 'UNRECOGNISED_PERIOD_VALUE'
+    END AS check_type,
+    ep.id AS event_participants_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    p.name AS participant_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    bad.unrecognised_values,
+    bad.unrecognised_count,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+-- The offending rows are selected and aggregated per owning event participant, so the
+-- audited object stays the participant rather than becoming one row per period value.
+-- An active row left empty is a different storage state from one holding a token
+-- (DB-SEM-002), and the two are repaired differently, so they are separated rather than
+-- merged into one verdict.
+JOIN (
+    SELECT
+        sr.event_participantsFK AS event_participants_id,
+        COUNT(*) AS unrecognised_count,
+        SUM(CASE WHEN sr.value IS NULL OR TRIM(sr.value) = '' THEN 1 ELSE 0 END) AS empty_count,
+        GROUP_CONCAT(DISTINCT sr.value ORDER BY sr.value SEPARATOR ', ') AS unrecognised_values
+    FROM scope_result sr
+    JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+                       AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+    JOIN event e2 ON e2.id = es.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    WHERE sr.del = 'no'
+      AND sr.scope_data_typeFK IN ({{SCOPE_PERIOD_DATA_TYPE_LIST}})
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND (
+          sr.value IS NULL
+          OR TRIM(sr.value) = ''
+          OR (
+              TRIM(sr.value) NOT REGEXP '^-?[0-9]+$'
+              AND LOWER(TRIM(sr.value)) NOT IN ({{SCOPE_PERIOD_SENTINEL_LIST}})
+          )
+      )
+    GROUP BY sr.event_participantsFK
+) bad ON bad.event_participants_id = ep.id
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN scope_result sr ON sr.event_participantsFK = ep.id AND sr.del = 'no'
+                    AND sr.scope_data_typeFK IN ({{SCOPE_PERIOD_DATA_TYPE_LIST}})
+JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+                   AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;
