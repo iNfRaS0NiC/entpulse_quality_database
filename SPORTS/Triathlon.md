@@ -286,6 +286,32 @@ contract, so `GLOBAL-DQ-077` has an empty eligible population here by constructi
 `NUMERIC_DATA_TYPE_LIST` stays empty. Recording the field would add a check whose coverage
 is permanently zero, which reads as misdirected scope rather than as clean data.
 
+**The mixed relay statistics rank teams without recording them.** Twenty-one statistics enter
+every one of their athletes on a place shared with the same number of others while no athlete
+in them carries a `1429 Team` value at all, which `GLOBAL-DQ-098` reports through
+`Triathlon-DQ-085`. Eighteen of them group by four and their athlete counts are all divisible
+by four - 8 through 88, so two to twenty-two teams - which matches the World Triathlon Mixed
+Relay format exactly: four athletes per team, two men and two women, each racing a
+super-sprint leg. The grouping is therefore the format rather than an artefact, and the
+missing link is a defect. The remaining three group by three, carry the `Standard Distance`
+discipline and a single-gender name, and match no relay format the sport runs; they are a
+separate question rather than the same finding.
+
+**`GLOBAL-DQ-095` is deliberately not instantiated for this sport, and the reason is
+mechanical rather than cautious.** That check reads how many participants may legitimately
+hold one place from the same `1429 Team` field, so where the field is unused it can only
+assume one and reports every relay member beyond the first - fifty-two findings, almost all
+of them the format. Populating the field fixes the check without touching it: the team size
+becomes readable, four holders of a place become legitimate, and only a genuine duplicate
+survives. Instantiating it before that produces a list nobody can act on, so the order is
+fixed - the Team field first, the check second.
+
+Nothing mechanical enforces that order. Every parameter `GLOBAL-DQ-095` declares is recorded
+for this sport, so the runner will execute it on request and the registry would accept a row
+for it; this paragraph is the only guard. Re-run `Triathlon-DQ-085` to test whether the block
+still applies: while it reports, the Team field is still unused and `GLOBAL-DQ-095` still
+reports the format instead of a defect.
+
 <!-- MANUAL PASTE ZONE: 50 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values
