@@ -1827,3 +1827,73 @@ WHERE e.del = 'no'
   AND LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}, {{WINNER_AWAY_VALUE_LIST}})
 
 ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-090
+    -- Name - EVENT_RESULT_MIRRORED_SCORE_TYPES_DISAGREE
+    -- What it does: Finds active event participants for whom the two result types the sport stores the same figure in do not agree, separating a pair holding two different values from a pair where one of the two is absent altogether, with both stored values and event context, together with a coverage count of all eligible event participants holding at least one of the two result types.
+    CASE
+        WHEN r_primary.id IS NULL THEN 'PRIMARY_SCORE_MISSING'
+        WHEN r_mirror.id IS NULL THEN 'MIRROR_SCORE_MISSING'
+        ELSE 'MIRRORED_VALUES_DIFFER'
+    END AS check_type,
+    ep.id AS event_participants_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    p.name AS participant_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    e.status_descFK,
+    r_primary.value AS primary_value,
+    r_mirror.value AS mirror_value,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+-- Both joins are left outer, because one of the pair being absent is the finding rather than
+-- a reason to drop the row: an absent result row and a differing value are separate storage
+-- states (DB-SEM-002) and they are repaired differently.
+LEFT JOIN result r_primary ON r_primary.event_participantsFK = ep.id AND r_primary.del = 'no'
+                          AND r_primary.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+LEFT JOIN result r_mirror  ON r_mirror.event_participantsFK = ep.id AND r_mirror.del = 'no'
+                          AND r_mirror.result_typeFK = {{RESULT_MIRROR_SCORE_TYPE_ID}}
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND (r_primary.id IS NOT NULL OR r_mirror.id IS NOT NULL)
+  AND (
+      r_primary.id IS NULL
+      OR r_mirror.id IS NULL
+      OR TRIM(r_primary.value) <> TRIM(r_mirror.value)
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+             AND r.result_typeFK IN ({{RESULT_FINAL_SCORE_TYPE_ID}}, {{RESULT_MIRROR_SCORE_TYPE_ID}})
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;

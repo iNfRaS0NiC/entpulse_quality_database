@@ -264,5 +264,6 @@ Full SQL never belongs here. It is stored in one sport-scoped file under
 | Curling-DQ-066 | Curling | GLOBAL-DQ-085 | WRONG_RESULTS | EVENT_RESULTS | EVENT_SCOPE_PERIOD_SUM_MISMATCH_TOTAL | `GLOBAL_DQ/RESULTS.sql` | Approved |
 | Curling-DQ-067 | Curling | GLOBAL-DQ-086 | WRONG_RESULTS | EVENT_RESULTS | EVENT_SCOPE_PERIOD_VALUE_UNRECOGNISED | `GLOBAL_DQ/RESULTS.sql` | Approved |
 | Curling-DQ-068 | Curling | GLOBAL-DQ-089 | WRONG_STRUCTURE | EVENT | EVENT_EXTRA_PERIOD_STATUS_MISMATCH | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
+| Curling-DQ-069 | Curling | GLOBAL-DQ-090 | WRONG_RESULTS | EVENT_RESULTS | EVENT_RESULT_MIRRORED_SCORE_TYPES_DISAGREE | `GLOBAL_DQ/RESULTS.sql` | Approved |
 
 <!-- MANUAL PASTE ZONE: POWERBI DQ REGISTRY — insert approved additions immediately before this marker; do not move or delete it. -->

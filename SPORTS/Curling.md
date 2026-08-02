@@ -89,9 +89,25 @@ status code against one another.
 `GLOBAL-DISCOVERY-026` confirms a single value shape for each: digits only, with no empty
 value, no decimal and no text anywhere in the active population.
 
-`1 Ordinary time` is present but effectively unused, in a handful of events against the full
-population of the other three. A check whose eligible population requires it audits those few
-events and its coverage count says so.
+`4 Final Result` and `6 Running score` are not two figures but one stored twice. Across the
+whole active population they hold the same value for effectively every participant, so the
+pair is a duplicate by design and any disagreement between them is a defect rather than a
+distinction. `GLOBAL-DQ-090` asserts that, and either side being absent is the same defect
+caught earlier.
+
+`1 Ordinary time` is an anomaly rather than a field the sport uses. It occurs on a handful of
+events only, and almost every one of them carries the `Finished after awarded win` status, so
+it reads as a by-product of how an awarded win is recorded rather than as a result the sport
+maintains. No rule can be asserted on it until what writes it is known; a check whose eligible
+population requires it audits those few events and its coverage count says so.
+
+`Finished after awarded win` is where this sport's result defects concentrate, and three
+independent checks converge on it. On such an event `4 Final Result` is either absent or left
+at zero while `6 Running score` and the end-by-end scope values carry the play that actually
+happened. That single editorial gap is visible as a mirrored-pair disagreement
+(`GLOBAL-DQ-090`), as an end sum that does not reach its total (`GLOBAL-DQ-085`) and, where
+both sides are left at zero, as a tie no head-to-head sport should record (`GLOBAL-DQ-084`).
+The same two events are reported by all three.
 
 The sport uses no status vocabulary on a result. `RESULT_COMMENT_VALUE_LIST` is therefore
 recorded as the empty list `''`, following the convention `GLOBAL_DQ/README.md` records for
