@@ -2468,3 +2468,132 @@ WHERE s.del = 'no'
   -- AND tt.id = <tournament_template_id>
 
 ORDER BY sort_order;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-098
+    -- Name - COMP.RANK_TEAM_FIELD_UNUSED_IN_TEAM_STATISTIC
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, in which every athlete shares their place with the same number of others and no athlete carries a Team value at all, so the statistic is scoring teams of that size without recording which team each athlete belongs to, with the number of athletes, how many places they occupy and how many hold each, and template and tournament name context, together with a coverage count of all eligible statistics holding at least one athlete with a numeric Rank.
+    'TEAM_FIELD_UNUSED_FOR_WHOLE_FIELD' AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.athlete_count,
+    x.shared_place_count,
+    x.holders_per_shared_place,
+    x.shared_places,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Several athletes on one place is what a team competition looks like from the athlete side,
+-- and the Team data field is what says which team each of them was on. A statistic showing
+-- the first without the second has lost that link entirely, and the loss is invisible to
+-- GLOBAL-DQ-064, whose eligible population is the statistic that uses the field at all - a
+-- statistic using it for nobody is excluded there rather than reported.
+-- It also explains a finding rather than repeating one: GLOBAL-DQ-095 reads how many
+-- participants a place may legitimately hold from this same field, so where the field is
+-- unused it can only assume one and reports every team member beyond the first. Populating
+-- the field is what fixes both, which is why this names the cause rather than loosening the
+-- other check.
+-- Restricted to athlete participants, because a statistic ranking teams shares a place by a
+-- different mechanism - the joint place a competition stops ranking at - and a team does not
+-- belong to a team.
+-- What is asserted is deliberately narrow: every athlete in a group, and every group the
+-- same size. That is a relay or team format and nothing else. Sharing that covers only part
+-- of the field, or covers it in ragged groups, is the joint placing an elimination round
+-- produces - everyone knocked out in one round entered on one place - and reporting it here
+-- would name a convention rather than a missing link, which is the mistake this check exists
+-- to avoid making on behalf of GLOBAL-DQ-095.
+FROM (
+    SELECT
+        st.statistic_id,
+        st.statistic_name,
+        st.template_name,
+        st.tournament_name,
+        st.athlete_count,
+        COUNT(*) AS shared_place_count,
+        MIN(rk.holder_count) AS holders_per_shared_place,
+        SUBSTRING(GROUP_CONCAT(CONCAT('rank ', rk.rank_value, ' x', rk.holder_count)
+                               ORDER BY rk.rank_value SEPARATOR ', '), 1, 200) AS shared_places
+    FROM (
+        SELECT
+            sp.statisticFK AS statistic_id,
+            CAST(TRIM(sd.value) AS SIGNED) AS rank_value,
+            COUNT(DISTINCT sp.id) AS holder_count
+        FROM statistic sx
+        JOIN tournament tx ON tx.id = sx.objectFK AND tx.del = 'no'
+        JOIN tournament_template ttx ON ttx.id = tx.tournament_templateFK AND ttx.del = 'no'
+        JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = sx.id AND sp.del = 'no'
+        JOIN participant px ON px.id = sp.participantFK AND px.del = 'no' AND px.type = 'athlete'
+        JOIN statistic_data{{SHARD_ID}} sd ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+             AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+             AND sd.del = 'no'
+             AND sd.value IS NOT NULL
+             AND TRIM(sd.value) REGEXP '^[1-9][0-9]*$'
+        WHERE sx.del = 'no'
+          AND sx.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+          AND sx.object_typeFK = 3
+          AND ttx.sportFK = {{SPORT_ID}}
+          AND (ttx.name IS NULL OR ttx.name NOT LIKE '%(IOC)%')
+          -- AND ttx.id = <tournament_template_id>
+        GROUP BY sp.statisticFK, CAST(TRIM(sd.value) AS SIGNED)
+        HAVING COUNT(DISTINCT sp.id) > 1
+    ) rk
+    JOIN (
+        SELECT
+            sy.id AS statistic_id,
+            sy.name AS statistic_name,
+            tty.name AS template_name,
+            ty.name AS tournament_name,
+            COUNT(DISTINCT sp2.id) AS athlete_count,
+            COUNT(DISTINCT CASE WHEN sdt.value IS NOT NULL AND TRIM(sdt.value) <> ''
+                                THEN sp2.id END) AS team_users
+        FROM statistic sy
+        JOIN tournament ty ON ty.id = sy.objectFK AND ty.del = 'no'
+        JOIN tournament_template tty ON tty.id = ty.tournament_templateFK AND tty.del = 'no'
+        JOIN statistic_participants{{SHARD_ID}} sp2 ON sp2.statisticFK = sy.id AND sp2.del = 'no'
+        JOIN participant py ON py.id = sp2.participantFK AND py.del = 'no' AND py.type = 'athlete'
+        LEFT JOIN statistic_data{{SHARD_ID}} sdt ON sdt.statistic_participants{{SHARD_ID}}FK = sp2.id
+             AND sdt.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+             AND sdt.del = 'no'
+        WHERE sy.del = 'no'
+          AND sy.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+          AND sy.object_typeFK = 3
+          AND tty.sportFK = {{SPORT_ID}}
+          AND (tty.name IS NULL OR tty.name NOT LIKE '%(IOC)%')
+          -- AND tty.id = <tournament_template_id>
+        GROUP BY sy.id, sy.name, tty.name, ty.name
+        HAVING COUNT(DISTINCT CASE WHEN sdt.value IS NOT NULL AND TRIM(sdt.value) <> ''
+                                   THEN sp2.id END) = 0
+    ) st ON st.statistic_id = rk.statistic_id
+    GROUP BY st.statistic_id, st.statistic_name, st.template_name, st.tournament_name, st.athlete_count
+    HAVING COUNT(DISTINCT rk.holder_count) = 1
+       AND COUNT(*) * MIN(rk.holder_count) = st.athlete_count
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no' AND p.type = 'athlete'
+JOIN statistic_data{{SHARD_ID}} sd ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+     AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+     AND sd.del = 'no'
+     AND sd.value IS NOT NULL
+     AND TRIM(sd.value) REGEXP '^[1-9][0-9]*$'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+
+ORDER BY sort_order, shared_place_count DESC;
