@@ -231,12 +231,17 @@ Three data fields are present but marginal, and each is confined to IOC-purpose 
   statistics statement excludes IOC-purpose templates, `GLOBAL-DQ-077` has an empty eligible
   population here and `NUMERIC_DATA_TYPE_LIST` stays unrecorded.
 - `1273 Comment` resolves to the single value `DNF`.
-- `1278 Qualification rank` carries one value, and that value is a medal word rather than a
-  rank.
+- `1278 Qualification rank` carries one value in the whole sport, and that value is a medal
+  word rather than a rank. It is a defect and not a second meaning the field carries: the row
+  is the athlete Lajos Belleli in statistic `325855`, European Championships B-Division Male
+  2011, whose `1278` reads `silver` while his `1277 Medal` already reads `silver` and his
+  `1270 Rank` correctly reads `2`. The value is a copy of the medal that landed in the wrong
+  field, so the field is unused in this sport rather than differently used.
 
 One statistic exists at owner level 4 (tournament_stage) rather than 3. It is named `test`,
-holds no participant row, and is active. The sport's real statistic layer is owner level 3
-alone.
+holds no participant row in any state, and is active, sitting on the Winter Olympics 2022
+stage. It is not expected to exist and is a defect; owner level 4 has no intended use in this
+sport, whose real statistic layer is owner level 3 alone.
 
 <!-- MANUAL PASTE ZONE: 10 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -360,8 +365,13 @@ a pair and never as a standalone classification, which is why the sport populate
 event-level rank.
 
 Most active events resolve to no venue, through neither their own `venue_object` link nor
-their tournament stage's. `GLOBAL-DQ-074` therefore reports the large majority of the sport,
-and the finding to read is the proportion rather than the individual event.
+their tournament stage's: 16764 of 17920, against 739 carrying their own link and 417
+inheriting one from their stage. That is expected rather than defective. Venue is newly
+populated in this database and the backfill is still ahead, so the absence records how far it
+has reached rather than something missing that was once there. `GLOBAL-DQ-074` stays
+instantiated for exactly that reason - it is the measure of the backfill's progress, and the
+figure to read is the proportion rather than the individual event. It will start reading as a
+defect only once the population is expected to be complete.
 
 **The sport records no winner.** The `Winner` event property, which 30 other sports use to
 name the winning side, does not occur on a single Curling event. Nor does any result type
@@ -390,12 +400,9 @@ documented before it, which do skip 2020.
 
 ## Open questions
 
-- Whether the single `1278 Qualification rank` value, which holds a medal word rather than a
-  rank, is an isolated defect or a second meaning the field carries in this sport.
-- Whether the active, participant-less statistic named `test` at owner level 4 is expected to
-  exist, and whether owner level 4 has any intended use for this sport.
-- Whether the events that resolve to no venue are expected to carry one. The measurement came
-  from a DQ template rather than a discovery statement, so it sizes the population without
-  establishing what the sport intends.
+All three questions this file opened with are answered and have moved to the sections that
+own them: the stray `1278 Qualification rank` value and the `test` statistic at owner level 4
+are both defects and are recorded under Statistics, and the events resolving to no venue are
+expected at this stage of the venue backfill and are recorded under storage semantics.
 
 <!-- MANUAL PASTE ZONE: 10 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
