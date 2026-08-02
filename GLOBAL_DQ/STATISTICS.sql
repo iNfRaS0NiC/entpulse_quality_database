@@ -2597,3 +2597,184 @@ WHERE s.del = 'no'
   -- AND tt.id = <tournament_template_id>
 
 ORDER BY sort_order, shared_place_count DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-099
+    -- Name - COMP.RANK_VALUE_BELONGS_TO_ANOTHER_FIELD
+    -- What it does: Finds active statistic-participant data rows of the selected statistic type, excluding IOC-purpose templates, whose value is not merely the wrong shape for the field holding it but is exactly a value another field owns, a medal word stored anywhere but the Medal field or a plain place number stored in it, separating the two, with the field, its name, the stored value and statistic, template and tournament name context, together with a coverage count of all eligible statistic-participant data rows carrying an active, non-empty value.
+    CASE
+        WHEN sd.statistic_data_typeFK = {{DATA_MEDAL_TYPE_ID}} THEN 'RANK_NUMBER_IN_MEDAL_FIELD'
+        ELSE 'MEDAL_WORD_OUTSIDE_MEDAL_FIELD'
+    END AS check_type,
+    sp.id AS statistic_participants_id,
+    s.id AS statistic_id,
+    s.name AS statistic_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    p.name AS participant_name,
+    sd.statistic_data_typeFK AS data_type_id,
+    COALESCE(sdt.name, CAST(sd.statistic_data_typeFK AS CHAR)) AS data_type_name,
+    sd.value AS stored_value,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Every value check in this catalogue asks whether a value fits the field holding it -
+-- GLOBAL-DQ-012 for Rank, -027 for Medal, -057 for Comment, -077 for a numeric field. None
+-- of them asks whose value it is, so a medal word in a rank field is reported as "not a
+-- rank" and the reader is left to notice that it is a perfectly good medal one column away.
+-- That difference is the difference between correcting a value and moving it, which is why
+-- this is worth its own statement rather than another shape test.
+-- Only exact matches count, on the closed vocabulary the medal checks already assert
+-- everywhere: gold, silver and bronze, compared after trimming and lowercasing. A field
+-- whose text merely contains one of the words is left alone, because a free-text comment
+-- legitimately might.
+FROM statistic_data{{SHARD_ID}} sd
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.id = sd.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
+JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+LEFT JOIN statistic_data_type sdt ON sdt.id = sd.statistic_data_typeFK
+WHERE sd.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND sd.value IS NOT NULL
+  AND TRIM(sd.value) <> ''
+  AND (
+      (sd.statistic_data_typeFK <> {{DATA_MEDAL_TYPE_ID}}
+       AND LOWER(TRIM(sd.value)) IN ('gold', 'silver', 'bronze'))
+      OR
+      (sd.statistic_data_typeFK = {{DATA_MEDAL_TYPE_ID}}
+       AND TRIM(sd.value) REGEXP '^[0-9]+$')
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sd.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic_data{{SHARD_ID}} sd
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.id = sd.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
+JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE sd.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND sd.value IS NOT NULL
+  AND TRIM(sd.value) <> ''
+
+ORDER BY sort_order;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-100
+    -- Name - COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, carrying a discipline relation naming a discipline that no active event under their own tournament was contested in, so the statistic claims a format its competition never ran, with the disciplines claimed, the disciplines the tournament actually contested and template and tournament name context, together with a coverage count of all eligible statistics carrying a discipline whose tournament holds at least one event carrying one.
+    'DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT' AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.claimed_disciplines,
+    x.contested_disciplines,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Asked against the tournament's own events rather than against the statistic's name, which
+-- is what makes it global: a name-to-discipline map has to be written per sport and is the
+-- kind of parameter GLOBAL_DQ/README.md warns turns one template into a configuration
+-- exercise. The events are the record of what was actually contested, so the statistic is
+-- measured against its own competition and no vocabulary is needed.
+-- A tournament running several disciplines is not reported for the difference between them:
+-- the claim only has to appear somewhere among the events. What is reported is a claim no
+-- event supports at all. A tournament whose events carry no discipline is outside the
+-- eligible population rather than a finding, because there is nothing to measure against -
+-- that gap is GLOBAL-DQ-015.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        GROUP_CONCAT(DISTINCT dc.name ORDER BY dc.name SEPARATOR ', ') AS claimed_disciplines,
+        (SELECT GROUP_CONCAT(DISTINCT de.name ORDER BY de.name SEPARATOR ', ')
+           FROM tournament_stage ts2
+           JOIN event e2 ON e2.tournament_stageFK = ts2.id AND e2.del = 'no'
+           JOIN object_discipline od2 ON od2.object_typeFK = 5 AND od2.objectFK = e2.id AND od2.del = 'no'
+           JOIN discipline de ON de.id = od2.disciplineFK AND de.del = 'no'
+          WHERE ts2.tournamentFK = t.id AND ts2.del = 'no'
+        ) AS contested_disciplines,
+        SUM(CASE WHEN NOT EXISTS (
+                SELECT 1
+                FROM tournament_stage ts3
+                JOIN event e3 ON e3.tournament_stageFK = ts3.id AND e3.del = 'no'
+                JOIN object_discipline od3 ON od3.object_typeFK = 5 AND od3.objectFK = e3.id AND od3.del = 'no'
+                WHERE ts3.tournamentFK = t.id AND ts3.del = 'no'
+                  AND od3.disciplineFK = od.disciplineFK
+            ) THEN 1 ELSE 0 END) AS unsupported_claims
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 83 AND od.objectFK = s.id AND od.del = 'no'
+    JOIN discipline dc ON dc.id = od.disciplineFK AND dc.del = 'no'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+      AND EXISTS (
+          SELECT 1
+          FROM tournament_stage ts4
+          JOIN event e4 ON e4.tournament_stageFK = ts4.id AND e4.del = 'no'
+          JOIN object_discipline od4 ON od4.object_typeFK = 5 AND od4.objectFK = e4.id AND od4.del = 'no'
+          WHERE ts4.tournamentFK = t.id AND ts4.del = 'no'
+      )
+    GROUP BY s.id, s.name, tt.name, t.name, t.id
+    HAVING SUM(CASE WHEN NOT EXISTS (
+                SELECT 1
+                FROM tournament_stage ts5
+                JOIN event e5 ON e5.tournament_stageFK = ts5.id AND e5.del = 'no'
+                JOIN object_discipline od5 ON od5.object_typeFK = 5 AND od5.objectFK = e5.id AND od5.del = 'no'
+                WHERE ts5.tournamentFK = t.id AND ts5.del = 'no'
+                  AND od5.disciplineFK = od.disciplineFK
+            ) THEN 1 ELSE 0 END) > 0
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 83 AND od.objectFK = s.id AND od.del = 'no'
+JOIN discipline dc ON dc.id = od.disciplineFK AND dc.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM tournament_stage ts4
+      JOIN event e4 ON e4.tournament_stageFK = ts4.id AND e4.del = 'no'
+      JOIN object_discipline od4 ON od4.object_typeFK = 5 AND od4.objectFK = e4.id AND od4.del = 'no'
+      WHERE ts4.tournamentFK = t.id AND ts4.del = 'no'
+  )
+
+ORDER BY sort_order;
