@@ -1724,3 +1724,106 @@ WHERE ep.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-088
+    -- Name - EVENT_WINNER_CONTRADICTS_SCORE
+    -- What it does: Finds active finished events of a head-to-head sport whose recorded Winner names the side holding the lower score, or names a side at all while the two scores are equal, with the winner value, both scores and template, tournament, stage and round context, together with a coverage count of all eligible finished events holding a side-naming Winner and exactly two numeric values of the deciding score result type.
+    CASE
+        WHEN x.score_1 = x.score_2 THEN 'WINNER_NAMED_ON_EQUAL_SCORE'
+        ELSE 'WINNER_CONTRADICTS_SCORE'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    e.round_typeFK,
+    pr.value AS winner_value,
+    x.score_1,
+    x.score_2,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
+                AND pr.name = 'Winner' AND pr.del = 'no'
+-- event_participants.number is the side discriminator: 1 is the home side and 2 the away
+-- side, confirmed by the agreement between the stored Winner and the higher score wherever
+-- both exist. The vocabulary naming those two sides differs per sport - Home/Away, a/b, A/B
+-- - so it is two declared lists rather than a literal.
+JOIN (
+    SELECT
+        ep.eventFK AS event_id,
+        MAX(CASE WHEN ep.number = 1 THEN CAST(TRIM(r.value) AS SIGNED) END) AS score_1,
+        MAX(CASE WHEN ep.number = 2 THEN CAST(TRIM(r.value) AS SIGNED) END) AS score_2
+    FROM result r
+    JOIN event_participants ep ON ep.id = r.event_participantsFK AND ep.del = 'no'
+    JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    WHERE r.del = 'no'
+      AND r.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND TRIM(r.value) REGEXP '^-?[0-9]+$'
+      AND ep.number IN (1, 2)
+    GROUP BY ep.eventFK
+    HAVING COUNT(*) = 2
+) x ON x.event_id = e.id
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}, {{WINNER_AWAY_VALUE_LIST}})
+  AND (
+      x.score_1 = x.score_2
+      OR (LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}) AND x.score_1 < x.score_2)
+      OR (LOWER(TRIM(pr.value)) IN ({{WINNER_AWAY_VALUE_LIST}}) AND x.score_2 < x.score_1)
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
+                AND pr.name = 'Winner' AND pr.del = 'no'
+JOIN (
+    SELECT ep.eventFK AS event_id
+    FROM result r
+    JOIN event_participants ep ON ep.id = r.event_participantsFK AND ep.del = 'no'
+    JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    WHERE r.del = 'no'
+      AND r.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND TRIM(r.value) REGEXP '^-?[0-9]+$'
+      AND ep.number IN (1, 2)
+    GROUP BY ep.eventFK
+    HAVING COUNT(*) = 2
+) x ON x.event_id = e.id
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}, {{WINNER_AWAY_VALUE_LIST}})
+
+ORDER BY sort_order, event_startdate DESC;

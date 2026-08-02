@@ -288,6 +288,22 @@ Every active event resolves to a `finished` status type, under four status descr
 Finished, Finished AEI, Finished after awarded win and Finished AET. No not-started or in-play
 status occurs, so a check keyed on one audits nothing here.
 
+`Finished AEI` is the status the sport uses for a game decided in an extra end, and the
+`end_extra` scope column is the independent record of the same fact. The two are meant to
+agree, and where they do not the disagreement is one-directional: the extra end is scored but
+the status stays plain `Finished`, far more often than the reverse. `Finished AET` also occurs
+against a scored extra end, which is the wrong member of the pair — the sport plays an extra
+end, not extra time.
+
+The number of ends carrying a score cannot substitute for the `end_extra` column here. Nine
+scored ends is either an eight-end game that went to an extra end or a ten-end game conceded
+on the ninth, and nothing in the count separates the two. `GLOBAL-DQ-089` therefore reads the
+extra-end column and never a period count.
+
+`Finished after awarded win` describes how the game ended rather than whether it went to an
+extra end, and both live in `status_descFK`. A game that went to an extra end and was then
+awarded can carry only one of the two, so the field cannot express both at once.
+
 <!-- MANUAL PASTE ZONE: 10 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
@@ -301,6 +317,18 @@ event-level rank.
 Most active events resolve to no venue, through neither their own `venue_object` link nor
 their tournament stage's. `GLOBAL-DQ-074` therefore reports the large majority of the sport,
 and the finding to read is the proportion rather than the individual event.
+
+**The sport records no winner.** The `Winner` event property, which 30 other sports use to
+name the winning side, does not occur on a single Curling event. Nor does any result type
+carry the outcome: the sport stores `1 Ordinary time`, `4 Final Result`, `6 Running score` and
+`501 Medal`, and none of them names a side. The winner is therefore not stored at all here —
+it is only derivable, by comparing the two `4 Final Result` values, and `501 Medal` marks a
+podium at the end of a competition rather than the outcome of a match.
+
+That makes `GLOBAL-DQ-087` and `GLOBAL-DQ-088` uninstantiable for this sport today, and the
+`WINNER_*` parameters are recorded as not applicable for that reason rather than left blank.
+The reason is about what the sport stores now, not about what it could store: if the property
+starts being written, the parameters are what change, not the checks.
 
 The sport uses no placeholder country. Every country reached from a tournament stage's direct
 country column and every country reached from a statistic's `object_relation` (83→33) resolves

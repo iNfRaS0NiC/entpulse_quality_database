@@ -1810,3 +1810,147 @@ WHERE ts.del = 'no'
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-087
+    -- Name - EVENT_WINNER_MISSING_OR_INVALID
+    -- What it does: Finds active finished events of a head-to-head sport that record no active Winner property, or record one whose value is empty or outside the side vocabulary the sport is confirmed to use, separating the three, with the stored value and template, tournament, stage and round context, together with a coverage count of all eligible active finished events.
+    CASE
+        WHEN pr.id IS NULL THEN 'WINNER_MISSING'
+        WHEN TRIM(pr.value) = '' THEN 'WINNER_VALUE_EMPTY'
+        ELSE 'WINNER_VALUE_INVALID'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    e.round_typeFK,
+    e.status_descFK,
+    pr.value AS stored_value,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+-- The Winner side is stored as an event property rather than on either result row, so a
+-- missing one is an absent row and not an empty value: DB-SEM-002 makes those different
+-- states, and the join is left outer precisely so the absent case is reportable at all.
+LEFT JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
+                     AND pr.name = 'Winner' AND pr.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND (
+      pr.id IS NULL
+      OR TRIM(pr.value) = ''
+      OR LOWER(TRIM(pr.value)) NOT IN ({{WINNER_VALUE_LIST}})
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-089
+    -- Name - EVENT_EXTRA_PERIOD_STATUS_MISMATCH
+    -- What it does: Finds active events whose extra competition period disagrees with the detailed status they carry, either because the extra period holds a score while the status does not say the event went to one, or because the status says it did while no extra period was scored, separating the two, with the stored status and template, tournament, stage and round context, together with a coverage count of all eligible active events carrying an active scope container of the selected type.
+    CASE
+        WHEN extra.event_id IS NOT NULL THEN 'EXTRA_PERIOD_PLAYED_STATUS_NOT_MARKED'
+        ELSE 'STATUS_MARKED_WITHOUT_EXTRA_PERIOD'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    e.round_typeFK,
+    e.status_type,
+    e.status_descFK,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+-- Whether the extra period was played is read from its own scope column rather than from a
+-- count of periods carrying a value: a period count cannot tell an extra period from a
+-- contest that ended early, because both leave the same number of scored periods behind.
+LEFT JOIN (
+    SELECT DISTINCT es.eventFK AS event_id
+    FROM scope_result sr
+    JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+                       AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+    JOIN event e2 ON e2.id = es.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    WHERE sr.del = 'no'
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND sr.scope_data_typeFK = {{SCOPE_EXTRA_PERIOD_DATA_TYPE_ID}}
+      AND TRIM(sr.value) REGEXP '^-?[0-9]+$'
+) extra ON extra.event_id = e.id
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1 FROM event_scope esx
+      WHERE esx.eventFK = e.id AND esx.del = 'no'
+        AND esx.scope_typeFK = {{SCOPE_TYPE_ID}}
+  )
+  AND (
+      (extra.event_id IS NOT NULL AND e.status_descFK NOT IN ({{EXTRA_PERIOD_STATUS_DESC_LIST}}))
+      OR (extra.event_id IS NULL AND e.status_descFK IN ({{EXTRA_PERIOD_STATUS_DESC_LIST}}))
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1 FROM event_scope esx
+      WHERE esx.eventFK = e.id AND esx.del = 'no'
+        AND esx.scope_typeFK = {{SCOPE_TYPE_ID}}
+  )
+
+ORDER BY sort_order, event_startdate DESC;
