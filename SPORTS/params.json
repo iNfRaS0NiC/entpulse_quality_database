@@ -34,6 +34,8 @@
     "RESULT_FULL_TIME_TYPE_ID": 557,
     "STALE_NOT_STARTED_DAYS": 30,
     "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+    "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', '1/8', '1/16', '1/32'",
+    "GROUP_ROUND_NAME_LIST": "'preliminary'",
     "ROUND_TYPE_LIST": "3, 9, 38, 171, 173, 176, 178, 179, 180, 184, 185, 188, 189, 204, 320",
     "NUMERIC_RESULT_TYPE_LIST": "102",
     "SERIES_MIN_YEARS": 3,
@@ -41,7 +43,18 @@
     "DUPLICATE_KEY_USES_CALENDAR_DAY": 0,
     "SERIES_SKIP_YEARS": "2020",
     "_notApplicable": {
-      "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes"
+      "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
+      "RESULT_FINAL_SCORE_TYPE_ID": "the sport is not head to head; an event is a field ranked against itself rather than a pair holding one deciding score",
+      "RESULT_MIRROR_SCORE_TYPE_ID": "the sport is not head to head; no result type mirrors a deciding score",
+      "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event, so no separate round decides bronze",
+      "WINNER_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+      "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+      "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+      "SCOPE_TYPE_ID": "the sport's only scope types are checkpoint splits (101 checkpoint1, 102 checkpoint2, 103 checkpoint3) on 22 containers; none holds a period-by-period score summing to a total",
+      "SCOPE_PERIOD_DATA_TYPE_LIST": "the scope layer holds checkpoint splits rather than competition periods, so there is no period set to list",
+      "SCOPE_PERIOD_SENTINEL_LIST": "the scope layer holds checkpoint splits rather than competition periods, so it has no vocabulary for a period that was not played",
+      "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "the sport plays no extra period and stores no column for one",
+      "EXTRA_PERIOD_STATUS_DESC_LIST": "the sport plays no extra period, so no detailed status marks one"
     }
   },
   "Triathlon": {
@@ -79,6 +92,8 @@
     "RESULT_FULL_TIME_TYPE_ID": 557,
     "STALE_NOT_STARTED_DAYS": 30,
     "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+    "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', '1/8', '1/16', '1/32'",
+    "GROUP_ROUND_NAME_LIST": "'preliminary'",
     "ROUND_TYPE_LIST": "9, 173, 178, 179, 180, 204, 267, 283, 284",
     "SERIES_MIN_YEARS": 3,
     "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
@@ -86,7 +101,18 @@
     "SERIES_SKIP_YEARS": "2020",
     "_notApplicable": {
       "NUMERIC_RESULT_TYPE_LIST": "no result type carries a measured quantity; every confirmed type is a place, a time, a status vocabulary or a medal code",
-      "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes"
+      "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
+      "RESULT_FINAL_SCORE_TYPE_ID": "the sport is not head to head; an event is a field ranked against itself rather than a pair holding one deciding score",
+      "RESULT_MIRROR_SCORE_TYPE_ID": "the sport is not head to head; no result type mirrors a deciding score",
+      "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event, so no separate round decides bronze",
+      "WINNER_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+      "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+      "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+      "SCOPE_TYPE_ID": "the sport writes no active event_scope row at all, so it has no scope layer to read",
+      "SCOPE_PERIOD_DATA_TYPE_LIST": "the sport writes no active event_scope row at all",
+      "SCOPE_PERIOD_SENTINEL_LIST": "the sport writes no active event_scope row at all",
+      "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "the sport plays no extra period and stores no column for one",
+      "EXTRA_PERIOD_STATUS_DESC_LIST": "the sport plays no extra period, so no detailed status marks one"
     }
   },
   "Curling": {
