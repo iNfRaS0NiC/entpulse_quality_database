@@ -725,3 +725,94 @@ WHERE s.del = 'no'
   -- AND tt.id = <tournament_template_id>
 
 ORDER BY sort_order;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Curling-DQ-084
+    -- Name - EVENT_DUPLICATE_BY_RESULT_ACROSS_DATES
+    -- What it does: Finds groups of more than one active Curling event inside one tournament stage that record the identical result - the same two teams holding the same score each - while sitting on different calendar days, so the same game appears twice under dates that keep it out of the metadata duplicate check, with the scores, the dates and names the group carries and how many events it holds, together with a coverage count of all eligible active events holding exactly two participants with a numeric Final Result.
+    'DUPLICATE_BY_RESULT_ACROSS_DATES' AS check_type,
+    d.template_name,
+    d.tournament_name,
+    d.stage_id AS tournament_stage_id,
+    d.stage_name,
+    GROUP_CONCAT(DISTINCT d.event_name ORDER BY d.event_name SEPARATOR ' | ') AS event_names,
+    GROUP_CONCAT(DISTINCT DATE(d.startdate) ORDER BY DATE(d.startdate) SEPARATOR ', ') AS event_dates,
+    d.score_key,
+    COUNT(*) AS duplicate_event_count,
+    GROUP_CONCAT(d.event_id ORDER BY d.event_id) AS event_ids,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The key is the result itself, tied to the side that holds it: a participant id joined to
+-- its own score, ordered by participant so the pairing reads the same whichever side was
+-- entered first. That is what makes the check safe where a plain participant key is not - a
+-- double round robin has the same two teams meeting twice inside one stage by design, and
+-- only the scores separate a second meeting from a second copy. Two curling games between
+-- one pair ending on the same score each way is possible; it is rare enough to be worth
+-- reading, and the row carries the scores so the reader decides.
+-- Restricted to groups spanning more than one calendar day, because a group inside one day
+-- is already GLOBAL-DQ-062 and would otherwise be reported twice under two names. The stage
+-- bounds the group so a preliminary meeting and a play-off meeting are never compared.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate,
+        ts.id AS stage_id,
+        ts.name AS stage_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        GROUP_CONCAT(CONCAT(ep.participantFK, '=', TRIM(r.value))
+                     ORDER BY ep.participantFK SEPARATOR '; ') AS score_key
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                 AND r.result_typeFK = 4
+                 AND r.value IS NOT NULL
+                 AND TRIM(r.value) REGEXP '^-?[0-9]+$'
+    WHERE e.del = 'no'
+      AND tt.sportFK = 10
+      AND e.startdate IS NOT NULL
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, ts.id, ts.name, tt.name, t.name
+    HAVING COUNT(*) = 2
+) d
+GROUP BY d.template_name, d.tournament_name, d.stage_id, d.stage_name, d.score_key
+HAVING COUNT(*) > 1
+   AND COUNT(DISTINCT DATE(d.startdate)) > 1
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(*) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT e.id
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                 AND r.result_typeFK = 4
+                 AND r.value IS NOT NULL
+                 AND TRIM(r.value) REGEXP '^-?[0-9]+$'
+    WHERE e.del = 'no'
+      AND tt.sportFK = 10
+      AND e.startdate IS NOT NULL
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id
+    HAVING COUNT(*) = 2
+) c
+
+ORDER BY sort_order, duplicate_event_count DESC;

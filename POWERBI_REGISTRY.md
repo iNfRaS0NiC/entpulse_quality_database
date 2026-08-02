@@ -279,5 +279,6 @@ Full SQL never belongs here. It is stored in one sport-scoped file under
 | Curling-DQ-081 | Curling | GLOBAL-DQ-097 | WRONG_STRUCTURE | EVENT | EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
 | Curling-DQ-082 | Curling | — | WRONG_DISCIPLINE | EVENT_RESULTS | EVENT_SCOPE_CONTAINER_SHAPE_CONTRADICTS_DISCIPLINE | `POWERBI_QUERIES/Curling.sql` | Approved |
 | Curling-DQ-083 | Curling | — | WRONG_RESULTS | COMP.RANK | COMP.RANK_TEAM_ATHLETE_RANK_DISAGREE | `POWERBI_QUERIES/Curling.sql` | Approved |
+| Curling-DQ-084 | Curling | — | WRONG_RESULTS | EVENT | EVENT_DUPLICATE_BY_RESULT_ACROSS_DATES | `POWERBI_QUERIES/Curling.sql` | Approved |
 
 <!-- MANUAL PASTE ZONE: POWERBI DQ REGISTRY — insert approved additions immediately before this marker; do not move or delete it. -->
