@@ -2774,3 +2774,77 @@ WHERE e.del = 'no'
   ) >= 2
 
 ORDER BY sort_order, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-114
+    -- Name - EVENT_RESULTS_MIRROR_SCORE_WITHOUT_DECIDING_SCORE
+    -- What it does: Finds active finished events of the selected sport holding a running or mirrored score for at least one participant while no participant holds the deciding score, so the event was written down far enough to be scored but never far enough to say who won, with the number of participations carrying the mirror and template and stage name context, together with a coverage count of all eligible finished events holding at least one active, non-empty score of either kind.
+    'Event_Mirror_Score_Without_Deciding_Score' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    ts.name AS tournament_stage_name,
+    tt.name AS template_name,
+    YEAR(e.startdate) AS event_year,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Not what GLOBAL-DQ-017 asks. That one reports a finished event with no result at all,
+-- so an event holding a running score leaves its population and is never seen again. The
+-- partially written event is the harder case precisely because it looks populated: a
+-- consumer reading the deciding score finds nothing and a consumer reading the running
+-- score finds a match that appears to have been played.
+-- Asked at event level rather than per participation, because a deciding score is a
+-- property of the event: one side holding it and the other not is a different defect, and
+-- GLOBAL-DQ-091 already asks that of the scope layer.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1 FROM result rm
+      JOIN event_participants epm ON epm.id = rm.event_participantsFK AND epm.del = 'no'
+      WHERE epm.eventFK = e.id AND rm.del = 'no'
+        AND rm.result_typeFK = {{RESULT_MIRROR_SCORE_TYPE_ID}}
+        AND TRIM(COALESCE(rm.value, '')) <> ''
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM result rf
+      JOIN event_participants epf ON epf.id = rf.event_participantsFK AND epf.del = 'no'
+      WHERE epf.eventFK = e.id AND rf.del = 'no'
+        AND rf.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+        AND TRIM(COALESCE(rf.value, '')) <> ''
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1 FROM result rc
+      JOIN event_participants epc ON epc.id = rc.event_participantsFK AND epc.del = 'no'
+      WHERE epc.eventFK = e.id AND rc.del = 'no'
+        AND rc.result_typeFK IN ({{RESULT_FINAL_SCORE_TYPE_ID}}, {{RESULT_MIRROR_SCORE_TYPE_ID}})
+        AND TRIM(COALESCE(rc.value, '')) <> ''
+  )
+
+ORDER BY sort_order, event_id;

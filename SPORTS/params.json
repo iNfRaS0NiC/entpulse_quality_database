@@ -212,6 +212,10 @@
         "signal": "Not applicable",
         "reason": "Venue is present as a stage property on a small minority of stages and is not the venue_object mechanism DATABASE.md records, so no event resolves to a venue through the path the check reads. SPORTS/Curling.md owns the finding."
       },
+      "GLOBAL-DQ-107": {
+        "signal": "Monitor",
+        "reason": "218 findings of which 197 are the Winter Olympics 2006 and 2010, two tournaments whose results are present in full while the scope layer was never imported for them - one gap, not 197 defects. What is left is 21 events, and 15 of those also hold no final score, so they are incompletely written rather than merely missing their ends. Read the year and template breakdown before the count."
+      },
       "GLOBAL-DQ-049": {
         "signal": "Monitor",
         "reason": "an event name is the pairing that plays it, so every event name contains a hyphen with no surrounding spaces and the check reports the sport's whole distinct-name vocabulary under HYPHEN_WITHOUT_SPACES. The rule is not wrong, it is describing the naming convention; the rows worth reading are the ones breaking a second rule as well. SPORTS/Curling.md names this check directly."
