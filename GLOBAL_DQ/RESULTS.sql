@@ -2439,3 +2439,126 @@ WHERE sr.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-107
+    -- Name - EVENT_SCOPE_CONTAINER_MISSING_FOR_FINISHED
+    -- What it does: Finds active finished events of the selected sport holding no active scope container of the confirmed scope type, so a match that was played records no period-by-period breakdown at all, with the event start year and template and stage name context, together with a coverage count of all eligible finished events of the sport.
+    'Event_Scope_Container_Missing' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    YEAR(e.startdate) AS event_year,
+    ts.name AS tournament_stage_name,
+    tt.name AS template_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Only the missing container is reported. More than one container for an event would be the
+-- other half of a cardinality rule, but it does not occur in any confirmed sport, and a
+-- statement asserting a condition with no observed population is a rule nobody can test.
+-- The event year is projected because a defect concentrated in one season is an import and a
+-- defect spread across twenty is a storage habit; the reader needs to tell them apart.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND NOT EXISTS (
+      SELECT 1 FROM event_scope es
+      WHERE es.eventFK = e.id AND es.del = 'no'
+        AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-108
+    -- Name - EVENT_RESULTS_SCORE_NEGATIVE_OR_FRACTIONAL
+    -- What it does: Finds active event-participant rows of the selected sport whose deciding score or its mirror holds a value that is negative or carries a fractional part, so a count of scoring units is stored as something no count can be, separating a negative value from a fractional one, with the offending values and their result types and event name context, together with a coverage count of all eligible event-participants holding at least one active, non-empty value of either type.
+    CASE
+        WHEN x.negative_count > 0 THEN 'SCORE_NEGATIVE'
+        ELSE 'SCORE_FRACTIONAL'
+    END AS check_type,
+    x.event_participants_id,
+    x.event_id,
+    x.event_name,
+    x.offending_values,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Tighter than GLOBAL-DQ-076, which asks only whether the value is numeric at all and
+-- therefore accepts -3 and 4.5. A score is a count of scoring units, so the domain is the
+-- non-negative integers and nothing else; the two ways of leaving it are separated because a
+-- negative score is a sign error and a fractional one is a unit error.
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        SUM(CASE WHEN TRIM(r.value) REGEXP '^-[0-9]' THEN 1 ELSE 0 END) AS negative_count,
+        SUBSTRING(GROUP_CONCAT(DISTINCT CONCAT(r.result_typeFK, '=', LEFT(TRIM(r.value), 20))
+                  ORDER BY r.result_typeFK SEPARATOR ' | '), 1, 100) AS offending_values
+    FROM result r
+    JOIN event_participants ep ON ep.id = r.event_participantsFK AND ep.del = 'no'
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = {{SPORT_ID}}
+    WHERE r.del = 'no'
+      AND r.result_typeFK IN ({{RESULT_FINAL_SCORE_TYPE_ID}}, {{RESULT_MIRROR_SCORE_TYPE_ID}})
+      AND TRIM(COALESCE(r.value, '')) <> ''
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      AND (TRIM(r.value) REGEXP '^-[0-9]' OR TRIM(r.value) REGEXP '^-?[0-9]+\\.[0-9]+$')
+    GROUP BY ep.id, e.id, e.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM result r
+JOIN event_participants ep ON ep.id = r.event_participantsFK AND ep.del = 'no'
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE r.del = 'no'
+  AND r.result_typeFK IN ({{RESULT_FINAL_SCORE_TYPE_ID}}, {{RESULT_MIRROR_SCORE_TYPE_ID}})
+  AND TRIM(COALESCE(r.value, '')) <> ''
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_id, event_participants_id;

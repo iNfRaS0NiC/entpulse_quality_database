@@ -816,3 +816,131 @@ FROM (
 ) c
 
 ORDER BY sort_order, duplicate_event_count DESC;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - Curling-DQ-095
+    -- Name - COMP.RANK_PARTICIPANT_TYPE_CONTRADICTS_STATISTIC_KIND
+    -- What it does: Finds active tournament-owned Curling Comp.Rank statistics, excluding IOC-purpose templates, holding a participant whose type contradicts the kind the statistic's name declares, an (athletes) statistic holding anything but athletes or its unsuffixed partner holding anything but teams, with the offending types and a sample and template and tournament name context, together with a coverage count of all eligible statistics holding at least one active participant.
+    CASE
+        WHEN x.statistic_kind = 'athletes' THEN 'ATHLETES_STATISTIC_HOLDS_NON_ATHLETE'
+        ELSE 'TEAM_STATISTIC_HOLDS_NON_TEAM'
+    END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.offending_participant_count,
+    x.offending_types,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Sport-authored rather than a GLOBAL template because the rule is carried by a name suffix.
+-- Turning "(athletes)" into a parameter would make every sport that has no such convention
+-- declare an empty one, which GLOBAL_DQ/README.md names as the point where a template stops
+-- being a template. SPORTS/Curling.md owns the convention.
+-- The two directions are one check: the pair of statistics is the sport's athlete-to-team
+-- membership mechanism, and either half holding the wrong kind breaks the same link.
+FROM (
+    SELECT
+        CASE WHEN LOWER(s.name) LIKE '%(athletes)%' THEN 'athletes' ELSE 'teams' END AS statistic_kind,
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(DISTINCT sp.id) AS offending_participant_count,
+        SUBSTRING(GROUP_CONCAT(DISTINCT p.type ORDER BY p.type SEPARATOR ', '), 1, 60) AS offending_types
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = 11
+      AND s.object_typeFK = 3
+      AND tt.sportFK = 10
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+      AND (
+            (LOWER(s.name) LIKE '%(athletes)%' AND p.type <> 'athlete')
+         OR (LOWER(s.name) NOT LIKE '%(athletes)%' AND p.type <> 'team')
+          )
+    GROUP BY
+        CASE WHEN LOWER(s.name) LIKE '%(athletes)%' THEN 'athletes' ELSE 'teams' END,
+        s.id, s.name, tt.name, t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 10
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1 FROM statistic_participants11 sp2
+      WHERE sp2.statisticFK = s.id AND sp2.del = 'no'
+  )
+
+ORDER BY sort_order, statistic_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - Curling-DQ-096
+    -- Name - EVENT_SETTINGS_MIXED_DOUBLES_GENDER_INVALID
+    -- What it does: Finds active Curling events carrying the Mixed Doubles discipline whose tournament stage declares a gender other than mixed, so a format played by a man and a woman together sits under a single-gender stage, with the stage gender found and template and stage name context, together with a coverage count of all eligible events carrying that discipline.
+    'Mixed_Doubles_Stage_Gender_Invalid' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    COALESCE(ts.gender, 'none') AS stage_gender_found,
+    ts.name AS tournament_stage_name,
+    tt.name AS template_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Sport-authored because discipline 752 is a Curling identifier and the rule is about what
+-- that one discipline means. A stage carrying no gender at all is reported here rather than
+-- excused: Mixed Doubles is the one format whose gender is not a matter of record-keeping
+-- preference, so an absent value is as wrong as a contradicting one.
+FROM event e
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+     AND od.disciplineFK = 752
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 10
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND (ts.gender IS NULL OR ts.gender <> 'mixed')
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+     AND od.disciplineFK = 752
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 10
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_id;

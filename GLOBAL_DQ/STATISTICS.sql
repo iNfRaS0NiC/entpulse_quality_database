@@ -3020,3 +3020,55 @@ WHERE s.del = 'no'
   )
 
 ORDER BY sort_order, statistic_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-106
+    -- Name - COMP.RANK_UNEXPECTED_OWNER_TYPE
+    -- What it does: Finds active statistics of the selected statistic type belonging to the sport, excluding IOC-purpose templates, that hang off an owner level other than the one the sport is confirmed to use, so a statistic sits on a tournament stage where the sport's statistic layer is the tournament, with the owner level found and the owning object and template name context, together with a coverage count of all eligible statistics of that type at any owner level.
+    'Comp_Rank_Unexpected_Owner_Type' AS check_type,
+    s.id AS statistic_id,
+    s.name AS statistic_name,
+    s.object_typeFK AS owner_type_found,
+    s.objectFK AS owner_object_id,
+    tt.name AS template_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Reached through both owner paths rather than through the tournament alone, which is the
+-- whole point: a statistic on the wrong level cannot be found by a statement that joins
+-- through the level it is supposed to be on. Every other Comp.Rank check in this file
+-- anchors on object_typeFK = 3 and therefore cannot see this at all.
+FROM statistic s
+LEFT JOIN tournament t3 ON s.object_typeFK = 3 AND t3.id = s.objectFK AND t3.del = 'no'
+LEFT JOIN tournament_stage ts4 ON s.object_typeFK = 4 AND ts4.id = s.objectFK AND ts4.del = 'no'
+LEFT JOIN tournament t4 ON t4.id = ts4.tournamentFK AND t4.del = 'no'
+JOIN tournament_template tt ON tt.id = COALESCE(t3.tournament_templateFK, t4.tournament_templateFK)
+     AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND s.object_typeFK <> {{STATISTIC_OWNER_TYPE_ID}}
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+LEFT JOIN tournament t3 ON s.object_typeFK = 3 AND t3.id = s.objectFK AND t3.del = 'no'
+LEFT JOIN tournament_stage ts4 ON s.object_typeFK = 4 AND ts4.id = s.objectFK AND ts4.del = 'no'
+LEFT JOIN tournament t4 ON t4.id = ts4.tournamentFK AND t4.del = 'no'
+JOIN tournament_template tt ON tt.id = COALESCE(t3.tournament_templateFK, t4.tournament_templateFK)
+     AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+
+ORDER BY sort_order, statistic_id;
