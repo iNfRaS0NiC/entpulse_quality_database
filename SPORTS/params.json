@@ -25,9 +25,9 @@
     "RESULT_RANK_TYPE_ID": 100,
     "RESULT_DURATION_TYPE_ID": 101,
     "RESULT_COMMENT_TYPE_ID": 104,
-    "RESULT_COMMENT_VALUE_LIST": "'q', 'dnf', 'dns', 'dsq', 'rel'",
+    "RESULT_COMMENT_VALUE_LIST": "'q', 'dnf', 'dns', 'dsq', 'rel', 'disq.', 'disqualified'",
     "RESULT_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'dsq', 'disq.', 'disqualified'",
-    "DATA_COMMENT_VALUE_LIST": "'dnf', 'dns', 'dsq', 'rel', 'no time'",
+    "DATA_COMMENT_VALUE_LIST": "'dnf', 'dns', 'dsq', 'rel', 'no time', 'disq.', 'disqualified'",
     "DATA_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'dsq', 'disq.', 'disqualified'",
     "FULL_TIME_TOLERANCE_SECONDS": 0.01,
     "RESULT_MEDAL_TYPE_ID": 501,
@@ -64,6 +64,14 @@
       "GLOBAL-DQ-033": {
         "signal": "Monitor",
         "reason": "Phase is not universal for this sport: a large share of active BMX Comp.Rank participant rows carry no phase row at all, so the check reports a large share of the population. The proportion is the finding. SPORTS/BMX.md owns the coverage statement."
+      },
+      "GLOBAL-DQ-064": {
+        "signal": "Not applicable",
+        "reason": "the sport contests no team events - event_participants confirms athlete type only, and the registered team participants have no event participation - so an athlete belongs to no team and the 1429 Team field has nothing to hold. The check asks which team an athlete is in and reported 102 findings from 102 eligible rows, which is the absence of teams rather than a defect. Unlike a blocked check this does not lift: populating the field would require teams the sport does not field. SPORTS/BMX.md owns the finding."
+      },
+      "GLOBAL-DQ-098": {
+        "signal": "Not applicable",
+        "reason": "the check asserts the 1429 Team field where a statistic ranks teams, and this sport ranks no teams at any level: it contests no team events and its Comp.Rank statistics rank athletes. Its scope is therefore empty here, and an empty scope reports clean data when what it means is that the scope is misdirected - POWERBI.md owns that rule. BMX-DQ-078 keeps its row and its ID; the classification records what the row's output is worth."
       }
     }
   },
@@ -93,9 +101,9 @@
     "RESULT_RANK_TYPE_ID": 100,
     "RESULT_DURATION_TYPE_ID": 101,
     "RESULT_COMMENT_TYPE_ID": 104,
-    "RESULT_COMMENT_VALUE_LIST": "'dnf', 'lap', 'dns', 'dsq', 'nc', 'q'",
+    "RESULT_COMMENT_VALUE_LIST": "'dnf', 'lap', 'dns', 'dsq', 'nc', 'q', 'disq.'",
     "RESULT_COMMENT_NO_RESULT_LIST": "'dnf', 'lap', 'dns', 'dsq', 'disq.', 'nc'",
-    "DATA_COMMENT_VALUE_LIST": "'dnf', 'lap', 'dns', 'dsq', 'nc', 'q'",
+    "DATA_COMMENT_VALUE_LIST": "'dnf', 'lap', 'dns', 'dsq', 'nc', 'q', 'disq.'",
     "DATA_COMMENT_NO_RESULT_LIST": "'dnf', 'lap', 'dns', 'dsq', 'disq.', 'nc'",
     "FULL_TIME_TOLERANCE_SECONDS": 1,
     "RESULT_MEDAL_TYPE_ID": 501,

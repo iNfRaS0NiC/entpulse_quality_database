@@ -645,6 +645,24 @@ Test-That 'two swapped registry rows are reported as out of order' {
     Assert-True ($run.Text -match 'is out of order') "the order finding should be reported; output was:`n$($run.Text)"
 }
 
+Test-That 'a no-result value missing from the value list is reported' {
+    # The defect this rule exists for: 'disq.' sat in both sports' NO_RESULT lists and in
+    # neither VALUE list, so GLOBAL-DQ-052 reported it invalid and honoured it as a no-result
+    # marker in the same statement. The sport files had recorded the spelling all along.
+    $root = Copy-RepositoryFixture -Name 'vocabulary'
+    $path = Join-Path $root 'SPORTS\params.json'
+    $text = [IO.File]::ReadAllText($path)
+
+    $before = "'q', 'dnf', 'dns', 'dsq', 'rel', 'disq.', 'disqualified'"
+    if (-not $text.Contains($before)) { throw 'the BMX result comment vocabulary was not found in the fixture copy' }
+    $text = $text.Replace($before, "'q', 'dnf', 'dns', 'dsq', 'rel'")
+    [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match "contains 'disq\.' but RESULT_COMMENT_VALUE_LIST does not") "the vocabulary finding should be reported; output was:`n$($run.Text)"
+}
+
 Test-That 'approving a template the sport declares blocked is reported' {
     # The block is a paragraph in a sport file until something enforces it. Triathlon
     # declares GLOBAL-DQ-095 blocked, so a row approving it has to fail.

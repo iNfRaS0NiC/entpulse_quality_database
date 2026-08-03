@@ -289,7 +289,7 @@ ORDER BY sort_order, event_id, full_time_seconds DESC;
 SELECT
     -- CheckID - Triathlon-DQ-070
     -- Name - EVENT_RESULTS_DURATION_SHAPE_UNCONFIRMED
-    -- What it does: Finds active Triathlon event-participant rows in the six in-scope disciplines storing a Duration or Full-time duration value outside the sport's confirmed shape set, which is an optionally plus-prefixed h:mm:ss.f, m:ss.f or ss.f for the gap Duration and the same forms without a plus for the absolute Full-time duration, separating a Full-time duration carrying the plus prefix it never takes from any other unconfirmed shape, with the offending values and their result types and template name context, together with a coverage count of all eligible event-participants in those disciplines carrying at least one active, non-empty value of either type.
+    -- What it does: Finds active Triathlon event-participant rows in the six in-scope disciplines storing a Duration or Full-time duration value outside the sport's confirmed shape set, which is an optionally plus-prefixed h:mm:ss.f, m:ss.f or ss.f for the gap Duration and the same forms without a plus for the absolute Full-time duration, where only the leading field is unbounded and every field following a colon is a two-digit 0-59 so that an impossible time such as 1:99:99.9 is not read as a confirmed shape, separating a Full-time duration carrying the plus prefix it never takes from any other unconfirmed shape, with the offending values and their result types and template name context, together with a coverage count of all eligible event-participants in those disciplines carrying at least one active, non-empty value of either type.
     CASE
         WHEN x.plus_prefixed_full_time_count > 0 THEN 'FULL_TIME_PLUS_PREFIXED'
         ELSE 'DURATION_SHAPE_NOT_CONFIRMED'
@@ -336,9 +336,13 @@ FROM (
             AND od.disciplineFK IN (144, 799, 800, 801, 803, 804)
       )
       AND (
-            TRIM(r.value) NOT REGEXP '^\\+?[0-9:]+\\.[0-9]+$'
-         OR TRIM(r.value) LIKE '%::%'
-         OR (LENGTH(TRIM(r.value)) - LENGTH(REPLACE(TRIM(r.value), ':', ''))) > 2
+            -- The shape set spelled out rather than approximated. [0-9:]+ accepted any
+            -- arrangement of digits and colons, so 1:99:99.9 and 1:2:3.4 passed as
+            -- confirmed shapes. Only the leading field is unbounded - a race may run past
+            -- an hour, and past a hundred minutes when stored without one - while every
+            -- field after a colon is a two-digit 0-59. This subsumes the separate empty
+            -- field and colon-count guards that used to stand beside it.
+            TRIM(r.value) NOT REGEXP '^\\+?([0-9]+:[0-5][0-9]:[0-5][0-9]|[0-9]+:[0-5][0-9]|[0-9]+)\\.[0-9]+$'
          OR (r.result_typeFK = 557 AND TRIM(r.value) LIKE '+%')
           )
     GROUP BY ep.id, e.id, e.name, p.name, tt.name

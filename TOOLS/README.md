@@ -279,9 +279,19 @@ two owners drifts.
 
 | Signal | Means | Enforced as |
 |---|---|---|
-| `Monitor` | Real, but population-wide. The proportion is the finding; a single row is not a defect | Must have an `Approved` row |
-| `Not applicable` | Measures a layer or mechanism this sport does not use, so it reports the whole population | Must have an `Approved` row |
-| `Blocked` | Would report the sport's normal shape as a defect until something else is fixed first | Must **not** have an `Approved` row |
+| `Monitor` | Real, but population-wide. The proportion is the finding; a single row is not a defect | Must have an `Approved` row — it describes a check that runs |
+| `Not applicable` | The sport has nothing for the check to read, so it reports the whole population | No row requirement, either way |
+| `Blocked` | Would report the sport's normal shape as a defect until something else is fixed first | Must **not** have an `Approved` row — it says "not yet" |
+
+`Blocked` and `Not applicable` are easy to confuse and the difference matters: a block lifts
+when the underlying data is fixed, and the check is then approved. `Not applicable` does not
+lift, because the structure it reads is one the sport does not have. Recording a permanent
+absence as `Blocked` promises a review that will never come.
+
+`Not applicable` carries no row requirement in either direction on purpose. A check the sport
+should never have is usually simply unapproved, but the cases where one *was* approved are
+exactly the ones worth being able to write down — and deprecating it is a separate decision,
+recorded in `POWERBI_REGISTRY.md`.
 
 ```json
 "Curling": {

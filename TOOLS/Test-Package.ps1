@@ -786,6 +786,32 @@ if (Test-Path -LiteralPath $paramsPath) {
                 }
             }
 
+            # A NO_RESULT list names the values that mean "no result was recorded". Every one
+            # of them is therefore a value the sport uses, so it has to be in the VALUE list
+            # too. GLOBAL-DQ-052 and -057 read both inside one statement: the VALUE list
+            # decides what is an invalid comment, the NO_RESULT list what a comment excuses.
+            # A value in the second but not the first is reported as invalid and honoured as
+            # a no-result marker by the same check, which is a contradiction no result can
+            # resolve.
+            foreach ($pair in @(
+                    @{ Values = 'RESULT_COMMENT_VALUE_LIST'; NoResult = 'RESULT_COMMENT_NO_RESULT_LIST' },
+                    @{ Values = 'DATA_COMMENT_VALUE_LIST'; NoResult = 'DATA_COMMENT_NO_RESULT_LIST' })) {
+
+                $valueText = [string]$property.Value.($pair.Values)
+                $noResultText = [string]$property.Value.($pair.NoResult)
+                if ([string]::IsNullOrWhiteSpace($valueText) -or [string]::IsNullOrWhiteSpace($noResultText)) { continue }
+
+                # Both are SQL IN-list fragments: 'a', 'b', 'c'. Compared lowercased, because
+                # that is how the statements compare them.
+                $declared = @($valueText -split ',' | ForEach-Object { $_.Trim().Trim("'").ToLowerInvariant() })
+                foreach ($item in @($noResultText -split ',' | ForEach-Object { $_.Trim().Trim("'").ToLowerInvariant() })) {
+                    if ($item -eq '') { continue }
+                    if ($declared -notcontains $item) {
+                        $sportFindings += "SPORTS/params.json: '$sport' $($pair.NoResult) contains '$item' but $($pair.Values) does not; the same check would report it invalid and honour it as a no-result marker"
+                    }
+                }
+            }
+
             # A classification is only worth writing down if it is held to something, so each
             # value carries its own rule. Blocked says the check must not be approved yet;
             # Monitor and Not applicable describe a check that is approved and running, so
@@ -825,13 +851,16 @@ if (Test-Path -LiteralPath $paramsPath) {
 
                     $isApproved = $(if ($isTemplate) { $approvedFamilies -contains $key } else { $approvedIds -contains $key })
 
-                    if ($signal -eq 'Blocked') {
-                        if ($isApproved) {
-                            $sportFindings += "SPORTS/params.json: '$sport' declares $key blocked but POWERBI_REGISTRY.md approves it"
-                        }
+                    # Blocked is temporary and says "not yet", so an Approved row contradicts
+                    # it. Monitor describes what a running check's findings mean, so it needs
+                    # one. Not applicable says the sport has nothing for the check to read,
+                    # which is true whether or not anyone approved it - and the cases where
+                    # someone did are exactly the ones worth being able to write down.
+                    if ($signal -eq 'Blocked' -and $isApproved) {
+                        $sportFindings += "SPORTS/params.json: '$sport' declares $key blocked but POWERBI_REGISTRY.md approves it"
                     }
-                    elseif (-not $isApproved) {
-                        $sportFindings += "SPORTS/params.json: '$sport' classifies $key as '$signal' but POWERBI_REGISTRY.md has no Approved row for it"
+                    if ($signal -eq 'Monitor' -and -not $isApproved) {
+                        $sportFindings += "SPORTS/params.json: '$sport' classifies $key as 'Monitor' but POWERBI_REGISTRY.md has no Approved row for it; Monitor describes a check that runs"
                     }
                 }
             }
