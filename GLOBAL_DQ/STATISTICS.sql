@@ -2778,3 +2778,158 @@ WHERE s.del = 'no'
   )
 
 ORDER BY sort_order;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-101
+    -- Name - COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, whose populated Event id config does not resolve to an event under the statistic's own tournament, separating a value that is not a number from one naming no active event and from one naming an event another tournament owns, with the offending values and template and tournament name context, together with a coverage count of all eligible statistics carrying at least one active, non-empty Event id config.
+    CASE
+        WHEN x.not_numeric_count > 0 THEN 'EVENT_ID_NOT_NUMERIC'
+        WHEN x.no_active_event_count > 0 THEN 'EVENT_ID_NO_ACTIVE_EVENT'
+        ELSE 'EVENT_ID_OUTSIDE_TOURNAMENT'
+    END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.invalid_config_count,
+    x.sample_values,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The Event id is the only path from a Comp.Rank statistic to the event it summarises, and
+-- every check that walks it joins through it. A join drops the row it cannot match, so an id
+-- naming nothing and an id naming another tournament's event are both invisible to those
+-- checks: they narrow the population silently instead of reporting it. That is what makes
+-- this worth asserting separately rather than trusting the joins to surface it.
+-- Three defects, one audited object. They are separated by check_type rather than by CheckID
+-- because they are one question - does this id point where it claims - and a statistic
+-- carrying two kinds at once should be one row rather than two.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(*) AS invalid_config_count,
+        SUM(CASE WHEN TRIM(sc.value) NOT REGEXP '^[0-9]+$' THEN 1 ELSE 0 END) AS not_numeric_count,
+        SUM(CASE WHEN TRIM(sc.value) REGEXP '^[0-9]+$' AND e.id IS NULL THEN 1 ELSE 0 END) AS no_active_event_count,
+        SUBSTRING(GROUP_CONCAT(DISTINCT LEFT(TRIM(sc.value), 20) ORDER BY TRIM(sc.value) SEPARATOR ' | '), 1, 100) AS sample_values
+    FROM statistic_config sc
+    JOIN statistic s ON s.id = sc.statisticFK AND s.del = 'no'
+         AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+         AND s.object_typeFK = 3
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN event e ON TRIM(sc.value) REGEXP '^[0-9]+$'
+         AND e.id = CAST(TRIM(sc.value) AS UNSIGNED) AND e.del = 'no'
+    LEFT JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    WHERE sc.del = 'no'
+      AND sc.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
+      AND TRIM(COALESCE(sc.value, '')) <> ''
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+      AND (
+            TRIM(sc.value) NOT REGEXP '^[0-9]+$'
+         OR e.id IS NULL
+         OR ts.tournamentFK <> s.objectFK
+          )
+    GROUP BY s.id, s.name, tt.name, t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic_config sc
+JOIN statistic s ON s.id = sc.statisticFK AND s.del = 'no'
+     AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+     AND s.object_typeFK = 3
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE sc.del = 'no'
+  AND sc.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
+  AND TRIM(COALESCE(sc.value, '')) <> ''
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+
+ORDER BY sort_order, statistic_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-103
+    -- Name - COMP.RANK_PARTICIPANT_DUPLICATE_IN_STATISTIC
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, holding more than one active participant row in the confirmed physical shard for the same participant, so one competitor occupies a place in the ranking twice, with the number of affected participants and a sample group and template and tournament name context, together with a coverage count of all eligible statistics holding at least one active participant row.
+    'Comp_Rank_Participant_Duplicate' AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.affected_participant_count,
+    x.duplicated_row_count,
+    x.sample_group,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Not the question GLOBAL-DQ-060 asks. That one groups by statistic_participants id and data
+-- type, so it sees several data rows hanging off one participant row. This sees one
+-- participant holding two participant rows in the same ranking, which that grouping cannot
+-- reach: each of the two rows can carry a perfectly well-formed single set of data.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(*) AS affected_participant_count,
+        SUM(g.row_count) AS duplicated_row_count,
+        MIN(CONCAT('participant=', g.participantFK, ' rows=', g.row_count)) AS sample_group
+    FROM (
+        SELECT sp.statisticFK, sp.participantFK, COUNT(*) AS row_count
+        FROM statistic_participants{{SHARD_ID}} sp
+        JOIN statistic s2 ON s2.id = sp.statisticFK AND s2.del = 'no'
+             AND s2.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+             AND s2.object_typeFK = 3
+        JOIN tournament t2 ON t2.id = s2.objectFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+             AND tt2.sportFK = {{SPORT_ID}}
+        WHERE sp.del = 'no'
+          AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
+          -- AND tt2.id = <tournament_template_id>
+        GROUP BY sp.statisticFK, sp.participantFK
+        HAVING COUNT(*) > 1
+    ) g
+    JOIN statistic s ON s.id = g.statisticFK AND s.del = 'no'
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    GROUP BY s.id, s.name, tt.name, t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1 FROM statistic_participants{{SHARD_ID}} sp2
+      WHERE sp2.statisticFK = s.id AND sp2.del = 'no'
+  )
+
+ORDER BY sort_order, statistic_id;

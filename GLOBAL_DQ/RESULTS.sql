@@ -2364,3 +2364,78 @@ WHERE ep.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_startdate DESC;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-102
+    -- Name - EVENT_SCOPE_RESULT_OWNER_EVENT_MISMATCH
+    -- What it does: Finds active events of the selected sport holding a scope container of the confirmed scope type whose scope results name an event participant belonging to a different event, or name an event-participant row that is not active at all, so the per-period value is attached to a competitor who did not play that event, with the number of offending rows and a sample and the container and stage name context, together with a coverage count of all eligible events holding at least one active scope result in such a container.
+    CASE
+        WHEN x.participant_row_missing_count > 0 THEN 'SCOPE_RESULT_PARTICIPANT_ROW_MISSING'
+        ELSE 'SCOPE_RESULT_OWNER_EVENT_MISMATCH'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.tournament_stage_name,
+    x.offending_row_count,
+    x.sample_row,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- A relational invariant rather than a reading of the sport's semantics: a scope result
+-- reaches an event twice over, once through the container it hangs off and once through the
+-- participant it names, and the two have to arrive at the same event. Nothing a sport does
+-- with periods, ends or checkpoints can make them disagree legitimately, which is why this
+-- needs no vocabulary parameter and carries no false-positive risk from format.
+-- The missing participant row is reported by the same check because it is the same failed
+-- resolution: a scope result whose participant cannot be reached is attached to nobody, and
+-- separating it into its own CheckID would split one broken reference in two.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        ts.name AS tournament_stage_name,
+        COUNT(*) AS offending_row_count,
+        SUM(CASE WHEN ep.id IS NULL THEN 1 ELSE 0 END) AS participant_row_missing_count,
+        MIN(CONCAT('scope=', es.id,
+                   ' scope_event=', es.eventFK,
+                   ' ep=', sr.event_participantsFK,
+                   ' ep_event=', COALESCE(CAST(ep.eventFK AS CHAR), 'none'))) AS sample_row
+    FROM scope_result sr
+    JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+         AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+    JOIN event e ON e.id = es.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = {{SPORT_ID}}
+    LEFT JOIN event_participants ep ON ep.id = sr.event_participantsFK AND ep.del = 'no'
+    WHERE sr.del = 'no'
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      AND (ep.id IS NULL OR ep.eventFK <> es.eventFK)
+    GROUP BY e.id, e.name, ts.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM scope_result sr
+JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+     AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+JOIN event e ON e.id = es.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE sr.del = 'no'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_id;

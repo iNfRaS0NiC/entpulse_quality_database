@@ -30,8 +30,13 @@ Full SQL never belongs here. It is stored in one sport-scoped file under
 - An `Approved` row's `Query file` points either to a `GLOBAL_DQ/` template, meaning the row
   is an instantiation with no per-sport statement, or to the one per-sport SQL file
   containing the full active query. Never both. `POWERBI.md` owns this rule.
-- Insert new approved rows immediately before the exact registry marker. Never place a
-  row after, move or delete the marker. Replace an existing CheckID row in place.
+- Insert a new approved row in its sorted position, which is what the sort rule above means
+  in practice: a new sport's first row starts a new block, and a new row for an existing
+  sport goes at the end of that sport's block, not at the end of the table. The rows form
+  one uninterrupted block; a blank line between two of them splits the rendered table.
+  Replace an existing CheckID row in place. `TOOLS/Test-Package.ps1` checks both.
+- The registry marker is the lower boundary of the whole table, not the insertion point for
+  every row. Never place a row after it, move it or delete it.
 
 ## Approved DQ checks
 
@@ -117,6 +122,8 @@ Full SQL never belongs here. It is stored in one sport-scoped file under
 | BMX-DQ-078 | BMX | GLOBAL-DQ-098 | MISSING_VALUES | COMP.RANK | COMP.RANK_TEAM_FIELD_UNUSED_IN_TEAM_STATISTIC | `GLOBAL_DQ/STATISTICS.sql` | Approved |
 | BMX-DQ-079 | BMX | GLOBAL-DQ-099 | WRONG_RESULTS | COMP.RANK_RESULTS | COMP.RANK_VALUE_BELONGS_TO_ANOTHER_FIELD | `GLOBAL_DQ/STATISTICS.sql` | Approved |
 | BMX-DQ-080 | BMX | GLOBAL-DQ-100 | WRONG_DISCIPLINE | COMP.RANK | COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT | `GLOBAL_DQ/STATISTICS.sql` | Approved |
+| BMX-DQ-081 | BMX | GLOBAL-DQ-101 | NO_RELATED_RECORDS | COMP.RANK | COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT | `GLOBAL_DQ/STATISTICS.sql` | Approved |
+| BMX-DQ-082 | BMX | GLOBAL-DQ-103 | WRONG_STRUCTURE | COMP.RANK | COMP.RANK_PARTICIPANT_DUPLICATE_IN_STATISTIC | `GLOBAL_DQ/STATISTICS.sql` | Approved |
 | Curling-DQ-001 | Curling | GLOBAL-DQ-001 | NO_RELATED_RECORDS | TEMPLATE | TEMPLATE_NO_TOURNAMENTS_OR_STAGES | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
 | Curling-DQ-002 | Curling | GLOBAL-DQ-002 | MISSING_VALUES | TOURNAMENT_STAGE | TOURNAMENT_STAGE_MISSING_AGE_CLASS | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
 | Curling-DQ-003 | Curling | GLOBAL-DQ-003 | NO_RELATED_RECORDS | TOURNAMENT_STAGE | TOURNAMENT_STAGE_NO_EVENTS | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
@@ -204,6 +211,8 @@ Full SQL never belongs here. It is stored in one sport-scoped file under
 | Curling-DQ-085 | Curling | GLOBAL-DQ-098 | MISSING_VALUES | COMP.RANK | COMP.RANK_TEAM_FIELD_UNUSED_IN_TEAM_STATISTIC | `GLOBAL_DQ/STATISTICS.sql` | Approved |
 | Curling-DQ-086 | Curling | GLOBAL-DQ-099 | WRONG_RESULTS | COMP.RANK_RESULTS | COMP.RANK_VALUE_BELONGS_TO_ANOTHER_FIELD | `GLOBAL_DQ/STATISTICS.sql` | Approved |
 | Curling-DQ-087 | Curling | GLOBAL-DQ-100 | WRONG_DISCIPLINE | COMP.RANK | COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT | `GLOBAL_DQ/STATISTICS.sql` | Approved |
+| Curling-DQ-088 | Curling | GLOBAL-DQ-102 | WRONG_STRUCTURE | EVENT_RESULTS | EVENT_SCOPE_RESULT_OWNER_EVENT_MISMATCH | `GLOBAL_DQ/RESULTS.sql` | Approved |
+| Curling-DQ-089 | Curling | GLOBAL-DQ-103 | WRONG_STRUCTURE | COMP.RANK | COMP.RANK_PARTICIPANT_DUPLICATE_IN_STATISTIC | `GLOBAL_DQ/STATISTICS.sql` | Approved |
 | Triathlon-DQ-001 | Triathlon | GLOBAL-DQ-001 | NO_RELATED_RECORDS | TEMPLATE | TEMPLATE_NO_TOURNAMENTS_OR_STAGES | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
 | Triathlon-DQ-002 | Triathlon | GLOBAL-DQ-002 | MISSING_VALUES | TOURNAMENT_STAGE | TOURNAMENT_STAGE_MISSING_AGE_CLASS | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
 | Triathlon-DQ-003 | Triathlon | GLOBAL-DQ-003 | NO_RELATED_RECORDS | TOURNAMENT_STAGE | TOURNAMENT_STAGE_NO_EVENTS | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
@@ -291,5 +300,7 @@ Full SQL never belongs here. It is stored in one sport-scoped file under
 | Triathlon-DQ-085 | Triathlon | GLOBAL-DQ-098 | MISSING_VALUES | COMP.RANK | COMP.RANK_TEAM_FIELD_UNUSED_IN_TEAM_STATISTIC | `GLOBAL_DQ/STATISTICS.sql` | Approved |
 | Triathlon-DQ-086 | Triathlon | GLOBAL-DQ-099 | WRONG_RESULTS | COMP.RANK_RESULTS | COMP.RANK_VALUE_BELONGS_TO_ANOTHER_FIELD | `GLOBAL_DQ/STATISTICS.sql` | Approved |
 | Triathlon-DQ-087 | Triathlon | GLOBAL-DQ-100 | WRONG_DISCIPLINE | COMP.RANK | COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT | `GLOBAL_DQ/STATISTICS.sql` | Approved |
+| Triathlon-DQ-088 | Triathlon | GLOBAL-DQ-101 | NO_RELATED_RECORDS | COMP.RANK | COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT | `GLOBAL_DQ/STATISTICS.sql` | Approved |
+| Triathlon-DQ-089 | Triathlon | GLOBAL-DQ-103 | WRONG_STRUCTURE | COMP.RANK | COMP.RANK_PARTICIPANT_DUPLICATE_IN_STATISTIC | `GLOBAL_DQ/STATISTICS.sql` | Approved |
 
 <!-- MANUAL PASTE ZONE: POWERBI DQ REGISTRY — insert approved additions immediately before this marker; do not move or delete it. -->
