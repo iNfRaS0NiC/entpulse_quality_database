@@ -9,6 +9,10 @@ result to the screen, to CSV/JSON, or to a single `.xlsx` workbook.
 and fails when the package contradicts its own rules. Run it after changing SQL, a registry
 row or a paste marker; see "Package validation" below.
 
+`Test-Tools.ps1` tests these two scripts themselves - selection, parameter expansion, the
+catalogue parser and the workbook writer. Run it after changing either script; see "Tool
+tests" below.
+
 The tools change only how a statement reaches the server. Every rule about what a
 statement may contain still lives where it did:
 
@@ -123,7 +127,8 @@ the account in use. The summary:
 | `-ListChecks` | Every CheckID with its name, source file and line |
 | `-ListChecks BMX-DQ-0*` | The same list, filtered by wildcard |
 | `-Sport BMX` | Discover the structural parameters and fill them in |
-| `-Sport BMX -RunAll` | Everything for one sport: its GLOBAL DQ templates, its own statements and the patterns, in one workbook |
+| `-Sport BMX -RunAll` | Everything approved for one sport, plus the patterns, in one workbook |
+| `-Sport X -RunAll -IncludeUnapproved` | Discovery for a sport with no approved checks yet: runs the GLOBAL catalogue against it |
 | `BMX-DQ-003` | One check to the screen |
 | `BMX-DQ-001,BMX-DQ-005` | A chosen few |
 | `BMX-DQ-*` | Every match; more than one switches to batch mode |
@@ -230,7 +235,7 @@ run, because there it is a mistake rather than a deferred choice.
 A deferred choice and an impossible one look identical to the placeholder scanner: both are
 an unfilled `{{TOKEN}}`. They are not the same thing, and reporting them alike sends the
 reader to the sport file to find out which is which. A sport records the difference in its
-`SPORTS/params.json` entry, under the one key that is not itself a parameter:
+`SPORTS/params.json` entry, under one of the two keys that are not themselves parameters:
 
 ```json
 "Triathlon": {
@@ -259,6 +264,50 @@ whose parameter the sport has declared it cannot supply.
 
 Record a parameter here only after the sport file documents why. The block is the runner's
 copy of a conclusion, never the place the conclusion is reached.
+
+### What a check's findings are worth for this sport
+
+The other reserved key is `_checkSignal`. It is not the same condition as the one above and
+must not be confused with it: there, a parameter is missing and the statement cannot run.
+Here every parameter **is** recorded, the statement runs, and what is in doubt is whether its
+findings are defects.
+
+Three values are recordable. `Actionable` is the default and is never written down — a fourth
+value on every check would make the block a second copy of the registry. `Deprecated` is
+deliberately not a signal: `POWERBI_REGISTRY.md`'s `Status` column owns it, and a value with
+two owners drifts.
+
+| Signal | Means | Enforced as |
+|---|---|---|
+| `Monitor` | Real, but population-wide. The proportion is the finding; a single row is not a defect | Must have an `Approved` row |
+| `Not applicable` | Measures a layer or mechanism this sport does not use, so it reports the whole population | Must have an `Approved` row |
+| `Blocked` | Would report the sport's normal shape as a defect until something else is fixed first | Must **not** have an `Approved` row |
+
+```json
+"Curling": {
+  "SPORT_ID": 10,
+  "_checkSignal": {
+    "GLOBAL-DQ-058": {
+      "signal": "Not applicable",
+      "reason": "lineups are used but are not this sport's membership mechanism: only a small minority of team event participants carry a Starter lineup... SPORTS/Curling.md names this check directly."
+    }
+  }
+}
+```
+
+Keys name either a `GLOBAL-DQ-NNN` template the sport instantiates or one of the sport's own
+CheckIDs, and every entry carries a non-empty reason.
+
+Selection does not depend on the block: a `Blocked` template has no row, so it is not selected
+either way, and a `Monitor` or `Not applicable` check is approved and still runs. What it buys
+is that a conclusion already written in a sport file stops being invisible to the run that
+contradicts it. `-RunAll` names the blocked templates among what it left out and the classified
+checks among what it is about to run, each with its reason; `Test-Package.ps1` enforces the
+table above.
+
+The sport file still owns the reasoning; this is the machine-readable half of it. A signal is
+a description of the check's output, not a decision about its future — deprecating a check is
+a separate act, recorded in `POWERBI_REGISTRY.md`.
 
 On a sport with a large event or statistic volume, run a capped batch first —
 `-MaxChecks 8` — and read what it costs before letting the whole catalogue go.
@@ -302,16 +351,46 @@ name. Without `-Sport`, an unfilled placeholder stops the run as it always does.
 .\TOOLS\Run-Query.ps1 -Sport Triathlon -RunAll
 ```
 
-One command for the whole picture: every `GLOBAL-DQ-*` template, every `<Sport>-DQ-*`
-statement the sport authored for itself, and the pattern statements, collected into one
-workbook under the output root. It implies `-WithPatterns` and `-Format xlsx`; an explicit
-`-Format`, `-OutDir` or `-MaxChecks` still wins.
+One command for the sport's whole approved catalogue: every check `POWERBI_REGISTRY.md`
+records as `Approved` for it, plus the pattern statements, collected into one workbook under
+the output root. It implies `-WithPatterns` and `-Format xlsx`; an explicit `-Format`,
+`-OutDir` or `-MaxChecks` still wins.
 
-The selection is read from the catalogue rather than from wildcards, so a sport that has no
-file of its own runs the templates alone instead of failing on a pattern that matches
-nothing. A template the sport cannot fill — because a parameter is not recorded for it — is
-listed as `SKIPPED` in the Overview exactly as it is under any other batch, so the workbook
-never reads as full coverage when it is not.
+**The registry decides what runs, and the row's `Query file` decides how.** A `GLOBAL_DQ/`
+path means the row instantiates its `Family`, so the template's statement runs; anything else
+means the sport authored its own, and the row's own CheckID names it. Three things follow,
+and each one was a real defect while the selection was read from the `.sql` files instead:
+
+- a template with no row for this sport does not run — a template is not a check for a sport
+  until that sport has a row for it, and `POWERBI.md` owns that rule;
+- a `Deprecated` row does not run, while keeping its reserved CheckID;
+- a sport that replaced a template with its own statement runs that statement **instead of**
+  the template, not alongside it.
+
+Results carry the sport's CheckID rather than the template's, because that is what
+`POWERBI_REGISTRY.md` makes the stable identifier for PowerBI and any external report. Two
+sports instantiating one template would otherwise both report the template ID.
+
+The run says what it left out: how many templates are not approved for this sport, which
+CheckIDs are deprecated, and any template `SPORTS/params.json` records as blocked, with the
+reason. A shorter workbook than the catalogue is then explained rather than left to be
+counted. It also names the checks it *is* running whose findings that file classifies as
+something other than defects — see "What a check's findings are worth for this sport".
+
+A template the sport cannot fill — because a parameter is not recorded for it — is still
+listed as `SKIPPED` in the Overview exactly as under any other batch, so the workbook never
+reads as full coverage when it is not.
+
+### An undocumented sport
+
+```powershell
+.\TOOLS\Run-Query.ps1 -Sport "Artistic Gymnastics" -RunAll -IncludeUnapproved
+```
+
+A sport with no registry row has nothing approved, so plain `-RunAll` stops and says so.
+`-IncludeUnapproved` runs the GLOBAL catalogue against it anyway, which is how a sport is
+opened. That output is discovery evidence, never a DQ result: nothing it ran is approved for
+the sport. The run labels itself accordingly.
 
 What a run produces is execution output, never evidence. `WORKFLOW.md` "Starting a new
 sport" owns the sequence around these commands: which drill-downs to run, how a confirmed
@@ -497,9 +576,15 @@ after. Without `-Sport` there is nothing better to fall back on and both read `G
 
 Parses every `.sql` file and registry in the repository and reports one line per check:
 identity headers, CheckID uniqueness, the DQ coverage contract, `UNION ALL` column counts,
-result-level `LIMIT`, registry-versus-SQL agreement, declared parameters, paste markers, the
-sport index and `SPORTS/params.json`. Exit code 1 on any failure, so it drops into a hook or
-a pre-commit step unchanged.
+result-level `LIMIT`, registry-versus-SQL agreement, declared parameters, paste markers,
+registry row order, the sport index and `SPORTS/params.json`. Exit code 1 on any failure, so
+it drops into a hook or a pre-commit step unchanged.
+
+`POWERBI_REGISTRY.md` declares that its rows sort by Sport and then by CheckID, so the order
+is checked rather than left to whoever appends the next row. Only the first displaced row is
+reported: one row in the wrong place shifts every row after it. A blank line between two rows
+is reported separately, because it splits the rendered table in two while the row scanner
+reads straight past it.
 
 It needs no credentials and sends nothing, because it parses rather than executes. That is
 also its boundary: it cannot prove live permissions, runtime cost or result semantics.
@@ -511,6 +596,28 @@ also its boundary: it cannot prove live permissions, runtime cost or result sema
 ```
 
 `VALIDATION_REPORT.md` is generated output. Fix the script or the package, never the report.
+
+## Tool tests
+
+```powershell
+.\TOOLS\Test-Tools.ps1
+```
+
+`Test-Package.ps1` proves the package is consistent; this proves the two scripts that read it
+behave as documented. It covers which checks `-RunAll` and a wildcard select, how `{{...}}`
+parameters are filled, how the catalogue is parsed out of the banner-separated `.sql` files,
+and what the workbook writer emits. The registry order rule is tested by breaking a throwaway
+copy of the repository and requiring the validator to catch it, so the rule cannot quietly
+stop biting.
+
+There is no Pester dependency. Windows PowerShell 5.1 ships Pester 3.4, whose syntax differs
+from every current version, so a suite written against either one fails on the other machine.
+The harness is the same `Group / Name / Status` shape `Test-Package.ps1` prints, and exits 1
+on any failure.
+
+Nothing here touches the network: `Run-Query.ps1` is dot-sourced with `-DotSourceOnly`, which
+runs its prologue and stops before `Main`. That switch exists for this file and for nothing
+else.
 
 ## Troubleshooting
 

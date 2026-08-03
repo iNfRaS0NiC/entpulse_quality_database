@@ -115,10 +115,16 @@ param(
     # types and the name patterns they have to be read against.
     [switch]$WithPatterns,
 
-    # One command for a whole sport: every GLOBAL DQ template, every statement the sport
-    # authored for itself, and the pattern statements, collected into one workbook. Needs
-    # -Sport. Implies -WithPatterns and -Format xlsx unless a format is given.
+    # One command for a whole sport: every check POWERBI_REGISTRY.md records as Approved for
+    # it, plus the pattern statements, collected into one workbook. Needs -Sport. Implies
+    # -WithPatterns and -Format xlsx unless a format is given.
     [switch]$RunAll,
+
+    # Turns -RunAll into discovery: run the whole GLOBAL catalogue against the sport whether
+    # or not anything is approved for it. This is how an undocumented sport is opened, and
+    # the only way to run a template the registry does not authorize. Its output is
+    # execution evidence, never a DQ result: nothing it runs has been approved for the sport.
+    [switch]$IncludeUnapproved,
 
     [int]$Preview = 50,
 
@@ -129,7 +135,12 @@ param(
     # Prints the full command set. The cqb wrapper maps a bare "info" onto this.
     [switch]$Info,
 
-    [switch]$Relogin
+    [switch]$Relogin,
+
+    # Dot-source the file for its functions and stop before Main. TOOLS/Test-Tools.ps1 uses
+    # it to exercise selection, parameter expansion, the parser and the workbook writer
+    # without a login or a statement. Nothing in a normal run passes it.
+    [switch]$DotSourceOnly
 )
 
 $ErrorActionPreference = 'Stop'
@@ -290,6 +301,156 @@ function Select-Checks {
     return $unique
 }
 
+function Get-RegistryRow {
+    # POWERBI_REGISTRY.md as objects. The registry is the authorization record: a template
+    # becomes a check for a sport when that sport has a row for it, and not before.
+    # POWERBI.md owns that rule; this only reads it.
+    param([string]$SportName)
+
+    $path = Join-Path $RepoRoot 'POWERBI_REGISTRY.md'
+    if (-not (Test-Path -LiteralPath $path)) {
+        throw "POWERBI_REGISTRY.md not found under $RepoRoot. -RunAll selects from it."
+    }
+
+    $rows = @()
+    foreach ($line in (Get-Content -LiteralPath $path -Encoding UTF8)) {
+        if ($line -notmatch '^\s*\|') { continue }
+        $cells = @(($line.Trim() -replace '^\|', '' -replace '\|\s*$', '') -split '\|' |
+            ForEach-Object { ($_ -replace '`', '').Trim() })
+        if ($cells.Count -ne 8) { continue }
+        if ($cells[0] -notmatch '^\S+-DQ-\d+$') { continue }
+        if ($SportName -and $cells[1] -ne $SportName) { continue }
+
+        $rows += [pscustomobject]@{
+            CheckId   = $cells[0]
+            Sport     = $cells[1]
+            Family    = $cells[2]
+            Category  = $cells[3]
+            Object    = $cells[4]
+            Name      = $cells[5]
+            QueryFile = $cells[6]
+            Status    = $cells[7]
+        }
+    }
+    return $rows
+}
+
+function Select-RunAllChecks {
+    # What "-RunAll -Sport X" means: every check POWERBI_REGISTRY.md records as Approved for
+    # that sport, run through the statement its Query file names, and carrying its own
+    # CheckID rather than the template's.
+    #
+    # Selected from the registry rather than from the .sql files, because the files hold the
+    # whole GLOBAL catalogue and a template is not a check for a sport until that sport has
+    # a row for it. Selecting from the files instead runs three kinds of statement nobody
+    # asked for: templates never approved for this sport, the generic version of a template
+    # the sport has replaced with its own statement, and a check whose row is Deprecated.
+    #
+    # Returns the jobs together with what was left out, so the caller can say so rather than
+    # leave a shorter run unexplained.
+    param($Catalogue, [string]$SportName, [switch]$IncludeUnapproved)
+
+    $byId = @{}
+    foreach ($entry in $Catalogue) { $byId[$entry.CheckId] = $entry }
+
+    $templateIds = @($Catalogue | Where-Object { $_.CheckId -like 'GLOBAL-DQ-*' } |
+        ForEach-Object { $_.CheckId } | Sort-Object)
+
+    if ($IncludeUnapproved) {
+        # An undocumented sport has no rows yet, and running the catalogue against it is how
+        # it gets opened. That is discovery, not a DQ run: nothing here is approved for the
+        # sport, and WORKFLOW.md's sequence still has to be followed before anything is.
+        $jobs = @($Catalogue |
+            Where-Object { $_.CheckId -like 'GLOBAL-DQ-*' -or $_.CheckId -like "$SportName-DQ-*" } |
+            Sort-Object CheckId)
+
+        return [pscustomobject]@{
+            Jobs             = $jobs
+            Unapproved       = $true
+            DeprecatedIds    = @()
+            NotApprovedIds   = @()
+            BlockedFamilies  = @()
+            Classified       = @()
+            MissingStatement = @()
+        }
+    }
+
+    $signals = Get-SportCheckSignal -SportName $SportName
+
+    $rows = @(Get-RegistryRow -SportName $SportName)
+    if ($rows.Count -eq 0) {
+        throw ("No POWERBI_REGISTRY.md row names the sport '$SportName', so nothing is approved to run. " +
+            "Sport names are exact and case-sensitive. To run the GLOBAL catalogue against an " +
+            "undocumented sport as discovery, pass -IncludeUnapproved.")
+    }
+
+    $approved = @($rows | Where-Object { $_.Status -eq 'Approved' })
+    $deprecated = @($rows | Where-Object { $_.Status -eq 'Deprecated' })
+
+    $jobs = @()
+    $missing = @()
+    foreach ($row in ($approved | Sort-Object CheckId)) {
+        # The Query file decides which statement runs. A GLOBAL_DQ path means the row is an
+        # instantiation of its Family; anything else means the sport authored its own, and
+        # then the row's own CheckID names the statement.
+        $wanted = if ($row.QueryFile -like 'GLOBAL_DQ/*') { $row.Family } else { $row.CheckId }
+
+        if (-not $byId.ContainsKey($wanted)) {
+            $missing += "$($row.CheckId): $($row.QueryFile) names $wanted, which is not in the catalogue"
+            continue
+        }
+
+        $statement = $byId[$wanted]
+
+        # A classification may be recorded against the template the row instantiates or
+        # against the row's own CheckID, whichever names the check for this sport.
+        $signal = $null
+        foreach ($key in @($row.Family, $row.CheckId)) {
+            if ($key -and $signals.ContainsKey($key)) { $signal = $signals[$key]; break }
+        }
+
+        # The row's CheckID travels with the result, not the template's. POWERBI_REGISTRY.md
+        # makes the CheckID the stable identifier for PowerBI and any external report, and
+        # two sports instantiating one template would otherwise both report the template ID.
+        $jobs += [pscustomobject]@{
+            CheckId      = $row.CheckId
+            Name         = $statement.Name
+            What         = $statement.What
+            File         = $statement.File
+            Line         = $statement.Line
+            Path         = $statement.Path
+            Sql          = $statement.Sql
+            Template     = $(if ($wanted -eq $row.CheckId) { '' } else { $wanted })
+            Signal       = $(if ($signal) { $signal.Signal } else { 'Actionable' })
+            SignalReason = $(if ($signal) { $signal.Reason } else { '' })
+        }
+    }
+
+    $approvedFamilies = @($approved | ForEach-Object { $_.Family } | Where-Object { $_ -like 'GLOBAL-DQ-*' })
+    $notApproved = @($templateIds | Where-Object { $approvedFamilies -notcontains $_ })
+
+    # A template this sport is documented as unable to use yet, with the reason. Reported
+    # rather than merely absent, so a shorter run does not read as an oversight.
+    $blocked = @($notApproved |
+        Where-Object { $signals.ContainsKey($_) -and $signals[$_].Signal -eq 'Blocked' } |
+        ForEach-Object { [pscustomobject]@{ Family = $_; Reason = $signals[$_].Reason } })
+
+    # Checks that are running and whose findings are documented as something other than
+    # defects. Named before the run rather than left for the reader to rediscover from the
+    # workbook, which is where the sport file's conclusion went unread until now.
+    $classified = @($jobs | Where-Object { $_.Signal -ne 'Actionable' })
+
+    return [pscustomobject]@{
+        Jobs             = @($jobs)
+        Unapproved       = $false
+        DeprecatedIds    = @($deprecated | ForEach-Object { $_.CheckId })
+        NotApprovedIds   = $notApproved
+        BlockedFamilies  = $blocked
+        Classified       = $classified
+        MissingStatement = $missing
+    }
+}
+
 function ConvertTo-ParamTable {
     # Accepts @{ SPORT_ID = 58 } as well as the friendlier SPORT_ID=58,FROM_ID=100 form.
     param($Value)
@@ -306,11 +467,25 @@ function ConvertTo-ParamTable {
         $text = [string]$item
         if ([string]::IsNullOrWhiteSpace($text)) { continue }
 
-        $split = $text.IndexOf('=')
-        if ($split -lt 1) {
-            throw "Cannot read parameter '$text'. Use NAME=VALUE, for example -Params SPORT_ID=58"
+        # An unquoted -Params SPORT_ID=58,SHARD_ID=11 is split into an array by PowerShell
+        # before it ever arrives, but a quoted one arrives whole and would otherwise be read
+        # as SPORT_ID = "58,SHARD_ID=11" - wrong, and silently so. Splitting here as well
+        # makes the documented form behave the same either way. A comma inside a value is
+        # left alone, because the split only stands when every piece is itself a NAME=VALUE.
+        $pieces = @($text)
+        if ($text.Contains(',')) {
+            $candidate = @($text -split ',' | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne '' })
+            $allNamed = @($candidate | Where-Object { $_.IndexOf('=') -gt 0 }).Count -eq $candidate.Count
+            if ($candidate.Count -gt 1 -and $allNamed) { $pieces = $candidate }
         }
-        $table[$text.Substring(0, $split).Trim()] = $text.Substring($split + 1).Trim()
+
+        foreach ($piece in $pieces) {
+            $split = $piece.IndexOf('=')
+            if ($split -lt 1) {
+                throw "Cannot read parameter '$piece'. Use NAME=VALUE, for example -Params SPORT_ID=58"
+            }
+            $table[$piece.Substring(0, $split).Trim()] = $piece.Substring($split + 1).Trim()
+        }
     }
 
     return $table
@@ -610,9 +785,20 @@ function Get-SqlLiteral {
 # never guessed.
 $DiscoverableParameters = @('SPORT_ID', 'STATISTIC_TYPE_ID', 'STATISTIC_OWNER_TYPE_ID', 'SHARD_ID')
 
-# The one key inside a sport's SPORTS/params.json entry that is not itself a parameter. It
-# holds the parameters the sport is documented as unable to supply, mapped to the reason.
+# The two keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
+# _notApplicable holds the parameters the sport is documented as unable to supply, mapped to
+# the reason. _checkSignal holds what a check's output is worth for this sport, for the ones
+# that are not simply actionable. Test-Package.ps1 declares the same two names; the pair of
+# files is the contract for both blocks.
 $NotApplicableKey = '_notApplicable'
+$CheckSignalKey = '_checkSignal'
+$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey)
+
+# What a recorded signal may say. Actionable is the default and is never recorded: writing it
+# down for every check would make the block a second copy of the registry. Deprecated is
+# deliberately absent - POWERBI_REGISTRY.md's Status column owns that, and a value with two
+# owners drifts.
+$CheckSignalValues = @('Monitor', 'Blocked', 'Not applicable')
 
 function Get-SportFileParameters {
     # Values a sport has already had confirmed and recorded. These outrank discovery: the
@@ -621,7 +807,7 @@ function Get-SportFileParameters {
     param([string]$SportName)
 
     $resolved = @{}
-    $path = Join-Path (Split-Path -Parent $PSScriptRoot) 'SPORTS\params.json'
+    $path = Join-Path $RepoRoot 'SPORTS\params.json'
     if (-not (Test-Path -LiteralPath $path)) { return $resolved }
 
     try {
@@ -639,9 +825,66 @@ function Get-SportFileParameters {
     }
 
     foreach ($property in $entry.Value.PSObject.Properties) {
-        if ($property.Name -eq $NotApplicableKey) { continue }
+        if ($ReservedParamKeys -contains $property.Name) { continue }
         $resolved[$property.Name] = $property.Value
-        Write-Host ("  {0,-30} {1}  (SPORTS/params.json)" -f $property.Name, $property.Value) -ForegroundColor DarkGray
+        # [string] on a number is invariant in PowerShell, which is what reaches the SQL, but
+        # -f formats in the current culture. Under bg-BG that showed 0,01 for a value the
+        # statement received as 0.01 - the same number reported two ways. Show what is sent.
+        Write-Host ("  {0,-30} {1}  (SPORTS/params.json)" -f $property.Name, [string]$property.Value) -ForegroundColor DarkGray
+    }
+    return $resolved
+}
+
+function Get-SportCheckSignal {
+    # What a check's output is worth for this sport, keyed by the GLOBAL-DQ template ID or by
+    # the sport's own CheckID, for the ones that are not simply actionable. Anything absent
+    # is actionable.
+    #
+    # This is a different question from _notApplicable, which is about a parameter the sport
+    # cannot supply so the statement cannot run at all. Here every parameter is present and
+    # the statement runs; what is in doubt is whether its findings are defects:
+    #
+    #   Monitor         real but population-wide - the proportion is the finding, not the row
+    #   Not applicable  measures a layer or mechanism this sport does not use
+    #   Blocked         would report the sport's normal shape as a defect until something
+    #                   else is fixed first, so it must not be approved yet
+    #
+    # Selection does not depend on it. What it buys is that a documented conclusion in a sport
+    # file stops being invisible to the run that contradicts it: -RunAll names the classified
+    # checks it is about to run, and Test-Package.ps1 enforces each value's own rule.
+    param([string]$SportName)
+
+    $resolved = @{}
+    $path = Join-Path $RepoRoot 'SPORTS\params.json'
+    if (-not (Test-Path -LiteralPath $path)) { return $resolved }
+
+    try {
+        $params = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+    catch {
+        return $resolved
+    }
+
+    $entry = $params.PSObject.Properties | Where-Object { $_.Name -eq $SportName }
+    if (-not $entry) { return $resolved }
+
+    $block = $entry.Value.PSObject.Properties | Where-Object { $_.Name -eq $CheckSignalKey }
+    if (-not $block) { return $resolved }
+
+    foreach ($property in $block.Value.PSObject.Properties) {
+        $signal = [string]$property.Value.signal
+        if ($CheckSignalValues -notcontains $signal) {
+            # Reported rather than dropped: an unreadable classification is worse than none,
+            # because the reader assumes the block is being honoured. Test-Package.ps1 fails
+            # on the same condition.
+            Write-Host ("  SPORTS/params.json: $($property.Name) has signal '$signal', which is not one of: " +
+                ($CheckSignalValues -join ', ')) -ForegroundColor Yellow
+            continue
+        }
+        $resolved[$property.Name] = [pscustomobject]@{
+            Signal = $signal
+            Reason = [string]$property.Value.reason
+        }
     }
     return $resolved
 }
@@ -654,7 +897,7 @@ function Get-SportNotApplicable {
     param([string]$SportName)
 
     $resolved = @{}
-    $path = Join-Path (Split-Path -Parent $PSScriptRoot) 'SPORTS\params.json'
+    $path = Join-Path $RepoRoot 'SPORTS\params.json'
     if (-not (Test-Path -LiteralPath $path)) { return $resolved }
 
     try {
@@ -1355,6 +1598,10 @@ function Save-RunWorkbook {
 # Main
 # --------------------------------------------------------------------------------------
 
+# The prologue above has run, so a caller dot-sourcing for the functions gets them with the
+# script variables they read already set. Everything below this line talks to the server.
+if ($DotSourceOnly) { return }
+
 if ($Info) {
     # The wrapper function announces itself through EP_QB_COMMAND so the examples
     # below show what the reader actually types.
@@ -1478,23 +1725,53 @@ if ($ListChecks) {
 # ----- what to run ---------------------------------------------------------------------
 
 if ($RunAll) {
-    # Everything one sport can be asked, in one command: its DQ templates, whatever it
-    # authored for itself, and the patterns those findings have to be read against. The
-    # selection is built from the catalogue rather than from wildcards, because a sport with
-    # no file of its own would otherwise fail on a pattern that matches nothing.
+    # Everything one sport can be asked, in one command: its approved DQ checks and the
+    # patterns those findings have to be read against. Select-RunAllChecks owns which checks
+    # those are.
     if ([string]::IsNullOrWhiteSpace($Sport)) {
         throw '-RunAll needs -Sport <name>: it selects that sport''s checks, and a GLOBAL template has no sport of its own.'
     }
-    $jobs = @(Get-CheckCatalogue |
-        Where-Object { $_.CheckId -like 'GLOBAL-DQ-*' -or $_.CheckId -like "$Sport-DQ-*" } |
-        Sort-Object CheckId)
+
+    $selection = Select-RunAllChecks -Catalogue (Get-CheckCatalogue) -SportName $Sport -IncludeUnapproved:$IncludeUnapproved
+    $jobs = @($selection.Jobs)
+
+    if ($selection.MissingStatement.Count -gt 0) {
+        # An Approved row whose statement is not in the catalogue is a broken package, not a
+        # check to skip quietly. Test-Package.ps1 reports the same condition.
+        throw ("POWERBI_REGISTRY.md has $($selection.MissingStatement.Count) Approved row(s) with no executable statement:`n  " +
+            ($selection.MissingStatement -join "`n  ") + "`nRun TOOLS\Test-Package.ps1.")
+    }
     if ($jobs.Count -eq 0) {
-        throw "No GLOBAL-DQ template and no $Sport-DQ statement found. Use -ListChecks to see what is registered."
+        throw "Nothing is Approved for $Sport in POWERBI_REGISTRY.md. Use -ListChecks to see what is registered."
     }
 
-    $own = @($jobs | Where-Object { $_.CheckId -like "$Sport-DQ-*" }).Count
-    Write-Host ("-RunAll: {0} GLOBAL template(s) and {1} {2} statement(s), plus the patterns." -f `
-        ($jobs.Count - $own), $own, $Sport) -ForegroundColor DarkGray
+    if ($selection.Unapproved) {
+        Write-Host ("-RunAll -IncludeUnapproved: {0} statement(s) for {1}, plus the patterns." -f $jobs.Count, $Sport) -ForegroundColor Yellow
+        Write-Host '  Discovery, not a DQ run: none of these is approved for this sport.' -ForegroundColor Yellow
+    }
+    else {
+        $instantiated = @($jobs | Where-Object { $_.Template }).Count
+        Write-Host ("-RunAll: {0} approved check(s) for {1} - {2} template instantiation(s) and {3} sport statement(s) - plus the patterns." -f `
+            $jobs.Count, $Sport, $instantiated, ($jobs.Count - $instantiated)) -ForegroundColor DarkGray
+
+        # What was left out, and why. A run that is shorter than the catalogue should say so
+        # here rather than leave the reader counting tabs in the workbook.
+        if ($selection.NotApprovedIds.Count -gt 0) {
+            Write-Host ("  {0} GLOBAL template(s) not approved for {1} and not run." -f $selection.NotApprovedIds.Count, $Sport) -ForegroundColor DarkGray
+        }
+        foreach ($block in $selection.BlockedFamilies) {
+            Write-Host ("  {0} is blocked for {1}: {2}" -f $block.Family, $Sport, $block.Reason) -ForegroundColor DarkGray
+        }
+        if ($selection.DeprecatedIds.Count -gt 0) {
+            Write-Host ("  deprecated and not run: {0}" -f ($selection.DeprecatedIds -join ', ')) -ForegroundColor DarkGray
+        }
+
+        # Running, but with the sport file's verdict on what the findings mean attached, so
+        # the reader is not left to take a full-population result at face value.
+        foreach ($item in $selection.Classified) {
+            Write-Host ("  {0} runs as {1}: {2}" -f $item.CheckId, $item.Signal, $item.SignalReason) -ForegroundColor DarkGray
+        }
+    }
 
     $WithPatterns = $true
     # A workbook is the only shape that holds a whole catalogue together; an explicit

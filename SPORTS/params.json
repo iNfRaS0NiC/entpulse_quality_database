@@ -55,6 +55,16 @@
       "SCOPE_PERIOD_SENTINEL_LIST": "the scope layer holds checkpoint splits rather than competition periods, so it has no vocabulary for a period that was not played",
       "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "the sport plays no extra period and stores no column for one",
       "EXTRA_PERIOD_STATUS_DESC_LIST": "the sport plays no extra period, so no detailed status marks one"
+    },
+    "_checkSignal": {
+      "GLOBAL-DQ-074": {
+        "signal": "Not applicable",
+        "reason": "venue_object holds no active row for any BMX tournament stage, event or Comp.Rank statistic; the layer was queried complete at all three levels and returned zero active links. The check therefore reports every event. SPORTS/BMX.md owns the finding."
+      },
+      "GLOBAL-DQ-033": {
+        "signal": "Monitor",
+        "reason": "Phase is not universal for this sport: a large share of active BMX Comp.Rank participant rows carry no phase row at all, so the check reports a large share of the population. The proportion is the finding. SPORTS/BMX.md owns the coverage statement."
+      }
     }
   },
   "Triathlon": {
@@ -113,6 +123,20 @@
       "SCOPE_PERIOD_SENTINEL_LIST": "the sport writes no active event_scope row at all",
       "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "the sport plays no extra period and stores no column for one",
       "EXTRA_PERIOD_STATUS_DESC_LIST": "the sport plays no extra period, so no detailed status marks one"
+    },
+    "_checkSignal": {
+      "GLOBAL-DQ-095": {
+        "signal": "Blocked",
+        "reason": "every parameter it declares is recorded, so nothing else stops it: while the 1429 Team field is unused the check can only assume one participant per place and reports every relay member beyond the first, which is the format rather than a defect. Re-run Triathlon-DQ-085 to test whether the block still applies. SPORTS/Triathlon.md owns the reasoning."
+      },
+      "GLOBAL-DQ-007": {
+        "signal": "Monitor",
+        "reason": "date_of_birth is populated for a small fraction of the registered athletes and its absence is the normal state for this sport, so the check reports almost the entire population. The proportion is the finding; a single row is not a defect. SPORTS/Triathlon.md owns the coverage statement."
+      },
+      "GLOBAL-DQ-034": {
+        "signal": "Monitor",
+        "reason": "the host-country relation and the city link are unpopulated wherever the direct country column is filled, which is the normal storage for this sport, so those two of the core fields report broadly rather than per defect. The other core fields in the same check still read as defects. SPORTS/Triathlon.md owns the storage finding."
+      }
     }
   },
   "Curling": {
@@ -170,6 +194,20 @@
       "WINNER_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
       "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
       "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored"
+    },
+    "_checkSignal": {
+      "GLOBAL-DQ-058": {
+        "signal": "Not applicable",
+        "reason": "lineups are used but are not this sport's membership mechanism: only a small minority of team event participants carry a Starter lineup, and athlete-to-team membership is carried by the Comp.Rank (athletes) statistic instead. The check measures the minority mechanism and reports the rest of the sport. SPORTS/Curling.md names this check directly."
+      },
+      "GLOBAL-DQ-074": {
+        "signal": "Not applicable",
+        "reason": "Venue is present as a stage property on a small minority of stages and is not the venue_object mechanism DATABASE.md records, so no event resolves to a venue through the path the check reads. SPORTS/Curling.md owns the finding."
+      },
+      "GLOBAL-DQ-049": {
+        "signal": "Monitor",
+        "reason": "an event name is the pairing that plays it, so every event name contains a hyphen with no surrounding spaces and the check reports the sport's whole distinct-name vocabulary under HYPHEN_WITHOUT_SPACES. The rule is not wrong, it is describing the naming convention; the rows worth reading are the ones breaking a second rule as well. SPORTS/Curling.md names this check directly."
+      }
     }
   }
 }

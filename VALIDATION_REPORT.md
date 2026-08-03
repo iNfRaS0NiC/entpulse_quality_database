@@ -24,6 +24,7 @@ output, not a hand-written claim: re-run the script rather than editing it.
 | DQ | Statistics context and IOC exclusion | PASS |
 | GLOBAL | Registry versus executable SQL, and declared parameters | PASS |
 | PowerBI | Registry versus active sport SQL | PASS |
+| PowerBI | Registry row order and contiguity | PASS |
 | Sports | Sport index, slugs and parameter file | PASS |
 
 ## Metrics

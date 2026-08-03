@@ -44,6 +44,8 @@ most often needed:
   every SQL file; `README.md` defines the minimal context profiles.
 - Run `TOOLS/Test-Package.ps1` after changing any `.sql` file, registry row or paste
   marker. It is the mechanical check for everything listed under "Hard rules" below.
+- Run `TOOLS/Test-Tools.ps1` after changing `TOOLS/Run-Query.ps1` or
+  `TOOLS/Test-Package.ps1`. It tests those two scripts rather than the package.
 - Results produced by `TOOLS/Run-Query.ps1` are execution output, never evidence. A
   finding enters the repository only through the `PREPARE_DOC_UPDATE` sequence in
   `WORKFLOW.md`.

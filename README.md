@@ -37,6 +37,7 @@ copied into a separate SQL file for every sport.
 | `TOOLS/README.md` | Query-runner setup, command set, output shapes and troubleshooting |
 | `TOOLS/Run-Query.ps1` | Executes registered statements against the Content Query Builder |
 | `TOOLS/Test-Package.ps1` | Static package, registry and SQL-shape validation |
+| `TOOLS/Test-Tools.ps1` | Behavioural tests for the two scripts above |
 | `VALIDATION_REPORT.md` | Generated output of the latest `TOOLS/Test-Package.ps1` run |
 | `AI_INSTRUCTIONS.md` | Matching behavior instructions for the user-operated assistant |
 

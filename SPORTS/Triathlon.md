@@ -322,11 +322,16 @@ becomes readable, four holders of a place become legitimate, and only a genuine 
 survives. Instantiating it before that produces a list nobody can act on, so the order is
 fixed - the Team field first, the check second.
 
-Nothing mechanical enforces that order. Every parameter `GLOBAL-DQ-095` declares is recorded
-for this sport, so the runner will execute it on request and the registry would accept a row
-for it; this paragraph is the only guard. Re-run `Triathlon-DQ-085` to test whether the block
-still applies: while it reports, the Team field is still unused and `GLOBAL-DQ-095` still
-reports the format instead of a defect.
+Every parameter `GLOBAL-DQ-095` declares is recorded for this sport, so nothing about the
+statement itself stops it: it would run on request. The order is now held mechanically as
+well as here. `SPORTS/params.json` records the template under this sport's `_checkSignal`
+block as `Blocked`, with the reason, which makes `-RunAll` name it among what it left out and
+makes `TOOLS/Test-Package.ps1` fail if a registry row approves it anyway. Running it
+deliberately by CheckID is still possible and still produces the fifty-two format findings.
+
+Re-run `Triathlon-DQ-085` to test whether the block still applies: while it reports, the Team
+field is still unused and `GLOBAL-DQ-095` still reports the format instead of a defect. When
+it stops reporting, remove the `_blockedChecks` entry and only then approve the check.
 
 <!-- MANUAL PASTE ZONE: 50 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 

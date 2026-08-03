@@ -37,9 +37,15 @@ $ErrorActionPreference = 'Stop'
 # The character still has to be produced, because a deprecated registry row uses it.
 $EmDash = [string][char]0x2014
 
-# The one key inside a sport's SPORTS/params.json entry that is not itself a parameter.
-# Run-Query.ps1 declares the same name; both files are the contract for that block.
+# The two keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
+# Run-Query.ps1 declares the same names; both files are the contract for those blocks.
 $NotApplicableKey = '_notApplicable'
+$CheckSignalKey = '_checkSignal'
+$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey)
+
+# Actionable is the default and is never recorded. Deprecated is absent on purpose:
+# POWERBI_REGISTRY.md's Status column owns it, and a value with two owners drifts.
+$CheckSignalValues = @('Monitor', 'Blocked', 'Not applicable')
 
 if (-not $RepoRoot) { $RepoRoot = Split-Path -Parent $PSScriptRoot }
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
@@ -282,7 +288,7 @@ $expected = @(
     'WORKFLOW.md', 'POWERBI.md', 'POWERBI_REGISTRY.md', 'VALIDATION_REPORT.md',
     'SPORTS/_TEMPLATE.md', 'SPORTS/params.json',
     'GLOBAL_QUERIES/README.md', 'GLOBAL_DQ/README.md',
-    'TOOLS/README.md', 'TOOLS/Run-Query.ps1', 'TOOLS/Test-Package.ps1'
+    'TOOLS/README.md', 'TOOLS/Run-Query.ps1', 'TOOLS/Test-Package.ps1', 'TOOLS/Test-Tools.ps1'
 )
 $missing = @($expected | Where-Object { -not (Test-Path -LiteralPath (Join-Path $RepoRoot $_)) } |
     ForEach-Object { "missing: $_" })
@@ -660,6 +666,35 @@ foreach ($group in ($registryRows | Group-Object { $_.Cells[1] })) {
 Add-Result -Group 'PowerBI' -Name 'Registry versus active sport SQL' -Findings $registryFindings
 Set-Metric 'PowerBI registry rows' $registryRows.Count
 
+# The registry states its own row order, so the order is checkable rather than a convention
+# nobody can enforce. Rows arrive in approval order, which drifts from Sport-then-CheckID
+# on every append unless something says so.
+$orderFindings = @()
+
+$expectedOrder = @($registryRows |
+    Sort-Object @{ Expression = { $_.Cells[1] } },
+                @{ Expression = { [int]([regex]::Match($_.Cells[0], '(\d+)$').Groups[1].Value) } } |
+    ForEach-Object { $_.Cells[0] })
+
+# Only the first displaced row is reported: one row in the wrong place shifts every row
+# after it, and a list of 200 findings would hide which one actually moved.
+for ($i = 0; $i -lt $registryRows.Count; $i++) {
+    if ($registryRows[$i].Cells[0] -ne $expectedOrder[$i]) {
+        $orderFindings += "POWERBI_REGISTRY.md:$($registryRows[$i].Line): $($registryRows[$i].Cells[0]) is out of order; rows sort by Sport then CheckID, so $($expectedOrder[$i]) belongs here"
+        break
+    }
+}
+
+# A blank line between two rows splits the table in two when rendered, while the row
+# scanner reads straight past it. Contiguity is only visible from the line numbers.
+for ($i = 1; $i -lt $registryRows.Count; $i++) {
+    if ($registryRows[$i].Line -ne $registryRows[$i - 1].Line + 1) {
+        $orderFindings += "POWERBI_REGISTRY.md:$($registryRows[$i - 1].Line + 1): the row block breaks between $($registryRows[$i - 1].Cells[0]) and $($registryRows[$i].Cells[0]); a break here splits the rendered table"
+    }
+}
+
+Add-Result -Group 'PowerBI' -Name 'Registry row order and contiguity' -Findings $orderFindings
+
 # --------------------------------------------------------------------------------------
 # Sports index and parameters
 # --------------------------------------------------------------------------------------
@@ -737,7 +772,7 @@ if (Test-Path -LiteralPath $paramsPath) {
             # missing value from one that will never exist.
             $block = $property.Value.PSObject.Properties | Where-Object { $_.Name -eq $NotApplicableKey }
             if ($block) {
-                $recordedHere = @($property.Value.PSObject.Properties.Name | Where-Object { $_ -ne $NotApplicableKey })
+                $recordedHere = @($property.Value.PSObject.Properties.Name | Where-Object { $ReservedParamKeys -notcontains $_ })
                 foreach ($entry in $block.Value.PSObject.Properties) {
                     if ($entry.Name -cnotmatch '^[A-Z][A-Z0-9_]*$') {
                         $sportFindings += "SPORTS/params.json: '$sport' $NotApplicableKey key '$($entry.Name)' is not a parameter name"
@@ -747,6 +782,56 @@ if (Test-Path -LiteralPath $paramsPath) {
                     }
                     if ($recordedHere -contains $entry.Name) {
                         $sportFindings += "SPORTS/params.json: '$sport' records $($entry.Name) and also declares it not applicable"
+                    }
+                }
+            }
+
+            # A classification is only worth writing down if it is held to something, so each
+            # value carries its own rule. Blocked says the check must not be approved yet;
+            # Monitor and Not applicable describe a check that is approved and running, so
+            # classifying one that is not approved is a statement about nothing.
+            $signalBlock = $property.Value.PSObject.Properties | Where-Object { $_.Name -eq $CheckSignalKey }
+            if ($signalBlock) {
+                $sportRows = @($registryRows |
+                    Where-Object { $_.Cells.Count -eq $expectedColumns -and $_.Cells[1] -eq $sport -and $_.Cells[7] -eq 'Approved' })
+                $approvedFamilies = @($sportRows | ForEach-Object { Remove-Backtick $_.Cells[2] })
+                $approvedIds = @($sportRows | ForEach-Object { $_.Cells[0] })
+
+                foreach ($entry in $signalBlock.Value.PSObject.Properties) {
+                    $key = $entry.Name
+                    $signal = [string]$entry.Value.signal
+                    $reason = [string]$entry.Value.reason
+
+                    # The key names either the template the sport instantiates or one of its
+                    # own statements. Anything else classifies a check that does not exist.
+                    $isTemplate = $key -cmatch '^GLOBAL-DQ-\d{3}$'
+                    $isOwn = $key -cmatch "^$([regex]::Escape($sport))-DQ-\d+$"
+                    if (-not $isTemplate -and -not $isOwn) {
+                        $sportFindings += "SPORTS/params.json: '$sport' $CheckSignalKey key '$key' is neither a GLOBAL-DQ template ID nor a $sport CheckID"
+                        continue
+                    }
+                    if ($isTemplate -and @($globalDq | Where-Object { $_.CheckId -eq $key }).Count -eq 0) {
+                        $sportFindings += "SPORTS/params.json: '$sport' classifies $key, which is not an existing GLOBAL-DQ template"
+                        continue
+                    }
+
+                    if ($CheckSignalValues -notcontains $signal) {
+                        $sportFindings += "SPORTS/params.json: '$sport' gives $key signal '$signal'; allowed: $($CheckSignalValues -join ', ') (Actionable is the default and is not recorded; POWERBI_REGISTRY.md Status owns Deprecated)"
+                        continue
+                    }
+                    if ([string]::IsNullOrWhiteSpace($reason)) {
+                        $sportFindings += "SPORTS/params.json: '$sport' records no reason for $key"
+                    }
+
+                    $isApproved = $(if ($isTemplate) { $approvedFamilies -contains $key } else { $approvedIds -contains $key })
+
+                    if ($signal -eq 'Blocked') {
+                        if ($isApproved) {
+                            $sportFindings += "SPORTS/params.json: '$sport' declares $key blocked but POWERBI_REGISTRY.md approves it"
+                        }
+                    }
+                    elseif (-not $isApproved) {
+                        $sportFindings += "SPORTS/params.json: '$sport' classifies $key as '$signal' but POWERBI_REGISTRY.md has no Approved row for it"
                     }
                 }
             }
@@ -770,7 +855,7 @@ if (Test-Path -LiteralPath $paramsPath) {
             $recorded = @()
             $unsupplied = @()
             if ($params.PSObject.Properties.Name -contains $sport) {
-                $recorded = @($params.$sport.PSObject.Properties.Name | Where-Object { $_ -ne $NotApplicableKey })
+                $recorded = @($params.$sport.PSObject.Properties.Name | Where-Object { $ReservedParamKeys -notcontains $_ })
                 $naBlock = $params.$sport.PSObject.Properties | Where-Object { $_.Name -eq $NotApplicableKey }
                 if ($naBlock) { $unsupplied = @($naBlock.Value.PSObject.Properties.Name) }
             }
