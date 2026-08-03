@@ -2933,3 +2933,90 @@ WHERE s.del = 'no'
   )
 
 ORDER BY sort_order, statistic_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-105
+    -- Name - COMP.RANK_SETTINGS_SCALAR_DUPLICATE_ROWS
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, holding more than one active config row for a setting that takes a single value, being the start date, the end date and the gender, separating a repeat of the same value from two rows that contradict each other, with the affected settings and a sample and template and tournament name context, together with a coverage count of all eligible statistics carrying at least one of those settings.
+    CASE
+        WHEN x.conflicting_groups > 0 THEN 'SETTINGS_CONFLICTING_VALUES'
+        ELSE 'SETTINGS_DUPLICATE_IDENTICAL'
+    END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.duplicate_groups,
+    x.sample_group,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The Event id config is deliberately outside the scope of this check. It is the one
+-- setting a statistic may legitimately hold several times, naming each event the ranking
+-- covers, so including it would report the normal shape of every multi-event statistic.
+-- Whether those ids point anywhere is GLOBAL-DQ-101's question, not this one.
+-- Two identical rows and two contradicting rows are not the same defect: the first is
+-- redundant storage a reader can ignore, the second means no reader can tell which value
+-- the statistic actually carries. They are separated rather than counted together.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(*) AS duplicate_groups,
+        SUM(CASE WHEN g.distinct_values > 1 THEN 1 ELSE 0 END) AS conflicting_groups,
+        MIN(CONCAT('type=', g.statistic_data_typeFK, ' rows=', g.row_count, ' values=', g.value_list)) AS sample_group
+    FROM (
+        SELECT
+            sc.statisticFK,
+            sc.statistic_data_typeFK,
+            COUNT(*) AS row_count,
+            COUNT(DISTINCT TRIM(sc.value)) AS distinct_values,
+            SUBSTRING(GROUP_CONCAT(DISTINCT TRIM(sc.value) ORDER BY TRIM(sc.value) SEPARATOR '|'), 1, 60) AS value_list
+        FROM statistic_config sc
+        JOIN statistic s2 ON s2.id = sc.statisticFK AND s2.del = 'no'
+             AND s2.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+             AND s2.object_typeFK = 3
+        JOIN tournament t2 ON t2.id = s2.objectFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+             AND tt2.sportFK = {{SPORT_ID}}
+        WHERE sc.del = 'no'
+          AND sc.statistic_data_typeFK IN (
+              {{CONFIG_START_DATE_TYPE_ID}}, {{CONFIG_END_DATE_TYPE_ID}}, {{CONFIG_GENDER_TYPE_ID}})
+          AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
+          -- AND tt2.id = <tournament_template_id>
+        GROUP BY sc.statisticFK, sc.statistic_data_typeFK
+        HAVING COUNT(*) > 1
+    ) g
+    JOIN statistic s ON s.id = g.statisticFK AND s.del = 'no'
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    GROUP BY s.id, s.name, tt.name, t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1 FROM statistic_config sc2
+      WHERE sc2.statisticFK = s.id AND sc2.del = 'no'
+        AND sc2.statistic_data_typeFK IN (
+            {{CONFIG_START_DATE_TYPE_ID}}, {{CONFIG_END_DATE_TYPE_ID}}, {{CONFIG_GENDER_TYPE_ID}})
+  )
+
+ORDER BY sort_order, statistic_id;

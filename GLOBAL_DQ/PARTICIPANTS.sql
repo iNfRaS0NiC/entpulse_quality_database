@@ -721,3 +721,68 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_startdate DESC;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-104
+    -- Name - EVENT_PARTICIPANT_REFERENCE_OR_TYPE_INVALID
+    -- What it does: Finds active events of the selected sport holding an event-participant row whose participant is not an active participant at all, or whose participant type is not one of the types the sport is confirmed to field, separating a reference that resolves to nothing from one resolving to a participant of the wrong kind, with the offending types and the stage name context, together with a coverage count of all eligible events holding at least one active event-participant row.
+    CASE
+        WHEN x.reference_missing_count > 0 THEN 'EVENT_PARTICIPANT_REFERENCE_MISSING'
+        ELSE 'EVENT_PARTICIPANT_TYPE_OUTSIDE_SPORT_SET'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.tournament_stage_name,
+    x.offending_row_count,
+    x.offending_types,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- EVENT_PARTICIPANT_TYPE_LIST is declared for every documented sport, but until now it was
+-- only ever a scope filter - GLOBAL-DQ-007 and -008 use it to decide which participants to
+-- look at. Filtering on a value never tests it: a participant of the wrong kind leaves the
+-- population silently, which is the opposite of being reported. This asserts the same list
+-- the other checks trust.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        ts.name AS tournament_stage_name,
+        COUNT(*) AS offending_row_count,
+        SUM(CASE WHEN p.id IS NULL THEN 1 ELSE 0 END) AS reference_missing_count,
+        SUBSTRING(GROUP_CONCAT(DISTINCT COALESCE(p.type, 'none') ORDER BY p.type SEPARATOR ', '), 1, 80) AS offending_types
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = {{SPORT_ID}}
+    LEFT JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    WHERE ep.del = 'no'
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      AND (p.id IS NULL OR p.type NOT IN ({{EVENT_PARTICIPANT_TYPE_LIST}}))
+    GROUP BY e.id, e.name, ts.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE ep.del = 'no'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_id;
