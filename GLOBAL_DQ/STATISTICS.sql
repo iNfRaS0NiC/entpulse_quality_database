@@ -3158,3 +3158,69 @@ WHERE s.del = 'no'
   )
 
 ORDER BY sort_order, statistic_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-113
+    -- Name - COMP.RANK_PARTICIPANT_TYPE_MIXED
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, holding participants of more than one kind in the confirmed physical shard, so one place sequence ranks teams against individuals, with the kinds held and their row counts and template and tournament name context, together with a coverage count of all eligible statistics holding at least one active participant.
+    'Comp_Rank_Participant_Type_Mixed' AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.types_held,
+    x.distinct_types,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- A ranking answers one question about one kind of competitor, so two kinds under one place
+-- sequence means either the ranking is two rankings or somebody is counted in both. Asked
+-- without naming which kinds are legitimate, which is what keeps it global: the sport's own
+-- participant vocabulary is GLOBAL-DQ-104's business, and a sport fielding both teams and
+-- individuals is normal - what is not normal is one statistic holding both.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(DISTINCT p.type) AS distinct_types,
+        SUBSTRING(GROUP_CONCAT(DISTINCT p.type ORDER BY p.type SEPARATOR ', '), 1, 60) AS types_held
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = {{SPORT_ID}}
+    JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY s.id, s.name, tt.name, t.name
+    HAVING COUNT(DISTINCT p.type) > 1
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1 FROM statistic_participants{{SHARD_ID}} sp2
+      WHERE sp2.statisticFK = s.id AND sp2.del = 'no'
+  )
+
+ORDER BY sort_order, statistic_id;

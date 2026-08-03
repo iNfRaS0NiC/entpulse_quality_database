@@ -376,3 +376,79 @@ WHERE ep.del = 'no'
   )
 
 ORDER BY sort_order, event_id, event_participants_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - Triathlon-DQ-094
+    -- Name - EVENT_MIXED_RELAY_LINEUP_SIZE_NOT_FOUR
+    -- What it does: Finds active Triathlon team participants in Mixed Relay events whose active Starter lineup names a number of distinct athletes other than four, the format being two men and two women each racing a super-sprint leg, counting only teams that carry a lineup at all, with the size found and the event and stage name context, together with a coverage count of all eligible Mixed Relay team participants carrying an active lineup.
+    'Mixed_Relay_Lineup_Size_Not_Four' AS check_type,
+    x.event_participants_id,
+    x.event_id,
+    x.event_name,
+    x.tournament_stage_name,
+    x.lineup_size,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Narrowed to discipline 800 alone rather than to relays in general. SPORTS/Triathlon.md
+-- records that lineup size is not fixed by discipline for this sport and that Team Relay
+-- fields both three- and four-member teams, so a rule written across relays would report the
+-- format. Mixed Relay is the one discipline whose four is the definition rather than a habit.
+-- A team carrying no lineup is outside the eligible population rather than a finding of size
+-- zero. That is a different defect - the membership is absent, not wrong - and folding it in
+-- would turn one outlier into a report of every unpopulated team.
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        ts.name AS tournament_stage_name,
+        COUNT(DISTINCT l.participantFK) AS lineup_size
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 50
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no' AND p.type = 'team'
+    JOIN lineup l ON l.event_participantsFK = ep.id AND l.del = 'no'
+    WHERE ep.del = 'no'
+      -- AND tt.id = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      AND EXISTS (
+          SELECT 1 FROM object_discipline od
+          WHERE od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+            AND od.disciplineFK = 800
+      )
+    GROUP BY ep.id, e.id, e.name, ts.name
+    HAVING COUNT(DISTINCT l.participantFK) <> 4
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 50
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no' AND p.type = 'team'
+JOIN lineup l ON l.event_participantsFK = ep.id AND l.del = 'no'
+WHERE ep.del = 'no'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1 FROM object_discipline od
+      WHERE od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+        AND od.disciplineFK = 800
+  )
+
+ORDER BY sort_order, event_id, event_participants_id;

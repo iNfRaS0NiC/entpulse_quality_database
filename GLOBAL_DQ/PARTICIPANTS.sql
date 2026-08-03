@@ -786,3 +786,87 @@ WHERE ep.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-112
+    -- Name - EVENT_LINEUP_ATHLETE_ASSIGNED_MORE_THAN_ONCE
+    -- What it does: Finds active events of the selected sport where one athlete is listed more than once across the event's active lineups, either repeated inside a single team's lineup or held by two teams at the same time, so one competitor occupies two places in one event, with the number of athletes affected and the number of teams involved and a sample and the stage name context, together with a coverage count of all eligible events holding at least one active lineup row.
+    CASE
+        WHEN x.max_teams_holding > 1 THEN 'LINEUP_ATHLETE_IN_TWO_TEAMS'
+        ELSE 'LINEUP_ATHLETE_REPEATED_IN_ONE_TEAM'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.tournament_stage_name,
+    x.affected_athletes,
+    x.sample_athlete,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The two shapes are one question asked of the same row set, so they share a CheckID and
+-- separate by check_type. They are not equally serious and the distinction is the point: a
+-- repeated row inside one lineup is redundant storage, while an athlete held by two teams in
+-- the same event changes which team fielded whom and therefore what the result means.
+-- Eligibility is events holding a lineup at all. A sport that uses lineups thinly - and this
+-- one does, over about a hundred events - gets a small coverage count, and that number is
+-- itself the thing to read before any finding count is interpreted.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        ts.name AS tournament_stage_name,
+        COUNT(*) AS affected_athletes,
+        MAX(g.teams_holding) AS max_teams_holding,
+        MIN(CONCAT('athlete=', g.participantFK,
+                   ' rows=', g.lineup_rows,
+                   ' teams=', g.teams_holding)) AS sample_athlete
+    FROM (
+        SELECT
+            ep.eventFK AS event_id,
+            l.participantFK,
+            COUNT(*) AS lineup_rows,
+            COUNT(DISTINCT ep.id) AS teams_holding
+        FROM lineup l
+        JOIN event_participants ep ON ep.id = l.event_participantsFK AND ep.del = 'no'
+        JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+             AND tt2.sportFK = {{SPORT_ID}}
+        WHERE l.del = 'no'
+          -- AND tt2.id = <tournament_template_id>
+          -- AND e2.startdate >= '<from_datetime>'
+          -- AND e2.startdate <  '<to_datetime>'
+        GROUP BY ep.eventFK, l.participantFK
+        HAVING COUNT(*) > 1
+    ) g
+    JOIN event e ON e.id = g.event_id AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    GROUP BY e.id, e.name, ts.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE e.del = 'no'
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep3
+      JOIN lineup l3 ON l3.event_participantsFK = ep3.id AND l3.del = 'no'
+      WHERE ep3.eventFK = e.id AND ep3.del = 'no'
+  )
+
+ORDER BY sort_order, event_id;

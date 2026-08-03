@@ -2577,11 +2577,11 @@ SELECT
     x.sample_offence,
     NULL AS eligible_count,
     0 AS sort_order
--- The effective time is Full time where one exists and Duration otherwise, because the
--- Duration column carries two different facts depending on that: where a Full time is stored
--- beside it, Duration is the gap to the winner; where it stands alone, it is the absolute
--- time itself. Comparing the column directly would therefore compare a gap against an
--- absolute and report the whole field.
+-- The Duration column follows the leader/gap convention: the leader carries an absolute time
+-- and everyone behind carries a gap to it, marked by a leading plus. SPORTS/BMX.md owns that
+-- statement for BMX. The Full time is preferred where one is stored only because it is
+-- unambiguously absolute; for a sport that populates it thinly, as BMX does over nine events,
+-- almost every row is read from Duration and the convention is what matters.
 -- Only values of the same kind are compared, which is what is_gap carries. Within one event
 -- the winner is often stored as an absolute time while everyone behind is stored as a gap to
 -- that winner, so an absolute and a gap sit side by side under the same rank sequence. Read
