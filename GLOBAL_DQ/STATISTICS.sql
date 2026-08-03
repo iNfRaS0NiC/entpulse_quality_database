@@ -3222,3 +3222,67 @@ WHERE s.del = 'no'
   -- AND tt.id = <tournament_template_id>
 
 ORDER BY sort_order, statistic_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-115
+    -- Name - COMP.RANK_PARTICIPANT_REFERENCE_INVALID
+    -- What it does: Finds active statistic-participant rows in active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, whose participant reference resolves to no participant row or to a soft-deleted participant, separating the two cases, with statistic, template and tournament name context and the number of active data rows still attached, together with a coverage count of all eligible statistic-participant rows.
+    CASE
+        WHEN p.id IS NULL THEN 'PARTICIPANT_REFERENCE_MISSING'
+        ELSE                   'PARTICIPANT_REFERENCE_SOFT_DELETED'
+    END AS check_type,
+    sp.id AS statistic_participants_id,
+    s.id AS statistic_id,
+    s.name AS statistic_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    sp.participantFK AS participant_id,
+    p.name AS participant_name,
+    p.type AS participant_type,
+    p.del AS participant_del,
+    (
+        SELECT COUNT(DISTINCT sd.id)
+        FROM statistic_data{{SHARD_ID}} sd
+        WHERE sd.statistic_participants{{SHARD_ID}}FK = sp.id
+          AND sd.del = 'no'
+    ) AS active_data_row_count,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The reference is tested rather than used as a scope join. An inner join to participant
+-- would make a missing reference disappear from both findings and coverage, which is the
+-- false-clean shape this statement exists to prevent. The data-row count is context only:
+-- a dangling participant row is invalid whether it still owns data or not.
+FROM statistic_participants{{SHARD_ID}} sp
+JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+LEFT JOIN participant p ON p.id = sp.participantFK
+WHERE sp.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND (p.id IS NULL OR p.del <> 'no')
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sp.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic_participants{{SHARD_ID}} sp
+JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE sp.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+
+ORDER BY sort_order, statistic_participants_id;

@@ -784,6 +784,31 @@ Test-That 'GLOBAL-DQ-113 resolves active participants in findings and coverage' 
         'active participant joins across both branches'
 }
 
+Test-That 'GLOBAL-DQ-115 audits dangling Comp.Rank references before participant resolution' {
+    $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'GLOBAL-DQ-115' })
+    Assert-Equal 1 $statement.Count 'GLOBAL-DQ-115 statement count'
+    $sql = $statement[0].Sql
+    $branches = [regex]::Split($sql, '(?im)^\s*UNION ALL\s*$')
+
+    Assert-Equal 2 $branches.Count 'findings and coverage branches'
+    Assert-True ($branches[0] -match 'LEFT\s+JOIN\s+participant\s+p\s+ON\s+p\.id\s*=\s*sp\.participantFK') `
+        'findings must retain unresolved participant references'
+    Assert-True ($branches[0] -match "p\.id\s+IS\s+NULL\s+OR\s+p\.del\s*<>\s*'no'") `
+        'missing and soft-deleted references must both be findings'
+    Assert-True ($branches[0] -match 'PARTICIPANT_REFERENCE_MISSING') `
+        'missing-reference verdict'
+    Assert-True ($branches[0] -match 'PARTICIPANT_REFERENCE_SOFT_DELETED') `
+        'soft-deleted-reference verdict'
+    Assert-Equal 0 ([regex]::Matches($branches[1], 'JOIN\s+participant')).Count `
+        'coverage must not resolve participant and hide dangling rows'
+    Assert-True ($branches[1] -match 'COUNT\s*\(\s*DISTINCT\s+sp\.id\s*\)\s+AS\s+eligible_count') `
+        'coverage must count statistic-participant audited objects'
+    Assert-Equal 2 ([regex]::Matches($sql, "tt\.name\s+NOT\s+LIKE\s+'%\(IOC\)%'")).Count `
+        'IOC exclusion in findings and coverage'
+    Assert-True ($sql -match 'ORDER\s+BY\s+sort_order\s*,\s*statistic_participants_id') `
+        'stable audited-object order'
+}
+
 Test-That 'Curling-DQ-095 and Triathlon-DQ-070 keep participant scope symmetric' {
     $curling = @($realCatalogue | Where-Object { $_.CheckId -eq 'Curling-DQ-095' })
     $triathlon = @($realCatalogue | Where-Object { $_.CheckId -eq 'Triathlon-DQ-070' })
