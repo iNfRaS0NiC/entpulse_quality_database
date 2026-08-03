@@ -231,6 +231,22 @@ discipline is in scope, and narrowing it would silently restrict the already app
 `GLOBAL-DQ-045`, `-054` and `-056` instantiations. The statistic layer is unaffected in
 either case: Aquathlon reaches events only.
 
+**`Standard Distance` behaves like a default on the statistic layer.** `GLOBAL-DQ-100` reports
+281 statistics of 3354 whose discipline relation names a discipline no active event under
+their own tournament was contested in, and **every one of the 281 claims
+`144 Standard Distance`** - not most of them, all of them. Their tournaments ran Sprint
+Distance, Aquathlon and others.
+
+A finding set that is unanimous on one value is one behaviour rather than a list of separate
+mistakes: it reads as the value written when the discipline is unknown, not as 281
+independent choices. Anyone reporting this should carry that with the number, because 281
+tickets and one are very different pieces of work, and the fix is wherever that default is
+applied rather than in the statistics themselves.
+
+The direction of the comparison is what makes the claim checkable at all. The events record
+what was actually contested, so a discipline appearing on no event of the tournament is the
+statistic disagreeing with its own competition, not two equal opinions.
+
 <!-- MANUAL PASTE ZONE: 50 GENERIC RELATIONS AND DISCIPLINES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Statistics

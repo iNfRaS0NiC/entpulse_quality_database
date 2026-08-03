@@ -199,6 +199,18 @@ The discipline, stage gender and participant-type combinations the sport has con
 `Mixed Doubles` is contested as a mixed format only. A check that expects every discipline to appear
 under every gender would be wrong here, and the matrix rather than a rule is what says so.
 
+**The statistic layer's discipline is not always the one its own tournament ran.** Two
+statistics named `World Championships Mixed - Competition Rank`, the team half and its
+`(athletes)` partner, carry `753 4aSide` while every active event under their tournament was
+contested in `752 Mixed Doubles`. `GLOBAL-DQ-100` reports them, and the direction of the
+error is what it adds: the events are the record of what was played, so the statistic is
+wrong rather than the events.
+
+That is the third independent route to the same pair. `GLOBAL-DQ-095` reaches them through a
+place held twice, `Curling-DQ-078` through rosters of two under a four-player discipline, and
+`GLOBAL-DQ-100` through the discipline itself. Three checks reading three different columns
+and arriving at one statistic is what makes the finding safe to act on.
+
 <!-- MANUAL PASTE ZONE: 10 GENERIC RELATIONS AND DISCIPLINES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Statistics
