@@ -3072,3 +3072,89 @@ WHERE s.del = 'no'
   -- AND tt.id = <tournament_template_id>
 
 ORDER BY sort_order, statistic_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-110
+    -- Name - COMP.RANK_DISCIPLINE_CONTRADICTS_LINKED_EVENT
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, that carry a discipline relation and also name their events through the Event id config, where no discipline claimed by the statistic was contested by any of the events it names, so the two paths disagree about the same competition, with the disciplines claimed and those the linked events carry and template and tournament name context, together with a coverage count of all eligible statistics carrying both paths.
+    'Comp_Rank_Discipline_Contradicts_Linked_Event' AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.claimed_disciplines,
+    x.linked_event_disciplines,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Narrower than GLOBAL-DQ-100 and asking a different question. That one measures the claim
+-- against everything the whole tournament contested, which is the loosest possible test and
+-- the only one available when no Event id is recorded. Where the ids are recorded the
+-- statistic names its own events, and the claim can be measured against those instead - a
+-- statistic claiming Racing whose linked events are all Freestyle passes the tournament-wide
+-- test whenever that tournament also ran Racing somewhere.
+-- Eligibility requires both paths. A statistic with no discipline relation is GLOBAL-DQ-023
+-- and one whose Event id points nowhere is GLOBAL-DQ-101; neither is this.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        SUBSTRING(GROUP_CONCAT(DISTINCT dc.name ORDER BY dc.name SEPARATOR ', '), 1, 80) AS claimed_disciplines,
+        SUBSTRING(GROUP_CONCAT(DISTINCT de.name ORDER BY de.name SEPARATOR ', '), 1, 80) AS linked_event_disciplines,
+        MAX(CASE WHEN od.disciplineFK = ode.disciplineFK THEN 1 ELSE 0 END) AS supported
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = {{SPORT_ID}}
+    JOIN object_discipline od ON od.object_typeFK = 83 AND od.objectFK = s.id AND od.del = 'no'
+    JOIN discipline dc ON dc.id = od.disciplineFK AND dc.del = 'no'
+    JOIN statistic_config sc ON sc.statisticFK = s.id AND sc.del = 'no'
+         AND sc.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
+         AND TRIM(COALESCE(sc.value, '')) <> ''
+         AND TRIM(sc.value) REGEXP '^[0-9]+$'
+    JOIN event e ON e.id = CAST(TRIM(sc.value) AS UNSIGNED) AND e.del = 'no'
+    JOIN object_discipline ode ON ode.object_typeFK = 5 AND ode.objectFK = e.id AND ode.del = 'no'
+    JOIN discipline de ON de.id = ode.disciplineFK AND de.del = 'no'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY s.id, s.name, tt.name, t.name
+    HAVING MAX(CASE WHEN od.disciplineFK = ode.disciplineFK THEN 1 ELSE 0 END) = 0
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND tt.id = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1 FROM object_discipline od2
+      WHERE od2.object_typeFK = 83 AND od2.objectFK = s.id AND od2.del = 'no'
+  )
+  AND EXISTS (
+      SELECT 1 FROM statistic_config sc2
+      JOIN event e2 ON e2.id = CAST(TRIM(sc2.value) AS UNSIGNED) AND e2.del = 'no'
+      JOIN object_discipline ode2 ON ode2.object_typeFK = 5 AND ode2.objectFK = e2.id AND ode2.del = 'no'
+      WHERE sc2.statisticFK = s.id AND sc2.del = 'no'
+        AND sc2.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
+        AND TRIM(COALESCE(sc2.value, '')) <> ''
+        AND TRIM(sc2.value) REGEXP '^[0-9]+$'
+  )
+
+ORDER BY sort_order, statistic_id;

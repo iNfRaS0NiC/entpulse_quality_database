@@ -2131,3 +2131,61 @@ WHERE tt.sportFK = {{SPORT_ID}}
   )
 
 ORDER BY sort_order, event_count DESC;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-109
+    -- Name - EVENT_SETTINGS_DISCIPLINE_STORAGE_MISMATCH
+    -- What it does: Finds active events of the selected sport that record their discipline through both the event property named discipline and the object_discipline relation, where the two do not name the same discipline, so one storage path contradicts the other, with both values and template and stage name context, together with a coverage count of all eligible events carrying both paths.
+    'Event_Discipline_Storage_Mismatch' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    TRIM(pr.value) AS property_discipline,
+    d.name AS relation_discipline,
+    tt.name AS template_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Only events carrying both paths are eligible. An event with one of them is not a
+-- disagreement, it is a single record, and whether the missing one should be there is
+-- GLOBAL-DQ-015's question. Two mechanisms holding one fact are worth asserting against
+-- each other precisely because nothing else notices when they drift apart: every other
+-- check reads one path and is right by construction about that path alone.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
+     AND pr.name = 'discipline' AND pr.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+WHERE e.del = 'no'
+  AND TRIM(COALESCE(pr.value, '')) <> ''
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND LOWER(TRIM(pr.value)) <> LOWER(TRIM(d.name))
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
+     AND pr.name = 'discipline' AND pr.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+WHERE e.del = 'no'
+  AND TRIM(COALESCE(pr.value, '')) <> ''
+  -- AND tt.id = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_id;
