@@ -3213,14 +3213,12 @@ FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
      AND tt.sportFK = {{SPORT_ID}}
+JOIN statistic_participants{{SHARD_ID}} sp2 ON sp2.statisticFK = s.id AND sp2.del = 'no'
+JOIN participant p2 ON p2.id = sp2.participantFK AND p2.del = 'no'
 WHERE s.del = 'no'
   AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
   AND s.object_typeFK = 3
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
-  AND EXISTS (
-      SELECT 1 FROM statistic_participants{{SHARD_ID}} sp2
-      WHERE sp2.statisticFK = s.id AND sp2.del = 'no'
-  )
 
 ORDER BY sort_order, statistic_id;

@@ -848,7 +848,7 @@ FROM (
         s.name AS statistic_name,
         tt.name AS template_name,
         t.name AS tournament_name,
-        COUNT(DISTINCT sp.id) AS offending_participant_count,
+        COUNT(DISTINCT p.id) AS offending_participant_count,
         SUBSTRING(GROUP_CONCAT(DISTINCT p.type ORDER BY p.type SEPARATOR ', '), 1, 60) AS offending_types
     FROM statistic s
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
@@ -887,7 +887,9 @@ WHERE s.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND tt.id = <tournament_template_id>
   AND EXISTS (
-      SELECT 1 FROM statistic_participants11 sp2
+      SELECT 1
+      FROM statistic_participants11 sp2
+      JOIN participant p2 ON p2.id = sp2.participantFK AND p2.del = 'no'
       WHERE sp2.statisticFK = s.id AND sp2.del = 'no'
   )
 
@@ -912,8 +914,6 @@ SELECT
 -- excused: Mixed Doubles is the one format whose gender is not a matter of record-keeping
 -- preference, so an absent value is as wrong as a contradicting one.
 FROM event e
-JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
-     AND od.disciplineFK = 752
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -922,6 +922,14 @@ WHERE e.del = 'no'
   -- AND tt.id = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM object_discipline od
+      WHERE od.object_typeFK = 5
+        AND od.objectFK = e.id
+        AND od.del = 'no'
+        AND od.disciplineFK = 752
+  )
   AND (ts.gender IS NULL OR ts.gender <> 'mixed')
 
 UNION ALL
@@ -932,8 +940,6 @@ SELECT
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event e
-JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
-     AND od.disciplineFK = 752
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -942,5 +948,13 @@ WHERE e.del = 'no'
   -- AND tt.id = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM object_discipline od
+      WHERE od.object_typeFK = 5
+        AND od.objectFK = e.id
+        AND od.del = 'no'
+        AND od.disciplineFK = 752
+  )
 
 ORDER BY sort_order, event_id;

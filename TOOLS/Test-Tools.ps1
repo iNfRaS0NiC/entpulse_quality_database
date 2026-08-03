@@ -5,7 +5,8 @@
 .DESCRIPTION
     Test-Package.ps1 proves the package is internally consistent. This proves the two
     scripts that read it behave as documented: which checks a run selects, how placeholders
-    are filled, how the SQL catalogue is parsed, and what the workbook writer emits.
+    are filled, how the SQL catalogue is parsed, what the workbook writer emits, and whether
+    the approved DQ statements keep the specific scope/granularity fixes they depend on.
 
     No Pester dependency. Windows PowerShell 5.1 ships Pester 3.4, whose syntax differs from
     every current version, so a suite written against either one is wrong on the other
@@ -214,12 +215,21 @@ FROM t;
 }
 '@
 
+    $sportIndex = @'
+# Fixture sports
+
+| Sport ID | Sport | Competition model | Structural file | Structural status | Last evidence date | Database sport name |
+|---:|---|---|---|---|---|---|
+| 777 | Water-Polo | H2H (team) | `SPORTS/Water-Polo.md` | In progress | 2026-08-03 | Water Polo |
+'@
+
     $utf8 = New-Object System.Text.UTF8Encoding $false
     [IO.File]::WriteAllText((Join-Path $root 'GLOBAL_DQ\FIXTURE.sql'), $global, $utf8)
     [IO.File]::WriteAllText((Join-Path $root 'POWERBI_QUERIES\Fixtureball.sql'), $sport, $utf8)
     [IO.File]::WriteAllText((Join-Path $root 'POWERBI_QUERIES\Otherball.sql'), $other, $utf8)
     [IO.File]::WriteAllText((Join-Path $root 'POWERBI_REGISTRY.md'), $registry, $utf8)
     [IO.File]::WriteAllText((Join-Path $root 'SPORTS\params.json'), $params, $utf8)
+    [IO.File]::WriteAllText((Join-Path $root 'SPORTS.md'), $sportIndex, $utf8)
     return $root
 }
 
@@ -329,6 +339,18 @@ Test-That 'an unclassified check defaults to actionable' {
     Assert-Equal 'Actionable' $plain.Signal 'signal'
 }
 
+Test-That 'a direct GLOBAL selection receives the sport signal outside RunAll' {
+    $direct = @(Set-JobCheckSignal -Jobs @(Select-Checks -Patterns @('GLOBAL-DQ-001', 'GLOBAL-DQ-002')) `
+            -SportName 'Fixtureball')
+    Assert-Equal 2 $direct.Count 'direct selection count'
+    $monitored = $direct | Where-Object { $_.CheckId -eq 'GLOBAL-DQ-001' }
+    Assert-Equal 1 (@($monitored).Count) 'monitored direct job count'
+    Assert-True (-not [string]::IsNullOrWhiteSpace([string]$monitored.Sql)) `
+        'direct selection should return a job, not a nested array'
+    Assert-Equal 'Monitor' $monitored.Signal 'direct selection signal'
+    Assert-True ($monitored.SignalReason -match 'fixture') 'direct selection reason'
+}
+
 Test-That 'only the non-actionable checks are reported as classified' {
     Assert-Equal 1 $fixtureSelection.Classified.Count 'classified count'
     Assert-Equal 'Fixtureball-DQ-001' $fixtureSelection.Classified[0].CheckId 'classified CheckID'
@@ -346,6 +368,35 @@ Test-That '-IncludeUnapproved runs the catalogue instead, and says it is unappro
     $discovery = Select-RunAllChecks -Catalogue $fixtureCatalogue -SportName 'Nosuchball' -IncludeUnapproved
     Assert-Equal 3 $discovery.Jobs.Count 'template-only count'
     Assert-True $discovery.Unapproved 'the selection should be flagged unapproved'
+}
+
+Test-That '-IncludeUnapproved refuses a documented sport instead of bypassing its block' {
+    Assert-Throws {
+        Select-RunAllChecks -Catalogue $fixtureCatalogue -SportName 'Fixtureball' -IncludeUnapproved
+    } 'genuinely undocumented' 'documented IncludeUnapproved'
+}
+
+Test-That 'the sport index maps an exact database name to its repository slug' {
+    $identity = Resolve-SportIdentity -SportValue 'Water Polo'
+    Assert-Equal 'Water-Polo' $identity.Slug 'repository slug'
+    Assert-Equal 'Water Polo' $identity.DatabaseName 'database sport name'
+    Assert-True $identity.Documented 'the index row should make the identity documented'
+
+    $fromSlug = Resolve-SportIdentity -SportValue 'Water-Polo'
+    Assert-Equal 'Water Polo' $fromSlug.DatabaseName 'database name resolved from slug'
+}
+
+Test-That 'an undocumented database name gets a slug without becoming documented' {
+    $identity = Resolve-SportIdentity -DatabaseSportNameValue 'Artistic Gymnastics'
+    Assert-Equal 'Artistic-Gymnastics' $identity.Slug 'derived slug'
+    Assert-Equal 'Artistic Gymnastics' $identity.DatabaseName 'database name'
+    Assert-True (-not $identity.Documented) 'a derived identity must remain undocumented'
+}
+
+Test-That 'an explicit repository slug cannot contain spaces' {
+    Assert-Throws {
+        Resolve-SportIdentity -SportSlugValue 'Arena Ball' -DatabaseSportNameValue 'Arena Ball'
+    } 'slug' 'invalid explicit slug'
 }
 
 Test-That '-RunAll returns the selection sorted by CheckID' {
@@ -606,6 +657,156 @@ Test-That 'a workbook is a readable package with one sheet per input' {
     Assert-True ($names -notcontains 'xl/worksheets/sheet3.xml') 'no sheet should be written for an input that was not given'
 }
 
+Test-That 'run summary defaults to Actionable and preserves an explicit signal' {
+    $plainJob = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'PLAIN'; What = 'plain' }
+    $plain = New-RunSummaryRow -Job $plainJob -Rows 0 -Seconds 1 -Status 'clean'
+    Assert-Equal 'Actionable' $plain.Signal 'default signal'
+    Assert-Equal '' $plain.SignalReason 'default reason'
+
+    $monitorJob = [pscustomobject]@{
+        CheckId = 'Fixtureball-DQ-001'; Name = 'MONITORED'; What = 'monitored'
+        Signal = 'Monitor'; SignalReason = 'population-wide fixture signal'
+    }
+    $monitor = New-RunSummaryRow -Job $monitorJob -Rows 3 -Seconds 2 -Status 'OK'
+    Assert-Equal 'Monitor' $monitor.Signal 'explicit signal'
+    Assert-Equal 'population-wide fixture signal' $monitor.SignalReason 'explicit reason'
+}
+
+Test-That 'flat run summary writes Signal and SignalReason columns' {
+    $job = [pscustomobject]@{
+        CheckId = 'Fixtureball-DQ-001'; Name = 'MONITORED'; What = 'monitored'
+        Signal = 'Monitor'; SignalReason = 'population-wide fixture signal'
+    }
+    $row = New-RunSummaryRow -Job $job -Rows 3 -Seconds 2 -Status 'OK'
+    $path = Join-Path $FixtureRoot '_summary.csv'
+    Save-RunSummaryCsv -Summary @($row) -Path $path
+    $header = Get-Content -LiteralPath $path -TotalCount 1
+    $saved = @(Import-Csv -LiteralPath $path)
+    Assert-Equal 1 $saved.Count 'summary row count'
+    Assert-Equal '"CheckId","Name","What","Rows","Seconds","Status","Signal","SignalReason"' `
+        $header 'summary column order'
+    Assert-Equal 'Monitor' $saved[0].Signal 'saved signal'
+    Assert-Equal 'population-wide fixture signal' $saved[0].SignalReason 'saved signal reason'
+}
+
+Test-That 'workbook Overview carries Signal and Signal reason' {
+    $job = [pscustomobject]@{
+        CheckId = 'Fixtureball-DQ-001'; Name = 'MONITORED'; What = 'monitored'
+        Sql = 'SELECT 1;'; Signal = 'Monitor'; SignalReason = 'population-wide fixture signal'
+    }
+    $summary = @(New-RunSummaryRow -Job $job -Rows 1 -Seconds 1 -Status 'OK')
+    $collected = @([pscustomobject]@{
+            Job = $job
+            Rows = @([pscustomobject]@{ check_type = 'Fixture'; id = 1 })
+        })
+    $path = Join-Path $FixtureRoot 'run-with-signal.xlsx'
+    Save-RunWorkbook -Summary $summary -Collected $collected -Path $path | Out-Null
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem | Out-Null
+    $zip = [IO.Compression.ZipFile]::OpenRead($path)
+    try {
+        $entry = $zip.GetEntry('xl/worksheets/sheet1.xml')
+        $reader = New-Object IO.StreamReader($entry.Open())
+        try { $xml = $reader.ReadToEnd() } finally { $reader.Dispose() }
+
+        $detailEntry = $zip.GetEntry('xl/worksheets/sheet2.xml')
+        $detailReader = New-Object IO.StreamReader($detailEntry.Open())
+        try { $detailXml = $detailReader.ReadToEnd() } finally { $detailReader.Dispose() }
+    }
+    finally { $zip.Dispose() }
+
+    Assert-True ($xml -match '>Signal<') 'Overview should name the Signal column'
+    Assert-True ($xml -match '>Signal reason<') 'Overview should name the Signal reason column'
+    Assert-True ($xml -match '>Monitor<') 'Overview should carry the signal value'
+    Assert-True ($xml -match 'population-wide fixture signal') 'Overview should carry the reason'
+    Assert-True ($xml -match 'hyperlink ref="E2"') 'Rows hyperlink should keep its established column'
+    Assert-True ($xml -match 'sqref="F2:F2"') 'Status validation should keep its established column'
+    Assert-True ($detailXml -match '>Signal<') 'detail tab should name the Signal field'
+    Assert-True ($detailXml -match '>Signal reason<') 'detail tab should name the Signal reason field'
+    Assert-True ($detailXml -match 'population-wide fixture signal') 'detail tab should carry the signal reason'
+}
+
+Complete-Group
+
+# --------------------------------------------------------------------------------------
+# Approved DQ semantic regressions
+#
+# Test-Package.ps1 intentionally stops at static package consistency; it cannot execute the
+# MySQL statements. These focused assertions pin the exact SQL shapes behind previously
+# observed false-clean coverage and join-fan-out defects. They complement, rather than
+# replace, the live positive controls recorded in the sport files.
+# --------------------------------------------------------------------------------------
+
+$RepoRoot = $RealRepoRoot
+$realCatalogue = Get-CheckCatalogue
+
+Start-Group 'DQ' 'Approved semantic regressions'
+
+Test-That 'GLOBAL-DQ-111 keeps unreadable times, one event row and symmetric no-result scope' {
+    $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'GLOBAL-DQ-111' })
+    Assert-Equal 1 $statement.Count 'GLOBAL-DQ-111 statement count'
+    $sql = $statement[0].Sql
+
+    Assert-True ($sql -match 'EFFECTIVE_TIME_UNPARSEABLE_AND_NOT_MONOTONIC') `
+        'the combined event-level violation type is missing'
+    Assert-True ($sql -match '(?is)LEFT\s+JOIN\s*\(.+?\)\s*b\s+ON') `
+        'unreadable left-side values would again depend on finding a peer'
+    Assert-True ($sql -match '(?is)b\.is_gap\s*=\s*a\.is_gap\s+AND\s+a\.seconds\s+IS\s+NOT\s+NULL\s+AND\s+b\.seconds\s+IS\s+NOT\s+NULL\s+AND\s+b\.seconds\s*<\s*a\.seconds') `
+        'the self-join no longer prunes readable non-monotonic pairs before materialization'
+    Assert-True ($sql -match '(?m)^\s*GROUP BY a\.event_id\s*$') `
+        'findings are not collapsed to one row per event'
+    Assert-Equal 3 ([regex]::Matches($sql, 'RESULT_COMMENT_NO_RESULT_LIST')).Count `
+        'no-result exclusions in the two finding inputs and coverage input'
+    Assert-True ($sql -match '(?is)SELECT\s+DISTINCT\s+c\.event_id.+?\)\s+eligible') `
+        'coverage no longer counts the pre-violation event population'
+}
+
+Test-That 'GLOBAL-DQ-109 compares two discipline sets with symmetric resolvable scope' {
+    $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'GLOBAL-DQ-109' })
+    Assert-Equal 1 $statement.Count 'GLOBAL-DQ-109 statement count'
+    $sql = $statement[0].Sql
+
+    Assert-Equal 2 ([regex]::Matches($sql, '(?is)GROUP_CONCAT\s*\(\s*DISTINCT\s+LOWER')).Count `
+        'distinct normalized discipline set aggregates'
+    Assert-True ($sql -match 'HAVING\s+property_disciplines\s+<>\s+relation_disciplines') `
+        'set comparison is missing'
+    Assert-Equal 2 ([regex]::Matches($sql, 'FROM\s+property\s+pr2')).Count `
+        'property eligibility in findings and coverage'
+    Assert-Equal 2 ([regex]::Matches($sql, 'FROM\s+object_discipline\s+od2')).Count `
+        'relation eligibility in findings and coverage'
+}
+
+Test-That 'GLOBAL-DQ-113 resolves active participants in findings and coverage' {
+    $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'GLOBAL-DQ-113' })
+    Assert-Equal 1 $statement.Count 'GLOBAL-DQ-113 statement count'
+    Assert-Equal 2 ([regex]::Matches($statement[0].Sql,
+            'JOIN\s+participant\s+p\d*\s+ON\s+p\d*\.id\s*=\s*sp\d*\.participantFK')).Count `
+        'active participant joins across both branches'
+}
+
+Test-That 'Curling-DQ-095 and Triathlon-DQ-070 keep participant scope symmetric' {
+    $curling = @($realCatalogue | Where-Object { $_.CheckId -eq 'Curling-DQ-095' })
+    $triathlon = @($realCatalogue | Where-Object { $_.CheckId -eq 'Triathlon-DQ-070' })
+    Assert-Equal 1 $curling.Count 'Curling-DQ-095 statement count'
+    Assert-Equal 1 $triathlon.Count 'Triathlon-DQ-070 statement count'
+    Assert-True ($curling[0].Sql -match 'COUNT\(DISTINCT\s+p\.id\)') `
+        'Curling-DQ-095 no longer counts distinct participants'
+    Assert-Equal 2 ([regex]::Matches($curling[0].Sql, 'JOIN\s+participant\s+p\d*\s+ON')).Count `
+        'Curling-DQ-095 participant joins across both branches'
+    Assert-Equal 2 ([regex]::Matches($triathlon[0].Sql, 'JOIN\s+participant\s+p\s+ON')).Count `
+        'Triathlon-DQ-070 participant joins across both branches'
+}
+
+Test-That 'Curling-DQ-096 scopes discipline through EXISTS rather than a fan-out join' {
+    $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'Curling-DQ-096' })
+    Assert-Equal 1 $statement.Count 'Curling-DQ-096 statement count'
+    $sql = $statement[0].Sql
+    Assert-Equal 2 ([regex]::Matches($sql, 'EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+object_discipline')).Count `
+        'discipline EXISTS predicates in findings and coverage'
+    Assert-Equal 0 ([regex]::Matches($sql, '(?m)^JOIN\s+object_discipline')).Count `
+        'fan-out object_discipline joins'
+}
+
 Complete-Group
 
 # --------------------------------------------------------------------------------------
@@ -643,6 +844,39 @@ Test-That 'two swapped registry rows are reported as out of order' {
     $run = Invoke-PackageValidator -Root $root
     Assert-Equal 1 $run.ExitCode 'validator exit code'
     Assert-True ($run.Text -match 'is out of order') "the order finding should be reported; output was:`n$($run.Text)"
+}
+
+Test-That 'a sport index row without its database name is reported' {
+    $root = Copy-RepositoryFixture -Name 'sport-name-map'
+    $path = Join-Path $root 'SPORTS.md'
+    $lines = @([IO.File]::ReadAllText($path) -split "`n")
+    $changed = $false
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match '^\| 58 \| BMX \|') {
+            $lines[$i] = $lines[$i] -replace '\|\s*BMX\s*\|\s*$', '|  |'
+            $changed = $true
+            break
+        }
+    }
+    if (-not $changed) { throw 'the BMX sport-index row was not found in the fixture copy' }
+    [IO.File]::WriteAllText($path, ($lines -join "`n"), (New-Object System.Text.UTF8Encoding $false))
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match 'has no exact Database sport name') "the mapping finding should be reported; output was:`n$($run.Text)"
+}
+
+Test-That 'one database sport name cannot map to two repository slugs' {
+    $root = Copy-RepositoryFixture -Name 'duplicate-sport-name-map'
+    $path = Join-Path $root 'SPORTS.md'
+    $text = [IO.File]::ReadAllText($path)
+    $text = $text -replace '(?m)^(\| 10 \| Curling \|[^\r\n]*\|) Curling \|\s*$', '$1 BMX |'
+    [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match "database sport name 'BMX' maps to more than one slug") `
+        "the duplicate mapping finding should be reported; output was:`n$($run.Text)"
 }
 
 Test-That 'a no-result value missing from the value list is reported' {

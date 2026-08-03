@@ -60,9 +60,9 @@
 
 .EXAMPLE
     .\TOOLS\Run-Query.ps1 -Sport Triathlon -RunAll
-    The same, plus everything the sport authored for itself, in one command. Equivalent to
-    GLOBAL-DQ-*,Triathlon-DQ-* -Sport Triathlon -WithPatterns -Format xlsx, and it does not
-    fail on a sport that has no file of its own.
+    Every check POWERBI_REGISTRY.md records as Approved for Triathlon, using a sport-authored
+    override where its row names one, plus the pattern summaries. Unapproved, blocked and
+    deprecated checks do not run.
 
 .EXAMPLE
     .\TOOLS\Run-Query.ps1 BMX-DQ-001,BMX-DQ-002,BMX-DQ-003 -OutDir .\out
@@ -94,6 +94,15 @@ param(
     # statistic type and owner, the physical shard - and fills them in. Statements still
     # needing an investigative selection are reported and skipped rather than guessed.
     [string]$Sport,
+
+    # Explicit repository identity. Use this when the repository slug differs from the
+    # database's sport.name; SPORTS.md maps the two. -Sport remains the compatible shorthand
+    # and may contain either value for a documented sport.
+    [string]$SportSlug,
+
+    # Exact sport.name stored in the database. May be paired with -SportSlug while opening a
+    # new sport, before SPORTS.md has a row that can map the two.
+    [string]$DatabaseSportName,
 
     # Remaining placeholders, either NAME=VALUE strings or a hashtable.
     [object]$Params,
@@ -145,9 +154,10 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-# What the run was aimed at, which a GLOBAL CheckID cannot say for itself. Read by
-# Get-SportFromCheckId for the workbook's Sport column and the run folder name.
-$script:RunSportName = $Sport
+# What the run was aimed at, which a GLOBAL CheckID cannot say for itself. Main resolves this
+# to the repository slug before any output is built. Read by Get-SportFromCheckId for the
+# workbook's Sport column and the run folder name.
+$script:RunSportName = ''
 
 # Local, git-ignored credential file. Loaded before anything reads EP_QB_*, so it
 # can supply the login, a session cookie or a different base URL.
@@ -335,6 +345,167 @@ function Get-RegistryRow {
     return $rows
 }
 
+function ConvertTo-SportSlug {
+    # SPORTS.md owns the slug rule. This is only the fallback for a sport not documented
+    # there yet; a recorded mapping always wins.
+    param([string]$Name)
+
+    if ([string]::IsNullOrWhiteSpace($Name)) { return '' }
+
+    $decomposed = $Name.Normalize([Text.NormalizationForm]::FormD)
+    $builder = New-Object Text.StringBuilder
+    foreach ($character in $decomposed.ToCharArray()) {
+        if ([Globalization.CharUnicodeInfo]::GetUnicodeCategory($character) -ne
+            [Globalization.UnicodeCategory]::NonSpacingMark) {
+            [void]$builder.Append($character)
+        }
+    }
+
+    $ascii = $builder.ToString().Normalize([Text.NormalizationForm]::FormC)
+    $slug = [regex]::Replace($ascii.Trim(), '\s+', '-')
+    $slug = [regex]::Replace($slug, '[^A-Za-z0-9.\-]', '')
+    return $slug.Trim('-')
+}
+
+function Get-SportIndexEntry {
+    # The index owns the mapping between a stable repository slug and the exact database
+    # sport.name. The database-name column was appended so the original column positions stay
+    # compatible with older readers of SPORTS.md.
+    $path = Join-Path $RepoRoot 'SPORTS.md'
+    if (-not (Test-Path -LiteralPath $path)) { return @() }
+
+    $entries = @()
+    foreach ($line in (Get-Content -LiteralPath $path -Encoding UTF8)) {
+        if ($line -notmatch '^\s*\|\s*\d+\s*\|') { continue }
+        $cells = @(($line.Trim() -replace '^\|', '' -replace '\|\s*$', '') -split '\|' |
+            ForEach-Object { ($_ -replace '`', '').Trim() })
+        if ($cells.Count -lt 2) { continue }
+
+        $slug = $cells[1]
+        # Six-column indexes predate the explicit mapping. They remain readable, with the
+        # historical assumption that slug and database name were the same.
+        $databaseName = if ($cells.Count -ge 7 -and -not [string]::IsNullOrWhiteSpace($cells[6])) {
+            $cells[6]
+        }
+        else { $slug }
+
+        $entries += [pscustomobject]@{
+            SportId     = [int]$cells[0]
+            Slug        = $slug
+            DatabaseName = $databaseName
+        }
+    }
+    return $entries
+}
+
+function Resolve-SportIdentity {
+    # Keep -Sport compatible while separating the two identities it used to conflate. For a
+    # documented sport it may be either the slug or the exact DB name. The explicit pair is
+    # useful before a new sport has an index row.
+    param(
+        [string]$SportValue,
+        [string]$SportSlugValue,
+        [string]$DatabaseSportNameValue
+    )
+
+    if (-not [string]::IsNullOrWhiteSpace($SportValue) -and
+        (-not [string]::IsNullOrWhiteSpace($SportSlugValue) -or
+         -not [string]::IsNullOrWhiteSpace($DatabaseSportNameValue))) {
+        throw '-Sport is the compatible shorthand; do not combine it with -SportSlug or -DatabaseSportName.'
+    }
+
+    if ([string]::IsNullOrWhiteSpace($SportValue) -and
+        [string]::IsNullOrWhiteSpace($SportSlugValue) -and
+        [string]::IsNullOrWhiteSpace($DatabaseSportNameValue)) {
+        return $null
+    }
+
+    $entries = @(Get-SportIndexEntry)
+    $matches = @()
+
+    if (-not [string]::IsNullOrWhiteSpace($SportValue)) {
+        $matches = @($entries | Where-Object {
+                $_.Slug -ieq $SportValue -or $_.DatabaseName -ieq $SportValue
+            })
+    }
+    else {
+        $matches = @($entries | Where-Object {
+                ([string]::IsNullOrWhiteSpace($SportSlugValue) -or $_.Slug -ieq $SportSlugValue) -and
+                ([string]::IsNullOrWhiteSpace($DatabaseSportNameValue) -or $_.DatabaseName -ieq $DatabaseSportNameValue)
+            })
+
+        # A supplied pair that points at two different documented rows is an error worth
+        # naming, not an undocumented sport to derive afresh.
+        $slugMatch = @($entries | Where-Object { $_.Slug -ieq $SportSlugValue })
+        $databaseMatch = @($entries | Where-Object { $_.DatabaseName -ieq $DatabaseSportNameValue })
+        if ($SportSlugValue -and $DatabaseSportNameValue -and
+            (($slugMatch.Count -gt 0 -and $slugMatch[0].DatabaseName -ine $DatabaseSportNameValue) -or
+             ($databaseMatch.Count -gt 0 -and $databaseMatch[0].Slug -ine $SportSlugValue))) {
+            throw "Sport identity '$SportSlugValue' / '$DatabaseSportNameValue' contradicts the mapping in SPORTS.md."
+        }
+    }
+
+    $matches = @($matches | Group-Object Slug | ForEach-Object { $_.Group[0] })
+    if ($matches.Count -gt 1) {
+        throw "Sport identity is ambiguous in SPORTS.md; pass both -SportSlug and -DatabaseSportName."
+    }
+    if ($matches.Count -eq 1) {
+        return [pscustomobject]@{
+            Slug         = $matches[0].Slug
+            DatabaseName = $matches[0].DatabaseName
+            SportId      = $matches[0].SportId
+            Documented   = $true
+        }
+    }
+
+    $databaseName = if ($DatabaseSportNameValue) { $DatabaseSportNameValue } else { $SportValue }
+    $slug = if ($SportSlugValue) { $SportSlugValue } else { ConvertTo-SportSlug -Name $databaseName }
+    if ([string]::IsNullOrWhiteSpace($databaseName)) { $databaseName = $slug }
+
+    if ([string]::IsNullOrWhiteSpace($slug) -or $slug -cnotmatch '^[A-Za-z0-9.\-]+$') {
+        throw "Repository sport slug '$slug' is invalid; use only A-Z, a-z, 0-9, period and hyphen."
+    }
+
+    return [pscustomobject]@{
+        Slug         = $slug
+        DatabaseName = $databaseName
+        SportId      = $null
+        Documented   = $false
+    }
+}
+
+function Test-SportDocumented {
+    # -IncludeUnapproved is an opening workflow, not an authorization override. Fail closed
+    # if any repository surface already knows the slug, even when the package is temporarily
+    # inconsistent and one of the other surfaces is missing.
+    param([string]$SportSlugValue)
+
+    if (@(Get-SportIndexEntry | Where-Object { $_.Slug -ieq $SportSlugValue }).Count -gt 0) { return $true }
+    if (Test-Path -LiteralPath (Join-Path $RepoRoot "SPORTS\$SportSlugValue.md")) { return $true }
+    if (Test-Path -LiteralPath (Join-Path $RepoRoot "POWERBI_QUERIES\$SportSlugValue.sql")) { return $true }
+
+    $registryPath = Join-Path $RepoRoot 'POWERBI_REGISTRY.md'
+    if (Test-Path -LiteralPath $registryPath) {
+        if (@(Get-RegistryRow -SportName $SportSlugValue).Count -gt 0) { return $true }
+    }
+
+    $paramsPath = Join-Path $RepoRoot 'SPORTS\params.json'
+    if (Test-Path -LiteralPath $paramsPath) {
+        try {
+            $params = Get-Content -LiteralPath $paramsPath -Raw -Encoding UTF8 | ConvertFrom-Json
+            if (@($params.PSObject.Properties | Where-Object { $_.Name -ieq $SportSlugValue }).Count -gt 0) {
+                return $true
+            }
+        }
+        catch {
+            # An unreadable documentation surface is not proof that a sport is new. The
+            # package validator will give the detailed JSON error.
+            return $true
+        }
+    }
+    return $false
+}
+
 function Select-RunAllChecks {
     # What "-RunAll -Sport X" means: every check POWERBI_REGISTRY.md records as Approved for
     # that sport, run through the statement its Query file names, and carrying its own
@@ -357,6 +528,11 @@ function Select-RunAllChecks {
         ForEach-Object { $_.CheckId } | Sort-Object)
 
     if ($IncludeUnapproved) {
+        if (Test-SportDocumented -SportSlugValue $SportName) {
+            throw ("-IncludeUnapproved is only for a genuinely undocumented sport. '$SportName' " +
+                'already exists in the repository, so its registry approvals, blocked signals and deprecated rows must remain authoritative.')
+        }
+
         # An undocumented sport has no rows yet, and running the catalogue against it is how
         # it gets opened. That is discovery, not a DQ run: nothing here is approved for the
         # sport, and WORKFLOW.md's sequence still has to be followed before anything is.
@@ -889,6 +1065,46 @@ function Get-SportCheckSignal {
     return $resolved
 }
 
+function Set-JobCheckSignal {
+    # Apply the sport's interpretation to every execution path, not only -RunAll. Direct
+    # GLOBAL-DQ patterns still run against one documented sport and must not lose a known
+    # Monitor or Not applicable verdict when their workbook/summary is built.
+    param($Jobs, [string]$SportName)
+
+    $signals = $(if ([string]::IsNullOrWhiteSpace($SportName)) { @{} }
+        else { Get-SportCheckSignal -SportName $SportName })
+    $hydrated = @()
+
+    foreach ($job in @($Jobs)) {
+        $classification = $null
+        $keys = @()
+        if ($job.PSObject.Properties.Name -contains 'Template' -and $job.Template) {
+            $keys += [string]$job.Template
+        }
+        if ($job.CheckId) { $keys += [string]$job.CheckId }
+
+        foreach ($key in $keys) {
+            if ($signals.ContainsKey($key)) {
+                $classification = $signals[$key]
+                break
+            }
+        }
+
+        $signal = if ($classification) { $classification.Signal }
+            elseif ($job.PSObject.Properties.Name -contains 'Signal' -and $job.Signal) { [string]$job.Signal }
+            else { 'Actionable' }
+        $reason = if ($classification) { $classification.Reason }
+            elseif ($job.PSObject.Properties.Name -contains 'SignalReason') { [string]$job.SignalReason }
+            else { '' }
+
+        $job | Add-Member -NotePropertyName Signal -NotePropertyValue $signal -Force
+        $job | Add-Member -NotePropertyName SignalReason -NotePropertyValue $reason -Force
+        $hydrated += $job
+    }
+
+    return $hydrated
+}
+
 function Get-SportNotApplicable {
     # Parameters the sport is documented as never being able to supply, each with the reason
     # it cannot. A missing value and an impossible one look identical to the placeholder
@@ -923,12 +1139,12 @@ function Resolve-SportParameters {
     # Fills the placeholders that are structural facts about a sport. Everything here is
     # read from the database rather than assumed: DATABASE.md DB-SEM-006 records that the
     # statistic type does not determine the physical shard, so the shard is probed.
-    param([string]$SportName)
+    param([string]$DatabaseSportNameValue)
 
     $resolved = @{}
-    Write-Host "Discovering parameters for '$SportName'..." -ForegroundColor DarkGray
+    Write-Host "Discovering parameters for database sport '$DatabaseSportNameValue'..." -ForegroundColor DarkGray
 
-    $literal = Get-SqlLiteral -Text $SportName
+    $literal = Get-SqlLiteral -Text $DatabaseSportNameValue
     $response = Invoke-SqlWithRetry -Statement `
         "SELECT id AS sport_id, name AS sport_name FROM sport WHERE del = 'no' AND name = $literal ORDER BY id;"
     # Get-ResultRows returns its array comma-wrapped so a single row is not unrolled.
@@ -936,10 +1152,10 @@ function Resolve-SportParameters {
     $hits = Get-ResultRows -Content $response.Content
 
     if ($hits.Count -eq 0) {
-        throw "No active sport is named '$SportName'. Names are exact; list them with -Sql ""SELECT id, name FROM sport WHERE del='no' ORDER BY name;"""
+        throw "No active sport is named '$DatabaseSportNameValue'. Names are exact; list them with -Sql ""SELECT id, name FROM sport WHERE del='no' ORDER BY name;"""
     }
     if ($hits.Count -gt 1) {
-        throw "'$SportName' matches $($hits.Count) active sports. Pass -SportId instead."
+        throw "'$DatabaseSportNameValue' matches $($hits.Count) active sports. Pass -SportId instead."
     }
 
     $sportId = [int]$hits[0].sport_id
@@ -1359,12 +1575,14 @@ function Save-Workbook {
             foreach ($link in $links) { $linked[$link.Ref] = $true }
 
             # A check tab opens with a labelled identity block:
-            #   row 1  Check ID | Check Name | SQL Used | What it does | Comment
+            #   row 1  Check ID | Check Name | SQL Used | What it does | Comment |
+            #          Signal | Signal reason
             #   row 2  the values, with Comment left empty for the reviewer
             #   row 3  the link back to Overview, in a cell of its own
             #   row 4  blank, so the result table below stays its own block
             if ($headerRow) {
-                $labels = @('Check ID', 'Check Name', 'SQL Used', 'What it does', 'Comment')
+                $labels = @('Check ID', 'Check Name', 'SQL Used', 'What it does',
+                    'Comment', 'Signal', 'Signal reason')
 
                 [void]$xml.Append('<row r="1">')
                 for ($c = 0; $c -lt $header.Count; $c++) {
@@ -1500,6 +1718,44 @@ function Save-Rows {
     }
 }
 
+function New-RunSummaryRow {
+    # One durable execution record used by both XLSX Overview and flat _summary.csv. The
+    # signal defaults here so pattern jobs and older callers cannot accidentally emit an
+    # empty classification that a downstream report reads as actionable by guesswork.
+    param(
+        $Job,
+        [int]$Rows,
+        [double]$Seconds,
+        [string]$Status
+    )
+
+    $signal = 'Actionable'
+    $reason = ''
+    if ($Job.PSObject.Properties.Name -contains 'Signal' -and
+        -not [string]::IsNullOrWhiteSpace([string]$Job.Signal)) {
+        $signal = [string]$Job.Signal
+    }
+    if ($Job.PSObject.Properties.Name -contains 'SignalReason') {
+        $reason = [string]$Job.SignalReason
+    }
+
+    return [pscustomobject]@{
+        CheckId     = $Job.CheckId
+        Name        = $Job.Name
+        What        = $Job.What
+        Rows        = $Rows
+        Seconds     = $Seconds
+        Status      = $Status
+        Signal      = $signal
+        SignalReason = $reason
+    }
+}
+
+function Save-RunSummaryCsv {
+    param($Summary, [string]$Path)
+    $Summary | Export-Csv -LiteralPath $Path -NoTypeInformation -Encoding UTF8
+}
+
 function Save-RunWorkbook {
     # Builds the whole workbook out of what the run has produced so far, so one piece of
     # code writes both the interim snapshots and the final file. Returns the checks whose
@@ -1551,6 +1807,8 @@ function Save-RunWorkbook {
             'What it does'  = $entry.What
             'Rows'          = $rowsCell
             'Status'        = 'Not Started'
+            'Signal'        = $(if ($entry.Signal) { $entry.Signal } else { 'Actionable' })
+            'Signal reason' = [string]$entry.SignalReason
         }
         # Rows carries the jump to the tab, so its column moves with it.
         if ($ran -and $tabOf.ContainsKey($entry.CheckId)) {
@@ -1580,7 +1838,9 @@ function Save-RunWorkbook {
         $sheets += [pscustomobject]@{
             Name   = $tabOf[$item.Job.CheckId]
             Rows   = $item.Rows
-            Header = @($item.Job.CheckId, $item.Job.Name, (ConvertTo-SingleLineSql -Sql $item.Job.Sql), $item.Job.What, '')
+            Header = @($item.Job.CheckId, $item.Job.Name, (ConvertTo-SingleLineSql -Sql $item.Job.Sql),
+                $item.Job.What, '', $(if ($item.Job.Signal) { $item.Job.Signal } else { 'Actionable' }),
+                [string]$item.Job.SignalReason)
             BackTo = $overviewName
         }
     }
@@ -1601,6 +1861,18 @@ function Save-RunWorkbook {
 # The prologue above has run, so a caller dot-sourcing for the functions gets them with the
 # script variables they read already set. Everything below this line talks to the server.
 if ($DotSourceOnly) { return }
+
+$sportIdentity = Resolve-SportIdentity -SportValue $Sport -SportSlugValue $SportSlug `
+    -DatabaseSportNameValue $DatabaseSportName
+if ($sportIdentity) {
+    $ResolvedSportSlug = $sportIdentity.Slug
+    $ResolvedDatabaseSportName = $sportIdentity.DatabaseName
+    $script:RunSportName = $ResolvedSportSlug
+}
+else {
+    $ResolvedSportSlug = ''
+    $ResolvedDatabaseSportName = ''
+}
 
 if ($Info) {
     # The wrapper function announces itself through EP_QB_COMMAND so the examples
@@ -1662,6 +1934,8 @@ if ($Info) {
     Write-Line "$Entry GLOBAL-DISCOVERY-001 -SportId 58" 'fills {{SPORT_ID}}'
     Write-Line '-Params STATISTIC_TYPE_ID=11,SHARD_ID=11' 'any other declared token'
     Write-Line '-Params @{ SHARD_ID = 11 }' 'the hashtable form also works'
+    Write-Line "$Entry -Sport 'Water Polo' ..." 'database name or documented repository slug'
+    Write-Line "$Entry -SportSlug Water-Polo -DatabaseSportName 'Water Polo' ..." 'make a new mapping explicit'
 
     Write-Section 'OPEN A NEW SPORT'
     Write-Line "$Entry GLOBAL-DISCOVERY-* -Sport BMX -Format xlsx" 'discover the parameters, then run'
@@ -1678,10 +1952,13 @@ if ($Info) {
 
     Write-Section 'EVERYTHING FOR ONE SPORT'
     Write-Line "$Entry -Sport Triathlon -RunAll" 'the whole sport in one command'
-    Write-Host '  Every GLOBAL DQ template, every statement the sport authored for itself' -ForegroundColor DarkGray
-    Write-Host '  and the patterns, in one workbook under the output root. Implies' -ForegroundColor DarkGray
+    Write-Host '  Every Approved registry row for the sport, using the Query file it names,' -ForegroundColor DarkGray
+    Write-Host '  and the patterns, in one workbook under the output root. Blocked,' -ForegroundColor DarkGray
+    Write-Host '  unapproved and deprecated checks do not run. Implies' -ForegroundColor DarkGray
     Write-Host '  -WithPatterns and -Format xlsx; an explicit -Format or -OutDir still wins.' -ForegroundColor DarkGray
     Write-Host '  A template the sport cannot parameterise is listed as SKIPPED, not run.' -ForegroundColor DarkGray
+    Write-Host '  -IncludeUnapproved is accepted only while the sport is absent everywhere' -ForegroundColor DarkGray
+    Write-Host '  in the repository; it cannot override an existing registry or block.' -ForegroundColor DarkGray
 
     Write-Section 'AD-HOC SQL'
     Write-Line "$Entry -Sql `"SELECT COUNT(*) AS c FROM sport;`"" 'run a literal statement'
@@ -1728,11 +2005,11 @@ if ($RunAll) {
     # Everything one sport can be asked, in one command: its approved DQ checks and the
     # patterns those findings have to be read against. Select-RunAllChecks owns which checks
     # those are.
-    if ([string]::IsNullOrWhiteSpace($Sport)) {
-        throw '-RunAll needs -Sport <name>: it selects that sport''s checks, and a GLOBAL template has no sport of its own.'
+    if ([string]::IsNullOrWhiteSpace($ResolvedSportSlug)) {
+        throw '-RunAll needs -Sport <name> (or -SportSlug/-DatabaseSportName): it selects that sport''s checks, and a GLOBAL template has no sport of its own.'
     }
 
-    $selection = Select-RunAllChecks -Catalogue (Get-CheckCatalogue) -SportName $Sport -IncludeUnapproved:$IncludeUnapproved
+    $selection = Select-RunAllChecks -Catalogue (Get-CheckCatalogue) -SportName $ResolvedSportSlug -IncludeUnapproved:$IncludeUnapproved
     $jobs = @($selection.Jobs)
 
     if ($selection.MissingStatement.Count -gt 0) {
@@ -1742,25 +2019,25 @@ if ($RunAll) {
             ($selection.MissingStatement -join "`n  ") + "`nRun TOOLS\Test-Package.ps1.")
     }
     if ($jobs.Count -eq 0) {
-        throw "Nothing is Approved for $Sport in POWERBI_REGISTRY.md. Use -ListChecks to see what is registered."
+        throw "Nothing is Approved for $ResolvedSportSlug in POWERBI_REGISTRY.md. Use -ListChecks to see what is registered."
     }
 
     if ($selection.Unapproved) {
-        Write-Host ("-RunAll -IncludeUnapproved: {0} statement(s) for {1}, plus the patterns." -f $jobs.Count, $Sport) -ForegroundColor Yellow
+        Write-Host ("-RunAll -IncludeUnapproved: {0} statement(s) for {1}, plus the patterns." -f $jobs.Count, $ResolvedSportSlug) -ForegroundColor Yellow
         Write-Host '  Discovery, not a DQ run: none of these is approved for this sport.' -ForegroundColor Yellow
     }
     else {
         $instantiated = @($jobs | Where-Object { $_.Template }).Count
         Write-Host ("-RunAll: {0} approved check(s) for {1} - {2} template instantiation(s) and {3} sport statement(s) - plus the patterns." -f `
-            $jobs.Count, $Sport, $instantiated, ($jobs.Count - $instantiated)) -ForegroundColor DarkGray
+            $jobs.Count, $ResolvedSportSlug, $instantiated, ($jobs.Count - $instantiated)) -ForegroundColor DarkGray
 
         # What was left out, and why. A run that is shorter than the catalogue should say so
         # here rather than leave the reader counting tabs in the workbook.
         if ($selection.NotApprovedIds.Count -gt 0) {
-            Write-Host ("  {0} GLOBAL template(s) not approved for {1} and not run." -f $selection.NotApprovedIds.Count, $Sport) -ForegroundColor DarkGray
+            Write-Host ("  {0} GLOBAL template(s) not approved for {1} and not run." -f $selection.NotApprovedIds.Count, $ResolvedSportSlug) -ForegroundColor DarkGray
         }
         foreach ($block in $selection.BlockedFamilies) {
-            Write-Host ("  {0} is blocked for {1}: {2}" -f $block.Family, $Sport, $block.Reason) -ForegroundColor DarkGray
+            Write-Host ("  {0} is blocked for {1}: {2}" -f $block.Family, $ResolvedSportSlug, $block.Reason) -ForegroundColor DarkGray
         }
         if ($selection.DeprecatedIds.Count -gt 0) {
             Write-Host ("  deprecated and not run: {0}" -f ($selection.DeprecatedIds -join ', ')) -ForegroundColor DarkGray
@@ -1837,6 +2114,13 @@ if ($WithPatterns) {
     }
 }
 
+# A sport classification belongs to the run regardless of how its jobs were selected.
+# -RunAll already carries it from the registry selection; this also hydrates direct IDs,
+# wildcards and the pattern statements they pull alongside them.
+if ($sportIdentity) {
+    $jobs = @(Set-JobCheckSignal -Jobs $jobs -SportName $ResolvedSportSlug)
+}
+
 # ----- parameters ----------------------------------------------------------------------
 
 $paramTable = ConvertTo-ParamTable -Value $Params
@@ -1844,9 +2128,13 @@ $paramTable = ConvertTo-ParamTable -Value $Params
 # Precedence, widest trust last: an explicit -Params or -SportId wins, then the values the
 # sport has had confirmed and recorded, then live discovery for whatever is still missing.
 # Each step fills only keys the earlier ones left empty.
-if ($Sport) {
-    Write-Host "Resolving parameters for '$Sport'..." -ForegroundColor DarkGray
-    foreach ($entry in (Get-SportFileParameters -SportName $Sport).GetEnumerator()) {
+if ($sportIdentity) {
+    $identityText = if ($ResolvedSportSlug -ceq $ResolvedDatabaseSportName) {
+        "'$ResolvedSportSlug'"
+    }
+    else { "'$ResolvedSportSlug' (database sport '$ResolvedDatabaseSportName')" }
+    Write-Host "Resolving parameters for $identityText..." -ForegroundColor DarkGray
+    foreach ($entry in (Get-SportFileParameters -SportName $ResolvedSportSlug).GetEnumerator()) {
         if (-not $paramTable.ContainsKey($entry.Key)) { $paramTable[$entry.Key] = $entry.Value }
     }
 
@@ -1865,7 +2153,7 @@ if ($Sport) {
         if (-not $Relogin) { $script:Session = Restore-SessionState }
         if ($null -eq $script:Session) { $script:Session = New-AuthenticatedSession }
 
-        foreach ($entry in (Resolve-SportParameters -SportName $Sport).GetEnumerator()) {
+        foreach ($entry in (Resolve-SportParameters -DatabaseSportNameValue $ResolvedDatabaseSportName).GetEnumerator()) {
             if (-not $paramTable.ContainsKey($entry.Key)) { $paramTable[$entry.Key] = $entry.Value }
         }
     }
@@ -1883,11 +2171,11 @@ $skipped = @()
 $runnable = @()
 
 $notApplicable = @{}
-if ($Sport) { $notApplicable = Get-SportNotApplicable -SportName $Sport }
+if ($sportIdentity) { $notApplicable = Get-SportNotApplicable -SportName $ResolvedSportSlug }
 
 foreach ($job in $jobs) {
     $missing = Get-MissingPlaceholders -Text $job.Sql -Values $paramTable
-    if ($Sport -and $missing.Count -gt 0 -and $jobs.Count -gt 1) {
+    if ($sportIdentity -and $missing.Count -gt 0 -and $jobs.Count -gt 1) {
         # One impossible parameter is enough: the statement can never run for this sport, so
         # it is reported as not applicable even when other placeholders are merely unfilled.
         $blocked = @($missing | Where-Object { $notApplicable.ContainsKey($_) })
@@ -2027,14 +2315,8 @@ if ($isBatch) {
         }
 
         $elapsed = ((Get-Date) - $started).TotalSeconds
-        $summary += [pscustomobject]@{
-            CheckId = $job.CheckId
-            Name    = $job.Name
-            What    = $job.What
-            Rows    = $rowCount
-            Seconds = [math]::Round($elapsed, 1)
-            Status  = $status
-        }
+        $summary += New-RunSummaryRow -Job $job -Rows $rowCount `
+            -Seconds ([math]::Round($elapsed, 1)) -Status $status
 
         $colour = if ($status -like 'ERROR*') { 'Red' } else { 'DarkGray' }
         Write-Host ("[{0}/{1}] {2}  rows={3}  {4:n1}s  {5}" -f `
@@ -2064,19 +2346,13 @@ if ($isBatch) {
     # Statements that could not be filled belong in the record too, or the run would look
     # like it covered the whole catalogue.
     foreach ($item in $skipped) {
-        $summary += [pscustomobject]@{
-            CheckId = $item.Job.CheckId
-            Name    = $item.Job.Name
-            What    = $item.Job.What
-            Rows    = 0
-            Seconds = 0
-            Status  = if ($item.Kind -eq 'NOT_APPLICABLE') {
+        $skipStatus = if ($item.Kind -eq 'NOT_APPLICABLE') {
                 "SKIPPED: not applicable - $($item.Reason)"
             }
             else {
                 "SKIPPED: needs $($item.Missing)"
             }
-        }
+        $summary += New-RunSummaryRow -Job $item.Job -Rows 0 -Seconds 0 -Status $skipStatus
     }
 
     if ($isWorkbook) {
@@ -2084,11 +2360,11 @@ if ($isBatch) {
         $destination = $workbookPath
     }
     else {
-        $summary | Export-Csv -LiteralPath (Join-Path $OutDir '_summary.csv') -NoTypeInformation -Encoding UTF8
+        Save-RunSummaryCsv -Summary $summary -Path (Join-Path $OutDir '_summary.csv')
         $destination = $OutDir
     }
 
-    $summary | Format-Table CheckId, Name, Rows, Seconds, Status -AutoSize
+    $summary | Format-Table CheckId, Name, Signal, Rows, Seconds, Status -AutoSize
 
     if ($isWorkbook -and $shortened.Count -gt 0) {
         Write-Host "Tab names capped at Excel's 31-character limit:" -ForegroundColor DarkGray
@@ -2131,8 +2407,17 @@ if ($OutFile) {
     $sheetName = ConvertTo-SheetName -Preferred $preferred -Fallback 'data' -Used $used
 
     if ($isWorkbook) {
+        $singleSignal = if ($job.PSObject.Properties.Name -contains 'Signal' -and $job.Signal) {
+            [string]$job.Signal
+        }
+        else { 'Actionable' }
+        $singleReason = if ($job.PSObject.Properties.Name -contains 'SignalReason') {
+            [string]$job.SignalReason
+        }
+        else { '' }
         Save-Rows -Rows $rows -Path $OutFile -Fmt $Format -SheetName $sheetName `
-            -Header @($job.CheckId, $job.Name, (ConvertTo-SingleLineSql -Sql $job.Sql))
+            -Header @($job.CheckId, $job.Name, (ConvertTo-SingleLineSql -Sql $job.Sql),
+                $job.What, '', $singleSignal, $singleReason)
     }
     else {
         $tagged = Add-CheckColumns -Rows $rows -CheckId $job.CheckId -Name $job.Name

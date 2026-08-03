@@ -703,7 +703,9 @@ $sportFindings = @()
 $indexRows = Get-MarkdownTableRow -Path (Join-Path $RepoRoot 'SPORTS.md') -FirstCell '^\d+$'
 $indexed = @{}
 
-# Columns: sport id, slug, competition model, structural file, status, last evidence date.
+# Columns: sport id, slug, competition model, structural file, status, last evidence date,
+# exact database sport.name. The last pair is what lets the runner keep a stable repository
+# slug without guessing the value its live discovery SQL must match.
 # The model is validated against the vocabulary DATABASE.md DB-SEM-015 defines, so a value
 # invented in the index fails here rather than travelling as if it were a confirmed fact.
 $competitionModels = @(
@@ -718,7 +720,19 @@ foreach ($row in $indexRows) {
     $sport = $row.Cells[1]
     $model = $row.Cells[2]
     $file = Remove-Backtick $row.Cells[3]
-    $indexed[$sport] = [pscustomobject]@{ SportId = [int]$row.Cells[0]; File = $file }
+    $databaseName = $(if ($row.Cells.Count -ge 7) { $row.Cells[6] } else { '' })
+    $indexed[$sport] = [pscustomobject]@{
+        SportId = [int]$row.Cells[0]
+        File = $file
+        DatabaseName = $databaseName
+    }
+
+    if ($row.Cells.Count -ne 7) {
+        $sportFindings += "SPORTS.md:$($row.Line): '$sport' has $($row.Cells.Count) columns, expected 7 including Database sport name"
+    }
+    elseif ([string]::IsNullOrWhiteSpace($databaseName)) {
+        $sportFindings += "SPORTS.md:$($row.Line): '$sport' has no exact Database sport name"
+    }
 
     if (-not (Test-Path -LiteralPath (Join-Path $RepoRoot $file))) {
         $sportFindings += "SPORTS.md:$($row.Line): '$file' does not exist"
@@ -732,6 +746,22 @@ foreach ($row in $indexRows) {
     if ($competitionModels -notcontains $model) {
         $sportFindings += "SPORTS.md:$($row.Line): '$sport' competition model '$model' is not one DB-SEM-015 defines"
     }
+}
+
+foreach ($group in ($indexRows | Where-Object { $_.Cells.Count -ge 7 } |
+        Group-Object { $_.Cells[6].ToLowerInvariant() } | Where-Object { $_.Count -gt 1 })) {
+    $slugs = @($group.Group | ForEach-Object { $_.Cells[1] }) -join ', '
+    $sportFindings += "SPORTS.md: database sport name '$($group.Group[0].Cells[6])' maps to more than one slug: $slugs"
+}
+
+foreach ($group in ($indexRows | Group-Object { $_.Cells[1].ToLowerInvariant() } |
+        Where-Object { $_.Count -gt 1 })) {
+    $sportFindings += "SPORTS.md: repository slug '$($group.Group[0].Cells[1])' appears more than once"
+}
+
+foreach ($group in ($indexRows | Group-Object { $_.Cells[0] } | Where-Object { $_.Count -gt 1 })) {
+    $slugs = @($group.Group | ForEach-Object { $_.Cells[1] }) -join ', '
+    $sportFindings += "SPORTS.md: Sport ID $($group.Name) maps to more than one slug: $slugs"
 }
 
 foreach ($file in (Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'SPORTS') -Filter *.md -File)) {

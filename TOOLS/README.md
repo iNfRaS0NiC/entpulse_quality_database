@@ -127,8 +127,10 @@ the account in use. The summary:
 | `-ListChecks` | Every CheckID with its name, source file and line |
 | `-ListChecks BMX-DQ-0*` | The same list, filtered by wildcard |
 | `-Sport BMX` | Discover the structural parameters and fill them in |
+| `-Sport "Water Polo"` | Accept the exact database name or documented repository slug |
+| `-SportSlug Water-Polo -DatabaseSportName "Water Polo"` | State both identities explicitly while opening a sport |
 | `-Sport BMX -RunAll` | Everything approved for one sport, plus the patterns, in one workbook |
-| `-Sport X -RunAll -IncludeUnapproved` | Discovery for a sport with no approved checks yet: runs the GLOBAL catalogue against it |
+| `-Sport X -RunAll -IncludeUnapproved` | Discovery only for a genuinely undocumented sport: runs the GLOBAL catalogue against it |
 | `BMX-DQ-003` | One check to the screen |
 | `BMX-DQ-001,BMX-DQ-005` | A chosen few |
 | `BMX-DQ-*` | Every match; more than one switches to batch mode |
@@ -173,8 +175,14 @@ textually and validates nothing about their values.
 
 ### Opening a new sport
 
-`-Sport <name>` discovers the parameters that are structural facts and fills them in, so a
-sport that has never been queried needs one command:
+`-Sport <name>` accepts either identity `SPORTS.md` records: the stable repository slug used
+by registry rows, parameter keys, CheckIDs and output, or the exact database `sport.name` used
+by live discovery SQL. Thus a documented `Water-Polo` row whose database name is `Water Polo`
+works through either spelling without conflating the two. `-SportSlug` and
+`-DatabaseSportName` make the pair explicit before a new sport has an index row.
+
+It then discovers the parameters that are structural facts and fills them in, so a sport that
+has never been queried needs one command:
 
 ```powershell
 .\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-* -Sport BMX -Format xlsx
@@ -196,7 +204,7 @@ a documented sport runs its templates without a single extra round trip:
 
 Discovery, when it does run, is three lookups against the database, none of them assumed:
 
-1. the sport name resolves to `SPORT_ID`;
+1. the mapped exact database sport name resolves to `SPORT_ID`;
 2. `GLOBAL-DISCOVERY-015` reports the statistic types and owner levels the sport uses, and
    the busiest pair becomes `STATISTIC_TYPE_ID` and `STATISTIC_OWNER_TYPE_ID`. Any other
    pair is printed rather than silently dropped;
@@ -312,8 +320,10 @@ Selection does not depend on the block: a `Blocked` template has no row, so it i
 either way, and a `Monitor` or `Not applicable` check is approved and still runs. What it buys
 is that a conclusion already written in a sport file stops being invisible to the run that
 contradicts it. `-RunAll` names the blocked templates among what it left out and the classified
-checks among what it is about to run, each with its reason; `Test-Package.ps1` enforces the
-table above.
+checks among what it is about to run, each with its reason. `Signal` and `Signal reason` also
+survive in the workbook Overview and flat `_summary.csv`, so the classification is not lost
+with the terminal. The same hydration applies to direct `GLOBAL-DQ-* -Sport <sport>` batches,
+not only `-RunAll`; `Test-Package.ps1` enforces the table above.
 
 The sport file still owns the reasoning; this is the machine-readable half of it. A signal is
 a description of the check's output, not a decision about its future — deprecating a check is
@@ -399,8 +409,10 @@ reads as full coverage when it is not.
 
 A sport with no registry row has nothing approved, so plain `-RunAll` stops and says so.
 `-IncludeUnapproved` runs the GLOBAL catalogue against it anyway, which is how a sport is
-opened. That output is discovery evidence, never a DQ result: nothing it ran is approved for
-the sport. The run labels itself accordingly.
+opened. It is accepted only when no sport-index row, sport file, parameter entry, registry row
+or sport SQL file already names that slug. On a documented sport it stops instead of bypassing
+an approval, blocked signal or deprecated row. The allowed output is discovery evidence,
+never a DQ result: nothing it ran is approved for the sport. The run labels itself accordingly.
 
 What a run produces is execution output, never evidence. `WORKFLOW.md` "Starting a new
 sport" owns the sequence around these commands: which drill-downs to run, how a confirmed
@@ -425,14 +437,16 @@ Google Drive and open as Sheets.
 
 `Overview` is the first tab:
 
-| Sport | CheckID | Check Name | What it does | Rows | Status |
-|---|---|---|---|---:|---|
-| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | Finds active participants of the selected types that … | 1064 | Not Started |
+| Sport | CheckID | Check Name | What it does | Rows | Status | Signal | Signal reason |
+|---|---|---|---|---:|---|---|---|
+| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | Finds active participants of the selected types that … | 1064 | Not Started | Monitor | Population-wide absence … |
 
 Every check appears, including those that returned nothing or failed and therefore have
 no tab of their own. `Sport` is taken from the CheckID prefix. `What it does` is the
 statement's own `-- What it does:` line, carried through the run so a reader can see what
-a check asserts beside what it found, without going back to the registry for it.
+a check asserts beside what it found, without going back to the registry for it. `Signal`
+defaults to `Actionable`; an explicit `Monitor` or `Not applicable` value and its reason come
+from the sport's `_checkSignal` block.
 
 `Rows` is the count the console printed, and doubles as the jump to that check's tab. A
 check that failed shows `ERROR` instead, so it cannot be misread as a clean zero, and is
@@ -445,9 +459,9 @@ along with the durations.
 Then one tab per check:
 
 ```text
-     A                     B                    C              D                E
-1    Check ID              Check Name           SQL Used       What it does     Comment
-2    BMX-DQ-001            PARTICIPANT_MIS...   SELECT 'Mis... Finds active ...
+     A                     B                    C              D                E          F          G
+1    Check ID              Check Name           SQL Used       What it does     Comment    Signal     Signal reason
+2    BMX-DQ-001            PARTICIPANT_MIS...   SELECT 'Mis... Finds active ...            Monitor    Population-wide…
 3    Return to Overview
 4
 5    check_type            participant_id       participant_name   ...
@@ -459,9 +473,10 @@ to Overview, and row 4 is blank so the result table below stays a self-contained
 sorting and filtering.
 
 `Comment` is written as a heading and nothing else: the column belongs to whoever reads the
-workbook, and the runner never puts a value in it. `What it does` beside it is the same
-sentence the Overview carries, so a tab opened from a link explains itself without the
-reader going back.
+workbook, and the runner never puts a value in it. `What it does`, `Signal` and `Signal reason`
+beside it are the same values the Overview carries, so a tab opened from a link explains
+itself without the reader going back. The two new signal columns are appended, so the existing
+Overview A-F and detail A-E contracts keep their positions.
 
 **A linked cell in Google Sheets is labelled from the hyperlink record, not from its own
 value.** With a `display` attribute Sheets shows that text; without one it falls back to
@@ -530,8 +545,9 @@ More than one matched CheckID switches to batch mode.
   is retried automatically.
 - Statements are sent one at a time with a short pause between them.
 - Row counts and durations are printed per check as the run proceeds. `_summary.csv` keeps
-  both, plus the server's message for a failure; the workbook's Overview tab keeps the row
-  count and marks a failure `ERROR`.
+  both, the `Signal` and `SignalReason`, plus the server's message for a failure; the
+  workbook's Overview tab keeps the same signal metadata and row count and marks a failure
+  `ERROR`.
 
 A batch inherits the cost constraints in `WORKFLOW.md`. Running the whole catalogue for a
 large sport can time out check by check; narrow the scope in the statement rather than
@@ -574,9 +590,10 @@ in `SPORTS/params.json` and its registry rows. Run the templates directly:
 .\TOOLS\Run-Query.ps1 GLOBAL-DQ-* -Sport Curling -Format xlsx
 ```
 
-A GLOBAL CheckID names the catalogue it lives in, not what it was run against, so under
-`-Sport` that name is what the Overview's `Sport` column and the run folder are named
-after. Without `-Sport` there is nothing better to fall back on and both read `GLOBAL`.
+A GLOBAL CheckID names the catalogue it lives in, not what it was run against, so under a
+sport identity the resolved repository slug is what the Overview's `Sport` column and the run
+folder are named after. The exact database name is used only to resolve live SQL. Without a
+sport identity there is nothing better to fall back on and both read `GLOBAL`.
 
 ## Package validation
 
@@ -614,11 +631,13 @@ also its boundary: it cannot prove live permissions, runtime cost or result sema
 ```
 
 `Test-Package.ps1` proves the package is consistent; this proves the two scripts that read it
-behave as documented. It covers which checks `-RunAll` and a wildcard select, how `{{...}}`
-parameters are filled, how the catalogue is parsed out of the banner-separated `.sql` files,
-and what the workbook writer emits. The registry order rule is tested by breaking a throwaway
-copy of the repository and requiring the validator to catch it, so the rule cannot quietly
-stop biting.
+behave as documented. It covers which checks `-RunAll` and a wildcard select, the slug-to-DB
+name mapping and undocumented-sport guard, how `{{...}}` parameters are filled, how the
+catalogue is parsed out of the banner-separated `.sql` files, and what the workbook and flat
+summary writers emit. Focused SQL assertions also pin previously observed coverage and
+join-fan-out regressions in the approved checks. The registry order rule is tested by breaking
+a throwaway copy of the repository and requiring the validator to catch it, so the rule cannot
+quietly stop biting.
 
 There is no Pester dependency. Windows PowerShell 5.1 ships Pester 3.4, whose syntax differs
 from every current version, so a suite written against either one fails on the other machine.

@@ -16,8 +16,9 @@ Confirm the sport is actually undocumented: check `SPORTS.md` for a row and
 `SPORTS/` for a file. If either exists, this is an update to an existing sport, not an
 opening — target the smallest relevant part of the existing file instead.
 
-Ask for the exact database sport name if the user gave an informal one. `-Sport` matches
-`sport.name` exactly and fails on a near miss, which is cheaper to resolve now than
+Ask for the exact database sport name if the user gave an informal one. `-Sport` accepts a
+documented repository slug too, but a new sport has no mapping yet, so its exact `sport.name`
+is required and a near miss still fails during live discovery. Resolve it now rather than
 mid-batch.
 
 ## Stage 1 - run the catalogue
@@ -62,7 +63,8 @@ PREPARE_DOC_UPDATE SPORT=<Sport>
 Then, in this order:
 
 1. add one row to `SPORTS.md` immediately before the `SPORT INDEX` marker, with the slug
-   derived by the slug rule in that file;
+   derived by the slug rule in that file and the exact database `sport.name` in the final
+   `Database sport name` column;
 2. create `SPORTS/<SportSlug>.md` from `SPORTS/_TEMPLATE.md`, replacing every `<SPORT_ID>`
    placeholder with the confirmed numeric sport ID — including the ones inside the paste
    markers;

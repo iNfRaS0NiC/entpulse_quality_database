@@ -10,11 +10,11 @@ mechanisms from `DATABASE.md`.
 
 ## Sport index
 
-| Sport ID | Sport | Competition model | Structural file | Structural status | Last evidence date |
-|---:|---|---|---|---|---|
-| 58 | BMX | Listing (individual) | `SPORTS/BMX.md` | In progress | 2026-07-22 |
-| 50 | Triathlon | Listing (individual and team) | `SPORTS/Triathlon.md` | In progress | 2026-07-30 |
-| 10 | Curling | H2H (team) | `SPORTS/Curling.md` | In progress | 2026-08-01 |
+| Sport ID | Sport | Competition model | Structural file | Structural status | Last evidence date | Database sport name |
+|---:|---|---|---|---|---|---|
+| 58 | BMX | Listing (individual) | `SPORTS/BMX.md` | In progress | 2026-07-22 | BMX |
+| 50 | Triathlon | Listing (individual and team) | `SPORTS/Triathlon.md` | In progress | 2026-07-30 | Triathlon |
+| 10 | Curling | H2H (team) | `SPORTS/Curling.md` | In progress | 2026-08-01 | Curling |
 
 <!-- MANUAL PASTE ZONE: SPORT INDEX — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -66,9 +66,10 @@ The result contains only `A-Z`, `a-z`, `0-9`, `.` and `-`. Multi-word slugs are 
 correctly: the CheckID prefix is everything before `-DQ-`, so `Water-Polo-DQ-001` resolves
 to `Water-Polo`.
 
-The slug is not required to equal the database's `sport.name`. `-Sport` takes the exact
-database name, while the slug names the repository's files; the index row below records both
-so the mapping is never inferred.
+The slug is not required to equal the database's `sport.name`. The final index column records
+the exact database value while `Sport` records the repository slug, so the mapping is never
+inferred after a sport is documented. `-Sport` accepts either value and resolves both;
+`-SportSlug` plus `-DatabaseSportName` makes the pair explicit while opening a new sport.
 
 ## Status meanings
 

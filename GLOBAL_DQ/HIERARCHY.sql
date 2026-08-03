@@ -2137,35 +2137,77 @@ ORDER BY sort_order, event_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-109
     -- Name - EVENT_SETTINGS_DISCIPLINE_STORAGE_MISMATCH
-    -- What it does: Finds active events of the selected sport that record their discipline through both the event property named discipline and the object_discipline relation, where the two do not name the same discipline, so one storage path contradicts the other, with both values and template and stage name context, together with a coverage count of all eligible events carrying both paths.
+    -- What it does: Finds active events of the selected sport that record their discipline through both the event property named discipline and the object_discipline relation, where the distinct active discipline sets resolved through the two paths do not match, so one storage path contradicts the other without a multi-row path producing duplicate or Cartesian findings, with both sets and template and stage name context, together with a coverage count of all eligible events carrying at least one active resolvable discipline through both paths.
     'Event_Discipline_Storage_Mismatch' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
-    TRIM(pr.value) AS property_discipline,
-    d.name AS relation_discipline,
+    (
+        SELECT GROUP_CONCAT(
+                   DISTINCT LOWER(TRIM(pd.name))
+                   ORDER BY LOWER(TRIM(pd.name)) SEPARATOR ', '
+               )
+        FROM property pr
+        JOIN discipline pd
+          ON pd.del = 'no'
+         AND LOWER(TRIM(pd.name)) = LOWER(TRIM(pr.value))
+        WHERE pr.object = 'event'
+          AND pr.objectFK = e.id
+          AND pr.name = 'discipline'
+          AND pr.del = 'no'
+          AND TRIM(COALESCE(pr.value, '')) <> ''
+    ) AS property_disciplines,
+    (
+        SELECT GROUP_CONCAT(
+                   DISTINCT LOWER(TRIM(rd.name))
+                   ORDER BY LOWER(TRIM(rd.name)) SEPARATOR ', '
+               )
+        FROM object_discipline od
+        JOIN discipline rd ON rd.id = od.disciplineFK AND rd.del = 'no'
+        WHERE od.object_typeFK = 5
+          AND od.objectFK = e.id
+          AND od.del = 'no'
+          AND TRIM(COALESCE(rd.name, '')) <> ''
+    ) AS relation_disciplines,
     tt.name AS template_name,
     NULL AS eligible_count,
     0 AS sort_order
--- Only events carrying both paths are eligible. An event with one of them is not a
--- disagreement, it is a single record, and whether the missing one should be there is
--- GLOBAL-DQ-015's question. Two mechanisms holding one fact are worth asserting against
--- each other precisely because nothing else notices when they drift apart: every other
--- check reads one path and is right by construction about that path alone.
+-- Only events carrying an active value that resolves to an active discipline through both
+-- paths are eligible. An event with one path is not a disagreement, and an unresolvable value
+-- is outside this comparison of two resolved paths. Each correlated aggregate reduces
+-- its path to one distinct normalized set before the sets are compared. That keeps one row
+-- per event when either storage layer contains duplicate or multiple active records, and it
+-- also avoids treating one unequal pair from two otherwise equal multi-value sets as a defect.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
      AND tt.sportFK = {{SPORT_ID}}
-JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
-     AND pr.name = 'discipline' AND pr.del = 'no'
-JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
-JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
 WHERE e.del = 'no'
-  AND TRIM(COALESCE(pr.value, '')) <> ''
   -- AND tt.id = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
-  AND LOWER(TRIM(pr.value)) <> LOWER(TRIM(d.name))
+  AND EXISTS (
+      SELECT 1
+      FROM property pr2
+      JOIN discipline pd2
+        ON pd2.del = 'no'
+       AND LOWER(TRIM(pd2.name)) = LOWER(TRIM(pr2.value))
+      WHERE pr2.object = 'event'
+        AND pr2.objectFK = e.id
+        AND pr2.name = 'discipline'
+        AND pr2.del = 'no'
+        AND TRIM(COALESCE(pr2.value, '')) <> ''
+  )
+  AND EXISTS (
+      SELECT 1
+      FROM object_discipline od2
+      JOIN discipline rd2 ON rd2.id = od2.disciplineFK AND rd2.del = 'no'
+      WHERE od2.object_typeFK = 5
+        AND od2.objectFK = e.id
+        AND od2.del = 'no'
+        AND TRIM(COALESCE(rd2.name, '')) <> ''
+  )
+HAVING property_disciplines <> relation_disciplines
 
 UNION ALL
 
@@ -2179,13 +2221,30 @@ JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
      AND tt.sportFK = {{SPORT_ID}}
-JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
-     AND pr.name = 'discipline' AND pr.del = 'no'
-JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
 WHERE e.del = 'no'
-  AND TRIM(COALESCE(pr.value, '')) <> ''
   -- AND tt.id = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM property pr2
+      JOIN discipline pd2
+        ON pd2.del = 'no'
+       AND LOWER(TRIM(pd2.name)) = LOWER(TRIM(pr2.value))
+      WHERE pr2.object = 'event'
+        AND pr2.objectFK = e.id
+        AND pr2.name = 'discipline'
+        AND pr2.del = 'no'
+        AND TRIM(COALESCE(pr2.value, '')) <> ''
+  )
+  AND EXISTS (
+      SELECT 1
+      FROM object_discipline od2
+      JOIN discipline rd2 ON rd2.id = od2.disciplineFK AND rd2.del = 'no'
+      WHERE od2.object_typeFK = 5
+        AND od2.objectFK = e.id
+        AND od2.del = 'no'
+        AND TRIM(COALESCE(rd2.name, '')) <> ''
+  )
 
 ORDER BY sort_order, event_id;

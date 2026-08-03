@@ -360,6 +360,7 @@ JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
 JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
      AND r.result_typeFK IN (101, 557)
 WHERE ep.del = 'no'
