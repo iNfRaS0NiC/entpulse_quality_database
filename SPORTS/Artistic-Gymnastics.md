@@ -261,6 +261,10 @@ are a repair list.
 Confirmed active phase rounds are `179 Qualifier`, `173 Final`, `9 Final`, `172 Tie-breaker`
 and `152 Qualifier`. `172 Tie-breaker` occurs **only** as a Comp.Rank phase and never as an
 event `round_typeFK`, so it belongs to the sport's round inventory through this path alone.
+Its `knockout = yes` flag is correct: a tie-breaker is an elimination round, unlike the
+sport's Final and Qualifier rounds, which is why `tie-breaker` is the sole member of
+`ELIMINATION_ROUND_NAME_LIST` here. `GLOBAL-DQ-083` does not judge it today, because
+`GLOBAL-DQ-097` reaches round types through events and no event is contested under `172`.
 
 `1273 Comment` uses active empty rows as a stored state. Its literal vocabulary outside
 IOC-purpose templates is `R`, `R1` through `R4`, `Q`, `Q4`, `Q7`, `Q8`, `DNS`, `DNF`, `NR`,
@@ -389,11 +393,24 @@ contradiction.
   DQ scope, so the question stays open without a check attached to it.
 - Whether `1456 Running Score` is intentionally instantiated as an empty reserved field or
   is expected to receive values in a competition format not present in the current evidence.
+  Its shape is now measured — 128024 active rows outside IOC-purpose templates, every one of
+  them empty — which rules out the field being merely IOC-confined but does not say why it is
+  instantiated at all.
 - Whether the sparse stage host-country relation is intentional duplication of the direct
-  country or a separately maintained field.
+  country or a separately maintained field. The proportion is now measured: 822 of 824 stages
+  carry no host-country relation while their direct `countryFK` is present, which is why
+  `GLOBAL-DQ-034` is a `Monitor`. Whether the relation is meant to be populated at all is the
+  part still open.
 - The row-level co-occurrence of country, age class, and discipline metadata on Comp.Rank
   statistics; the three paths are used, but their alignment on the same statistics was not
   tested.
+- Why `172 Tie-breaker` appears only as a Comp.Rank phase and never as an event
+  `round_typeFK`. The round is a legitimate elimination round and its `knockout = yes` flag is
+  correct, but no event in the sport is contested under it, so a rank derived from a
+  tie-breaker has no event to point back to.
+- Whether the eight Comp.Rank rows without a phase and the 18 medals recorded against a
+  Qualifier phase share one cause. Both sets are now reported by `Artistic-Gymnastics-DQ-087`
+  and `-088`; the first is confined to a single statistic, which reads as one broken import.
 - Event-name, stage-name, statistic-name, and anomalous value-pattern details remain
   unclassified because `GLOBAL-DISCOVERY-021`, `-023`, `-025`, `-027`, and `-029` were not
   run.

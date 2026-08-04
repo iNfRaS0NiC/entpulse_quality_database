@@ -319,7 +319,15 @@ with the reading `SPORTS/BMX.md` records for `38` and extends it to the rest of 
 
 Every active event resolves to a `finished` status type, under four status descriptions:
 Finished, Finished AEI, Finished after awarded win and Finished AET. No not-started or in-play
-status occurs, so a check keyed on one audits nothing here.
+status currently occurs.
+
+That absence is a row count, not a structure the sport lacks: `event.status_descFK` is in
+active use here, and `status_desc.status_type` carries a `notstarted` value the sport can
+receive with any import. The two not-started checks are therefore instantiated rather than
+classified away — `Curling-DQ-100` and `Curling-DQ-101` — and `NOT_STARTED_DESC_LIST` names
+the full canonical family rather than the ids seen so far. `CLAUDE.md` owns the rule; an
+earlier revision recorded both parameters as impossible on the strength of the current
+population, which would have kept the sport silent on the day a not-started event arrived.
 
 `Finished AEI` is the status the sport uses for a game decided in an extra end, and the
 `end_extra` scope column is the independent record of the same fact. The two are meant to
