@@ -523,7 +523,10 @@ Every approved DQ query:
 - includes at least one suitable commented scope-limiting filter;
 - uses one statement per execution.
 
-eligible_count = 0 means empty or misdirected scope, not clean data.
+eligible_count = 0 is never clean data. It is either a misdirected scope, which must be
+corrected before the result means anything, or a correct scope over a population that is
+legitimately empty today, which is a sentinel and is left alone. The sport file states
+which one applies.
 
 Never use LIMIT/OFFSET as audited-scope batching.
 

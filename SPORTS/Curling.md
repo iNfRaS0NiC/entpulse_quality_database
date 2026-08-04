@@ -329,6 +329,14 @@ the full canonical family rather than the ids seen so far. `CLAUDE.md` owns the 
 earlier revision recorded both parameters as impossible on the strength of the current
 population, which would have kept the sport silent on the day a not-started event arrived.
 
+`Curling-DQ-100` returns `eligible_count = 0` and is a **sentinel** in the sense `POWERBI.md`
+defines: the scope is correct and the population is legitimately empty today, so zero is its
+right answer and not a scope to correct. `Curling-DQ-101` reads the same status family but
+also audits finished events, so it covers 17920. `Curling-DQ-007` is a sentinel of the same
+shape for a different reason — it is additionally `Not applicable`, because athletes never
+reach `event_participants` in this sport at all, and a non-zero coverage there would itself
+be the finding.
+
 `Finished AEI` is the status the sport uses for a game decided in an extra end, and the
 `end_extra` scope column is the independent record of the same fact. The two are meant to
 agree, and where they do not the disagreement is one-directional: the extra end is scored but

@@ -68,7 +68,10 @@ than only in their owner:
 - **Coverage contract.** Every DQ statement returns finding rows with a concrete
   `check_type` and `NULL AS eligible_count`, plus one `UNION ALL` branch with
   `check_type = 'COVERAGE'` and `COUNT(DISTINCT <object_id>) AS eligible_count` over the
-  identical scope. `eligible_count = 0` means misdirected scope, not clean data.
+  identical scope. `eligible_count = 0` is never clean data, and is one of two things:
+  a misdirected scope that must be corrected, or a correct scope over a population that
+  is legitimately empty today, which is a sentinel and needs no change. The sport file
+  must say which. `POWERBI.md` owns the distinction.
 - **Audited-object rows.** One row per distinct audited object, never one per raw child
   record. Counts are `COUNT(DISTINCT <object_id>)`; raw counts only as named secondary
   columns. `COVERAGE` sorts last.

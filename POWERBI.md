@@ -131,8 +131,22 @@ Interpretation:
 |---|---|
 | Finding rows + `eligible_count > 0` | The query reached its scope and found violations |
 | No finding rows + `eligible_count > 0` | The scope was checked and no violations were found |
-| `eligible_count = 0` | Empty or misdirected scope; do not report the data as clean |
+| `eligible_count = 0` | One of two different things; never clean data. Read the next paragraph before acting |
 | Missing `COVERAGE` row or failed statement | The result is not validated |
+
+A zero coverage count has two causes and they call for opposite responses:
+
+| Cause | What it looks like | What to do |
+|---|---|---|
+| **Misdirected scope** | The statement anchors on the wrong type, shard, owner level or filter, so it audits objects the rule was never about | Correct the scope. The result proves nothing until you do |
+| **Sentinel** | The scope is exactly right and the population it audits is legitimately empty today | Nothing. Zero is the check's correct answer for now, and the check exists to stop being silent when the population appears |
+
+The distinction is never readable from the number itself, so the sport file must say which
+one applies and why, naming the check. Without that sentence a later reader has to re-derive
+it, and the cheap conclusion — "no rows, so it does not apply here" — is the one `CLAUDE.md`
+forbids: a sentinel retired on its own zero is silent precisely when the row it waits for
+arrives. A sentinel is not a `_checkSignal` value. It is an ordinary `Actionable` check with
+nothing to act on yet, and `TOOLS/README.md` owns why none of the three signals fits it.
 
 Coverage values are operational evidence only. They are not structural findings and do
 not belong in `DATABASE.md` or `SPORTS/<SportSlug>.md`.

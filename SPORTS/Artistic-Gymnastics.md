@@ -329,6 +329,15 @@ teams is the reading; a single team row is not the repair unit.
 Confirmed active coarse/detailed event-status pairs are `finished → 6 Finished` and
 `cancelled → 106 Cancelled`.
 
+No event currently carries a not-started status, and that is a row count rather than a
+missing structure: `event.status_descFK` is in active use here and `status_desc.status_type`
+carries a `notstarted` value the sport can receive with any import. `Artistic-Gymnastics-DQ-084`
+is therefore a **sentinel** in the sense `POWERBI.md` defines: its scope is correct, its
+population is legitimately empty today, and its `eligible_count = 0` is the right answer
+rather than a scope to correct. It exists to stop being silent when the first not-started
+event arrives holding results. `Artistic-Gymnastics-DQ-085` reads the same status family but
+also audits finished events, so its coverage is not zero.
+
 The complete active event-round inventory contains two different IDs named `Final` (`9`,
 `173`) and two named `Qualifier` (`152`, `179`). Round identity must therefore be read from
 `round_typeFK`, not from the display name alone. Detail runs for `9` and `152` confirm both
