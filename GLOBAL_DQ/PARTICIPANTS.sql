@@ -1,103 +1,161 @@
 SELECT
     -- CheckID - GLOBAL-DQ-007
     -- Name - PARTICIPANT_MISSING_DATE_OF_BIRTH
-    -- What it does: Finds active participants of the sport's person types that take part in at least one active event of the sport but have no active, non-empty date_of_birth property value, with their country, their participation count and the count of participations carrying at least one active result, together with a coverage count of all eligible participants.
+    -- What it does: Finds active participants of the sport's person types, reached through the sport registry or through any of the three ways a person takes part - an event participant row, a lineup place or a Comp.Rank statistic - that carry no active, non-empty date_of_birth property value, with their country and a count of their participations on each of the three paths, ordered by how many they have in total, together with a coverage count of all eligible participants.
     'Missing_DOB' AS check_type,
-    p.id AS participant_id,
-    p.name AS participant_name,
-    p.type AS participant_type,
+    x.participant_id,
+    x.participant_name,
+    x.participant_type,
     (
         SELECT c.name
         FROM country c
-        WHERE c.id = p.countryFK
+        WHERE c.id = x.countryFK
           AND c.del = 'no'
     ) AS participant_country,
-    (
-        SELECT COUNT(DISTINCT ep2.id)
-        FROM event_participants ep2
-        JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
-        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
-        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
-        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
-        WHERE ep2.participantFK = p.id
-          AND ep2.del = 'no'
-          AND tt2.sportFK = {{SPORT_ID}}
-    ) AS participation_count,
-    (
-        SELECT COUNT(DISTINCT ep3.id)
-        FROM event_participants ep3
-        JOIN event e3 ON e3.id = ep3.eventFK AND e3.del = 'no'
-        JOIN tournament_stage ts3 ON ts3.id = e3.tournament_stageFK AND ts3.del = 'no'
-        JOIN tournament t3 ON t3.id = ts3.tournamentFK AND t3.del = 'no'
-        JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
-        WHERE ep3.participantFK = p.id
-          AND ep3.del = 'no'
-          AND tt3.sportFK = {{SPORT_ID}}
-          AND EXISTS (
-              SELECT 1
-              FROM result r3
-              WHERE r3.event_participantsFK = ep3.id
-                AND r3.del = 'no'
-                AND r3.value IS NOT NULL
-                AND TRIM(r3.value) <> ''
-          )
-    ) AS participations_with_any_result,
-    NULL AS eligible_count
-FROM participant p
-WHERE p.del = 'no'
-  AND p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
-  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
-  AND EXISTS (
-      SELECT 1
-      FROM event_participants ep
-      JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
-      JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-      JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-      JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-      WHERE ep.participantFK = p.id
-        AND ep.del = 'no'
-        AND tt.sportFK = {{SPORT_ID}}
-        -- AND tt.id = <tournament_template_id>
-  )
-  AND NOT EXISTS (
-      SELECT 1
-      FROM property pr
-      WHERE pr.object = 'participant'
-        AND pr.objectFK = p.id
-        AND pr.name = 'date_of_birth'
-        AND pr.del = 'no'
-        AND pr.value IS NOT NULL
-        AND TRIM(pr.value) <> ''
-  )
+    x.event_participations,
+    x.lineup_participations,
+    x.statistic_participations,
+    x.total_participations,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- A person reaches a sport by three different mechanisms and no sport uses all three the
+-- same way: one enters athletes directly on the event, one enters teams and carries the
+-- athletes in lineups, and one carries them only in the Comp.Rank statistic. Reading a
+-- single path leaves the check covering nothing in the sports that use another, which reads
+-- as clean data when it means the statement never looked. All three are read, and the sport
+-- registry is read beside them so that a registered athlete who has never taken part is
+-- still audited: a missing date of birth on a person nobody has entered yet is the cheapest
+-- moment to fix it, so a zero count is context and never a reason to leave the row out.
+-- The three counts are projected separately rather than summed only, because which path a
+-- person is on tells the reader where to go and fix the record.
+FROM (
+    SELECT
+        p.id AS participant_id,
+        p.name AS participant_name,
+        p.type AS participant_type,
+        p.countryFK,
+        SUM(u.ev) AS event_participations,
+        SUM(u.lu) AS lineup_participations,
+        SUM(u.st) AS statistic_participations,
+        SUM(u.ev) + SUM(u.lu) + SUM(u.st) AS total_participations
+    FROM (
+        SELECT ep.participantFK AS participant_id, 1 AS ev, 0 AS lu, 0 AS st
+        FROM event_participants ep
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        WHERE ep.del = 'no'
+          AND tt.sportFK = {{SPORT_ID}}
+          -- AND tt.id = <tournament_template_id>
+
+        UNION ALL
+
+        SELECT l.participantFK, 0, 1, 0
+        FROM lineup l
+        JOIN event_participants ep ON ep.id = l.event_participantsFK AND ep.del = 'no'
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        WHERE l.del = 'no'
+          AND tt.sportFK = {{SPORT_ID}}
+          -- AND tt.id = <tournament_template_id>
+
+        UNION ALL
+
+        SELECT sp.participantFK, 0, 0, 1
+        FROM statistic_participants{{SHARD_ID}} sp
+        JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+             AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+        JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        WHERE sp.del = 'no'
+          AND s.object_typeFK = 3
+          AND tt.sportFK = {{SPORT_ID}}
+          -- AND tt.id = <tournament_template_id>
+
+        UNION ALL
+
+        SELECT op.participantFK, 0, 0, 0
+        FROM object_participants op
+        WHERE op.object = 'sport'
+          AND op.objectFK = {{SPORT_ID}}
+          AND op.del = 'no'
+    ) u
+    JOIN participant p ON p.id = u.participant_id AND p.del = 'no'
+    WHERE p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
+      -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
+    GROUP BY p.id, p.name, p.type, p.countryFK
+) x
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM property pr
+    WHERE pr.object = 'participant'
+      AND pr.objectFK = x.participant_id
+      AND pr.name = 'date_of_birth'
+      AND pr.del = 'no'
+      AND pr.value IS NOT NULL
+      AND TRIM(pr.value) <> ''
+)
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
-    COUNT(DISTINCT p.id) AS eligible_count
-FROM participant p
-WHERE p.del = 'no'
-  AND p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
-  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
-  AND EXISTS (
-      SELECT 1
-      FROM event_participants ep
-      JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
-      JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-      JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-      JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-      WHERE ep.participantFK = p.id
-        AND ep.del = 'no'
-        AND tt.sportFK = {{SPORT_ID}}
-        -- AND tt.id = <tournament_template_id>
-  );
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT y.participant_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT ep.participantFK AS participant_id
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 
+    UNION ALL
+
+    SELECT l.participantFK
+    FROM lineup l
+    JOIN event_participants ep ON ep.id = l.event_participantsFK AND ep.del = 'no'
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE l.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
+
+    UNION ALL
+
+    SELECT sp.participantFK
+    FROM statistic_participants{{SHARD_ID}} sp
+    JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+         AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE sp.del = 'no'
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
+
+    UNION ALL
+
+    SELECT op.participantFK
+    FROM object_participants op
+    WHERE op.object = 'sport'
+      AND op.objectFK = {{SPORT_ID}}
+      AND op.del = 'no'
+) y
+JOIN participant p ON p.id = y.participant_id AND p.del = 'no'
+WHERE p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
+  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
+
+ORDER BY sort_order, total_participations DESC, participant_id;
 
 -- ================================================================================
 SELECT
@@ -222,14 +280,22 @@ WHERE p.del = 'no'
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-009
-    -- Name - PARTICIPANT_NO_EVENT_PARTICIPATION
-    -- What it does: Finds active participants of the selected types linked through active sport-registry rows but having zero active event_participants rows within the sport, together with a coverage count of the same registered population.
-    'No_Event_Participation' AS check_type,
+    -- Name - PARTICIPANT_NO_PARTICIPATION_ANYWHERE
+    -- What it does: Finds active participants of the selected types linked through active sport-registry rows that take no part in the sport by any of the three mechanisms a participant can be used by - an event participant row, a lineup place or a Comp.Rank statistic - with the registry active flag, together with a coverage count of the same registered population.
+    'No_Participation_Anywhere' AS check_type,
     p.id AS participant_id,
     p.name AS participant_name,
     p.type AS participant_type,
     op.active AS registry_active_flag,
-    NULL AS eligible_count
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Registration is a claim that the participant belongs to the sport; the three paths are
+-- the only ways that claim is ever cashed. Asserting the event path alone reports every
+-- athlete of a sport that enters teams and carries its people in lineups or in the
+-- Comp.Rank statistic, which is the sport's normal shape rather than a defect, so all
+-- three are read and a participant is reported only when none of them holds them.
+-- The registry active flag travels with the row because an inactive registration with no
+-- participation is a different repair from an active one.
 FROM object_participants op
 JOIN participant p
   ON p.id = op.participantFK
@@ -250,6 +316,30 @@ WHERE op.object = 'sport'
         AND ep.del = 'no'
         AND tt.sportFK = {{SPORT_ID}}
   )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lineup l
+      JOIN event_participants ep ON ep.id = l.event_participantsFK AND ep.del = 'no'
+      JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+      JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+      JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+      JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+      WHERE l.participantFK = p.id
+        AND l.del = 'no'
+        AND tt.sportFK = {{SPORT_ID}}
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM statistic_participants{{SHARD_ID}} sp
+      JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+           AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+      JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+      WHERE sp.participantFK = p.id
+        AND sp.del = 'no'
+        AND s.object_typeFK = 3
+        AND tt.sportFK = {{SPORT_ID}}
+  )
 
 UNION ALL
 
@@ -259,7 +349,8 @@ SELECT
     NULL,
     NULL,
     NULL,
-    COUNT(DISTINCT p.id) AS eligible_count
+    COUNT(DISTINCT p.id) AS eligible_count,
+    1 AS sort_order
 FROM object_participants op
 JOIN participant p
   ON p.id = op.participantFK
@@ -269,8 +360,8 @@ WHERE op.object = 'sport'
   AND op.objectFK = {{SPORT_ID}}
   AND p.type IN ({{REGISTRY_PARTICIPANT_TYPE_LIST}})
   -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
-;
 
+ORDER BY sort_order, participant_id;
 
 -- ================================================================================
 SELECT

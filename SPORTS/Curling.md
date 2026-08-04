@@ -333,10 +333,15 @@ population, which would have kept the sport silent on the day a not-started even
 `Curling-DQ-100` returns `eligible_count = 0` and is a **sentinel** in the sense `POWERBI.md`
 defines: the scope is correct and the population is legitimately empty today, so zero is its
 right answer and not a scope to correct. `Curling-DQ-101` reads the same status family but
-also audits finished events, so it covers 17920. `Curling-DQ-007` is a sentinel of the same
-shape for a different reason — it is additionally `Not applicable`, because athletes never
-reach `event_participants` in this sport at all, and a non-zero coverage there would itself
-be the finding.
+also audits finished events, so it covers 17920.
+
+`Curling-DQ-007` was briefly a sentinel and briefly `Not applicable`, and was neither. Its
+coverage was zero because `GLOBAL-DQ-007` reached participants through `event_participants`
+alone, and this sport enters teams — its athletes are carried by lineups and by the Comp.Rank
+statistic. The template now reads all three paths and the sport registry beside them, so the
+check covers the sport's athletes as it always should have, and the classification is
+removed. The lesson is the one `CLAUDE.md` records: a zero coverage count is a question about
+the statement before it is ever a fact about the sport.
 
 `Finished AEI` is the status the sport uses for a game decided in an extra end, and the
 `end_extra` scope column is the independent record of the same fact. The two are meant to

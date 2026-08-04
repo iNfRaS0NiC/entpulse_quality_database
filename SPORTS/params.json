@@ -208,10 +208,6 @@
       "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored"
     },
     "_checkSignal": {
-      "GLOBAL-DQ-007": {
-        "signal": "Not applicable",
-        "reason": "no Curling athlete reaches event_participants at all: the sport enters teams, and athletes are carried by lineups and the Comp.Rank statistic instead, so the person-scoped population is empty and eligible_count is 0. The row stays Approved deliberately: an athlete appearing in event_participants would itself be a structural defect, so a non-zero coverage here is the finding. SPORTS/Curling.md owns the reasoning."
-      },
       "GLOBAL-DQ-058": {
         "signal": "Monitor",
         "reason": "Lineups are used but are not this sport's membership mechanism: only a small minority of team event participants carry a Starter lineup, and athlete-to-team membership is carried by the Comp.Rank (athletes) statistic instead. The check therefore measures the minority mechanism and reports the rest of the sport, which makes its output a proportion rather than a defect per event - the wording SPORTS/Curling.md already used before this block contradicted it."
