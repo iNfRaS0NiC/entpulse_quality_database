@@ -257,7 +257,7 @@
     "RANK_MAX_PLAUSIBLE": 250,
     "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
     "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
-    "NUMERIC_DATA_TYPE_LIST": "1271, 1278",
+    "NUMERIC_DATA_TYPE_LIST": "1271",
     "DATA_COMMENT_VALUE_LIST": "'q', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'r', 'r1', 'r2', 'r3', 'r4', 'dns', 'dnf', 'dnq', 'dqb', 'nr', 'nc', 'disq.', 'withdrawn'",
     "SERIES_MIN_YEARS": 3,
     "SERIES_SKIP_YEARS": "2020",

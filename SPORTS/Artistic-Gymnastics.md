@@ -244,6 +244,24 @@ Active `statistic_data11` fields are `1270 Rank`, `1271 Points`, `1273 Comment`,
 `1278 Qualification rank`, `1429 Team`, and `1456 Running Score`. Active `statistic_config`
 fields are `1463 Start date`, `1464 End date`, `1470 Gender`, and `1471 Event id`.
 
+Only five of those data fields are in DQ scope: `1270 Rank`, `1271 Points`, `1273 Comment`,
+`1277 Medal` and `1429 Team`. `1278 Qualification rank` is an IOC-purpose field — all 29514
+of its active rows sit under IOC-purpose templates, which every statistics statement
+excludes, so it is unreachable by a DQ check rather than merely unused. `1456 Running Score`
+is a different case and is not IOC-only: it holds 128024 active rows outside those templates,
+every one of them empty.
+
+**Phase is used, and is not a `statistic_data` field.** It is stored in `object_round` with
+`object_typeFK = 138` and `type = 'phase'`, the mechanism `DATABASE.md` records as the only
+storage for the concept: the round a Comp.Rank participant's rank was taken from. Outside
+IOC-purpose templates, 159088 of the sport's 159096 Comp.Rank participant rows carry one, so
+`GLOBAL-DQ-033` is actionable rather than population-wide — the eight rows without a phase
+are a repair list.
+
+Confirmed active phase rounds are `179 Qualifier`, `173 Final`, `9 Final`, `172 Tie-breaker`
+and `152 Qualifier`. `172 Tie-breaker` occurs **only** as a Comp.Rank phase and never as an
+event `round_typeFK`, so it belongs to the sport's round inventory through this path alone.
+
 `1273 Comment` uses active empty rows as a stored state. Its literal vocabulary outside
 IOC-purpose templates is `R`, `R1` through `R4`, `Q`, `Q4`, `Q7`, `Q8`, `DNS`, `DNF`, `NR`,
 `NC`, `Disq.` and `Withdrawn`, and the same six of those mean no classified result as at the
@@ -292,7 +310,7 @@ teams is the reading; a single team row is not the repair unit.
 | `lineup_type` | `14 Starter` |
 | `scope_type` | `101 checkpoint1`; `102 checkpoint2` |
 | `scope_data_type` | `1 rank`; `2 points`; `3 comment`; `86 penalties`; `1069 dscore`; `1070 escore`; `1076 penalty`; `1077 bonus` |
-| `round_type` | `9 Final`; `152 Qualifier`; `173 Final`; `179 Qualifier` |
+| `round_type` | `9 Final`; `152 Qualifier`; `173 Final`; `179 Qualifier`; `172 Tie-breaker` (Comp.Rank phase only) |
 | `discipline` | `82 Team All-Around`; `84 Floor Exercise`; `85 Pommel Horse`; `86 Rings`; `87 Balance Beam`; `88 Horizontal Bar`; `89 Parallel Bars`; `90 Vault`; `91 Uneven Bars`; `96 Individual All-Around Artistic`; `798 Mixed Team` |
 | `tournament_age_class` | `1 SENIOR`; `2 YOUTH`; `3 JUNIOR` |
 | `statistic_type` | `11 Comp.Rank` |
