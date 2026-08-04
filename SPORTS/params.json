@@ -267,8 +267,8 @@
     "STALE_NOT_STARTED_DAYS": 30,
     "NUMERIC_RESULT_TYPE_LIST": "102",
     "RESULT_COMMENT_VALUE_LIST": "'q', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'r', 'r1', 'r2', 'r3', 'r4', 'dns', 'dnf', 'nr', 'nc', 'disq.', 'withdrawn'",
-    "RESULT_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disq.', 'withdrawn', 'nc', 'nr'",
-    "DATA_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disq.', 'withdrawn', 'nc', 'nr'",
+    "RESULT_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disq.', 'withdrawn'",
+    "DATA_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disq.', 'withdrawn'",
     "_notApplicable": {
       "RESULT_FULL_TIME_TYPE_ID": "the sport is judged rather than timed: a routine is scored by a panel and no result type records elapsed time, so there is no absolute finishing time to assert",
       "RESULT_DURATION_TYPE_ID": "the sport is judged rather than timed: no result type records elapsed time or a gap to the leader",

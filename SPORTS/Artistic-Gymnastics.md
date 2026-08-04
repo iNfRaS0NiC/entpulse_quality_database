@@ -98,9 +98,15 @@ role must be resolved before those rows can identify a repair.
 
 The `104 Comment` vocabulary is closed as of 2026-08-04. The exact literals in active use
 outside IOC-purpose templates are `Q`, `Q1` through `Q8`, `R`, `R1` through `R4`, `DNS`,
-`DNF`, `NR`, `NC`, `Disq.`, `Withdrawn`, and `From Vault 1`. Of these, `DNS`, `DNF`, `Disq.`,
-`Withdrawn`, `NC` and `NR` mean the participant holds no classified result; the `Q` and `R`
-forms are progression markers and do not.
+`DNF`, `NR`, `NC`, `Disq.`, `Withdrawn`, and `From Vault 1`. Only four of them mean the
+participant holds no classified result: `DNS`, `DNF`, `Disq.` and `Withdrawn`. The `Q` and
+`R` forms are progression markers and do not.
+
+`NR` and `NC` were briefly recorded as no-result markers and are not. Every one of the 117
+active `NR` rows carries both a Points value and a Rank, and 42 of the 68 `NC` rows carry
+Points while exactly one carries a Rank. Both therefore describe a gymnast who competed and
+was left out of a classification, not one with nothing to classify, and both are excluded
+from `RESULT_COMMENT_NO_RESULT_LIST` and `DATA_COMMENT_NO_RESULT_LIST`.
 
 `From Vault 1` is deliberately left out of `RESULT_COMMENT_VALUE_LIST`: it is a sentence
 rather than a status code, so it is surfaced as a finding rather than blessed as vocabulary.
@@ -389,6 +395,41 @@ both findings and coverage; the check remains active for every future tournament
 contradiction.
 
 <!-- MANUAL PASTE ZONE: 40 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
+
+## Sport-specific DQ wave
+
+Eight checks were approved on 2026-08-04 from an analysis of the event and Comp.Rank sample
+extracts. `Artistic-Gymnastics-DQ-089` through `-096` live in
+`POWERBI_QUERIES/Artistic-Gymnastics.sql` and read no Extended Results field, which stays
+outside DQ scope.
+
+Four of them report against real rows: 5 events whose stored discipline contradicts an
+unambiguous apparatus in their own name (`-089`); 12 pairs of events, spanning 2005 to 2026,
+whose complete participant and Points set is identical across two different disciplines of
+one tournament, reported as 24 rows because the audited object is the event (`-090`); 3
+Comp.Rank teams whose members disagree on the team Points within one phase (`-091`); 69
+participants whose Comment records no classified result while a Rank is stored beside it
+(`-093`); 9 scores written into the Comment field with a comma decimal (`-094`); and 2
+Individual All-Around events whose Points sit on a single-apparatus scale (`-096`).
+
+`-092` and `-095` return nothing today over non-empty coverage — 3990 gendered-apparatus
+events and 66 `From Vault` comments respectively — which is the sport being correct on both
+rules rather than a scope to correct.
+
+Two rules deliberately do **not** exist. A generic *rank follows points* assertion must not
+be written for Vault: an apparatus qualifier legitimately mixes two-vault averages for
+gymnasts contesting the Vault final with first-vault-only scores for those contesting
+All-Around and Team, so a lower-ranked gymnast can hold a higher single score. And a
+qualifier-count rule keyed on `rank <= 8` would be wrong at every level, because the FIG
+per-federation quota lets a gymnast outside the top eight qualify while one inside it does
+not; a real version needs a per-template, per-year expected count this package has no
+mechanism for.
+
+`GLOBAL-DQ-113`, instantiated as `Artistic-Gymnastics-DQ-005`, already reports the one
+statistic mixing team and athlete rows on two incompatible scales, so no sport-specific check
+restates it.
+
+<!-- MANUAL PASTE ZONE: 40 SPORT-SPECIFIC DQ WAVE — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
 
