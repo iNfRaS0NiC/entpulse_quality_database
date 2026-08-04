@@ -17,13 +17,14 @@
     file carry check_id and check_name as their first two columns.
 
     -Format xlsx collects a whole batch into a single workbook instead. Its first tab,
-    Overview, lists Sport, CheckID, Check Name, What it does, Rows and a Status field for
-    every check, with each row count linking to its tab. The check tabs are named after the
-    "-- Name -" header, abbreviated to fit Excel's 31-character limit, and there the identity
-    sits above the data rather than on every row: row 1 the labels, row 2 the CheckID, the
-    name, the statement that ran as a single line and what the check asserts, with an empty
-    Comment cell for the reviewer, row 3 the link back to Overview, and the result table from
-    row 5. Upload that file to Google Drive and open it as Sheets.
+    Overview, lists Sport, CheckID, Check Name, What it does, Rows and the Status and Check By
+    fields for every check, with each row count linking to its tab. Signal and Signal reason
+    follow, hidden. The check tabs are named after the "-- Name -" header, abbreviated to fit
+    Excel's 31-character limit, and there the identity sits above the data rather than on every
+    row: row 1 the labels, row 2 the CheckID, the name, the statement that ran as a single line
+    and what the check asserts, with empty Comment and Check By cells for the reviewer, row 3
+    the link back to Overview, and the result table from row 5. Upload that file to Google
+    Drive and open it as Sheets.
 
     A batch is written to survive being cut short. Each statement runs under a wall-clock
     watchdog, so a connection the server half-closes is abandoned as a failed check instead
@@ -1554,7 +1555,22 @@ function Save-Workbook {
 
             $xml = New-Object Text.StringBuilder
             [void]$xml.Append('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>')
-            [void]$xml.Append('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>')
+            [void]$xml.Append('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">')
+
+            # The schema fixes this order too: cols before sheetData. A hidden column keeps
+            # its heading and its values and still exports - it is only collapsed out of the
+            # reader's way, and unhiding it is a two-click undo. The width is carried so a
+            # column reopened by hand comes back readable instead of at Excel's default.
+            $hiddenColumns = @(if ($null -eq $sheet.HiddenColumns) { @() } else { $sheet.HiddenColumns })
+            if ($hiddenColumns.Count -gt 0) {
+                [void]$xml.Append('<cols>')
+                foreach ($column in $hiddenColumns) {
+                    [void]$xml.Append(('<col min="{0}" max="{0}" width="20" customWidth="1" hidden="1"/>' -f $column))
+                }
+                [void]$xml.Append('</cols>')
+            }
+
+            [void]$xml.Append('<sheetData>')
 
             # Identity lives once on row 1 rather than repeated down every data row.
             # Row 2 is deliberately skipped: sheetData tolerates gaps, and the blank
@@ -1576,13 +1592,13 @@ function Save-Workbook {
 
             # A check tab opens with a labelled identity block:
             #   row 1  Check ID | Check Name | SQL Used | What it does | Comment |
-            #          Signal | Signal reason
-            #   row 2  the values, with Comment left empty for the reviewer
+            #          Check By | Signal | Signal reason
+            #   row 2  the values, with Comment and Check By left empty for the reviewer
             #   row 3  the link back to Overview, in a cell of its own
             #   row 4  blank, so the result table below stays its own block
             if ($headerRow) {
                 $labels = @('Check ID', 'Check Name', 'SQL Used', 'What it does',
-                    'Comment', 'Signal', 'Signal reason')
+                    'Comment', 'Check By', 'Signal', 'Signal reason')
 
                 [void]$xml.Append('<row r="1">')
                 for ($c = 0; $c -lt $header.Count; $c++) {
@@ -1807,6 +1823,7 @@ function Save-RunWorkbook {
             'What it does'  = $entry.What
             'Rows'          = $rowsCell
             'Status'        = 'Not Started'
+            'Check By'      = ''
             'Signal'        = $(if ($entry.Signal) { $entry.Signal } else { 'Actionable' })
             'Signal reason' = [string]$entry.SignalReason
         }
@@ -1820,26 +1837,31 @@ function Save-RunWorkbook {
         }
     }
 
+    # Signal and Signal reason are the runner's own classification, settled before the run
+    # and unchanged by reading it, so they are collapsed out of the reviewer's way rather
+    # than dropped: H and I still carry every value for whoever needs to unhide them.
     $sheets = @([pscustomobject]@{
-            Name       = $overviewName
-            Rows       = $overviewRows
-            Header     = $null
-            BackTo     = $null
-            Links      = $links
-            Validation = @{
+            Name           = $overviewName
+            Rows           = $overviewRows
+            Header         = $null
+            BackTo         = $null
+            Links          = $links
+            HiddenColumns  = @(8, 9)
+            Validation     = @{
                 Sqref  = "F2:F$overviewRow"
-                Values = 'Not Started,In Progress,Completed'
+                Values = 'Not Started,In Progress,IT Task,Completed'
             }
         })
 
-    # Comment is written empty on purpose: the column is the reviewer's, and the workbook
-    # only supplies its heading.
+    # Comment and Check By are written empty on purpose: both columns are the reviewer's,
+    # and the workbook only supplies their headings.
     foreach ($item in $Collected) {
         $sheets += [pscustomobject]@{
             Name   = $tabOf[$item.Job.CheckId]
             Rows   = $item.Rows
             Header = @($item.Job.CheckId, $item.Job.Name, (ConvertTo-SingleLineSql -Sql $item.Job.Sql),
-                $item.Job.What, '', $(if ($item.Job.Signal) { $item.Job.Signal } else { 'Actionable' }),
+                $item.Job.What, '', '',
+                $(if ($item.Job.Signal) { $item.Job.Signal } else { 'Actionable' }),
                 [string]$item.Job.SignalReason)
             BackTo = $overviewName
         }
@@ -1970,11 +1992,12 @@ if ($Info) {
     Write-Line '-Format csv' 'CSV, with check_id and check_name columns'
     Write-Line '-Format json' 'JSON, with check_id and check_name fields'
     Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, Overview first'
-    Write-Host '  Overview lists Sport, CheckID, Check Name, What it does, Rows and a' -ForegroundColor DarkGray
-    Write-Host '  Status field to fill in; each row count links to its tab. On a check tab' -ForegroundColor DarkGray
+    Write-Host '  Overview lists Sport, CheckID, Check Name, What it does, Rows and the' -ForegroundColor DarkGray
+    Write-Host '  Status and Check By fields to fill in, with Signal and Signal reason' -ForegroundColor DarkGray
+    Write-Host '  hidden behind them; each row count links to its tab. On a check tab' -ForegroundColor DarkGray
     Write-Host '  row 2 holds the CheckID, the name, the one-line SQL that ran and what' -ForegroundColor DarkGray
-    Write-Host '  the check asserts, with an empty Comment cell beside them; A3 returns to' -ForegroundColor DarkGray
-    Write-Host '  Overview, and the result table starts on row 5. CSV and JSON keep' -ForegroundColor DarkGray
+    Write-Host '  the check asserts, with empty Comment and Check By cells beside them;' -ForegroundColor DarkGray
+    Write-Host '  A3 returns to Overview, and the result table starts on row 5. CSV and JSON keep' -ForegroundColor DarkGray
     Write-Host '  check_id and check_name as columns, having nowhere else to put them.' -ForegroundColor DarkGray
     Write-Host '  Files are named after the CheckID: BMX-DQ-003.csv' -ForegroundColor DarkGray
     Write-Host '  Upload the .xlsx to Google Drive and open it as Sheets to get the tabs.' -ForegroundColor DarkGray
@@ -2417,7 +2440,7 @@ if ($OutFile) {
         else { '' }
         Save-Rows -Rows $rows -Path $OutFile -Fmt $Format -SheetName $sheetName `
             -Header @($job.CheckId, $job.Name, (ConvertTo-SingleLineSql -Sql $job.Sql),
-                $job.What, '', $singleSignal, $singleReason)
+                $job.What, '', '', $singleSignal, $singleReason)
     }
     else {
         $tagged = Add-CheckColumns -Rows $rows -CheckId $job.CheckId -Name $job.Name

@@ -724,6 +724,48 @@ Test-That 'workbook Overview carries Signal and Signal reason' {
     Assert-True ($detailXml -match '>Signal<') 'detail tab should name the Signal field'
     Assert-True ($detailXml -match '>Signal reason<') 'detail tab should name the Signal reason field'
     Assert-True ($detailXml -match 'population-wide fixture signal') 'detail tab should carry the signal reason'
+
+    # The signal columns are hidden, not dropped, so the values asserted above must still
+    # be in the part - and H:I is where the two of them land once Check By takes G.
+    Assert-True ($xml -match '<cols><col min="8" max="8"[^>]*hidden="1"') 'Signal should be hidden'
+    Assert-True ($xml -match '<col min="9" max="9"[^>]*hidden="1"/></cols>') 'Signal reason should be hidden'
+    Assert-True ($xml.IndexOf('<cols>') -lt $xml.IndexOf('<sheetData>')) 'cols must precede sheetData'
+    Assert-True ($detailXml -notmatch '<cols>') 'a check tab should hide nothing'
+}
+
+Test-That 'workbook carries the Check By column and the IT Task status' {
+    $job = [pscustomobject]@{
+        CheckId = 'Fixtureball-DQ-001'; Name = 'MANUAL_FIELDS'; What = 'manual'
+        Sql = 'SELECT 1;'
+    }
+    $summary = @(New-RunSummaryRow -Job $job -Rows 1 -Seconds 1 -Status 'OK')
+    $collected = @([pscustomobject]@{
+            Job = $job
+            Rows = @([pscustomobject]@{ check_type = 'Fixture'; id = 1 })
+        })
+    $path = Join-Path $FixtureRoot 'run-with-check-by.xlsx'
+    Save-RunWorkbook -Summary $summary -Collected $collected -Path $path | Out-Null
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem | Out-Null
+    $zip = [IO.Compression.ZipFile]::OpenRead($path)
+    try {
+        $entry = $zip.GetEntry('xl/worksheets/sheet1.xml')
+        $reader = New-Object IO.StreamReader($entry.Open())
+        try { $xml = $reader.ReadToEnd() } finally { $reader.Dispose() }
+
+        $detailEntry = $zip.GetEntry('xl/worksheets/sheet2.xml')
+        $detailReader = New-Object IO.StreamReader($detailEntry.Open())
+        try { $detailXml = $detailReader.ReadToEnd() } finally { $detailReader.Dispose() }
+    }
+    finally { $zip.Dispose() }
+
+    Assert-True ($xml -match '>Check By<') 'Overview should name the Check By column'
+    Assert-True ($xml -match 'r="G1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit in Overview column G'
+    Assert-True ($xml -match '"Not Started,In Progress,IT Task,Completed"') 'IT Task should be in the dropdown'
+    Assert-True ($detailXml -match 'r="F1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit after Comment on a check tab'
+    # An empty manual field writes no cell at all, so the reviewer types into a blank.
+    Assert-True ($detailXml -notmatch 'r="F2"') 'Check By should be left empty on a check tab'
+    Assert-True ($detailXml -match 'r="G1"[^>]*><is><t[^>]*>Signal<') 'Signal should follow Check By on a check tab'
 }
 
 Complete-Group

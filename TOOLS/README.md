@@ -448,9 +448,14 @@ Google Drive and open as Sheets.
 
 `Overview` is the first tab:
 
-| Sport | CheckID | Check Name | What it does | Rows | Status | Signal | Signal reason |
-|---|---|---|---|---:|---|---|---|
-| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | Finds active participants of the selected types that … | 1064 | Not Started | Monitor | Population-wide absence … |
+| Sport | CheckID | Check Name | What it does | Rows | Status | Check By | Signal | Signal reason |
+|---|---|---|---|---:|---|---|---|---|
+| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | Finds active participants of the selected types that … | 1064 | Not Started | | Monitor | Population-wide absence … |
+
+`Signal` and `Signal reason` are columns H and I, and the workbook ships with both hidden.
+They are the runner's own classification, settled before the run and unchanged by reading
+it, so the reviewer opens on the seven columns that are theirs to work through. Nothing is
+dropped: unhiding H:I brings back every value, and both still travel in `_summary.csv`.
 
 Every check appears, including those that returned nothing or failed and therefore have
 no tab of their own. `Sport` is taken from the CheckID prefix. `What it does` is the
@@ -465,14 +470,15 @@ left unlinked because it has no tab; the reason is on the console and in `_summa
 along with the durations.
 
 `Status` is a manual tracking field, seeded to `Not Started` with a dropdown offering
-`In Progress` and `Completed`. Nothing in the runner reads it back.
+`In Progress`, `IT Task` and `Completed`. `Check By` is a second manual field, written as a
+heading over empty cells and free text. Nothing in the runner reads either back.
 
 Then one tab per check:
 
 ```text
-     A                     B                    C              D                E          F          G
-1    Check ID              Check Name           SQL Used       What it does     Comment    Signal     Signal reason
-2    BMX-DQ-001            PARTICIPANT_MIS...   SELECT 'Mis... Finds active ...            Monitor    Population-wide…
+     A                     B                    C              D                E          F          G          H
+1    Check ID              Check Name           SQL Used       What it does     Comment    Check By   Signal     Signal reason
+2    BMX-DQ-001            PARTICIPANT_MIS...   SELECT 'Mis... Finds active ...                       Monitor    Population-wide…
 3    Return to Overview
 4
 5    check_type            participant_id       participant_name   ...
@@ -483,11 +489,14 @@ The identity sits on rows 1 and 2 rather than on every data row. Row 3 holds the
 to Overview, and row 4 is blank so the result table below stays a self-contained block for
 sorting and filtering.
 
-`Comment` is written as a heading and nothing else: the column belongs to whoever reads the
-workbook, and the runner never puts a value in it. `What it does`, `Signal` and `Signal reason`
-beside it are the same values the Overview carries, so a tab opened from a link explains
-itself without the reader going back. The two new signal columns are appended, so the existing
-Overview A-F and detail A-E contracts keep their positions.
+`Comment` and `Check By` are written as headings and nothing else: both columns belong to
+whoever reads the workbook, and the runner never puts a value in either. `What it does`,
+`Signal` and `Signal reason` beside them are the same values the Overview carries, so a tab
+opened from a link explains itself without the reader going back. Unlike the Overview, a
+check tab leaves the signal fields visible — there are only two of them on a row that is
+already about one check. Every column is appended after the manual fields, so the Overview
+A-F and detail A-E contracts keep their positions: `Rows` still links from column E and the
+`Status` dropdown still binds to column F.
 
 **A linked cell in Google Sheets is labelled from the hyperlink record, not from its own
 value.** With a `display` attribute Sheets shows that text; without one it falls back to
