@@ -64,6 +64,16 @@ Artistic Gymnastics is a listing sport at event level: ranked multi-entry fields
 through result type `100 Rank`. Both individuals and teams participate, so the competition
 model is `Listing (individual and team)`, not a fixed two-side H2H model.
 
+`GLOBAL-DQ-068` is a `Monitor` for this sport. Two teams with populated Starter lineups in
+the same event may legitimately expose different roster sizes, so the difference itself is
+population context rather than proof that one team row is defective. A team event participant
+with no lineup at all remains an actionable absence under `GLOBAL-DQ-058`.
+
+`GLOBAL-DQ-043` is also a `Monitor`. Its athlete and lineup-member gender contradictions
+remain actionable drill-down rows, but its complete output also includes mixed team entities
+whose generic participant gender is not authoritative for a male or female stage. The team
+role must be resolved before those rows can identify a repair.
+
 <!-- MANUAL PASTE ZONE: 40 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types
@@ -89,6 +99,18 @@ Result types `545 Penalties`, `567 Penalty`, `568 DScore`, `569 Escore`, and `64
 belong to Extended Results. By explicit decision of 2026-08-04 they remain in the confirmed
 structural inventory but are outside the initial Artistic Gymnastics DQ scope. This boundary
 assigns no check and does not classify the fields as unused.
+
+`GLOBAL-DQ-053` is a `Monitor` for this sport. Event-layer Medal and Rank values include
+tie and ordinal-storage shapes in which a direct Gold=1, Silver=2, Bronze=3 comparison is
+not sufficient to classify one participant row as defective. Exact swapped medal/rank pairs
+remain drill-down targets, but the mismatch row alone is not the repair unit.
+
+`GLOBAL-DQ-037` is a `Monitor` for the same tie-aware reason at event-set level. Legitimate
+ties and duplicated bronze placements prevent the aggregate invalid-set result from being a
+direct repair list; no-medal, contradictory and missing-medal subtypes remain useful
+drill-down targets. `GLOBAL-DQ-049` is likewise monitored because legitimate `All-Around`
+and `All-Round` compounds dominate its generic name-format output, while double spaces and
+Cyrillic lookalikes remain actionable subtypes.
 
 <!-- MANUAL PASTE ZONE: 40 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -190,6 +212,22 @@ status/progression patterns including `DNQ`, `R`, `R#`, `Q`, `Q#`, `DNS`, `DNF`,
 resolved. `1456 Running Score` has active rows, but its complete current value-pattern
 inventory contains only the empty state; no non-empty active use was confirmed.
 
+`GLOBAL-DQ-072` is a `Monitor` for this sport. Comp.Rank medal rows commonly occur in
+tie-aware, ordinal or team-inherited result shapes, so a medal whose stored Rank is shifted
+from the simple 1/2/3 mapping is not automatically one independent defect. Non-standard
+deltas and broken ranking sequences remain the rows to prioritise within that monitored
+population.
+
+`GLOBAL-DQ-026` monitors the aggregate Comp.Rank medal-set population because legitimate
+ties, duplicated bronze placements and team-inherited medal rows can all create repeated
+holders. Missing and contradictory medal subtypes remain drill-down targets.
+
+`GLOBAL-DQ-044` is a `Monitor`: athlete-statistic gender contradictions are actionable, but
+mixed-gender team entities require team-role semantics before their appearance in a male or
+female Comp.Rank can be called defective. `GLOBAL-DQ-051` is also monitored because the
+generic statistic-name rule includes legitimate hyphenated and diacritic-bearing names;
+double spaces and Cyrillic lookalikes remain actionable drill-down subtypes.
+
 <!-- MANUAL PASTE ZONE: 40 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values
@@ -221,6 +259,9 @@ The complete active event-round inventory contains two different IDs named `Fina
 as active event values across more than one competition context; they are not unused legacy
 references.
 
+Both confirmed Final IDs, `9` and `173`, are medal-awarding rounds for this sport and form
+the approved `MEDAL_ROUND_TYPE_LIST`. The non-medal Qualifier IDs remain outside that list.
+
 <!-- MANUAL PASTE ZONE: 40 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
@@ -240,6 +281,22 @@ their values were not tested for equality.
 Tournament-owned Comp.Rank statistics attach country and age class through
 `object_relation` and discipline through `object_discipline`. These are separate metadata
 paths from the event hierarchy.
+
+Tournament-stage dates are a containing competition window: they may begin before the
+earliest event start or end after the latest one. `GLOBAL-DQ-004` is therefore a `Monitor`
+for this sport while it compares exact endpoints; a wider containing stage interval is not
+itself a boundary defect.
+
+The generic name-format checks require language-aware interpretation. `GLOBAL-DQ-048` is a
+`Monitor` because valid compound and geographic names include forms such as `All-Around`,
+`Tel-Aviv`, and `São Paulo`. `GLOBAL-DQ-079` is a `Monitor` because the legitimate template
+compound `World Cup All-Around` is sufficient to trigger its generic rule.
+
+Summer Olympics tournaments `14678` and `36693` are the confirmed postponed editions whose
+stored tournament name is `2020` while their stages took place in 2021. The
+`Artistic-Gymnastics-DQ-029` instance of `GLOBAL-DQ-080` excludes exactly those two IDs from
+both findings and coverage; the check remains active for every future tournament-season
+contradiction.
 
 <!-- MANUAL PASTE ZONE: 40 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 

@@ -348,33 +348,66 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-025
     -- Name - COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_EVENTS
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type whose Start date and End date config values do not match the earliest and latest startdate of the events referenced through the Event id config field, with template and tournament name context, together with a coverage count of all eligible statistics with at least one linked event and at least one active config date.
-    'Date_Range_Mismatch_Events' AS check_type,
-    s.id AS statistic_id,
-    s.name AS statistic_name,
-    tt.name AS template_name,
-    t.name AS tournament_name,
-    (SELECT MIN(sc1.value) FROM statistic_config sc1 WHERE sc1.statisticFK = s.id AND sc1.statistic_data_typeFK = {{CONFIG_START_DATE_TYPE_ID}} AND sc1.del = 'no') AS config_start_date,
-    (SELECT MAX(sc2.value) FROM statistic_config sc2 WHERE sc2.statisticFK = s.id AND sc2.statistic_data_typeFK = {{CONFIG_END_DATE_TYPE_ID}} AND sc2.del = 'no') AS config_end_date,
-    MIN(e.startdate) AS earliest_linked_event_startdate,
-    MAX(e.startdate) AS latest_linked_event_startdate,
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type whose Start date and End date config interval is inverted, or does not contain every active event referenced through the Event id config field, separating the four boundary failures with template and tournament name context, together with a coverage count of all eligible statistics with at least one linked event and at least one active config date.
+    CASE
+        WHEN DATE(x.config_start_date) > DATE(x.config_end_date)
+            THEN 'Config_Date_Range_Inverted'
+        WHEN DATE(x.earliest_linked_event_startdate) < DATE(x.config_start_date)
+         AND DATE(x.latest_linked_event_startdate) > DATE(x.config_end_date)
+            THEN 'Linked_Events_Outside_Both_Bounds'
+        WHEN DATE(x.earliest_linked_event_startdate) < DATE(x.config_start_date)
+            THEN 'Linked_Event_Before_Config_Start'
+        ELSE 'Linked_Event_After_Config_End'
+    END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.config_start_date,
+    x.config_end_date,
+    x.earliest_linked_event_startdate,
+    x.latest_linked_event_startdate,
     NULL AS eligible_count
-FROM statistic s
-JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN statistic_config sce ON sce.statisticFK = s.id AND sce.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}} AND sce.del = 'no'
-JOIN event e ON e.id = sce.value AND e.del = 'no'
-WHERE s.del = 'no'
-  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND s.object_typeFK = 3
-  AND tt.sportFK = {{SPORT_ID}}
-  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
-GROUP BY s.id, s.name, tt.name, t.name
-HAVING (
-    DATE((SELECT MIN(sc1.value) FROM statistic_config sc1 WHERE sc1.statisticFK = s.id AND sc1.statistic_data_typeFK = {{CONFIG_START_DATE_TYPE_ID}} AND sc1.del = 'no')) <> DATE(MIN(e.startdate))
-    OR DATE((SELECT MAX(sc2.value) FROM statistic_config sc2 WHERE sc2.statisticFK = s.id AND sc2.statistic_data_typeFK = {{CONFIG_END_DATE_TYPE_ID}} AND sc2.del = 'no')) <> DATE(MAX(e.startdate))
-)
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        (SELECT MIN(sc1.value)
+         FROM statistic_config sc1
+         WHERE sc1.statisticFK = s.id
+           AND sc1.statistic_data_typeFK = {{CONFIG_START_DATE_TYPE_ID}}
+           AND sc1.del = 'no') AS config_start_date,
+        (SELECT MAX(sc2.value)
+         FROM statistic_config sc2
+         WHERE sc2.statisticFK = s.id
+           AND sc2.statistic_data_typeFK = {{CONFIG_END_DATE_TYPE_ID}}
+           AND sc2.del = 'no') AS config_end_date,
+        MIN(e.startdate) AS earliest_linked_event_startdate,
+        MAX(e.startdate) AS latest_linked_event_startdate
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_config sce ON sce.statisticFK = s.id AND sce.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}} AND sce.del = 'no'
+    JOIN event e ON e.id = sce.value AND e.del = 'no'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND tt.id = <tournament_template_id>
+      AND EXISTS (
+          SELECT 1 FROM statistic_config sc3
+          WHERE sc3.statisticFK = s.id
+            AND sc3.statistic_data_typeFK IN ({{CONFIG_START_DATE_TYPE_ID}}, {{CONFIG_END_DATE_TYPE_ID}})
+            AND sc3.del = 'no'
+      )
+    GROUP BY s.id, s.name, tt.name, t.name
+) x
+WHERE DATE(x.config_start_date) > DATE(x.config_end_date)
+   OR DATE(x.earliest_linked_event_startdate) < DATE(x.config_start_date)
+   OR DATE(x.latest_linked_event_startdate) > DATE(x.config_end_date)
 
 UNION ALL
 
@@ -698,7 +731,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-030
     -- Name - COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT
-    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, whose participant takes part in no active event anywhere under the statistic's own tournament, with template and tournament name context, together with a coverage count of all eligible statistic-participant rows.
+    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, whose participant is neither a direct event participant nor an active lineup member anywhere under the statistic's own tournament, with template and tournament name context, together with a coverage count of all eligible statistic-participant rows.
     'PARTICIPANT_NOT_IN_TOURNAMENT' AS check_type,
     sp.id AS statistic_participants_id,
     s.id AS statistic_id,
@@ -726,6 +759,17 @@ WHERE s.del = 'no'
       WHERE ts2.tournamentFK = t.id
         AND ts2.del = 'no'
         AND ep2.participantFK = sp.participantFK
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM tournament_stage ts3
+      JOIN event e3 ON e3.tournament_stageFK = ts3.id AND e3.del = 'no'
+      JOIN event_participants ep3 ON ep3.eventFK = e3.id AND ep3.del = 'no'
+      JOIN lineup l3 ON l3.event_participantsFK = ep3.id
+                    AND l3.del = 'no'
+                    AND l3.participantFK = sp.participantFK
+      WHERE ts3.tournamentFK = t.id
+        AND ts3.del = 'no'
   )
 
 UNION ALL

@@ -761,6 +761,104 @@ Test-That 'GLOBAL-DQ-111 keeps unreadable times, one event row and symmetric no-
         'coverage no longer counts the pre-violation event population'
 }
 
+Test-That 'GLOBAL-DQ-102 keeps the scope-type list symmetric across findings and coverage' {
+    $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'GLOBAL-DQ-102' })
+    Assert-Equal 1 $statement.Count 'GLOBAL-DQ-102 statement count'
+    $sql = $statement[0].Sql
+    $branches = [regex]::Split($sql, '(?im)^\s*UNION ALL\s*$')
+
+    Assert-Equal 2 $branches.Count 'findings and coverage branches'
+    Assert-Equal 1 ([regex]::Matches($branches[0], 'es\.scope_typeFK\s+IN\s*\(\s*\{\{SCOPE_TYPE_LIST\}\}\s*\)')).Count `
+        'scope-type list in findings'
+    Assert-Equal 1 ([regex]::Matches($branches[1], 'es\.scope_typeFK\s+IN\s*\(\s*\{\{SCOPE_TYPE_LIST\}\}\s*\)')).Count `
+        'scope-type list in coverage'
+    Assert-Equal 0 ([regex]::Matches($sql, '\{\{SCOPE_TYPE_ID\}\}')).Count `
+        'obsolete scalar scope parameter'
+}
+
+Test-That 'GLOBAL-DQ-025 treats configured dates as a containing interval' {
+    $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'GLOBAL-DQ-025' })
+    Assert-Equal 1 $statement.Count 'GLOBAL-DQ-025 statement count'
+    $sql = $statement[0].Sql
+    $branches = [regex]::Split($sql, '(?im)^\s*UNION ALL\s*$')
+
+    Assert-Equal 2 $branches.Count 'findings and coverage branches'
+    Assert-True ($branches[0] -match 'Config_Date_Range_Inverted') `
+        'inverted interval verdict'
+    Assert-True ($branches[0] -match 'Linked_Events_Outside_Both_Bounds') `
+        'both-bounds verdict'
+    Assert-True ($branches[0] -match 'Linked_Event_Before_Config_Start') `
+        'before-start verdict'
+    Assert-True ($branches[0] -match 'Linked_Event_After_Config_End') `
+        'after-end verdict'
+    Assert-True ($branches[0] -match 'DATE\(x\.config_start_date\)\s*>\s*DATE\(x\.config_end_date\)') `
+        'inverted interval predicate'
+    Assert-True ($branches[0] -match 'DATE\(x\.earliest_linked_event_startdate\)\s*<\s*DATE\(x\.config_start_date\)') `
+        'linked event before configured interval predicate'
+    Assert-True ($branches[0] -match 'DATE\(x\.latest_linked_event_startdate\)\s*>\s*DATE\(x\.config_end_date\)') `
+        'linked event after configured interval predicate'
+    Assert-Equal 0 ([regex]::Matches($sql,
+            'config_(start|end)_date\)\s*<>\s*DATE\(')).Count `
+        'obsolete exact-endpoint comparison'
+    Assert-Equal 2 ([regex]::Matches($sql,
+            'statistic_data_typeFK\s+IN\s*\(\s*\{\{CONFIG_START_DATE_TYPE_ID\}\}\s*,\s*\{\{CONFIG_END_DATE_TYPE_ID\}\}\s*\)')).Count `
+        'identical active config-date eligibility in findings and coverage'
+    Assert-Equal 2 ([regex]::Matches($sql,
+            'JOIN\s+statistic_config\s+sce\s+ON\s+sce\.statisticFK\s*=\s*s\.id')).Count `
+        'Event-id joins in findings and coverage'
+    Assert-Equal 2 ([regex]::Matches($sql,
+            "tt\.name\s+NOT\s+LIKE\s+'%\(IOC\)%'")).Count `
+        'IOC exclusion in findings and coverage'
+    Assert-True ($branches[1] -match 'COUNT\s*\(\s*DISTINCT\s+s\.id\s*\)\s+AS\s+eligible_count') `
+        'coverage must count eligible statistics'
+}
+
+Test-That 'GLOBAL-DQ-030 accepts direct event participants and active lineup members' {
+    $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'GLOBAL-DQ-030' })
+    Assert-Equal 1 $statement.Count 'GLOBAL-DQ-030 statement count'
+    $sql = $statement[0].Sql
+    $branches = [regex]::Split($sql, '(?im)^\s*UNION ALL\s*$')
+
+    Assert-Equal 2 $branches.Count 'findings and coverage branches'
+    Assert-Equal 2 ([regex]::Matches($branches[0], 'AND\s+NOT\s+EXISTS\s*\(')).Count `
+        'direct-participant and lineup-member exclusion paths'
+    Assert-True ($branches[0] -match 'ep2\.participantFK\s*=\s*sp\.participantFK') `
+        'direct event participant predicate'
+    Assert-True ($branches[0] -match 'JOIN\s+lineup\s+l3\s+ON\s+l3\.event_participantsFK\s*=\s*ep3\.id') `
+        'active lineup path'
+    Assert-True ($branches[0] -match 'l3\.participantFK\s*=\s*sp\.participantFK') `
+        'lineup member predicate'
+    Assert-Equal 0 ([regex]::Matches($branches[1], 'event_participants|JOIN\s+lineup')).Count `
+        'coverage must remain independent of participation representation'
+    Assert-True ($branches[1] -match 'COUNT\s*\(\s*DISTINCT\s+sp\.id\s*\)\s+AS\s+eligible_count') `
+        'coverage must count statistic-participant rows'
+    Assert-Equal 2 ([regex]::Matches($sql, "tt\.name\s+NOT\s+LIKE\s+'%\(IOC\)%'")).Count `
+        'IOC exclusion in findings and coverage'
+}
+
+Test-That 'Artistic-Gymnastics-DQ-029 excludes only confirmed postponed editions symmetrically' {
+    $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'Artistic-Gymnastics-DQ-029' })
+    Assert-Equal 1 $statement.Count 'Artistic-Gymnastics-DQ-029 statement count'
+    $sql = $statement[0].Sql
+    $branches = [regex]::Split($sql, '(?im)^\s*UNION ALL\s*$')
+
+    Assert-Equal 2 $branches.Count 'findings and coverage branches'
+    Assert-Equal 1 ([regex]::Matches($branches[0],
+            't\.id\s+NOT\s+IN\s*\(\s*14678\s*,\s*36693\s*\)')).Count `
+        'postponed-edition exclusion in findings'
+    Assert-Equal 1 ([regex]::Matches($branches[1],
+            't\.id\s+NOT\s+IN\s*\(\s*14678\s*,\s*36693\s*\)')).Count `
+        'postponed-edition exclusion in coverage'
+    Assert-Equal 1 ([regex]::Matches($branches[0], 'tt\.sportFK\s*=\s*40')).Count `
+        'Artistic Gymnastics scope in findings'
+    Assert-Equal 1 ([regex]::Matches($branches[1], 'tt\.sportFK\s*=\s*40')).Count `
+        'Artistic Gymnastics scope in coverage'
+    Assert-True ($branches[1] -match 'COUNT\s*\(\s*DISTINCT\s+t\.id\s*\)\s+AS\s+eligible_count') `
+        'coverage must count eligible tournaments'
+    Assert-Equal 0 ([regex]::Matches($sql, '\{\{\w+\}\}')).Count `
+        'sport-authored statement must not retain template placeholders'
+}
+
 Test-That 'GLOBAL-DQ-109 compares two discipline sets with symmetric resolvable scope' {
     $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'GLOBAL-DQ-109' })
     Assert-Equal 1 $statement.Count 'GLOBAL-DQ-109 statement count'

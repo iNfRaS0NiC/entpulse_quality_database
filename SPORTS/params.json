@@ -174,6 +174,7 @@
     "RESULT_FINAL_SCORE_TYPE_ID": 4,
     "RESULT_MIRROR_SCORE_TYPE_ID": 6,
     "SCOPE_TYPE_ID": 305,
+    "SCOPE_TYPE_LIST": "305",
     "SCOPE_PERIOD_DATA_TYPE_LIST": "282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292",
     "SCOPE_PERIOD_SENTINEL_LIST": "'x'",
     "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": 292,
@@ -238,9 +239,61 @@
     "CONFIG_GENDER_TYPE_ID": 1470,
     "CONFIG_EVENT_ID_TYPE_ID": 1471,
     "FINAL_ROUND_TYPE_LIST": "9, 173",
+    "MEDAL_ROUND_TYPE_LIST": "9, 173",
     "RESULT_RANK_TYPE_ID": 100,
     "RESULT_COMMENT_TYPE_ID": 104,
     "RESULT_MEDAL_TYPE_ID": 501,
-    "ROUND_TYPE_LIST": "9, 152, 173, 179"
+    "SCOPE_TYPE_LIST": "101, 102",
+    "ROUND_TYPE_LIST": "9, 152, 173, 179",
+    "_checkSignal": {
+      "GLOBAL-DQ-004": {
+        "signal": "Monitor",
+        "reason": "Artistic Gymnastics tournament-stage dates define a containing competition window and need not equal the earliest and latest event start dates. A wider containing interval is population context, not one row-level defect. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-026": {
+        "signal": "Monitor",
+        "reason": "Comp.Rank medal sets include legitimate ties, duplicated bronze placements and team-inherited medal rows, so the aggregate invalid-set result is a monitored population. Missing or contradictory medal subtypes remain drill-down targets. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-037": {
+        "signal": "Monitor",
+        "reason": "Final-event medal sets include legitimate ties and duplicated bronze placements, so the aggregate invalid-set result is a monitored population. Events with no medals or contradictory and missing medal subtypes remain drill-down targets. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-043": {
+        "signal": "Monitor",
+        "reason": "The check mixes actionable athlete/lineup gender contradictions with mixed-team entities whose generic participant gender is not authoritative for a single-gender stage. The latter semantic boundary makes the complete output a Monitor. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-044": {
+        "signal": "Monitor",
+        "reason": "Athlete-statistic gender contradictions are actionable, but mixed-gender team entities can legitimately appear in a male or female Comp.Rank context and require team-role semantics. The complete output is therefore monitored. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-048": {
+        "signal": "Monitor",
+        "reason": "The generic stage-name format rule also matches legitimate compound names and diacritics such as All-Around, Tel-Aviv and São Paulo. Those language-aware cases make the aggregate output a Monitor. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-049": {
+        "signal": "Monitor",
+        "reason": "The generic event-name format rule is dominated by legitimate All-Around and All-Round compounds. Double spaces and Cyrillic lookalikes remain actionable drill-down subtypes. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-051": {
+        "signal": "Monitor",
+        "reason": "The generic Comp.Rank name rule also matches legitimate hyphenated and diacritic-bearing names. Double spaces and Cyrillic lookalikes remain actionable drill-down subtypes. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-053": {
+        "signal": "Monitor",
+        "reason": "Event Medal and Rank rows include tie and ordinal-storage shapes for which a direct Gold=1, Silver=2, Bronze=3 comparison does not identify one repair row. Exact swaps remain drill-down targets. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-068": {
+        "signal": "Monitor",
+        "reason": "Populated team lineups within one Artistic Gymnastics event can legitimately have different roster sizes, so the difference is population context. GLOBAL-DQ-058 remains the actionable check for a team with no lineup. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-072": {
+        "signal": "Monitor",
+        "reason": "Comp.Rank medals occur in tie-aware, ordinal and team-inherited shapes, so a stored Rank shifted from the simple 1/2/3 mapping is not automatically an independent defect. Non-standard deltas and broken sequences remain drill-down targets. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-079": {
+        "signal": "Monitor",
+        "reason": "The template-name format rule flags the legitimate compound World Cup All-Around, so its current Artistic Gymnastics output is semantic naming context rather than a direct repair list. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      }
+    }
   }
 }

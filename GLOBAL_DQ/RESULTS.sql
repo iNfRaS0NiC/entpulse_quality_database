@@ -2370,7 +2370,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-102
     -- Name - EVENT_SCOPE_RESULT_OWNER_EVENT_MISMATCH
-    -- What it does: Finds active events of the selected sport holding a scope container of the confirmed scope type whose scope results name an event participant belonging to a different event, or name an event-participant row that is not active at all, so the per-period value is attached to a competitor who did not play that event, with the number of offending rows and a sample and the container and stage name context, together with a coverage count of all eligible events holding at least one active scope result in such a container.
+    -- What it does: Finds active events of the selected sport holding a scope container of one of the confirmed scope types whose scope results name an event participant belonging to a different event, or name an event-participant row that is not active at all, so the scope value is attached to a competitor who did not play that event, with the number of offending rows and a sample and the container and stage name context, together with a coverage count of all eligible events holding at least one active scope result in such a container.
     CASE
         WHEN x.participant_row_missing_count > 0 THEN 'SCOPE_RESULT_PARTICIPANT_ROW_MISSING'
         ELSE 'SCOPE_RESULT_OWNER_EVENT_MISMATCH'
@@ -2403,7 +2403,7 @@ FROM (
                    ' ep_event=', COALESCE(CAST(ep.eventFK AS CHAR), 'none'))) AS sample_row
     FROM scope_result sr
     JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
-         AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+         AND es.scope_typeFK IN ({{SCOPE_TYPE_LIST}})
     JOIN event e ON e.id = es.eventFK AND e.del = 'no'
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
     JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -2427,7 +2427,7 @@ SELECT
     1 AS sort_order
 FROM scope_result sr
 JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
-     AND es.scope_typeFK = {{SCOPE_TYPE_ID}}
+     AND es.scope_typeFK IN ({{SCOPE_TYPE_LIST}})
 JOIN event e ON e.id = es.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
