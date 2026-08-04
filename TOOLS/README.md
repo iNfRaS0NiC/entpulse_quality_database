@@ -296,6 +296,17 @@ when the underlying data is fixed, and the check is then approved. `Not applicab
 lift, because the structure it reads is one the sport does not have. Recording a permanent
 absence as `Blocked` promises a review that will never come.
 
+**A signal is read off the structure, never off the current population.** A sport that stores
+no such column, no such layer and no such relation is `Not applicable`. A sport that stores
+all three but holds no row carrying that value today is not: it is a sport whose check
+returns nothing, which is the check working. The distinction is the whole point of writing
+one. A status, a type or a value absent this morning can arrive with the next import, and a
+check classified away on a row count is precisely the check that will stay silent when it
+does — the arrival it existed to catch becomes the thing it can no longer see. "Zero rows
+returned" and "nothing to read" are different findings and are never interchangeable. When it
+is not clear which of the two applies, ask rather than classify: an unclassified check keeps
+running, and running is the safe default.
+
 `Not applicable` carries no row requirement in either direction on purpose. A check the sport
 should never have is usually simply unapproved, but the cases where one *was* approved are
 exactly the ones worth being able to write down — and deprecating it is a separate decision,

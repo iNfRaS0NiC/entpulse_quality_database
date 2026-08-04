@@ -43,6 +43,12 @@ The sport uses the active core path `tournament_template` → `tournament` →
 `tournament_stage` → `event` → `event_participants`. Template and stage genders in active
 use are `male`, `female`, and `mixed`.
 
+The tournament stage is the sport's **gender** carrier, not a discipline carrier. A stage is
+male, female or mixed, and any stage may hold events of any apparatus; discipline lives on
+the event through `object_discipline`. `GLOBAL-DQ-082` is therefore `Not applicable` here,
+because it asserts a stage-level discipline grouping this sport does not store. That is a
+property of how the sport organises competition rather than of the current data.
+
 The IOC-purpose templates `12886` and `12887` (World Championships Artistic (IOC)) and
 `12890` and `12891` (World Cup (IOC)) reach active tournaments but no active stage or event
 in the current complete hierarchy inventory. Their tournament presence therefore does not
@@ -90,10 +96,25 @@ role must be resolved before those rows can identify a repair.
 | escore | 569 | Not checked | Escore | Confirmed-data |
 | bonus | 645 | Not checked | Bonus | Confirmed-data |
 
-The complete current `104 Comment` pattern inventory contains status and progression forms
-such as `Q`, `R`, digit-bearing `R#` and `Q#`, `DNS`, `DNF`, `NR`, `NC`, `From Vault #`,
-`Disq.`, and `Withdrawn`. These are digit-normalized patterns, not a confirmed closed list
-of exact literals or meanings.
+The `104 Comment` vocabulary is closed as of 2026-08-04. The exact literals in active use
+outside IOC-purpose templates are `Q`, `Q1` through `Q8`, `R`, `R1` through `R4`, `DNS`,
+`DNF`, `NR`, `NC`, `Disq.`, `Withdrawn`, and `From Vault 1`. Of these, `DNS`, `DNF`, `Disq.`,
+`Withdrawn`, `NC` and `NR` mean the participant holds no classified result; the `Q` and `R`
+forms are progression markers and do not.
+
+`From Vault 1` is deliberately left out of `RESULT_COMMENT_VALUE_LIST`: it is a sentence
+rather than a status code, so it is surfaced as a finding rather than blessed as vocabulary.
+The list also carries the full `Q1`-`Q8` and `R1`-`R4` ranges even where a given member has
+no row today, because an unused member of a confirmed range is a row count and not a
+structural absence.
+
+The sport is judged rather than timed. No result type records elapsed time or a gap to the
+leader, and no apparatus is decided on the clock, so `RESULT_FULL_TIME_TYPE_ID`,
+`RESULT_DURATION_TYPE_ID` and `TIMED_DISCIPLINE_LIST` are recorded under `_notApplicable`.
+`GLOBAL-DQ-052` reads a full time and a duration alongside the Comment and is therefore
+permanently unrunnable here; `GLOBAL-DQ-076` asserts the same numeric-field rule without
+them and is instantiated instead. `102 Points` is the sport's only numeric result type
+inside DQ scope, Extended Results being outside it by the decision below.
 
 Result types `545 Penalties`, `567 Penalty`, `568 DScore`, `569 Escore`, and `645 Bonus`
 belong to Extended Results. By explicit decision of 2026-08-04 they remain in the confirmed
@@ -223,10 +244,20 @@ Active `statistic_data11` fields are `1270 Rank`, `1271 Points`, `1273 Comment`,
 `1278 Qualification rank`, `1429 Team`, and `1456 Running Score`. Active `statistic_config`
 fields are `1463 Start date`, `1464 End date`, `1470 Gender`, and `1471 Event id`.
 
-`1273 Comment` uses active empty rows as a stored state and also carries digit-normalized
-status/progression patterns including `DNQ`, `R`, `R#`, `Q`, `Q#`, `DNS`, `DNF`, `NR`, `NC`,
-`Disq.`, `Withdrawn`, and `DQB`. The exact literal vocabulary and meanings are not fully
-resolved. `1456 Running Score` has active rows, but its complete current value-pattern
+`1273 Comment` uses active empty rows as a stored state. Its literal vocabulary outside
+IOC-purpose templates is `R`, `R1` through `R4`, `Q`, `Q4`, `Q7`, `Q8`, `DNS`, `DNF`, `NR`,
+`NC`, `Disq.` and `Withdrawn`, and the same six of those mean no classified result as at the
+event layer. `DNQ` and `DQB` appear in the sport's overall inventory but not in this
+population: they occur under IOC-purpose templates, which every statistics statement
+excludes. Both stay in `DATA_COMMENT_VALUE_LIST` together with the full `Q1`-`Q8` and
+`R1`-`R4` ranges, because a member with no row in the audited population is a row count
+rather than a structural absence.
+
+`GLOBAL-DQ-057` is the statistic-layer twin of the Comment rule and reads a Time data field
+this sport does not store, so it is permanently unrunnable here for the same reason
+`GLOBAL-DQ-052` is at the event layer.
+
+`1456 Running Score` has active rows, but its complete current value-pattern
 inventory contains only the empty state; no non-empty active use was confirmed.
 
 `GLOBAL-DQ-072` is a `Monitor` for this sport. Comp.Rank medal rows commonly occur in
@@ -295,6 +326,11 @@ In the complete current stage inventory, every active stage has a direct
 `city_object` is also used for stages, but only on a subset. Host country through
 `object_relation 4 → 33` is a separate, sparsely used path; every observed host-country link
 agrees with the same stage's direct country.
+
+`GLOBAL-DQ-034` is a `Monitor` for that reason. It asserts five stage fields at once, and
+822 of the sport's 824 stages are reported for the host-country relation alone while their
+direct `tournament_stage.countryFK` is present. The proportion carrying the separate relation
+is the reading; a single stage row is not a repair unit.
 
 The sport stores judged output in parallel layers: event-participant `result` rows and
 participant-owned checkpoint `scope_result` rows use corresponding rank, points, comment,

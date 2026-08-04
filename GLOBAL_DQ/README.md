@@ -267,6 +267,16 @@ The last point matters most in practice. "Every stage has an age class" is true 
 sports and meaningless for others; such a check is global only because the prerequisite
 column says where it applies.
 
+**"Legitimately absent" means structurally absent, and is never read off a row count.** The
+prerequisite column describes what a sport *stores* — which columns, layers and relations its
+records use — not how many rows currently carry a given value. A sport whose events hold a
+status column satisfies the prerequisite of a status rule even while no event carries that
+status today; excluding it on that count silently disables the rule for the day the first
+such row arrives, which is the day it was written for. The same applies to a value list, a
+type or a discipline that happens to be unused this month. Where the two are hard to tell
+apart, ask before classifying. `TOOLS/README.md` owns the same distinction for `_checkSignal`
+and `WORKFLOW.md` states it for scope.
+
 ## Promoting a sport check to a template
 
 Only after explicit user approval:

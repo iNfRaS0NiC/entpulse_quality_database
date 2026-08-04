@@ -511,7 +511,7 @@ on structure rather than on volume:
 | Case | Why it is different |
 |---|---|
 | `eligible_count = 0` | The scope is empty or misdirected. The statement audits nothing, so it proves nothing. Correct the scope; do not read it as clean. |
-| The applicability prerequisite is absent | The sport does not use the structure the rule asserts, so the rule has no meaning for it. `GLOBAL_DQ/README.md` owns this column. |
+| The applicability prerequisite is absent | The sport does not use the structure the rule asserts, so the rule has no meaning for it. Absent means structurally absent — no such column, layer or relation — and never a value, status or type that merely has no rows today, which the next import can change. A check excluded on a row count is silent exactly when the row it was written for finally arrives. Where the two are hard to tell apart, ask before excluding. `GLOBAL_DQ/README.md` owns this column. |
 
 A deprecated check keeps its row and its ID either way; `POWERBI.md` owns that rule.
 

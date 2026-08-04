@@ -20,7 +20,7 @@
     "CONFIG_EVENT_ID_TYPE_ID": 1471,
     "FINAL_ROUND_TYPE_LIST": "9, 173",
     "MEDAL_ROUND_TYPE_LIST": "9, 173",
-    "NOT_STARTED_DESC_LIST": "1",
+    "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
     "TIMED_DISCIPLINE_LIST": "429, 776",
     "RANK_MAX_PLAUSIBLE": 200,
     "RESULT_RANK_TYPE_ID": 100,
@@ -97,7 +97,7 @@
     "CONFIG_EVENT_ID_TYPE_ID": 1471,
     "FINAL_ROUND_TYPE_LIST": "9, 173",
     "MEDAL_ROUND_TYPE_LIST": "9, 173",
-    "NOT_STARTED_DESC_LIST": "1, 5",
+    "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
     "TIMED_DISCIPLINE_LIST": "144, 799, 800, 801, 803, 804, 806",
     "RANK_MAX_PLAUSIBLE": 200,
     "RESULT_RANK_TYPE_ID": 100,
@@ -184,6 +184,8 @@
     "EXTRA_PERIOD_STATUS_DESC_LIST": "113",
     "FINAL_ROUND_TYPE_LIST": "9, 173",
     "MEDAL_ROUND_TYPE_LIST": "9, 138, 173, 181",
+    "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
+    "STALE_NOT_STARTED_DAYS": 30,
     "BRONZE_ROUND_TYPE_LIST": "138, 181",
     "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', 'bronze', '1/8', '1/16', 'heats', 'qualifier', 'repechage', 'playoff', 'tie-breaker', 'small final'",
     "GROUP_ROUND_NAME_LIST": "'preliminary', 'seeding'",
@@ -200,8 +202,6 @@
       "DATA_DEPRECATED_DURATION_TYPE_ID": "Comp.Rank stores no time field",
       "TIMED_DISCIPLINE_LIST": "neither Mixed Doubles nor 4aSide is a timed discipline",
       "CONFIG_EVENT_ID_TYPE_ID": "statistic_config records no Event id, so a Comp.Rank statistic cannot be resolved to its event through that path",
-      "NOT_STARTED_DESC_LIST": "every active event resolves to a finished status; no not-started status occurs",
-      "STALE_NOT_STARTED_DAYS": "every active event resolves to a finished status; no not-started status occurs",
       "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
       "WINNER_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
       "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
@@ -253,7 +253,35 @@
     "RESULT_MEDAL_TYPE_ID": 501,
     "SCOPE_TYPE_LIST": "101, 102",
     "ROUND_TYPE_LIST": "9, 152, 173, 179",
+    "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+    "RANK_MAX_PLAUSIBLE": 250,
+    "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
+    "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
+    "NUMERIC_DATA_TYPE_LIST": "1271, 1278",
+    "DATA_COMMENT_VALUE_LIST": "'q', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'r', 'r1', 'r2', 'r3', 'r4', 'dns', 'dnf', 'dnq', 'dqb', 'nr', 'nc', 'disq.', 'withdrawn'",
+    "SERIES_MIN_YEARS": 3,
+    "SERIES_SKIP_YEARS": "2020",
+    "ELIMINATION_ROUND_NAME_LIST": "''",
+    "GROUP_ROUND_NAME_LIST": "'final', 'qualifier'",
+    "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
+    "STALE_NOT_STARTED_DAYS": 30,
+    "NUMERIC_RESULT_TYPE_LIST": "102",
+    "RESULT_COMMENT_VALUE_LIST": "'q', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'r', 'r1', 'r2', 'r3', 'r4', 'dns', 'dnf', 'nr', 'nc', 'disq.', 'withdrawn'",
+    "RESULT_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disq.', 'withdrawn', 'nc', 'nr'",
+    "DATA_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disq.', 'withdrawn', 'nc', 'nr'",
+    "_notApplicable": {
+      "RESULT_FULL_TIME_TYPE_ID": "the sport is judged rather than timed: a routine is scored by a panel and no result type records elapsed time, so there is no absolute finishing time to assert",
+      "RESULT_DURATION_TYPE_ID": "the sport is judged rather than timed: no result type records elapsed time or a gap to the leader",
+      "DATA_TIME_TYPE_ID": "Comp.Rank stores no time field; the sport ranks on judged scores rather than on the clock",
+      "DATA_TIME_DIFFERENCE_TYPE_ID": "Comp.Rank stores no time field, so it records no gap to the leader either",
+      "DATA_DEPRECATED_DURATION_TYPE_ID": "Comp.Rank stores no time field, so it has no superseded duration field to report",
+      "TIMED_DISCIPLINE_LIST": "none of the eleven apparatus is decided on the clock; every one is scored by a judging panel"
+    },
     "_checkSignal": {
+      "GLOBAL-DQ-034": {
+        "signal": "Monitor",
+        "reason": "The check asserts five stage fields at once, and Artistic Gymnastics populates host country through the sparse object_relation 4 to 33 path rather than on every stage, so 822 of 824 stages are reported for that field alone. The direct tournament_stage.countryFK is present throughout; the proportion carrying the separate host-country relation is the reading. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
       "GLOBAL-DQ-004": {
         "signal": "Monitor",
         "reason": "Artistic Gymnastics tournament-stage dates define a containing competition window and need not equal the earliest and latest event start dates. A wider containing interval is population context, not one row-level defect. SPORTS/Artistic-Gymnastics.md owns the reasoning."
@@ -306,13 +334,17 @@
         "signal": "Monitor",
         "reason": "The template-name format rule flags the legitimate compound World Cup All-Around, so its current Artistic Gymnastics output is semantic naming context rather than a direct repair list. SPORTS/Artistic-Gymnastics.md owns the reasoning."
       },
+      "GLOBAL-DQ-082": {
+        "signal": "Not applicable",
+        "reason": "Structural: an Artistic Gymnastics tournament stage carries gender, not discipline. The sport runs male, female and mixed stages, and any stage may hold events of any apparatus, so the check asserts a grouping this sport does not store at that level. This is a property of how the sport organises competition, not of the current data. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
       "GLOBAL-DQ-102": {
         "signal": "Not applicable",
         "reason": "The checkpoint scope layer is outside Artistic Gymnastics DQ scope by explicit decision of 2026-08-04. The layer is Vault-only, so a scope-owner assertion reads a structure the sport does not maintain across its disciplines. SPORTS/Artistic-Gymnastics.md owns the reasoning."
       },
       "GLOBAL-DQ-107": {
         "signal": "Not applicable",
-        "reason": "The check asserts a scope container on every finished event, but the Artistic Gymnastics checkpoint layer is Vault-only and 6934 of 7377 finished events hold none, so it reports the sport's normal shape. The layer is outside DQ scope by explicit decision of 2026-08-04. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+        "reason": "Structural: checkpoint1 and checkpoint2 are the two vaults a gymnast performs, so the scope layer belongs to the Vault apparatus rather than to the event level the check asserts. Nine of the sport's eleven disciplines contest a single exercise and have no second attempt for a container to hold, which is a property of the sport rather than of the current data. The layer is also outside DQ scope by explicit decision of 2026-08-04. SPORTS/Artistic-Gymnastics.md owns the reasoning."
       }
     }
   }
