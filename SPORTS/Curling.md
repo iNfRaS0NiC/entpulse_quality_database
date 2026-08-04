@@ -66,7 +66,8 @@ event participants carry one. Athlete-to-team membership is carried by the Comp.
 instead, through the `(athletes)` statistic described under Statistics below. A check that
 reads team membership from lineups therefore measures the minority mechanism and reports the
 rest of the sport; `GLOBAL-DQ-058` is that check and its finding here is the proportion, not a
-defect per event.
+defect per event. It is signalled `Monitor` for that reason. An earlier revision of
+`SPORTS/params.json` recorded it as `Not applicable`, contradicting this paragraph.
 
 <!-- MANUAL PASTE ZONE: 10 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -399,7 +400,10 @@ populated in this database and the backfill is still ahead, so the absence recor
 has reached rather than something missing that was once there. `GLOBAL-DQ-074` stays
 instantiated for exactly that reason - it is the measure of the backfill's progress, and the
 figure to read is the proportion rather than the individual event. It will start reading as a
-defect only once the population is expected to be complete.
+defect only once the population is expected to be complete. It is signalled `Monitor` for that
+reason. An earlier revision of `SPORTS/params.json` recorded it as `Not applicable` and stated
+that no event resolves to a venue, which contradicted this paragraph and misstated the sport:
+1156 events do resolve to one.
 
 **The sport records no winner.** The `Winner` event property, which 30 other sports use to
 name the winning side, does not occur on a single Curling event. Nor does any result type

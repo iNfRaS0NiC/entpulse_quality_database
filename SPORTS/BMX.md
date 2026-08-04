@@ -232,7 +232,9 @@ using it: the name does not say which round it is, while the events do.
 ## Confirmed sport-specific storage semantics
 City for a BMX tournament stage is stored via `city_object` (object_typeFK=4, objectFK=tournament_stage.id) linking to `city`, not via a direct column.
 
-Venue is `Not used` for BMX. `venue_object` holds no active row for any BMX tournament stage (object_typeFK=4), event (5) or Comp.Rank statistic (83), and the venue field visible on the Comp.Rank edit form is unpopulated for the sport. The layer was queried complete at all three levels and returned zero active links.
+Venue is unpopulated for BMX. `venue_object` holds no active row for any BMX tournament stage (object_typeFK=4), event (5) or Comp.Rank statistic (83), and the venue field visible on the Comp.Rank edit form is unpopulated for the sport. The layer was queried complete at all three levels and returned zero active links.
+
+That is a row count, not a structure the sport lacks: `venue_object` is the global mechanism `DATABASE.md` records, available to every sport, and `SPORTS/Curling.md` establishes that venue is newly populated in this database with the backfill still ahead. BMX is at nought per cent of that backfill. `GLOBAL-DQ-074` is therefore a `Monitor` rather than `Not applicable` — it covers every event, reports every event, and the figure to read is the proportion, which is expected to fall as the backfill reaches the sport. An earlier revision classified it away on the zero, which `CLAUDE.md` forbids: the check would then have stayed silent on the day the first venue arrived.
 
 Host Country for a BMX tournament stage is stored via `object_relation` (object_typeFK=4 → rel_object_typeFK=33), distinct from the direct `tournament_stage.countryFK` column. Confirmed active and functional for BMX via manual positive control (stage 920060).
 

@@ -59,8 +59,8 @@
     },
     "_checkSignal": {
       "GLOBAL-DQ-074": {
-        "signal": "Not applicable",
-        "reason": "venue_object holds no active row for any BMX tournament stage, event or Comp.Rank statistic; the layer was queried complete at all three levels and returned zero active links. The check therefore reports every event. SPORTS/BMX.md owns the finding."
+        "signal": "Monitor",
+        "reason": "venue_object is a global mechanism the sport can populate at any time, and BMX simply holds no active link at stage, event or Comp.Rank level yet, so the check covers every event and reports every event. That is a proportion rather than a per-event defect: SPORTS/Curling.md records that venue is newly populated in this database and the backfill is still ahead, and BMX is at nought per cent of it. The signal is Monitor rather than Not applicable because the absence is a row count, which CLAUDE.md forbids classifying away. SPORTS/BMX.md owns the finding."
       },
       "GLOBAL-DQ-033": {
         "signal": "Monitor",
@@ -68,11 +68,11 @@
       },
       "GLOBAL-DQ-064": {
         "signal": "Not applicable",
-        "reason": "the sport contests no team events - event_participants confirms athlete type only, and the registered team participants have no event participation - so an athlete belongs to no team and the 1429 Team field has nothing to hold. The check asks which team an athlete is in and reported 102 findings from 102 eligible rows, which is the absence of teams rather than a defect. Unlike a blocked check this does not lift: populating the field would require teams the sport does not field. SPORTS/BMX.md owns the finding."
+        "reason": "Structural: BMX is contested individually. Its competition model fields no teams, so an athlete belongs to none and the 1429 Team field has nothing to hold - populating it would require teams the sport does not race. The registry carries team participants, but none of them enters an event. The 102 findings from 102 eligible rows are the evidence for that model, not the basis for the classification, which is what keeps this Not applicable rather than a row count. SPORTS/BMX.md owns the finding."
       },
       "GLOBAL-DQ-098": {
         "signal": "Not applicable",
-        "reason": "the check asserts the 1429 Team field where a statistic ranks teams, and this sport ranks no teams at any level: it contests no team events and its Comp.Rank statistics rank athletes. Its scope is therefore empty here, and an empty scope reports clean data when what it means is that the scope is misdirected - POWERBI.md owns that rule. BMX-DQ-078 keeps its row and its ID; the classification records what the row's output is worth."
+        "reason": "Structural: the check asserts the 1429 Team field where a statistic ranks teams, and BMX ranks no teams at any level - it is contested individually and its Comp.Rank statistics rank athletes. The eligible population is therefore permanently empty rather than empty today, which is the difference POWERBI.md draws between a misdirected scope and a sentinel: this is neither, it is a structure the sport does not have. BMX-DQ-078 keeps its row and its ID."
       }
     }
   },
@@ -213,12 +213,12 @@
         "reason": "no Curling athlete reaches event_participants at all: the sport enters teams, and athletes are carried by lineups and the Comp.Rank statistic instead, so the person-scoped population is empty and eligible_count is 0. The row stays Approved deliberately: an athlete appearing in event_participants would itself be a structural defect, so a non-zero coverage here is the finding. SPORTS/Curling.md owns the reasoning."
       },
       "GLOBAL-DQ-058": {
-        "signal": "Not applicable",
-        "reason": "lineups are used but are not this sport's membership mechanism: only a small minority of team event participants carry a Starter lineup, and athlete-to-team membership is carried by the Comp.Rank (athletes) statistic instead. The check measures the minority mechanism and reports the rest of the sport. SPORTS/Curling.md names this check directly."
+        "signal": "Monitor",
+        "reason": "Lineups are used but are not this sport's membership mechanism: only a small minority of team event participants carry a Starter lineup, and athlete-to-team membership is carried by the Comp.Rank (athletes) statistic instead. The check therefore measures the minority mechanism and reports the rest of the sport, which makes its output a proportion rather than a defect per event - the wording SPORTS/Curling.md already used before this block contradicted it."
       },
       "GLOBAL-DQ-074": {
-        "signal": "Not applicable",
-        "reason": "Venue is present as a stage property on a small minority of stages and is not the venue_object mechanism DATABASE.md records, so no event resolves to a venue through the path the check reads. SPORTS/Curling.md owns the finding."
+        "signal": "Monitor",
+        "reason": "The check measures how far the venue backfill has reached. 16764 of 17920 active events resolve to no venue, while 739 carry their own venue_object link and 417 inherit one from their stage, so the mechanism is in use and filling. The proportion is the finding and no single event is a defect. SPORTS/Curling.md records the backfill and keeps the check instantiated for exactly that reason. An earlier revision recorded this as Not applicable on the strength of the unfilled majority, which both contradicted that section and misstated the sport - events do resolve to venues here."
       },
       "GLOBAL-DQ-107": {
         "signal": "Monitor",
