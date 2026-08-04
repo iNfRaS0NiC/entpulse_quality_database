@@ -1,11 +1,17 @@
 SELECT
     -- CheckID - GLOBAL-DQ-007
     -- Name - PARTICIPANT_MISSING_DATE_OF_BIRTH
-    -- What it does: Finds active participants of the selected types that take part in at least one active event of the sport but have no active, non-empty date_of_birth property value, with their participation count and the count of participations carrying at least one active result, together with a coverage count of all eligible participants.
+    -- What it does: Finds active participants of the sport's person types that take part in at least one active event of the sport but have no active, non-empty date_of_birth property value, with their country, their participation count and the count of participations carrying at least one active result, together with a coverage count of all eligible participants.
     'Missing_DOB' AS check_type,
     p.id AS participant_id,
     p.name AS participant_name,
     p.type AS participant_type,
+    (
+        SELECT c.name
+        FROM country c
+        WHERE c.id = p.countryFK
+          AND c.del = 'no'
+    ) AS participant_country,
     (
         SELECT COUNT(DISTINCT ep2.id)
         FROM event_participants ep2
@@ -39,7 +45,7 @@ SELECT
     NULL AS eligible_count
 FROM participant p
 WHERE p.del = 'no'
-  AND p.type IN ({{EVENT_PARTICIPANT_TYPE_LIST}})
+  AND p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
   -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
   AND EXISTS (
       SELECT 1
@@ -73,10 +79,11 @@ SELECT
     NULL,
     NULL,
     NULL,
+    NULL,
     COUNT(DISTINCT p.id) AS eligible_count
 FROM participant p
 WHERE p.del = 'no'
-  AND p.type IN ({{EVENT_PARTICIPANT_TYPE_LIST}})
+  AND p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
   -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
   AND EXISTS (
       SELECT 1
@@ -96,11 +103,17 @@ WHERE p.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-008
     -- Name - PARTICIPANT_MISSING_PROFILE_FIELDS
-    -- What it does: Finds active participants of the selected types that take part in at least one active event of the sport and are missing name, country, first_name and/or last_name, together with a coverage count of all eligible participants.
+    -- What it does: Finds active participants of the selected types that take part in at least one active event of the sport and are missing name or country, or, for the sport's person types only, first_name and/or last_name, with the country projected beside the missing-field list, together with a coverage count of all eligible participants.
     'Missing_Profile_Field' AS check_type,
     p.id AS participant_id,
     p.name AS participant_name,
     p.type AS participant_type,
+    (
+        SELECT c.name
+        FROM country c
+        WHERE c.id = p.countryFK
+          AND c.del = 'no'
+    ) AS participant_country,
     CONCAT_WS(', ',
         IF(p.name IS NULL OR TRIM(p.name) = '', 'name', NULL),
         IF(NOT EXISTS (
@@ -109,7 +122,7 @@ SELECT
             WHERE c.id = p.countryFK
               AND c.del = 'no'
         ), 'country', NULL),
-        IF(NOT EXISTS (
+        IF(p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}}) AND NOT EXISTS (
             SELECT 1
             FROM language fn
             WHERE fn.object = 'participant'
@@ -119,7 +132,7 @@ SELECT
               AND fn.name IS NOT NULL
               AND TRIM(fn.name) <> ''
         ), 'first_name', NULL),
-        IF(NOT EXISTS (
+        IF(p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}}) AND NOT EXISTS (
             SELECT 1
             FROM language ln
             WHERE ln.object = 'participant'
@@ -156,7 +169,7 @@ WHERE p.del = 'no'
           WHERE c.id = p.countryFK
             AND c.del = 'no'
       )
-      OR NOT EXISTS (
+      OR (p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}}) AND NOT EXISTS (
           SELECT 1
           FROM language fn
           WHERE fn.object = 'participant'
@@ -165,8 +178,8 @@ WHERE p.del = 'no'
             AND fn.del = 'no'
             AND fn.name IS NOT NULL
             AND TRIM(fn.name) <> ''
-      )
-      OR NOT EXISTS (
+      ))
+      OR (p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}}) AND NOT EXISTS (
           SELECT 1
           FROM language ln
           WHERE ln.object = 'participant'
@@ -175,13 +188,14 @@ WHERE p.del = 'no'
             AND ln.del = 'no'
             AND ln.name IS NOT NULL
             AND TRIM(ln.name) <> ''
-      )
+      ))
   )
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
+    NULL,
     NULL,
     NULL,
     NULL,

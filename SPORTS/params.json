@@ -3,6 +3,7 @@
     "SPORT_ID": 58,
     "EVENT_PARTICIPANT_TYPE_LIST": "'athlete'",
     "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
     "STATISTIC_TYPE_ID": 11,
     "STATISTIC_OWNER_TYPE_ID": 3,
     "SHARD_ID": 11,
@@ -79,6 +80,7 @@
     "SPORT_ID": 50,
     "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
     "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
     "STATISTIC_TYPE_ID": 11,
     "STATISTIC_OWNER_TYPE_ID": 3,
     "SHARD_ID": 11,
@@ -151,6 +153,7 @@
     "SPORT_ID": 10,
     "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
     "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach'",
+    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
     "STATISTIC_TYPE_ID": 11,
     "STATISTIC_OWNER_TYPE_ID": 3,
     "SHARD_ID": 11,
@@ -205,6 +208,10 @@
       "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored"
     },
     "_checkSignal": {
+      "GLOBAL-DQ-007": {
+        "signal": "Not applicable",
+        "reason": "no Curling athlete reaches event_participants at all: the sport enters teams, and athletes are carried by lineups and the Comp.Rank statistic instead, so the person-scoped population is empty and eligible_count is 0. The row stays Approved deliberately: an athlete appearing in event_participants would itself be a structural defect, so a non-zero coverage here is the finding. SPORTS/Curling.md owns the reasoning."
+      },
       "GLOBAL-DQ-058": {
         "signal": "Not applicable",
         "reason": "lineups are used but are not this sport's membership mechanism: only a small minority of team event participants carry a Starter lineup, and athlete-to-team membership is carried by the Comp.Rank (athletes) statistic instead. The check measures the minority mechanism and reports the rest of the sport. SPORTS/Curling.md names this check directly."
@@ -227,6 +234,7 @@
     "SPORT_ID": 40,
     "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
     "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
     "STATISTIC_TYPE_ID": 11,
     "STATISTIC_OWNER_TYPE_ID": 3,
     "SHARD_ID": 11,
@@ -282,6 +290,10 @@
         "signal": "Monitor",
         "reason": "Event Medal and Rank rows include tie and ordinal-storage shapes for which a direct Gold=1, Silver=2, Bronze=3 comparison does not identify one repair row. Exact swaps remain drill-down targets. SPORTS/Artistic-Gymnastics.md owns the reasoning."
       },
+      "GLOBAL-DQ-065": {
+        "signal": "Monitor",
+        "reason": "Artistic Gymnastics teams within one competition legitimately field different numbers of gymnasts, so an uneven Comp.Rank athlete count is population context rather than one row-level defect. It is the statistic-layer twin of GLOBAL-DQ-068 and is monitored for the same reason. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
       "GLOBAL-DQ-068": {
         "signal": "Monitor",
         "reason": "Populated team lineups within one Artistic Gymnastics event can legitimately have different roster sizes, so the difference is population context. GLOBAL-DQ-058 remains the actionable check for a team with no lineup. SPORTS/Artistic-Gymnastics.md owns the reasoning."
@@ -293,6 +305,14 @@
       "GLOBAL-DQ-079": {
         "signal": "Monitor",
         "reason": "The template-name format rule flags the legitimate compound World Cup All-Around, so its current Artistic Gymnastics output is semantic naming context rather than a direct repair list. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-102": {
+        "signal": "Not applicable",
+        "reason": "The checkpoint scope layer is outside Artistic Gymnastics DQ scope by explicit decision of 2026-08-04. The layer is Vault-only, so a scope-owner assertion reads a structure the sport does not maintain across its disciplines. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+      },
+      "GLOBAL-DQ-107": {
+        "signal": "Not applicable",
+        "reason": "The check asserts a scope container on every finished event, but the Artistic Gymnastics checkpoint layer is Vault-only and 6934 of 7377 finished events hold none, so it reports the sport's normal shape. The layer is outside DQ scope by explicit decision of 2026-08-04. SPORTS/Artistic-Gymnastics.md owns the reasoning."
       }
     }
   }

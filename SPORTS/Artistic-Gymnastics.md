@@ -139,8 +139,25 @@ types store participant-owned values in `scope_result` with the same field inven
 
 `event_scope_detail` is used with detail name `name`. No active `lineup_scope_result` layer
 was returned by the complete scope-layer inventory; lineup-owned scope values are therefore
-`Not used` in this evidence. The Extended Results decision above applies only to the five
-confirmed event `result_typeFK` values and does not classify these separate scope fields.
+`Not used` in this evidence.
+
+The checkpoint layer is a Vault-only structure. Of the 443 finished events carrying an active
+container, 442 hold discipline `90 Vault` and one is a single `91 Uneven Bars` event from
+2018; the other nine disciplines hold no active container at all. `checkpoint1` and
+`checkpoint2` therefore correspond to the two vaults a gymnast performs, not to a general
+per-exercise breakdown. The two container types never occur apart: an event holds both or
+neither. Containers first appear in 2011 on Finals, are absent across 2015 to 2017, and
+resume in 2018 for Finals and Qualifiers alike, where between 54% and 100% of Vault events
+carry one depending on the year.
+
+By explicit decision of 2026-08-04 the checkpoint scope layer is outside Artistic Gymnastics
+DQ scope. `event_scope`, `scope_result` and `event_scope_detail` stay in the confirmed
+structural inventory above, and no DQ check reads them for this sport. `GLOBAL-DQ-102` was
+instantiated as `Artistic-Gymnastics-DQ-008` before the decision and is now `Deprecated` in
+`POWERBI_REGISTRY.md`; the ID stays permanently reserved. `GLOBAL-DQ-107` and the
+period-score templates `GLOBAL-DQ-085`, `-086`, `-089`, `-091` and `-092` are not
+instantiated. This boundary assigns no check and does not classify the scope fields as
+unused.
 
 <!-- MANUAL PASTE ZONE: 40 SCOPES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -228,6 +245,12 @@ female Comp.Rank can be called defective. `GLOBAL-DQ-051` is also monitored beca
 generic statistic-name rule includes legitimate hyphenated and diacritic-bearing names;
 double spaces and Cyrillic lookalikes remain actionable drill-down subtypes.
 
+`GLOBAL-DQ-065` is a `Monitor` for the same reason its event-layer twin `GLOBAL-DQ-068` is.
+Teams competing in one Artistic Gymnastics competition legitimately field different numbers
+of gymnasts, so an uneven athlete count across the teams of one Comp.Rank is population
+context rather than proof that one team is entered incompletely. The proportion of uneven
+teams is the reading; a single team row is not the repair unit.
+
 <!-- MANUAL PASTE ZONE: 40 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values
@@ -306,8 +329,10 @@ contradiction.
   or are derived from, their corresponding typed relations and hierarchy fields.
 - What semantic distinction determines use of event result types `545 Penalties` and
   `567 Penalty`; both are Extended Results and their detailed interpretation is deferred.
-- Whether the checkpoint containers and the `checkpoints` / `checkpoint_details` event
-  properties describe the same exercises, and which path is authoritative.
+- Whether the `checkpoints` and `checkpoint_details` event properties describe the same two
+  vaults the checkpoint containers hold, and which path is authoritative. The containers are
+  now confirmed Vault-only, but the two properties were not profiled and the layer is outside
+  DQ scope, so the question stays open without a check attached to it.
 - Whether `1456 Running Score` is intentionally instantiated as an empty reserved field or
   is expected to receive values in a competition format not present in the current evidence.
 - Whether the sparse stage host-country relation is intentional duplication of the direct
