@@ -249,6 +249,21 @@ constraints are specific to DQ:
   batch. Report each batch's `eligible_count` separately; never merge batches into one
   claimed coverage figure.
 
+The one exception to that last rule is worth stating precisely, because the distinction is
+not the arithmetic but what the arithmetic is allowed to claim. Batches chosen by hand are
+reported separately because nothing guarantees they tile the population: they are picked at
+different times, may overlap, and may leave a gap between them, so their sum asserts a
+coverage the run never had. Windows that partition the audited object's own primary key
+within a single execution carry that guarantee by construction — every object falls in
+exactly one window, and the marker sits in the coverage branch as well as the findings
+branch, so each window counts the same population its findings came from. Their sum is
+therefore the coverage, not a claim about it, and may be merged into one `COVERAGE` row.
+
+That exception is what `TOOLS/Run-Query.ps1` relies on when it answers a result too large by
+cutting the id range up; `TOOLS/README.md` owns the runner behaviour. It does not extend to
+date windows, to ranges typed in by a person, or to pieces run across separate invocations —
+in each of those the guarantee is an intention rather than a property of the run.
+
 Prefer `EXISTS` over `JOIN` plus `DISTINCT` in the violation predicate, and keep the
 findings and coverage branches on the same indexed scope so neither branch scans more
 than the other.

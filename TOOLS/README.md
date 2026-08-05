@@ -274,7 +274,9 @@ partition the id space, so no object lands in two of them or in none. And the ma
 the coverage branch as well as the findings branch, so `eligible_count` is summed into a single
 `COVERAGE` row over exactly the same population the findings were read from — the coverage
 contract holds across the cut, which is why `Test-Package.ps1` fails a statement whose
-top-level `UNION ALL` branches do not all carry the marker.
+top-level `UNION ALL` branches do not all carry the marker. Those two properties are exactly
+what `POWERBI.md` requires before summed windows may be reported as one coverage figure, and
+it owns that rule; batches a person chooses are still reported one by one.
 
 A statement carrying no marker cannot be cut, and its failure stands as reported. That is a
 statement-design problem rather than a runner limit: `POWERBI.md` requires every approved query
