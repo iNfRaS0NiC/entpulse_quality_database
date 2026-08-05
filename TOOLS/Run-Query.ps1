@@ -1033,7 +1033,14 @@ $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey)
 # down for every check would make the block a second copy of the registry. Deprecated is
 # deliberately absent - POWERBI_REGISTRY.md's Status column owns that, and a value with two
 # owners drifts.
-$CheckSignalValues = @('Monitor', 'Blocked', 'Not applicable')
+$CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable')
+
+# Discovery is a census by construction: its rows are categories with counts, and a category
+# cannot be corrected the way a missing birth date can. So every statement in GLOBAL_QUERIES
+# is informational without a sport having to say so, and the reviewer is told once rather than
+# left to infer it from the shape of each result.
+$DiscoveryCheckIdPattern = 'GLOBAL-DISCOVERY-*'
+$DiscoverySignalReason = 'Discovery: the output describes the population rather than finding defects in it, so no row is correctable.'
 
 function Get-SportFileParameters {
     # Values a sport has already had confirmed and recorded. These outrank discovery: the
@@ -1080,6 +1087,9 @@ function Get-SportCheckSignal {
     # the statement runs; what is in doubt is whether its findings are defects:
     #
     #   Monitor         real but population-wide - the proportion is the finding, not the row
+    #   Informational   nothing in the output is correctable for this sport: it describes a
+    #                   state rather than naming a defect. Distinct from Monitor, which still
+    #                   asks a human to sort the real findings from the legitimate ones
     #   Not applicable  measures a layer or mechanism this sport does not use
     #   Blocked         would report the sport's normal shape as a defect until something
     #                   else is fixed first, so it must not be approved yet
@@ -1149,10 +1159,16 @@ function Set-JobCheckSignal {
             }
         }
 
+        # A sport may still record something about a discovery statement, so the recorded
+        # classification is read first and only an unclassified one falls back to the rule.
+        $discovery = ([string]$job.CheckId -like $DiscoveryCheckIdPattern)
+
         $signal = if ($classification) { $classification.Signal }
+            elseif ($discovery) { 'Informational' }
             elseif ($job.PSObject.Properties.Name -contains 'Signal' -and $job.Signal) { [string]$job.Signal }
             else { 'Actionable' }
         $reason = if ($classification) { $classification.Reason }
+            elseif ($discovery) { $DiscoverySignalReason }
             elseif ($job.PSObject.Properties.Name -contains 'SignalReason') { [string]$job.SignalReason }
             else { '' }
 
@@ -1484,63 +1500,6 @@ function Get-CellXml {
         $Reference, $styleAttribute, (ConvertTo-XmlText -Text $raw)
 }
 
-function ConvertTo-SingleLineSql {
-    # C1 records the statement that ran, but its newlines make row 1 as tall as the whole
-    # query and push the sheet out of shape. Collapsing them requires removing the line
-    # comments first: otherwise everything after a "--" ends up commented out and the
-    # copied statement no longer runs. Quote state is tracked so a "--" or "#" inside a
-    # string literal survives.
-    param([string]$Sql)
-
-    $out = New-Object Text.StringBuilder
-    $quote = $null
-    $i = 0
-    $n = $Sql.Length
-
-    while ($i -lt $n) {
-        $ch = $Sql[$i]
-
-        if ($quote) {
-            [void]$out.Append($ch)
-            if ($ch -eq '\' -and $i + 1 -lt $n) {
-                [void]$out.Append($Sql[$i + 1])
-                $i += 2
-                continue
-            }
-            if ($ch -eq $quote) { $quote = $null }
-            $i++
-            continue
-        }
-
-        if ($ch -eq "'" -or $ch -eq '"' -or $ch -eq '`') {
-            $quote = $ch
-            [void]$out.Append($ch)
-            $i++
-            continue
-        }
-
-        if (($ch -eq '-' -and $i + 1 -lt $n -and $Sql[$i + 1] -eq '-') -or $ch -eq '#') {
-            $end = $Sql.IndexOf("`n", $i)
-            if ($end -lt 0) { break }
-            $i = $end + 1
-            [void]$out.Append(' ')
-            continue
-        }
-
-        if ($ch -eq '/' -and $i + 1 -lt $n -and $Sql[$i + 1] -eq '*') {
-            $end = $Sql.IndexOf('*/', $i)
-            $i = if ($end -lt 0) { $n } else { $end + 2 }
-            [void]$out.Append(' ')
-            continue
-        }
-
-        [void]$out.Append($ch)
-        $i++
-    }
-
-    return (($out.ToString() -replace '\s+', ' ').Trim())
-}
-
 function Get-StylesXml {
     # The smallest style sheet Excel accepts. Font 1 is the blue underline that makes a
     # navigation cell read as a link; the two fills and the border are mandatory entries.
@@ -1665,11 +1624,11 @@ function Save-Workbook {
                 }
                 [void]$xml.Append('</row>')
 
-                # A fixed height keeps the one-line statement in C2 from stretching the row.
-                [void]$xml.Append('<row r="2" ht="15" customHeight="1">')
+                [void]$xml.Append('<row r="2">')
                 for ($c = 0; $c -lt $header.Count; $c++) {
                     $ref = (Get-ExcelColumnName -Index ($c + 1)) + '2'
-                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $header[$c]))
+                    $style = if ($linked.ContainsKey($ref)) { 1 } else { 0 }
+                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $header[$c] -Style $style))
                 }
                 [void]$xml.Append('</row>')
 
@@ -1718,7 +1677,13 @@ function Save-Workbook {
             if ($links.Count -gt 0) {
                 [void]$xml.Append('<hyperlinks>')
                 foreach ($link in $links) {
-                    $location = "'" + ($link.Target -replace "'", "''") + "'!A1"
+                    # A link into the SQL sheet has to land on the block it belongs to, not on
+                    # the top of a sheet holding every statement in the run.
+                    $cell = 'A1'
+                    if ($link.PSObject.Properties.Name -contains 'Cell' -and $link.Cell) {
+                        $cell = [string]$link.Cell
+                    }
+                    $location = "'" + ($link.Target -replace "'", "''") + "'!" + $cell
                     [void]$xml.Append(('<hyperlink ref="{0}" location="{1}" display="{2}"/>' -f `
                                 $link.Ref, (ConvertTo-XmlText -Text $location), (ConvertTo-XmlText -Text $link.Text)))
                 }
@@ -1769,20 +1734,92 @@ function Save-Workbook {
     }
 }
 
+function New-SqlSheet {
+    # The statement each check ran, one line per row, on a sheet of its own.
+    #
+    # It used to sit in C2 of every check tab: one cell holding a few thousand characters on a
+    # single line. Nothing about that was readable, and opening the cell pushed the result
+    # table below it out of place. Here the statement keeps its line breaks, C2 becomes the
+    # jump to the right block, and the block's first cell jumps back to the results.
+    param($Entries, $TabOf, [string]$SheetName = 'SQL')
+
+    $entries = @($Entries)
+    if ($entries.Count -eq 0) { return $null }
+
+    $rows = @()
+    $links = @()
+    $anchor = @{}
+    $rowNumber = 1   # row 1 carries the column names the writer emits from the row objects
+
+    foreach ($entry in $entries) {
+        $rowNumber++
+        $anchor[$entry.CheckId] = "A$rowNumber"
+        $rows += [pscustomobject]@{ 'Check ID' = $entry.CheckId; 'Statement' = $entry.Name }
+
+        if ($TabOf -and $TabOf.ContainsKey($entry.CheckId)) {
+            $links += [pscustomobject]@{
+                Ref    = "A$rowNumber"
+                Target = $TabOf[$entry.CheckId]
+                Text   = [string]$entry.CheckId
+            }
+        }
+
+        foreach ($line in ([string]$entry.Sql -split '\r?\n')) {
+            $rowNumber++
+            $rows += [pscustomobject]@{ 'Check ID' = ''; 'Statement' = $line }
+        }
+
+        # One blank row, so two consecutive statements read as two blocks.
+        $rowNumber++
+        $rows += [pscustomobject]@{ 'Check ID' = ''; 'Statement' = '' }
+    }
+
+    return [pscustomobject]@{
+        Sheet  = [pscustomobject]@{
+            Name   = $SheetName
+            Rows   = $rows
+            Header = $null
+            BackTo = $null
+            Links  = $links
+        }
+        Anchor = $anchor
+        Name   = $SheetName
+    }
+}
+
 function Save-Rows {
-    param($Rows, [string]$Path, [string]$Fmt, [string]$SheetName = 'data', $Header)
+    param($Rows, [string]$Path, [string]$Fmt, [string]$SheetName = 'data', $Header, $SqlEntry)
 
     $dir = Split-Path -Parent $Path
     if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir | Out-Null }
 
     if ($Fmt -eq 'xlsx') {
-        # A single-sheet workbook has no Overview to link back to.
-        Save-Workbook -Path $Path -Sheets @([pscustomobject]@{
-                Name   = $SheetName
-                Rows   = $Rows
-                Header = $Header
-                BackTo = $null
-            })
+        # A single-sheet workbook has no Overview to link back to. It still gets the SQL sheet,
+        # so one check exported on its own reads the same way as one inside a batch.
+        $tabOf = @{}
+        if ($SqlEntry) { $tabOf[$SqlEntry.CheckId] = $SheetName }
+        $sqlSheet = New-SqlSheet -Entries $SqlEntry -TabOf $tabOf
+
+        $sheet = [pscustomobject]@{
+            Name   = $SheetName
+            Rows   = $Rows
+            Header = $Header
+            BackTo = $null
+        }
+
+        $sheets = @($sheet)
+        if ($sqlSheet -and $sqlSheet.Anchor.ContainsKey($SqlEntry.CheckId)) {
+            $sheet | Add-Member -NotePropertyName Links -NotePropertyValue @(
+                [pscustomobject]@{
+                    Ref    = 'C2'
+                    Target = $sqlSheet.Name
+                    Cell   = $sqlSheet.Anchor[$SqlEntry.CheckId]
+                    Text   = 'SQL'
+                })
+            $sheets += $sqlSheet.Sheet
+        }
+
+        Save-Workbook -Path $Path -Sheets $sheets
     }
     elseif ($Fmt -eq 'json') {
         $Rows | ConvertTo-Json -Depth 8 | Out-File -LiteralPath $Path -Encoding utf8
@@ -1880,7 +1917,7 @@ function Save-RunWorkbook {
             'Check Name'    = $entry.Name
             'What it does'  = $entry.What
             'Rows'          = $rowsCell
-            'Status'        = 'Not Started'
+            'Status'        = 'Not reviewed'
             'Check By'      = ''
             'Signal'        = $(if ($entry.Signal) { $entry.Signal } else { 'Actionable' })
             'Signal reason' = [string]$entry.SignalReason
@@ -1905,25 +1942,48 @@ function Save-RunWorkbook {
             BackTo         = $null
             Links          = $links
             HiddenColumns  = @(8, 9)
+            # Each value names an outcome rather than a stage of work, because "Completed"
+            # hides the only thing the next reader needs: completed with what result. The
+            # three closing values are the three ways a check can honestly end.
             Validation     = @{
                 Sqref  = "F2:F$overviewRow"
-                Values = 'Not Started,In Progress,IT Task,Completed'
+                Values = 'Not reviewed,Reviewing,On hold,No issue,Reported to IT,Fixed,No action needed'
             }
         })
 
+    $sqlSheet = New-SqlSheet -TabOf $tabOf -Entries @($Collected | ForEach-Object {
+            [pscustomobject]@{ CheckId = $_.Job.CheckId; Name = $_.Job.Name; Sql = $_.Job.Sql }
+        })
+
     # Comment and Check By are written empty on purpose: both columns are the reviewer's,
-    # and the workbook only supplies their headings.
+    # and the workbook only supplies their headings. C2 holds the jump to the statement
+    # rather than the statement itself.
     foreach ($item in $Collected) {
-        $sheets += [pscustomobject]@{
+        $sheet = [pscustomobject]@{
             Name   = $tabOf[$item.Job.CheckId]
             Rows   = $item.Rows
-            Header = @($item.Job.CheckId, $item.Job.Name, (ConvertTo-SingleLineSql -Sql $item.Job.Sql),
+            Header = @($item.Job.CheckId, $item.Job.Name, 'SQL',
                 $item.Job.What, '', '',
                 $(if ($item.Job.Signal) { $item.Job.Signal } else { 'Actionable' }),
                 [string]$item.Job.SignalReason)
             BackTo = $overviewName
         }
+
+        if ($sqlSheet -and $sqlSheet.Anchor.ContainsKey($item.Job.CheckId)) {
+            $sheet | Add-Member -NotePropertyName Links -NotePropertyValue @(
+                [pscustomobject]@{
+                    Ref    = 'C2'
+                    Target = $sqlSheet.Name
+                    Cell   = $sqlSheet.Anchor[$item.Job.CheckId]
+                    Text   = 'SQL'
+                })
+        }
+
+        $sheets += $sheet
     }
+
+    # Last, so the check tabs stay next to the Overview they are read from.
+    if ($sqlSheet) { $sheets += $sqlSheet.Sheet }
 
     # Written aside and moved into place, so a snapshot interrupted halfway cannot leave a
     # truncated zip where the last good one was.
@@ -2205,10 +2265,10 @@ if ($WithPatterns) {
 
 # A sport classification belongs to the run regardless of how its jobs were selected.
 # -RunAll already carries it from the registry selection; this also hydrates direct IDs,
-# wildcards and the pattern statements they pull alongside them.
-if ($sportIdentity) {
-    $jobs = @(Set-JobCheckSignal -Jobs $jobs -SportName $ResolvedSportSlug)
-}
+# wildcards and the pattern statements they pull alongside them. It runs without a sport too,
+# because the discovery rule is a property of the statement rather than of the sport it is
+# pointed at, and a run started with -SportId alone must not lose it.
+$jobs = @(Set-JobCheckSignal -Jobs $jobs -SportName $(if ($sportIdentity) { $ResolvedSportSlug } else { '' }))
 
 # ----- parameters ----------------------------------------------------------------------
 
@@ -2554,8 +2614,9 @@ if ($OutFile) {
         }
         else { '' }
         Save-Rows -Rows $rows -Path $OutFile -Fmt $Format -SheetName $sheetName `
-            -Header @($job.CheckId, $job.Name, (ConvertTo-SingleLineSql -Sql $job.Sql),
-                $job.What, '', '', $singleSignal, $singleReason)
+            -Header @($job.CheckId, $job.Name, 'SQL',
+                $job.What, '', '', $singleSignal, $singleReason) `
+            -SqlEntry ([pscustomobject]@{ CheckId = $job.CheckId; Name = $job.Name; Sql = $job.Sql })
     }
     else {
         $tagged = Add-CheckColumns -Rows $rows -CheckId $job.CheckId -Name $job.Name

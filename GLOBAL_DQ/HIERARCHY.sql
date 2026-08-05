@@ -546,7 +546,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-034
     -- Name - TOURNAMENT_STAGE_MISSING_CORE_FIELDS
-    -- What it does: Finds active tournament stages missing at least one of name, gender, country, host country, or an active city link, or carrying a country or host country that resolves only to a placeholder row and therefore reads as populated, together with a coverage count of all eligible stages.
+    -- What it does: Finds active tournament stages missing at least one of name, gender, country, or an active city link, carrying a country that resolves only to a placeholder row and therefore reads as populated, or holding the host country wrongly: absent or itself a placeholder where the country is International, or present where the country already names a nation, together with a coverage count of all eligible stages.
     'Missing_Stage_Field' AS check_type,
     ts.id AS tournament_stage_id,
     ts.name AS tournament_stage_name,
@@ -567,13 +567,20 @@ SELECT
         ), 'country', NULL),
         -- A country that resolves to a placeholder row reads as populated to every
         -- IS NULL test, so it is named separately rather than counted as clean.
+        -- International is deliberately not one of them here: it is a legitimate value
+        -- meaning the stage belongs to no single nation, and it is what makes the host
+        -- country required below. The rest of the placeholder list still applies.
         IF(EXISTS (
             SELECT 1
             FROM country c
             WHERE c.id = ts.countryFK
               AND c.del = 'no'
               AND c.name IN ({{PLACEHOLDER_COUNTRY_LIST}})
+              AND c.name <> 'International'
         ), 'country_placeholder', NULL),
+        -- The host country carries the location only where the country cannot: it exists
+        -- to say where an International stage was actually held. Asserting it everywhere
+        -- reported every stage of every sport whose country already names a nation.
         IF(NOT EXISTS (
             SELECT 1
             FROM object_relation hc
@@ -584,6 +591,12 @@ SELECT
               AND hc.objectFK = ts.id
               AND hc.rel_object_typeFK = 33
               AND hc.del = 'no'
+        ) AND EXISTS (
+            SELECT 1
+            FROM country c
+            WHERE c.id = ts.countryFK
+              AND c.del = 'no'
+              AND c.name = 'International'
         ), 'host_country', NULL),
         IF(EXISTS (
             SELECT 1
@@ -596,7 +609,32 @@ SELECT
               AND hc.rel_object_typeFK = 33
               AND hc.del = 'no'
               AND hcc.name IN ({{PLACEHOLDER_COUNTRY_LIST}})
+        ) AND EXISTS (
+            SELECT 1
+            FROM country c
+            WHERE c.id = ts.countryFK
+              AND c.del = 'no'
+              AND c.name = 'International'
         ), 'host_country_placeholder', NULL),
+        -- The mirror: a host country where the country already names the nation adds
+        -- nothing and can contradict it.
+        IF(EXISTS (
+            SELECT 1
+            FROM object_relation hc
+            JOIN country hcc
+              ON hcc.id = hc.rel_objectFK
+             AND hcc.del = 'no'
+            WHERE hc.object_typeFK = 4
+              AND hc.objectFK = ts.id
+              AND hc.rel_object_typeFK = 33
+              AND hc.del = 'no'
+        ) AND NOT EXISTS (
+            SELECT 1
+            FROM country c
+            WHERE c.id = ts.countryFK
+              AND c.del = 'no'
+              AND c.name = 'International'
+        ), 'host_country_unexpected', NULL),
         IF(NOT EXISTS (
             SELECT 1
             FROM city_object co
@@ -637,29 +675,68 @@ WHERE ts.del = 'no'
           WHERE c.id = ts.countryFK
             AND c.del = 'no'
             AND c.name IN ({{PLACEHOLDER_COUNTRY_LIST}})
+            AND c.name <> 'International'
       )
-      OR NOT EXISTS (
-          SELECT 1
-          FROM object_relation hc
-          JOIN country hcc
-            ON hcc.id = hc.rel_objectFK
-           AND hcc.del = 'no'
-          WHERE hc.object_typeFK = 4
-            AND hc.objectFK = ts.id
-            AND hc.rel_object_typeFK = 33
-            AND hc.del = 'no'
+      OR (
+          NOT EXISTS (
+              SELECT 1
+              FROM object_relation hc
+              JOIN country hcc
+                ON hcc.id = hc.rel_objectFK
+               AND hcc.del = 'no'
+              WHERE hc.object_typeFK = 4
+                AND hc.objectFK = ts.id
+                AND hc.rel_object_typeFK = 33
+                AND hc.del = 'no'
+          )
+          AND EXISTS (
+              SELECT 1
+              FROM country c
+              WHERE c.id = ts.countryFK
+                AND c.del = 'no'
+                AND c.name = 'International'
+          )
       )
-      OR EXISTS (
-          SELECT 1
-          FROM object_relation hc
-          JOIN country hcc
-            ON hcc.id = hc.rel_objectFK
-           AND hcc.del = 'no'
-          WHERE hc.object_typeFK = 4
-            AND hc.objectFK = ts.id
-            AND hc.rel_object_typeFK = 33
-            AND hc.del = 'no'
-            AND hcc.name IN ({{PLACEHOLDER_COUNTRY_LIST}})
+      OR (
+          EXISTS (
+              SELECT 1
+              FROM object_relation hc
+              JOIN country hcc
+                ON hcc.id = hc.rel_objectFK
+               AND hcc.del = 'no'
+              WHERE hc.object_typeFK = 4
+                AND hc.objectFK = ts.id
+                AND hc.rel_object_typeFK = 33
+                AND hc.del = 'no'
+                AND hcc.name IN ({{PLACEHOLDER_COUNTRY_LIST}})
+          )
+          AND EXISTS (
+              SELECT 1
+              FROM country c
+              WHERE c.id = ts.countryFK
+                AND c.del = 'no'
+                AND c.name = 'International'
+          )
+      )
+      OR (
+          EXISTS (
+              SELECT 1
+              FROM object_relation hc
+              JOIN country hcc
+                ON hcc.id = hc.rel_objectFK
+               AND hcc.del = 'no'
+              WHERE hc.object_typeFK = 4
+                AND hc.objectFK = ts.id
+                AND hc.rel_object_typeFK = 33
+                AND hc.del = 'no'
+          )
+          AND NOT EXISTS (
+              SELECT 1
+              FROM country c
+              WHERE c.id = ts.countryFK
+                AND c.del = 'no'
+                AND c.name = 'International'
+          )
       )
       OR NOT EXISTS (
           SELECT 1

@@ -516,7 +516,7 @@ Google Drive and open as Sheets.
 
 | Sport | CheckID | Check Name | What it does | Rows | Status | Check By | Signal | Signal reason |
 |---|---|---|---|---:|---|---|---|---|
-| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | Finds active participants of the selected types that … | 1064 | Not Started | | Monitor | Population-wide absence … |
+| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | Finds active participants of the selected types that … | 1064 | Not reviewed | | Monitor | Population-wide absence … |
 
 `Signal` and `Signal reason` are columns H and I, and the workbook ships with both hidden.
 They are the runner's own classification, settled before the run and unchanged by reading
@@ -526,25 +526,50 @@ dropped: unhiding H:I brings back every value, and both still travel in `_summar
 Every check appears, including those that returned nothing or failed and therefore have
 no tab of their own. `Sport` is taken from the CheckID prefix. `What it does` is the
 statement's own `-- What it does:` line, carried through the run so a reader can see what
-a check asserts beside what it found, without going back to the registry for it. `Signal`
-defaults to `Actionable`; an explicit `Monitor` or `Not applicable` value and its reason come
-from the sport's `_checkSignal` block.
+a check asserts beside what it found, without going back to the registry for it.
+
+`Signal` says what the output is worth before anyone reads it. It defaults to `Actionable`,
+and a sport's `_checkSignal` block records the exceptions with their reasons:
+
+| Signal | What it says |
+|---|---|
+| `Actionable` | every row names something that can be corrected |
+| `Monitor` | real, but population-wide, or mixed with legitimate shapes: a human sorts them |
+| `Informational` | nothing here is correctable — the output describes a state |
+| `Blocked` | would report the sport's normal shape as a defect; not to be approved yet |
+| `Not applicable` | measures a layer or mechanism this sport does not use |
+
+`Informational` is the one value the runner also assigns on its own: every `GLOBAL-DISCOVERY`
+statement carries it without a sport saying so. Discovery is a census by construction, and a
+row of it is a category with a count — nobody can correct `round type 9, 412 events` the way
+they can correct a missing date of birth. The distinction from `Monitor` matters in the other
+direction too: a `Monitor` check still has work in it, so labelling one informational would
+tell the reviewer to skip a tab that needs them.
 
 `Rows` is the count the console printed, and doubles as the jump to that check's tab. A
 check that failed shows `ERROR` instead, so it cannot be misread as a clean zero, and is
 left unlinked because it has no tab; the reason is on the console and in `_summary.csv`,
 along with the durations.
 
-`Status` is a manual tracking field, seeded to `Not Started` with a dropdown offering
-`In Progress`, `IT Task` and `Completed`. `Check By` is a second manual field, written as a
-heading over empty cells and free text. Nothing in the runner reads either back.
+`Status` is a manual tracking field, seeded to `Not reviewed`. Its dropdown names outcomes
+rather than stages of work, because "completed" hides the only thing the next reader needs
+— completed with what result:
+
+| Open | Closed |
+|---|---|
+| `Not reviewed`, `Reviewing`, `On hold` | `No issue`, `Reported to IT`, `Fixed`, `No action needed` |
+
+`No action needed` is the reviewer's counterpart to the `Informational` signal: the check ran,
+it was read, and there was never anything in it to act on. `Check By` is a second manual
+field, written as a heading over empty cells and free text. Nothing in the runner reads
+either back.
 
 Then one tab per check:
 
 ```text
      A                     B                    C              D                E          F          G          H
 1    Check ID              Check Name           SQL Used       What it does     Comment    Check By   Signal     Signal reason
-2    BMX-DQ-001            PARTICIPANT_MIS...   SELECT 'Mis... Finds active ...                       Monitor    Population-wide…
+2    BMX-DQ-001            PARTICIPANT_MIS...   SQL            Finds active ...                       Monitor    Population-wide…
 3    Return to Overview
 4
 5    check_type            participant_id       participant_name   ...
@@ -554,6 +579,13 @@ Then one tab per check:
 The identity sits on rows 1 and 2 rather than on every data row. Row 3 holds the link back
 to Overview, and row 4 is blank so the result table below stays a self-contained block for
 sorting and filtering.
+
+C2 reads `SQL` and jumps to the statement, which lives on the `SQL` tab at the end of the
+workbook rather than in the cell. It used to be the statement itself, collapsed onto one
+line: a cell of a few thousand characters that nothing could display, and that pushed the
+result table out of shape the moment somebody opened it. On the `SQL` tab each statement
+keeps the line breaks it was written with, one line per row, and its first cell jumps back
+to the results it produced.
 
 `Comment` and `Check By` are written as headings and nothing else: both columns belong to
 whoever reads the workbook, and the runner never puts a value in either. `What it does`,

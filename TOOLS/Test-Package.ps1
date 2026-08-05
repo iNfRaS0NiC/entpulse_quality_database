@@ -45,7 +45,7 @@ $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey)
 
 # Actionable is the default and is never recorded. Deprecated is absent on purpose:
 # POWERBI_REGISTRY.md's Status column owns it, and a value with two owners drifts.
-$CheckSignalValues = @('Monitor', 'Blocked', 'Not applicable')
+$CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable')
 
 if (-not $RepoRoot) { $RepoRoot = Split-Path -Parent $PSScriptRoot }
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path

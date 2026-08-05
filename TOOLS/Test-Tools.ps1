@@ -787,17 +787,31 @@ Test-That 'an over-long cell is truncated before it reaches Excel' {
     Assert-True ($xml -match 'truncated') 'the value should be marked truncated'
 }
 
-Test-That 'line comments are removed before the statement is collapsed' {
-    $sql = "SELECT 1 -- a comment`nFROM t;"
-    $out = ConvertTo-SingleLineSql -Sql $sql
-    Assert-True ($out -notmatch 'comment') 'the comment should be gone'
-    Assert-True ($out -notmatch "`n") 'the result should be one line'
-    Assert-Equal 'SELECT 1 FROM t;' $out 'collapsed statement'
+Test-That 'the SQL sheet keeps a statement on its own lines' {
+    $entries = @(
+        [pscustomobject]@{ CheckId = 'GLOBAL-DQ-001'; Name = 'FIRST'; Sql = "SELECT 1`nFROM t;" },
+        [pscustomobject]@{ CheckId = 'GLOBAL-DQ-002'; Name = 'SECOND'; Sql = "SELECT 2;" })
+    $built = New-SqlSheet -Entries $entries -TabOf @{ 'GLOBAL-DQ-001' = 'FIRST'; 'GLOBAL-DQ-002' = 'SECOND' }
+
+    # Row 1 is the column-name row, so the first block starts at row 2 and the second one
+    # after two SQL lines and a blank separator.
+    Assert-Equal 'A2' $built.Anchor['GLOBAL-DQ-001'] 'first block anchor'
+    Assert-Equal 'A6' $built.Anchor['GLOBAL-DQ-002'] 'second block anchor'
+
+    $statements = @($built.Sheet.Rows | ForEach-Object { $_.'Statement' })
+    Assert-Equal 'SELECT 1' $statements[1] 'the statement keeps its own first line'
+    Assert-Equal 'FROM t;' $statements[2] 'and its second'
 }
 
-Test-That 'a double dash inside a string literal survives' {
-    $out = ConvertTo-SingleLineSql -Sql "SELECT '--not a comment' AS x;"
-    Assert-True ($out -match 'not a comment') 'the literal should be preserved'
+Test-That 'a statement with no tab still gets a block' {
+    $built = New-SqlSheet -Entries @(
+        [pscustomobject]@{ CheckId = 'GLOBAL-DQ-003'; Name = 'THIRD'; Sql = 'SELECT 3;' }) -TabOf @{}
+    Assert-Equal 'A2' $built.Anchor['GLOBAL-DQ-003'] 'the block is anchored'
+    Assert-Equal 0 @($built.Sheet.Links).Count 'with no link back to a tab that does not exist'
+}
+
+Test-That 'nothing collected produces no SQL sheet' {
+    Assert-True ($null -eq (New-SqlSheet -Entries @() -TabOf @{})) 'an empty run has no SQL sheet'
 }
 
 Test-That 'a workbook is a readable package with one sheet per input' {
@@ -899,7 +913,7 @@ Test-That 'workbook Overview carries Signal and Signal reason' {
     Assert-True ($detailXml -notmatch '<cols>') 'a check tab should hide nothing'
 }
 
-Test-That 'workbook carries the Check By column and the IT Task status' {
+Test-That 'workbook carries the Check By column and the outcome statuses' {
     $job = [pscustomobject]@{
         CheckId = 'Fixtureball-DQ-001'; Name = 'MANUAL_FIELDS'; What = 'manual'
         Sql = 'SELECT 1;'
@@ -927,11 +941,58 @@ Test-That 'workbook carries the Check By column and the IT Task status' {
 
     Assert-True ($xml -match '>Check By<') 'Overview should name the Check By column'
     Assert-True ($xml -match 'r="G1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit in Overview column G'
-    Assert-True ($xml -match '"Not Started,In Progress,IT Task,Completed"') 'IT Task should be in the dropdown'
+    # Every value names an outcome, so a closed check says how it closed rather than only
+    # that somebody got to it.
+    Assert-True ($xml -match '"Not reviewed,Reviewing,On hold,No issue,Reported to IT,Fixed,No action needed"') 'the dropdown should offer the outcome statuses'
+    Assert-True ($xml -match '>Not reviewed<') 'Status should be seeded to Not reviewed'
     Assert-True ($detailXml -match 'r="F1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit after Comment on a check tab'
     # An empty manual field writes no cell at all, so the reviewer types into a blank.
     Assert-True ($detailXml -notmatch 'r="F2"') 'Check By should be left empty on a check tab'
     Assert-True ($detailXml -match 'r="G1"[^>]*><is><t[^>]*>Signal<') 'Signal should follow Check By on a check tab'
+}
+
+Test-That 'the statement lives on the SQL sheet and C2 jumps to it' {
+    $job = [pscustomobject]@{
+        CheckId = 'Fixtureball-DQ-002'; Name = 'SQL_OFF_THE_TAB'; What = 'sql'
+        Sql = "SELECT 1`nFROM t;"
+    }
+    $summary = @(New-RunSummaryRow -Job $job -Rows 1 -Seconds 1 -Status 'OK')
+    $collected = @([pscustomobject]@{
+            Job = $job
+            Rows = @([pscustomobject]@{ check_type = 'Fixture'; id = 1 })
+        })
+    $path = Join-Path $FixtureRoot 'run-with-sql-sheet.xlsx'
+    Save-RunWorkbook -Summary $summary -Collected $collected -Path $path | Out-Null
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem | Out-Null
+    $zip = [IO.Compression.ZipFile]::OpenRead($path)
+    try {
+        $read = {
+            param($name)
+            $entry = $zip.GetEntry($name)
+            if (-not $entry) { return $null }
+            $reader = New-Object IO.StreamReader($entry.Open())
+            try { return $reader.ReadToEnd() } finally { $reader.Dispose() }
+        }
+        $detailXml = & $read 'xl/worksheets/sheet2.xml'
+        $sqlXml = & $read 'xl/worksheets/sheet3.xml'
+        $workbookXml = & $read 'xl/workbook.xml'
+    }
+    finally { $zip.Dispose() }
+
+    Assert-True ($workbookXml -match 'name="SQL"') 'the workbook should carry a SQL sheet'
+
+    # C2 holds a short label, never the statement: a cell of a few thousand characters is
+    # what pushed the result table out of shape when it was opened.
+    Assert-True ($detailXml -match 'r="C2"[^>]*><is><t[^>]*>SQL<') 'C2 should read SQL'
+    Assert-True ($detailXml -notmatch 'SELECT 1') 'the statement should not be on the check tab'
+    # The sheet name is quoted in the location and the quotes reach the part XML-escaped.
+    Assert-True ($detailXml -match 'location="&apos;SQL&apos;!A2"') 'C2 should jump to the block, not to the top of the sheet'
+
+    # The statement keeps the line breaks it was written with.
+    Assert-True ($sqlXml -match '>SELECT 1<') 'the first line stands alone'
+    Assert-True ($sqlXml -match '>FROM t;<') 'and so does the second'
+    Assert-True ($sqlXml -match 'location="&apos;SQL_OFF_THE_TAB&apos;!A1"') 'the block should link back to its results'
 }
 
 Complete-Group

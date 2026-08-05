@@ -73,6 +73,10 @@
       "GLOBAL-DQ-098": {
         "signal": "Not applicable",
         "reason": "Structural: the check asserts the 1429 Team field where a statistic ranks teams, and BMX ranks no teams at any level - it is contested individually and its Comp.Rank statistics rank athletes. The eligible population is therefore permanently empty rather than empty today, which is the difference POWERBI.md draws between a misdirected scope and a sentinel: this is neither, it is a structure the sport does not have. BMX-DQ-078 keeps its row and its ID."
+      },
+      "GLOBAL-DQ-009": {
+        "signal": "Informational",
+        "reason": "The rows are athletes the sport registry knows who have not raced anywhere inside our coverage, which is a state of the registry rather than a defect in it: nobody can correct a row here, because the athlete is not wrong and the missing races are not ours to add. Recorded by decision of 2026-08-05. The signal is Informational rather than Monitor because Monitor still asks a human to sort real findings from legitimate ones, and here there are none of the first kind. It is per-sport, not a property of the template: the same output for a sport that registers only its own competitors would be registry litter worth clearing."
       }
     }
   },
