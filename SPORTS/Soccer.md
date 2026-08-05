@@ -403,19 +403,4 @@ begun is a normal outcome in this one.
   uses, which shard holds them, which data and config fields exist — does not change with the
   scope, so the wider evidence is sound for the facts recorded from it. It would matter for a
   finding counted per row, and none of these is.
-- **Why does reading `statistic_config.value` cost two orders of magnitude?**
-  `GLOBAL-DQ-044` cannot complete for this sport, and the cause is one predicate rather than
-  the sport's size. The same statement without `sg.value IN ('male','female','mixed')` counts
-  its 305 eligible statistics in about a second; with it, in every formulation tried — as a
-  join condition, in the `WHERE` clause, as a correlated `EXISTS`, and with the eligible
-  statistics resolved in a derived table first — it takes about two minutes or does not return
-  at all. `ON` and `WHERE` are equivalent here because the joins are inner, and the derived
-  table is merged away, so none of the rewrites reaches the plan.
-  What the check would find is measurable by other means and is nothing: no Comp.Rank
-  statistic in the scope holds a participant whose gender differs from the statistic's own.
-  `GLOBAL-DQ-044` therefore stays unassigned and the gender of the statistic layer stays
-  **Not checked** — an absence of evidence, not evidence of absence. A fix means changing how
-  a shared template reaches `statistic_config`, which affects every sport and needs its own
-  decision.
-
 <!-- MANUAL PASTE ZONE: 1 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
