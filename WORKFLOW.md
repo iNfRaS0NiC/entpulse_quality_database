@@ -139,7 +139,7 @@ failures occur and they need different corrections:
 | Symptom | Cause | Correction |
 |---|---|---|
 | `Request timed out` | Server-side cost: unbounded scan, join fan-out, filesort, a function or `REGEXP` on the filtered column, a multi-shard scan | Narrow the scanned population before the statement groups or sorts anything |
-| `Allowed memory size of 134217728 bytes exhausted` | Client-side buffering: the executor holds the whole result set in a 128 MB PHP process | Return fewer rows and fewer or narrower columns |
+| `Allowed memory size of 134217728 bytes exhausted` | Client-side buffering: the executor holds the whole result set in a 128 MB PHP process | Return fewer rows and fewer or narrower columns. Where the statement carries an id-range marker the runner cuts the range into windows and merges the result itself; `TOOLS/README.md` owns that behaviour |
 
 Both are query-design failures, not infrastructure problems.
 

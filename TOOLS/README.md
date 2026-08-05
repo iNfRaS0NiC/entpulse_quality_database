@@ -239,6 +239,48 @@ among several but the audited population itself, and removing it would leave not
 participation path reaches. It appears as `SKIPPED: registry-bound` in the Overview, and a
 single one stops with an error.
 
+### A result too large for one request
+
+Some statements are correctly scoped and still return more rows than the executor can hold.
+`GLOBAL-DQ-009` on Soccer is the standing case: a healthy population, a correct scope, and six
+figures of findings that die in a 128 MB process. The runner cuts such a result up and merges
+it back, so the check needs no manual range and no run of its own.
+
+This answers **one** of the two failure modes `WORKFLOW.md` separates, and only that one:
+
+| Server says | Runner does |
+|---|---|
+| `Allowed memory size ... exhausted` | Cuts the id range into windows and merges the pieces |
+| `Request timed out` | Nothing. Reports the failure |
+
+The asymmetry is the point. A statement that is too slow is still too slow in eight parts, and
+eight of them cost eight times the scan; cutting it up would turn one honest failure into a
+long run of them. Server-side cost is corrected in the statement, by narrowing the population
+before it groups or sorts. `WORKFLOW.md` owns that correction.
+
+Cutting works off the same kind of commented marker the template flag uses:
+
+```sql
+-- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
+```
+
+The runner reads the alias and column out of the marker, measures that object's live id range,
+and fans out into eight windows. A window that still cannot be carried halves itself from
+there, to a fixed depth. The full range is never retried once it has failed — an earlier
+version did, and paid for a failed scan again at every level.
+
+Two properties make the merged result trustworthy rather than merely convenient. The windows
+partition the id space, so no object lands in two of them or in none. And the marker sits in
+the coverage branch as well as the findings branch, so `eligible_count` is summed into a single
+`COVERAGE` row over exactly the same population the findings were read from — the coverage
+contract holds across the cut, which is why `Test-Package.ps1` fails a statement whose
+top-level `UNION ALL` branches do not all carry the marker.
+
+A statement carrying no marker cannot be cut, and its failure stands as reported. That is a
+statement-design problem rather than a runner limit: `POWERBI.md` requires every approved query
+to carry at least one safe commented filter chosen from its own audited object, and for a
+standalone object the primary-key range is that filter.
+
 ### Opening a new sport
 
 `-Sport <name>` accepts either identity `SPORTS.md` records: the stable repository slug used
@@ -700,7 +742,8 @@ More than one matched CheckID switches to batch mode.
 - Per-file formats write one file per CheckID plus `_summary.csv`; a workbook writes one
   `<Sport>.xlsx`.
 - A failing check is recorded as `ERROR: <server message>` and the run continues. Nothing
-  is retried automatically.
+  is retried automatically, with one exception: a result too large is cut into id windows
+  and merged, as described under "A result too large for one request".
 - Statements are sent one at a time with a short pause between them.
 - Row counts and durations are printed per check as the run proceeds. `_summary.csv` keeps
   both, the `Signal` and `SignalReason`, plus the server's message for a failure; the

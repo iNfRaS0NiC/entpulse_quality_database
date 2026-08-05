@@ -147,10 +147,10 @@ official only by accident. `REGISTRY_PARTICIPANT_TYPE_LIST` is therefore narrowe
 and `team` for `GLOBAL-DQ-009`, the one statement that reads it — a scope for that check, not a
 correction to the four roles the registry carries.
 
-**`Soccer-DQ-080` must be run in shards, and is the first check in the package that has to
-be.** The registry it audits held 393 933 athletes and teams on 2026-08-05, of which a little
-over a third reach none of the three paths, so the statement returns on the order of 140 000
-finding rows. Its coverage is healthy and its scope is correct; what fails is the transport,
+**`Soccer-DQ-080` returns more rows than one request can carry, and is the first check in the
+package that does.** The registry it audits held 393 933 athletes and teams on 2026-08-05, of
+which a little over a third reach none of the three paths, so the statement returns on the
+order of 140 000 finding rows. Its coverage is healthy and its scope is correct; what fails is the transport,
 which runs out of memory before it can return them:
 
 ```text
@@ -164,11 +164,16 @@ not a statement too slow — and the statement already carries the marker that a
 -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
 ```
 
-Participant IDs in this sport's registry run from `1567` to `2124491`. Two other things make
-this check unlike its neighbours and are worth knowing before a batch is run: the registry has
-no template relation, so `-TemplateIds` skips the statement rather than narrowing it, and the
-registry is the audited population itself, so `-WithoutRegistryBranch` has nothing to drop.
-A full Soccer run therefore leaves this one check unmeasured unless it is run separately.
+The runner activates that marker itself. On a result too large it measures the participant id
+range, cuts it into windows and merges the pieces back into one result, so the check needs
+neither a range chosen by hand nor a run of its own. The range is deliberately not recorded
+here: it moves with every participant the feed adds, and the runner reads it at execution time.
+
+Two things still make this check unlike its neighbours and are worth knowing before a batch is
+run: the registry has no template relation, so `-TemplateIds` skips the statement rather than
+narrowing it, and the registry is the audited population itself, so `-WithoutRegistryBranch`
+has nothing to drop. Neither switch makes it cheaper, so it is measured at full scope or not
+at all.
 
 <!-- MANUAL PASTE ZONE: 1 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
