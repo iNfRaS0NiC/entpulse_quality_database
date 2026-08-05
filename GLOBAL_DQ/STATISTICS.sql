@@ -295,32 +295,54 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-024
     -- Name - COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_STAGE
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type whose Start date and End date config values do not match the earliest and latest active tournament_stage start and end date under the statistic's tournament, with template and tournament name context, together with a coverage count of all eligible statistics carrying at least one active config date.
-    'Date_Range_Mismatch_Stage' AS check_type,
-    s.id AS statistic_id,
-    s.name AS statistic_name,
-    tt.name AS template_name,
-    t.name AS tournament_name,
-    (SELECT MIN(sc1.value) FROM statistic_config sc1 WHERE sc1.statisticFK = s.id AND sc1.statistic_data_typeFK = {{CONFIG_START_DATE_TYPE_ID}} AND sc1.del = 'no') AS config_start_date,
-    (SELECT MAX(sc2.value) FROM statistic_config sc2 WHERE sc2.statisticFK = s.id AND sc2.statistic_data_typeFK = {{CONFIG_END_DATE_TYPE_ID}} AND sc2.del = 'no') AS config_end_date,
-    MIN(ts.startdate) AS earliest_stage_startdate,
-    MAX(ts.enddate) AS latest_stage_enddate,
+    -- What it does: Finds active tournament-owned statistics of the selected statistic type whose Start date and End date config interval is inverted, or is not contained within the earliest and latest active tournament_stage start and end date under the statistic's tournament, separating an inverted interval, an interval crossing both stage bounds, a start before the earliest stage and an end after the latest stage, with template and tournament name context, together with a coverage count of all eligible statistics carrying at least one active config date.
+    CASE
+        WHEN DATE(x.config_start_date) > DATE(x.config_end_date)
+            THEN 'Config_Date_Range_Inverted'
+        WHEN DATE(x.config_start_date) < DATE(x.earliest_stage_startdate)
+         AND DATE(x.config_end_date) > DATE(x.latest_stage_enddate)
+            THEN 'Config_Outside_Both_Stage_Bounds'
+        WHEN DATE(x.config_start_date) < DATE(x.earliest_stage_startdate)
+            THEN 'Config_Start_Before_Stage_Span'
+        ELSE 'Config_End_After_Stage_Span'
+    END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.config_start_date,
+    x.config_end_date,
+    x.earliest_stage_startdate,
+    x.latest_stage_enddate,
     NULL AS eligible_count
-FROM statistic s
-JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
-WHERE s.del = 'no'
-  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND s.object_typeFK = 3
-  AND tt.sportFK = {{SPORT_ID}}
-  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND t.tournament_templateFK = <tournament_template_id>
-GROUP BY s.id, s.name, tt.name, t.name
-HAVING (
-    DATE((SELECT MIN(sc1.value) FROM statistic_config sc1 WHERE sc1.statisticFK = s.id AND sc1.statistic_data_typeFK = {{CONFIG_START_DATE_TYPE_ID}} AND sc1.del = 'no')) <> DATE(MIN(ts.startdate))
-    OR DATE((SELECT MAX(sc2.value) FROM statistic_config sc2 WHERE sc2.statisticFK = s.id AND sc2.statistic_data_typeFK = {{CONFIG_END_DATE_TYPE_ID}} AND sc2.del = 'no')) <> DATE(MAX(ts.enddate))
-)
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        (SELECT MIN(sc1.value) FROM statistic_config sc1 WHERE sc1.statisticFK = s.id AND sc1.statistic_data_typeFK = {{CONFIG_START_DATE_TYPE_ID}} AND sc1.del = 'no') AS config_start_date,
+        (SELECT MAX(sc2.value) FROM statistic_config sc2 WHERE sc2.statisticFK = s.id AND sc2.statistic_data_typeFK = {{CONFIG_END_DATE_TYPE_ID}} AND sc2.del = 'no') AS config_end_date,
+        MIN(ts.startdate) AS earliest_stage_startdate,
+        MAX(ts.enddate) AS latest_stage_enddate
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY s.id, s.name, tt.name, t.name
+) x
+-- Containment, not endpoint equality, is the invariant. A tournament is often a season and a
+-- statistic often covers one stage of it, so a window that starts after the earliest stage and
+-- ends before the latest one is the normal case, not a finding.
+WHERE DATE(x.config_start_date) > DATE(x.config_end_date)
+   OR DATE(x.config_start_date) < DATE(x.earliest_stage_startdate)
+   OR DATE(x.config_end_date) > DATE(x.latest_stage_enddate)
 
 UNION ALL
 
