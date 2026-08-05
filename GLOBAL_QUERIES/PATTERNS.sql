@@ -394,7 +394,7 @@ ORDER BY
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-026
     -- Name - EVENT_RESULTS_VALUE_PATTERNS_SUMMARY
-    -- What it does: Groups active event-result values by a digit-normalized pattern across all result codes for one confirmed result type selected from the event-result inventory (GLOBAL-DISCOVERY-007) in the selected sport.
+    -- What it does: Groups event-result values by a digit-normalized pattern, for one result type chosen from the inventory (GLOBAL-DISCOVERY-007).
     r.result_typeFK AS result_type_id,
     rt.name AS result_type_name,
     CASE
@@ -439,7 +439,7 @@ ORDER BY
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-027
     -- Name - EVENT_RESULTS_VALUE_PATTERNS_DETAIL
-    -- What it does: Lists active events with at least one result matching the selected result type and digit-normalized value pattern, selected from the corresponding GLOBAL summary query; one row per event, ordered by event ID.
+    -- What it does: Lists events holding a result that matches the chosen result type and value pattern, one row per event.
     e.id AS event_id,
     e.name AS event_name,
     ts.id AS tournament_stage_id,
@@ -503,7 +503,7 @@ ORDER BY
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-028
     -- Name - STATISTIC_DATA_VALUE_PATTERNS_SUMMARY
-    -- What it does: Groups statistic-data values by a digit-normalized pattern for one confirmed statistic type, owner level, physical shard and data type selected from the statistic field inventory (GLOBAL-DISCOVERY-017) in the selected sport.
+    -- What it does: Groups statistic-data values by a digit-normalized pattern, for one statistic type, owner level, shard and data type chosen from the field inventory (GLOBAL-DISCOVERY-017).
     sd.statistic_data_typeFK AS statistic_data_type_id,
     sdt.name AS statistic_data_type_name,
     CASE
@@ -611,7 +611,7 @@ ORDER BY
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-029
     -- Name - STATISTIC_DATA_VALUE_PATTERNS_DETAIL
-    -- What it does: Lists statistics with at least one data value matching the selected data type and digit-normalized value pattern selected from the corresponding GLOBAL summary query (GLOBAL-DISCOVERY-028); one row per statistic, ordered by statistic ID.
+    -- What it does: Lists statistics holding a data value that matches the chosen data type and value pattern, one row per statistic.
     st.id AS statistic_id,
     st.name AS statistic_name,
     st.statistic_typeFK AS statistic_type_id,

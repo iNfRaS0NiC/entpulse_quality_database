@@ -404,7 +404,7 @@ ORDER BY
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-032
     -- Name - EVENT_DISCIPLINE_GENDER_PARTICIPANT_MATRIX
-    -- What it does: Lists every combination of discipline, stage gender and event-participant type the selected sport has ever contested, with the number of events, the number of distinct templates carrying it and the first and last year it was seen, so a combination the sport does not contest is read off the matrix rather than asserted by a rule.
+    -- What it does: Lists every combination of discipline, stage gender and participant type the sport has contested, with event and template counts and the years first and last seen, so an uncontested combination is read off rather than assumed.
     d.name AS discipline_name,
     od.disciplineFK AS discipline_id,
     COALESCE(ts.gender, 'null') AS stage_gender,

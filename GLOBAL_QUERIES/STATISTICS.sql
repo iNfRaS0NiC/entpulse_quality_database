@@ -435,7 +435,7 @@ LIMIT 1000;
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-031
     -- Name - STATISTIC_DATA_TYPE_DECLARED_VS_USED
-    -- What it does: Compares the data field types declared for one statistic type against their use in one confirmed owner level and physical shard, keeping declared but unused field types.
+    -- What it does: Compares the data field types declared for one statistic type against their use in one owner level and shard, keeping declared but unused types.
     sdt.id AS statistic_data_type_id,
     sdt.name AS statistic_data_type_name,
     sdt.code AS statistic_data_type_code,
