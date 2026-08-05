@@ -631,7 +631,9 @@ Test-That 'both branches of one statement are dropped together' {
 
 Test-That 'a statement marking no registry branch reports nothing to drop' {
     # GLOBAL-DQ-009 is the standing case: the registry is its audited population, so it marks
-    # no branch and the caller stops rather than leaving it with nothing to audit.
+    # no branch. The caller runs it unchanged rather than refusing it - dropping nothing is a
+    # no-op, unlike an unnarrowed statement under -TemplateIds, which would claim a scope it
+    # does not have.
     $sql = "SELECT op.participantFK FROM object_participants op WHERE op.object = 'sport'"
     $out = Remove-RegistryBranch -Text $sql
 

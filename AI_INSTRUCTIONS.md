@@ -533,6 +533,17 @@ Never use LIMIT/OFFSET as audited-scope batching.
 Use template, half-open event-date or stable primary-key range filters only when valid
 for the audited path.
 
+A template filter reads the tournament's foreign key, never the template's primary key,
+wherever the statement already joins the tournament that owns the template:
+
+    -- AND t.tournament_templateFK = <tournament_template_id>
+
+The two select identical rows and are not the same query. Keying on tournament_template.id
+makes the optimiser drive from the template table and lose the index path into the statistic
+shards, and the same result costs roughly ten times as much. Only a statement auditing
+templates themselves, with no tournament in scope, keeps tt.id. The alias belongs to the
+statement that declares it: tt pairs with t, tt2 with t2.
+
 STATISTICS (COMP.RANK) QUERY RULES
 
 Every DQ or discovery query whose audited object is a statistic, statistic_participants11

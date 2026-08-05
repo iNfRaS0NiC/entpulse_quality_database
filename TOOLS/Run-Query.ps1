@@ -117,9 +117,9 @@ param(
     # Drops the sport-registry branch from a statement that marks one as optional, so the
     # audited people are only those the three participation paths reach. The registry has no
     # template relation and so survives -TemplateIds untouched; without this a narrowed run of
-    # such a statement still audits every person registered to the sport. A statement with no
-    # marked branch is skipped, because for it the registry is the population rather than one
-    # source among several.
+    # such a statement still audits every person registered to the sport. A statement marking
+    # no such branch runs unchanged - dropping nothing from it is a no-op, and the run reports
+    # which statements were actually trimmed.
     [switch]$WithoutRegistryBranch,
 
     [ValidateSet('table', 'json', 'csv', 'xlsx')]
@@ -2258,6 +2258,7 @@ if ($PSBoundParameters.ContainsKey('SportId')) { $paramTable['SPORT_ID'] = $Spor
 # without it an unfilled placeholder is a mistake worth stopping for.
 $skipped = @()
 $runnable = @()
+$registryTrimmed = @()
 
 $notApplicable = @{}
 if ($sportIdentity) { $notApplicable = Get-SportNotApplicable -SportName $ResolvedSportSlug }
@@ -2317,24 +2318,17 @@ foreach ($job in $jobs) {
         $job.Sql = $narrowed.Sql
     }
 
+    # A statement marking no optional registry branch is run unchanged rather than skipped.
+    # Dropping nothing from it is a no-op, and its result is the honest one - unlike an
+    # unnarrowed statement under -TemplateIds, which would claim a scope it does not have.
+    # Most statements never read the registry at all, so refusing them here would empty a
+    # batch to make a point about the two that do.
     if ($WithoutRegistryBranch) {
         $trimmed = Remove-RegistryBranch -Text $job.Sql
-        if ($trimmed.Removed -eq 0) {
-            if ($jobs.Count -eq 1) {
-                throw ("$($job.CheckId) marks no optional registry branch, so " +
-                    '-WithoutRegistryBranch cannot drop one. Either it never reads the ' +
-                    'registry, or the registry is its audited population and removing it ' +
-                    'would leave the statement with nothing to audit.')
-            }
-            $skipped += [pscustomobject]@{
-                Job     = $job
-                Missing = ''
-                Kind    = 'NO_REGISTRY_BRANCH'
-                Reason  = 'marks no optional registry branch to drop'
-            }
-            continue
+        if ($trimmed.Removed -gt 0) {
+            $job.Sql = $trimmed.Sql
+            $registryTrimmed += $job.CheckId
         }
-        $job.Sql = $trimmed.Sql
     }
 
     $runnable += $job
@@ -2343,7 +2337,6 @@ foreach ($job in $jobs) {
 if ($skipped.Count -gt 0) {
     $impossible = @($skipped | Where-Object { $_.Kind -eq 'NOT_APPLICABLE' })
     $unnarrowable = @($skipped | Where-Object { $_.Kind -eq 'NO_TEMPLATE_FILTER' })
-    $registryBound = @($skipped | Where-Object { $_.Kind -eq 'NO_REGISTRY_BRANCH' })
     $unselected = @($skipped | Where-Object { $_.Kind -eq 'NEEDS_SELECTION' })
 
     Write-Host "Skipping $($skipped.Count) statement(s):" -ForegroundColor DarkGray
@@ -2356,14 +2349,15 @@ if ($skipped.Count -gt 0) {
         Write-Host "  cannot be narrowed to -TemplateIds ($($unnarrowable.Count)):" -ForegroundColor DarkGray
         $unnarrowable | ForEach-Object { "    {0}  {1}" -f $_.Job.CheckId, $_.Reason } | Write-Host -ForegroundColor DarkGray
     }
-    if ($registryBound.Count -gt 0) {
-        Write-Host "  cannot drop a registry branch ($($registryBound.Count)):" -ForegroundColor DarkGray
-        $registryBound | ForEach-Object { "    {0}  {1}" -f $_.Job.CheckId, $_.Reason } | Write-Host -ForegroundColor DarkGray
-    }
     if ($unselected.Count -gt 0) {
         Write-Host "  needs a value selected from a summary result ($($unselected.Count)):" -ForegroundColor DarkGray
         $unselected | ForEach-Object { "    {0}  needs {1}" -f $_.Job.CheckId, $_.Missing } | Write-Host -ForegroundColor DarkGray
     }
+    Write-Host ''
+}
+
+if ($registryTrimmed.Count -gt 0) {
+    Write-Host ("Registry branch dropped from {0}: {1}" -f $registryTrimmed.Count, ($registryTrimmed -join ', ')) -ForegroundColor DarkGray
     Write-Host ''
 }
 
@@ -2494,7 +2488,6 @@ if ($isBatch) {
         $skipStatus = switch ($item.Kind) {
             'NOT_APPLICABLE'      { "SKIPPED: not applicable - $($item.Reason)" }
             'NO_TEMPLATE_FILTER'  { "SKIPPED: not narrowable - $($item.Reason)" }
-            'NO_REGISTRY_BRANCH'  { "SKIPPED: registry-bound - $($item.Reason)" }
             default               { "SKIPPED: needs $($item.Missing)" }
         }
         $summary += New-RunSummaryRow -Job $item.Job -Rows 0 -Seconds 0 -Status $skipStatus

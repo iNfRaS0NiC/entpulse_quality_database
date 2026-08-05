@@ -89,6 +89,18 @@ than only in their owner:
   those rows arrive, which is the day it was written for. Never classify from the current
   population; where the two are hard to tell apart, ask. `TOOLS/README.md` owns the signal
   vocabulary, `GLOBAL_DQ/README.md` the prerequisite column.
+- **Template filter: the foreign key, never the primary key.** A commented template filter
+  reads `t.tournament_templateFK`, not `tt.id`, wherever the statement already joins the
+  tournament that owns the template. The two select identical rows and are not the same query:
+  keying on the template's primary key makes the optimiser drive from `tournament_template` and
+  lose the index path into the statistic shards, and the same result then costs roughly ten
+  times as much — measured on Soccer, 2.5 seconds against 28.3, and about a minute per
+  Comp.Rank check across a batch. Only a statement auditing templates themselves, with no
+  tournament in scope, keeps `tt.id`. The alias belongs to the statement that declares it:
+  `tt` pairs with `t`, `tt2` with `t2`. `POWERBI.md` owns the contract and
+  `TOOLS/Test-Tools.ps1` fails a marker that keeps the primary key where a tournament is
+  joined.
+
 - **Paste markers.** A `MANUAL PASTE ZONE` marker is the fixed lower boundary of its
   section. Insert immediately before it, never after; keep it unchanged; never include it
   in inserted text. If it is missing, duplicated or misplaced, report it and stop. Markers
