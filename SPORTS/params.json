@@ -373,6 +373,9 @@
     "PLACEHOLDER_COUNTRY_LIST": "'International'",
     "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
     "RANK_MAX_PLAUSIBLE": 48,
+    "STALE_NOT_STARTED_DAYS": 30,
+    "SERIES_MIN_YEARS": 3,
+    "SERIES_SKIP_YEARS": "2003",
     "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
     "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
     "_notApplicable": {
@@ -400,6 +403,50 @@
       "WINNER_AWAY_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write"
     },
     "_checkSignal": {
+      "GLOBAL-DQ-041": {
+        "signal": "Not applicable",
+        "reason": "The template's own prerequisite is a sport confirmed to carry a Phase, and Soccer is not one: no Comp.Rank participant row in the sport carries an active object_round phase row at all, across every statistic that holds participants. The check reads a relation this sport never writes, so its eligible population is not empty today but permanently absent. This is the prerequisite failing rather than a count being small - the same reading would apply if the sport held ten phase rows or ten thousand. SPORTS/Soccer.md owns the finding."
+      },
+      "GLOBAL-DQ-084": {
+        "signal": "Not applicable",
+        "reason": "Structural: the template's prerequisite is a head-to-head sport whose format admits no draw, and Soccer's does. A group match may legitimately end level, and so may one leg of a tie decided on aggregate, so the rule cannot be asserted at sport level - run wide it matched every drawn match and exhausted the server. The narrower rule that does hold, restricted to knockout rounds and excluding aggregate legs, is Soccer-DQ-022. SPORTS/Soccer.md owns the reasoning."
+      },
+      "GLOBAL-DQ-033": {
+        "signal": "Not applicable",
+        "reason": "The template's prerequisite is a sport confirmed to carry a Phase on ranked participants, and Soccer carries none: no Comp.Rank participant row in the sport holds an active object_round phase row. The check therefore reads a relation the sport never writes. This is the prerequisite failing, not a count being small - the same reading would apply at any population size. SPORTS/Soccer.md owns the finding."
+      },
+      "GLOBAL-DQ-037": {
+        "signal": "Not applicable",
+        "reason": "Structural, and the template says so itself: a head-to-head sport must not instantiate it, because its Final holds two participants, bronze is not awardable inside that one event, and every Final would be reported as missing it. Soccer decides bronze in its own match, so the per-round expectation belongs to GLOBAL-DQ-093 - instantiated as Soccer-DQ-017 - and the completeness of the medal set to the Comp.Rank layer. SPORTS/Soccer.md owns the reasoning."
+      },
+      "GLOBAL-DQ-107": {
+        "signal": "Not applicable",
+        "reason": "Structural: Soccer writes an event_scope container for a tie decided over two legs, not for an event. The check asserts that every finished event holds one, which is a shape this sport does not maintain - the single matches that make up almost all of it have nothing for a container to hold. The scope layer is used, and GLOBAL-DISCOVERY-009 and -010 record how; it simply does not sit at the level this check reads. SPORTS/Soccer.md owns the reasoning."
+      },
+      "GLOBAL-DQ-034": {
+        "signal": "Monitor",
+        "reason": "The check asserts five stage fields at once and Soccer populates host country through the sparse object_relation 4 to 33 path while leaving city empty, so nearly every stage is reported for those two fields alone. The direct tournament_stage.countryFK is present throughout, commonly holding the placeholder International. The proportion is the reading. SPORTS/Soccer.md owns the storage finding."
+      },
+      "GLOBAL-DQ-035": {
+        "signal": "Monitor",
+        "reason": "The statistic-layer twin of GLOBAL-DQ-034 and monitored for the same reason: the same core fields are asserted together and the same sparse relation carries one of them, so the check reports nearly the whole Comp.Rank population. SPORTS/Soccer.md owns the storage finding."
+      },
+      "GLOBAL-DQ-049": {
+        "signal": "Monitor",
+        "reason": "An event name in this sport is the pairing that plays it, written Home-Away with no spaces around the hyphen, and the convention holds without exception across every distinct name pattern in scope. The generic name-format rule therefore describes the naming convention rather than finding a defect in it, exactly as it does for Curling. SPORTS/Soccer.md owns the convention."
+      },
+      "GLOBAL-DQ-058": {
+        "signal": "Monitor",
+        "reason": "Lineups are this sport's membership mechanism and are richly typed, but they are not imported for every match - the older the event, the likelier it carries none. The check therefore measures how far lineup coverage reaches rather than naming a defect per event. A team with no lineup in a recent match remains worth reading inside the output. SPORTS/Soccer.md owns the reasoning."
+      },
+      "GLOBAL-DQ-074": {
+        "signal": "Monitor",
+        "reason": "venue_object is the global mechanism a sport can populate at any time, and Soccer is partway through the same backfill SPORTS/Curling.md records: most events resolve to no venue while the mechanism is plainly in use. The proportion is the finding and no single event is a defect. SPORTS/Soccer.md owns the finding."
+      },
+      "GLOBAL-DQ-096": {
+        "signal": "Monitor",
+        "reason": "The check asserts that an event name is made of its participants, which is exactly what DUPLICATE_KEY_INCLUDES_EVENT_NAME = 0 records for this sport, so the two are the same statement read from opposite ends. Its output is dominated by fixtures whose participants are not yet known and stand as placeholders such as Winner SF 1, where the name cannot name them yet. SPORTS/Soccer.md owns the reasoning."
+      },
       "GLOBAL-DQ-068": {
         "signal": "Monitor",
         "reason": "The two sides of a Soccer match name their substitutes independently, so a lineup one or two members shorter than its opponent's is the competition's own arrangement rather than an incomplete entry. The check measures each event against itself and therefore reports a large share of the scope, which makes its output a proportion rather than a defect per event. SPORTS/Soccer.md owns the reasoning."
