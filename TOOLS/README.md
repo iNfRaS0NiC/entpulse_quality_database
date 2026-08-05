@@ -141,6 +141,7 @@ the account in use. The summary:
 | `-OutDir .\out` | Batch target folder |
 | `-Format table\|csv\|json\|xlsx` | Output shape |
 | `-DryRun` | Print the SQL, or the batch selection, and send nothing |
+| `-TemplateIds 44,50,65` | Narrow the run to these tournament templates |
 | `-Sql "SELECT ..."` / `-File .\q.sql` | Ad-hoc statement |
 | `-Relogin` | Discard the cached cookie and authenticate again |
 
@@ -172,6 +173,34 @@ An unreplaced token stops the run before anything is sent, and the error names t
 missing tokens. A parameter passed to a statement that declares none is simply unused.
 Parameter meanings are declared in `GLOBAL_QUERIES/README.md`; the runner substitutes them
 textually and validates nothing about their values.
+
+### Narrowing a run to certain templates
+
+`-TemplateIds` restricts a run to named tournament templates:
+
+```powershell
+.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-* -Sport Soccer -TemplateIds 44,50,65 -Format xlsx
+```
+
+It writes no new condition. `POWERBI.md`'s scope-limiting contract already requires a
+commented `-- AND tt.id = <tournament_template_id>` in every branch whose audited population
+reaches a template, so the flag only uncomments what the statement already declares. Because
+the marker is in the findings branch and the coverage branch alike, `eligible_count` is
+counted over exactly the narrowed scope, which is what the coverage contract demands.
+
+The alias is taken from each marker rather than assumed. Most statements join the template
+layer once as `tt`, but a statement joining it twice uses `tt2`, `ttx` or `tty`, and narrowing
+on `tt` alone would filter one branch while its sibling still read the whole sport.
+
+**A statement carrying no marker is skipped, not run.** No marker means the audited population
+has no template relation — the sport registry is the standing example — and `POWERBI.md`
+forbids inventing one there. Such a statement appears as `SKIPPED: not narrowable` in the
+workbook Overview, so it is visibly absent rather than silently sport-wide; running a single
+one this way stops with an error instead. Run it without `-TemplateIds` and read its result as
+what it is: sport-wide.
+
+Narrowing happens after `{{...}}` expansion, so a filter may sit beside a placeholder in the
+same `WHERE` clause. Applying the flag twice is a no-op: the second pass finds no marker left.
 
 ### Opening a new sport
 

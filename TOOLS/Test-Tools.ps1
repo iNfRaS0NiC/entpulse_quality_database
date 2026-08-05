@@ -501,6 +501,69 @@ Test-That 'an unfilled placeholder is an error naming the parameter' {
     Assert-Throws { Expand-Placeholders -Text 'SELECT {{SHARD_ID}};' -Values @{} } 'SHARD_ID' 'Expand-Placeholders'
 }
 
+Test-That 'the template filter is activated in every branch that carries the marker' {
+    # The findings branch and the coverage branch must narrow together, or eligible_count
+    # would be counted over a scope the findings never saw.
+    $sql = @"
+FROM tournament_template tt
+WHERE tt.del = 'no'
+  -- AND tt.id = <tournament_template_id>
+UNION ALL
+FROM tournament_template tt
+WHERE tt.del = 'no'
+  -- AND tt.id = <tournament_template_id>
+"@
+    $out = Enable-TemplateFilter -Text $sql -TemplateIds @(44, 50, 65)
+
+    Assert-Equal 2 $out.Activated 'both markers should be activated'
+    Assert-Equal 2 ([regex]::Matches($out.Sql, [regex]::Escape('AND tt.id IN (44, 50, 65)')).Count) `
+        'both branches should carry the same list'
+    Assert-True ($out.Sql -notmatch '<tournament_template_id>') 'no marker should survive'
+    Assert-True ($out.Sql -match '(?m)^  AND tt\.id IN') 'the marker indentation should be kept'
+}
+
+Test-That 'the alias is read from the marker rather than assumed' {
+    # A statement joining the template layer twice uses tt2, ttx or tty. Narrowing on tt
+    # alone would filter one branch and leave its sibling reading the whole sport.
+    $sql = "-- AND tt.id = <tournament_template_id>`n" +
+           "-- AND tt2.id = <tournament_template_id>`n" +
+           "-- AND ttx.id = <tournament_template_id>`n" +
+           "-- AND tty.id = <tournament_template_id>"
+    $out = Enable-TemplateFilter -Text $sql -TemplateIds @(7)
+
+    Assert-Equal 4 $out.Activated 'every alias should be activated'
+    foreach ($alias in 'tt', 'tt2', 'ttx', 'tty') {
+        Assert-True ($out.Sql -match [regex]::Escape("AND $alias.id IN (7)")) "$alias should keep its own alias"
+    }
+}
+
+Test-That 'a statement with no marker reports nothing to activate' {
+    # The caller stops such a statement; it must never come back silently unnarrowed.
+    $sql = "FROM object_participants op`nWHERE op.object = 'sport' AND op.objectFK = 1"
+    $out = Enable-TemplateFilter -Text $sql -TemplateIds @(44)
+
+    Assert-Equal 0 $out.Activated 'nothing should be activated'
+    Assert-Equal $sql $out.Sql 'the statement should be returned untouched'
+}
+
+Test-That 'a projection naming the template id is not mistaken for a filter' {
+    # tt.id AS tournament_template_id occurs in nine statements and is a column, not a marker.
+    $sql = "SELECT tt.id AS tournament_template_id,`n       tt.name`nFROM tournament_template tt"
+    $out = Enable-TemplateFilter -Text $sql -TemplateIds @(44)
+
+    Assert-Equal 0 $out.Activated 'a projection is not a filter'
+    Assert-True ($out.Sql -match 'tt\.id AS tournament_template_id') 'the projection should survive intact'
+}
+
+Test-That 'an already active filter is not activated twice' {
+    $sql = "  -- AND tt.id = <tournament_template_id>"
+    $once = Enable-TemplateFilter -Text $sql -TemplateIds @(44)
+    $twice = Enable-TemplateFilter -Text $once.Sql -TemplateIds @(50)
+
+    Assert-Equal 0 $twice.Activated 'the second pass should find no marker'
+    Assert-True ($twice.Sql -match [regex]::Escape('IN (44)')) 'the first list should stand'
+}
+
 Complete-Group
 
 # --------------------------------------------------------------------------------------

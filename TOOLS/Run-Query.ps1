@@ -108,6 +108,12 @@ param(
     # Remaining placeholders, either NAME=VALUE strings or a hashtable.
     [object]$Params,
 
+    # Narrows the run to these tournament templates by activating the commented template
+    # filter POWERBI.md's scope-limiting contract already puts in every branch that has a
+    # template relation. A statement carrying no such marker is skipped rather than run
+    # wide, because a silently unnarrowed result would be read as the narrow one.
+    [int[]]$TemplateIds,
+
     [ValidateSet('table', 'json', 'csv', 'xlsx')]
     [string]$Format = 'table',
 
@@ -675,6 +681,29 @@ function Get-MissingPlaceholders {
         ForEach-Object { $_.Groups[1].Value } |
         Where-Object { -not $Values.ContainsKey($_) } |
         Select-Object -Unique)
+}
+
+# The lower boundary of a branch's scope, as POWERBI.md fixes it. The alias is read out of
+# the marker rather than assumed: a statement joining the template layer more than once uses
+# tt2, ttx or tty, and an expression keyed on tt alone would narrow one branch and leave its
+# sibling wide - the one failure this whole mechanism exists to prevent.
+$TemplateFilterMarker =
+'(?m)^([ \t]*)--[ \t]*AND[ \t]+(\w+)\.id[ \t]*=[ \t]*<tournament_template_id>[ \t]*$'
+
+function Enable-TemplateFilter {
+    # Activates every template filter in the statement and reports how many it found, so a
+    # statement with none can be stopped rather than run over the whole sport.
+    param([string]$Text, [int[]]$TemplateIds)
+
+    $found = [regex]::Matches($Text, $TemplateFilterMarker)
+    $list = ($TemplateIds -join ', ')
+
+    $activated = [regex]::Replace($Text, $TemplateFilterMarker, {
+            param($m)
+            '{0}AND {1}.id IN ({2})' -f $m.Groups[1].Value, $m.Groups[2].Value, $list
+        })
+
+    return [pscustomobject]@{ Sql = $activated; Activated = $found.Count }
 }
 
 function Expand-Placeholders {
@@ -1959,6 +1988,14 @@ if ($Info) {
     Write-Line "$Entry -Sport 'Water Polo' ..." 'database name or documented repository slug'
     Write-Line "$Entry -SportSlug Water-Polo -DatabaseSportName 'Water Polo' ..." 'make a new mapping explicit'
 
+    Write-Section 'NARROWING TO CERTAIN TEMPLATES'
+    Write-Line '-TemplateIds 44,50,65' 'run only these tournament templates'
+    Write-Host '  Activates the commented template filter POWERBI.md already requires in' -ForegroundColor DarkGray
+    Write-Host '  every branch that has a template relation, in the findings and the' -ForegroundColor DarkGray
+    Write-Host '  coverage branch alike, so eligible_count is counted over the same scope.' -ForegroundColor DarkGray
+    Write-Host '  A statement carrying no such marker audits a population with no template' -ForegroundColor DarkGray
+    Write-Host '  relation: it is skipped, never run wide and reported as though narrow.' -ForegroundColor DarkGray
+
     Write-Section 'OPEN A NEW SPORT'
     Write-Line "$Entry GLOBAL-DISCOVERY-* -Sport BMX -Format xlsx" 'discover the parameters, then run'
     Write-Host '  -Sport resolves the sport ID, the statistic type and owner, and probes' -ForegroundColor DarkGray
@@ -2227,18 +2264,47 @@ foreach ($job in $jobs) {
         continue
     }
     $job.Sql = Expand-Placeholders -Text $job.Sql -Values $paramTable
+
+    # Narrowing happens after expansion, so a filter can sit beside a placeholder in the same
+    # WHERE clause. A statement with no marker is one whose audited population has no template
+    # relation - POWERBI.md forbids inventing one there - so it is stopped rather than run
+    # wide and reported as though it were narrow.
+    if ($TemplateIds.Count -gt 0) {
+        $narrowed = Enable-TemplateFilter -Text $job.Sql -TemplateIds $TemplateIds
+        if ($narrowed.Activated -eq 0) {
+            if ($jobs.Count -eq 1) {
+                throw ("$($job.CheckId) carries no template filter, so -TemplateIds cannot " +
+                    'narrow it. Its audited population has no template relation; run it ' +
+                    'without -TemplateIds and read the result as sport-wide.')
+            }
+            $skipped += [pscustomobject]@{
+                Job     = $job
+                Missing = ''
+                Kind    = 'NO_TEMPLATE_FILTER'
+                Reason  = 'no template filter to activate; the audited population has no template relation'
+            }
+            continue
+        }
+        $job.Sql = $narrowed.Sql
+    }
+
     $runnable += $job
 }
 
 if ($skipped.Count -gt 0) {
     $impossible = @($skipped | Where-Object { $_.Kind -eq 'NOT_APPLICABLE' })
-    $unselected = @($skipped | Where-Object { $_.Kind -ne 'NOT_APPLICABLE' })
+    $unnarrowable = @($skipped | Where-Object { $_.Kind -eq 'NO_TEMPLATE_FILTER' })
+    $unselected = @($skipped | Where-Object { $_.Kind -eq 'NEEDS_SELECTION' })
 
     Write-Host "Skipping $($skipped.Count) statement(s):" -ForegroundColor DarkGray
 
     if ($impossible.Count -gt 0) {
         Write-Host "  not applicable to this sport ($($impossible.Count)):" -ForegroundColor DarkGray
         $impossible | ForEach-Object { "    {0}  {1}" -f $_.Job.CheckId, $_.Reason } | Write-Host -ForegroundColor DarkGray
+    }
+    if ($unnarrowable.Count -gt 0) {
+        Write-Host "  cannot be narrowed to -TemplateIds ($($unnarrowable.Count)):" -ForegroundColor DarkGray
+        $unnarrowable | ForEach-Object { "    {0}  {1}" -f $_.Job.CheckId, $_.Reason } | Write-Host -ForegroundColor DarkGray
     }
     if ($unselected.Count -gt 0) {
         Write-Host "  needs a value selected from a summary result ($($unselected.Count)):" -ForegroundColor DarkGray
@@ -2248,7 +2314,9 @@ if ($skipped.Count -gt 0) {
 }
 
 if ($runnable.Count -eq 0) {
-    throw "Nothing left to run: every matched statement is either not applicable to this sport or needs a value that must be selected from a summary result."
+    throw ("Nothing left to run: every matched statement is either not applicable to this sport, " +
+        "carries no template filter for -TemplateIds to activate, or needs a value that must be " +
+        "selected from a summary result.")
 }
 
 $jobs = $runnable
@@ -2369,12 +2437,11 @@ if ($isBatch) {
     # Statements that could not be filled belong in the record too, or the run would look
     # like it covered the whole catalogue.
     foreach ($item in $skipped) {
-        $skipStatus = if ($item.Kind -eq 'NOT_APPLICABLE') {
-                "SKIPPED: not applicable - $($item.Reason)"
-            }
-            else {
-                "SKIPPED: needs $($item.Missing)"
-            }
+        $skipStatus = switch ($item.Kind) {
+            'NOT_APPLICABLE'     { "SKIPPED: not applicable - $($item.Reason)" }
+            'NO_TEMPLATE_FILTER' { "SKIPPED: not narrowable - $($item.Reason)" }
+            default              { "SKIPPED: needs $($item.Missing)" }
+        }
         $summary += New-RunSummaryRow -Job $item.Job -Rows 0 -Seconds 0 -Status $skipStatus
     }
 
