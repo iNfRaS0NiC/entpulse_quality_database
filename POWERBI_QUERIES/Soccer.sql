@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Soccer-DQ-022
     -- Name - EVENT_RESULTS_SCORE_TIED_ON_KNOCKOUT_SINGLE_MATCH
-    -- What it does: Finds active finished Soccer events on a knockout round type, excluding a leg of a tie decided on aggregate, whose two participants hold an identical deciding score, so the round that must produce a winner produced none, with the shared score, the round type and template, tournament and stage name context, together with a coverage count of all eligible finished knockout single-match events holding exactly two deciding scores.
+    -- What it does: Finds finished knockout events whose two participants hold an identical deciding score, so a round that must produce a winner produced none, excluding a leg of a tie decided on aggregate.
     'TIED_SCORE_ON_KNOCKOUT_SINGLE_MATCH' AS check_type,
     e.id AS event_id,
     e.name AS event_name,

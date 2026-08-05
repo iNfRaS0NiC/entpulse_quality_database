@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Triathlon-DQ-068
     -- Name - EVENT_SETTINGS_DISCIPLINE_NAME_MISMATCH
-    -- What it does: Finds active Triathlon events whose name names a discipline that the event's own active object_discipline relations do not carry, resolving Super Sprint before Sprint and both relay formats before either, with the expected discipline, the disciplines actually related, the event discipline property as unauthoritative context and template, tournament and stage name context, together with a coverage count of all eligible events whose name names one of the six in-scope disciplines and that carry at least one active in-scope discipline relation. An Aquathlon-named event is excluded rather than reported, because that discipline is out of the sport's DQ scope.
+    -- What it does: Finds events whose name names a discipline the event's own relations do not carry, resolving Super Sprint before Sprint and both relay formats before either. An Aquathlon-named event is excluded rather than reported, being outside the sport's DQ scope.
     'EVENT_DISCIPLINE_NOT_MATCHING_NAME' AS check_type,
     x.event_id,
     x.event_name,
@@ -114,7 +114,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - Triathlon-DQ-069
     -- Name - EVENT_RESULTS_FULL_TIME_OUT_OF_DISCIPLINE_BAND
-    -- What it does: Finds active Triathlon event-participant rows in the six in-scope disciplines holding a numeric Rank and a readable full-time duration whose finishing time is implausible for the discipline it was raced in, being below its plausible floor, above its plausible ceiling, or more than twice the fastest full time recorded in the same event, with the parsed seconds, the event's fastest time and template name context, together with a coverage count of all eligible event-participants in those disciplines holding a numeric Rank and a readable full time. The bands are judgement values derived from each discipline's nominal distance, not official cut-off times, so a finding is a review candidate rather than a certain defect.
+    -- What it does: Finds participants whose full time is implausible for the discipline raced: below its floor, above its ceiling, or more than twice the fastest full time in the same event. The bands are judgement values rather than official cut-offs, so a finding is a review candidate.
     CASE
         WHEN x.secs < x.floor_secs   THEN 'FULL_TIME_BELOW_DISCIPLINE_FLOOR'
         WHEN x.secs > x.ceiling_secs THEN 'FULL_TIME_ABOVE_DISCIPLINE_CEILING'
@@ -289,7 +289,7 @@ ORDER BY sort_order, event_id, full_time_seconds DESC;
 SELECT
     -- CheckID - Triathlon-DQ-070
     -- Name - EVENT_RESULTS_DURATION_SHAPE_UNCONFIRMED
-    -- What it does: Finds active Triathlon event-participant rows in the six in-scope disciplines storing a Duration or Full-time duration value outside the sport's confirmed shape set, which is an optionally plus-prefixed h:mm:ss.f, m:ss.f or ss.f for the gap Duration and the same forms without a plus for the absolute Full-time duration, where only the leading field is unbounded and every field following a colon is a two-digit 0-59 so that an impossible time such as 1:99:99.9 is not read as a confirmed shape, separating a Full-time duration carrying the plus prefix it never takes from any other unconfirmed shape, with the offending values and their result types and template name context, together with a coverage count of all eligible event-participants in those disciplines carrying at least one active, non-empty value of either type.
+    -- What it does: Finds Duration or Full-time values outside the sport's confirmed shapes - an optionally plus-prefixed h:mm:ss.f, m:ss.f or ss.f for the gap and the same forms without a plus for the absolute - where only the leading field is unbounded, so an impossible time such as 1:99:99.9 is not read as confirmed.
     CASE
         WHEN x.plus_prefixed_full_time_count > 0 THEN 'FULL_TIME_PLUS_PREFIXED'
         ELSE 'DURATION_SHAPE_NOT_CONFIRMED'
@@ -383,7 +383,7 @@ ORDER BY sort_order, event_id, event_participants_id;
 SELECT
     -- CheckID - Triathlon-DQ-094
     -- Name - EVENT_MIXED_RELAY_LINEUP_SIZE_NOT_FOUR
-    -- What it does: Finds active Triathlon team participants in Mixed Relay events whose active Starter lineup names a number of distinct athletes other than four, the format being two men and two women each racing a super-sprint leg, counting only teams that carry a lineup at all, with the size found and the event and stage name context, together with a coverage count of all eligible Mixed Relay team participants carrying an active lineup.
+    -- What it does: Finds Mixed Relay teams whose Starter lineup names a number of distinct athletes other than four, the format being two men and two women each racing a leg.
     'Mixed_Relay_Lineup_Size_Not_Four' AS check_type,
     x.event_participants_id,
     x.event_id,

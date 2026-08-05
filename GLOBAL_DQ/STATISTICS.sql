@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - GLOBAL-DQ-010
     -- Name - COMP.RANK_NO_PARTICIPANTS
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type with zero active participant rows in the confirmed physical shard, with template and tournament name context, together with a coverage count of all eligible statistics.
+    -- What it does: Finds Comp.Rank holding no participant rows in the sport's shard.
     'No_Participants' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -46,7 +46,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-011
     -- Name - COMP.RANK_SETTINGS_MISSING_START_OR_END_DATE
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type with a missing or empty Start date or End date config value, with template and tournament name context, together with a coverage count of all eligible statistics.
+    -- What it does: Finds Comp.Rank with a missing or empty Start date or End date.
     'Missing_Start_Or_End_Date' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -121,7 +121,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-012
     -- Name - COMP.RANK_RESULTS_RANK_INVALID_OR_MISSING
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type holding at least one participant whose Rank data value is non-numeric or not a positive integer, or whose Rank is missing or empty while no active Comment value explains it, with template and tournament name context and the count of affected participant rows, together with a coverage count of all eligible statistics.
+    -- What it does: Finds Comp.Rank holding a participant whose Rank is not a positive integer, or is missing with no Comment to explain it.
     'Rank_Invalid_Or_Missing' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -191,7 +191,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-022
     -- Name - COMP.RANK_SETTINGS_MISSING_AGE_CLASS
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type without an active tournament_age_class relation via object_relation (owner type=83), with template and tournament name context, together with a coverage count of all eligible statistics.
+    -- What it does: Finds Comp.Rank with no age-class relation.
     'Missing_Age_Class' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -238,7 +238,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-023
     -- Name - COMP.RANK_SETTINGS_MISSING_DISCIPLINE
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type with zero active object_discipline relations (owner type=83), or with an active relation whose disciplineFK does not resolve to any active discipline row, with template and tournament name context, together with a coverage count of all eligible statistics.
+    -- What it does: Finds Comp.Rank with no discipline relation, or one naming a discipline that does not resolve.
     'Missing_Discipline' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -295,7 +295,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-024
     -- Name - COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_STAGE
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type whose Start date and End date config interval is inverted, or is not contained within the earliest and latest active tournament_stage start and end date under the statistic's tournament, separating an inverted interval, an interval crossing both stage bounds, a start before the earliest stage and an end after the latest stage, with template and tournament name context, together with a coverage count of all eligible statistics carrying at least one active config date.
+    -- What it does: Finds Comp.Rank whose configured date interval is inverted, or is not contained within the stage dates of its own tournament, separating an inverted interval, one crossing both bounds, a start before the earliest stage and an end after the latest.
     CASE
         WHEN DATE(x.config_start_date) > DATE(x.config_end_date)
             THEN 'Config_Date_Range_Inverted'
@@ -370,7 +370,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-025
     -- Name - COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_EVENTS
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type whose Start date and End date config interval is inverted, or does not contain every active event referenced through the Event id config field, separating the four boundary failures with template and tournament name context, together with a coverage count of all eligible statistics with at least one linked event and at least one active config date.
+    -- What it does: Finds Comp.Rank whose configured date interval is inverted, or does not contain every event it names through the Event id config, separating the four boundary failures.
     CASE
         WHEN DATE(x.config_start_date) > DATE(x.config_end_date)
             THEN 'Config_Date_Range_Inverted'
@@ -458,7 +458,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-026
     -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type whose set of Medal values is not one gold, one silver and one bronze, because a medal type is absent among statistic participants, is held by more participants than a place is held by in that statistic, or is held by fewer, counting the holders of each medal per team wherever the statistic assigns athletes to one through the Team data field and reading the number of holders a place takes from what the medals present agree on, so a relay whose members each carry their team's medal is not read as a duplicate whether or not the team assignment exists, separating a statistic with no medals at all, a duplicate contradicted by the place below it, a duplicate shaped like a tie, a duplicated bronze, a medal held by fewer participants than its place takes and a missing medal type, together with a coverage count of all eligible statistics.
+    -- What it does: Finds Comp.Rank whose medal set is not one gold, one silver and one bronze: a type missing, held by more participants than the place takes, or held by fewer - counting relay members who share their team's medal as one holder.
     CASE
         WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All'
         -- A shared place removes the place below it, so a second gold beside a silver is a
@@ -578,7 +578,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-027
     -- Name - COMP.RANK_RESULTS_MEDAL_INVALID_VALUE
-    -- What it does: Finds active statistic-participant Medal rows of the selected statistic type, excluding IOC-purpose templates, whose value is present but not one of the accepted values gold, silver or bronze, together with a coverage count of all eligible statistic-participant rows carrying any active, non-empty Medal value.
+    -- What it does: Finds Comp.Rank Medal values that are not gold, silver or bronze.
     'Medal_Invalid_Value' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -631,7 +631,7 @@ WHERE sd.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-028
     -- Name - COMP.RANK_RESULTS_TIME_DIFFERENCE_FORMAT_MISMATCH_TO_RANK
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, containing at least one participant whose Time Difference value does not follow the leader/gap convention for their Rank value (rank 1 must be a plain absolute time with no plus sign while every other rank must be a plus-prefixed gap value), together with the count, type and per-participant detail of mismatching values per statistic and a coverage count of all eligible statistics with at least one participant having both an active rank and an active time-difference value.
+    -- What it does: Finds Comp.Rank holding a participant whose Time Difference breaks the leader/gap convention: rank 1 a plain absolute time, every other rank a plus-prefixed gap.
     'Time_Difference_Format_Mismatch' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -700,7 +700,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-029
     -- Name - COMP.RANK_RESULTS_DEPRECATED_DURATION_USED
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, where at least one participant still stores an active, non-empty value in the deprecated Duration data field, reporting the count of participants using it and which of the current Time and Time Difference fields are also populated in the same statistic, together with a coverage count of all eligible statistics.
+    -- What it does: Finds Comp.Rank still storing a value in the deprecated Duration field, with which of the current Time and Time Difference fields are populated beside it.
     'Deprecated_Duration_Used' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -753,7 +753,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-030
     -- Name - COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT
-    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, whose participant is neither a direct event participant nor an active lineup member anywhere under the statistic's own tournament, with template and tournament name context, together with a coverage count of all eligible statistic-participant rows.
+    -- What it does: Finds Comp.Rank participants who are neither an event participant nor a lineup member anywhere under their own tournament.
     'PARTICIPANT_NOT_IN_TOURNAMENT' AS check_type,
     sp.id AS statistic_participants_id,
     s.id AS statistic_id,
@@ -817,7 +817,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-031
     -- Name - COMP.RANK_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE
-    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, whose numeric Rank value exceeds the number of active participants in their own statistic and is disconnected from the next lower Rank in that statistic, while carrying no active Comment value, with template and tournament name context, together with a coverage count of all eligible statistic-participant rows holding an active numeric Rank.
+    -- What it does: Finds Comp.Rank participants whose Rank exceeds the number ranked and is disconnected from the next lower Rank, with no Comment to explain it.
     'RANK_OUTLIER_ABOVE_FIELD_SIZE' AS check_type,
     sp.id AS statistic_participants_id,
     f.statistic_id,
@@ -907,7 +907,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-032
     -- Name - COMP.RANK_RESULTS_NO_RANK_DATA_FOR_PARTICIPANTS
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, that hold at least one active participant but no active non-empty Rank data value for any of them, separating statistics holding no data value of any type from those holding other data but no Rank, with template and tournament name context, together with a coverage count of all eligible statistics holding at least one active participant.
+    -- What it does: Finds Comp.Rank holding participants but no Rank value for any of them, separating one holding no data at all from one holding other data.
     CASE
         WHEN y.data_rows = 0 THEN 'PARTICIPANTS_BUT_NO_DATA_AT_ALL'
         ELSE 'DATA_BUT_NO_RANK_AT_ALL'
@@ -968,7 +968,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-033
     -- Name - COMP.RANK_RESULTS_MISSING_PHASE
-    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, carrying no active object_round phase row (object_typeFK=138, type='phase'), with template and tournament name context and the participant's Rank value, together with a coverage count of all eligible statistic-participant rows.
+    -- What it does: Finds Comp.Rank participants carrying no phase row.
     'MISSING_PHASE' AS check_type,
     sp.id AS statistic_participants_id,
     s.id AS statistic_id,
@@ -1027,7 +1027,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-035
     -- Name - COMP.RANK_SETTINGS_MISSING_CORE_FIELDS
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type missing name, an active non-empty Gender config value, an active country relation (object_relation 83->33), or an active city relation (city_object owner type=83), or carrying a country relation that resolves only to a placeholder row and therefore reads as populated, with template and tournament name context, together with a coverage count of all eligible statistics.
+    -- What it does: Finds Comp.Rank missing a name, a Gender config, a country or a city relation, or carrying a country that resolves only to a placeholder.
     'Missing_Statistic_Field' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -1134,7 +1134,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-040
     -- Name - EVENT_FINAL_WITHOUT_COMP.RANK
-    -- What it does: Finds active events on a Final round type, excluding IOC-purpose templates, that no statistic of the selected type under their own tournament references through its Event id config field, separating tournaments holding no such statistic at all and tournaments whose statistics declare no event scope, with template, tournament and stage name context, together with a coverage count of all eligible Final-round events.
+    -- What it does: Finds Final-round events that no Comp.Rank under their own tournament names through its Event id config, separating a tournament holding none at all from one whose Comp.Rank declares no event scope.
     CASE
         WHEN x.tournament_statistics = 0 THEN 'TOURNAMENT_HAS_NO_COMP_RANK'
         WHEN x.statistics_with_event_config = 0 THEN 'COMP.RANK_EVENT_SCOPE_UNDETERMINABLE'
@@ -1218,7 +1218,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-041
     -- Name - COMP.RANK_RESULTS_MEDAL_ON_NON_MEDAL_ROUND_PHASE
-    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, carrying an active non-empty Medal value while their object_round phase names a round type that is none of the sport's medal round types, with template and tournament name context and the offending phase, together with a coverage count of all eligible statistic-participant rows carrying an active non-empty Medal value.
+    -- What it does: Finds Comp.Rank participants carrying a Medal while their phase names a round the sport awards no medals on.
     'MEDAL_ON_NON_MEDAL_ROUND_PHASE' AS check_type,
     sp.id AS statistic_participants_id,
     s.id AS statistic_id,
@@ -1280,7 +1280,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-042
     -- Name - EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK
-    -- What it does: Finds active event-participant rows in Final-round events, excluding IOC-purpose templates, whose participant appears in none of the populated statistics of the selected type that reference their event through the Event id config field, with template, tournament and event name context, together with a coverage count of all eligible Final-round event-participants whose event is referenced by at least one populated statistic.
+    -- What it does: Finds participants in Final-round events who appear in none of the Comp.Rank naming their event.
     'FINAL_PARTICIPANT_NOT_IN_COMP.RANK' AS check_type,
     ep.id AS event_participants_id,
     e.id AS event_id,
@@ -1370,7 +1370,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-044
     -- Name - COMP.RANK_RESULTS_GENDER_MISMATCH
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type whose Gender config value does not match the gender composition of their statistic participants, classifying each violation type, together with a coverage count of all eligible statistics.
+    -- What it does: Finds Comp.Rank whose Gender config does not match the gender of its own participants.
     'Gender_Mismatch' AS check_type,
     elig.statistic_id,
     elig.statistic_name,
@@ -1475,7 +1475,7 @@ JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-046
     -- Name - COMP.RANK_RESULTS_TIME_FULL_TIME_MISMATCH_TO_RANK
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type restricted to the sport's timed disciplines, containing at least one participant whose time storage is inconsistent with their Rank: Time missing despite an active rank, Time Difference missing despite an active rank other than the leader's, either present without an active rank, or Time present with an invalid format or as a zero time, together with the distinct violation types and count of mismatching participants per statistic and a coverage count of all eligible statistics in those disciplines.
+    -- What it does: Finds Comp.Rank in the sport's timed disciplines whose time storage contradicts a Rank: a Time or Time Difference missing where the rank calls for one, either present with no rank, or a Time badly formatted or zero.
     'Time_Full_Time_Mismatch_Statistics' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -1573,7 +1573,7 @@ ORDER BY sort_order, violating_record_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-051
     -- Name - COMP.RANK_NAME_FORMAT_INVALID
-    -- What it does: Finds each distinct active tournament-owned statistic name that breaks at least one text-hygiene rule - edge or doubled spacing, a control character, a definite text corruption such as an HTML entity, a replacement character, a non-breaking or zero-width space or a double-encoded byte sequence, a non-ASCII character, a hyphen without surrounding spaces, a year glued to a word, a capitalisation shape a proof-read name does not take, a placeholder name or a numeric-only name - naming every rule the name breaks and how many objects carry it, reporting one row per offending name rather than one per object repeating it, together with a coverage count of all distinct eligible names.
+    -- What it does: Finds Comp.Rank names breaking a text-hygiene rule - spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder or a numeric-only name - one row per name, naming every rule it breaks.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS statistic_name,
     x.violation_types,
@@ -1656,7 +1656,7 @@ ORDER BY sort_order, violation_types, statistic_name;
 SELECT
     -- CheckID - GLOBAL-DQ-057
     -- Name - COMP.RANK_RESULTS_COMMENT_INVALID_OR_CONTRADICTED
-    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, whose Comment data value is outside the sport's confirmed set of status codes, or whose Comment marks a participant as having no classified result while a Rank, a Time or a Medal is stored for that same participant, together with a coverage count of all eligible statistic-participant rows carrying an active, non-empty Comment value.
+    -- What it does: Finds Comp.Rank Comment values outside the sport's status codes, or marking a participant as unclassified while a Rank, a Time or a Medal is stored for that same participant.
     CASE
         WHEN LOWER(TRIM(x.comment_value)) IN ({{DATA_COMMENT_NO_RESULT_LIST}}) AND x.medal_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_MEDAL'
         WHEN LOWER(TRIM(x.comment_value)) IN ({{DATA_COMMENT_NO_RESULT_LIST}}) AND x.rank_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_RANK'
@@ -1742,7 +1742,7 @@ WHERE sd.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-060
     -- Name - COMP.RANK_RESULTS_DUPLICATE_ROWS
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, holding more than one active data row for the same statistic participant and data type, separating a duplicate repeating the same value from one storing conflicting values, with template and tournament name context, the number of affected participants and a sample group, together with a coverage count of all eligible statistics holding at least one active data row.
+    -- What it does: Finds Comp.Rank holding more than one data row for the same participant and field, separating a duplicate repeating the value from one storing a conflicting one.
     'Comp_Rank_Duplicate_Rows' AS check_type,
     d.statistic_id,
     d.statistic_name,
@@ -1809,7 +1809,7 @@ WHERE sd.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-064
     -- Name - COMP.RANK_ATHLETE_TEAM_MISSING_OR_INVALID
-    -- What it does: Finds active athlete statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, inside a statistic that uses the Team data field, whose own Team value is absent, does not resolve to an active team participant, is stored more than once with conflicting values, or is stored more than once repeating one value, separating the four cases, with statistic, template and tournament name context, together with a coverage count of all eligible athlete statistic-participant rows inside statistics that use the Team data field.
+    -- What it does: Finds athletes inside a Comp.Rank that uses the Team field whose own Team value is absent, does not resolve to a team, or is stored twice - repeating a value or contradicting itself.
     CASE
         WHEN x.team_value IS NULL   THEN 'TEAM_VALUE_MISSING'
         WHEN tp.id IS NULL          THEN 'TEAM_VALUE_UNRESOLVED'
@@ -1978,7 +1978,7 @@ FROM (
 SELECT
     -- CheckID - GLOBAL-DQ-065
     -- Name - COMP.RANK_TEAM_ATHLETE_COUNT_UNEVEN
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, whose athletes are assigned to teams through the Team data field in unequal numbers, so one team fields fewer athletes than another inside one statistic, separating a shortfall of one athlete from a larger one, with the team by team breakdown and template and tournament name context, together with a coverage count of all eligible statistics holding at least one athlete assigned to a resolvable team.
+    -- What it does: Finds Comp.Rank whose teams do not all field the same number of athletes, separating a shortfall of one athlete from a larger one.
     CASE
         WHEN a.max_athletes_per_team - a.min_athletes_per_team = 1 THEN 'TEAM_SIZE_UNEVEN_BY_ONE'
         ELSE 'TEAM_SIZE_UNEVEN_BY_MORE'
@@ -2069,7 +2069,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-066
     -- Name - COMP.RANK_TEAM_GENDER_BALANCE_UNEVEN
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type whose Gender config value is mixed, excluding IOC-purpose templates, holding at least one team whose athletes assigned through the Team data field are not an equal number of male and female, separating a team fielding one gender only from one fielding both in unequal numbers, with the offending teams and their gender counts and template and tournament name context, together with a coverage count of all eligible mixed statistics holding at least one athlete assigned to a resolvable team.
+    -- What it does: Finds mixed Comp.Rank holding a team whose athletes are not an equal number of male and female, separating a team fielding one gender only from one fielding both unevenly.
     CASE
         WHEN a.teams_missing_a_gender > 0 THEN 'STATISTIC_TEAM_MISSING_A_GENDER'
         ELSE 'STATISTIC_TEAM_GENDER_COUNT_UNEVEN'
@@ -2173,7 +2173,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-070
     -- Name - COMP.RANK_RESULTS_VALUE_BLANK
-    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, holding at least one active data row whose value is neither empty nor readable, being made only of ordinary spacing or only of invisible characters such as a non-breaking or zero-width space, separating the two, with the data fields affected and template and tournament name context, together with a coverage count of all eligible statistic-participant rows holding at least one active data row.
+    -- What it does: Finds Comp.Rank data values that are neither empty nor readable, made only of ordinary spacing or only of invisible characters, separating the two.
     CASE
         WHEN x.invisible_count > 0 THEN 'BLANK_INVISIBLE_CHARACTER'
         ELSE 'BLANK_WHITESPACE_ONLY'
@@ -2256,7 +2256,7 @@ ORDER BY sort_order, blank_data_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-072
     -- Name - COMP.RANK_RESULTS_MEDAL_RANK_MISMATCH
-    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, carrying an active non-empty Medal value whose Rank does not match the place the medal stands for, or that carry no Rank at all, with template and tournament name context, together with a coverage count of all eligible statistic-participant rows carrying an active non-empty Medal value.
+    -- What it does: Finds Comp.Rank participants whose Medal does not match the place it stands for, or that carry no Rank at all.
     CASE
         WHEN x.rank_value IS NULL THEN 'MEDAL_WITHOUT_RANK'
         ELSE 'MEDAL_RANK_MISMATCH'
@@ -2338,7 +2338,7 @@ WHERE sm.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-077
     -- Name - COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC
-    -- What it does: Finds active statistic-participant rows of the selected statistic type, excluding IOC-purpose templates, holding a value in one of the sport's numeric data fields that is not a number, separating a value that is one of the sport's own status codes, a value that is a sentinel standing for no data such as nan or n/a, a number written with thousands separators, and any other text, with the data field, the value and template and tournament name context, together with a coverage count of all eligible statistic-participant rows holding an active non-empty value in one of those fields.
+    -- What it does: Finds non-numeric values in the sport's numeric Comp.Rank fields, separating one of the sport's own status codes, a no-data sentinel such as nan, a number written with thousands separators, and any other text.
     CASE
         WHEN LOWER(TRIM(sd.value)) IN ({{DATA_COMMENT_VALUE_LIST}}) THEN 'STATUS_CODE_IN_NUMERIC_FIELD'
         WHEN LOWER(TRIM(sd.value)) IN ('nan', 'null', 'n/a', 'na', '-', '--', '?', 'none') THEN 'SENTINEL_IN_NUMERIC_FIELD'
@@ -2402,7 +2402,7 @@ WHERE sd.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-095
     -- Name - COMP.RANK_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, in which one Rank value is held by more participants than the statistic's own teams field athletes, where the sport assigns them, no Comment value explains the sharing, and the statistic still awards one of the places that sharing consumes, so the place is occupied twice over rather than being the joint place a competition stops ranking at, separating a statistic repeating one place from one repeating several, with the repeated ranks, how many participants hold each and template and tournament name context, together with a coverage count of all eligible statistics holding at least one active numeric Rank.
+    -- What it does: Finds a Comp.Rank place held by more participants than its teams field athletes, with no Comment to explain it, while the place that sharing consumes is still awarded - so the place is occupied twice over rather than being a joint place the ranking stops at.
     CASE
         WHEN x.duplicated_rank_count = 1 THEN 'ONE_RANK_HELD_TWICE'
         ELSE 'SEVERAL_RANKS_HELD_TWICE'
@@ -2571,7 +2571,7 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - GLOBAL-DQ-098
     -- Name - COMP.RANK_TEAM_FIELD_UNUSED_IN_TEAM_STATISTIC
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, in which every athlete shares their place with the same number of others and no athlete carries a Team value at all, so the statistic is scoring teams of that size without recording which team each athlete belongs to, with the number of athletes, how many places they occupy and how many hold each, and template and tournament name context, together with a coverage count of all eligible statistics holding at least one athlete with a numeric Rank.
+    -- What it does: Finds Comp.Rank where every athlete shares a place with the same number of others and none carries a Team value, so teams of that size are scored without recording which team each athlete belongs to.
     'TEAM_FIELD_UNUSED_FOR_WHOLE_FIELD' AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -2700,7 +2700,7 @@ ORDER BY sort_order, shared_place_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-099
     -- Name - COMP.RANK_VALUE_BELONGS_TO_ANOTHER_FIELD
-    -- What it does: Finds active statistic-participant data rows of the selected statistic type, excluding IOC-purpose templates, whose value is not merely the wrong shape for the field holding it but is exactly a value another field owns, a medal word stored anywhere but the Medal field or a plain place number stored in it, separating the two, with the field, its name, the stored value and statistic, template and tournament name context, together with a coverage count of all eligible statistic-participant data rows carrying an active, non-empty value.
+    -- What it does: Finds a Comp.Rank value that is exactly what another field owns: a medal word stored outside the Medal field, or a plain place number stored inside it.
     CASE
         WHEN sd.statistic_data_typeFK = {{DATA_MEDAL_TYPE_ID}} THEN 'RANK_NUMBER_IN_MEDAL_FIELD'
         ELSE 'MEDAL_WORD_OUTSIDE_MEDAL_FIELD'
@@ -2777,7 +2777,7 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - GLOBAL-DQ-100
     -- Name - COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, carrying a discipline relation naming a discipline that no active event under their own tournament was contested in, so the statistic claims a format its competition never ran, with the disciplines claimed, the disciplines the tournament actually contested and template and tournament name context, together with a coverage count of all eligible statistics carrying a discipline whose tournament holds at least one event carrying one.
+    -- What it does: Finds Comp.Rank claiming a discipline that no event under its own tournament was contested in.
     'DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT' AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -2881,7 +2881,7 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - GLOBAL-DQ-101
     -- Name - COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, whose populated Event id config does not resolve to an event under the statistic's own tournament, separating a value that is not a number from one naming no active event and from one naming an event another tournament owns, with the offending values and template and tournament name context, together with a coverage count of all eligible statistics carrying at least one active, non-empty Event id config.
+    -- What it does: Finds Comp.Rank whose Event id config does not resolve to an event under its own tournament, separating a value that is not a number, one naming no event, and one naming an event another tournament owns.
     CASE
         WHEN x.not_numeric_count > 0 THEN 'EVENT_ID_NOT_NUMERIC'
         WHEN x.no_active_event_count > 0 THEN 'EVENT_ID_NO_ACTIVE_EVENT'
@@ -2963,7 +2963,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-103
     -- Name - COMP.RANK_PARTICIPANT_DUPLICATE_IN_STATISTIC
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, holding more than one active participant row in the confirmed physical shard for the same participant, so one competitor occupies a place in the ranking twice, with the number of affected participants and a sample group and template and tournament name context, together with a coverage count of all eligible statistics holding at least one active participant row.
+    -- What it does: Finds Comp.Rank holding the same participant twice, so one competitor occupies a place in the ranking two times over.
     'Comp_Rank_Participant_Duplicate' AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -3036,7 +3036,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-105
     -- Name - COMP.RANK_SETTINGS_SCALAR_DUPLICATE_ROWS
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, holding more than one active config row for a setting that takes a single value, being the start date, the end date and the gender, separating a repeat of the same value from two rows that contradict each other, with the affected settings and a sample and template and tournament name context, together with a coverage count of all eligible statistics carrying at least one of those settings.
+    -- What it does: Finds Comp.Rank holding more than one config row for a setting that takes one value - start date, end date or gender - separating a repeat of the same value from two that contradict each other.
     CASE
         WHEN x.conflicting_groups > 0 THEN 'SETTINGS_CONFLICTING_VALUES'
         ELSE 'SETTINGS_DUPLICATE_IDENTICAL'
@@ -3123,7 +3123,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-106
     -- Name - COMP.RANK_UNEXPECTED_OWNER_TYPE
-    -- What it does: Finds active statistics of the selected statistic type belonging to the sport, excluding IOC-purpose templates, that hang off an owner level other than the one the sport is confirmed to use, so a statistic sits on a tournament stage where the sport's statistic layer is the tournament, with the owner level found and the owning object and template name context, together with a coverage count of all eligible statistics of that type at any owner level.
+    -- What it does: Finds Comp.Rank hanging off an owner level other than the one the sport is confirmed to use.
     'Comp_Rank_Unexpected_Owner_Type' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -3175,7 +3175,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-110
     -- Name - COMP.RANK_DISCIPLINE_CONTRADICTS_LINKED_EVENT
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, that carry a discipline relation and also name their events through the Event id config, where no discipline claimed by the statistic was contested by any of the events it names, so the two paths disagree about the same competition, with the disciplines claimed and those the linked events carry and template and tournament name context, together with a coverage count of all eligible statistics carrying both paths.
+    -- What it does: Finds Comp.Rank whose claimed discipline was contested by none of the events it names through the Event id config, so the two paths disagree about the same competition.
     'Comp_Rank_Discipline_Contradicts_Linked_Event' AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -3261,7 +3261,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-113
     -- Name - COMP.RANK_PARTICIPANT_TYPE_MIXED
-    -- What it does: Finds active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, holding participants of more than one kind in the confirmed physical shard, so one place sequence ranks teams against individuals, with the kinds held and their row counts and template and tournament name context, together with a coverage count of all eligible statistics holding at least one active participant.
+    -- What it does: Finds Comp.Rank holding participants of more than one kind, so one place sequence ranks teams against individuals.
     'Comp_Rank_Participant_Type_Mixed' AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -3325,7 +3325,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-115
     -- Name - COMP.RANK_PARTICIPANT_REFERENCE_INVALID
-    -- What it does: Finds active statistic-participant rows in active tournament-owned statistics of the selected statistic type, excluding IOC-purpose templates, whose participant reference resolves to no participant row or to a soft-deleted participant, separating the two cases, with statistic, template and tournament name context and the number of active data rows still attached, together with a coverage count of all eligible statistic-participant rows.
+    -- What it does: Finds Comp.Rank participants whose reference resolves to no participant row, or to a soft-deleted one, separating the two, with the data rows still attached to them.
     CASE
         WHEN p.id IS NULL THEN 'PARTICIPANT_REFERENCE_MISSING'
         ELSE                   'PARTICIPANT_REFERENCE_SOFT_DELETED'

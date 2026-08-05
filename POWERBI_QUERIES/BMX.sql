@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - BMX-DQ-030
     -- Name - EVENT_DURATION_FORMAT_MISMATCH_TO_RANK
-    -- What it does: Finds active BMX events containing at least one participant whose duration result format does not match the expected shape for their rank result (rank 1 must be a plain full time with no plus sign; every other rank must be a plus-prefixed gap value with no colon), together with the count, type and per-participant detail of mismatching values per event and a coverage count of all eligible BMX events with at least one participant having both an active rank and an active duration result.
+    -- What it does: Finds events where a participant's duration breaks the leader/gap convention: rank 1 a plain full time, every other rank a plus-prefixed gap with no colon.
     'Duration_Format_Mismatch_Events' AS check_type,
     e.id AS event_id,
     e.name AS event_name,

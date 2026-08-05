@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Curling-DQ-070
     -- Name - EVENT_SCOPE_END_SCORED_BY_BOTH_TEAMS
-    -- What it does: Finds active Curling events holding an end in which both teams are recorded as having scored, which the sport's scoring rule makes impossible because only the team holding the hammer outcome takes points in an end and the other is left on zero, with the offending ends named, how many of them the event holds and template, tournament and stage name context, together with a coverage count of all eligible active events holding at least one active end row in the final_result scope.
+    -- What it does: Finds events holding an end in which both teams scored, which the sport's rule makes impossible - only the side taking the end scores and the other is left on zero.
     'END_SCORED_BY_BOTH_TEAMS' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -86,7 +86,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-073
     -- Name - EVENT_SCOPE_EXTRA_END_WITHOUT_TIED_REGULATION_SCORE
-    -- What it does: Finds active Curling events whose extra end is recorded as played while the two teams did not reach it level, because an extra end is what a tie after the regular ends produces and nothing else, with each side's regular-end total and extra-end value and template, tournament, stage and status context, together with a coverage count of all eligible active events holding exactly two participants that each carry a numeric extra-end value and at least one numeric regular end.
+    -- What it does: Finds events whose extra end is recorded as played while the two teams did not reach it level, since only a tie after the regular ends produces one.
     'EXTRA_END_WITHOUT_TIED_REGULATION_SCORE' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -212,7 +212,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-074
     -- Name - EVENT_SCOPE_ENDS_BELOW_MINIMUM
-    -- What it does: Finds active Curling events holding fewer than six scored regular ends, which is below the shortest game either scheduled length can legitimately produce once a conceded game is allowed for, separating an event whose status records an awarded win and therefore explains the shortfall from one that finished normally and does not, with the number of ends scored, the number of end rows stored and template, tournament, stage and status context, together with a coverage count of all eligible active events holding at least one active regular end row in the final_result scope.
+    -- What it does: Finds events holding fewer than six scored regular ends, below the shortest game either length can legitimately produce, separating one whose status records an awarded win from one that finished normally.
     CASE
         WHEN e.status_descFK = 190 THEN 'FEW_ENDS_AWARDED_WIN'
         ELSE 'FEW_ENDS_PLAIN_FINISHED'
@@ -294,7 +294,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-077
     -- Name - EVENT_SETTINGS_DISCIPLINE_CONTRADICTS_COMPETITION_NAME
-    -- What it does: Finds active Curling events whose competition names it as a Mixed Doubles competition while the event carries no Mixed Doubles discipline relation, or the reverse, so the name and the discipline disagree about which format was contested, with the disciplines actually related and template, tournament and stage name context, together with a coverage count of all eligible active events carrying at least one active discipline relation. The name is read from the template, tournament and stage together, because the format is named by the competition rather than by the event, whose name is only the pairing that played it.
+    -- What it does: Finds events whose competition names Mixed Doubles while the event carries no such discipline, or the reverse. The name is read from template, tournament and stage together, because the format is named by the competition rather than by the event.
     CASE
         WHEN x.name_says_mixed_doubles = 1 THEN 'NAME_SAYS_MIXED_DOUBLES_DISCIPLINE_DOES_NOT'
         ELSE 'DISCIPLINE_MIXED_DOUBLES_NAME_DOES_NOT'
@@ -381,7 +381,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-078
     -- Name - COMP.RANK_TEAM_ROSTER_SIZE_CONTRADICTS_DISCIPLINE
-    -- What it does: Finds active tournament-owned Comp.Rank statistics of Curling, excluding IOC-purpose templates, holding a team whose number of assigned athletes contradicts the discipline the statistic itself carries, separating a Mixed Doubles team that is not a pair, a 4aSide statistic in which most teams are pairs and which is therefore a doubles competition carrying the wrong discipline, and a 4aSide team short of four where the rest of the statistic is not, with the offending teams and their sizes, the discipline and template and tournament name context, together with a coverage count of all eligible statistics carrying a discipline and at least one athlete assigned to a resolvable team.
+    -- What it does: Finds Comp.Rank holding a team whose roster size contradicts the discipline it carries: a Mixed Doubles team that is not a pair, a 4aSide ranking whose teams are mostly pairs, or a 4aSide team short of four where the rest are not.
     CASE
         WHEN x.doubles_team_not_two > 0 THEN 'MIXED_DOUBLES_TEAM_NOT_TWO'
         WHEN x.four_a_side_sized_like_doubles * 2 > x.team_count THEN 'FOUR_A_SIDE_STATISTIC_IS_DOUBLES_SHAPED'
@@ -498,7 +498,7 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - Curling-DQ-082
     -- Name - EVENT_SCOPE_CONTAINER_SHAPE_CONTRADICTS_DISCIPLINE
-    -- What it does: Finds active Curling events whose end-by-end container is shaped like no length the sport schedules, holding an end_9 column without the end_10 that a ten-end game would also carry, or is shaped for ten ends while the event is contested as Mixed Doubles, which is played over eight, separating the two, with the shape found, the highest end column stored and template, tournament, stage and discipline context, together with a coverage count of all eligible active events holding at least one active regular end row in the final_result scope.
+    -- What it does: Finds events whose end-by-end container is shaped like no length the sport schedules: an end_9 without the end_10 a ten-end game also carries, or ten ends on a Mixed Doubles game played over eight.
     CASE
         WHEN x.container_shape = '9-end' THEN 'CONTAINER_SHAPE_NOT_A_SCHEDULED_LENGTH'
         ELSE 'MIXED_DOUBLES_WITH_TEN_END_CONTAINER'
@@ -592,7 +592,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-083
     -- Name - COMP.RANK_TEAM_ATHLETE_RANK_DISAGREE
-    -- What it does: Finds active tournament-owned Comp.Rank statistics of Curling, excluding IOC-purpose templates, whose team and athlete halves do not agree, either because an athlete is ranked differently from the team the Team data field assigns them to, or because one half of the pair does not exist at all, separating an athlete-side disagreement from a team statistic with no athlete partner and an athlete statistic with no team partner, with the number of disagreeing athletes and a sample of the ranks involved and template and tournament name context, together with a coverage count of all eligible statistics.
+    -- What it does: Finds Comp.Rank whose team and athlete halves disagree: an athlete ranked differently from the team the Team field assigns them to, or one half of the pair missing altogether.
     CASE
         WHEN x.kind = 'team' AND x.partner_id IS NULL THEN 'TEAM_STATISTIC_WITHOUT_ATHLETE_PARTNER'
         WHEN x.kind = 'athlete' AND x.partner_id IS NULL THEN 'ATHLETE_STATISTIC_WITHOUT_TEAM_PARTNER'
@@ -731,7 +731,7 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - Curling-DQ-084
     -- Name - EVENT_DUPLICATE_BY_RESULT_ACROSS_DATES
-    -- What it does: Finds groups of more than one active Curling event inside one tournament stage that record the identical result - the same two teams holding the same score each - while sitting on different calendar days, so the same game appears twice under dates that keep it out of the metadata duplicate check, with the scores, the dates and names the group carries and how many events it holds, together with a coverage count of all eligible active events holding exactly two participants with a numeric Final Result.
+    -- What it does: Finds events inside one stage recording the identical result - the same two teams holding the same scores - on different calendar days, so one game appears twice under dates that keep it out of the metadata duplicate check.
     'DUPLICATE_BY_RESULT_ACROSS_DATES' AS check_type,
     d.template_name,
     d.tournament_name,
@@ -822,7 +822,7 @@ ORDER BY sort_order, duplicate_event_count DESC;
 SELECT
     -- CheckID - Curling-DQ-095
     -- Name - COMP.RANK_PARTICIPANT_TYPE_CONTRADICTS_STATISTIC_KIND
-    -- What it does: Finds active tournament-owned Curling Comp.Rank statistics, excluding IOC-purpose templates, holding a participant whose type contradicts the kind the statistic's name declares, an (athletes) statistic holding anything but athletes or its unsuffixed partner holding anything but teams, with the offending types and a sample and template and tournament name context, together with a coverage count of all eligible statistics holding at least one active participant.
+    -- What it does: Finds Comp.Rank holding a participant whose type contradicts what its own name declares: an (athletes) ranking holding anything but athletes, or its unsuffixed partner anything but teams.
     CASE
         WHEN x.statistic_kind = 'athletes' THEN 'ATHLETES_STATISTIC_HOLDS_NON_ATHLETE'
         ELSE 'TEAM_STATISTIC_HOLDS_NON_TEAM'
@@ -900,7 +900,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - Curling-DQ-096
     -- Name - EVENT_SETTINGS_MIXED_DOUBLES_GENDER_INVALID
-    -- What it does: Finds active Curling events carrying the Mixed Doubles discipline whose tournament stage declares a gender other than mixed, so a format played by a man and a woman together sits under a single-gender stage, with the stage gender found and template and stage name context, together with a coverage count of all eligible events carrying that discipline.
+    -- What it does: Finds Mixed Doubles events whose tournament stage declares a gender other than mixed, so a format played by a man and a woman together sits under a single-gender stage.
     'Mixed_Doubles_Stage_Gender_Invalid' AS check_type,
     e.id AS event_id,
     e.name AS event_name,

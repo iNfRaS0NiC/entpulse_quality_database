@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-029
     -- Name - TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES
-    -- What it does: Finds active Artistic Gymnastics tournaments, excluding IOC-purpose templates and the two confirmed postponed Summer Olympics 2020 editions, whose name disagrees with the calendar years their own tournament stages occupy, separating the five contradiction shapes, with stage-year and template context and a coverage count of the identical eligible tournament scope.
+    -- What it does: Finds tournaments whose name disagrees with the calendar years their stages occupy, separating the five shapes, excluding the two postponed Summer Olympics 2020 editions.
     CASE
         WHEN x.stage_span > 2 THEN 'STAGES_SPAN_MORE_THAN_TWO_YEARS'
         WHEN x.stage_span = 2 AND x.name_has_span = 0 THEN 'SINGLE_YEAR_NAME_ON_SEASON'
@@ -80,7 +80,7 @@ ORDER BY sort_order, first_stage_year;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-089
     -- Name - EVENT_DISCIPLINE_CONTRADICTS_EVENT_NAME
-    -- What it does: Finds active Artistic Gymnastics events, excluding IOC-purpose templates, whose stored object_discipline names one apparatus while the event name unambiguously names a different one, with both disciplines, the event name and template and tournament name context, together with a coverage count of all eligible events whose name names an apparatus at all.
+    -- What it does: Finds events whose stored discipline names one apparatus while the event name unambiguously names a different one.
     'Event_Discipline_Contradicts_Name' AS check_type,
     x.event_id,
     x.event_name,
@@ -171,7 +171,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-090
     -- Name - EVENT_RESULT_SET_DUPLICATED_ACROSS_DISCIPLINES
-    -- What it does: Finds active finished Artistic Gymnastics events, excluding IOC-purpose templates, whose complete set of participants and Points values is identical to that of an event of a different discipline in the same tournament, so one apparatus field has been written over another, with the partner disciplines and event ids, the participant count and template and tournament name context, together with a coverage count of all eligible events holding at least five participants.
+    -- What it does: Finds finished events whose whole set of participants and Points is identical to an event of a different discipline in the same tournament, so one apparatus field was written over another.
     'Event_Result_Set_Duplicated_Across_Disciplines' AS check_type,
     f.event_id,
     f.event_name,
@@ -283,7 +283,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-091
     -- Name - COMP.RANK_TEAM_MEMBERS_DISAGREE_ON_TEAM_RESULT
-    -- What it does: Finds active tournament-owned Comp.Rank statistics of Artistic Gymnastics, excluding IOC-purpose templates, in which the athletes the Team data field assigns to one team within one phase do not all carry the same Points or the same Rank, so one member holds a different version of a placing the whole team shares, with the team id, the member count, the differing values and template and tournament name context, together with a coverage count of all eligible statistics holding at least one team-linked member.
+    -- What it does: Finds Comp.Rank where the athletes the Team field assigns to one team within a phase do not all carry the same Points or the same Rank.
     CASE
         WHEN x.distinct_points > 1 AND x.distinct_ranks > 1 THEN 'TEAM_MEMBERS_DISAGREE_ON_POINTS_AND_RANK'
         WHEN x.distinct_points > 1 THEN 'TEAM_MEMBERS_DISAGREE_ON_POINTS'
@@ -375,7 +375,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-092
     -- Name - EVENT_DISCIPLINE_INCOMPATIBLE_WITH_GENDER
-    -- What it does: Finds active Artistic Gymnastics events, excluding IOC-purpose templates, contested on an apparatus the stage gender does not compete, a male stage on Uneven Bars or Balance Beam or a female stage on Pommel Horse, Rings, Parallel Bars or Horizontal Bar, separating the two directions, with the discipline, the stage gender and template and tournament name context, together with a coverage count of all eligible events held on a single-gender stage and a gender-specific apparatus.
+    -- What it does: Finds events contested on an apparatus the stage gender does not compete: a male stage on Uneven Bars or Balance Beam, or a female stage on Pommel Horse, Rings, Parallel Bars or Horizontal Bar.
     CASE
         WHEN ts.gender = 'male' THEN 'MALE_STAGE_ON_WOMENS_APPARATUS'
         ELSE 'FEMALE_STAGE_ON_MENS_APPARATUS'
@@ -443,7 +443,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-093
     -- Name - EVENT_RESULTS_NO_RESULT_COMMENT_CARRIES_RANK
-    -- What it does: Finds active Artistic Gymnastics event participants, excluding IOC-purpose templates, whose Comment records that the gymnast produced no classified result while a Rank or a Medal is stored beside it, separating a stored rank from a stored medal, with the comment, the contradicting values, the discipline and template and tournament name context, together with a coverage count of all eligible participants carrying one of those comments.
+    -- What it does: Finds participants whose Comment records no classified result while a Rank or a Medal is stored beside it, separating the two.
     CASE
         WHEN med.value IS NOT NULL AND TRIM(med.value) <> '' THEN 'NO_RESULT_COMMENT_WITH_MEDAL'
         ELSE 'NO_RESULT_COMMENT_WITH_RANK'
@@ -516,7 +516,7 @@ ORDER BY sort_order, event_participants_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-094
     -- Name - EVENT_RESULTS_NUMERIC_LEAKED_TO_COMMENT
-    -- What it does: Finds active Artistic Gymnastics event participants, excluding IOC-purpose templates, whose Comment holds a gymnastics score rather than a status code, separating a comma-decimal shape from a dot-decimal one, with the stored value, whether a Points value exists beside it, the discipline and template and tournament name context, together with a coverage count of all eligible participants carrying an active non-empty Comment.
+    -- What it does: Finds participants whose Comment holds a gymnastics score rather than a status code, separating a comma decimal from a dot decimal.
     CASE
         WHEN TRIM(cmt.value) REGEXP '^[0-9]+,[0-9]{1,3}$' THEN 'SCORE_WITH_COMMA_DECIMAL_IN_COMMENT'
         ELSE 'SCORE_WITH_DOT_DECIMAL_IN_COMMENT'
@@ -592,7 +592,7 @@ ORDER BY sort_order, event_participants_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-095
     -- Name - EVENT_VAULT_COMMENT_OUTSIDE_VAULT
-    -- What it does: Finds active Artistic Gymnastics event participants, excluding IOC-purpose templates, whose Comment records that the score was taken from the first vault while the event is contested on an apparatus other than Vault, so a Vault-only marker has been carried onto a discipline that performs one exercise, with the discipline, the stored comment and template and tournament name context, together with a coverage count of all eligible participants carrying that comment on any discipline.
+    -- What it does: Finds participants whose Comment records a score taken from the first vault while the event is contested on an apparatus other than Vault.
     'Vault_Comment_Outside_Vault' AS check_type,
     ep.id AS event_participants_id,
     e.id AS event_id,
@@ -661,7 +661,7 @@ ORDER BY sort_order, event_participants_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-096
     -- Name - EVENT_RESULT_SCALE_CONTRADICTS_DISCIPLINE
-    -- What it does: Finds active finished Artistic Gymnastics All-Around events, excluding IOC-purpose templates, whose Points values sit in the range a single apparatus produces rather than the multi-apparatus total the competition is, separating an Individual All-Around from a Team All-Around, with the median-scale figures, the participant counts and template and tournament name context, together with a coverage count of all eligible All-Around events holding at least five scored participants.
+    -- What it does: Finds finished All-Around events whose Points sit in the range a single apparatus produces rather than the multi-apparatus total the competition is, separating Individual from Team.
     CASE
         WHEN x.discipline_id = 96 THEN 'INDIVIDUAL_ALL_AROUND_ON_SINGLE_APPARATUS_SCALE'
         ELSE 'TEAM_ALL_AROUND_ON_SINGLE_APPARATUS_SCALE'
