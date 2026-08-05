@@ -326,9 +326,16 @@ makes it the only confirmed case of the field the Triathlon record describes as 
 **The two kinds of Comp.Rank statistic divide the work between them, and the split is
 structural.** A statistic without the `(athletes)` suffix ranks `team` participants and holds
 the placing. A statistic with the suffix lists `athlete` and `coach` participants, and every
-one of those rows carries `1429 Team` while **none of them carries a `1270 Rank` row at all** —
+one of those rows carries `1429 Team` while **all but one carries no `1270 Rank` row at all** —
 not an empty rank, no row. So the athlete statistic records who was in the squad, and the team
 statistic records where the squad finished.
+
+The single exception is measured rather than assumed, and is worth naming because the earlier
+record of this file claimed there was none: across the whole sport on 2026-08-05, one athlete
+row carries a Rank, in statistic `305482` under template `296 World Championship U20 1`. That
+template is outside the client scope, so a narrowed run never meets it. It is a stray value
+rather than a second way of storing a placing — one row against fourteen thousand — but the
+rule stated here is a strong majority, not an absolute.
 
 This is a state of the data rather than a limit of the schema: `1270 Rank` is a field of this
 layer and the team statistics use it, so a squad list that began carrying a placing would be
@@ -377,6 +384,15 @@ field any competition in scope has entered so far is 32, and the World Champions
 48 from 2026, which the scope already reaches. `RANK_MAX_PLAUSIBLE` is recorded as the ceiling
 the sport can legitimately award rather than the largest value stored today, so the expansion
 arrives as competition rather than as a defect report.
+
+**That ceiling is a judgement about the client's 28 templates and does not hold across the
+sport.** Outside them the Nations League ranks every UEFA federation in one Comp.Rank statistic
+and reaches 51 — measured on 2026-08-05 in statistic `201308` under template `10457`, where
+Armenia, the Faroe Islands and Moldova hold 51, 50 and 49. Those are correct placings, so any
+Comp.Rank check keyed on `RANK_MAX_PLAUSIBLE` must be run with `-TemplateIds`; run sport-wide
+it reports a legitimate final ranking as an outlier. The parameter is right for the scope it
+was recorded for and wrong for the sport, which is a property of the client boundary rather
+than of the value.
 
 **An empty `1277 Medal` value is a written state, not an unwritten field.** Read against the
 `1270 Rank` beside it, `gold`, `silver` and `bronze` accompany the first three places while the
@@ -439,8 +455,17 @@ begun is a normal outcome in this one.
   one leg of a tie decided on aggregate, which is played inside a knockout round and marked by
   the `BestOf` event property. `Soccer-DQ-022` is the rule with both exclusions applied.
 - The pairing is the classification. There is no event-level rank and no `Winner` event
-  property; the outcome is stored on the result as `549 finaloutcome`, carrying `won` and
-  `lost`, and is additionally derivable from the two `finalresult` values.
+  property, and for all but a fraction of matches there is no stored outcome either: the
+  winner is read from the two `finalresult` values and nothing else records it.
+- **`549 finaloutcome` is a field of the two-legged tie, not of the match.** Measured on
+  2026-08-05 across the scope, it sits on about one match in a hundred, and every match
+  carrying it carries all three markers of an aggregate tie beside it — `550 overallscore`,
+  the `BestOf` event property and a `351 aggregate_score` scope container — without a single
+  exception. It records which side won the tie, so it must be read against `550`, never
+  against `4 finalresult`: on a good third of those matches the side marked `won` lost the leg
+  it is stored on, or the leg was drawn, and both are the tie being decided somewhere else.
+  Read against `550` no side marked `won` holds the lower aggregate, and where the aggregate
+  is level the tie was settled by away goals or by a shootout.
 - A match official takes part through an event property of type `ref:participant`, never
   through an event participant row, a lineup place or a statistic.
 - The same two participants never meet twice on one calendar day, which is what
