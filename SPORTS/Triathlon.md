@@ -264,8 +264,15 @@ Comment, `1277` Medal, `1426` Time, `1427` Time Difference, `1429` Team. Active
 `statistic_config` field types: `1463` Start date, `1464` End date, `1470` Gender, `1471`
 Event id.
 
-`1272 Duration` is the deprecated time field and still carries active values for the sport,
-in parallel with the current `1426 Time` and `1427 Time Difference`.
+`1272 Duration` is the deprecated time field and still carries active values, in parallel with
+the current `1426 Time` and `1427 Time Difference` — **but every one of them sits under an
+IOC-purpose template.** Outside those templates the field has never been written. Because a
+statistics statement excludes IOC-purpose templates by contract, `Triathlon-DQ-029` audits a
+healthy population of statistics and can never find a use of the field inside it. Its zero is
+the second kind `POWERBI.md` describes: a correct scope over a population that is legitimately
+empty, not a misdirected one. The same reading applies to BMX `1271 Points`, Curling `1271
+Points` and `1273 Comment`, and Artistic Gymnastics `1278 Qualification rank`, each recorded
+in its own sport file.
 
 `1271 Points` and `1429 Team` are used by a small minority of statistics only. `1429 Team`
 holds a participant ID, consistent with the team event participation confirmed above.
