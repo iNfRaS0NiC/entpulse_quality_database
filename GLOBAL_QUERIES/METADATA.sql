@@ -32,6 +32,7 @@ FROM (
      AND tt.del = 'no'
     WHERE pr.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 
     UNION ALL
 
@@ -55,6 +56,7 @@ FROM (
      AND tt.del = 'no'
     WHERE pr.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 
     UNION ALL
 
@@ -75,6 +77,7 @@ FROM (
      AND tt.del = 'no'
     WHERE pr.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 
     UNION ALL
 
@@ -107,6 +110,7 @@ FROM (
      AND tt.del = 'no'
     WHERE pr.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 ) AS x
 GROUP BY
     x.owner_object,

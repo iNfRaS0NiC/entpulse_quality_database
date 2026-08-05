@@ -20,9 +20,7 @@ correction is required.
   the sport. The registry, property, `object_relation`, `object_discipline` and statistic
   layers were confirmed sport-wide, because the discovery statements that read them carry no
   template relation to narrow on. Each area's row below records which of the two it is.
-  Properties are covered for the `event` owner only, measured inside the scope by a statement
-  written for the purpose after `GLOBAL-DISCOVERY-011` proved unable to complete against the
-  whole sport; the `tournament_stage` and `participant` owners remain `Not checked`.
+  Properties are covered for every owner, inside the scope.
 
 ## Scope
 
@@ -74,7 +72,7 @@ below the sport's own population is the scope working, not a misdirected scope.
 | Incidents | Used | `GLOBAL-DISCOVERY-008` (scope) |
 | Lineups | Used | `GLOBAL-DISCOVERY-005` (scope) |
 | Scope layer | Used | `GLOBAL-DISCOVERY-009` (scope), `-010` (sport-wide) |
-| Properties | Used for the `event` owner (scope); other owners `Not checked` | `GLOBAL-DISCOVERY-011` failed on server temporary storage and is not narrowable; the event owner was measured separately |
+| Properties | Used | `GLOBAL-DISCOVERY-011` (scope), after it gained the template filter its branches always supported |
 | object_relation | Used | `GLOBAL-DISCOVERY-012` (sport-wide) |
 | object_discipline | Used | `GLOBAL-DISCOVERY-013` (sport-wide) |
 | Statistics | Used | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-028` (sport-wide) |
@@ -187,10 +185,10 @@ not maintain, and a check written for aggregate ties reads one Curling does not.
 
 ## Properties
 
-`GLOBAL-DISCOVERY-011` reads every property owner at once, carries no template filter, and
-against the whole sport exhausts the server's temporary storage rather than returning a
-result. The **event** owner was therefore measured on its own, inside the scope, and is
-documented here; `tournament_stage` and `participant` owners remain `Not checked`.
+`GLOBAL-DISCOVERY-011` reads every property owner at once and against the whole sport
+exhausts the server's temporary storage rather than returning a result. All four of its
+branches reach `tournament_template`, so the statement now carries the standard template
+filter and returns the whole layer for the scope in about a second.
 
 Events carry a wide property vocabulary. `Round` and `Live` sit on every event in scope.
 Timing marks record the passage of the match — game and half start and end, and the same set
@@ -210,6 +208,17 @@ of type `ref:participant` carry `refereeFK`, `assistant1_refereeFK`, `assistant2
 a fourth way of taking part in the sport, alongside the event participant row, the lineup place
 and the Comp.Rank statistic, and no approved check reads it. It is why the registry's
 `official` role appears to take no part in the sport when measured through the other three.
+
+Tournament stages carry `Cup`, `International`, `Live`, `Ranking` and `youth` across the whole
+scope, plus `Note` and `StatusComment` as free operational text and a sparse `reserve`.
+
+Participants carry `IsNationalTeam` and `ToBeDecided` on every team in scope, and `HomePage`
+and `home_shirt_color_1` on a few. **`IsNationalTeam` is where the club and national-team
+distinction is stored.** The scope deliberately mixes the two, and this property separates them
+structurally rather than by reading a template name, so a check needing one kind of entity has
+somewhere to look.
+
+The `tournament` owner carries no properties anywhere in the scope.
 
 <!-- MANUAL PASTE ZONE: 1 PROPERTIES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -322,9 +331,6 @@ Tournament stage names follow their competition, in the forms `World Cup grp. #`
 - **Which participant role is authoritative when the registry and `participant.type`
   disagree?** Until this is settled, a person-role check cannot be written without choosing a
   field arbitrarily.
-- **What do the `tournament_stage` and `participant` property owners hold?** The event owner
-  was measured separately once `GLOBAL-DISCOVERY-011` proved unable to complete, and the same
-  can be done for the other two. Until then the statement stays unusable for this sport.
 - **Should the referee properties be treated as a fourth participation path?** They are how
   match officials take part, and no approved check reads them. A participation check that
   counts the three known mechanisms describes officials as taking no part in the sport.
