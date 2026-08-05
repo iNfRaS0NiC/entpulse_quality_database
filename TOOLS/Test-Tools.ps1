@@ -555,6 +555,65 @@ Test-That 'a projection naming the template id is not mistaken for a filter' {
     Assert-True ($out.Sql -match 'tt\.id AS tournament_template_id') 'the projection should survive intact'
 }
 
+Test-That 'a marked registry branch is dropped and the rest of the statement survives' {
+    $sql = @"
+FROM (
+    SELECT ep.participantFK FROM event_participants ep
+    -- REGISTRY BRANCH BEGIN
+    UNION ALL
+
+    SELECT op.participantFK
+    FROM object_participants op
+    WHERE op.object = 'sport'
+    -- REGISTRY BRANCH END
+) u
+"@
+    $out = Remove-RegistryBranch -Text $sql
+
+    Assert-Equal 1 $out.Removed 'one branch should be removed'
+    Assert-True ($out.Sql -notmatch 'object_participants') 'the registry branch should be gone'
+    Assert-True ($out.Sql -notmatch 'UNION ALL') 'the UNION ALL joining it should go with it'
+    Assert-True ($out.Sql -match 'event_participants') 'the surviving branch should be untouched'
+    Assert-True ($out.Sql -match '\) u') 'the derived table should still close'
+}
+
+Test-That 'both branches of one statement are dropped together' {
+    # The findings branch and the coverage branch must lose the registry at the same time, or
+    # eligible_count would be counted over a population the findings never saw.
+    $one = "    -- REGISTRY BRANCH BEGIN`n    UNION ALL`n    SELECT 1`n    -- REGISTRY BRANCH END`n"
+    $out = Remove-RegistryBranch -Text ("A`n" + $one + "B`n" + $one + "C`n")
+
+    Assert-Equal 2 $out.Removed 'both branches should be removed'
+    Assert-Equal "A`nB`nC`n" $out.Sql 'only the marked blocks should go'
+}
+
+Test-That 'a statement marking no registry branch reports nothing to drop' {
+    # GLOBAL-DQ-009 is the standing case: the registry is its audited population, so it marks
+    # no branch and the caller stops rather than leaving it with nothing to audit.
+    $sql = "SELECT op.participantFK FROM object_participants op WHERE op.object = 'sport'"
+    $out = Remove-RegistryBranch -Text $sql
+
+    Assert-Equal 0 $out.Removed 'nothing should be removed'
+    Assert-Equal $sql $out.Sql 'the statement should be returned untouched'
+}
+
+Test-That 'GLOBAL-DQ-007 marks its registry branch and GLOBAL-DQ-009 does not' {
+    # The whole mechanism rests on which statement carries the pair, so it is asserted against
+    # the real file rather than a fixture.
+    $file = Join-Path $RealRepoRoot 'GLOBAL_DQ\PARTICIPANTS.sql'
+    $text = Get-Content -LiteralPath $file -Raw
+    $statements = $text -split '(?m)^-- ={10,}\s*$'
+
+    $seven = @($statements | Where-Object { $_ -match 'CheckID - GLOBAL-DQ-007\b' })
+    $nine = @($statements | Where-Object { $_ -match 'CheckID - GLOBAL-DQ-009\b' })
+    Assert-Equal 1 $seven.Count 'GLOBAL-DQ-007 should be found once'
+    Assert-Equal 1 $nine.Count 'GLOBAL-DQ-009 should be found once'
+
+    Assert-Equal 2 (Remove-RegistryBranch -Text $seven[0]).Removed 'GLOBAL-DQ-007 marks both its branches'
+    Assert-Equal 0 (Remove-RegistryBranch -Text $nine[0]).Removed 'GLOBAL-DQ-009 marks none'
+    Assert-True ($nine[0] -match 'object_participants') 'GLOBAL-DQ-009 still reads the registry'
+}
+
 Test-That 'an already active filter is not activated twice' {
     $sql = "  -- AND tt.id = <tournament_template_id>"
     $once = Enable-TemplateFilter -Text $sql -TemplateIds @(44)

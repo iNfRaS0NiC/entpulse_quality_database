@@ -20,8 +20,9 @@ correction is required.
   the sport. The registry, property, `object_relation`, `object_discipline` and statistic
   layers were confirmed sport-wide, because the discovery statements that read them carry no
   template relation to narrow on. Each area's row below records which of the two it is.
-  Properties are `Not checked`: `GLOBAL-DISCOVERY-011` exhausted the server's temporary
-  storage against the whole sport and carries no template filter that would narrow it.
+  Properties are covered for the `event` owner only, measured inside the scope by a statement
+  written for the purpose after `GLOBAL-DISCOVERY-011` proved unable to complete against the
+  whole sport; the `tournament_stage` and `participant` owners remain `Not checked`.
 
 ## Scope
 
@@ -73,7 +74,7 @@ below the sport's own population is the scope working, not a misdirected scope.
 | Incidents | Used | `GLOBAL-DISCOVERY-008` (scope) |
 | Lineups | Used | `GLOBAL-DISCOVERY-005` (scope) |
 | Scope layer | Used | `GLOBAL-DISCOVERY-009` (scope), `-010` (sport-wide) |
-| Properties | Not checked | `GLOBAL-DISCOVERY-011` failed on server temporary storage; not narrowable |
+| Properties | Used for the `event` owner (scope); other owners `Not checked` | `GLOBAL-DISCOVERY-011` failed on server temporary storage and is not narrowable; the event owner was measured separately |
 | object_relation | Used | `GLOBAL-DISCOVERY-012` (sport-wide) |
 | object_discipline | Used | `GLOBAL-DISCOVERY-013` (sport-wide) |
 | Statistics | Used | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-028` (sport-wide) |
@@ -186,10 +187,29 @@ not maintain, and a check written for aggregate ties reads one Curling does not.
 
 ## Properties
 
-`Not checked`. `GLOBAL-DISCOVERY-011` is the only discovery statement that reads the property
-layer, it carries no template filter, and run across the whole sport it exhausts the server's
-temporary storage rather than returning a result. This is an absence of evidence, not evidence
-of absence: nothing here says Soccer stores no properties.
+`GLOBAL-DISCOVERY-011` reads every property owner at once, carries no template filter, and
+against the whole sport exhausts the server's temporary storage rather than returning a
+result. The **event** owner was therefore measured on its own, inside the scope, and is
+documented here; `tournament_stage` and `participant` owners remain `Not checked`.
+
+Events carry a wide property vocabulary. `Round` and `Live` sit on every event in scope.
+Timing marks record the passage of the match — game and half start and end, and the same set
+again for extra time. Match context arrives as `Spectators`, `VenueName`, `VenueNeutral`,
+`ElapsedTime`, `BestOf` and `BestOfNum` for a tie played over two legs, and `medal_related`.
+Production state is carried by `Verified`, `LineupConfirmed`, `Commentary`, `LiveStatsType`,
+`LiveStatsPlus` and `SuperLive`.
+
+**There is no `Winner` property.** Measured across every property name the scope uses, the
+sport records no winning side on the event at all: the outcome lives on the result, as
+`549 finaloutcome`. A check reading a `Winner` event property therefore reads a structure this
+sport does not write, while the information it looks for is present one layer away.
+
+**Match officials reach an event through properties, not through participation.** Properties
+of type `ref:participant` carry `refereeFK`, `assistant1_refereeFK`, `assistant2_refereeFK`,
+`fourth_refereeFK`, `var1_refereeFK` and `var2_refereeFK`, each naming a `participant`. This is
+a fourth way of taking part in the sport, alongside the event participant row, the lineup place
+and the Comp.Rank statistic, and no approved check reads it. It is why the registry's
+`official` role appears to take no part in the sport when measured through the other three.
 
 <!-- MANUAL PASTE ZONE: 1 PROPERTIES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -280,8 +300,11 @@ Tournament stage names follow their competition, in the forms `World Cup grp. #`
   absent and contributes nothing. `5 halftime` is not a term in it: it is a snapshot taken
   during ordinary time, not a stage that adds to the total. Any check comparing one score type
   against another must use this relation rather than assume each type is an independent value.
-- The pairing is the classification. There is no event-level rank, and the winner is derivable
-  from the two `finalresult` values rather than stored as a named side.
+- The pairing is the classification. There is no event-level rank and no `Winner` event
+  property; the outcome is stored on the result as `549 finaloutcome`, carrying `won` and
+  `lost`, and is additionally derivable from the two `finalresult` values.
+- A match official takes part through an event property of type `ref:participant`, never
+  through an event participant row, a lineup place or a statistic.
 - A tie played over two legs is assembled in the scope layer under `351 aggregate_score`, with
   the second leg reached through `event_scope_detail.ref_eventFK`.
 - A cancelled incident is a distinct incident type, not a flag on the original.
@@ -299,9 +322,12 @@ Tournament stage names follow their competition, in the forms `World Cup grp. #`
 - **Which participant role is authoritative when the registry and `participant.type`
   disagree?** Until this is settled, a person-role check cannot be written without choosing a
   field arbitrarily.
-- **What does the property layer hold?** `GLOBAL-DISCOVERY-011` cannot complete against the
-  whole sport and cannot be narrowed. Either the statement gains a template relation or the
-  layer stays unverified.
+- **What do the `tournament_stage` and `participant` property owners hold?** The event owner
+  was measured separately once `GLOBAL-DISCOVERY-011` proved unable to complete, and the same
+  can be done for the other two. Until then the statement stays unusable for this sport.
+- **Should the referee properties be treated as a fourth participation path?** They are how
+  match officials take part, and no approved check reads them. A participation check that
+  counts the three known mechanisms describes officials as taking no part in the sport.
 - **Do the sport-wide areas need re-confirming inside the scope?** The registry, statistic,
   relation and discipline findings describe all of Soccer. Where a check narrows to the client
   scope but its structural evidence was taken sport-wide, the two are not the same population.

@@ -142,6 +142,7 @@ the account in use. The summary:
 | `-Format table\|csv\|json\|xlsx` | Output shape |
 | `-DryRun` | Print the SQL, or the batch selection, and send nothing |
 | `-TemplateIds 44,50,65` | Narrow the run to these tournament templates |
+| `-WithoutRegistryBranch` | Drop the optional sport-registry branch where a statement marks one |
 | `-Sql "SELECT ..."` / `-File .\q.sql` | Ad-hoc statement |
 | `-Relogin` | Discard the cached cookie and authenticate again |
 
@@ -201,6 +202,34 @@ what it is: sport-wide.
 
 Narrowing happens after `{{...}}` expansion, so a filter may sit beside a placeholder in the
 same `WHERE` clause. Applying the flag twice is a no-op: the second pass finds no marker left.
+
+### Dropping the registry branch
+
+`-TemplateIds` cannot narrow what has no template relation, and the sport registry has none. A
+statement that reaches people through the registry **as well as** through the participation
+paths therefore stays sport-wide in that one branch however tightly the rest is narrowed —
+`GLOBAL-DQ-007` is the case, and a narrowed run of it would still audit every person
+registered to the sport.
+
+`-WithoutRegistryBranch` removes that branch where the statement marks it optional:
+
+```powershell
+.\TOOLS\Run-Query.ps1 GLOBAL-DQ-007 -Sport Soccer -TemplateIds 44,50,65 -WithoutRegistryBranch
+```
+
+The two flags are meant to be used together. Apart, the first narrows everything except the
+registry and the second removes the registry without narrowing anything else.
+
+A statement marks the branch by bracketing it with `-- REGISTRY BRANCH BEGIN` and
+`-- REGISTRY BRANCH END`, and both the findings branch and the coverage branch must be marked
+so they lose the registry together — otherwise `eligible_count` would be counted over a
+population the findings never saw. `GLOBAL_DQ/README.md` owns that contract.
+
+**A statement marking no branch is skipped, not run.** For it the registry is not one source
+among several but the audited population itself, and removing it would leave nothing to audit.
+`GLOBAL-DQ-009` is the standing example: its whole subject is people the registry knows and no
+participation path reaches. It appears as `SKIPPED: registry-bound` in the Overview, and a
+single one stops with an error.
 
 ### Opening a new sport
 

@@ -75,6 +75,7 @@ FROM (
           AND tt.sportFK = {{SPORT_ID}}
           -- AND tt.id = <tournament_template_id>
 
+        -- REGISTRY BRANCH BEGIN
         UNION ALL
 
         SELECT op.participantFK, 0, 0, 0
@@ -82,6 +83,7 @@ FROM (
         WHERE op.object = 'sport'
           AND op.objectFK = {{SPORT_ID}}
           AND op.del = 'no'
+        -- REGISTRY BRANCH END
     ) u
     JOIN participant p ON p.id = u.participant_id AND p.del = 'no'
     WHERE p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
@@ -143,6 +145,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       -- AND tt.id = <tournament_template_id>
 
+    -- REGISTRY BRANCH BEGIN
     UNION ALL
 
     SELECT op.participantFK
@@ -150,6 +153,7 @@ FROM (
     WHERE op.object = 'sport'
       AND op.objectFK = {{SPORT_ID}}
       AND op.del = 'no'
+    -- REGISTRY BRANCH END
 ) y
 JOIN participant p ON p.id = y.participant_id AND p.del = 'no'
 WHERE p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})

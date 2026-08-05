@@ -96,6 +96,39 @@ Every value is a confirmed structural fact recorded in the sport's file before i
 `SPORTS/params.json`. A parameter that is not yet confirmed for a sport means the template
 cannot be instantiated for it yet — not that a plausible value may be guessed.
 
+## Optional registry branch
+
+A template that reaches people through the sport registry **as well as** through the
+participation paths marks the registry branch optional, by bracketing it exactly:
+
+```sql
+        -- REGISTRY BRANCH BEGIN
+        UNION ALL
+
+        SELECT op.participantFK, 0, 0, 0
+        FROM object_participants op
+        WHERE op.object = 'sport'
+          AND op.objectFK = {{SPORT_ID}}
+          AND op.del = 'no'
+        -- REGISTRY BRANCH END
+```
+
+`TOOLS/Run-Query.ps1 -WithoutRegistryBranch` removes every marked block, and the run is
+refused where a template marks none.
+
+The marker exists because the registry has no template relation and so survives every scope
+narrowing. Where a sport's client scope is narrower than the sport — `SPORTS/Soccer.md` is the
+confirmed case — a narrowed run of an unmarked template would still audit every person
+registered, which is the wrong population reported as the right one.
+
+Two rules bind it:
+
+- **mark both branches or neither.** The findings branch and the coverage branch must lose the
+  registry together, or `eligible_count` is counted over a population the findings never saw;
+- **mark nothing where the registry is the audited population.** `GLOBAL-DQ-009` audits people
+  the registry knows and no path reaches, so dropping its registry branch would leave it with
+  nothing to audit. It marks no branch, and the runner therefore refuses to strip it.
+
 ## Sport parameter file
 
 `SPORTS/params.json` maps a sport slug to its confirmed values:

@@ -361,7 +361,7 @@
     "RESULT_MEDAL_TYPE_ID": 501,
     "RESULT_FINAL_SCORE_TYPE_ID": 4,
     "RESULT_MIRROR_SCORE_TYPE_ID": 6,
-    "NUMERIC_RESULT_TYPE_LIST": "4, 6",
+    "NUMERIC_RESULT_TYPE_LIST": "1, 2, 3, 4, 5, 6, 550",
     "SCOPE_TYPE_ID": 351,
     "SCOPE_TYPE_LIST": "351",
     "FINAL_ROUND_TYPE_LIST": "9",
@@ -392,9 +392,9 @@
       "SCOPE_PERIOD_DATA_TYPE_LIST": "the scope layer holds the aggregate of a two-legged tie rather than competition periods, so there is no period set to list",
       "SCOPE_PERIOD_SENTINEL_LIST": "the scope layer holds no periods, so it has no vocabulary for a period that was not played",
       "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "extra time is a result type of its own rather than a scope period, so the scope layer stores no column for one",
-      "WINNER_VALUE_LIST": "the sport records no Winner event property; the winner is derivable from the two Final Result values but is not stored",
-      "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property; the winner is derivable from the two Final Result values but is not stored",
-      "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the winner is derivable from the two Final Result values but is not stored"
+      "WINNER_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event. Result type 549 Final Outcome carries won and lost per event participant, and the event property layer - measured across every property name the scope uses - contains no Winner property for GLOBAL-DQ-087 to read. The vocabulary exists, it simply does not live where that check looks",
+      "WINNER_HOME_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write",
+      "WINNER_AWAY_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write"
     }
   }
 }

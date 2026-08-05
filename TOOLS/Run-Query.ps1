@@ -114,6 +114,14 @@ param(
     # wide, because a silently unnarrowed result would be read as the narrow one.
     [int[]]$TemplateIds,
 
+    # Drops the sport-registry branch from a statement that marks one as optional, so the
+    # audited people are only those the three participation paths reach. The registry has no
+    # template relation and so survives -TemplateIds untouched; without this a narrowed run of
+    # such a statement still audits every person registered to the sport. A statement with no
+    # marked branch is skipped, because for it the registry is the population rather than one
+    # source among several.
+    [switch]$WithoutRegistryBranch,
+
     [ValidateSet('table', 'json', 'csv', 'xlsx')]
     [string]$Format = 'table',
 
@@ -704,6 +712,22 @@ function Enable-TemplateFilter {
         })
 
     return [pscustomobject]@{ Sql = $activated; Activated = $found.Count }
+}
+
+# A branch a statement declares optional. Only a statement that reads the registry as one
+# source beside others carries the pair; one whose audited population is the registry itself
+# does not, which is what makes dropping it refusable rather than silently destructive.
+$RegistryBranchMarker =
+'(?ms)^[ \t]*--[ \t]*REGISTRY BRANCH BEGIN[ \t]*\r?\n.*?^[ \t]*--[ \t]*REGISTRY BRANCH END[ \t]*\r?\n'
+
+function Remove-RegistryBranch {
+    # Removes every marked branch and reports how many it found.
+    param([string]$Text)
+
+    $found = [regex]::Matches($Text, $RegistryBranchMarker)
+    $stripped = [regex]::Replace($Text, $RegistryBranchMarker, '')
+
+    return [pscustomobject]@{ Sql = $stripped; Removed = $found.Count }
 }
 
 function Expand-Placeholders {
@@ -2288,12 +2312,33 @@ foreach ($job in $jobs) {
         $job.Sql = $narrowed.Sql
     }
 
+    if ($WithoutRegistryBranch) {
+        $trimmed = Remove-RegistryBranch -Text $job.Sql
+        if ($trimmed.Removed -eq 0) {
+            if ($jobs.Count -eq 1) {
+                throw ("$($job.CheckId) marks no optional registry branch, so " +
+                    '-WithoutRegistryBranch cannot drop one. Either it never reads the ' +
+                    'registry, or the registry is its audited population and removing it ' +
+                    'would leave the statement with nothing to audit.')
+            }
+            $skipped += [pscustomobject]@{
+                Job     = $job
+                Missing = ''
+                Kind    = 'NO_REGISTRY_BRANCH'
+                Reason  = 'marks no optional registry branch to drop'
+            }
+            continue
+        }
+        $job.Sql = $trimmed.Sql
+    }
+
     $runnable += $job
 }
 
 if ($skipped.Count -gt 0) {
     $impossible = @($skipped | Where-Object { $_.Kind -eq 'NOT_APPLICABLE' })
     $unnarrowable = @($skipped | Where-Object { $_.Kind -eq 'NO_TEMPLATE_FILTER' })
+    $registryBound = @($skipped | Where-Object { $_.Kind -eq 'NO_REGISTRY_BRANCH' })
     $unselected = @($skipped | Where-Object { $_.Kind -eq 'NEEDS_SELECTION' })
 
     Write-Host "Skipping $($skipped.Count) statement(s):" -ForegroundColor DarkGray
@@ -2305,6 +2350,10 @@ if ($skipped.Count -gt 0) {
     if ($unnarrowable.Count -gt 0) {
         Write-Host "  cannot be narrowed to -TemplateIds ($($unnarrowable.Count)):" -ForegroundColor DarkGray
         $unnarrowable | ForEach-Object { "    {0}  {1}" -f $_.Job.CheckId, $_.Reason } | Write-Host -ForegroundColor DarkGray
+    }
+    if ($registryBound.Count -gt 0) {
+        Write-Host "  cannot drop a registry branch ($($registryBound.Count)):" -ForegroundColor DarkGray
+        $registryBound | ForEach-Object { "    {0}  {1}" -f $_.Job.CheckId, $_.Reason } | Write-Host -ForegroundColor DarkGray
     }
     if ($unselected.Count -gt 0) {
         Write-Host "  needs a value selected from a summary result ($($unselected.Count)):" -ForegroundColor DarkGray
@@ -2438,9 +2487,10 @@ if ($isBatch) {
     # like it covered the whole catalogue.
     foreach ($item in $skipped) {
         $skipStatus = switch ($item.Kind) {
-            'NOT_APPLICABLE'     { "SKIPPED: not applicable - $($item.Reason)" }
-            'NO_TEMPLATE_FILTER' { "SKIPPED: not narrowable - $($item.Reason)" }
-            default              { "SKIPPED: needs $($item.Missing)" }
+            'NOT_APPLICABLE'      { "SKIPPED: not applicable - $($item.Reason)" }
+            'NO_TEMPLATE_FILTER'  { "SKIPPED: not narrowable - $($item.Reason)" }
+            'NO_REGISTRY_BRANCH'  { "SKIPPED: registry-bound - $($item.Reason)" }
+            default               { "SKIPPED: needs $($item.Missing)" }
         }
         $summary += New-RunSummaryRow -Job $item.Job -Rows 0 -Seconds 0 -Status $skipStatus
     }
