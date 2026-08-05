@@ -156,6 +156,7 @@ FROM (
      AND tt.del = 'no'
     WHERE orl.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 
     UNION ALL
 
@@ -170,6 +171,7 @@ FROM (
      AND tt.del = 'no'
     WHERE orl.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 
     UNION ALL
 
@@ -187,6 +189,7 @@ FROM (
      AND tt.del = 'no'
     WHERE orl.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 
     UNION ALL
 
@@ -207,6 +210,7 @@ FROM (
      AND tt.del = 'no'
     WHERE orl.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 
     UNION ALL
 
@@ -225,6 +229,7 @@ FROM (
      AND tt.del = 'no'
     WHERE orl.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 ) AS x
 GROUP BY
     x.object_type_id,
@@ -271,6 +276,7 @@ FROM (
      AND d.del = 'no'
     WHERE od.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 
     UNION ALL
 
@@ -297,6 +303,7 @@ FROM (
      AND d.del = 'no'
     WHERE od.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 ) AS x
 GROUP BY
     x.owner_object,

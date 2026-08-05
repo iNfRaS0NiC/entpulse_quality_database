@@ -17,10 +17,11 @@ correction is required.
   Everything below that concerns the competition hierarchy, event participants, results,
   incidents, lineups, round types, disciplines and the scope layer was confirmed over the
   28 tournament templates named under Scope below, and describes those templates rather than
-  the sport. The registry, property, `object_relation`, `object_discipline` and statistic
-  layers were confirmed sport-wide, because the discovery statements that read them carry no
-  template relation to narrow on. Each area's row below records which of the two it is.
-  Properties are covered for every owner, inside the scope.
+  the sport. Only the registry and the statistic layers remain confirmed sport-wide: the
+  registry has no template relation at all, and the statistic discovery statements reach the
+  template through a disjunction over six owner types that a single filter cannot narrow
+  correctly. Every other area, properties included, was measured inside the scope. Each area's
+  row below records which of the two it is.
 
 ## Scope
 
@@ -71,10 +72,10 @@ below the sport's own population is the scope working, not a misdirected scope.
 | Event results | Used | `GLOBAL-DISCOVERY-007`, `-026` (scope) |
 | Incidents | Used | `GLOBAL-DISCOVERY-008` (scope) |
 | Lineups | Used | `GLOBAL-DISCOVERY-005` (scope) |
-| Scope layer | Used | `GLOBAL-DISCOVERY-009` (scope), `-010` (sport-wide) |
+| Scope layer | Used | `GLOBAL-DISCOVERY-009`, `-010` (scope) |
 | Properties | Used | `GLOBAL-DISCOVERY-011` (scope), after it gained the template filter its branches always supported |
-| object_relation | Used | `GLOBAL-DISCOVERY-012` (sport-wide) |
-| object_discipline | Used | `GLOBAL-DISCOVERY-013` (sport-wide) |
+| object_relation | Used | `GLOBAL-DISCOVERY-012` (scope) |
+| object_discipline | Used | `GLOBAL-DISCOVERY-013` (scope) |
 | Statistics | Used | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-028` (sport-wide) |
 | Reference values | Used | `GLOBAL-DISCOVERY-030`, `-031` (sport-wide) |
 | Other tables | Not checked | |
@@ -89,9 +90,16 @@ Core hierarchy through `tournament_template.sportFK=1` → `tournament` → `tou
 `statistic_participants11` → `statistic_data11`, with `statistic_config` for statistic-level
 metadata.
 
-`object_relation` carries the template-to-subset pair `2 → 152`, a template-to-city pair
-`2 → 33`, stage-level host country `4 → 33` and age class `4 → 151`, a stage-to-stage pair
-`4 → 4`, and the statistic-level pairs `83 → 33` and `83 → 151`.
+Inside the scope `object_relation` carries a sport-level pair `1 → 153`, the template-to-subset
+pair `2 → 152`, stage-level host country `4 → 33` and age class `4 → 151`, and the
+statistic-level pairs `83 → 33` and `83 → 151`. A template-to-city pair `2 → 33` and a
+stage-to-stage pair `4 → 4` exist elsewhere in the sport but not under these templates.
+
+The sport-level pair is the one relation in that statement with no template above it, so it
+survives narrowing untouched. That is correct rather than a leak — the relation belongs to the
+sport itself and no template owns it — but it is the same shape as the registry branch of
+`GLOBAL-DQ-007` and is noted here so the difference is a judgement on record rather than an
+oversight.
 
 <!-- MANUAL PASTE ZONE: 1 TABLES AND RELATIONS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -215,6 +223,11 @@ so no check is to read `ref:participant` and none is to be written for it. The c
 must be carried rather than forgotten: a participation check counting the three mechanisms
 reports every registered `official` as taking no part in the sport, and that finding is an
 artefact of the unread fourth path, not a defect in the data.
+
+`REGISTRY_PARTICIPANT_TYPE_LIST` keeps `official` regardless, because the parameter describes
+what the registry holds and the registry does hold that role. The exclusion belongs to this
+client rather than to the database, so it is made per run: a participation check is executed
+with the role removed from the list, and the run records that it was. Decided 2026-08-05.
 
 Tournament stages carry `Cup`, `International`, `Live`, `Ranking` and `youth` across the whole
 scope, plus `Note` and `StatusComment` as free operational text and a sparse `reserve`.
@@ -356,10 +369,10 @@ begun is a normal outcome in this one.
 - **Which participant role is authoritative when the registry and `participant.type`
   disagree?** Until this is settled, a person-role check cannot be written without choosing a
   field arbitrarily.
-- **Should `official` stay in `REGISTRY_PARTICIPANT_TYPE_LIST`?** The referee path is out of
-  scope by decision, so the three mechanisms the checks read will never reach an official and a
-  participation check reports the whole role. Either the role leaves the list for those checks
-  or their output carries the reason permanently.
+- **Do the sport-wide areas need re-confirming inside the scope?** The registry and the
+  statistic findings still describe all of Soccer. The registry has no template relation and
+  never will; the statistic statements could be narrowed only by a filter shaped for their
+  six-way owner disjunction, which does not exist yet.
 - **Do the sport-wide areas need re-confirming inside the scope?** The registry, statistic,
   relation and discipline findings describe all of Soccer. Where a check narrows to the client
   scope but its structural evidence was taken sport-wide, the two are not the same population.

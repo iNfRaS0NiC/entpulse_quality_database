@@ -163,6 +163,7 @@ FROM (
       ON sdt.id = sr.scope_data_typeFK
     WHERE sr.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 
     UNION ALL
 
@@ -197,6 +198,7 @@ FROM (
       ON sdt.id = lsr.scope_data_typeFK
     WHERE lsr.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 
     UNION ALL
 
@@ -229,6 +231,7 @@ FROM (
       ON st.id = es.scope_typeFK
     WHERE esd.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      -- AND tt.id = <tournament_template_id>
 ) AS x
 GROUP BY
     x.storage_layer,
