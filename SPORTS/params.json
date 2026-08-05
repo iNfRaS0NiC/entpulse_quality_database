@@ -398,6 +398,20 @@
       "WINNER_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event. Result type 549 Final Outcome carries won and lost per event participant, and the event property layer - measured across every property name the scope uses - contains no Winner property for GLOBAL-DQ-087 to read. The vocabulary exists, it simply does not live where that check looks",
       "WINNER_HOME_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write",
       "WINNER_AWAY_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write"
+    },
+    "_checkSignal": {
+      "GLOBAL-DQ-068": {
+        "signal": "Monitor",
+        "reason": "The two sides of a Soccer match name their substitutes independently, so a lineup one or two members shorter than its opponent's is the competition's own arrangement rather than an incomplete entry. The check measures each event against itself and therefore reports a large share of the scope, which makes its output a proportion rather than a defect per event. SPORTS/Soccer.md owns the reasoning."
+      },
+      "GLOBAL-DQ-065": {
+        "signal": "Monitor",
+        "reason": "Squads entered in one competition do not field an identical number of athletes through the Comp.Rank Team field, so the check reports most of the statistics eligible for it. The proportion is the finding; a single uneven statistic is not a defect. It is the statistic-layer twin of GLOBAL-DQ-068 and is monitored for the same reason. SPORTS/Soccer.md owns the reasoning."
+      },
+      "GLOBAL-DQ-090": {
+        "signal": "Monitor",
+        "reason": "The check reads every event participant holding either of the mirrored score types and does not narrow to events that have been played, so its output is dominated by fixtures still to come - European Championship 2028 semi-finals carrying placeholder participants such as Winner SF 1, with a running score written and no final result yet. A mirrored pair that stopped being written for a finished match is the defect this check exists for and remains worth reading; the unplayed majority is the calendar. SPORTS/Soccer.md owns the reasoning."
+      }
     }
   }
 }

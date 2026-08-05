@@ -126,6 +126,13 @@ Lineups are this sport's membership mechanism and are richly typed: `Goalkeeper`
 `Midfield`, `Forward`, `Substitute player`, `Starter` and `Coach` all attach members to a
 `team` event participant. Members are of type `athlete` and of type `coach`.
 
+**The two sides of a match do not field equal lineups, and are not expected to.** Each side
+names its own substitutes, so one team's lineup is routinely a member or two shorter than its
+opponent's inside the same event. `GLOBAL-DQ-068` measures exactly that and therefore reports a
+large share of the scope; its finding is the proportion, not the event. The Comp.Rank layer
+behaves the same way for squads entered in one competition, which is why `GLOBAL-DQ-065` is
+monitored on the same reasoning. Both are signalled `Monitor` in `SPORTS/params.json`.
+
 **Coaches occupy playing lineup types.** `coach` members appear under `Substitute player` and
 `Midfield`, not only under the `Coach` lineup type. A check that infers a person's role from
 the lineup type they occupy will therefore be wrong for this sport, and a check that infers it
@@ -146,6 +153,14 @@ from `participant.type` disagrees with the registry as described above.
 | `medal` | 501 | Medal code | Medal awarded to the participant | `GLOBAL-DISCOVERY-007` |
 | `finaloutcome` | 549 | Text | Won or lost, as a word | `GLOBAL-DISCOVERY-007` |
 | `overallscore` | 550 | Numeric | Score across both legs of a tie | `GLOBAL-DISCOVERY-007` |
+
+**The mirrored pair is written before the match is played.** A fixture that has not happened
+yet already carries `6 runningscore` with no `4 finalresult` beside it — the scope reaches the
+2028 European Championship, whose semi-finals stand with placeholder participants named
+`Winner SF 1` and `Winner SF 2`. `GLOBAL-DQ-090` reads both types without narrowing to played
+events, so its output is dominated by the calendar rather than by defects, and it is signalled
+`Monitor` for that reason. The pair that stopped being written for a **finished** match is what
+the check is for and remains worth reading inside its output.
 
 `4` and `6` are the confirmed final-score and mirror-score pair, verified by value pattern:
 both carry a bare integer and nothing else, and `6` is present on every event in scope where
