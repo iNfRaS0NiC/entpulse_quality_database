@@ -209,6 +209,13 @@ a fourth way of taking part in the sport, alongside the event participant row, t
 and the Comp.Rank statistic, and no approved check reads it. It is why the registry's
 `official` role appears to take no part in the sport when measured through the other three.
 
+**The referee path is outside the client's scope by explicit decision of 2026-08-05, and is
+recorded here as structure rather than as work.** UK Sport does not ask about match officials,
+so no check is to read `ref:participant` and none is to be written for it. The consequence
+must be carried rather than forgotten: a participation check counting the three mechanisms
+reports every registered `official` as taking no part in the sport, and that finding is an
+artefact of the unread fourth path, not a defect in the data.
+
 Tournament stages carry `Cup`, `International`, `Live`, `Ranking` and `youth` across the whole
 scope, plus `Note` and `StatusComment` as free operational text and a sparse `reserve`.
 
@@ -349,9 +356,10 @@ begun is a normal outcome in this one.
 - **Which participant role is authoritative when the registry and `participant.type`
   disagree?** Until this is settled, a person-role check cannot be written without choosing a
   field arbitrarily.
-- **Should the referee properties be treated as a fourth participation path?** They are how
-  match officials take part, and no approved check reads them. A participation check that
-  counts the three known mechanisms describes officials as taking no part in the sport.
+- **Should `official` stay in `REGISTRY_PARTICIPANT_TYPE_LIST`?** The referee path is out of
+  scope by decision, so the three mechanisms the checks read will never reach an official and a
+  participation check reports the whole role. Either the role leaves the list for those checks
+  or their output carries the reason permanently.
 - **Do the sport-wide areas need re-confirming inside the scope?** The registry, statistic,
   relation and discipline findings describe all of Soccer. Where a check narrows to the client
   scope but its structural evidence was taken sport-wide, the two are not the same population.
