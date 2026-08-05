@@ -344,6 +344,12 @@ begun is a normal outcome in this one.
   absent and contributes nothing. `5 halftime` is not a term in it: it is a snapshot taken
   during ordinary time, not a stage that adds to the total. Any check comparing one score type
   against another must use this relation rather than assume each type is an independent value.
+- **A knockout round must produce a winner; a group round need not.** `round_type.knockout`
+  is the discriminator, read from the id the event carries rather than from the round name,
+  because `DB-SEM-012` records that one name exists as both. Two exceptions keep the rule from
+  being asserted for the sport as a whole: a group match may legitimately end level, and so may
+  one leg of a tie decided on aggregate, which is played inside a knockout round and marked by
+  the `BestOf` event property. `Soccer-DQ-022` is the rule with both exclusions applied.
 - The pairing is the classification. There is no event-level rank and no `Winner` event
   property; the outcome is stored on the result as `549 finaloutcome`, carrying `won` and
   `lost`, and is additionally derivable from the two `finalresult` values.
