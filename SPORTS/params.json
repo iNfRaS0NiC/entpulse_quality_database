@@ -371,7 +371,10 @@
     "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', 'bronze', '1/8', '1/16', 'playoff'",
     "GROUP_ROUND_NAME_LIST": "'1', '2', '3', '4', '5', '6'",
     "PLACEHOLDER_COUNTRY_LIST": "'International'",
+    "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
+    "RANK_MAX_PLAUSIBLE": 48,
     "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
+    "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
     "_notApplicable": {
       "RESULT_RANK_TYPE_ID": "no Rank result type; the sport is head to head and the pairing is the classification, so no place is stored on a result",
       "RESULT_COMMENT_TYPE_ID": "no Comment result type; the sport records no status vocabulary on a result",

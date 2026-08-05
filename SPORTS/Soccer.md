@@ -264,6 +264,12 @@ structure rather than as a candidate.
 Comp.Rank `1277 Medal` uses the standard `gold`, `silver`, `bronze` vocabulary and also occurs
 with an empty value. `1270 Rank` carries a bare integer.
 
+**The plausible rank ceiling is the field size, and the field is about to grow.** The largest
+field any competition in scope has entered so far is 32, and the World Championship expands to
+48 from 2026, which the scope already reaches. `RANK_MAX_PLAUSIBLE` is recorded as the ceiling
+the sport can legitimately award rather than the largest value stored today, so the expansion
+arrives as competition rather than as a defect report.
+
 **An empty `1277 Medal` value is a written state, not an unwritten field.** Read against the
 `1270 Rank` beside it, `gold`, `silver` and `bronze` accompany the first three places while the
 empty value sits overwhelmingly at fourth place and worse. The field therefore distinguishes
@@ -299,6 +305,15 @@ the medal rounds are `9` and `138` while the final round alone is `9`.
 Tournament stage names follow their competition, in the forms `World Cup grp. #`,
 `EURO U# Grp. A`, `Women's EURO U# Final Stage` and `World Cup Bronze Match`.
 
+Under `status_type = 'notstarted'` the catalogue offers `Not started`, `Postponed`,
+`Abandoned`, `Kick Off Delayed`, `Start delayed` and a few competition-specific variants.
+`NOT_STARTED_DESC_LIST` records only the `Not started` and `Postponed` descriptors, on the same
+reading the four sports before it used: the parameter names the statuses that are expected to
+carry **no results**, and an abandoned match legitimately carries the goals scored before it
+was abandoned. Listing `Abandoned` would report those goals as a defect. The distinction
+matters more here than in the sports documented earlier, because abandonment after play has
+begun is a normal outcome in this one.
+
 <!-- MANUAL PASTE ZONE: 1 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
@@ -314,6 +329,9 @@ Tournament stage names follow their competition, in the forms `World Cup grp. #`
   `lost`, and is additionally derivable from the two `finalresult` values.
 - A match official takes part through an event property of type `ref:participant`, never
   through an event participant row, a lineup place or a statistic.
+- The same two participants never meet twice on one calendar day, which is what
+  `DUPLICATE_KEY_USES_CALENDAR_DAY = 1` records: two meetings of one pairing on one date are a
+  duplicate whatever their kick-off times say.
 - A tie played over two legs is assembled in the scope layer under `351 aggregate_score`, with
   the second leg reached through `event_scope_detail.ref_eventFK`.
 - A cancelled incident is a distinct incident type, not a flag on the original.
