@@ -438,6 +438,31 @@ was abandoned. Listing `Abandoned` would report those goals as a defect. The dis
 matters more here than in the sports documented earlier, because abandonment after play has
 begun is a normal outcome in this one.
 
+**Under `status_type = 'finished'` the scope uses six descriptors, and each says which score
+stages the match should carry.** Measured on 2026-08-05:
+
+| `status_descFK` | Descriptor | Means |
+|---:|---|---|
+| 6 | Finished | decided inside ninety minutes |
+| 13 | Finished AP | decided by a penalty shootout |
+| 11 | Finished AET | decided in extra time |
+| 190 | Finished after awarded win | decided administratively |
+| 16 | Finished AGG | decided on the aggregate of two legs |
+| 24 | Finished ASG | decided by a silver goal |
+
+`24 Finished ASG` occurs once, on the 2004 European Championship semi-final, and behaves
+exactly as `11` does: extra time, no shootout. It is kept rather than treated as an anomaly,
+because a status the sport still holds is a status the data can use again.
+
+**A penalty shootout does not imply extra time.** Nearly a quarter of the matches decided on
+penalties went to them straight from a level ninety minutes, which is the format several
+competitions in scope have used rather than a defect. `Soccer-DQ-081` therefore asserts that
+`13` carries a shootout and never that it carries extra time — the rule the measurement
+refused. It asserts the reverse implications instead: a shootout belongs to `13` alone, and
+extra time to `11`, `13`, `16` and `24`. `190` is left out of both, because an awarded result
+replaces a match that may genuinely have been abandoned mid-way, so a stage stored beside it
+records the play rather than contradicting the status.
+
 <!-- MANUAL PASTE ZONE: 1 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
