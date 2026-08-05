@@ -1049,6 +1049,36 @@ Three things this rule is not:
 `SPORTS.md` records the model per sport. A model is recorded only once the sport file
 documents the evidence for it, on the same terms as any other confirmed structure.
 
+### `DB-SEM-016` — `REL-DIRECT-002` is traversed from the tournament, not from the template
+
+The relation between a tournament and its template is one relation and two directions, and the
+database does not treat them alike. Restricting a scope by `tournament.tournament_templateFK`
+and restricting it by `tournament_template.id` select exactly the same rows. They do not cost
+the same, and the difference is not marginal.
+
+Keyed on the template's primary key, the optimiser drives from `tournament_template` — a small
+table — and reaches everything else through it. That reads like the better plan and is not: the
+path from a handful of template rows outward loses the index route into
+`statistic_participants{{SHARD_ID}}` and `statistic_data{{SHARD_ID}}`, and the shards are then
+scanned. Keyed on the tournament's foreign key, `tournament` anchors the scope and the shards
+are reached by index.
+
+Measured on Soccer over twenty-eight templates, returning an identical 20293 rows: 28.3 seconds
+one way, 2.5 seconds the other. Across the approved checks of one sport the same asymmetry cost
+about a minute per statistic-layer check, and made `GLOBAL-DQ-044` fail to return at all.
+
+Two things this rule is not:
+
+- **It is not about the sport's size.** Soccer's Comp.Rank layer is the smallest of the five
+  documented sports — 492 statistics and about twenty thousand data rows against 8.8 million in
+  the shard. The cost came from the direction of the traversal, not from the volume traversed.
+- **It is not a licence to rewrite a statement for speed.** Only this one substitution is
+  established. `GLOBAL-DQ-044` also needed its eligible statistics resolved in a materialised
+  step, and that is a property of `statistic_config`, recorded with the check rather than here.
+
+`POWERBI.md` owns the resulting query rule and `TOOLS/Test-Tools.ps1` enforces it against the
+package.
+
 <!-- MANUAL PASTE ZONE: DATABASE STRUCTURAL SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---

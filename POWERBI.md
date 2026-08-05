@@ -196,11 +196,9 @@ the query's confirmed relation path.
 
 **Filter the tournament's foreign key, not the template's primary key**, wherever the
 statement already joins the tournament that owns the template. The two select the same rows
-and are not the same query: keying on `tournament_template.id` makes the optimiser drive from
-the template table and lose the index path into the statistic shards, and the same result then
-costs about ten times as much. Measured on Soccer, one form returned in 2.5 seconds and the
-other in 28.3. Where no tournament is in scope — a statement auditing templates themselves —
-the primary-key form stays correct:
+and are not the same query; `DATABASE.md` `DB-SEM-016` owns why, and measured it at 2.5 seconds
+against 28.3 for an identical result. Where no tournament is in scope — a statement auditing
+templates themselves — the primary-key form stays correct:
 
 ```sql
 -- AND tt.id = <tournament_template_id>

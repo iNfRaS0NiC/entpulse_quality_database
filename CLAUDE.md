@@ -97,9 +97,9 @@ than only in their owner:
   times as much — measured on Soccer, 2.5 seconds against 28.3, and about a minute per
   Comp.Rank check across a batch. Only a statement auditing templates themselves, with no
   tournament in scope, keeps `tt.id`. The alias belongs to the statement that declares it:
-  `tt` pairs with `t`, `tt2` with `t2`. `POWERBI.md` owns the contract and
-  `TOOLS/Test-Tools.ps1` fails a marker that keeps the primary key where a tournament is
-  joined.
+  `tt` pairs with `t`, `tt2` with `t2`. `DATABASE.md` `DB-SEM-016` owns the database fact,
+  `POWERBI.md` the query contract, and `TOOLS/Test-Tools.ps1` fails a marker that keeps the
+  primary key where a tournament is joined.
 
 - **Paste markers.** A `MANUAL PASTE ZONE` marker is the fixed lower boundary of its
   section. Insert immediately before it, never after; keep it unchanged; never include it
