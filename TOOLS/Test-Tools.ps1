@@ -863,8 +863,9 @@ Test-That 'flat run summary writes Signal and SignalReason columns' {
     $header = Get-Content -LiteralPath $path -TotalCount 1
     $saved = @(Import-Csv -LiteralPath $path)
     Assert-Equal 1 $saved.Count 'summary row count'
-    Assert-Equal '"CheckId","Name","What","Rows","Seconds","Status","Signal","SignalReason"' `
-        $header 'summary column order'
+    $expected = '"CheckId","Name","What","Rows","Seconds","Status",' +
+        '"Priority","Category","Signal","SignalReason"'
+    Assert-Equal $expected $header 'summary column order'
     Assert-Equal 'Monitor' $saved[0].Signal 'saved signal'
     Assert-Equal 'population-wide fixture signal' $saved[0].SignalReason 'saved signal reason'
 }
@@ -899,16 +900,17 @@ Test-That 'workbook Overview carries Signal and Signal reason' {
     Assert-True ($xml -match '>Signal reason<') 'Overview should name the Signal reason column'
     Assert-True ($xml -match '>Monitor<') 'Overview should carry the signal value'
     Assert-True ($xml -match 'population-wide fixture signal') 'Overview should carry the reason'
-    Assert-True ($xml -match 'hyperlink ref="E2"') 'Rows hyperlink should keep its established column'
-    Assert-True ($xml -match 'sqref="F2:F2"') 'Status validation should keep its established column'
+    Assert-True ($xml -match 'hyperlink ref="G2"') 'Rows hyperlink should follow its column'
+    Assert-True ($xml -match 'sqref="H2:H2"') 'Status validation should follow its column'
     Assert-True ($detailXml -match '>Signal<') 'detail tab should name the Signal field'
     Assert-True ($detailXml -match '>Signal reason<') 'detail tab should name the Signal reason field'
     Assert-True ($detailXml -match 'population-wide fixture signal') 'detail tab should carry the signal reason'
 
     # The signal columns are hidden, not dropped, so the values asserted above must still
-    # be in the part - and H:I is where the two of them land once Check By takes G.
-    Assert-True ($xml -match '<cols><col min="8" max="8"[^>]*hidden="1"') 'Signal should be hidden'
-    Assert-True ($xml -match '<col min="9" max="9"[^>]*hidden="1"/></cols>') 'Signal reason should be hidden'
+    # be in the part - and J:K is where the two of them land once Priority and Category take
+    # D and E.
+    Assert-True ($xml -match '<cols><col min="10" max="10"[^>]*hidden="1"') 'Signal should be hidden'
+    Assert-True ($xml -match '<col min="11" max="11"[^>]*hidden="1"/></cols>') 'Signal reason should be hidden'
     Assert-True ($xml.IndexOf('<cols>') -lt $xml.IndexOf('<sheetData>')) 'cols must precede sheetData'
     Assert-True ($detailXml -notmatch '<cols>') 'a check tab should hide nothing'
 }
@@ -940,15 +942,17 @@ Test-That 'workbook carries the Check By column and the outcome statuses' {
     finally { $zip.Dispose() }
 
     Assert-True ($xml -match '>Check By<') 'Overview should name the Check By column'
-    Assert-True ($xml -match 'r="G1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit in Overview column G'
+    Assert-True ($xml -match 'r="I1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit in Overview column I'
+    Assert-True ($xml -match 'r="D1"[^>]*><is><t[^>]*>Priority<') 'Priority should sit beside Check Name'
+    Assert-True ($xml -match 'r="E1"[^>]*><is><t[^>]*>Category<') 'Category should follow Priority'
     # Every value names an outcome, so a closed check says how it closed rather than only
     # that somebody got to it.
     Assert-True ($xml -match '"Not reviewed,Reviewing,On hold,No issue,Reported to IT,Fixed,No action needed"') 'the dropdown should offer the outcome statuses'
     Assert-True ($xml -match '>Not reviewed<') 'Status should be seeded to Not reviewed'
-    Assert-True ($detailXml -match 'r="F1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit after Comment on a check tab'
+    Assert-True ($detailXml -match 'r="H1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit after Comment on a check tab'
     # An empty manual field writes no cell at all, so the reviewer types into a blank.
-    Assert-True ($detailXml -notmatch 'r="F2"') 'Check By should be left empty on a check tab'
-    Assert-True ($detailXml -match 'r="G1"[^>]*><is><t[^>]*>Signal<') 'Signal should follow Check By on a check tab'
+    Assert-True ($detailXml -notmatch 'r="H2"') 'Check By should be left empty on a check tab'
+    Assert-True ($detailXml -match 'r="I1"[^>]*><is><t[^>]*>Signal<') 'Signal should follow Check By on a check tab'
 }
 
 Test-That 'the statement lives on the SQL sheet and C2 jumps to it' {

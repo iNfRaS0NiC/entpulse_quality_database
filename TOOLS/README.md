@@ -514,14 +514,21 @@ Google Drive and open as Sheets.
 
 `Overview` is the first tab:
 
-| Sport | CheckID | Check Name | What it does | Rows | Status | Check By | Signal | Signal reason |
-|---|---|---|---|---:|---|---|---|---|
-| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | Finds active participants of the selected types that … | 1064 | Not reviewed | | Monitor | Population-wide absence … |
+| Sport | CheckID | Check Name | Priority | Category | What it does | Rows | Status | Check By | Signal | Signal reason |
+|---|---|---|---|---|---|---:|---|---|---|---|
+| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 3 Missing value | MISSING_VALUES | Finds active participants of the selected types that … | 1064 | Not reviewed | | Monitor | Population-wide absence … |
 
-`Signal` and `Signal reason` are columns H and I, and the workbook ships with both hidden.
+`Signal` and `Signal reason` are columns J and K, and the workbook ships with both hidden.
 They are the runner's own classification, settled before the run and unchanged by reading
-it, so the reviewer opens on the seven columns that are theirs to work through. Nothing is
-dropped: unhiding H:I brings back every value, and both still travel in `_summary.csv`.
+it, so the reviewer opens on the nine columns that are theirs to work through. Nothing is
+dropped: unhiding J:K brings back every value, and both still travel in `_summary.csv`.
+
+`Category` is the row's own `Category` from `POWERBI_REGISTRY.md`, and `Priority` is the
+band `POWERBI.md` derives from it — `1 Structure`, `2 Wrong value`, `3 Missing value`. The
+numeric prefix means sorting the column produces the working order rather than an
+alphabetical one. Both are empty for a statement no registry row names: a direct template
+run and a discovery statement have no category to band, and the runner leaves them blank
+rather than inventing one.
 
 Every check appears, including those that returned nothing or failed and therefore have
 no tab of their own. `Sport` is taken from the CheckID prefix. `What it does` is the
@@ -567,13 +574,13 @@ either back.
 Then one tab per check:
 
 ```text
-     A                     B                    C              D                E          F          G          H
-1    Check ID              Check Name           SQL Used       What it does     Comment    Check By   Signal     Signal reason
-2    BMX-DQ-001            PARTICIPANT_MIS...   SQL            Finds active ...                       Monitor    Population-wide…
+     A                B                   C          D                E                F                G          H          I          J
+1    Check ID         Check Name          SQL Used   Priority         Category         What it does     Comment    Check By   Signal     Signal reason
+2    BMX-DQ-001       PARTICIPANT_MIS...  SQL        3 Missing value  MISSING_VALUES   Finds active ...                       Monitor    Population-wide…
 3    Return to Overview
 4
-5    check_type            participant_id       participant_name   ...
-6    Missing_DOB           1473234              Jude Jones         ...
+5    check_type       participant_id      participant_name   ...
+6    Missing_DOB      1473234             Jude Jones         ...
 ```
 
 The identity sits on rows 1 and 2 rather than on every data row. Row 3 holds the link back
@@ -588,13 +595,17 @@ keeps the line breaks it was written with, one line per row, and its first cell 
 to the results it produced.
 
 `Comment` and `Check By` are written as headings and nothing else: both columns belong to
-whoever reads the workbook, and the runner never puts a value in either. `What it does`,
-`Signal` and `Signal reason` beside them are the same values the Overview carries, so a tab
-opened from a link explains itself without the reader going back. Unlike the Overview, a
-check tab leaves the signal fields visible — there are only two of them on a row that is
-already about one check. Every column is appended after the manual fields, so the Overview
-A-F and detail A-E contracts keep their positions: `Rows` still links from column E and the
-`Status` dropdown still binds to column F.
+whoever reads the workbook, and the runner never puts a value in either. `Priority`,
+`Category`, `What it does`, `Signal` and `Signal reason` beside them are the same values the
+Overview carries, so a tab opened from a link explains itself without the reader going back.
+Unlike the Overview, a check tab leaves the signal fields visible — there are only two of
+them on a row that is already about one check.
+
+`SQL Used` stays at C on a check tab, because C2 is where the jump to the statement lives.
+Everything else shifted right by two when `Priority` and `Category` were added: `Rows` links
+from Overview column G, the `Status` dropdown binds to H, and the hidden signal pair is J:K.
+A change to these positions is a change to three places at once — the row builder, the
+validation `sqref`, and the assertions in `Test-Tools.ps1` that pin them.
 
 **A linked cell in Google Sheets is labelled from the hyperlink record, not from its own
 value.** With a `display` attribute Sheets shows that text; without one it falls back to

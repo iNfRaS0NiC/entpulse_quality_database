@@ -297,6 +297,28 @@ parameters. `GLOBAL_DQ/README.md` owns the qualification rule and the promotion 
 `Category` identifies the DQ problem family. `Object` identifies the canonical object or
 logical storage layer. `Name` must match the SQL identity header exactly.
 
+### Category and the priority it implies
+
+Every category belongs to one of three bands, and the band says what a reviewer works
+through first. A broken structure outranks a wrong value, and a wrong value outranks an
+empty field: a relation that does not resolve breaks everything read through it, whereas an
+empty field is one fact nobody has entered yet. Recorded by decision of 2026-08-05.
+
+| Band | Categories | What is wrong |
+|---|---|---|
+| `1 Structure` | `WRONG_STRUCTURE`, `NO_RELATED_RECORDS` | the shape or the relation itself |
+| `2 Wrong value` | `WRONG_RESULTS`, `WRONG_GENDER`, `WRONG_DISCIPLINE`, `DATE_RANGE_MISMATCH`, `MALFORMED_NAME` | the value is present and wrong |
+| `3 Missing value` | `MISSING_VALUES` | the field is empty |
+
+The band is **derived** from the category, never authored per check, so a check cannot
+disagree with its own category. The numeric prefix is what makes an ordinary sort produce
+the priority order, since the names do not sort that way on their own.
+
+`TOOLS/Run-Query.ps1` carries the map into the workbook and `TOOLS/Test-Package.ps1`
+declares the same one, failing any registry `Category` that is missing from it — so a new
+category cannot reach a reviewer as a blank on the column meant to say what to do first.
+Adding a category means adding it here and in both scripts.
+
 `Family` and `Query file` answer two independent questions and must not be conflated:
 
 | Column | Question |

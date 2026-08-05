@@ -612,6 +612,7 @@ function Select-RunAllChecks {
             Path         = $statement.Path
             Sql          = $statement.Sql
             Template     = $(if ($wanted -eq $row.CheckId) { '' } else { $wanted })
+            Category     = $row.Category
             Signal       = $(if ($signal) { $signal.Signal } else { 'Actionable' })
             SignalReason = $(if ($signal) { $signal.Reason } else { '' })
         }
@@ -1035,6 +1036,26 @@ $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey)
 # owners drifts.
 $CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable')
 
+# What to work through first, banded from the Category POWERBI_REGISTRY.md already records
+# against every row. A broken structure outranks a wrong value, and a wrong value outranks an
+# empty field: a relation that does not resolve breaks everything read through it, whereas an
+# empty field is one fact nobody has entered yet. Recorded by decision of 2026-08-05.
+#
+# The band is derived rather than authored per check, so a check cannot disagree with its own
+# category. The numeric prefix is what makes an ordinary sort in Sheets produce the priority
+# order, since the names themselves do not sort that way. POWERBI.md owns the vocabulary and
+# Test-Package.ps1 declares the same map, failing a registry Category that is missing from it.
+$CheckPriorityByCategory = @{
+    'WRONG_STRUCTURE'     = '1 Structure'
+    'NO_RELATED_RECORDS'  = '1 Structure'
+    'WRONG_RESULTS'       = '2 Wrong value'
+    'WRONG_GENDER'        = '2 Wrong value'
+    'WRONG_DISCIPLINE'    = '2 Wrong value'
+    'DATE_RANGE_MISMATCH' = '2 Wrong value'
+    'MALFORMED_NAME'      = '2 Wrong value'
+    'MISSING_VALUES'      = '3 Missing value'
+}
+
 # Discovery is a census by construction: its rows are categories with counts, and a category
 # cannot be corrected the way a missing birth date can. So every statement in GLOBAL_QUERIES
 # is informational without a sport having to say so, and the reviewer is told once rather than
@@ -1132,6 +1153,17 @@ function Get-SportCheckSignal {
         }
     }
     return $resolved
+}
+
+function Get-CheckPriority {
+    # The band a check falls in, from the Category its registry row records. A category the
+    # map does not know sorts last and says so, rather than leaving a blank the reader would
+    # take for "no priority"; Test-Package.ps1 fails before it can reach a workbook.
+    param([string]$Category)
+
+    if ([string]::IsNullOrWhiteSpace($Category)) { return '' }
+    if ($CheckPriorityByCategory.ContainsKey($Category)) { return $CheckPriorityByCategory[$Category] }
+    return '9 Unclassified'
 }
 
 function Set-JobCheckSignal {
@@ -1608,14 +1640,15 @@ function Save-Workbook {
             foreach ($link in $links) { $linked[$link.Ref] = $true }
 
             # A check tab opens with a labelled identity block:
-            #   row 1  Check ID | Check Name | SQL Used | What it does | Comment |
-            #          Check By | Signal | Signal reason
+            #   row 1  Check ID | Check Name | SQL Used | Priority | Category | What it does |
+            #          Comment | Check By | Signal | Signal reason
             #   row 2  the values, with Comment and Check By left empty for the reviewer
             #   row 3  the link back to Overview, in a cell of its own
             #   row 4  blank, so the result table below stays its own block
+            # SQL Used stays at C, because C2 is where the jump to the statement lives.
             if ($headerRow) {
-                $labels = @('Check ID', 'Check Name', 'SQL Used', 'What it does',
-                    'Comment', 'Check By', 'Signal', 'Signal reason')
+                $labels = @('Check ID', 'Check Name', 'SQL Used', 'Priority', 'Category',
+                    'What it does', 'Comment', 'Check By', 'Signal', 'Signal reason')
 
                 [void]$xml.Append('<row r="1">')
                 for ($c = 0; $c -lt $header.Count; $c++) {
@@ -1850,6 +1883,14 @@ function New-RunSummaryRow {
         $reason = [string]$Job.SignalReason
     }
 
+    # Only a registry-backed run knows the category: it is authored against the CheckID, not
+    # derivable from the statement. A direct template run and a discovery statement leave both
+    # fields empty rather than guessing a band for a check nobody has categorised.
+    $category = ''
+    if ($Job.PSObject.Properties.Name -contains 'Category') {
+        $category = [string]$Job.Category
+    }
+
     return [pscustomobject]@{
         CheckId     = $Job.CheckId
         Name        = $Job.Name
@@ -1857,6 +1898,8 @@ function New-RunSummaryRow {
         Rows        = $Rows
         Seconds     = $Seconds
         Status      = $Status
+        Priority    = Get-CheckPriority -Category $category
+        Category    = $category
         Signal      = $signal
         SignalReason = $reason
     }
@@ -1915,6 +1958,8 @@ function Save-RunWorkbook {
             'Sport'         = Get-SportFromCheckId -CheckId $entry.CheckId
             'CheckID'       = $entry.CheckId
             'Check Name'    = $entry.Name
+            'Priority'      = [string]$entry.Priority
+            'Category'      = [string]$entry.Category
             'What it does'  = $entry.What
             'Rows'          = $rowsCell
             'Status'        = 'Not reviewed'
@@ -1925,7 +1970,7 @@ function Save-RunWorkbook {
         # Rows carries the jump to the tab, so its column moves with it.
         if ($ran -and $tabOf.ContainsKey($entry.CheckId)) {
             $links += [pscustomobject]@{
-                Ref    = "E$overviewRow"
+                Ref    = "G$overviewRow"
                 Target = $tabOf[$entry.CheckId]
                 Text   = [string]$entry.Rows
             }
@@ -1934,19 +1979,19 @@ function Save-RunWorkbook {
 
     # Signal and Signal reason are the runner's own classification, settled before the run
     # and unchanged by reading it, so they are collapsed out of the reviewer's way rather
-    # than dropped: H and I still carry every value for whoever needs to unhide them.
+    # than dropped: J and K still carry every value for whoever needs to unhide them.
     $sheets = @([pscustomobject]@{
             Name           = $overviewName
             Rows           = $overviewRows
             Header         = $null
             BackTo         = $null
             Links          = $links
-            HiddenColumns  = @(8, 9)
+            HiddenColumns  = @(10, 11)
             # Each value names an outcome rather than a stage of work, because "Completed"
             # hides the only thing the next reader needs: completed with what result. The
             # three closing values are the three ways a check can honestly end.
             Validation     = @{
-                Sqref  = "F2:F$overviewRow"
+                Sqref  = "H2:H$overviewRow"
                 Values = 'Not reviewed,Reviewing,On hold,No issue,Reported to IT,Fixed,No action needed'
             }
         })
@@ -1959,10 +2004,16 @@ function Save-RunWorkbook {
     # and the workbook only supplies their headings. C2 holds the jump to the statement
     # rather than the statement itself.
     foreach ($item in $Collected) {
+        $itemCategory = $(if ($item.Job.PSObject.Properties.Name -contains 'Category') {
+                [string]$item.Job.Category
+            }
+            else { '' })
+
         $sheet = [pscustomobject]@{
             Name   = $tabOf[$item.Job.CheckId]
             Rows   = $item.Rows
             Header = @($item.Job.CheckId, $item.Job.Name, 'SQL',
+                (Get-CheckPriority -Category $itemCategory), $itemCategory,
                 $item.Job.What, '', '',
                 $(if ($item.Job.Signal) { $item.Job.Signal } else { 'Actionable' }),
                 [string]$item.Job.SignalReason)
@@ -2613,8 +2664,14 @@ if ($OutFile) {
             [string]$job.SignalReason
         }
         else { '' }
+        $singleCategory = if ($job.PSObject.Properties.Name -contains 'Category') {
+            [string]$job.Category
+        }
+        else { '' }
+
         Save-Rows -Rows $rows -Path $OutFile -Fmt $Format -SheetName $sheetName `
             -Header @($job.CheckId, $job.Name, 'SQL',
+                (Get-CheckPriority -Category $singleCategory), $singleCategory,
                 $job.What, '', '', $singleSignal, $singleReason) `
             -SqlEntry ([pscustomobject]@{ CheckId = $job.CheckId; Name = $job.Name; Sql = $job.Sql })
     }

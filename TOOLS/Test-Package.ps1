@@ -47,6 +47,20 @@ $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey)
 # POWERBI_REGISTRY.md's Status column owns it, and a value with two owners drifts.
 $CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable')
 
+# The priority band each registry Category falls in. Run-Query.ps1 declares the same map and
+# puts the band in the workbook; this side exists so a category added to the registry without
+# a band cannot reach a reviewer as an unexplained blank. POWERBI.md owns the vocabulary.
+$CheckPriorityByCategory = @{
+    'WRONG_STRUCTURE'     = '1 Structure'
+    'NO_RELATED_RECORDS'  = '1 Structure'
+    'WRONG_RESULTS'       = '2 Wrong value'
+    'WRONG_GENDER'        = '2 Wrong value'
+    'WRONG_DISCIPLINE'    = '2 Wrong value'
+    'DATE_RANGE_MISMATCH' = '2 Wrong value'
+    'MALFORMED_NAME'      = '2 Wrong value'
+    'MISSING_VALUES'      = '3 Missing value'
+}
+
 if (-not $RepoRoot) { $RepoRoot = Split-Path -Parent $PSScriptRoot }
 $RepoRoot = (Resolve-Path -LiteralPath $RepoRoot).Path
 
@@ -694,6 +708,29 @@ for ($i = 1; $i -lt $registryRows.Count; $i++) {
 }
 
 Add-Result -Group 'PowerBI' -Name 'Registry row order and contiguity' -Findings $orderFindings
+
+# The workbook derives a priority band from the Category rather than asking each check to
+# state one, so a category nobody has banded would reach the reviewer as an unexplained
+# blank on the column that is meant to say what to do first.
+$priorityFindings = @()
+$seenCategories = @{}
+
+foreach ($row in $registryRows) {
+    $category = [string]$row.Cells[3]
+    if ([string]::IsNullOrWhiteSpace($category)) {
+        $priorityFindings += "POWERBI_REGISTRY.md:$($row.Line): $($row.Cells[0]) records no Category, so the run cannot band it"
+        continue
+    }
+    if ($seenCategories.ContainsKey($category)) { continue }
+    $seenCategories[$category] = $true
+
+    if (-not $CheckPriorityByCategory.ContainsKey($category)) {
+        $priorityFindings += "POWERBI_REGISTRY.md:$($row.Line): Category '$category' has no priority band; add it to the map in TOOLS/Run-Query.ps1 and TOOLS/Test-Package.ps1, and to the table POWERBI.md owns"
+    }
+}
+
+Add-Result -Group 'PowerBI' -Name 'Every category has a priority band' -Findings $priorityFindings
+Set-Metric 'DQ categories in use' $seenCategories.Count
 
 # --------------------------------------------------------------------------------------
 # Sports index and parameters
