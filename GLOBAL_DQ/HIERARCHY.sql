@@ -63,7 +63,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND NOT EXISTS (
       SELECT 1
       FROM object_relation orl
@@ -89,7 +89,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -111,7 +111,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND NOT EXISTS (
       SELECT 1
       FROM event e
@@ -135,7 +135,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -164,7 +164,7 @@ JOIN event e
  AND e.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY
     ts.id,
     ts.name,
@@ -193,7 +193,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
       FROM event e2
@@ -224,7 +224,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND (ts.startdate IS NULL OR ts.enddate IS NULL)
 
 UNION ALL
@@ -244,7 +244,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -267,7 +267,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND (
@@ -291,7 +291,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
@@ -431,7 +431,7 @@ WHERE ts.del = 'no'
   AND ts.gender IS NOT NULL AND TRIM(ts.gender) <> '' AND LOWER(TRIM(ts.gender)) <> 'mixed'
   AND tt.gender IS NOT NULL AND TRIM(tt.gender) <> '' AND LOWER(TRIM(tt.gender)) <> 'mixed'
   AND LOWER(TRIM(ts.gender)) <> LOWER(TRIM(tt.gender))
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 UNION ALL
 
@@ -445,7 +445,7 @@ WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND ts.gender IS NOT NULL AND TRIM(ts.gender) <> '' AND LOWER(TRIM(ts.gender)) <> 'mixed'
   AND tt.gender IS NOT NULL AND TRIM(tt.gender) <> '' AND LOWER(TRIM(tt.gender)) <> 'mixed'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -467,7 +467,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND NOT EXISTS (
@@ -490,7 +490,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
@@ -515,7 +515,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND (
@@ -536,7 +536,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
@@ -618,7 +618,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
  AND tt.sportFK = {{SPORT_ID}}
 WHERE ts.del = 'no'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND (
       ts.name IS NULL
       OR TRIM(ts.name) = ''
@@ -690,7 +690,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
  AND tt.sportFK = {{SPORT_ID}}
 WHERE ts.del = 'no'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -714,7 +714,7 @@ WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.round_typeFK IN ({{MEDAL_ROUND_TYPE_LIST}})
   AND e.status_type = 'finished'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND NOT EXISTS (
@@ -741,7 +741,7 @@ WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.round_typeFK IN ({{MEDAL_ROUND_TYPE_LIST}})
   AND e.status_type = 'finished'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
@@ -800,7 +800,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND ts.name IS NOT NULL
       AND TRIM(ts.name) <> ''
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) x
 WHERE x.violation_types <> ''
 GROUP BY x.name_bin, x.violation_types
@@ -819,7 +819,7 @@ WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND ts.name IS NOT NULL
   AND TRIM(ts.name) <> ''
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, violation_types, stage_name;
 
@@ -878,7 +878,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND e.name IS NOT NULL
       AND TRIM(e.name) <> ''
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) x
 WHERE x.violation_types <> ''
 GROUP BY x.name_bin, x.violation_types
@@ -898,7 +898,7 @@ WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.name IS NOT NULL
   AND TRIM(e.name) <> ''
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, violation_types, event_name;
 
@@ -952,7 +952,7 @@ FROM (
           AND tt.sportFK = {{SPORT_ID}}
           AND ts.name IS NOT NULL
           AND TRIM(ts.name) <> ''
-          -- AND tt.id = <tournament_template_id>
+          -- AND t.tournament_templateFK = <tournament_template_id>
         GROUP BY name_normalized, stage_name
     ) a
 ) v
@@ -975,7 +975,7 @@ WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND ts.name IS NOT NULL
   AND TRIM(ts.name) <> ''
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, dominant_spelling, stage_name;
 
@@ -1006,7 +1006,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.startdate IS NOT NULL
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND (
@@ -1030,7 +1030,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.startdate IS NOT NULL
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND (
@@ -1092,7 +1092,7 @@ FROM (
       AND e.name IS NOT NULL
       AND TRIM(e.name) <> ''
       AND e.startdate IS NOT NULL
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
 ) d
@@ -1133,7 +1133,7 @@ WHERE e.del = 'no'
   AND e.name IS NOT NULL
   AND TRIM(e.name) <> ''
   AND e.startdate IS NOT NULL
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
@@ -1157,7 +1157,7 @@ JOIN tournament_template tt
 WHERE t.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND NOT EXISTS (
       SELECT 1
       FROM tournament_stage ts
@@ -1178,7 +1178,7 @@ JOIN tournament_template tt
 WHERE t.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -1203,7 +1203,7 @@ WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.round_typeFK NOT IN ({{MEDAL_ROUND_TYPE_LIST}})
   AND e.status_type = 'finished'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND EXISTS (
@@ -1230,7 +1230,7 @@ WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.round_typeFK NOT IN ({{MEDAL_ROUND_TYPE_LIST}})
   AND e.status_type = 'finished'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
@@ -1279,7 +1279,7 @@ FROM (
     LEFT JOIN venue vt ON vt.id = vot.venueFK AND vt.del = 'no'
     WHERE e.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
     GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ts.name
@@ -1298,7 +1298,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
@@ -1325,7 +1325,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 JOIN round_type rt ON rt.id = e.round_typeFK
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   -- A NULL or dangling round_typeFK is GLOBAL-DQ-006's finding, so the join to round_type
@@ -1346,7 +1346,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 JOIN round_type rt ON rt.id = e.round_typeFK
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
@@ -1399,7 +1399,7 @@ FROM (
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.name IS NOT NULL
       AND TRIM(t.name) <> ''
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) x
 WHERE x.violation_types <> ''
 GROUP BY x.name_bin, x.violation_types
@@ -1418,7 +1418,7 @@ WHERE t.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.name IS NOT NULL
   AND TRIM(t.name) <> ''
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, violation_types, tournament_name;
 
@@ -1529,7 +1529,7 @@ FROM (
     WHERE t.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY t.id, t.name, tt.name
 ) x
 -- A name carrying no year at all is left alone: there is no season label to contradict, and
@@ -1564,7 +1564,7 @@ JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
 WHERE t.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, first_stage_year;
 
@@ -1801,7 +1801,7 @@ FROM (
     JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
     WHERE ts.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
     GROUP BY ts.id, ts.name, tt.name, t.name
@@ -1824,7 +1824,7 @@ JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
 JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
@@ -1863,7 +1863,7 @@ LEFT JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.status_type = 'finished'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND (
@@ -1886,7 +1886,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.status_type = 'finished'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 
@@ -1936,7 +1936,7 @@ LEFT JOIN (
 ) extra ON extra.event_id = e.id
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND EXISTS (
@@ -1962,7 +1962,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND EXISTS (
@@ -2026,7 +2026,7 @@ FROM (
       AND TRIM(e.name) <> ''
       AND p.name IS NOT NULL
       AND TRIM(p.name) <> ''
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
     GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ts.name
@@ -2052,7 +2052,7 @@ WHERE e.del = 'no'
   AND TRIM(e.name) <> ''
   AND p.name IS NOT NULL
   AND TRIM(p.name) <> ''
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 
@@ -2100,7 +2100,7 @@ JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND (
@@ -2122,7 +2122,7 @@ JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND (
@@ -2183,7 +2183,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
      AND tt.sportFK = {{SPORT_ID}}
 WHERE e.del = 'no'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND EXISTS (
@@ -2222,7 +2222,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
      AND tt.sportFK = {{SPORT_ID}}
 WHERE e.del = 'no'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND EXISTS (

@@ -42,7 +42,7 @@ JOIN (
     JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
     WHERE ep.del = 'no'
       AND tt2.sportFK = 1
-      -- AND tt2.id = <tournament_template_id>
+      -- AND t2.tournament_templateFK = <tournament_template_id>
     GROUP BY ep.eventFK
 ) x ON x.event_id = e.id AND x.score_count = 2 AND x.distinct_scores = 1
 WHERE e.del = 'no'
@@ -59,7 +59,7 @@ WHERE e.del = 'no'
         AND pr.name = 'BestOf'
         AND pr.del = 'no'
   )
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 
@@ -90,7 +90,7 @@ JOIN (
     JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
     WHERE ep.del = 'no'
       AND tt2.sportFK = 1
-      -- AND tt2.id = <tournament_template_id>
+      -- AND t2.tournament_templateFK = <tournament_template_id>
     GROUP BY ep.eventFK
 ) x ON x.event_id = e.id AND x.score_count = 2
 WHERE e.del = 'no'
@@ -104,7 +104,7 @@ WHERE e.del = 'no'
         AND pr.name = 'BestOf'
         AND pr.del = 'no'
   )
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 

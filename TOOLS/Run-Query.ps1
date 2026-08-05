@@ -691,12 +691,17 @@ function Get-MissingPlaceholders {
         Select-Object -Unique)
 }
 
-# The lower boundary of a branch's scope, as POWERBI.md fixes it. The alias is read out of
-# the marker rather than assumed: a statement joining the template layer more than once uses
-# tt2, ttx or tty, and an expression keyed on tt alone would narrow one branch and leave its
-# sibling wide - the one failure this whole mechanism exists to prevent.
+# The lower boundary of a branch's scope, as POWERBI.md fixes it. Both the alias and the
+# column are read out of the marker rather than assumed. The alias, because a statement
+# joining the template layer more than once uses tt2, ttx or tty, and an expression keyed on
+# tt alone would narrow one branch and leave its sibling wide - the one failure this whole
+# mechanism exists to prevent. The column, because the two forms are not equivalent to the
+# optimiser: filtering tournament_template.id makes it drive from the template table and lose
+# the index path into the statistic shards, where filtering tournament.tournament_templateFK
+# keeps the plan that starts where the scope does. Measured on Soccer, the same result takes
+# 28.3s one way and 2.5s the other.
 $TemplateFilterMarker =
-'(?m)^([ \t]*)--[ \t]*AND[ \t]+(\w+)\.id[ \t]*=[ \t]*<tournament_template_id>[ \t]*$'
+'(?m)^([ \t]*)--[ \t]*AND[ \t]+(\w+)\.(id|tournament_templateFK)[ \t]*=[ \t]*<tournament_template_id>[ \t]*$'
 
 function Enable-TemplateFilter {
     # Activates every template filter in the statement and reports how many it found, so a
@@ -708,7 +713,7 @@ function Enable-TemplateFilter {
 
     $activated = [regex]::Replace($Text, $TemplateFilterMarker, {
             param($m)
-            '{0}AND {1}.id IN ({2})' -f $m.Groups[1].Value, $m.Groups[2].Value, $list
+            '{0}AND {1}.{2} IN ({3})' -f $m.Groups[1].Value, $m.Groups[2].Value, $m.Groups[3].Value, $list
         })
 
     return [pscustomobject]@{ Sql = $activated; Activated = $found.Count }

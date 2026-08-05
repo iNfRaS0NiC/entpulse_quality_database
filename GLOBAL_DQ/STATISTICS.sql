@@ -16,7 +16,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND NOT EXISTS (
       SELECT 1
       FROM statistic_participants{{SHARD_ID}} sp
@@ -38,7 +38,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -79,7 +79,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND (
       NOT EXISTS (
           SELECT 1 FROM statistic_config sc3
@@ -113,7 +113,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -142,7 +142,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND (
       -- A Rank that is absent or empty is explained by a Comment naming the status the
       -- participant finished under, which is how a sport records a non-finisher; the
@@ -183,7 +183,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -206,7 +206,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND NOT EXISTS (
       SELECT 1
       FROM object_relation orl
@@ -230,7 +230,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -253,7 +253,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND (
       NOT EXISTS (
           SELECT 1 FROM object_discipline od
@@ -287,7 +287,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -315,7 +315,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY s.id, s.name, tt.name, t.name
 HAVING (
     DATE((SELECT MIN(sc1.value) FROM statistic_config sc1 WHERE sc1.statisticFK = s.id AND sc1.statistic_data_typeFK = {{CONFIG_START_DATE_TYPE_ID}} AND sc1.del = 'no')) <> DATE(MIN(ts.startdate))
@@ -337,7 +337,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM statistic_config sc3
       WHERE sc3.statisticFK = s.id AND sc3.statistic_data_typeFK IN ({{CONFIG_START_DATE_TYPE_ID}}, {{CONFIG_END_DATE_TYPE_ID}}) AND sc3.del = 'no'
@@ -396,7 +396,7 @@ FROM (
       AND s.object_typeFK = 3
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       AND EXISTS (
           SELECT 1 FROM statistic_config sc3
           WHERE sc3.statisticFK = s.id
@@ -425,7 +425,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM statistic_config sc3
       WHERE sc3.statisticFK = s.id AND sc3.statistic_data_typeFK IN ({{CONFIG_START_DATE_TYPE_ID}}, {{CONFIG_END_DATE_TYPE_ID}}) AND sc3.del = 'no'
@@ -526,7 +526,7 @@ FROM (
       AND s.object_typeFK = 3
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
     ) y
 ) x
@@ -548,7 +548,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -579,7 +579,7 @@ WHERE sd.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND LOWER(TRIM(sd.value)) NOT IN ('gold', 'silver', 'bronze')
 
 UNION ALL
@@ -601,7 +601,7 @@ WHERE sd.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -641,7 +641,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND TRIM(rk.value) <> ''
   AND TRIM(td.value) <> ''
   AND (
@@ -668,7 +668,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND TRIM(rk.value) <> ''
   AND TRIM(td.value) <> ''
 ;
@@ -705,7 +705,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY s.id, s.name, tt.name, t.name
 HAVING deprecated_duration_participant_count > 0
 
@@ -723,7 +723,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -750,7 +750,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND NOT EXISTS (
       SELECT 1
       FROM tournament_stage ts2
@@ -787,7 +787,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -835,7 +835,7 @@ FROM (
       AND s.object_typeFK = 3
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, tt.name, t.name
     HAVING MAX(CAST(sdf.value AS UNSIGNED)) > COUNT(DISTINCT spf.id)
 ) f
@@ -877,7 +877,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -918,7 +918,7 @@ FROM (
       AND s.object_typeFK = 3
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
 ) y
 WHERE y.rank_rows = 0
@@ -938,7 +938,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -972,7 +972,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND NOT EXISTS (
       SELECT 1
       FROM object_round orr
@@ -997,7 +997,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -1055,7 +1055,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND (
       s.name IS NULL OR TRIM(s.name) = ''
       OR NOT EXISTS (
@@ -1104,7 +1104,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -1170,7 +1170,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) x
 WHERE x.referencing_statistics = 0
 
@@ -1188,7 +1188,7 @@ WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -1227,7 +1227,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND orr.round_typeFK NOT IN ({{MEDAL_ROUND_TYPE_LIST}})
 
 UNION ALL
@@ -1250,7 +1250,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -1277,7 +1277,7 @@ WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
       FROM statistic_config sc2
@@ -1324,7 +1324,7 @@ WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
       FROM statistic_config sc2
@@ -1404,7 +1404,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND sg.value IN ('male','female','mixed')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY st.id, st.name, tt.name, t.name
 ) elig
 JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = elig.statistic_id AND sp.del = 'no'
@@ -1441,7 +1441,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND sg.value IN ('male','female','mixed')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY st.id, st.name, tt.name, t.name
 ) elig
 JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = elig.statistic_id AND sp.del = 'no'
@@ -1506,7 +1506,7 @@ FROM (
       AND s2.object_typeFK = 3
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       AND EXISTS (
           SELECT 1 FROM object_discipline od
           WHERE od.object_typeFK = 83 AND od.objectFK = s2.id
@@ -1537,7 +1537,7 @@ WHERE sp.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM object_discipline od
       WHERE od.object_typeFK = 83 AND od.objectFK = s.id
@@ -1603,7 +1603,7 @@ FROM (
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND s.name IS NOT NULL
       AND TRIM(s.name) <> ''
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) x
 WHERE x.violation_types <> ''
 GROUP BY x.name_bin, x.violation_types
@@ -1625,7 +1625,7 @@ WHERE s.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND s.name IS NOT NULL
   AND TRIM(s.name) <> ''
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, violation_types, statistic_name;
 
@@ -1685,7 +1685,7 @@ FROM (
       AND s.object_typeFK = 3
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) x
 WHERE LOWER(TRIM(x.comment_value)) NOT IN ({{DATA_COMMENT_VALUE_LIST}})
    OR (
@@ -1712,7 +1712,7 @@ WHERE sd.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -1755,7 +1755,7 @@ FROM (
     WHERE sd.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY st.id, st.name, tt.name, t.name, sp.id, sd.statistic_data_typeFK
     HAVING COUNT(*) > 1
 ) d
@@ -1779,7 +1779,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE sd.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -1864,7 +1864,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND p.type = 'athlete'
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY sp.id
 ) x
 LEFT JOIN participant tp
@@ -1946,7 +1946,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND p.type = 'athlete'
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY sp.id
 ) y
 ;
@@ -2010,7 +2010,7 @@ FROM (
           AND s.object_typeFK = 3
           AND tt.sportFK = {{SPORT_ID}}
           AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-          -- AND tt.id = <tournament_template_id>
+          -- AND t.tournament_templateFK = <tournament_template_id>
         GROUP BY s.id, s.name, tt.name, t.name, tp.id, tp.name
     ) g
     GROUP BY g.statistic_id, g.statistic_name, g.template_name, g.tournament_name
@@ -2039,7 +2039,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -2111,7 +2111,7 @@ FROM (
           AND s.object_typeFK = 3
           AND tt.sportFK = {{SPORT_ID}}
           AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-          -- AND tt.id = <tournament_template_id>
+          -- AND t.tournament_templateFK = <tournament_template_id>
         GROUP BY s.id, s.name, tt.name, t.name, sg.value, tp.id, tp.name
     ) g
     GROUP BY g.statistic_id, g.statistic_name, g.template_name, g.tournament_name, g.statistic_gender
@@ -2143,7 +2143,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -2196,7 +2196,7 @@ FROM (
       AND s.object_typeFK = 3
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       -- NULL and '' are one state in DATABASE.md, the active empty row, which is how this
       -- layer records that a field does not apply to a participant - a Comp.Rank field set
       -- is declared per statistic type, not per participant. Both are out of scope.
@@ -2225,7 +2225,7 @@ WHERE sd.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, blank_data_count DESC;
 
@@ -2282,7 +2282,7 @@ FROM (
       AND s.object_typeFK = 3
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) x
 -- A value outside gold, silver and bronze resolves to no expected rank and is left to
 -- GLOBAL-DQ-027, so the two do not report the same row under different verdicts.
@@ -2308,7 +2308,7 @@ WHERE sm.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
 
@@ -2346,7 +2346,7 @@ WHERE sd.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND sd.value IS NOT NULL
   AND TRIM(sd.value) <> ''
   -- The mirror of GLOBAL-DQ-057, and inventoried separately from the event layer because
@@ -2370,7 +2370,7 @@ WHERE sd.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND sd.value IS NOT NULL
   AND TRIM(sd.value) <> ''
 ;
@@ -2446,7 +2446,7 @@ FROM (
               AND sx.object_typeFK = 3
               AND ttx.sportFK = {{SPORT_ID}}
               AND (ttx.name IS NULL OR ttx.name NOT LIKE '%(IOC)%')
-              -- AND ttx.id = <tournament_template_id>
+              -- AND tx.tournament_templateFK = <tournament_template_id>
               AND NOT EXISTS (
                   SELECT 1
                   FROM statistic_data{{SHARD_ID}} sc
@@ -2540,7 +2540,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order;
 
@@ -2611,7 +2611,7 @@ FROM (
           AND sx.object_typeFK = 3
           AND ttx.sportFK = {{SPORT_ID}}
           AND (ttx.name IS NULL OR ttx.name NOT LIKE '%(IOC)%')
-          -- AND ttx.id = <tournament_template_id>
+          -- AND tx.tournament_templateFK = <tournament_template_id>
         GROUP BY sp.statisticFK, CAST(TRIM(sd.value) AS SIGNED)
         HAVING COUNT(DISTINCT sp.id) > 1
     ) rk
@@ -2637,7 +2637,7 @@ FROM (
           AND sy.object_typeFK = 3
           AND tty.sportFK = {{SPORT_ID}}
           AND (tty.name IS NULL OR tty.name NOT LIKE '%(IOC)%')
-          -- AND tty.id = <tournament_template_id>
+          -- AND ty.tournament_templateFK = <tournament_template_id>
         GROUP BY sy.id, sy.name, tty.name, ty.name
         HAVING COUNT(DISTINCT CASE WHEN sdt.value IS NOT NULL AND TRIM(sdt.value) <> ''
                                    THEN sp2.id END) = 0
@@ -2669,7 +2669,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, shared_place_count DESC;
 
@@ -2716,7 +2716,7 @@ WHERE sd.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND sd.value IS NOT NULL
   AND TRIM(sd.value) <> ''
   AND (
@@ -2744,7 +2744,7 @@ WHERE sd.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND sd.value IS NOT NULL
   AND TRIM(sd.value) <> ''
 
@@ -2807,7 +2807,7 @@ FROM (
       AND s.object_typeFK = 3
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       AND EXISTS (
           SELECT 1
           FROM tournament_stage ts4
@@ -2843,7 +2843,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
       FROM tournament_stage ts4
@@ -2905,7 +2905,7 @@ FROM (
       AND TRIM(COALESCE(sc.value, '')) <> ''
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       AND (
             TRIM(sc.value) NOT REGEXP '^[0-9]+$'
          OR e.id IS NULL
@@ -2932,7 +2932,7 @@ WHERE sc.del = 'no'
   AND TRIM(COALESCE(sc.value, '')) <> ''
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_id;
 
@@ -2976,7 +2976,7 @@ FROM (
              AND tt2.sportFK = {{SPORT_ID}}
         WHERE sp.del = 'no'
           AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
-          -- AND tt2.id = <tournament_template_id>
+          -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY sp.statisticFK, sp.participantFK
         HAVING COUNT(*) > 1
     ) g
@@ -3001,7 +3001,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM statistic_participants{{SHARD_ID}} sp2
       WHERE sp2.statisticFK = s.id AND sp2.del = 'no'
@@ -3061,7 +3061,7 @@ FROM (
           AND sc.statistic_data_typeFK IN (
               {{CONFIG_START_DATE_TYPE_ID}}, {{CONFIG_END_DATE_TYPE_ID}}, {{CONFIG_GENDER_TYPE_ID}})
           AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
-          -- AND tt2.id = <tournament_template_id>
+          -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY sc.statisticFK, sc.statistic_data_typeFK
         HAVING COUNT(*) > 1
     ) g
@@ -3086,7 +3086,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM statistic_config sc2
       WHERE sc2.statisticFK = s.id AND sc2.del = 'no'
@@ -3197,7 +3197,7 @@ FROM (
       AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
       AND s.object_typeFK = 3
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
     HAVING MAX(CASE WHEN od.disciplineFK = ode.disciplineFK THEN 1 ELSE 0 END) = 0
 ) x
@@ -3217,7 +3217,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
   AND s.object_typeFK = 3
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM object_discipline od2
       WHERE od2.object_typeFK = 83 AND od2.objectFK = s.id AND od2.del = 'no'
@@ -3272,7 +3272,7 @@ FROM (
       AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
       AND s.object_typeFK = 3
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
     HAVING COUNT(DISTINCT p.type) > 1
 ) x
@@ -3294,7 +3294,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
   AND s.object_typeFK = 3
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_id;
 
@@ -3339,7 +3339,7 @@ WHERE sp.del = 'no'
   AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
   AND s.object_typeFK = 3
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND (p.id IS NULL OR p.del <> 'no')
 
 UNION ALL
@@ -3358,6 +3358,6 @@ WHERE sp.del = 'no'
   AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
   AND s.object_typeFK = 3
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_participants_id;

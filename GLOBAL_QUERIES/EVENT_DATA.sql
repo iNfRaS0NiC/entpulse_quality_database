@@ -29,7 +29,7 @@ LEFT JOIN result_type rt
   ON rt.id = r.result_typeFK
 WHERE r.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY
     r.result_typeFK,
     rt.name,
@@ -70,7 +70,7 @@ LEFT JOIN incident_type it
   ON it.id = i.incident_typeFK
 WHERE i.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY
     i.incident_typeFK,
     it.name,
@@ -109,7 +109,7 @@ LEFT JOIN scope_type st
   ON st.id = es.scope_typeFK
 WHERE es.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY
     es.scope_typeFK,
     st.name
@@ -163,7 +163,7 @@ FROM (
       ON sdt.id = sr.scope_data_typeFK
     WHERE sr.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 
     UNION ALL
 
@@ -198,7 +198,7 @@ FROM (
       ON sdt.id = lsr.scope_data_typeFK
     WHERE lsr.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 
     UNION ALL
 
@@ -231,7 +231,7 @@ FROM (
       ON st.id = es.scope_typeFK
     WHERE esd.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) AS x
 GROUP BY
     x.storage_layer,

@@ -26,7 +26,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
 WHERE ep.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY
     p.type,
     p.gender
@@ -74,7 +74,7 @@ LEFT JOIN lineup_type lt
   ON lt.id = l.lineup_typeFK
 WHERE l.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY
     l.lineup_typeFK,
     lt.name,

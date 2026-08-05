@@ -51,7 +51,7 @@ FROM (
       AND tt.sportFK = 50
       AND e.name IS NOT NULL
       AND TRIM(e.name) <> ''
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
       AND EXISTS (
@@ -96,7 +96,7 @@ FROM (
       AND tt.sportFK = 50
       AND e.name IS NOT NULL
       AND TRIM(e.name) <> ''
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
       AND EXISTS (
@@ -201,7 +201,7 @@ FROM (
           AND tt.sportFK = 50
           AND TRIM(rr.value) REGEXP '^[0-9]+$'
           AND TRIM(rf.value) REGEXP '^[0-9]+(:[0-9]{2}){0,2}(\\.[0-9]+)?$'
-          -- AND tt.id = <tournament_template_id>
+          -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
           AND EXISTS (
@@ -237,7 +237,7 @@ JOIN (
           AND tt.sportFK = 50
           AND TRIM(rr.value) REGEXP '^[0-9]+$'
           AND TRIM(rf.value) REGEXP '^[0-9]+(:[0-9]{2}){0,2}(\\.[0-9]+)?$'
-          -- AND tt.id = <tournament_template_id>
+          -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
           AND EXISTS (
@@ -273,7 +273,7 @@ WHERE ep.del = 'no'
   AND tt.sportFK = 50
   AND TRIM(rr.value) REGEXP '^[0-9]+$'
   AND TRIM(rf.value) REGEXP '^[0-9]+(:[0-9]{2}){0,2}(\\.[0-9]+)?$'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND EXISTS (
@@ -327,7 +327,7 @@ FROM (
       AND tt.sportFK = 50
       AND r.value IS NOT NULL
       AND TRIM(r.value) <> ''
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
       AND EXISTS (
@@ -367,7 +367,7 @@ WHERE ep.del = 'no'
   AND tt.sportFK = 50
   AND r.value IS NOT NULL
   AND TRIM(r.value) <> ''
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND EXISTS (
@@ -415,7 +415,7 @@ FROM (
     JOIN participant p ON p.id = ep.participantFK AND p.del = 'no' AND p.type = 'team'
     JOIN lineup l ON l.event_participantsFK = ep.id AND l.del = 'no'
     WHERE ep.del = 'no'
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
       AND EXISTS (
@@ -443,7 +443,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 JOIN participant p ON p.id = ep.participantFK AND p.del = 'no' AND p.type = 'team'
 JOIN lineup l ON l.event_participantsFK = ep.id AND l.del = 'no'
 WHERE ep.del = 'no'
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
   AND EXISTS (

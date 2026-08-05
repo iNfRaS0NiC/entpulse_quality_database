@@ -72,7 +72,7 @@ LEFT JOIN status_desc sd
   ON sd.id = e.status_descFK
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY
     e.status_type,
     e.status_descFK,

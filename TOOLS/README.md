@@ -184,14 +184,22 @@ textually and validates nothing about their values.
 ```
 
 It writes no new condition. `POWERBI.md`'s scope-limiting contract already requires a
-commented `-- AND tt.id = <tournament_template_id>` in every branch whose audited population
-reaches a template, so the flag only uncomments what the statement already declares. Because
-the marker is in the findings branch and the coverage branch alike, `eligible_count` is
-counted over exactly the narrowed scope, which is what the coverage contract demands.
+commented template filter in every branch whose audited population reaches a template, so the
+flag only uncomments what the statement already declares. Because the marker is in the findings
+branch and the coverage branch alike, `eligible_count` is counted over exactly the narrowed
+scope, which is what the coverage contract demands.
 
-The alias is taken from each marker rather than assumed. Most statements join the template
-layer once as `tt`, but a statement joining it twice uses `tt2`, `ttx` or `tty`, and narrowing
-on `tt` alone would filter one branch while its sibling still read the whole sport.
+Both the alias and the column are taken from each marker rather than assumed. Most statements
+join the template layer once as `tt`, but a statement joining it twice uses `tt2`, `ttx` or
+`tty`, and narrowing on `tt` alone would filter one branch while its sibling still read the
+whole sport.
+
+The column matters as much as the alias, and for a different reason. A marker sitting where the
+statement already joins the tournament filters `t.tournament_templateFK`; one auditing templates
+themselves filters `tt.id`. The two select identical rows and cost wildly different amounts,
+because keying on the template's primary key makes the optimiser drive from the template table
+and lose the index path into the statistic shards. `POWERBI.md` owns the rule; the effect is
+about tenfold on the Comp.Rank checks.
 
 **A statement carrying no marker is skipped, not run.** No marker means the audited population
 has no template relation — the sport registry is the standing example — and `POWERBI.md`

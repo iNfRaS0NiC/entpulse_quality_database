@@ -37,7 +37,7 @@ FROM (
       AND tt.sportFK = 40
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.id NOT IN (14678, 36693)
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY t.id, t.name, tt.name
 ) x
 WHERE x.stage_span > 2
@@ -71,7 +71,7 @@ WHERE t.del = 'no'
   AND tt.sportFK = 40
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.id NOT IN (14678, 36693)
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, first_stage_year;
 
@@ -126,7 +126,7 @@ FROM (
     WHERE e.del = 'no'
       AND tt.sportFK = 40
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) x
 WHERE x.name_implies IS NOT NULL
   AND x.name_implies <> x.stored_discipline
@@ -160,7 +160,7 @@ FROM (
     WHERE e.del = 'no'
       AND tt.sportFK = 40
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) y
 WHERE y.name_implies IS NOT NULL
 
@@ -214,7 +214,7 @@ FROM (
       AND e.status_type = 'finished'
       AND tt.sportFK = 40
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY e.id, e.name, e.startdate, t.id, t.name, tt.name, d.id, d.name
     HAVING participants >= 5
 ) f
@@ -241,7 +241,7 @@ JOIN (
           AND e.status_type = 'finished'
           AND tt.sportFK = 40
           AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-          -- AND tt.id = <tournament_template_id>
+          -- AND t.tournament_templateFK = <tournament_template_id>
         GROUP BY e.id, t.id, d.id, d.name
         HAVING participants >= 5
     ) z
@@ -271,7 +271,7 @@ FROM (
       AND e.status_type = 'finished'
       AND tt.sportFK = 40
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY e.id
     HAVING COUNT(DISTINCT ep.id) >= 5
 ) c
@@ -341,7 +341,7 @@ FROM (
       AND s.object_typeFK = 3
       AND tt.sportFK = 40
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name, orr.round_typeFK, team.value
 ) x
 WHERE x.members > 1
@@ -366,7 +366,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = 40
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_id;
 
@@ -410,7 +410,7 @@ WHERE e.del = 'no'
   AND tt.sportFK = 40
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND ts.gender IN ('male', 'female')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND (
        (ts.gender = 'male'   AND d.id IN (91, 87))
     OR (ts.gender = 'female' AND d.id IN (85, 86, 89, 88))
@@ -434,7 +434,7 @@ WHERE e.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND ts.gender IN ('male', 'female')
   AND d.id IN (85, 86, 87, 88, 89, 91)
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, event_id;
 
@@ -486,7 +486,7 @@ WHERE cmt.del = 'no'
   AND LOWER(TRIM(cmt.value)) IN ('dns', 'dnf', 'disq.', 'withdrawn')
   AND tt.sportFK = 40
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND (rnk.value IS NOT NULL OR med.value IS NOT NULL)
 
 UNION ALL
@@ -507,7 +507,7 @@ WHERE cmt.del = 'no'
   AND LOWER(TRIM(cmt.value)) IN ('dns', 'dnf', 'disq.', 'withdrawn')
   AND tt.sportFK = 40
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, event_participants_id;
 
@@ -558,7 +558,7 @@ WHERE cmt.del = 'no'
   AND TRIM(cmt.value) <> ''
   AND tt.sportFK = 40
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   AND (
        TRIM(cmt.value) REGEXP '^[0-9]+,[0-9]{1,3}$'
     OR TRIM(cmt.value) REGEXP '^[0-9]+[.][0-9]{1,3}$'
@@ -583,7 +583,7 @@ WHERE cmt.del = 'no'
   AND TRIM(cmt.value) <> ''
   AND tt.sportFK = 40
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, event_participants_id;
 
@@ -631,7 +631,7 @@ WHERE cmt.del = 'no'
   AND tt.sportFK = 40
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND d.id <> 90
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 UNION ALL
 
@@ -652,7 +652,7 @@ WHERE cmt.del = 'no'
   AND LOWER(TRIM(cmt.value)) LIKE 'from vault%'
   AND tt.sportFK = 40
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, event_participants_id;
 
@@ -713,7 +713,7 @@ FROM (
       AND tt.sportFK = 40
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND d.id IN (96, 82)
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY e.id, e.name, e.startdate, d.id, d.name, ts.gender, tt.name, t.name
     HAVING scored_participants >= 5
 ) x
@@ -742,7 +742,7 @@ FROM (
       AND tt.sportFK = 40
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND od.disciplineFK IN (96, 82)
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY e.id
     HAVING COUNT(DISTINCT ep.id) >= 5
 ) c

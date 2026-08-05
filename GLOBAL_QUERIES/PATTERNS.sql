@@ -21,7 +21,7 @@ LEFT JOIN round_type rt
   ON rt.id = e.round_typeFK
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY
     e.round_typeFK,
     rt.name
@@ -67,7 +67,7 @@ WHERE e.del = 'no'
       e.round_typeFK = {{ROUND_TYPE_ID}}
       OR (e.round_typeFK IS NULL AND {{ROUND_TYPE_ID}} IS NULL)
   )
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ORDER BY
     tt.name,
     t.name,
@@ -98,7 +98,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY
     name_pattern
 ORDER BY
@@ -136,7 +136,7 @@ JOIN tournament_template tt
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND REGEXP_REPLACE(e.name, '[0-9]+', '#') = '{{NAME_PATTERN}}'  -- select name_pattern from GLOBAL-DISCOVERY-020 (EVENT_NAME_PATTERNS_SUMMARY)
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ORDER BY
     tt.name,
     t.name,
@@ -166,7 +166,7 @@ JOIN tournament_template tt
  AND tt.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY
     name_pattern
 ORDER BY
@@ -199,7 +199,7 @@ JOIN tournament_template tt
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND REGEXP_REPLACE(ts.name, '[0-9]+', '#') = '{{NAME_PATTERN}}'  -- select name_pattern from GLOBAL-DISCOVERY-022 (TOURNAMENT_STAGE_NAME_PATTERNS_SUMMARY)
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ORDER BY
     tt.name,
     t.name,
@@ -425,7 +425,7 @@ LEFT JOIN result_type rt
 WHERE r.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND r.result_typeFK = {{RESULT_TYPE_ID}}  -- select result_type_id from GLOBAL-DISCOVERY-007 (EVENT_RESULTS_TYPES_CODES)
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY
     r.result_typeFK,
     rt.name,
@@ -483,7 +483,7 @@ WHERE r.del = 'no'
       END
   ) = '{{VALUE_PATTERN}}'  -- select value_pattern from GLOBAL-DISCOVERY-026 (EVENT_RESULTS_VALUE_PATTERNS_SUMMARY)
   -- Optional scope filter:
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY
     e.id,
     e.name,

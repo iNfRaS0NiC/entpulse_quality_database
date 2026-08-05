@@ -32,7 +32,7 @@ FROM (
      AND tt.del = 'no'
     WHERE pr.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 
     UNION ALL
 
@@ -56,7 +56,7 @@ FROM (
      AND tt.del = 'no'
     WHERE pr.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 
     UNION ALL
 
@@ -77,7 +77,7 @@ FROM (
      AND tt.del = 'no'
     WHERE pr.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 
     UNION ALL
 
@@ -110,7 +110,7 @@ FROM (
      AND tt.del = 'no'
     WHERE pr.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) AS x
 GROUP BY
     x.owner_object,
@@ -171,7 +171,7 @@ FROM (
      AND tt.del = 'no'
     WHERE orl.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 
     UNION ALL
 
@@ -189,7 +189,7 @@ FROM (
      AND tt.del = 'no'
     WHERE orl.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 
     UNION ALL
 
@@ -210,7 +210,7 @@ FROM (
      AND tt.del = 'no'
     WHERE orl.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 
     UNION ALL
 
@@ -229,7 +229,7 @@ FROM (
      AND tt.del = 'no'
     WHERE orl.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) AS x
 GROUP BY
     x.object_type_id,
@@ -276,7 +276,7 @@ FROM (
      AND d.del = 'no'
     WHERE od.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 
     UNION ALL
 
@@ -303,7 +303,7 @@ FROM (
      AND d.del = 'no'
     WHERE od.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
-      -- AND tt.id = <tournament_template_id>
+      -- AND t.tournament_templateFK = <tournament_template_id>
 ) AS x
 GROUP BY
     x.owner_object,
@@ -392,7 +392,7 @@ LEFT JOIN country direct_country
  AND direct_country.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ORDER BY
     tt.name,
     t.name,
@@ -423,7 +423,7 @@ JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
 JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
-  -- AND tt.id = <tournament_template_id>
+  -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 GROUP BY d.name, od.disciplineFK, ts.gender, p.type

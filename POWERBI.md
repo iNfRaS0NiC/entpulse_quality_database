@@ -188,11 +188,26 @@ relation.
 Preferred filters, in order of applicability:
 
 ```sql
--- AND tt.id = <tournament_template_id>
+-- AND t.tournament_templateFK = <tournament_template_id>
 ```
 
 Use this only when every eligible audited object reaches the selected template through
 the query's confirmed relation path.
+
+**Filter the tournament's foreign key, not the template's primary key**, wherever the
+statement already joins the tournament that owns the template. The two select the same rows
+and are not the same query: keying on `tournament_template.id` makes the optimiser drive from
+the template table and lose the index path into the statistic shards, and the same result then
+costs about ten times as much. Measured on Soccer, one form returned in 2.5 seconds and the
+other in 28.3. Where no tournament is in scope — a statement auditing templates themselves —
+the primary-key form stays correct:
+
+```sql
+-- AND tt.id = <tournament_template_id>
+```
+
+Both forms are recognised by `TOOLS/Run-Query.ps1 -TemplateIds`, and the alias and column are
+read out of the marker rather than assumed.
 
 ```sql
 -- AND e.startdate >= '<from_datetime>'

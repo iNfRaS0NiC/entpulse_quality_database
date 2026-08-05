@@ -537,6 +537,48 @@ Test-That 'the alias is read from the marker rather than assumed' {
     }
 }
 
+Test-That 'the marker column is read from the marker, not assumed' {
+    # The two forms are not equivalent to the optimiser. Filtering tournament_template.id makes
+    # it drive from the template table and lose the index path into the statistic shards;
+    # filtering tournament.tournament_templateFK keeps the plan that starts where the scope
+    # does. Measured on Soccer, the same result took 28.3s one way and 2.5s the other, so the
+    # activated filter has to preserve whichever column the statement declares.
+    $sql = "  -- AND t.tournament_templateFK = <tournament_template_id>`n" +
+           "  -- AND tt.id = <tournament_template_id>`n" +
+           "  -- AND t2.tournament_templateFK = <tournament_template_id>"
+    $out = Enable-TemplateFilter -Text $sql -TemplateIds @(44, 50)
+
+    Assert-Equal 3 $out.Activated 'both marker columns should be recognised'
+    Assert-True ($out.Sql -match [regex]::Escape('AND t.tournament_templateFK IN (44, 50)')) 'foreign-key form kept'
+    Assert-True ($out.Sql -match [regex]::Escape('AND tt.id IN (44, 50)')) 'primary-key form kept'
+    Assert-True ($out.Sql -match [regex]::Escape('AND t2.tournament_templateFK IN (44, 50)')) 'aliased foreign-key form kept'
+    Assert-True ($out.Sql -notmatch '<tournament_template_id>') 'no marker should survive'
+}
+
+Test-That 'every marker that can name a tournament does' {
+    # Asserted against the real files: a marker sitting where the statement already joins the
+    # tournament that owns the template must filter the foreign key, or the run pays about ten
+    # times the cost for the same rows. A marker with no tournament in scope keeps tt.id.
+    $files = Get-ChildItem -LiteralPath $RealRepoRoot -Recurse -Filter *.sql |
+        Where-Object { $_.FullName -notmatch '\\output\\' }
+    $wrong = @()
+    foreach ($f in $files) {
+        $lines = [IO.File]::ReadAllLines($f.FullName)
+        $start = 0
+        for ($i = 0; $i -lt $lines.Count; $i++) {
+            if ($lines[$i] -match '^SELECT\s*$') { $start = $i }
+            if ($lines[$i] -match '^\s*--\s*AND\s+(\w+)\.id\s*=\s*<tournament_template_id>') {
+                $tt = $matches[1]
+                $window = ($lines[$start..$i] -join "`n")
+                if ($window -match ([regex]::Escape($tt) + '\.id\s*=\s*(\w+)\.tournament_templateFK')) {
+                    $wrong += "$($f.Name):$($i + 1)"
+                }
+            }
+        }
+    }
+    Assert-Equal 0 $wrong.Count "markers still keyed on the template primary key: $($wrong -join ', ')"
+}
+
 Test-That 'a statement with no marker reports nothing to activate' {
     # The caller stops such a statement; it must never come back silently unnarrowed.
     $sql = "FROM object_participants op`nWHERE op.object = 'sport' AND op.objectFK = 1"
