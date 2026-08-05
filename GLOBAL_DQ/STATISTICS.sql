@@ -1350,28 +1350,28 @@ SELECT
     -- Name - COMP.RANK_RESULTS_GENDER_MISMATCH
     -- What it does: Finds active tournament-owned statistics of the selected statistic type whose Gender config value does not match the gender composition of their statistic participants, classifying each violation type, together with a coverage count of all eligible statistics.
     'Gender_Mismatch' AS check_type,
-    st.id AS statistic_id,
-    st.name AS statistic_name,
-    tt.name AS template_name,
-    t.name AS tournament_name,
-    sg.value AS statistic_gender,
+    elig.statistic_id,
+    elig.statistic_name,
+    elig.template_name,
+    elig.tournament_name,
+    elig.statistic_gender,
     MAX(p.type) AS participant_type_seen,
     COUNT(DISTINCT CASE WHEN p.gender = 'male' THEN p.id END) AS male_cnt,
     COUNT(DISTINCT CASE WHEN p.gender = 'female' THEN p.id END) AS female_cnt,
     COUNT(DISTINCT CASE WHEN p.gender = 'mixed' THEN p.id END) AS mixed_cnt,
     COUNT(DISTINCT CASE WHEN p.type = 'team' AND p.gender <> 'mixed' THEN p.id END) AS team_wrong_gender_cnt,
     CASE
-        WHEN sg.value = 'male'
+        WHEN elig.statistic_gender = 'male'
              AND COUNT(DISTINCT CASE WHEN p.gender <> 'male' THEN p.id END) > 0
             THEN 'MALE_STATISTIC_HAS_NONMALE'
-        WHEN sg.value = 'female'
+        WHEN elig.statistic_gender = 'female'
              AND COUNT(DISTINCT CASE WHEN p.gender <> 'female' THEN p.id END) > 0
             THEN 'FEMALE_STATISTIC_HAS_NONFEMALE'
-        WHEN sg.value = 'mixed'
+        WHEN elig.statistic_gender = 'mixed'
              AND COUNT(DISTINCT CASE WHEN p.type = 'team' THEN p.id END) > 0
              AND COUNT(DISTINCT CASE WHEN p.type = 'team' AND p.gender <> 'mixed' THEN p.id END) > 0
             THEN 'MIXED_TEAM_NOT_MIXED_GENDER'
-        WHEN sg.value = 'mixed'
+        WHEN elig.statistic_gender = 'mixed'
              AND COUNT(DISTINCT CASE WHEN p.type = 'athlete' THEN p.id END) > 0
              AND (
                   COUNT(DISTINCT CASE WHEN p.type = 'athlete' AND p.gender = 'male' THEN p.id END) = 0
@@ -1381,40 +1381,71 @@ SELECT
         ELSE 'OK'
     END AS violation_type,
     NULL AS eligible_count
-FROM statistic st
-JOIN tournament t ON t.id = st.objectFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN statistic_config sg ON sg.statisticFK = st.id AND sg.statistic_data_typeFK = {{CONFIG_GENDER_TYPE_ID}} AND sg.del = 'no'
-     AND sg.value IN ('male','female','mixed')
-JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = st.id AND sp.del = 'no'
+FROM (
+    -- The eligible statistics are resolved in their own materialised step, and the GROUP BY
+    -- is what makes it materialise rather than be merged into the query above. Without it,
+    -- filtering on sg.value makes the optimiser drive from statistic_config - a table holding
+    -- every sport's configuration - and probe the participant shard once per row of it, which
+    -- does not finish on a large sport. Resolved first, the statistics are a small known set
+    -- and the participants join to them.
+    SELECT
+        st.id AS statistic_id,
+        st.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        MIN(sg.value) AS statistic_gender
+    FROM statistic st
+    JOIN tournament t ON t.id = st.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_config sg ON sg.statisticFK = st.id AND sg.statistic_data_typeFK = {{CONFIG_GENDER_TYPE_ID}} AND sg.del = 'no'
+    WHERE st.del = 'no'
+      AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND st.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND sg.value IN ('male','female','mixed')
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY st.id, st.name, tt.name, t.name
+) elig
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = elig.statistic_id AND sp.del = 'no'
 JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
-WHERE st.del = 'no'
-  AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND st.object_typeFK = 3
-  AND tt.sportFK = {{SPORT_ID}}
-  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
-GROUP BY st.id, st.name, tt.name, t.name, sg.value
+GROUP BY elig.statistic_id, elig.statistic_name, elig.template_name, elig.tournament_name, elig.statistic_gender
 HAVING violation_type <> 'OK'
 
 UNION ALL
 
 SELECT
-    'COVERAGE', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT st.id) AS eligible_count
-FROM statistic st
-JOIN tournament t ON t.id = st.objectFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN statistic_config sg ON sg.statisticFK = st.id AND sg.statistic_data_typeFK = {{CONFIG_GENDER_TYPE_ID}} AND sg.del = 'no'
-     AND sg.value IN ('male','female','mixed')
-JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = st.id AND sp.del = 'no'
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT elig.statistic_id) AS eligible_count
+FROM (
+    -- The eligible statistics are resolved in their own materialised step, and the GROUP BY
+    -- is what makes it materialise rather than be merged into the query above. Without it,
+    -- filtering on sg.value makes the optimiser drive from statistic_config - a table holding
+    -- every sport's configuration - and probe the participant shard once per row of it, which
+    -- does not finish on a large sport. Resolved first, the statistics are a small known set
+    -- and the participants join to them.
+    SELECT
+        st.id AS statistic_id,
+        st.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        MIN(sg.value) AS statistic_gender
+    FROM statistic st
+    JOIN tournament t ON t.id = st.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_config sg ON sg.statisticFK = st.id AND sg.statistic_data_typeFK = {{CONFIG_GENDER_TYPE_ID}} AND sg.del = 'no'
+    WHERE st.del = 'no'
+      AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND st.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND sg.value IN ('male','female','mixed')
+      -- AND tt.id = <tournament_template_id>
+    GROUP BY st.id, st.name, tt.name, t.name
+) elig
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = elig.statistic_id AND sp.del = 'no'
 JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
-WHERE st.del = 'no'
-  AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND st.object_typeFK = 3
-  AND tt.sportFK = {{SPORT_ID}}
-  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND tt.id = <tournament_template_id>
 ;
 
 
