@@ -948,11 +948,30 @@ Test-That 'workbook carries the Check By column and the outcome statuses' {
     # Every value names an outcome, so a closed check says how it closed rather than only
     # that somebody got to it.
     Assert-True ($xml -match '"Not reviewed,Reviewing,On hold,No issue,Reported to IT,Fixed,No action needed"') 'the dropdown should offer the outcome statuses'
-    Assert-True ($xml -match '>Not reviewed<') 'Status should be seeded to Not reviewed'
+    Assert-True ($xml -match '>No issue<') 'a check returning only its COVERAGE row should open as No issue'
     Assert-True ($detailXml -match 'r="H1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit after Comment on a check tab'
     # An empty manual field writes no cell at all, so the reviewer types into a blank.
     Assert-True ($detailXml -notmatch 'r="H2"') 'Check By should be left empty on a check tab'
     Assert-True ($detailXml -match 'r="I1"[^>]*><is><t[^>]*>Signal<') 'Signal should follow Check By on a check tab'
+}
+
+Test-That 'the workbook seeds the two statuses it can settle itself' {
+    Assert-Equal 'No action needed' (Get-SeededStatus -Signal 'Informational' -Rows 40 -Ran $true) `
+        'an informational check has nothing to act on whatever it returned'
+    Assert-Equal 'No issue' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true) `
+        'only the COVERAGE row means nothing was found today'
+    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 12 -Ran $true) `
+        'findings wait for a reviewer'
+    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Monitor' -Rows 900 -Ran $true) `
+        'a monitored check still wants reading'
+    # A failed check reports one cell too, but it holds the word ERROR rather than a coverage
+    # count, so it must never be seeded as a clean result.
+    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 'ERROR' -Ran $false) `
+        'a failed check produced no verdict'
+    # An informational check that failed is still a failure. A closing status asserts that
+    # somebody read an output, and a check that did not run has none to have read.
+    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Informational' -Rows 'ERROR' -Ran $false) `
+        'a failed check is never closed, whatever its signal'
 }
 
 Test-That 'the statement lives on the SQL sheet and C2 jumps to it' {

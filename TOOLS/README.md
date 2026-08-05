@@ -558,18 +558,34 @@ check that failed shows `ERROR` instead, so it cannot be misread as a clean zero
 left unlinked because it has no tab; the reason is on the console and in `_summary.csv`,
 along with the durations.
 
-`Status` is a manual tracking field, seeded to `Not reviewed`. Its dropdown names outcomes
-rather than stages of work, because "completed" hides the only thing the next reader needs
-— completed with what result:
+`Status` is a manual tracking field. Its dropdown names outcomes rather than stages of work,
+because "completed" hides the only thing the next reader needs — completed with what result:
 
 | Open | Closed |
 |---|---|
 | `Not reviewed`, `Reviewing`, `On hold` | `No issue`, `Reported to IT`, `Fixed`, `No action needed` |
 
 `No action needed` is the reviewer's counterpart to the `Informational` signal: the check ran,
-it was read, and there was never anything in it to act on. `Check By` is a second manual
-field, written as a heading over empty cells and free text. Nothing in the runner reads
-either back.
+it was read, and there was never anything in it to act on.
+
+Two of those the workbook settles itself, so a reviewer opens on the rows that actually want
+reading:
+
+| Seeded as | When |
+|---|---|
+| `No action needed` | the signal is `Informational` — nothing in the output is correctable |
+| `No issue` | the check returned exactly one row, its `COVERAGE` row, so it found nothing today |
+| `Not reviewed` | everything else |
+
+The one-row rule is the coverage contract read back: every DQ statement returns a `COVERAGE`
+row whether or not it has findings, so a result of exactly one row *is* the statement saying
+it found none. That is a reading of the data, not the absence of one. A check that failed or
+was skipped is never seeded closed whatever its signal — it reports one cell too, holding
+`ERROR` rather than a coverage count, and a closing status would assert that somebody read an
+output that does not exist.
+
+`Check By` is a second manual field, written as a heading over empty cells and free text.
+Nothing in the runner reads either back.
 
 Then one tab per check:
 

@@ -1155,6 +1155,25 @@ function Get-SportCheckSignal {
     return $resolved
 }
 
+function Get-SeededStatus {
+    # The two verdicts the workbook can settle for itself, so a reviewer opens on the rows
+    # that actually want reading.
+    #
+    # An informational check has nothing to act on by its nature. A check that came back with
+    # its COVERAGE row alone found nothing today - which is a reading of the data and not the
+    # absence of one, and the row count says so exactly.
+    #
+    # A check that failed or was skipped is never seeded with a closing status, whatever its
+    # signal: a closed status asserts that somebody read an output, and there is no output to
+    # have read. It also reports one row, holding the word ERROR rather than a coverage count.
+    param([string]$Signal, $Rows, [bool]$Ran)
+
+    if (-not $Ran) { return 'Not reviewed' }
+    if ($Signal -eq 'Informational') { return 'No action needed' }
+    if ($Rows -eq 1) { return 'No issue' }
+    return 'Not reviewed'
+}
+
 function Get-CheckPriority {
     # The band a check falls in, from the Category its registry row records. A category the
     # map does not know sorts last and says so, rather than leaving a blank the reader would
@@ -1954,6 +1973,10 @@ function Save-RunWorkbook {
         }
         $ran = ($rowsCell -isnot [string])
 
+        $signalValue = $(if ($entry.Signal) { $entry.Signal } else { 'Actionable' })
+
+        $seededStatus = Get-SeededStatus -Signal $signalValue -Rows $rowsCell -Ran $ran
+
         $overviewRows += [pscustomobject]@{
             'Sport'         = Get-SportFromCheckId -CheckId $entry.CheckId
             'CheckID'       = $entry.CheckId
@@ -1962,9 +1985,9 @@ function Save-RunWorkbook {
             'Category'      = [string]$entry.Category
             'What it does'  = $entry.What
             'Rows'          = $rowsCell
-            'Status'        = 'Not reviewed'
+            'Status'        = $seededStatus
             'Check By'      = ''
-            'Signal'        = $(if ($entry.Signal) { $entry.Signal } else { 'Actionable' })
+            'Signal'        = $signalValue
             'Signal reason' = [string]$entry.SignalReason
         }
         # Rows carries the jump to the tab, so its column moves with it.
