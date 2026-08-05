@@ -921,9 +921,11 @@ Test-That 'workbook carries the Check By column and the outcome statuses' {
         Sql = 'SELECT 1;'
     }
     $summary = @(New-RunSummaryRow -Job $job -Rows 1 -Seconds 1 -Status 'OK')
+    # A statement that found nothing still returns its COVERAGE row, and the count in it is
+    # what lets the workbook call the result clean.
     $collected = @([pscustomobject]@{
             Job = $job
-            Rows = @([pscustomobject]@{ check_type = 'Fixture'; id = 1 })
+            Rows = @([pscustomobject]@{ check_type = 'COVERAGE'; id = $null; eligible_count = 806 })
         })
     $path = Join-Path $FixtureRoot 'run-with-check-by.xlsx'
     Save-RunWorkbook -Summary $summary -Collected $collected -Path $path | Out-Null
@@ -956,22 +958,52 @@ Test-That 'workbook carries the Check By column and the outcome statuses' {
 }
 
 Test-That 'the workbook seeds the two statuses it can settle itself' {
-    Assert-Equal 'No action needed' (Get-SeededStatus -Signal 'Informational' -Rows 40 -Ran $true) `
+    Assert-Equal 'No action needed' (Get-SeededStatus -Signal 'Informational' -Rows 40 -Ran $true -Eligible $null) `
         'an informational check has nothing to act on whatever it returned'
-    Assert-Equal 'No issue' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true) `
-        'only the COVERAGE row means nothing was found today'
-    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 12 -Ran $true) `
+    Assert-Equal 'No issue' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible 20000) `
+        'only the COVERAGE row, over a population, means nothing was found today'
+    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 12 -Ran $true -Eligible 20000) `
         'findings wait for a reviewer'
-    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Monitor' -Rows 900 -Ran $true) `
+    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Monitor' -Rows 900 -Ran $true -Eligible 20000) `
         'a monitored check still wants reading'
     # A failed check reports one cell too, but it holds the word ERROR rather than a coverage
     # count, so it must never be seeded as a clean result.
-    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 'ERROR' -Ran $false) `
+    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 'ERROR' -Ran $false -Eligible $null) `
         'a failed check produced no verdict'
     # An informational check that failed is still a failure. A closing status asserts that
     # somebody read an output, and a check that did not run has none to have read.
-    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Informational' -Rows 'ERROR' -Ran $false) `
+    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Informational' -Rows 'ERROR' -Ran $false -Eligible $null) `
         'a failed check is never closed, whatever its signal'
+}
+
+Test-That 'a check that audited nothing is never called clean' {
+    # The whole point of the coverage contract. Both of these return one row and no findings;
+    # only the eligible_count inside that row says whether anything was looked at.
+    Assert-Equal 'No issue' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible 952) `
+        'zero findings over a real population is clean data'
+    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible 0) `
+        'zero findings over nothing is not clean data and wants a person'
+    # No COVERAGE branch at all means the single row is a finding, not a coverage count.
+    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible $null) `
+        'a statement with no coverage branch cannot be read as clean'
+}
+
+Test-That 'the coverage count is read out of the COVERAGE row' {
+    $withFindings = @(
+        [pscustomobject]@{ check_type = 'Missing_DOB'; participant_id = 7; eligible_count = $null }
+        [pscustomobject]@{ check_type = 'COVERAGE'; participant_id = $null; eligible_count = 1064 })
+    Assert-Equal 1064 (Get-CoverageCount -Rows $withFindings) 'the COVERAGE row carries the count'
+
+    $auditedNothing = @([pscustomobject]@{ check_type = 'COVERAGE'; eligible_count = 0 })
+    Assert-Equal 0 (Get-CoverageCount -Rows $auditedNothing) 'a zero is read as a zero, not as absent'
+
+    # A discovery statement declares no coverage branch, and $null is how that is said.
+    $census = @([pscustomobject]@{ round_type_id = 9; events = 412 })
+    Assert-True ($null -eq (Get-CoverageCount -Rows $census)) 'no COVERAGE branch means no count'
+
+    # The value arrives from the database as text.
+    $asText = @([pscustomobject]@{ check_type = 'COVERAGE'; eligible_count = '  3388 ' })
+    Assert-Equal 3388 (Get-CoverageCount -Rows $asText) 'a numeric string is still a count'
 }
 
 Test-That 'the statement lives on the SQL sheet and C2 jumps to it' {

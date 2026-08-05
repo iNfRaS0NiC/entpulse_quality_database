@@ -1155,22 +1155,49 @@ function Get-SportCheckSignal {
     return $resolved
 }
 
+function Get-CoverageCount {
+    # The eligible_count a statement reports in its COVERAGE row: how many objects it actually
+    # audited. Returns $null for a statement that declares no COVERAGE branch, which is every
+    # discovery statement and nothing else the validator lets through.
+    param($Rows)
+
+    $total = $null
+    foreach ($row in @($Rows)) {
+        if ($null -eq $row) { continue }
+        $names = $row.PSObject.Properties.Name
+        if ($names -notcontains 'check_type' -or $names -notcontains 'eligible_count') { continue }
+        if ([string]$row.check_type -ne 'COVERAGE') { continue }
+
+        $value = 0
+        if (-not [int]::TryParse([string]$row.eligible_count, [ref]$value)) { continue }
+        $total = $(if ($null -eq $total) { $value } else { $total + $value })
+    }
+    return $total
+}
+
 function Get-SeededStatus {
     # The two verdicts the workbook can settle for itself, so a reviewer opens on the rows
     # that actually want reading.
     #
     # An informational check has nothing to act on by its nature. A check that came back with
     # its COVERAGE row alone found nothing today - which is a reading of the data and not the
-    # absence of one, and the row count says so exactly.
+    # absence of one.
     #
-    # A check that failed or was skipped is never seeded with a closing status, whatever its
-    # signal: a closed status asserts that somebody read an output, and there is no output to
-    # have read. It also reports one row, holding the word ERROR rather than a coverage count.
-    param([string]$Signal, $Rows, [bool]$Ran)
+    # But the row count alone cannot say that. A statement that audited nothing returns the
+    # same single row as one that found nothing wrong, and only the eligible_count in it tells
+    # them apart: zero findings is clean data only when something was in scope to be found.
+    # CLAUDE.md's coverage contract is explicit that a zero there is never clean, so it is
+    # never seeded closed - it wants a person to decide whether the scope is misdirected or
+    # the population is legitimately empty.
+    #
+    # A check that failed or was skipped is never seeded closed either, whatever its signal:
+    # a closing status asserts that somebody read an output, and there is none to have read.
+    # It also reports one row, holding the word ERROR rather than a coverage count.
+    param([string]$Signal, $Rows, [bool]$Ran, $Eligible)
 
     if (-not $Ran) { return 'Not reviewed' }
     if ($Signal -eq 'Informational') { return 'No action needed' }
-    if ($Rows -eq 1) { return 'No issue' }
+    if ($Rows -eq 1 -and $null -ne $Eligible -and $Eligible -gt 0) { return 'No issue' }
     return 'Not reviewed'
 }
 
@@ -1942,6 +1969,13 @@ function Save-RunWorkbook {
     $used = @{}
     $overviewName = ConvertTo-SheetName -Preferred 'Overview' -Fallback 'Overview' -Used $used
 
+    # Read from the result rows rather than carried on the summary, because the summary holds
+    # a row count and the count is exactly what cannot tell a clean check from a dead one.
+    $eligibleOf = @{}
+    foreach ($item in $Collected) {
+        $eligibleOf[$item.Job.CheckId] = Get-CoverageCount -Rows $item.Rows
+    }
+
     $tabOf = @{}
     $shortened = @()
     foreach ($item in $Collected) {
@@ -1975,7 +2009,8 @@ function Save-RunWorkbook {
 
         $signalValue = $(if ($entry.Signal) { $entry.Signal } else { 'Actionable' })
 
-        $seededStatus = Get-SeededStatus -Signal $signalValue -Rows $rowsCell -Ran $ran
+        $eligible = $(if ($eligibleOf.ContainsKey($entry.CheckId)) { $eligibleOf[$entry.CheckId] } else { $null })
+        $seededStatus = Get-SeededStatus -Signal $signalValue -Rows $rowsCell -Ran $ran -Eligible $eligible
 
         $overviewRows += [pscustomobject]@{
             'Sport'         = Get-SportFromCheckId -CheckId $entry.CheckId
@@ -2641,6 +2676,17 @@ if ($isBatch) {
     if ($isWorkbook -and $shortened.Count -gt 0) {
         Write-Host "Tab names capped at Excel's 31-character limit:" -ForegroundColor DarkGray
         $shortened | Format-Table CheckId, Wanted, Tab -AutoSize
+    }
+
+    # A check that audited nothing succeeded, returned one row and reported no findings, so it
+    # is indistinguishable from a clean one anywhere except in its own eligible_count. Named
+    # here because CLAUDE.md's coverage contract says a zero there is never clean data: it is
+    # either a misdirected scope to correct or a legitimately empty population to record, and
+    # both need a person. Nothing selects on it - the run is already over.
+    $audited = @($collected | Where-Object { 0 -eq (Get-CoverageCount -Rows $_.Rows) })
+    if ($audited.Count -gt 0) {
+        Write-Host ("{0} check(s) audited nothing - eligible_count is 0, which is never clean data: {1}" -f `
+                $audited.Count, (($audited | ForEach-Object { $_.Job.CheckId }) -join ', ')) -ForegroundColor Yellow
     }
 
     $failed = @($summary | Where-Object { $_.Status -like 'ERROR*' }).Count

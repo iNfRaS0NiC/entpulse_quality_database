@@ -574,15 +574,28 @@ reading:
 | Seeded as | When |
 |---|---|
 | `No action needed` | the signal is `Informational` — nothing in the output is correctable |
-| `No issue` | the check returned exactly one row, its `COVERAGE` row, so it found nothing today |
+| `No issue` | the check returned exactly one row, its `COVERAGE` row, **and that row counts a population above zero** |
 | `Not reviewed` | everything else |
 
 The one-row rule is the coverage contract read back: every DQ statement returns a `COVERAGE`
 row whether or not it has findings, so a result of exactly one row *is* the statement saying
-it found none. That is a reading of the data, not the absence of one. A check that failed or
-was skipped is never seeded closed whatever its signal — it reports one cell too, holding
-`ERROR` rather than a coverage count, and a closing status would assert that somebody read an
-output that does not exist.
+it found none.
+
+**The row count alone cannot say that, which is the whole reason the contract exists.** A
+statement that audited nothing returns the same single row as one that found nothing wrong.
+Only the `eligible_count` inside it separates them, and `CLAUDE.md` is explicit that a zero
+there is never clean data — it is either a misdirected scope to correct or a population that
+is legitimately empty today, and both want a person. So the runner reads the value out of the
+`COVERAGE` row rather than counting rows, never seeds a zero-coverage check closed, and names
+those checks on the console when a run finishes:
+
+```text
+2 check(s) audited nothing - eligible_count is 0, which is never clean data: BMX-DQ-014, BMX-DQ-031
+```
+
+A check that failed or was skipped is never seeded closed either, whatever its signal — it
+reports one cell too, holding `ERROR` rather than a coverage count, and a closing status would
+assert that somebody read an output that does not exist.
 
 `Check By` is a second manual field, written as a heading over empty cells and free text.
 Nothing in the runner reads either back.
