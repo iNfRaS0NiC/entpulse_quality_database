@@ -494,6 +494,64 @@ foreach ($s in ($dqStatements + $globalDq)) {
 }
 Add-Result -Group 'DQ' -Name 'Statistics context and IOC exclusion' -Findings $statsFindings
 
+# A statement carrying an id window can be cut into shards and merged when its result is too
+# large for one request. Merging sums the COVERAGE counts, which is exact only while the
+# window and the counted object are the same thing: cut on participants and count events, and
+# an event spanning two windows would be counted twice. The runner cannot see that at run
+# time, so it is settled here instead.
+$shardFindings = @()
+foreach ($s in ($dqStatements + $globalDq)) {
+    $windows = [regex]::Matches($s.Sql, '(?m)^\s*--\s*AND\s+([\w.]+)\s+BETWEEN\s+<from_([a-z_]+)_id>\s+AND\s+<to_([a-z_]+)_id>\s*$')
+    if ($windows.Count -eq 0) { continue }
+    $where = "$($s.CheckId) ($($s.File):$($s.Line))"
+
+    $objects = @($windows | ForEach-Object { $_.Groups[2].Value } | Select-Object -Unique)
+    if ($objects.Count -gt 1) {
+        $shardFindings += "${where}: id windows name more than one object ($($objects -join ', ')); a merged run could not sum one coverage count"
+        continue
+    }
+    $object = $objects[0]
+
+    foreach ($w in $windows) {
+        if ($w.Groups[2].Value -ne $w.Groups[3].Value) {
+            $shardFindings += "${where}: window runs from <from_$($w.Groups[2].Value)_id> to <to_$($w.Groups[3].Value)_id>, which name different objects"
+        }
+    }
+
+    # Every top-level branch must carry a window, or an unwindowed branch would return its
+    # whole population inside each shard and be multiplied by the merge. Only top-level ones
+    # count: these statements union their participation sources inside a derived table, and a
+    # window on the table that drives the branch already constrains everything it feeds.
+    $branchStarts = @(0)
+    $depth = 0
+    for ($i = 0; $i -lt $s.Sql.Length; $i++) {
+        $ch = $s.Sql[$i]
+        if ($ch -eq '(') { $depth++ }
+        elseif ($ch -eq ')') { $depth-- }
+        elseif ($depth -eq 0 -and $ch -eq 'U' -and $s.Sql.Substring($i) -match '^UNION\s+ALL\b') {
+            $branchStarts += $i
+        }
+    }
+
+    for ($b = 0; $b -lt $branchStarts.Count; $b++) {
+        $from = $branchStarts[$b]
+        $to = if ($b + 1 -lt $branchStarts.Count) { $branchStarts[$b + 1] } else { $s.Sql.Length }
+        $branch = $s.Sql.Substring($from, $to - $from)
+        if ($branch -notmatch '(?m)^\s*--\s*AND\s+[\w.]+\s+BETWEEN\s+<from_[a-z_]+_id>') {
+            $shardFindings += "${where}: branch $($b + 1) of $($branchStarts.Count) carries no id window, so a merged run would repeat its whole population in every shard"
+        }
+    }
+
+    $counted = @([regex]::Matches($s.Sql, 'COUNT\(DISTINCT\s+([a-z_0-9.]+)\)') | ForEach-Object { $_.Groups[1].Value })
+    foreach ($key in $counted) {
+        $tail = ($key -split '\.')[-1]
+        if ($tail -ne 'id' -and $tail -ne "${object}_id") {
+            $shardFindings += "${where}: cut on $object but coverage counts $key, so summing the shards would not be exact"
+        }
+    }
+}
+Add-Result -Group 'DQ' -Name 'Shardable statements can be merged' -Findings $shardFindings
+
 # --------------------------------------------------------------------------------------
 # GLOBAL parameterization
 # --------------------------------------------------------------------------------------

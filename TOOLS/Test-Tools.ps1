@@ -957,6 +957,49 @@ Test-That 'workbook carries the Check By column and the outcome statuses' {
     Assert-True ($detailXml -match 'r="I1"[^>]*><is><t[^>]*>Signal<') 'Signal should follow Check By on a check tab'
 }
 
+Test-That 'an id window is activated and reports the object it keys on' {
+    $sql = @'
+SELECT p.id
+FROM participant p
+WHERE p.del = 'no'
+  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
+'@
+    $shard = Enable-ShardFilter -Text $sql -From 1567 -To 900000
+    Assert-Equal 1 $shard.Activated 'one window found'
+    Assert-Equal 'participant' $shard.Object 'the placeholder names the table to read the range from'
+    Assert-True ($shard.Sql -match 'AND p\.id BETWEEN 1567 AND 900000') 'the window is written into the statement'
+    Assert-True ($shard.Sql -notmatch '<from_') 'no placeholder survives'
+
+    # A statement with no window cannot be cut, and says so rather than being guessed at.
+    Assert-True ($null -eq (Enable-ShardFilter -Text 'SELECT 1;' -From 1 -To 2)) 'no marker means no shard'
+}
+
+Test-That 'only a result too large is answered by cutting it up' {
+    Assert-True (Test-ResultTooLarge -Message 'Allowed memory size of 134217728 bytes exhausted') 'the failure sharding exists for'
+    Assert-True (Test-ResultTooLarge -Message 'Out of memory') 'and its other wording'
+    # Cutting a slow statement multiplies the time instead of dividing the rows.
+    Assert-True (-not (Test-ResultTooLarge -Message 'Maximum execution time of 300 seconds exceeded')) 'a slow statement is not a large one'
+    Assert-True (-not (Test-ResultTooLarge -Message 'Unknown column p.nope in field list')) 'nor is a broken one'
+}
+
+Test-That 'merging shards concatenates findings and sums coverage' {
+    $first = @(
+        [pscustomobject]@{ check_type = 'No_Participation'; participant_id = 11; eligible_count = $null }
+        [pscustomobject]@{ check_type = 'No_Participation'; participant_id = 12; eligible_count = $null }
+        [pscustomobject]@{ check_type = 'COVERAGE'; participant_id = $null; eligible_count = 200 })
+    $second = @(
+        [pscustomobject]@{ check_type = 'No_Participation'; participant_id = 90; eligible_count = $null }
+        [pscustomobject]@{ check_type = 'COVERAGE'; participant_id = $null; eligible_count = 193933 })
+
+    $merged = @(Merge-ShardedRows -Parts @($first, $second))
+
+    Assert-Equal 4 $merged.Count 'three findings and one coverage row'
+    $coverage = @($merged | Where-Object { $_.check_type -eq 'COVERAGE' })
+    Assert-Equal 1 $coverage.Count 'the shards must not each keep their own coverage row'
+    Assert-Equal 194133 $coverage[0].eligible_count 'the counts are summed, not repeated'
+    Assert-Equal 'COVERAGE' $merged[-1].check_type 'coverage still sorts last'
+}
+
 Test-That 'the workbook seeds the two statuses it can settle itself' {
     Assert-Equal 'No action needed' (Get-SeededStatus -Signal 'Informational' -Rows 40 -Ran $true -Eligible $null) `
         'an informational check has nothing to act on whatever it returned'

@@ -720,6 +720,93 @@ function Enable-TemplateFilter {
     return [pscustomobject]@{ Sql = $activated; Activated = $found.Count }
 }
 
+# The id window a statement can be cut into. WORKFLOW.md separates two ways scope failure
+# arrives, and this marker answers the second: not a statement too slow, but a result the
+# transport cannot carry whole. Soccer's registry holds close to 400 000 audited people and
+# GLOBAL-DQ-009 reports around 140 000 of them, which exhausts the API's memory before a row
+# is returned.
+#
+# The placeholder names the object the window keys on - <from_participant_id> means the
+# participant table - so the runner can find that table's id range without being told.
+$ShardFilterMarker =
+'(?m)^([ \t]*)--[ \t]*AND[ \t]+([\w.]+)[ \t]+BETWEEN[ \t]+<from_([a-z_]+)_id>[ \t]+AND[ \t]+<to_[a-z_]+_id>[ \t]*$'
+
+# A runaway split is the thing to bound rather than the split itself. Eight levels is 256
+# windows, far past any result this package can produce.
+$MaxShardDepth = 8
+
+# How many windows the first cut makes. Halving from the whole range would rediscover the
+# limit by failing at every level, and a failure costs the same full scan a success does -
+# the transport only gives up once the rows are gathered. Measured on Soccer: halving spent
+# seven failed scans to reach eight windows, where cutting straight to eight spends none.
+$InitialShardCount = 8
+
+function Enable-ShardFilter {
+    # Activates every id window in the statement. Returns $null for a statement that declares
+    # none, which is how a caller learns it cannot be cut rather than guessing a column.
+    param([string]$Text, [long]$From, [long]$To)
+
+    $found = [regex]::Matches($Text, $ShardFilterMarker)
+    if ($found.Count -eq 0) { return $null }
+
+    $activated = [regex]::Replace($Text, $ShardFilterMarker, {
+            param($m)
+            '{0}AND {1} BETWEEN {2} AND {3}' -f $m.Groups[1].Value, $m.Groups[2].Value, $From, $To
+        })
+
+    return [pscustomobject]@{
+        Sql       = $activated
+        Object    = $found[0].Groups[3].Value
+        Activated = $found.Count
+    }
+}
+
+function Test-ResultTooLarge {
+    # The transport giving up on the size of a result, which is the one failure sharding
+    # answers. A statement that is merely slow fails differently and must not be cut, because
+    # cutting it would multiply the time rather than divide the rows.
+    param([string]$Message)
+
+    return ([string]$Message -match 'Allowed memory size' -or
+        [string]$Message -match 'memory[ _]?(size )?exhausted' -or
+        [string]$Message -match 'Out of memory')
+}
+
+function Merge-ShardedRows {
+    # Findings concatenate; COVERAGE does not. Each shard reports the population of its own
+    # window, so the merged statement must carry one COVERAGE row holding their sum, or the
+    # workbook would show a check that audited nothing per shard.
+    #
+    # Summing is exact only because the window and the count key are the same object, which
+    # Test-Package.ps1 enforces statically for every statement carrying the marker.
+    param($Parts)
+
+    $findings = @()
+    $coverage = $null
+    $total = 0
+
+    foreach ($rows in $Parts) {
+        foreach ($row in @($rows)) {
+            if ($null -eq $row) { continue }
+            $names = $row.PSObject.Properties.Name
+            if ($names -contains 'check_type' -and [string]$row.check_type -eq 'COVERAGE') {
+                if ($null -eq $coverage) { $coverage = $row }
+                $value = 0
+                if ($names -contains 'eligible_count' -and
+                    [int]::TryParse([string]$row.eligible_count, [ref]$value)) { $total += $value }
+                continue
+            }
+            $findings += $row
+        }
+    }
+
+    if ($null -ne $coverage) {
+        $coverage.eligible_count = $total
+        $findings += $coverage
+    }
+    return $findings
+}
+
 # A branch a statement declares optional. Only a statement that reads the registry as one
 # source beside others carries the pair; one whose audited population is the registry itself
 # does not, which is what makes dropping it refusable rather than silently destructive.
@@ -1014,6 +1101,88 @@ function Get-SqlLiteral {
     param([string]$Text)
 
     return "'" + (($Text -replace '\\', '\\\\') -replace "'", "''") + "'"
+}
+
+function Get-ShardBounds {
+    # The id range the windows are cut from, read from the object the marker names. The whole
+    # table is used rather than the sport's slice of it: a window falling outside the sport
+    # returns nothing and costs one cheap query, where deriving the sport's own range would
+    # mean parsing the statement's FROM clause to find out how it reaches the sport.
+    param([string]$Object)
+
+    # The name comes out of a placeholder in our own SQL, but it is about to be concatenated
+    # into a statement, so it is checked rather than trusted.
+    if ($Object -notmatch '^[a-z][a-z_]*$') { return $null }
+
+    $probe = "SELECT MIN(id) AS lo, MAX(id) AS hi FROM $Object WHERE del = 'no'"
+    $rows = @(Get-ResultRows -Content (Invoke-SqlWithRetry -Statement $probe).Content)
+    if ($rows.Count -eq 0) { return $null }
+
+    $lo = 0
+    $hi = 0
+    if (-not [long]::TryParse([string]$rows[0].lo, [ref]$lo)) { return $null }
+    if (-not [long]::TryParse([string]$rows[0].hi, [ref]$hi)) { return $null }
+    if ($hi -lt $lo) { return $null }
+
+    return [pscustomobject]@{ Lo = $lo; Hi = $hi }
+}
+
+function Invoke-ShardedSql {
+    # Runs one id window, and halves it on the same failure rather than guessing a shard count
+    # up front: the size that defeats the transport is a property of the data, not of the
+    # statement, and it changes as the database grows.
+    param([string]$Statement, [long]$From, [long]$To, [int]$Depth = 0)
+
+    $shard = Enable-ShardFilter -Text $Statement -From $From -To $To
+
+    try {
+        return Get-ResultRows -Content (Invoke-SqlWithRetry -Statement $shard.Sql).Content
+    }
+    catch {
+        if (-not (Test-ResultTooLarge -Message $_.Exception.Message)) { throw }
+        if ($Depth -ge $MaxShardDepth -or $From -ge $To) { throw }
+
+        $mid = [long][math]::Floor(($From + $To) / 2)
+        $left = Invoke-ShardedSql -Statement $Statement -From $From -To $mid -Depth ($Depth + 1)
+        $right = Invoke-ShardedSql -Statement $Statement -From ($mid + 1) -To $To -Depth ($Depth + 1)
+        return Merge-ShardedRows -Parts @($left, $right)
+    }
+}
+
+function Get-StatementRows {
+    # One statement's rows. Whole where the transport can carry them, cut into id windows and
+    # merged where it cannot - so a batch is not lost to the one check whose findings outgrew
+    # the connection, and nobody has to know in advance which check that is.
+    param([string]$Statement, [string]$CheckId)
+
+    try {
+        return Get-ResultRows -Content (Invoke-SqlWithRetry -Statement $Statement).Content
+    }
+    catch {
+        if (-not (Test-ResultTooLarge -Message $_.Exception.Message)) { throw }
+
+        $shard = Enable-ShardFilter -Text $Statement -From 0 -To 0
+        if (-not $shard) { throw }
+
+        $bounds = Get-ShardBounds -Object $shard.Object
+        if (-not $bounds) { throw }
+
+        Write-Host ("  {0}: result too large for one request, cutting {1} ids {2}-{3} into {4} windows" -f `
+                $CheckId, $shard.Object, $bounds.Lo, $bounds.Hi, $InitialShardCount) -ForegroundColor Yellow
+
+        # The whole range has just failed, so it is not tried again. Each window that still
+        # cannot be carried halves itself from here.
+        $span = $bounds.Hi - $bounds.Lo + 1
+        $step = [long][math]::Ceiling($span / $InitialShardCount)
+        $parts = @()
+
+        for ($lo = $bounds.Lo; $lo -le $bounds.Hi; $lo += $step) {
+            $hi = [long][math]::Min($lo + $step - 1, $bounds.Hi)
+            $parts += , (Invoke-ShardedSql -Statement $Statement -From $lo -To $hi -Depth 1)
+        }
+
+        return Merge-ShardedRows -Parts $parts
+    }
 }
 
 # The parameters Resolve-SportParameters can read from the database. Anything else has to
@@ -2597,8 +2766,7 @@ if ($isBatch) {
         $status = 'OK'
 
         try {
-            $response = Invoke-SqlWithRetry -Statement $job.Sql
-            $rows = Get-ResultRows -Content $response.Content
+            $rows = Get-StatementRows -Statement $job.Sql -CheckId $job.CheckId
             $rowCount = @($rows).Count
 
             if ($rowCount -gt 0) {
@@ -2704,12 +2872,11 @@ if ($job.CheckId) {
 }
 
 $started = Get-Date
-$response = Invoke-SqlWithRetry -Statement $job.Sql
+$rows = Get-StatementRows -Statement $job.Sql -CheckId $job.CheckId
 $elapsed = (Get-Date) - $started
 
 Save-SessionState -Session $script:Session
 
-$rows = Get-ResultRows -Content $response.Content
 $count = @($rows).Count
 Write-Host ("Rows: {0}   Elapsed: {1:n1}s" -f $count, $elapsed.TotalSeconds) -ForegroundColor DarkGray
 
