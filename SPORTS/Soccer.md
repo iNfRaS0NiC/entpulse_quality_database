@@ -295,6 +295,37 @@ Comp.Rank has no status vocabulary and no measured quantity.
 **`1429 Team` is populated here.** Soccer is the first documented sport to fill it, which
 makes it the only confirmed case of the field the Triathlon record describes as unpopulated.
 
+**The two kinds of Comp.Rank statistic divide the work between them, and the split is
+structural.** A statistic without the `(athletes)` suffix ranks `team` participants and holds
+the placing. A statistic with the suffix lists `athlete` and `coach` participants, and every
+one of those rows carries `1429 Team` while **none of them carries a `1270 Rank` row at all** —
+not an empty rank, no row. So the athlete statistic records who was in the squad, and the team
+statistic records where the squad finished.
+
+This is a state of the data rather than a limit of the schema: `1270 Rank` is a field of this
+layer and the team statistics use it, so a squad list that began carrying a placing would be
+readable the day it appeared. The event layer is the opposite case and is settled elsewhere —
+a head-to-head sport stores no place on a result, which is why `RESULT_RANK_TYPE_ID` is
+recorded as unavailable in `SPORTS/params.json`.
+
+### Checks whose eligible population is empty
+
+The coverage contract requires the sport file to say which of the two kinds each zero is.
+Measured on 2026-08-05, three approved checks audit nothing today, and all three are sentinels
+rather than misdirected scopes — the scope is aimed correctly and the population it names does
+not exist yet:
+
+| Check | Its population | Why it is empty |
+|---|---|---|
+| `Soccer-DQ-053` | Comp.Rank statistics whose Gender config reads `mixed` | the config carries only `male` and `female` |
+| `Soccer-DQ-054` | event participants that are teams of gender `mixed` | team participants are only `male` and `female` |
+| `Soccer-DQ-066` | athlete Comp.Rank rows holding a numeric Rank | the squad lists carry no Rank row, as above |
+
+None of the three reads a structure the sport lacks. `mixed` is a value of a populated column
+in both of the first two, and `CLAUDE.md` is explicit that a value with no rows today is a data
+state: excluding a check on that basis disables it for the day those rows arrive, which is the
+day it was written for. Each keeps its registry row, its ID and its `Approved` status.
+
 Soccer's statistic layer is far wider than Comp.Rank alone. Other active types sit at three
 owner levels — tournament, tournament stage and event — and include `Player Stats`,
 `Team Stats`, their Extended variants and `Fun Facts Stats`, with the largest populations at
