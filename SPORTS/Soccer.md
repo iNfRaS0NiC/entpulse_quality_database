@@ -299,6 +299,11 @@ structure rather than as a candidate.
 Comp.Rank `1277 Medal` uses the standard `gold`, `silver`, `bronze` vocabulary and also occurs
 with an empty value. `1270 Rank` carries a bare integer.
 
+A Comp.Rank statistic is named `<Competition> <Gender> <Year> - Competition Rank`, with an
+`(athletes)` variant beside the plain one wherever the competition ranks both teams and the
+people in them. Tournament stage names follow their competition and hold to their own forms
+without exception across every distinct pattern in scope.
+
 **The plausible rank ceiling is the field size, and the field is about to grow.** The largest
 field any competition in scope has entered so far is 32, and the World Championship expands to
 48 from 2026, which the scope already reaches. `RANK_MAX_PLAUSIBLE` is recorded as the ceiling
@@ -393,7 +398,11 @@ begun is a normal outcome in this one.
 - **Do the sport-wide areas need re-confirming inside the scope?** The registry and the
   statistic findings still describe all of Soccer. The registry has no template relation and
   never will; the statistic statements could be narrowed only by a filter shaped for their
-  six-way owner disjunction, which does not exist yet.
+  six-way owner disjunction, which does not exist yet. Deliberately left that way on
+  2026-08-05: what those statements establish — which statistic types and owners the sport
+  uses, which shard holds them, which data and config fields exist — does not change with the
+  scope, so the wider evidence is sound for the facts recorded from it. It would matter for a
+  finding counted per row, and none of these is.
 - **Why does reading `statistic_config.value` cost two orders of magnitude?**
   `GLOBAL-DQ-044` cannot complete for this sport, and the cause is one predicate rather than
   the sport's size. The same statement without `sg.value IN ('male','female','mixed')` counts
