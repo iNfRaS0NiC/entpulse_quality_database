@@ -411,6 +411,10 @@
         "signal": "Not applicable",
         "reason": "Structural: the template's prerequisite is a head-to-head sport whose format admits no draw, and Soccer's does. A group match may legitimately end level, and so may one leg of a tie decided on aggregate, so the rule cannot be asserted at sport level - run wide it matched every drawn match and exhausted the server. The narrower rule that does hold, restricted to knockout rounds and excluding aggregate legs, is Soccer-DQ-022. SPORTS/Soccer.md owns the reasoning."
       },
+      "GLOBAL-DQ-030": {
+        "signal": "Monitor",
+        "reason": "Most of the output is the lineup import rather than the data: roughly four fifths of the reported rows sit in tournaments carrying no active lineup at all, where the check has no mechanism through which to find the ranked participant and would report them however complete the entry was. The rows worth reading are the remainder, in tournaments that do carry lineups and where the participant is therefore genuinely unrepresented - athletes mostly, with a few coaches. Read the lineup state of the tournament before the count. SPORTS/Soccer.md owns the finding."
+      },
       "GLOBAL-DQ-033": {
         "signal": "Not applicable",
         "reason": "The template's prerequisite is a sport confirmed to carry a Phase on ranked participants, and Soccer carries none: no Comp.Rank participant row in the sport holds an active object_round phase row. The check therefore reads a relation the sport never writes. This is the prerequisite failing, not a count being small - the same reading would apply at any population size. SPORTS/Soccer.md owns the finding."
