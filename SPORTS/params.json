@@ -351,7 +351,7 @@
   "Soccer": {
     "SPORT_ID": 1,
     "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
-    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach', 'official'",
+    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
     "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
     "STATISTIC_TYPE_ID": 11,
     "STATISTIC_OWNER_TYPE_ID": 3,
@@ -407,6 +407,10 @@
       "WINNER_AWAY_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write"
     },
     "_checkSignal": {
+      "GLOBAL-DQ-009": {
+        "signal": "Informational",
+        "reason": "135282 of 364192 registered athletes and 6140 of 29954 registered teams reach none of the three participation paths, and the rows are ordinary named people with a gender and a country, concentrated in the newest participant IDs - players the registry has taken on who have not yet appeared in a match this database covers. Nobody can correct such a row: the athlete is not wrong and the matches are not ours to add. Recorded by decision of 2026-08-05. REGISTRY_PARTICIPANT_TYPE_LIST is narrowed to athlete and team for the same decision: the registry also files coach and official, and the check reads only the event, lineup and Comp.Rank paths, so 3900 of the 3901 registered officials report for want of the ref:participant path this client does not use. Coaches are reachable - 1413 of 12844 report - and are left out only because the two audited types were the ones asked for. The narrowed list is this check's scope, not the registry's content, which SPORTS/Soccer.md records in full."
+      },
       "GLOBAL-DQ-041": {
         "signal": "Not applicable",
         "reason": "The template's own prerequisite is a sport confirmed to carry a Phase, and Soccer is not one: no Comp.Rank participant row in the sport carries an active object_round phase row at all, across every statistic that holds participants. The check reads a relation this sport never writes, so its eligible population is not empty today but permanently absent. This is the prerequisite failing rather than a count being small - the same reading would apply if the sport held ten phase rows or ten thousand. SPORTS/Soccer.md owns the finding."

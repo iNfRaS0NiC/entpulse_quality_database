@@ -138,6 +138,15 @@ monitored on the same reasoning. Both are signalled `Monitor` in `SPORTS/params.
 the lineup type they occupy will therefore be wrong for this sport, and a check that infers it
 from `participant.type` disagrees with the registry as described above.
 
+**Only two of the four registry roles are reachable by the three participation paths.** An
+`athlete` is reached through a lineup place or a Comp.Rank row, a `team` through an event
+participant row, and a `coach` through both a lineup place and a Comp.Rank row. An `official`
+is reached by none of them: the role's own mechanism is the `ref:participant` path, which is
+outside this client's scope by the decision of 2026-08-05, so a participation check finds an
+official only by accident. `REGISTRY_PARTICIPANT_TYPE_LIST` is therefore narrowed to `athlete`
+and `team` for `GLOBAL-DQ-009`, the one statement that reads it — a scope for that check, not a
+correction to the four roles the registry carries.
+
 <!-- MANUAL PASTE ZONE: 1 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types
