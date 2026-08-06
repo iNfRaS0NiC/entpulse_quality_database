@@ -2905,3 +2905,188 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-116
+    -- Name - EVENT_RESULTS_RANK_TIE_CONTRADICTED_BY_SCORE
+    -- What it does: Finds event participants sharing a Rank with another in a finished event while the score that decides the ranking does not agree across the tie, separating a tie whose scores differ from one where a tied participant holds no score at all.
+    'RANK_TIE_SCORE_DIFFERS' AS check_type,
+    ep.id AS event_participants_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    tt.name AS template_name,
+    p.name AS participant_name,
+    CAST(r.value AS UNSIGNED) AS rank_value,
+    NULLIF(TRIM(COALESCE(rs.value, '')), '') AS score_value,
+    g.distinct_scores AS distinct_scores_at_rank,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id
+     AND r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+     AND r.del = 'no'
+     AND r.value REGEXP '^[1-9][0-9]*$'
+LEFT JOIN result rs ON rs.event_participantsFK = ep.id
+     AND rs.result_typeFK = {{RESULT_SCORE_TYPE_ID}}
+     AND rs.del = 'no'
+JOIN (
+    SELECT ep2.eventFK AS event_id,
+           CAST(r2.value AS UNSIGNED) AS rank_value,
+           COUNT(DISTINCT ep2.id) AS tied_count,
+           COUNT(DISTINCT NULLIF(TRIM(rs2.value), '')) AS distinct_scores,
+           COUNT(DISTINCT CASE WHEN TRIM(COALESCE(rs2.value, '')) = '' THEN ep2.id END) AS scoreless_count
+    FROM event_participants ep2
+    JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    JOIN result r2 ON r2.event_participantsFK = ep2.id
+         AND r2.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+         AND r2.del = 'no'
+         AND r2.value REGEXP '^[1-9][0-9]*$'
+    LEFT JOIN result rs2 ON rs2.event_participantsFK = ep2.id
+         AND rs2.result_typeFK = {{RESULT_SCORE_TYPE_ID}}
+         AND rs2.del = 'no'
+    WHERE ep2.del = 'no'
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND e2.status_type = 'finished'
+      -- AND t2.tournament_templateFK = <tournament_template_id>
+      -- AND e2.startdate >= '<from_datetime>'
+      -- AND e2.startdate <  '<to_datetime>'
+      AND NOT EXISTS (
+          SELECT 1
+          FROM result rc2
+          WHERE rc2.event_participantsFK = ep2.id
+            AND rc2.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+            AND rc2.del = 'no'
+            AND TRIM(COALESCE(rc2.value, '')) <> ''
+      )
+    GROUP BY ep2.eventFK, CAST(r2.value AS UNSIGNED)
+    HAVING COUNT(DISTINCT ep2.id) > 1
+) g ON g.event_id = e.id AND g.rank_value = CAST(r.value AS UNSIGNED)
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND g.scoreless_count = 0
+  AND g.distinct_scores > 1
+  AND NOT EXISTS (
+      SELECT 1
+      FROM result rc
+      WHERE rc.event_participantsFK = ep.id
+        AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+        AND rc.del = 'no'
+        AND TRIM(COALESCE(rc.value, '')) <> ''
+  )
+
+UNION ALL
+
+SELECT
+    'RANK_TIE_SCORE_MISSING' AS check_type,
+    ep.id AS event_participants_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    tt.name AS template_name,
+    p.name AS participant_name,
+    CAST(r.value AS UNSIGNED) AS rank_value,
+    NULLIF(TRIM(COALESCE(rs.value, '')), '') AS score_value,
+    g.distinct_scores AS distinct_scores_at_rank,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id
+     AND r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+     AND r.del = 'no'
+     AND r.value REGEXP '^[1-9][0-9]*$'
+LEFT JOIN result rs ON rs.event_participantsFK = ep.id
+     AND rs.result_typeFK = {{RESULT_SCORE_TYPE_ID}}
+     AND rs.del = 'no'
+JOIN (
+    SELECT ep2.eventFK AS event_id,
+           CAST(r2.value AS UNSIGNED) AS rank_value,
+           COUNT(DISTINCT ep2.id) AS tied_count,
+           COUNT(DISTINCT NULLIF(TRIM(rs2.value), '')) AS distinct_scores,
+           COUNT(DISTINCT CASE WHEN TRIM(COALESCE(rs2.value, '')) = '' THEN ep2.id END) AS scoreless_count
+    FROM event_participants ep2
+    JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    JOIN result r2 ON r2.event_participantsFK = ep2.id
+         AND r2.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+         AND r2.del = 'no'
+         AND r2.value REGEXP '^[1-9][0-9]*$'
+    LEFT JOIN result rs2 ON rs2.event_participantsFK = ep2.id
+         AND rs2.result_typeFK = {{RESULT_SCORE_TYPE_ID}}
+         AND rs2.del = 'no'
+    WHERE ep2.del = 'no'
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND e2.status_type = 'finished'
+      -- AND t2.tournament_templateFK = <tournament_template_id>
+      -- AND e2.startdate >= '<from_datetime>'
+      -- AND e2.startdate <  '<to_datetime>'
+      AND NOT EXISTS (
+          SELECT 1
+          FROM result rc2
+          WHERE rc2.event_participantsFK = ep2.id
+            AND rc2.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+            AND rc2.del = 'no'
+            AND TRIM(COALESCE(rc2.value, '')) <> ''
+      )
+    GROUP BY ep2.eventFK, CAST(r2.value AS UNSIGNED)
+    HAVING COUNT(DISTINCT ep2.id) > 1
+) g ON g.event_id = e.id AND g.rank_value = CAST(r.value AS UNSIGNED)
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND g.scoreless_count > 0
+  AND NOT EXISTS (
+      SELECT 1
+      FROM result rc
+      WHERE rc.event_participantsFK = ep.id
+        AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+        AND rc.del = 'no'
+        AND TRIM(COALESCE(rc.value, '')) <> ''
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id
+     AND r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+     AND r.del = 'no'
+     AND r.value REGEXP '^[1-9][0-9]*$'
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_id;

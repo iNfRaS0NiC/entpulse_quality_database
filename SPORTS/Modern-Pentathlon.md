@@ -99,6 +99,14 @@ unresolved. `disq.` carries a Rank on none, which is consistent with a disqualif
 the participant has no result; `q`, `or`, `wr` and `q/or` always do, being a qualification or a
 record rather than an absence.
 
+A shared Rank is normal rather than exceptional, and the `102` points result is what says which
+shared rank is real. Two competitors scoring the same number of points in a segment genuinely
+occupy the same place, so the sport ties by design and a rule reading a shared rank as suspect
+unless a Comment explains it reports its ordinary scoring. The score decides it instead: where a
+place is shared and the points behind it agree, the tie is the format; where the points differ,
+the ranking contradicts its own input. `GLOBAL-DQ-021` is therefore recorded as not applicable
+here and `GLOBAL-DQ-116` carries the invariant, reading the score rather than the Comment.
+
 The Rank values divide cleanly. The largest field the sport contests holds 75 participants and
 ordinary ranks stop there; the only values above it are a handful in the 471 to 561 range, each
 occurring once and all on `Team-Relay Mix - After Laser Run` events. Nothing sits between the

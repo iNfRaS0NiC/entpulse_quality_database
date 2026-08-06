@@ -495,6 +495,7 @@
     "RESULT_RANK_TYPE_ID": 100,
     "RESULT_COMMENT_TYPE_ID": 104,
     "RESULT_MEDAL_TYPE_ID": 501,
+    "RESULT_SCORE_TYPE_ID": 102,
     "ROUND_TYPE_LIST": "2, 38, 39, 40, 41, 42, 77, 89, 92, 152, 173, 178, 179, 251, 260",
     "FINAL_ROUND_TYPE_LIST": "173",
     "MEDAL_ROUND_TYPE_LIST": "173",
@@ -534,6 +535,10 @@
       "GLOBAL-DQ-046": {
         "signal": "Blocked",
         "reason": "The two populations it needs never meet: every Comp.Rank carrying a Time value carries no object_discipline row, and every Comp.Rank carrying a discipline holds no Time. The check scopes on the sport's timed disciplines and reports a Time missing despite a Rank, so whatever discipline list it were given it would report every discipline-tagged statistic in the sport as defective - its normal shape. Blocked rather than not applicable because both structures are present and used; they are simply not attached to each other. It becomes meaningful the day one of the two is joined to the other, without the check changing. SPORTS/Modern-Pentathlon.md owns the evidence."
+      },
+      "GLOBAL-DQ-021": {
+        "signal": "Not applicable",
+        "reason": "The template excludes a sport that awards tied ranks by design, and this one does: its segments are scored in points, so two competitors on the same score share a place legitimately and no Comment is written for it. Measured, the rule reports 32178 event participants, of which the points behind 30136 agree - correct records read as defects. GLOBAL-DQ-116 carries the same invariant against the score instead of the Comment and reports 2013, and GLOBAL-DQ-095 guards it on the statistic layer where the overall classification lives. The exclusion rests on how the sport scores a place, not on how many rows tie today."
       },
       "GLOBAL-DQ-096": {
         "signal": "Not applicable",
