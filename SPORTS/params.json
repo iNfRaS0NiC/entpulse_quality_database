@@ -472,5 +472,29 @@
         "reason": "The check reads every event participant holding either of the mirrored score types and does not narrow to events that have been played, so its output is dominated by fixtures still to come - European Championship 2028 semi-finals carrying placeholder participants such as Winner SF 1, with a running score written and no final result yet. A mirrored pair that stopped being written for a finished match is the defect this check exists for and remains worth reading; the unplayed majority is the calendar. SPORTS/Soccer.md owns the reasoning."
       }
     }
+  },
+  "Modern-Pentathlon": {
+    "SPORT_ID": 42,
+    "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+    "STATISTIC_TYPE_ID": 11,
+    "STATISTIC_OWNER_TYPE_ID": 3,
+    "SHARD_ID": 11,
+    "DATA_RANK_TYPE_ID": 1270,
+    "DATA_COMMENT_TYPE_ID": 1273,
+    "DATA_MEDAL_TYPE_ID": 1277,
+    "DATA_TIME_TYPE_ID": 1426,
+    "DATA_TEAM_TYPE_ID": 1429,
+    "CONFIG_START_DATE_TYPE_ID": 1463,
+    "CONFIG_END_DATE_TYPE_ID": 1464,
+    "CONFIG_GENDER_TYPE_ID": 1470,
+    "CONFIG_EVENT_ID_TYPE_ID": 1471,
+    "RESULT_RANK_TYPE_ID": 100,
+    "RESULT_COMMENT_TYPE_ID": 104,
+    "RESULT_MEDAL_TYPE_ID": 501,
+    "ROUND_TYPE_LIST": "2, 38, 39, 40, 41, 42, 77, 89, 92, 152, 173, 178, 179, 251, 260",
+    "NUMERIC_RESULT_TYPE_LIST": "100, 102",
+    "NUMERIC_DATA_TYPE_LIST": "1270, 1271"
   }
 }
