@@ -2940,7 +2940,14 @@ JOIN (
     SELECT ep2.eventFK AS event_id,
            CAST(r2.value AS UNSIGNED) AS rank_value,
            COUNT(DISTINCT ep2.id) AS tied_count,
-           COUNT(DISTINCT NULLIF(TRIM(rs2.value), '')) AS distinct_scores,
+           -- Compared as a quantity where the value is one, so 13.800 and 13.8 are one score
+           -- rather than two. A value that is not a plain number stays text and keeps its own
+           -- identity, which a sport storing a status word in its score field depends on.
+           COUNT(DISTINCT CASE
+                     WHEN TRIM(rs2.value) REGEXP '^-?[0-9]+([.][0-9]+)?$'
+                          THEN CAST(CAST(TRIM(rs2.value) AS DECIMAL(20,6)) AS CHAR)
+                     ELSE NULLIF(TRIM(rs2.value), '')
+                 END) AS distinct_scores,
            COUNT(DISTINCT CASE WHEN TRIM(COALESCE(rs2.value, '')) = '' THEN ep2.id END) AS scoreless_count
     FROM event_participants ep2
     JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
@@ -3019,7 +3026,14 @@ JOIN (
     SELECT ep2.eventFK AS event_id,
            CAST(r2.value AS UNSIGNED) AS rank_value,
            COUNT(DISTINCT ep2.id) AS tied_count,
-           COUNT(DISTINCT NULLIF(TRIM(rs2.value), '')) AS distinct_scores,
+           -- Compared as a quantity where the value is one, so 13.800 and 13.8 are one score
+           -- rather than two. A value that is not a plain number stays text and keeps its own
+           -- identity, which a sport storing a status word in its score field depends on.
+           COUNT(DISTINCT CASE
+                     WHEN TRIM(rs2.value) REGEXP '^-?[0-9]+([.][0-9]+)?$'
+                          THEN CAST(CAST(TRIM(rs2.value) AS DECIMAL(20,6)) AS CHAR)
+                     ELSE NULLIF(TRIM(rs2.value), '')
+                 END) AS distinct_scores,
            COUNT(DISTINCT CASE WHEN TRIM(COALESCE(rs2.value, '')) = '' THEN ep2.id END) AS scoreless_count
     FROM event_participants ep2
     JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
