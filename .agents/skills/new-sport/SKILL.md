@@ -66,6 +66,30 @@ Classify every result with the `WORKFLOW.md` evidence vocabulary as you go. A re
 row count equals the limit is truncated and supports only "these examples exist". A chained
 one supports only "these examples exist among the values pursued".
 
+## Stage 2b - settle every open decision before writing anything
+
+A run decides some things by itself and defers others. Both are fine while they stay execution
+output. Stage 3 is where they stop being that: a value written into `SPORTS/params.json` is read
+by every later run as confirmed evidence, and a heuristic recorded there is indistinguishable
+from a fact anybody checked.
+
+So before the `PREPARE_DOC_UPDATE` command, list every open decision and put them to the user
+**one at a time, each with its actual alternatives** — taken from the run's own output, not
+invented. Do not proceed on silence, and do not fold two decisions into one question.
+
+The recurring ones, and where the alternatives come from:
+
+| Decision | Alternatives to offer |
+|---|---|
+| Which statistic type and owner level the sport is documented on | every row `GLOBAL-DISCOVERY-015` returned; the runner takes the busiest and prints the rest as "other pairs not used" |
+| Values `-Chain` did not pursue | the count in each `SKIPPED: N further value(s) …` row: pursue more, or record the sample as a sample |
+| A drill-down left `SKIPPED` with no source | run it by hand with a chosen value, or record the area as `Not checked` |
+| A check whose `eligible_count` is 0 | a misdirected scope to correct, or a legitimately empty population to record as a sentinel — `POWERBI.md` owns the distinction and it is never a third thing |
+| A check that failed | re-run it, or record the area as `Not checked` — never `Not used` |
+
+A decision the user has not made stays out of `params.json`. Recording the area as `Not checked`
+is always available and is the honest answer; guessing to fill a row is not.
+
 ## Stage 3 - record what was confirmed
 
 Only after the user issues:
@@ -109,4 +133,7 @@ A structural finding never becomes a DQ check automatically.
 - report a chained result as the sport's whole use of a shape: `-Chain` pursues the values a
   summary ranks first and says what it left, and that report is part of the finding;
 - fill a `params.json` value the sport file does not document as confirmed;
+- carry a value the runner chose for itself into `params.json` without the user having been
+  offered the alternatives and having picked one - that is the step where a heuristic becomes
+  evidence, and it is the one thing here that cannot be undone by reading the file later;
 - report a narrowed or truncated result as complete sport coverage.

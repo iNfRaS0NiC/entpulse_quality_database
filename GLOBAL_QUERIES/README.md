@@ -60,6 +60,20 @@ the one to hang the declaration on. Both name the column to read the value from 
 `GLOBAL-DISCOVERY-NNN` that returns it, and the column name is the one that statement
 projects.
 
+A source covering more than the consumer reads narrows itself with a trailing
+`where <column> = <value>`, where the value may carry a declared parameter:
+
+```sql
+AND sd.statistic_data_typeFK = {{STATISTIC_DATA_TYPE_ID}}  -- select statistic_data_type_id from GLOBAL-DISCOVERY-017 (STATISTIC_DATA_AND_CONFIG_FIELDS) where storage_layer = statistic_data{{SHARD_ID}}
+```
+
+`GLOBAL-DISCOVERY-017` inventories `statistic_config` beside the data shard and orders by
+storage layer, so its config rows always come first, while `GLOBAL-DISCOVERY-028` and
+`GLOBAL-DISCOVERY-029` read the shard alone. The filter is not a way to pick better values —
+it is the consumer stating which of its source's rows are about the layer it reads, which no
+ordering could have supplied. Without it every fed value returns nothing, and a chain that
+audited the wrong layer reports as a clean one.
+
 The declaration is the record of where a value legitimately comes from, and reading it is
 what lets `TOOLS/Run-Query.ps1 -Chain` run a drill-down without a pairing list; `TOOLS/README.md`
 owns that behaviour. A drill-down added without a declaration fails `TOOLS/Test-Tools.ps1`.

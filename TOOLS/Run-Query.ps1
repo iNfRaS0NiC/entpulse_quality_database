@@ -747,29 +747,63 @@ function Get-MissingPlaceholders {
 # first, which every summary in the catalogue orders by frequency. That makes a chained result a
 # sample of the busiest shapes, never coverage - so the values not pursued are reported and kept
 # in the workbook rather than left for the reader to infer from a tab count.
+#
+# A source wider than its consumer says so, with a trailing "where <column> = <value>":
+#
+#   -- select statistic_data_type_id from GLOBAL-DISCOVERY-017 (...) where storage_layer = statistic_data{{SHARD_ID}}
+#
+# GLOBAL-DISCOVERY-017 inventories the config layer beside the data shard and orders by storage
+# layer first, so statistic_config always leads whatever the counts are, while GLOBAL-DISCOVERY-028
+# reads the data shard alone. Without the filter the chain feeds it field types that layer cannot
+# hold, every one comes back empty, and the drill-down below them never runs at all - which is
+# what happened on Modern Pentathlon before this existed.
+#
+# Note what the filter is not: a way to pick better values. It is the consumer stating which of
+# its source's rows are about the thing it reads, which no ordering could have supplied.
 # --------------------------------------------------------------------------------------
 
+# The filter is optional and reads the same in both declaration forms.
+$ChainDeclarationFilter = '(?:[ \t]+where[ \t]+(?<filter>\w+)[ \t]*=[ \t]*(?<value>[^\r\n]+?)[ \t]*(?=$|\r))?'
+
 $ChainOwnLineDeclaration =
-'(?m)^[ \t]*--[ \t]*\{\{[ \t]*(\w+)[ \t]*\}\}[ \t]*:[ \t]*select[ \t]+(\w+)[ \t]+from[ \t]+(GLOBAL-DISCOVERY-\d+)'
+'(?m)^[ \t]*--[ \t]*\{\{[ \t]*(?<name>\w+)[ \t]*\}\}[ \t]*:[ \t]*select[ \t]+(?<column>\w+)[ \t]+from[ \t]+(?<check>GLOBAL-DISCOVERY-\d+)(?:[ \t]*\([^)\r\n]*\))?' +
+$ChainDeclarationFilter
 
 $ChainInlineDeclaration =
-'(?m)^(?<sql>[^\r\n]*\{\{[ \t]*\w+[ \t]*\}\}[^\r\n]*?)--[ \t]*select[ \t]+(?<column>\w+)[ \t]+from[ \t]+(?<check>GLOBAL-DISCOVERY-\d+)'
+'(?m)^(?<sql>[^\r\n]*\{\{[ \t]*\w+[ \t]*\}\}[^\r\n]*?)--[ \t]*select[ \t]+(?<column>\w+)[ \t]+from[ \t]+(?<check>GLOBAL-DISCOVERY-\d+)(?:[ \t]*\([^)\r\n]*\))?' +
+$ChainDeclarationFilter
+
+function New-DeclaredFeeder {
+    param($Match)
+
+    $filter = $null
+    if ($Match.Groups['filter'].Success) {
+        $filter = [pscustomobject]@{
+            Column = $Match.Groups['filter'].Value
+            Value  = $Match.Groups['value'].Value.Trim()
+        }
+    }
+
+    return [pscustomobject]@{
+        Column  = $Match.Groups['column'].Value
+        CheckId = $Match.Groups['check'].Value
+        Filter  = $filter
+    }
+}
 
 function Get-DeclaredFeeder {
-    # Which statement supplies each placeholder, and under which column name. The own-line form
-    # is read first because it names its placeholder explicitly; the inline form takes the last
-    # placeholder standing before the comment, which is the one the comment sits on.
+    # Which statement supplies each placeholder, under which column name, and which of its rows
+    # are the ones to read. The own-line form is read first because it names its placeholder
+    # explicitly; the inline form takes the last placeholder standing before the comment, which
+    # is the one the comment sits on.
     param([string]$Text)
 
     $declared = @{}
 
     foreach ($match in [regex]::Matches($Text, $ChainOwnLineDeclaration)) {
-        $name = $match.Groups[1].Value
+        $name = $match.Groups['name'].Value
         if ($declared.ContainsKey($name)) { continue }
-        $declared[$name] = [pscustomobject]@{
-            Column  = $match.Groups[2].Value
-            CheckId = $match.Groups[3].Value
-        }
+        $declared[$name] = New-DeclaredFeeder -Match $match
     }
 
     foreach ($match in [regex]::Matches($Text, $ChainInlineDeclaration)) {
@@ -778,13 +812,53 @@ function Get-DeclaredFeeder {
 
         $name = $names[$names.Count - 1].Groups[1].Value
         if ($declared.ContainsKey($name)) { continue }
-        $declared[$name] = [pscustomobject]@{
-            Column  = $match.Groups['column'].Value
-            CheckId = $match.Groups['check'].Value
-        }
+        $declared[$name] = New-DeclaredFeeder -Match $match
     }
 
     return $declared
+}
+
+function Expand-KnownPlaceholders {
+    # Substitutes what the run already knows and leaves the rest standing. Expand-Placeholders
+    # throws on a leftover, which is right for a statement about to be sent and wrong here: a
+    # declared filter is read before the caller has decided whether it can be honoured at all.
+    param([string]$Text, [hashtable]$Values)
+
+    return [regex]::Replace($Text, '\{\{\s*(\w+)\s*\}\}', {
+            param($m)
+            $key = $m.Groups[1].Value
+            if ($Values.ContainsKey($key)) { return [string]$Values[$key] }
+            return $m.Value
+        })
+}
+
+function Select-FeederRow {
+    # The rows of a source a consumer may actually read, per the filters declared against that
+    # source. Only those: a filter belongs to the statement it was written on, and a two-level
+    # chain reaches its values through a nearer source that never projected the filtered column.
+    # GLOBAL-DISCOVERY-029 declares storage_layer against GLOBAL-DISCOVERY-017 and is normally
+    # fed by GLOBAL-DISCOVERY-028, whose result has no storage_layer to test - carrying the
+    # filter across would empty every row of it and stop the chain one step from the end.
+    #
+    # Applied to its own source, a filter naming a column that source does not project selects
+    # nothing rather than everything: there the statement asked for a distinction its source
+    # cannot make, and answering with the unfiltered rows is the silent wrong answer.
+    param($Rows, $Filters, [hashtable]$ParamTable, [string]$CheckId)
+
+    $rows = @($Rows)
+    foreach ($filter in @($Filters)) {
+        if ($null -eq $filter) { continue }
+        if ($CheckId -and $filter.CheckId -and $filter.CheckId -ne $CheckId) { continue }
+
+        $wanted = Expand-KnownPlaceholders -Text $filter.Value -Values $ParamTable
+        if ($wanted -match '\{\{') { return @() }
+
+        $rows = @($rows | Where-Object {
+                $names = $_.PSObject.Properties.Name
+                ($names -contains $filter.Column) -and ([string]$_.($filter.Column) -eq $wanted)
+            })
+    }
+    return $rows
 }
 
 function Test-QuotedPlaceholder {
@@ -945,18 +1019,46 @@ function Get-ChainedJob {
         foreach ($name in $missing) { $columnOf[$name] = $declared[$name].Column }
         $wanted = @($missing | ForEach-Object { $columnOf[$_] } | Select-Object -Unique)
         $feeders = @($missing | ForEach-Object { $declared[$_].CheckId } | Select-Object -Unique)
+        # Each filter carries the source it was declared against, so it is applied to that
+        # source's rows and to no other.
+        $filters = @($missing | ForEach-Object {
+                $entry = $declared[$_]
+                if ($entry.Filter) {
+                    [pscustomobject]@{
+                        CheckId = $entry.CheckId
+                        Column  = $entry.Filter.Column
+                        Value   = $entry.Filter.Value
+                    }
+                }
+            } | Where-Object { $_ })
 
-        $sources = @($Completed | Where-Object {
-                $feeders -contains $_.Job.CheckId -and (Test-RowColumn -Rows $_.Rows -Columns $wanted)
-            })
+        # Narrowed before the source is judged, not after: a run of the right statement whose
+        # rows are all the wrong layer is not a source, and counting it as one would produce a
+        # wave of drill-downs that can only come back empty.
+        $sources = @()
+        foreach ($candidate in $Completed) {
+            if ($feeders -notcontains $candidate.Job.CheckId) { continue }
+
+            $rows = @(Select-FeederRow -Rows $candidate.Rows -Filters $filters -ParamTable $ParamTable `
+                    -CheckId $candidate.Job.CheckId)
+            if ($rows.Count -eq 0) { continue }
+            if (-not (Test-RowColumn -Rows $rows -Columns $wanted)) { continue }
+
+            $sources += [pscustomobject]@{ Job = $candidate.Job; Rows = $rows }
+        }
 
         if ($sources.Count -eq 0) {
             $ran = @($Completed | Where-Object { $feeders -contains $_.Job.CheckId })
+            $filtered = @($filters | ForEach-Object { "{0} = {1}" -f $_.Column, $_.Value })
             $notes += [pscustomobject]@{
                 Job    = $job
                 Kind   = 'NO_SOURCE'
                 Reason = $(if ($ran.Count -eq 0) {
                         ("{0} returned nothing to select from" -f ($feeders -join ', '))
+                    }
+                    elseif ($filtered.Count -gt 0) {
+                        ("no run of {0} carries {1} together in rows where {2}" -f
+                            ($feeders -join ', '), ($wanted -join ' and '), ($filtered -join ' and '))
                     }
                     else {
                         ("no single run of {0} carries {1} together" -f ($feeders -join ', '), ($wanted -join ' and '))
@@ -3108,19 +3210,20 @@ if ($runnable.Count -eq 0) {
 }
 
 $jobs = $runnable
-$isBatch = $jobs.Count -gt 1
 
-# -Chain feeds one statement from another's result, so it needs a run that holds both. Said
-# here rather than left to produce an unexplained plain batch.
+# A chained run is a batch even when one statement starts it: the wave it feeds makes several,
+# and they need the summary, the per-run files and the workbook that only the batch path writes.
+$chainable = @($skipped | Where-Object {
+        $Chain -and $_.Kind -eq 'NEEDS_SELECTION' -and $_.Job.CheckId -like $DiscoveryCheckIdPattern
+    })
+$isBatch = ($jobs.Count -gt 1) -or ($chainable.Count -gt 0)
+
 if ($Chain) {
-    if (-not $isBatch) {
-        Write-Host '-Chain needs a batch: a drill-down is filled from a summary the same run produced.' -ForegroundColor Yellow
-    }
-    elseif ($ChainTop.Count -eq 0) {
+    if ($ChainTop.Count -eq 0) {
         throw '-ChainTop needs at least one level, for example -ChainTop 3,2.'
     }
-    elseif (@($skipped | Where-Object { $_.Kind -eq 'NEEDS_SELECTION' }).Count -eq 0) {
-        Write-Host '-Chain has nothing to chain: no matched statement is waiting on a value from a summary.' -ForegroundColor DarkGray
+    if ($chainable.Count -eq 0) {
+        Write-Host '-Chain has nothing to chain: no matched discovery statement is waiting on a value from a summary.' -ForegroundColor DarkGray
     }
 }
 
@@ -3304,6 +3407,16 @@ if ($isBatch) {
     # run must say so here rather than leave the reader counting tabs.
     $chainNotes = @($chainNotes | Where-Object {
             -not ($_.Kind -eq 'NO_SOURCE' -and $chainResolved.ContainsKey($_.Job.CheckId))
+        })
+
+    # A statement short of a source says so once per level it was tried at, and the reader
+    # needs the fact, not the count of attempts.
+    $seenNote = @{}
+    $chainNotes = @($chainNotes | Where-Object {
+            $key = '{0}|{1}|{2}' -f $_.Job.CheckId, $_.Kind, $_.Reason
+            if ($seenNote.ContainsKey($key)) { return $false }
+            $seenNote[$key] = $true
+            return $true
         })
 
     $chainReason = @{}

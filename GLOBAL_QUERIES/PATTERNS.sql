@@ -588,7 +588,7 @@ LEFT JOIN object_participants op15
 WHERE sd.del = 'no'
   AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- select statistic_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
   AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}  -- select statistic_owner_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
-  AND sd.statistic_data_typeFK = {{STATISTIC_DATA_TYPE_ID}}  -- select statistic_data_type_id from GLOBAL-DISCOVERY-017 (STATISTIC_DATA_AND_CONFIG_FIELDS)
+  AND sd.statistic_data_typeFK = {{STATISTIC_DATA_TYPE_ID}}  -- select statistic_data_type_id from GLOBAL-DISCOVERY-017 (STATISTIC_DATA_AND_CONFIG_FIELDS) where storage_layer = statistic_data{{SHARD_ID}}
   AND (
       sport_owner.id = {{SPORT_ID}}
       OR tt2.sportFK = {{SPORT_ID}}
@@ -697,7 +697,7 @@ LEFT JOIN object_participants op15
 WHERE sd.del = 'no'
   AND st.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- select statistic_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
   AND st.object_typeFK = {{STATISTIC_OWNER_TYPE_ID}}  -- select statistic_owner_type_id from GLOBAL-DISCOVERY-015 (STATISTIC_TYPES_AND_OWNERS)
-  AND sd.statistic_data_typeFK = {{STATISTIC_DATA_TYPE_ID}}  -- select statistic_data_type_id from GLOBAL-DISCOVERY-017 (STATISTIC_DATA_AND_CONFIG_FIELDS)
+  AND sd.statistic_data_typeFK = {{STATISTIC_DATA_TYPE_ID}}  -- select statistic_data_type_id from GLOBAL-DISCOVERY-017 (STATISTIC_DATA_AND_CONFIG_FIELDS) where storage_layer = statistic_data{{SHARD_ID}}
   AND (
       sport_owner.id = {{SPORT_ID}}
       OR tt2.sportFK = {{SPORT_ID}}

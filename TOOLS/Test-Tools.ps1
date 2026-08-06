@@ -732,6 +732,122 @@ Test-That 'every drill-down in GLOBAL_QUERIES declares where its value comes fro
     Assert-Equal 0 $undeclared.Count ("undeclared drill-down parameters: " + ($undeclared -join ', '))
 }
 
+Test-That 'a declaration may narrow its source to the rows the consumer reads' {
+    $sql = "AND sd.statistic_data_typeFK = {{STATISTIC_DATA_TYPE_ID}}  -- select statistic_data_type_id from GLOBAL-DISCOVERY-017 (X) where storage_layer = statistic_data{{SHARD_ID}}"
+    $declared = Get-DeclaredFeeder -Text $sql
+
+    Assert-Equal 'statistic_data_type_id' $declared['STATISTIC_DATA_TYPE_ID'].Column 'column'
+    Assert-Equal 'storage_layer' $declared['STATISTIC_DATA_TYPE_ID'].Filter.Column 'filter column'
+    Assert-Equal 'statistic_data{{SHARD_ID}}' $declared['STATISTIC_DATA_TYPE_ID'].Filter.Value 'filter value, still unexpanded'
+}
+
+Test-That 'a declaration without a filter reports none' {
+    $sql = "AND r.result_typeFK = {{RESULT_TYPE_ID}}  -- select result_type_id from GLOBAL-DISCOVERY-007 (X)"
+    Assert-True ($null -eq (Get-DeclaredFeeder -Text $sql)['RESULT_TYPE_ID'].Filter) 'no filter'
+}
+
+Test-That 'a filter keeps only its own rows and expands what the run knows' {
+    $rows = @(
+        (New-ChainRow @{ storage_layer = 'statistic_config'; statistic_data_type_id = 1463 }),
+        (New-ChainRow @{ storage_layer = 'statistic_data11'; statistic_data_type_id = 1270 })
+    )
+    $filter = [pscustomobject]@{ Column = 'storage_layer'; Value = 'statistic_data{{SHARD_ID}}' }
+    $kept = @(Select-FeederRow -Rows $rows -Filters @($filter) -ParamTable @{ SHARD_ID = 11 })
+
+    Assert-Equal 1 $kept.Count 'row count'
+    Assert-Equal 1270 $kept[0].statistic_data_type_id 'the data-layer row survives'
+}
+
+Test-That 'a filter the run cannot resolve selects nothing rather than everything' {
+    # Answering an unresolvable filter with the unfiltered rows is the silent wrong answer the
+    # whole mechanism exists to prevent, so it selects none and the caller reports no source.
+    $rows = @((New-ChainRow @{ storage_layer = 'statistic_data11'; statistic_data_type_id = 1270 }))
+    $filter = [pscustomobject]@{ Column = 'storage_layer'; Value = 'statistic_data{{SHARD_ID}}' }
+    Assert-Equal 0 (@(Select-FeederRow -Rows $rows -Filters @($filter) -ParamTable @{}).Count) 'unresolved filter'
+
+    $absent = [pscustomobject]@{ Column = 'no_such_column'; Value = 'x' }
+    Assert-Equal 0 (@(Select-FeederRow -Rows $rows -Filters @($absent) -ParamTable @{}).Count) 'column the source does not project'
+}
+
+Test-That 'a source holding only the wrong layer is not a source' {
+    # Modern Pentathlon, before the filter existed: GLOBAL-DISCOVERY-017 orders by storage layer,
+    # so statistic_config always leads, and GLOBAL-DISCOVERY-028 was fed three field types the
+    # data shard cannot hold. All three came back empty and GLOBAL-DISCOVERY-029 never ran.
+    $detail = New-ChainStatement -CheckId 'GLOBAL-DISCOVERY-028' -Name 'STATISTIC_DATA_VALUE_PATTERNS_SUMMARY' `
+        -Sql "SELECT 1 WHERE sd.statistic_data_typeFK = {{STATISTIC_DATA_TYPE_ID}}  -- select statistic_data_type_id from GLOBAL-DISCOVERY-017 (X) where storage_layer = statistic_data{{SHARD_ID}}"
+    $pending = @([pscustomobject]@{ Job = $detail; Kind = 'NEEDS_SELECTION'; Missing = 'STATISTIC_DATA_TYPE_ID' })
+
+    $configOnly = [pscustomobject]@{
+        Job  = (New-ChainStatement -CheckId 'GLOBAL-DISCOVERY-017' -Name 'STATISTIC_DATA_AND_CONFIG_FIELDS' -Sql 'SELECT 1')
+        Rows = @(
+            (New-ChainRow @{ storage_layer = 'statistic_config'; statistic_data_type_id = 1463 }),
+            (New-ChainRow @{ storage_layer = 'statistic_config'; statistic_data_type_id = 1464 })
+        )
+    }
+    $wave = Get-ChainedJob -Pending $pending -Completed @($configOnly) -ParamTable @{ SHARD_ID = 11 } `
+        -Top 3 -Budget 40 -TemplateIds @()
+
+    Assert-Equal 0 $wave.Jobs.Count 'a config-only inventory feeds nothing to a data-shard statement'
+    Assert-Equal 'NO_SOURCE' $wave.Notes[0].Kind 'reported as no source'
+    Assert-True ($wave.Notes[0].Reason -match 'storage_layer') 'the reason should name the filter that emptied it'
+}
+
+Test-That 'a mixed source feeds only the rows the consumer reads' {
+    $detail = New-ChainStatement -CheckId 'GLOBAL-DISCOVERY-028' -Name 'STATISTIC_DATA_VALUE_PATTERNS_SUMMARY' `
+        -Sql "SELECT 1 WHERE sd.statistic_data_typeFK = {{STATISTIC_DATA_TYPE_ID}}  -- select statistic_data_type_id from GLOBAL-DISCOVERY-017 (X) where storage_layer = statistic_data{{SHARD_ID}}"
+    $pending = @([pscustomobject]@{ Job = $detail; Kind = 'NEEDS_SELECTION'; Missing = 'STATISTIC_DATA_TYPE_ID' })
+
+    $mixed = [pscustomobject]@{
+        Job  = (New-ChainStatement -CheckId 'GLOBAL-DISCOVERY-017' -Name 'STATISTIC_DATA_AND_CONFIG_FIELDS' -Sql 'SELECT 1')
+        Rows = @(
+            (New-ChainRow @{ storage_layer = 'statistic_config'; statistic_data_type_id = 1463 }),
+            (New-ChainRow @{ storage_layer = 'statistic_data11'; statistic_data_type_id = 1270 }),
+            (New-ChainRow @{ storage_layer = 'statistic_data11'; statistic_data_type_id = 1271 })
+        )
+    }
+    $wave = Get-ChainedJob -Pending $pending -Completed @($mixed) -ParamTable @{ SHARD_ID = 11 } `
+        -Top 3 -Budget 40 -TemplateIds @()
+
+    Assert-Equal 2 $wave.Jobs.Count 'only the two data-layer types'
+    Assert-Equal 'STATISTIC_DATA_TYPE_ID=1270' $wave.Jobs[0].Parameters 'first data-layer type'
+    Assert-Equal 'STATISTIC_DATA_TYPE_ID=1271' $wave.Jobs[1].Parameters 'second data-layer type'
+}
+
+Test-That 'a filter applies to its own source and not to a nearer one' {
+    # GLOBAL-DISCOVERY-029 declares storage_layer against GLOBAL-DISCOVERY-017, but is normally
+    # fed by a run of GLOBAL-DISCOVERY-028, whose result projects no storage_layer at all.
+    # Carrying the filter across empties every row of it and stops the chain one step short -
+    # which is what happened on the first live run after the filter was added.
+    $rows = @(
+        (New-ChainRow @{ statistic_data_type_id = 1270; value_pattern = '#' }),
+        (New-ChainRow @{ statistic_data_type_id = 1270; value_pattern = '#.#' })
+    )
+    $filter = [pscustomobject]@{ CheckId = 'GLOBAL-DISCOVERY-017'; Column = 'storage_layer'; Value = 'statistic_data{{SHARD_ID}}' }
+
+    $nearer = @(Select-FeederRow -Rows $rows -Filters @($filter) -ParamTable @{ SHARD_ID = 11 } -CheckId 'GLOBAL-DISCOVERY-028')
+    Assert-Equal 2 $nearer.Count 'a filter declared against another source must not be applied here'
+
+    $own = @(Select-FeederRow -Rows $rows -Filters @($filter) -ParamTable @{ SHARD_ID = 11 } -CheckId 'GLOBAL-DISCOVERY-017')
+    Assert-Equal 0 $own.Count 'against its own source the missing column still selects nothing'
+}
+
+Test-That 'the statistic-data drill-downs declare the layer they read' {
+    # Asserted against the real file: without this the chain feeds them config fields and both
+    # go quiet, which is a failure that reports as clean.
+    $RepoRoot = $RealRepoRoot
+    $catalogue = Get-CheckCatalogue
+
+    foreach ($id in @('GLOBAL-DISCOVERY-028', 'GLOBAL-DISCOVERY-029')) {
+        $check = @($catalogue | Where-Object { $_.CheckId -eq $id })
+        Assert-Equal 1 $check.Count "$id should be found once"
+
+        $filter = (Get-DeclaredFeeder -Text $check[0].Sql)['STATISTIC_DATA_TYPE_ID'].Filter
+        Assert-True ($null -ne $filter) "$id should declare a storage-layer filter"
+        Assert-Equal 'storage_layer' $filter.Column "$id filter column"
+        Assert-Equal 'statistic_data{{SHARD_ID}}' $filter.Value "$id filter value"
+    }
+}
+
 Test-That 'a quoted placeholder is told apart from a bare one' {
     Assert-True (Test-QuotedPlaceholder -Text "x = '{{NAME_PATTERN}}'" -Name 'NAME_PATTERN') 'quoted'
     Assert-True (-not (Test-QuotedPlaceholder -Text 'x = {{ROUND_TYPE_ID}}' -Name 'ROUND_TYPE_ID')) 'bare'

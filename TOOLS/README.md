@@ -373,6 +373,13 @@ summary in the catalogue orders by frequency — and runs the drill-down once pe
 statement added later chains on its own declaration; there is no pairing list to maintain,
 and `TOOLS/Test-Tools.ps1` fails a drill-down that declares no source.
 
+A source covering more than its consumer reads narrows itself in the same declaration, with a
+trailing `where storage_layer = statistic_data{{SHARD_ID}}`. `GLOBAL-DISCOVERY-017` inventories
+the config layer beside the data shard and orders by layer, so its config rows always lead;
+`GLOBAL-DISCOVERY-028` reads the shard alone. Rows are narrowed before the source is judged, so
+a run holding only the wrong layer is reported as no source rather than producing a wave of
+drill-downs that can only come back empty.
+
 Two rules keep the result honest:
 
 - **Values are taken as whole rows, never crossed.** `GLOBAL-DISCOVERY-027` needs a result
