@@ -252,6 +252,17 @@ must therefore key on the round type ID and never on its name.
 `251` is `After Disciplines` and `260` is `Bonus Round`, both of which are sport-specific stages
 of a multi-discipline competition rather than knockout rounds.
 
+`Final` is the sport's only round that eliminates nobody; every other round it contests is an
+elimination round, by decision of 2026-08-06. `DATABASE.md` `DB-SEM-012` records that a round
+name exists twice, once with `knockout = 'yes'` and once without, and that the pair is
+distinguished by ID rather than by name — so which variant a sport uses is a fact about that
+sport. This one uses the non-knockout variant of all ten of its elimination round names, while
+the knockout twin of every one of them exists (`38`/`89`, `39`/`90`, `40`/`91`, `41`/`92`,
+`42`/`93`, `77`/`128`, `152`/`179`, `2`/`178`, `251`/`252`, `260`/`261`), and for four of those
+names the sport already uses the knockout twin on some of its events. The round types are
+therefore recorded as they are used, and the mismatch is a finding rather than a shape to
+accommodate.
+
 `173` `Final` is the sport's only medal round: nearly every event on it carries a Medal result,
 and every medal is awarded inside the Final event itself rather than on a separate bronze
 decider. A small number of Medal results sit on other round types, and a small number of Final
@@ -330,5 +341,10 @@ statistic to the event it describes.
   tenth, so the two spellings behave as different states. What `dns.` denotes is unresolved.
 - Around a hundred distinct numbers and times are stored in the `104` comment result, each
   beside a Rank. Whether they belong in a field of their own is for the data owners.
+- Ten of the sport's fifteen round types sit on the non-knockout variant of a name whose
+  knockout twin exists and, for four of them, is already in use on other events of the same
+  sport. Whether the events should move to the twin or the flag on those rows is wrong is for
+  the data owners; `DB-SEM-012` makes the pair deliberate, so this is a choice of variant
+  rather than a missing row.
 
 <!-- MANUAL PASTE ZONE: 42 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
