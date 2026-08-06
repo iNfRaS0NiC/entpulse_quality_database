@@ -536,6 +536,10 @@
         "signal": "Blocked",
         "reason": "The two populations it needs never meet: every Comp.Rank carrying a Time value carries no object_discipline row, and every Comp.Rank carrying a discipline holds no Time. The check scopes on the sport's timed disciplines and reports a Time missing despite a Rank, so whatever discipline list it were given it would report every discipline-tagged statistic in the sport as defective - its normal shape. Blocked rather than not applicable because both structures are present and used; they are simply not attached to each other. It becomes meaningful the day one of the two is joined to the other, without the check changing. SPORTS/Modern-Pentathlon.md owns the evidence."
       },
+      "GLOBAL-DQ-082": {
+        "signal": "Not applicable",
+        "reason": "The template requires a tournament stage that groups a single discipline and forbids instantiation by a sport that legitimately runs several under one stage. This sport is one: a stage such as World Championships holds Fencing, Swimming, Riding, Laser Run and Overall events together, which is what a pentathlon is. Its whole population would be reported. The exclusion rests on how the sport composes a stage, not on how many stages hold several disciplines today."
+      },
       "GLOBAL-DQ-021": {
         "signal": "Not applicable",
         "reason": "The template excludes a sport that awards tied ranks by design, and this one does: its segments are scored in points, so two competitors on the same score share a place legitimately and no Comment is written for it. Measured, the rule reports 32178 event participants, of which the points behind 30136 agree - correct records read as defects. GLOBAL-DQ-116 carries the same invariant against the score instead of the Comment and reports 2013, and GLOBAL-DQ-095 guards it on the statistic layer where the overall classification lives. The exclusion rests on how the sport scores a place, not on how many rows tie today."
