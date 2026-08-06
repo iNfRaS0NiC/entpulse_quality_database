@@ -1007,6 +1007,92 @@ Test-That 'a chained statement carrying no template filter is dropped rather tha
     Assert-Equal 1 (@($wave.Notes | Where-Object { $_.Kind -eq 'DROPPED' }).Count) 'the drop should be recorded'
 }
 
+Test-That 'a recorded decision carries its alternatives and leaves the answer empty' {
+    $script:RunDecision = @()
+    Add-RunDecision -Kind 'Statistic type and owner' -Subject 'STATISTIC_TYPE_ID' `
+        -Chose 'type 11 / owner 3' -Why 'the busiest pair' -Alternatives @('type 11 / owner 5', 'type 83 / owner 3')
+
+    Assert-Equal 1 $script:RunDecision.Count 'one decision'
+    Assert-Equal 'type 11 / owner 5; type 83 / owner 3' $script:RunDecision[0].Alternatives 'alternatives'
+    Assert-Equal '' $script:RunDecision[0].Answer 'the runner writes the question and never the answer'
+    $script:RunDecision = @()
+}
+
+Test-That 'the decision file is written only when something is open' {
+    $path = Join-Path $FixtureRoot '_decisions.json'
+    if (Test-Path -LiteralPath $path) { Remove-Item -LiteralPath $path -Force }
+
+    # An empty file would read as a run that had no decisions rather than one that recorded none.
+    Assert-True ($null -eq (Save-RunDecisions -Decisions @() -Path $path)) 'nothing open writes nothing'
+    Assert-True (-not (Test-Path -LiteralPath $path)) 'no file should exist'
+
+    $decision = [pscustomobject]@{
+        Decision = 'Audited nothing'; Subject = 'GLOBAL-DQ-001'; 'Run chose' = 'deferred'
+        Why = 'eligible_count is 0'; Alternatives = 'a misdirected scope; a legitimately empty population'
+        Answer = ''
+    }
+    Assert-Equal $path (Save-RunDecisions -Decisions @($decision) -Path $path) 'returns the path it wrote'
+
+    # No byte-order mark: Set-Content -Encoding UTF8 writes one, and ConvertFrom-Json then reads
+    # it as part of the first property name, which made the file unreadable by the step it
+    # exists for. Asserted on the bytes, because reading it as text is what hides the problem.
+    $head = [IO.File]::ReadAllBytes($path)[0..2]
+    Assert-True (-not ($head[0] -eq 0xEF -and $head[1] -eq 0xBB -and $head[2] -eq 0xBF)) 'the file must carry no BOM'
+
+    # A list even at one element. ConvertTo-Json unwraps a single-element array into a bare
+    # object, and a consumer reading the file as a list then reads one decision as none.
+    Assert-True ([IO.File]::ReadAllText($path).TrimStart().StartsWith('[')) 'the file must be a JSON array'
+
+    $saved = @(Get-Content -LiteralPath $path -Raw | ConvertFrom-Json)
+    Assert-Equal 1 $saved.Count 'one decision saved'
+    Assert-Equal 'GLOBAL-DQ-001' $saved[0].Subject 'subject survives the round trip'
+    Assert-True ($saved[0].Alternatives -match 'legitimately empty') 'both alternatives survive'
+
+    # The round trip a reader actually performs, and the one that lost a run's decisions when
+    # the file still carried a BOM: read it back and write it out again unchanged.
+    Save-RunDecisions -Decisions $saved -Path $path | Out-Null
+    $again = @(Get-Content -LiteralPath $path -Raw | ConvertFrom-Json)
+    Assert-Equal 1 $again.Count 'the file survives being read and written again'
+    Assert-Equal 'GLOBAL-DQ-001' $again[0].Subject 'and keeps its content'
+}
+
+Test-That 'the workbook carries a Decisions tab, and only when there is one' {
+    $job = [pscustomobject]@{ CheckId = 'GLOBAL-DISCOVERY-001'; Name = 'SPORT_IDENTITY'; What = 'identity' }
+    $summary = @(New-RunSummaryRow -Job $job -Rows 1 -Seconds 1 -Status 'OK')
+    $collected = @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ sport_id = 42 }) })
+
+    $script:RunDecision = @()
+    $without = Join-Path $FixtureRoot 'run-no-decisions.xlsx'
+    Save-RunWorkbook -Summary $summary -Collected $collected -Path $without | Out-Null
+
+    Add-RunDecision -Kind 'Statistic type and owner' -Subject 'STATISTIC_TYPE_ID' `
+        -Chose 'type 11 / owner 3' -Why 'the busiest pair' -Alternatives @('type 11 / owner 5')
+    $with = Join-Path $FixtureRoot 'run-with-decisions.xlsx'
+    Save-RunWorkbook -Summary $summary -Collected $collected -Path $with | Out-Null
+    $script:RunDecision = @()
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    foreach ($pair in @(@{ Path = $without; Expect = $false }, @{ Path = $with; Expect = $true })) {
+        $zip = [IO.Compression.ZipFile]::OpenRead($pair.Path)
+        try {
+            $entry = $zip.GetEntry('xl/workbook.xml')
+            $reader = New-Object IO.StreamReader($entry.Open())
+            try { $xml = $reader.ReadToEnd() } finally { $reader.Dispose() }
+        }
+        finally { $zip.Dispose() }
+
+        if ($pair.Expect) {
+            Assert-True ($xml -match 'name="Decisions"') 'a run with an open decision should carry the tab'
+            # Second, so what the run decided for itself is read before what it found.
+            $names = @([regex]::Matches($xml, '<sheet name="([^"]*)"') | ForEach-Object { $_.Groups[1].Value })
+            Assert-Equal 'Decisions' $names[1] 'Decisions should sit straight after Overview'
+        }
+        else {
+            Assert-True ($xml -notmatch 'name="Decisions"') 'a run with none should carry no tab'
+        }
+    }
+}
+
 Complete-Group
 
 # --------------------------------------------------------------------------------------

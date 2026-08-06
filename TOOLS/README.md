@@ -625,6 +625,34 @@ runs once per value it was fed. Those runs share a CheckID by design — the Che
 the statement, not the execution — so `Parameters` is what tells them apart, and it is also
 where a `SKIPPED` row records the values the chain did not pursue.
 
+### Decisions
+
+A run decides some things by itself — the busiest statistic type and owner, the values a chain
+pursues — and leaves others open. Both are honest while they stay execution output. The moment
+one is copied into `SPORTS/params.json` it is read by every later run as confirmed evidence, and
+a heuristic recorded there is indistinguishable from a fact somebody checked.
+
+So they are written down rather than printed and forgotten: a `Decisions` tab straight after
+Overview, and a `_decisions.json` beside the workbook. Both appear only when something is open.
+
+| Column | What it holds |
+|---|---|
+| `Decision` | which kind — statistic type and owner, chain values not pursued, drill-down without a source, statement not run, audited nothing, statement failed |
+| `Subject` | the parameter or the run key it concerns |
+| `Run chose` | what the run did: a value it picked, or `deferred` / `skipped` |
+| `Why` | on what basis, in the run's own words |
+| `Alternatives` | the real options, read from the run's output — never invented |
+| `Answer` | the reader's column, like `Check By`; the runner writes the question and never the answer |
+
+The one that matters most is the statistic type and owner pair. Every statistics statement and
+every Comp.Rank template reads the sport through it, `GLOBAL-DISCOVERY-015` may return several,
+and the runner takes the busiest. As a grey console line that was easy to miss; as a row with
+the other pairs beside it, it has to be answered. The row is written even when there was only
+one candidate, so "nothing to decide" is recorded rather than assumed.
+
+`WORKFLOW.md` owns the evidence gate and the `new-sport` skill's stage 2b owns what must happen
+to these before a sport file is written. The runner only makes sure the list exists.
+
 `Category` is the row's own `Category` from `POWERBI_REGISTRY.md`, and `Priority` is the
 band `POWERBI.md` derives from it — `1 Structure`, `2 Wrong value`, `3 Missing value`. The
 numeric prefix means sorting the column produces the working order rather than an

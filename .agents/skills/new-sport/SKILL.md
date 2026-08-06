@@ -73,9 +73,15 @@ output. Stage 3 is where they stop being that: a value written into `SPORTS/para
 by every later run as confirmed evidence, and a heuristic recorded there is indistinguishable
 from a fact anybody checked.
 
-So before the `PREPARE_DOC_UPDATE` command, list every open decision and put them to the user
-**one at a time, each with its actual alternatives** — taken from the run's own output, not
-invented. Do not proceed on silence, and do not fold two decisions into one question.
+The run writes them down for you: a `Decisions` tab straight after Overview and a
+`_decisions.json` beside the workbook, each row carrying what the run chose, why, and the real
+alternatives. Read that list first — it is the agenda for this stage, and it exists so the gate
+does not depend on anybody noticing a grey console line.
+
+Then put them to the user **one at a time, each with its actual alternatives** — the ones in the
+file, not invented. Do not proceed on silence, and do not fold two decisions into one question.
+Check each item's premise before asking: a decision whose answer is already visible in a summary
+the run completed is not open, and saying so is better than manufacturing a question.
 
 The recurring ones, and where the alternatives come from:
 

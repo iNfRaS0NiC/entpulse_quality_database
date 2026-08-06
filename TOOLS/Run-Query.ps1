@@ -201,6 +201,39 @@ $ErrorActionPreference = 'Stop'
 # workbook's Sport column and the run folder name.
 $script:RunSportName = ''
 
+# Every choice the run made for itself, and every one it left open. A run decides some things
+# by itself - the busiest statistic type, the values a chain pursues - and defers others, and
+# both are only honest while they stay execution output. The moment one is copied into
+# SPORTS/params.json it is read by every later run as confirmed evidence, and a heuristic
+# recorded there is indistinguishable from a fact somebody checked.
+#
+# So the run writes them down where they can be answered rather than leaving them as console
+# prose somebody has to notice: a Decisions tab beside the Overview and a _decisions.json next
+# to it. WORKFLOW.md's evidence gate and the new-sport skill's stage 2b own what must happen to
+# them before anything is recorded; this only makes sure the list exists.
+$script:RunDecision = @()
+
+function Add-RunDecision {
+    # Alternatives are read from the run's own output, never invented: an option nobody can act
+    # on is worse than none, because it reads as a choice that was available.
+    param(
+        [string]$Kind,
+        [string]$Subject,
+        [string]$Chose,
+        [string]$Why,
+        [string[]]$Alternatives
+    )
+
+    $script:RunDecision += [pscustomobject]@{
+        Decision     = $Kind
+        Subject      = $Subject
+        'Run chose'  = $Chose
+        Why          = $Why
+        Alternatives = (@($Alternatives) -join '; ')
+        Answer       = ''
+    }
+}
+
 # Local, git-ignored credential file. Loaded before anything reads EP_QB_*, so it
 # can supply the login, a session cookie or a different base URL.
 $SecretsPath = Join-Path $PSScriptRoot 'secrets.local.ps1'
@@ -1945,12 +1978,28 @@ function Resolve-SportParameters {
     Write-Host ("  STATISTIC_OWNER_TYPE_ID  {0}  ({1}, {2} statistics)" -f `
             $chosen.statistic_owner_type_id, $chosen.owner_path, $chosen.statistic_count) -ForegroundColor DarkGray
 
-    if ($ranked.Count -gt 1) {
-        $others = ($ranked | Select-Object -Skip 1 | ForEach-Object {
-                'type {0} / owner {1} ({2})' -f $_.statistic_type_id, $_.statistic_owner_type_id, $_.statistic_count
-            }) -join '; '
-        Write-Host "  other pairs not used: $others" -ForegroundColor DarkGray
+    # The one choice in this whole run that everything downstream inherits: 016, 017, 024, 025,
+    # 028, 029 and every Comp.Rank template read the sport through it. Printed as a grey line it
+    # was easy to miss; recorded here it has to be answered before it can become a params.json
+    # entry that later runs treat as established.
+    $others = @($ranked | Select-Object -Skip 1 | ForEach-Object {
+            'type {0} / owner {1} ({2}, {3} statistics)' -f `
+                $_.statistic_type_id, $_.statistic_owner_type_id, $_.owner_path, $_.statistic_count
+        })
+
+    if ($others.Count -gt 0) {
+        Write-Host ("  other pairs not used: {0}" -f ($others -join '; ')) -ForegroundColor DarkGray
     }
+
+    Add-RunDecision -Kind 'Statistic type and owner' `
+        -Subject 'STATISTIC_TYPE_ID, STATISTIC_OWNER_TYPE_ID' `
+        -Chose ('type {0} / owner {1} ({2}, {3} statistics)' -f `
+            $chosen.statistic_type_id, $chosen.statistic_owner_type_id, $chosen.owner_path, $chosen.statistic_count) `
+        -Why $(if ($others.Count -eq 0) {
+                'GLOBAL-DISCOVERY-015 returned one pair, so nothing was chosen'
+            }
+            else { 'the busiest pair GLOBAL-DISCOVERY-015 returned; a count, not a documented fact' }) `
+        -Alternatives $(if ($others.Count -eq 0) { @('none - one candidate') } else { $others })
 
     # Shard: probe one table per execution, as WORKFLOW.md requires, using a statistic the
     # inventory already confirmed belongs to this sport.
@@ -2591,6 +2640,36 @@ function Save-RunSummaryCsv {
     $Summary | Export-Csv -LiteralPath $Path -NoTypeInformation -Encoding UTF8
 }
 
+function Save-RunDecisions {
+    # The open decisions as data, next to whatever else the run wrote. JSON rather than only a
+    # workbook tab because this list is meant to be read by the next step of the workflow, and a
+    # tab inside a zip is not something a later run or a reviewer's script can pick up.
+    # Writing nothing when there is nothing open is deliberate: an empty file would read as a
+    # run that had no decisions rather than one that recorded none.
+    param($Decisions, [string]$Path)
+
+    $decisions = @($Decisions)
+    if ($decisions.Count -eq 0) { return $null }
+
+    $dir = Split-Path -Parent $Path
+    if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+
+    # Always a JSON array, even for one decision. ConvertTo-Json unwraps a single-element array
+    # into a bare object, and a consumer reading the file as a list then either fails or, worse,
+    # reads one decision as none.
+    $json = if ($decisions.Count -eq 1) {
+        '[' + ($decisions[0] | ConvertTo-Json -Depth 5) + ']'
+    }
+    else { $decisions | ConvertTo-Json -Depth 5 }
+
+    # Written without a byte-order mark. Set-Content -Encoding UTF8 emits one on Windows
+    # PowerShell, and ConvertFrom-Json reads it as part of the first property name - so the file
+    # meant to be read back by the next step of the workflow could not be. The package validator
+    # holds repository files to the same rule.
+    [IO.File]::WriteAllText($Path, $json, (New-Object Text.UTF8Encoding $false))
+    return $Path
+}
+
 function Save-RunWorkbook {
     # Builds the whole workbook out of what the run has produced so far, so one piece of
     # code writes both the interim snapshots and the final file. Returns the checks whose
@@ -2684,6 +2763,19 @@ function Save-RunWorkbook {
         }
     }
 
+    # Decisions sits second, right where a reader arrives from Overview, because what the run
+    # decided for itself has to be read before what it found. Answer is the reader's column, in
+    # the same spirit as Check By: the runner writes the question and never the answer.
+    $decisionSheet = $null
+    if ($script:RunDecision.Count -gt 0) {
+        $decisionSheet = [pscustomobject]@{
+            Name   = (ConvertTo-SheetName -Preferred 'Decisions' -Fallback 'Decisions' -Used $used)
+            Rows   = @($script:RunDecision)
+            Header = $null
+            BackTo = $null
+        }
+    }
+
     # Signal and Signal reason are the runner's own classification, settled before the run
     # and unchanged by reading it, so they are collapsed out of the reviewer's way rather
     # than dropped: K and L still carry every value for whoever needs to unhide them.
@@ -2702,6 +2794,8 @@ function Save-RunWorkbook {
                 Values = 'Not reviewed,Reviewing,On hold,No issue,Reported to IT,Fixed,No action needed'
             }
         })
+
+    if ($decisionSheet) { $sheets += $decisionSheet }
 
     $sqlSheet = New-SqlSheet -TabOf $tabOf -Entries @($Collected | ForEach-Object {
             [pscustomobject]@{
@@ -3451,14 +3545,59 @@ if ($isBatch) {
         $summary += New-RunSummaryRow -Job $note.Job -Rows 0 -Seconds 0 -Status "SKIPPED: $($note.Reason)"
     }
 
+    # Everything the run left open, collected before anything is written, so the Decisions tab
+    # and the JSON beside it are complete rather than a subset that happened to be known early.
+    # The chain notes already carry their own alternatives - a count of values not pursued, a
+    # pair that could not be found together - so nothing is reconstructed from the console.
+    foreach ($note in $chainNotes) {
+        $kind = switch ($note.Kind) {
+            'NOT_PURSUED' { 'Chain values not pursued' }
+            'NO_SOURCE'   { 'Drill-down without a source' }
+            'UNDECLARED'  { 'Drill-down without a source' }
+            default       { 'Chain value dropped' }
+        }
+        Add-RunDecision -Kind $kind -Subject $note.Job.CheckId -Chose 'deferred' -Why $note.Reason `
+            -Alternatives @('raise -ChainTop and re-run', 'run it by hand with a chosen value',
+                'record the area as a sample, saying so')
+    }
+
+    foreach ($item in $skipped) {
+        if ($item.Kind -ne 'NEEDS_SELECTION') { continue }
+        if ($chainResolved.ContainsKey($item.Job.CheckId)) { continue }
+
+        Add-RunDecision -Kind 'Statement not run' -Subject $item.Job.CheckId -Chose 'skipped' `
+            -Why ("needs {0}, which is a value picked out of a summary result" -f $item.Missing) `
+            -Alternatives @('run it with -Params <NAME>=<value>', 'record the area as Not checked')
+    }
+
+    # The one decision POWERBI.md fixes to exactly two answers, so it is the one the run can
+    # state completely. It cannot be a third thing, and it is never clean data.
+    $audited = @($collected | Where-Object { 0 -eq (Get-CoverageCount -Rows $_.Rows) })
+    foreach ($item in $audited) {
+        Add-RunDecision -Kind 'Audited nothing' -Subject (Get-JobRunKey -Job $item.Job) -Chose 'deferred' `
+            -Why 'eligible_count is 0, which POWERBI.md says is never clean data' `
+            -Alternatives @('a misdirected scope, to be corrected',
+                'a correct scope over a population that is legitimately empty today, to be recorded as a sentinel')
+    }
+
+    foreach ($entry in @($summary | Where-Object { $_.Status -like 'ERROR*' })) {
+        Add-RunDecision -Kind 'Statement failed' -Subject $entry.RunKey -Chose 'deferred' `
+            -Why ([string]$entry.Status) `
+            -Alternatives @('re-run it on its own', 'record the area as Not checked - never Not used')
+    }
+
     if ($isWorkbook) {
         $shortened = @(Save-RunWorkbook -Summary $summary -Collected $collected -Path $workbookPath)
         $destination = $workbookPath
+        $decisionPath = Join-Path (Split-Path -Parent $workbookPath) '_decisions.json'
     }
     else {
         Save-RunSummaryCsv -Summary $summary -Path (Join-Path $OutDir '_summary.csv')
         $destination = $OutDir
+        $decisionPath = Join-Path $OutDir '_decisions.json'
     }
+
+    $decisionFile = Save-RunDecisions -Decisions $script:RunDecision -Path $decisionPath
 
     $summary | Format-Table CheckId, Parameters, Name, Signal, Rows, Seconds, Status -AutoSize
 
@@ -3491,10 +3630,16 @@ if ($isBatch) {
     # here because CLAUDE.md's coverage contract says a zero there is never clean data: it is
     # either a misdirected scope to correct or a legitimately empty population to record, and
     # both need a person. Nothing selects on it - the run is already over.
-    $audited = @($collected | Where-Object { 0 -eq (Get-CoverageCount -Rows $_.Rows) })
     if ($audited.Count -gt 0) {
         Write-Host ("{0} check(s) audited nothing - eligible_count is 0, which is never clean data: {1}" -f `
                 $audited.Count, (($audited | ForEach-Object { Get-JobRunKey -Job $_.Job }) -join ', ')) -ForegroundColor Yellow
+    }
+
+    if ($script:RunDecision.Count -gt 0) {
+        Write-Host ("{0} decision(s) recorded on the Decisions tab. Each is a choice the run made for" -f `
+                $script:RunDecision.Count) -ForegroundColor Yellow
+        Write-Host '  itself or left open, and none of them is settled evidence until somebody answers it.' -ForegroundColor Yellow
+        if ($decisionFile) { Write-Host "  $decisionFile" -ForegroundColor DarkGray }
     }
 
     $failed = @($summary | Where-Object { $_.Status -like 'ERROR*' }).Count
