@@ -60,6 +60,17 @@ and `team`, and carries both active and inactive rows for each.
 One lineup type is in use, `14` (`Starter`). Its members are always `athlete`, male or female;
 no other member type appears.
 
+A mixed team is symmetric: it holds the same number of men as women. The rule is read from the
+sport's own data rather than from the discipline's rules, and holds independently in the two
+places a team's membership is stored. Among the event entries of a `mixed` team the dominant
+composition by a wide margin is one man and one woman, and the symmetry is kept at two, three
+and four a side; among the teams the Comp.Rank statistic assembles through its `1429` Team
+field the same distribution appears again. In both layers an entry holding both genders
+unevenly is a small minority, so a balance check reports an exception rather than the sport's
+format. A team holding one gender only is a separate state and not a broken balance: the event
+layer leaves it to `GLOBAL-DQ-043`, while the statistic layer has no such sibling and
+`GLOBAL-DQ-066` reports it there.
+
 <!-- MANUAL PASTE ZONE: 42 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types
