@@ -88,6 +88,12 @@ unresolved. `disq.` carries a Rank on none, which is consistent with a disqualif
 the participant has no result; `q`, `or`, `wr` and `q/or` always do, being a qualification or a
 record rather than an absence.
 
+The Rank values divide cleanly. The largest field the sport contests holds 75 participants and
+ordinary ranks stop there; the only values above it are a handful in the 471 to 561 range, each
+occurring once and all on `Team-Relay Mix - After Laser Run` events. Nothing sits between the
+two groups, so the sport's plausible maximum is recorded at 100 — inside that gap, with headroom
+for a larger field than any contested so far.
+
 <!-- MANUAL PASTE ZONE: 42 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
@@ -168,6 +174,14 @@ The discipline population differs between the two layers: every discipline above
 events, but the statistic layer is dominated by `Overall`. A discipline-scoped check must be
 written against the layer it audits and must not infer one layer's discipline population from
 the other.
+
+Within the statistic layer the discipline relation and the `1426` Time field are disjoint:
+every Comp.Rank carrying a Time carries no `object_discipline` row, and every Comp.Rank
+carrying a discipline holds no Time. Neither is empty on its own — both are populated — but
+they are never attached to the same statistic. A check scoping on the sport's timed disciplines
+and reading a time therefore audits a population that by construction can hold none, which is
+why `GLOBAL-DQ-046` is recorded as `Blocked` rather than approved or declared inapplicable.
+The sampled Time values are `00.00` and `99.00`, neither of which reads as a measured time.
 
 <!-- MANUAL PASTE ZONE: 42 GENERIC RELATIONS AND DISCIPLINES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -255,6 +269,16 @@ Tournament stage names identify the competition and its age band: `World Champio
 Event statuses in use are `finished` (detail `6`), `notstarted` (detail `1`), `cancelled`
 (detail `106`) and `finished` with detail `11`, `Finished AET`.
 
+The sport uses one of the 37 detailed statuses the reference table marks `notstarted`, but the
+vocabulary recorded for it is the curated set of `Not started` and `Postponed` codes rather than
+that single value: classifying from today's population would blind the check to every other
+status the day it arrives. `Abandoned` is deliberately outside the set — an abandoned event
+started and stopped, which is not the same as one that never began.
+
+An event still marked not started 48 hours after its own date is treated as stale. That is a
+tighter window than the 30 days the other five documented sports carry, by decision of
+2026-08-06; the parameter's unit is days, so the value is recorded as `2`.
+
 <!-- MANUAL PASTE ZONE: 42 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
@@ -263,6 +287,12 @@ A tournament stage carries its country in two places at once: directly in
 `tournament_stage.countryFK`, and through the host-country relation. It also carries a city link
 and an age-class relation, with `SENIOR` among the age classes in use. `DATABASE.md` records
 that the two country paths are distinct, and this sport uses both.
+
+`International` and `Unknown` are the two placeholder rows the `country` table holds. Neither
+reaches this sport through the direct column, the host-country relation or the statistic country
+relation, so a placeholder-country check reads a population that is empty today. They are
+recorded as the sport's placeholder vocabulary all the same: the list says what would count as
+one, not that any exists.
 
 Statistics are owned by the tournament (`object_typeFK = 3`) and name their event through the
 `1471` Event id config rather than through a foreign key, which is the only path from a
@@ -292,5 +322,13 @@ statistic to the event it describes.
   any of these is a legitimate score is unresolved.
 - Event names include at least one with a truncated leading character (`eam-Relay Mix - After
   Swimming`). Whether this is isolated or systematic has not been measured.
+- The `1426` Time values sampled are `00.00` and `99.00`, and every statistic holding one lacks
+  a discipline while every statistic holding a discipline lacks a Time. Whether the time field
+  is being written by a path that does not set the discipline, or the values are placeholders
+  rather than measurements, is unresolved and blocks `GLOBAL-DQ-046`.
+- `dns.` carries a Rank on every participant that holds it while `dns` does so on roughly a
+  tenth, so the two spellings behave as different states. What `dns.` denotes is unresolved.
+- Around a hundred distinct numbers and times are stored in the `104` comment result, each
+  beside a Rank. Whether they belong in a field of their own is for the data owners.
 
 <!-- MANUAL PASTE ZONE: 42 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

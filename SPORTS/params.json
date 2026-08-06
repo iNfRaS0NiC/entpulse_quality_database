@@ -33,7 +33,7 @@
     "FULL_TIME_TOLERANCE_SECONDS": 0.01,
     "RESULT_MEDAL_TYPE_ID": 501,
     "RESULT_FULL_TIME_TYPE_ID": 557,
-    "STALE_NOT_STARTED_DAYS": 30,
+    "STALE_NOT_STARTED_DAYS": 2,
     "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
     "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', '1/8', '1/16', '1/32', 'heats', 'qualifier', 'repechage', 'playoff', 'tie-breaker', 'small final'",
     "GROUP_ROUND_NAME_LIST": "'preliminary', 'seeding'",
@@ -114,7 +114,7 @@
     "FULL_TIME_TOLERANCE_SECONDS": 1,
     "RESULT_MEDAL_TYPE_ID": 501,
     "RESULT_FULL_TIME_TYPE_ID": 557,
-    "STALE_NOT_STARTED_DAYS": 30,
+    "STALE_NOT_STARTED_DAYS": 2,
     "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
     "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', '1/8', '1/16', '1/32', 'heats', 'qualifier', 'repechage', 'playoff', 'tie-breaker', 'small final'",
     "GROUP_ROUND_NAME_LIST": "'preliminary', 'seeding'",
@@ -189,7 +189,7 @@
     "FINAL_ROUND_TYPE_LIST": "9, 173",
     "MEDAL_ROUND_TYPE_LIST": "9, 138, 173, 181",
     "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
-    "STALE_NOT_STARTED_DAYS": 30,
+    "STALE_NOT_STARTED_DAYS": 2,
     "BRONZE_ROUND_TYPE_LIST": "138, 181",
     "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', 'bronze', '1/8', '1/16', 'heats', 'qualifier', 'repechage', 'playoff', 'tie-breaker', 'small final'",
     "GROUP_ROUND_NAME_LIST": "'preliminary', 'seeding'",
@@ -264,7 +264,7 @@
     "ELIMINATION_ROUND_NAME_LIST": "'tie-breaker'",
     "GROUP_ROUND_NAME_LIST": "'final', 'qualifier'",
     "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
-    "STALE_NOT_STARTED_DAYS": 30,
+    "STALE_NOT_STARTED_DAYS": 2,
     "NUMERIC_RESULT_TYPE_LIST": "102",
     "RESULT_COMMENT_VALUE_LIST": "'q', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'r', 'r1', 'r2', 'r3', 'r4', 'dns', 'dnf', 'nr', 'nc', 'disq.', 'withdrawn'",
     "RESULT_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disq.', 'withdrawn'",
@@ -377,7 +377,7 @@
     "PLACEHOLDER_COUNTRY_LIST": "'International'",
     "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
     "RANK_MAX_PLAUSIBLE": 48,
-    "STALE_NOT_STARTED_DAYS": 30,
+    "STALE_NOT_STARTED_DAYS": 2,
     "SERIES_MIN_YEARS": 3,
     "SERIES_SKIP_YEARS": "2003",
     "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
@@ -498,6 +498,10 @@
     "ROUND_TYPE_LIST": "2, 38, 39, 40, 41, 42, 77, 89, 92, 152, 173, 178, 179, 251, 260",
     "FINAL_ROUND_TYPE_LIST": "173",
     "MEDAL_ROUND_TYPE_LIST": "173",
+    "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown'",
+    "RANK_MAX_PLAUSIBLE": 100,
+    "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
+    "STALE_NOT_STARTED_DAYS": 2,
     "NUMERIC_RESULT_TYPE_LIST": "100, 102",
     "NUMERIC_DATA_TYPE_LIST": "1270, 1271",
     "RESULT_COMMENT_VALUE_LIST": "'eliminated', 'el', 'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'q', 'q/or', 'or', 'wr', 'n/a'",
@@ -519,6 +523,12 @@
       "RESULT_DURATION_TYPE_ID": "no result type records elapsed time or a gap to the leader; the result layer carries Rank, Points, Comment and Medal only",
       "FULL_TIME_TOLERANCE_SECONDS": "the sport stores no time on a result, so there is no arithmetic between times to hold to a tolerance",
       "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event (round type 173), so no separate round decides bronze"
+    },
+    "_checkSignal": {
+      "GLOBAL-DQ-046": {
+        "signal": "Blocked",
+        "reason": "The two populations it needs never meet: every Comp.Rank carrying a Time value carries no object_discipline row, and every Comp.Rank carrying a discipline holds no Time. The check scopes on the sport's timed disciplines and reports a Time missing despite a Rank, so whatever discipline list it were given it would report every discipline-tagged statistic in the sport as defective - its normal shape. Blocked rather than not applicable because both structures are present and used; they are simply not attached to each other. It becomes meaningful the day one of the two is joined to the other, without the check changing. SPORTS/Modern-Pentathlon.md owns the evidence."
+      }
     }
   }
 }
