@@ -290,6 +290,11 @@ An event still marked not started 48 hours after its own date is treated as stal
 tighter window than the 30 days the other five documented sports carry, by decision of
 2026-08-06; the parameter's unit is days, so the value is recorded as `2`.
 
+Tournament names are the season and nothing else: every active tournament in the sport is named
+by a bare four-digit year. The name therefore carries a label a date check can contradict, which
+is the structure `GLOBAL-DQ-080` reads, and it carries no other content for a naming check to
+judge.
+
 <!-- MANUAL PASTE ZONE: 42 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
