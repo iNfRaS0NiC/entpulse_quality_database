@@ -122,6 +122,14 @@ permanently unrunnable here; `GLOBAL-DQ-076` asserts the same numeric-field rule
 them and is instantiated instead. `102 Points` is the sport's only numeric result type
 inside DQ scope, Extended Results being outside it by the decision below.
 
+`102 Points` is also the value the placing inside an event is decided from, and is recorded
+as `RESULT_SCORE_TYPE_ID` on that basis. Two gymnasts sharing a place must therefore share a
+score; where they do not, the placing contradicts the number it was derived from, which is
+what `GLOBAL-DQ-116` asserts. The score is stored with inconsistent precision — `13.800` and
+`13.8` both occur — so the check compares it as a quantity rather than as text; that is a
+property of the template rather than of this sport, recorded here because this sport is where
+it was found.
+
 Result types `545 Penalties`, `567 Penalty`, `568 DScore`, `569 Escore`, and `645 Bonus`
 belong to Extended Results. By explicit decision of 2026-08-04 they remain in the confirmed
 structural inventory but are outside the initial Artistic Gymnastics DQ scope. This boundary
