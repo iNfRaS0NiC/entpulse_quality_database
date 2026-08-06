@@ -26,6 +26,12 @@
     the link back to Overview, and the result table from row 5. Upload that file to Google
     Drive and open it as Sheets.
 
+    -Chain carries a discovery batch through its drill-downs. A statement whose parameter has
+    to be picked out of a summary is normally skipped; under -Chain the runner reads the
+    summary it already ran, takes the values that summary ranks first, and runs the drill-down
+    once per value in the same workbook. The value is a sample and the run says so: what was
+    not pursued is reported and kept in the Overview.
+
     A batch is written to survive being cut short. Each statement runs under a wall-clock
     watchdog, so a connection the server half-closes is abandoned as a failed check instead
     of stalling the run, and a workbook is re-written every minute with the checks completed
@@ -64,6 +70,12 @@
     Every check POWERBI_REGISTRY.md records as Approved for Triathlon, using a sport-authored
     override where its row names one, plus the pattern summaries. Unapproved, blocked and
     deprecated checks do not run.
+
+.EXAMPLE
+    .\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-* -Sport "Ice Hockey" -Chain -Format xlsx
+    The whole discovery catalogue for a sport being opened, drill-downs included: each summary
+    feeds the detail statement below it, so one command covers what used to be a batch plus a
+    dozen hand-run follow-ups. -ChainTop and -ChainMax set how far it goes.
 
 .EXAMPLE
     .\TOOLS\Run-Query.ps1 BMX-DQ-001,BMX-DQ-002,BMX-DQ-003 -OutDir .\out
@@ -143,6 +155,21 @@ param(
     # it, plus the pattern statements, collected into one workbook. Needs -Sport. Implies
     # -WithPatterns and -Format xlsx unless a format is given.
     [switch]$RunAll,
+
+    # Runs the drill-downs a discovery batch would otherwise skip, filling each from the
+    # summary the statement itself names as its source. Opening a sport stops being a batch
+    # followed by a dozen hand-run follow-ups.
+    [switch]$Chain,
+
+    # How many values to pursue at each level of the chain: the first entry is how many the
+    # summaries feed their details, the second how many a detail one level down is given. A
+    # summary orders its rows by frequency, so these are the shapes the sport uses most.
+    [int[]]$ChainTop = @(3, 2),
+
+    # The ceiling on chained statements for the whole run. A chain widens as it deepens, and
+    # this is what keeps a sport with many result types from turning one command into an
+    # afternoon. What it stops is reported, never dropped silently.
+    [int]$ChainMax = 40,
 
     # Turns -RunAll into discovery: run the whole GLOBAL catalogue against the sport whether
     # or not anything is approved for it. This is how an undocumented sport is opened, and
@@ -683,6 +710,17 @@ function ConvertTo-ParamTable {
     return $table
 }
 
+function Get-SqlEscaped {
+    # A value going between SQL quotes. String.Replace rather than -replace: the replacement
+    # side of -replace is a regex replacement string, where '\\\\' is four literal characters
+    # and doubles one backslash into four rather than two. Nothing in the package has carried a
+    # backslash so far, so the older form worked by never being tested; a name pattern comes
+    # straight out of the data and can.
+    param([string]$Text)
+
+    return $Text.Replace('\', '\\').Replace("'", "''")
+}
+
 function Get-MissingPlaceholders {
     param([string]$Text, [hashtable]$Values)
 
@@ -690,6 +728,301 @@ function Get-MissingPlaceholders {
         ForEach-Object { $_.Groups[1].Value } |
         Where-Object { -not $Values.ContainsKey($_) } |
         Select-Object -Unique)
+}
+
+# --------------------------------------------------------------------------------------
+# Chaining
+#
+# A drill-down does not invent the value it needs. GLOBAL_QUERIES already authors the source
+# on the placeholder's own line, in one of two forms that say the same thing:
+#
+#   AND r.result_typeFK = {{RESULT_TYPE_ID}}  -- select result_type_id from GLOBAL-DISCOVERY-007 (...)
+#   -- {{ROUND_TYPE_ID}}: select round_type_id from GLOBAL-DISCOVERY-018 (...)
+#
+# So the feed is a repository fact like every other, read rather than inferred, and a statement
+# added later chains on its own declaration without a pairing table here to keep in step.
+# GLOBAL_QUERIES/README.md owns the declaration; this only reads it.
+#
+# What chaining adds is that the value is taken automatically: the rows the feeder itself ranks
+# first, which every summary in the catalogue orders by frequency. That makes a chained result a
+# sample of the busiest shapes, never coverage - so the values not pursued are reported and kept
+# in the workbook rather than left for the reader to infer from a tab count.
+# --------------------------------------------------------------------------------------
+
+$ChainOwnLineDeclaration =
+'(?m)^[ \t]*--[ \t]*\{\{[ \t]*(\w+)[ \t]*\}\}[ \t]*:[ \t]*select[ \t]+(\w+)[ \t]+from[ \t]+(GLOBAL-DISCOVERY-\d+)'
+
+$ChainInlineDeclaration =
+'(?m)^(?<sql>[^\r\n]*\{\{[ \t]*\w+[ \t]*\}\}[^\r\n]*?)--[ \t]*select[ \t]+(?<column>\w+)[ \t]+from[ \t]+(?<check>GLOBAL-DISCOVERY-\d+)'
+
+function Get-DeclaredFeeder {
+    # Which statement supplies each placeholder, and under which column name. The own-line form
+    # is read first because it names its placeholder explicitly; the inline form takes the last
+    # placeholder standing before the comment, which is the one the comment sits on.
+    param([string]$Text)
+
+    $declared = @{}
+
+    foreach ($match in [regex]::Matches($Text, $ChainOwnLineDeclaration)) {
+        $name = $match.Groups[1].Value
+        if ($declared.ContainsKey($name)) { continue }
+        $declared[$name] = [pscustomobject]@{
+            Column  = $match.Groups[2].Value
+            CheckId = $match.Groups[3].Value
+        }
+    }
+
+    foreach ($match in [regex]::Matches($Text, $ChainInlineDeclaration)) {
+        $names = [regex]::Matches($match.Groups['sql'].Value, '\{\{\s*(\w+)\s*\}\}')
+        if ($names.Count -eq 0) { continue }
+
+        $name = $names[$names.Count - 1].Groups[1].Value
+        if ($declared.ContainsKey($name)) { continue }
+        $declared[$name] = [pscustomobject]@{
+            Column  = $match.Groups['column'].Value
+            CheckId = $match.Groups['check'].Value
+        }
+    }
+
+    return $declared
+}
+
+function Test-QuotedPlaceholder {
+    # A placeholder substituted inside SQL quotes carries a string; a bare one carries a number
+    # or the literal NULL. The two need opposite handling for a feeder cell that holds nothing,
+    # so the shape is read off the statement rather than guessed from the parameter's name.
+    param([string]$Text, [string]$Name)
+
+    return ($Text -match ("'\{\{\s*" + [regex]::Escape($Name) + "\s*\}\}'"))
+}
+
+function ConvertTo-ChainValue {
+    # What replaces the placeholder. Returns $null for a combination that cannot be pursued,
+    # which the caller drops with its reason rather than running.
+    param([string]$Text, [string]$Name, $Value)
+
+    $quoted = Test-QuotedPlaceholder -Text $Text -Name $Name
+    $empty = ($null -eq $Value -or $Value -is [DBNull] -or [string]$Value -eq '')
+
+    if ($empty) {
+        # A quoted comparison can never match a value the feeder does not have, so the
+        # statement would run, cost a full scan and report nothing - for a reason about SQL
+        # rather than about the sport. Bare is the opposite: GLOBAL-DISCOVERY-019 is written
+        # with an IS NULL arm precisely so the literal NULL selects the events that have none.
+        if ($quoted) { return $null }
+        return 'NULL'
+    }
+
+    $text = [string]$Value
+    if ($quoted) { return (Get-SqlEscaped -Text $text) }
+    return $text
+}
+
+function Test-RowColumn {
+    # Whether a result carries every column named. Read off the first row, because the API
+    # returns one shape for the whole result set.
+    param($Rows, [string[]]$Columns)
+
+    $first = @($Rows) | Select-Object -First 1
+    if ($null -eq $first) { return $false }
+
+    $names = $first.PSObject.Properties.Name
+    foreach ($column in $Columns) {
+        if ($names -notcontains $column) { return $false }
+    }
+    return $true
+}
+
+function Get-ChainValueSet {
+    # The value combinations a feeder offers, in its own order, without repeats. Taken as whole
+    # rows rather than one column at a time: a summary's rows are the combinations that occur
+    # together, and crossing its columns would manufacture pairs the sport never had.
+    param($Rows, [string[]]$Columns)
+
+    $seen = @{}
+    $sets = @()
+
+    foreach ($row in @($Rows)) {
+        if ($null -eq $row) { continue }
+
+        $names = $row.PSObject.Properties.Name
+        $absent = @($Columns | Where-Object { $names -notcontains $_ })
+        if ($absent.Count -gt 0) { continue }
+
+        $set = [ordered]@{}
+        foreach ($column in $Columns) { $set[$column] = $row.$column }
+
+        # A separator no pattern can contain, so two different combinations cannot collide
+        # into one key and be silently deduplicated.
+        $key = (@($Columns | ForEach-Object { [string]$set[$_] }) -join [char]1)
+        if ($seen.ContainsKey($key)) { continue }
+        $seen[$key] = $true
+
+        $sets += , $set
+    }
+
+    # Returned plain, not comma-wrapped: the caller re-wraps with @(), and the two together
+    # would nest the whole list inside a single element.
+    return $sets
+}
+
+function New-ChainedJob {
+    # One drill-down bound to one combination of values. The CheckID is unchanged - POWERBI.md
+    # makes it the identity of the statement, and running one statement three times does not
+    # make three statements - so the values travel beside it in Parameters, and RunKey is what
+    # keeps the three runs apart in a workbook that is otherwise keyed per check.
+    param($Job, $Assignment, [hashtable]$ParamTable)
+
+    $values = @{}
+    foreach ($entry in $ParamTable.GetEnumerator()) { $values[$entry.Key] = $entry.Value }
+
+    $shown = @()
+    foreach ($name in $Assignment.Keys) {
+        $literal = ConvertTo-ChainValue -Text $Job.Sql -Name $name -Value $Assignment[$name]
+        if ($null -eq $literal) { return $null }
+
+        $values[$name] = $literal
+        $shown += ('{0}={1}' -f $name,
+            $(if ($null -eq $Assignment[$name]) { 'NULL' } else { [string]$Assignment[$name] }))
+    }
+
+    $parameters = $shown -join ', '
+
+    return [pscustomobject]@{
+        CheckId      = $Job.CheckId
+        Name         = $Job.Name
+        What         = $Job.What
+        File         = $Job.File
+        Line         = $Job.Line
+        Path         = $Job.Path
+        Sql          = (Expand-Placeholders -Text $Job.Sql -Values $values)
+        RunKey       = ('{0} [{1}]' -f $Job.CheckId, $parameters)
+        Parameters   = $parameters
+        Category     = $(if ($Job.PSObject.Properties.Name -contains 'Category') { [string]$Job.Category } else { '' })
+        Signal       = $(if ($Job.PSObject.Properties.Name -contains 'Signal' -and $Job.Signal) { [string]$Job.Signal } else { 'Informational' })
+        SignalReason = $(if ($Job.PSObject.Properties.Name -contains 'SignalReason' -and $Job.SignalReason) { [string]$Job.SignalReason } else { $DiscoverySignalReason })
+    }
+}
+
+function Get-ChainedJob {
+    # The next wave of the chain: every statement still short of a value, bound to the values
+    # its declared feeder has already returned.
+    #
+    # Which run feeds it is not a pairing table either. A statement declares one feeder per
+    # placeholder, and among the runs of those feeders the ones used are those whose result
+    # carries every column the statement is missing - because a two-level chain reaches its
+    # values through a summary that is itself already bound to one of them, and reading the
+    # two placeholders out of two different runs would produce combinations neither reported.
+    # Where no single run carries them all, nothing is guessed: the statement stays skipped
+    # and the run says which pair it could not find together.
+    param($Pending, $Completed, [hashtable]$ParamTable, [int]$Top, [int]$Budget, [int[]]$TemplateIds)
+
+    $jobs = @()
+    $resolved = @()
+    $notes = @()
+    $capped = $false
+
+    foreach ($item in $Pending) {
+        if ($jobs.Count -ge $Budget) { $capped = $true; break }
+
+        $job = $item.Job
+        $missing = @(Get-MissingPlaceholders -Text $job.Sql -Values $ParamTable)
+        if ($missing.Count -eq 0) { continue }
+
+        $declared = Get-DeclaredFeeder -Text $job.Sql
+        $undeclared = @($missing | Where-Object { -not $declared.ContainsKey($_) })
+        if ($undeclared.Count -gt 0) {
+            $notes += [pscustomobject]@{
+                Job    = $job
+                Kind   = 'UNDECLARED'
+                Reason = ("no source declared for {0}; GLOBAL_QUERIES names one on the placeholder's own line" -f
+                    ($undeclared -join ', '))
+            }
+            continue
+        }
+
+        $columnOf = @{}
+        foreach ($name in $missing) { $columnOf[$name] = $declared[$name].Column }
+        $wanted = @($missing | ForEach-Object { $columnOf[$_] } | Select-Object -Unique)
+        $feeders = @($missing | ForEach-Object { $declared[$_].CheckId } | Select-Object -Unique)
+
+        $sources = @($Completed | Where-Object {
+                $feeders -contains $_.Job.CheckId -and (Test-RowColumn -Rows $_.Rows -Columns $wanted)
+            })
+
+        if ($sources.Count -eq 0) {
+            $ran = @($Completed | Where-Object { $feeders -contains $_.Job.CheckId })
+            $notes += [pscustomobject]@{
+                Job    = $job
+                Kind   = 'NO_SOURCE'
+                Reason = $(if ($ran.Count -eq 0) {
+                        ("{0} returned nothing to select from" -f ($feeders -join ', '))
+                    }
+                    else {
+                        ("no single run of {0} carries {1} together" -f ($feeders -join ', '), ($wanted -join ' and '))
+                    })
+            }
+            continue
+        }
+
+        $made = 0
+        $dropped = 0
+        $unpursued = 0
+
+        foreach ($source in $sources) {
+            $sets = @(Get-ChainValueSet -Rows $source.Rows -Columns $wanted)
+            $pursued = @($sets | Select-Object -First $Top)
+            $unpursued += ($sets.Count - $pursued.Count)
+
+            foreach ($set in $pursued) {
+                if ($jobs.Count -ge $Budget) { $capped = $true; break }
+
+                $assignment = [ordered]@{}
+                foreach ($name in $missing) { $assignment[$name] = $set[$columnOf[$name]] }
+
+                $chained = New-ChainedJob -Job $job -Assignment $assignment -ParamTable $ParamTable
+                if ($null -eq $chained) { $dropped++; continue }
+
+                # Narrowing is applied here as well as in the main selection, or a chained run
+                # under -TemplateIds would be the one statement in the workbook that quietly
+                # covered the whole sport.
+                if ($TemplateIds.Count -gt 0) {
+                    $narrowed = Enable-TemplateFilter -Text $chained.Sql -TemplateIds $TemplateIds
+                    if ($narrowed.Activated -eq 0) { $dropped++; continue }
+                    $chained.Sql = $narrowed.Sql
+                }
+
+                $jobs += $chained
+                $made++
+            }
+
+            if ($capped) { break }
+        }
+
+        if ($unpursued -gt 0) {
+            $notes += [pscustomobject]@{
+                Job    = $job
+                Kind   = 'NOT_PURSUED'
+                Reason = ("{0} further value(s) of {1} not pursued; -ChainTop takes the {2} the summary ranks first" -f
+                    $unpursued, ($wanted -join '/'), $Top)
+            }
+        }
+        if ($dropped -gt 0) {
+            $notes += [pscustomobject]@{
+                Job    = $job
+                Kind   = 'DROPPED'
+                Reason = ("{0} value(s) could not be pursued: a quoted parameter has no value to match" -f $dropped)
+            }
+        }
+        if ($made -gt 0) { $resolved += $item }
+    }
+
+    return [pscustomobject]@{
+        Jobs     = @($jobs)
+        Resolved = @($resolved)
+        Notes    = @($notes)
+        Capped   = $capped
+    }
 }
 
 # The lower boundary of a branch's scope, as POWERBI.md fixes it. Both the alias and the
@@ -1100,7 +1433,7 @@ function Invoke-SqlWithRetry {
 function Get-SqlLiteral {
     param([string]$Text)
 
-    return "'" + (($Text -replace '\\', '\\\\') -replace "'", "''") + "'"
+    return "'" + (Get-SqlEscaped -Text $Text) + "'"
 }
 
 function Get-ShardBounds {
@@ -1629,6 +1962,18 @@ function Get-RunFolder {
     return Join-Path $OutputRoot ('{0} {1}' -f (Get-RunSport -Jobs $Jobs), $stamp)
 }
 
+function Get-JobRunKey {
+    # What identifies one execution. Normally the CheckID, which is what a check is; under
+    # -Chain the same statement runs once per value it was fed, and only the values tell those
+    # executions apart. Nothing here is a CheckID: POWERBI.md forbids minting one, and a run
+    # key never leaves the run it names.
+    param($Job)
+
+    if ($null -eq $Job) { return '' }
+    if ($Job.PSObject.Properties.Name -contains 'RunKey' -and $Job.RunKey) { return [string]$Job.RunKey }
+    return [string]$Job.CheckId
+}
+
 function Get-SafeFileName {
     param([string]$CheckId)
 
@@ -1856,14 +2201,15 @@ function Save-Workbook {
 
             # A check tab opens with a labelled identity block:
             #   row 1  Check ID | Check Name | SQL Used | Priority | Category | What it does |
-            #          Comment | Check By | Signal | Signal reason
+            #          Comment | Check By | Signal | Signal reason | Parameters
             #   row 2  the values, with Comment and Check By left empty for the reviewer
             #   row 3  the link back to Overview, in a cell of its own
             #   row 4  blank, so the result table below stays its own block
-            # SQL Used stays at C, because C2 is where the jump to the statement lives.
+            # SQL Used stays at C, because C2 is where the jump to the statement lives, so
+            # Parameters - which only a chained run fills - is appended at the end instead.
             if ($headerRow) {
                 $labels = @('Check ID', 'Check Name', 'SQL Used', 'Priority', 'Category',
-                    'What it does', 'Comment', 'Check By', 'Signal', 'Signal reason')
+                    'What it does', 'Comment', 'Check By', 'Signal', 'Signal reason', 'Parameters')
 
                 [void]$xml.Append('<row r="1">')
                 for ($c = 0; $c -lt $header.Count; $c++) {
@@ -2001,14 +2347,21 @@ function New-SqlSheet {
 
     foreach ($entry in $entries) {
         $rowNumber++
-        $anchor[$entry.CheckId] = "A$rowNumber"
-        $rows += [pscustomobject]@{ 'Check ID' = $entry.CheckId; 'Statement' = $entry.Name }
+        # Anchored per execution, not per CheckID: a chained statement appears here once per
+        # value it ran with, and each block holds the statement that actually went out.
+        $key = $(if ($entry.PSObject.Properties.Name -contains 'Key' -and $entry.Key) {
+                [string]$entry.Key
+            }
+            else { [string]$entry.CheckId })
 
-        if ($TabOf -and $TabOf.ContainsKey($entry.CheckId)) {
+        $anchor[$key] = "A$rowNumber"
+        $rows += [pscustomobject]@{ 'Check ID' = $key; 'Statement' = $entry.Name }
+
+        if ($TabOf -and $TabOf.ContainsKey($key)) {
             $links += [pscustomobject]@{
                 Ref    = "A$rowNumber"
-                Target = $TabOf[$entry.CheckId]
-                Text   = [string]$entry.CheckId
+                Target = $TabOf[$key]
+                Text   = $key
             }
         }
 
@@ -2106,8 +2459,19 @@ function New-RunSummaryRow {
         $category = [string]$Job.Category
     }
 
+    # RunKey, not CheckId, is what a workbook keys a tab and a coverage count by: -Chain runs
+    # one statement once per value, and the CheckID is the same for all of them by design.
+    # Parameters is what tells those runs apart for a reader.
+    $runKey = $Job.CheckId
+    if ($Job.PSObject.Properties.Name -contains 'RunKey' -and $Job.RunKey) { $runKey = [string]$Job.RunKey }
+
+    $parameters = ''
+    if ($Job.PSObject.Properties.Name -contains 'Parameters') { $parameters = [string]$Job.Parameters }
+
     return [pscustomobject]@{
         CheckId     = $Job.CheckId
+        RunKey      = $runKey
+        Parameters  = $parameters
         Name        = $Job.Name
         What        = $Job.What
         Rows        = $Rows
@@ -2140,22 +2504,27 @@ function Save-RunWorkbook {
 
     # Read from the result rows rather than carried on the summary, because the summary holds
     # a row count and the count is exactly what cannot tell a clean check from a dead one.
+    #
+    # Keyed by RunKey throughout: under -Chain one CheckID runs several times with different
+    # values, and keying by CheckID would give all of those runs the last one's tab and the
+    # last one's coverage count.
     $eligibleOf = @{}
     foreach ($item in $Collected) {
-        $eligibleOf[$item.Job.CheckId] = Get-CoverageCount -Rows $item.Rows
+        $eligibleOf[(Get-JobRunKey -Job $item.Job)] = Get-CoverageCount -Rows $item.Rows
     }
 
     $tabOf = @{}
     $shortened = @()
     foreach ($item in $Collected) {
+        $runKey = Get-JobRunKey -Job $item.Job
         $preferred = if ($item.Job.Name) { $item.Job.Name } else { $item.Job.CheckId }
         $abbreviated = Get-ShortSheetName -Name $preferred
         $sheetName = ConvertTo-SheetName -Preferred $abbreviated -Fallback $item.Job.CheckId -Used $used
-        $tabOf[$item.Job.CheckId] = $sheetName
+        $tabOf[$runKey] = $sheetName
         # Abbreviation is lossless enough to pass unreported; only a name that still had
         # to be cut is worth flagging.
         if ($sheetName -ne $abbreviated) {
-            $shortened += [pscustomobject]@{ CheckId = $item.Job.CheckId; Wanted = $preferred; Tab = $sheetName }
+            $shortened += [pscustomobject]@{ CheckId = $runKey; Wanted = $preferred; Tab = $sheetName }
         }
     }
 
@@ -2178,12 +2547,20 @@ function Save-RunWorkbook {
 
         $signalValue = $(if ($entry.Signal) { $entry.Signal } else { 'Actionable' })
 
-        $eligible = $(if ($eligibleOf.ContainsKey($entry.CheckId)) { $eligibleOf[$entry.CheckId] } else { $null })
+        $runKey = $(if ($entry.PSObject.Properties.Name -contains 'RunKey' -and $entry.RunKey) {
+                [string]$entry.RunKey
+            }
+            else { [string]$entry.CheckId })
+
+        $eligible = $(if ($eligibleOf.ContainsKey($runKey)) { $eligibleOf[$runKey] } else { $null })
         $seededStatus = Get-SeededStatus -Signal $signalValue -Rows $rowsCell -Ran $ran -Eligible $eligible
 
+        # Parameters sits beside the CheckID because it is part of what was run, not a result:
+        # three rows carrying GLOBAL-DISCOVERY-019 differ in nothing else.
         $overviewRows += [pscustomobject]@{
             'Sport'         = Get-SportFromCheckId -CheckId $entry.CheckId
             'CheckID'       = $entry.CheckId
+            'Parameters'    = $(if ($entry.PSObject.Properties.Name -contains 'Parameters') { [string]$entry.Parameters } else { '' })
             'Check Name'    = $entry.Name
             'Priority'      = [string]$entry.Priority
             'Category'      = [string]$entry.Category
@@ -2194,11 +2571,12 @@ function Save-RunWorkbook {
             'Signal'        = $signalValue
             'Signal reason' = [string]$entry.SignalReason
         }
-        # Rows carries the jump to the tab, so its column moves with it.
-        if ($ran -and $tabOf.ContainsKey($entry.CheckId)) {
+        # Rows carries the jump to the tab, so its column moves with it - H since Parameters
+        # was inserted at C.
+        if ($ran -and $tabOf.ContainsKey($runKey)) {
             $links += [pscustomobject]@{
-                Ref    = "G$overviewRow"
-                Target = $tabOf[$entry.CheckId]
+                Ref    = "H$overviewRow"
+                Target = $tabOf[$runKey]
                 Text   = [string]$entry.Rows
             }
         }
@@ -2206,53 +2584,65 @@ function Save-RunWorkbook {
 
     # Signal and Signal reason are the runner's own classification, settled before the run
     # and unchanged by reading it, so they are collapsed out of the reviewer's way rather
-    # than dropped: J and K still carry every value for whoever needs to unhide them.
+    # than dropped: K and L still carry every value for whoever needs to unhide them.
     $sheets = @([pscustomobject]@{
             Name           = $overviewName
             Rows           = $overviewRows
             Header         = $null
             BackTo         = $null
             Links          = $links
-            HiddenColumns  = @(10, 11)
+            HiddenColumns  = @(11, 12)
             # Each value names an outcome rather than a stage of work, because "Completed"
             # hides the only thing the next reader needs: completed with what result. The
             # three closing values are the three ways a check can honestly end.
             Validation     = @{
-                Sqref  = "H2:H$overviewRow"
+                Sqref  = "I2:I$overviewRow"
                 Values = 'Not reviewed,Reviewing,On hold,No issue,Reported to IT,Fixed,No action needed'
             }
         })
 
     $sqlSheet = New-SqlSheet -TabOf $tabOf -Entries @($Collected | ForEach-Object {
-            [pscustomobject]@{ CheckId = $_.Job.CheckId; Name = $_.Job.Name; Sql = $_.Job.Sql }
+            [pscustomobject]@{
+                Key     = (Get-JobRunKey -Job $_.Job)
+                CheckId = $_.Job.CheckId
+                Name    = $_.Job.Name
+                Sql     = $_.Job.Sql
+            }
         })
 
     # Comment and Check By are written empty on purpose: both columns are the reviewer's,
     # and the workbook only supplies their headings. C2 holds the jump to the statement
     # rather than the statement itself.
     foreach ($item in $Collected) {
+        $itemRunKey = Get-JobRunKey -Job $item.Job
         $itemCategory = $(if ($item.Job.PSObject.Properties.Name -contains 'Category') {
                 [string]$item.Job.Category
             }
             else { '' })
+        $itemParameters = $(if ($item.Job.PSObject.Properties.Name -contains 'Parameters') {
+                [string]$item.Job.Parameters
+            }
+            else { '' })
 
+        # Parameters is appended rather than inserted: C2 is where the jump to the statement
+        # lives, and moving SQL Used off C would move the link with it.
         $sheet = [pscustomobject]@{
-            Name   = $tabOf[$item.Job.CheckId]
+            Name   = $tabOf[$itemRunKey]
             Rows   = $item.Rows
             Header = @($item.Job.CheckId, $item.Job.Name, 'SQL',
                 (Get-CheckPriority -Category $itemCategory), $itemCategory,
                 $item.Job.What, '', '',
                 $(if ($item.Job.Signal) { $item.Job.Signal } else { 'Actionable' }),
-                [string]$item.Job.SignalReason)
+                [string]$item.Job.SignalReason, $itemParameters)
             BackTo = $overviewName
         }
 
-        if ($sqlSheet -and $sqlSheet.Anchor.ContainsKey($item.Job.CheckId)) {
+        if ($sqlSheet -and $sqlSheet.Anchor.ContainsKey($itemRunKey)) {
             $sheet | Add-Member -NotePropertyName Links -NotePropertyValue @(
                 [pscustomobject]@{
                     Ref    = 'C2'
                     Target = $sqlSheet.Name
-                    Cell   = $sqlSheet.Anchor[$item.Job.CheckId]
+                    Cell   = $sqlSheet.Anchor[$itemRunKey]
                     Text   = 'SQL'
                 })
         }
@@ -2370,6 +2760,18 @@ if ($Info) {
     Write-Host '  result are listed and skipped, never guessed. An explicit -SportId or' -ForegroundColor DarkGray
     Write-Host '  -Params wins over a discovered value.' -ForegroundColor DarkGray
 
+    Write-Section 'FOLLOW THE DRILL-DOWNS TOO'
+    Write-Line "$Entry GLOBAL-DISCOVERY-* -Sport BMX -Chain -Format xlsx" 'summaries and their details, one command'
+    Write-Line '-ChainTop 3,2' 'values per level; default 3 then 2'
+    Write-Line '-ChainMax 40' 'ceiling on chained statements for the run'
+    Write-Host '  A skipped drill-down names its own source: GLOBAL_QUERIES writes' -ForegroundColor DarkGray
+    Write-Host '  "select <column> from GLOBAL-DISCOVERY-NNN" on the placeholder line. -Chain' -ForegroundColor DarkGray
+    Write-Host '  reads that, takes the values the summary ranks first and runs the drill-down' -ForegroundColor DarkGray
+    Write-Host '  once per value, in the same workbook. The CheckID is unchanged and the' -ForegroundColor DarkGray
+    Write-Host '  values appear in Parameters, so nothing here mints an identity.' -ForegroundColor DarkGray
+    Write-Host '  Chained results are samples of the busiest shapes, never coverage: what was' -ForegroundColor DarkGray
+    Write-Host '  not pursued keeps a SKIPPED row of its own in the Overview.' -ForegroundColor DarkGray
+
     Write-Section 'PATTERNS ALONGSIDE A RUN'
     Write-Line "$Entry GLOBAL-DQ-* -Sport BMX -WithPatterns -Format xlsx" 'DQ plus the patterns'
     Write-Host '  Adds every PATTERNS.sql statement whose parameters -Sport can supply:' -ForegroundColor DarkGray
@@ -2396,8 +2798,8 @@ if ($Info) {
     Write-Line '-Format csv' 'CSV, with check_id and check_name columns'
     Write-Line '-Format json' 'JSON, with check_id and check_name fields'
     Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, Overview first'
-    Write-Host '  Overview lists Sport, CheckID, Check Name, What it does, Rows and the' -ForegroundColor DarkGray
-    Write-Host '  Status and Check By fields to fill in, with Signal and Signal reason' -ForegroundColor DarkGray
+    Write-Host '  Overview lists Sport, CheckID, Parameters, Check Name, What it does, Rows' -ForegroundColor DarkGray
+    Write-Host '  and the Status and Check By fields to fill in, with Signal and Signal reason' -ForegroundColor DarkGray
     Write-Host '  hidden behind them; each row count links to its tab. On a check tab' -ForegroundColor DarkGray
     Write-Host '  row 2 holds the CheckID, the name, the one-line SQL that ran and what' -ForegroundColor DarkGray
     Write-Host '  the check asserts, with empty Comment and Check By cells beside them;' -ForegroundColor DarkGray
@@ -2708,10 +3110,27 @@ if ($runnable.Count -eq 0) {
 $jobs = $runnable
 $isBatch = $jobs.Count -gt 1
 
+# -Chain feeds one statement from another's result, so it needs a run that holds both. Said
+# here rather than left to produce an unexplained plain batch.
+if ($Chain) {
+    if (-not $isBatch) {
+        Write-Host '-Chain needs a batch: a drill-down is filled from a summary the same run produced.' -ForegroundColor Yellow
+    }
+    elseif ($ChainTop.Count -eq 0) {
+        throw '-ChainTop needs at least one level, for example -ChainTop 3,2.'
+    }
+    elseif (@($skipped | Where-Object { $_.Kind -eq 'NEEDS_SELECTION' }).Count -eq 0) {
+        Write-Host '-Chain has nothing to chain: no matched statement is waiting on a value from a summary.' -ForegroundColor DarkGray
+    }
+}
+
 if ($DryRun) {
     if ($isBatch) {
         Write-Host "--- $($jobs.Count) checks that would run ---" -ForegroundColor DarkGray
         $jobs | Format-Table CheckId, Name -AutoSize
+        if ($Chain) {
+            Write-Host ('  -Chain would add up to {0} more, but which ones depends on values only the run itself returns.' -f $ChainMax) -ForegroundColor DarkGray
+        }
     }
     else {
         Write-Host "--- SQL that would be sent ($($jobs[0].CheckId)) ---" -ForegroundColor DarkGray
@@ -2759,75 +3178,164 @@ if ($isBatch) {
     $index = 0
     $lastSnapshot = Get-Date
 
-    foreach ($job in $jobs) {
-        $index++
-        $started = Get-Date
-        $rowCount = 0
-        $status = 'OK'
+    # The run is a queue of waves rather than one list. Without -Chain there is exactly one
+    # wave and this behaves as it always did; with it, each wave is built out of what the
+    # previous one returned, which is the only order the values can arrive in.
+    $queue = @($jobs)
+    $planned = $queue.Count
 
-        try {
-            $rows = Get-StatementRows -Statement $job.Sql -CheckId $job.CheckId
-            $rowCount = @($rows).Count
+    # Feeder results, kept whatever the output format. A workbook run already holds them in
+    # $collected, but a chained flat run must not have to re-read a CSV it just wrote.
+    $chainSource = @()
+    $chainNotes = @()
+    $chainResolved = @{}
+    $chainedTotal = 0
+    $chainCapped = $false
+    $level = 0
 
-            if ($rowCount -gt 0) {
-                if ($isWorkbook) {
-                    # A workbook names the check on the tab and on row 1, so the rows
-                    # themselves stay clean.
-                    $collected += [pscustomobject]@{ Job = $job; Rows = $rows }
+    # Only discovery chains. A DQ statement short of a parameter is short of a confirmed fact
+    # about the sport, not of a value to sample, and POWERBI.md does not let a check be run on
+    # a guess. -Chain is silent about them rather than refusing the run they came with.
+    $pendingSelection = @()
+    if ($Chain) {
+        $pendingSelection = @($skipped |
+            Where-Object { $_.Kind -eq 'NEEDS_SELECTION' -and $_.Job.CheckId -like $DiscoveryCheckIdPattern })
+    }
+
+    while ($queue.Count -gt 0) {
+        foreach ($job in $queue) {
+            $index++
+            $started = Get-Date
+            $rowCount = 0
+            $status = 'OK'
+            $runKey = Get-JobRunKey -Job $job
+
+            try {
+                $rows = Get-StatementRows -Statement $job.Sql -CheckId $runKey
+                $rowCount = @($rows).Count
+
+                if ($rowCount -gt 0) {
+                    if ($isWorkbook) {
+                        # A workbook names the check on the tab and on row 1, so the rows
+                        # themselves stay clean.
+                        $collected += [pscustomobject]@{ Job = $job; Rows = $rows }
+                    }
+                    else {
+                        # A flat file has nowhere else to record which check a row came from.
+                        # The file is named for the run rather than the check, or two chained
+                        # runs of one CheckID would overwrite each other.
+                        $tagged = Add-CheckColumns -Rows $rows -CheckId $runKey -Name $job.Name
+                        $target = Join-Path $OutDir ((Get-SafeFileName -CheckId $runKey) + $extension)
+                        Save-Rows -Rows $tagged -Path $target -Fmt $Format
+                    }
+
+                    if ($Chain) { $chainSource += [pscustomobject]@{ Job = $job; Rows = $rows } }
                 }
                 else {
-                    # A flat file has nowhere else to record which check a row came from.
-                    $tagged = Add-CheckColumns -Rows $rows -CheckId $job.CheckId -Name $job.Name
-                    $target = Join-Path $OutDir ((Get-SafeFileName -CheckId $job.CheckId) + $extension)
-                    Save-Rows -Rows $tagged -Path $target -Fmt $Format
+                    $status = 'clean'
                 }
             }
-            else {
-                $status = 'clean'
-            }
-        }
-        catch {
-            $status = "ERROR: $($_.Exception.Message)"
-        }
-
-        $elapsed = ((Get-Date) - $started).TotalSeconds
-        $summary += New-RunSummaryRow -Job $job -Rows $rowCount `
-            -Seconds ([math]::Round($elapsed, 1)) -Status $status
-
-        $colour = if ($status -like 'ERROR*') { 'Red' } else { 'DarkGray' }
-        Write-Host ("[{0}/{1}] {2}  rows={3}  {4:n1}s  {5}" -f `
-                $index, $jobs.Count, $job.CheckId, $rowCount, $elapsed, $status) -ForegroundColor $colour
-
-        # A run that wedges or is interrupted must not cost the checks that already
-        # succeeded. Flat files are written per check as they come, so only the workbook
-        # needs this. A snapshot that cannot be written - the file open in Excel, most
-        # likely - is reported and skipped: it must never end the run it exists to protect.
-        if ($isWorkbook -and $collected.Count -gt 0 -and $index -lt $jobs.Count -and
-            ((Get-Date) - $lastSnapshot).TotalSeconds -ge $SnapshotIntervalSec) {
-            try {
-                Save-RunWorkbook -Summary $summary -Collected $collected -Path $workbookPath | Out-Null
-                Write-Host ("        snapshot: {0} of {1} checks saved" -f $index, $jobs.Count) -ForegroundColor DarkGray
-            }
             catch {
-                Write-Host "        snapshot failed: $($_.Exception.Message)" -ForegroundColor Yellow
+                $status = "ERROR: $($_.Exception.Message)"
             }
-            $lastSnapshot = Get-Date
+
+            $elapsed = ((Get-Date) - $started).TotalSeconds
+            $summary += New-RunSummaryRow -Job $job -Rows $rowCount `
+                -Seconds ([math]::Round($elapsed, 1)) -Status $status
+
+            $colour = if ($status -like 'ERROR*') { 'Red' } else { 'DarkGray' }
+            Write-Host ("[{0}/{1}] {2}  rows={3}  {4:n1}s  {5}" -f `
+                    $index, $planned, $runKey, $rowCount, $elapsed, $status) -ForegroundColor $colour
+
+            # A run that wedges or is interrupted must not cost the checks that already
+            # succeeded. Flat files are written per check as they come, so only the workbook
+            # needs this. A snapshot that cannot be written - the file open in Excel, most
+            # likely - is reported and skipped: it must never end the run it exists to protect.
+            if ($isWorkbook -and $collected.Count -gt 0 -and $index -lt $planned -and
+                ((Get-Date) - $lastSnapshot).TotalSeconds -ge $SnapshotIntervalSec) {
+                try {
+                    Save-RunWorkbook -Summary $summary -Collected $collected -Path $workbookPath | Out-Null
+                    Write-Host ("        snapshot: {0} of {1} checks saved" -f $index, $planned) -ForegroundColor DarkGray
+                }
+                catch {
+                    Write-Host "        snapshot failed: $($_.Exception.Message)" -ForegroundColor Yellow
+                }
+                $lastSnapshot = Get-Date
+            }
+
+            if ($index -lt $planned) { Start-Sleep -Milliseconds $BatchDelayMs }
         }
 
-        if ($index -lt $jobs.Count) { Start-Sleep -Milliseconds $BatchDelayMs }
+        $queue = @()
+        if (-not $Chain -or $level -ge $ChainTop.Count -or $pendingSelection.Count -eq 0) { break }
+
+        $top = $ChainTop[$level]
+        $level++
+        if ($top -le 0) { break }
+
+        $wave = Get-ChainedJob -Pending $pendingSelection -Completed $chainSource -ParamTable $paramTable `
+            -Top $top -Budget ($ChainMax - $chainedTotal) -TemplateIds $TemplateIds
+
+        $chainNotes += @($wave.Notes)
+        if ($wave.Capped) { $chainCapped = $true }
+
+        foreach ($item in $wave.Resolved) { $chainResolved[$item.Job.CheckId] = $true }
+        $pendingSelection = @($pendingSelection | Where-Object { -not $chainResolved.ContainsKey($_.Job.CheckId) })
+
+        $queue = @($wave.Jobs)
+        if ($queue.Count -eq 0) { break }
+
+        $chainedTotal += $queue.Count
+        $planned += $queue.Count
+
+        Write-Host ''
+        Write-Host ("Chain level {0}: {1} drill-down(s) from {2} value(s) each." -f `
+                $level, $queue.Count, $top) -ForegroundColor DarkGray
+        foreach ($chained in $queue) {
+            Write-Host ("    {0}  {1}" -f $chained.CheckId, $chained.Parameters) -ForegroundColor DarkGray
+        }
+        Write-Host ''
     }
 
     Save-SessionState -Session $script:Session
 
+    # A statement the chain reached is no longer skipped, and a level that could not find a
+    # source yet is not a finding once a later level did. Everything else stays: an incomplete
+    # run must say so here rather than leave the reader counting tabs.
+    $chainNotes = @($chainNotes | Where-Object {
+            -not ($_.Kind -eq 'NO_SOURCE' -and $chainResolved.ContainsKey($_.Job.CheckId))
+        })
+
+    $chainReason = @{}
+    foreach ($note in $chainNotes) {
+        if ($note.Kind -eq 'NOT_PURSUED') { continue }
+        if (-not $chainReason.ContainsKey($note.Job.CheckId)) { $chainReason[$note.Job.CheckId] = $note.Reason }
+    }
+
     # Statements that could not be filled belong in the record too, or the run would look
     # like it covered the whole catalogue.
     foreach ($item in $skipped) {
+        if ($item.Kind -eq 'NEEDS_SELECTION' -and $chainResolved.ContainsKey($item.Job.CheckId)) { continue }
+
         $skipStatus = switch ($item.Kind) {
             'NOT_APPLICABLE'      { "SKIPPED: not applicable - $($item.Reason)" }
             'NO_TEMPLATE_FILTER'  { "SKIPPED: not narrowable - $($item.Reason)" }
-            default               { "SKIPPED: needs $($item.Missing)" }
+            default               {
+                $why = "SKIPPED: needs $($item.Missing)"
+                if ($chainReason.ContainsKey($item.Job.CheckId)) {
+                    $why += " - not chained: $($chainReason[$item.Job.CheckId])"
+                }
+                $why
+            }
         }
         $summary += New-RunSummaryRow -Job $item.Job -Rows 0 -Seconds 0 -Status $skipStatus
+    }
+
+    # What the chain reached but did not exhaust. A row of its own, because a reader counting
+    # three GLOBAL-DISCOVERY-019 tabs has no way to know whether that was three of three or
+    # three of forty, and the difference is the whole distance between a sample and coverage.
+    foreach ($note in @($chainNotes | Where-Object { $_.Kind -eq 'NOT_PURSUED' })) {
+        $summary += New-RunSummaryRow -Job $note.Job -Rows 0 -Seconds 0 -Status "SKIPPED: $($note.Reason)"
     }
 
     if ($isWorkbook) {
@@ -2839,11 +3347,30 @@ if ($isBatch) {
         $destination = $OutDir
     }
 
-    $summary | Format-Table CheckId, Name, Signal, Rows, Seconds, Status -AutoSize
+    $summary | Format-Table CheckId, Parameters, Name, Signal, Rows, Seconds, Status -AutoSize
 
     if ($isWorkbook -and $shortened.Count -gt 0) {
         Write-Host "Tab names capped at Excel's 31-character limit:" -ForegroundColor DarkGray
         $shortened | Format-Table CheckId, Wanted, Tab -AutoSize
+    }
+
+    # A chained run is a sample of the busiest shapes, and every way it fell short of the whole
+    # is said out loud. WORKFLOW.md's evidence rule turns on exactly this distinction.
+    if ($Chain) {
+        if ($chainedTotal -gt 0) {
+            Write-Host ("Chained {0} drill-down(s) over {1} level(s)." -f $chainedTotal, $level) -ForegroundColor DarkGray
+        }
+        else {
+            Write-Host 'Chained nothing: no skipped statement could be filled from a result this run produced.' -ForegroundColor DarkGray
+        }
+
+        foreach ($note in $chainNotes) {
+            Write-Host ("  {0}  {1}" -f $note.Job.CheckId, $note.Reason) -ForegroundColor DarkGray
+        }
+        if ($chainCapped) {
+            Write-Host ("  -ChainMax $ChainMax reached; the chain stopped there rather than widening further.") -ForegroundColor Yellow
+        }
+        Write-Host '  Chained values are the ones each summary ranks first, so these results are samples, never coverage.' -ForegroundColor DarkGray
     }
 
     # A check that audited nothing succeeded, returned one row and reported no findings, so it
@@ -2854,13 +3381,13 @@ if ($isBatch) {
     $audited = @($collected | Where-Object { 0 -eq (Get-CoverageCount -Rows $_.Rows) })
     if ($audited.Count -gt 0) {
         Write-Host ("{0} check(s) audited nothing - eligible_count is 0, which is never clean data: {1}" -f `
-                $audited.Count, (($audited | ForEach-Object { $_.Job.CheckId }) -join ', ')) -ForegroundColor Yellow
+                $audited.Count, (($audited | ForEach-Object { Get-JobRunKey -Job $_.Job }) -join ', ')) -ForegroundColor Yellow
     }
 
     $failed = @($summary | Where-Object { $_.Status -like 'ERROR*' }).Count
     $totalRows = ($summary | Measure-Object Rows -Sum).Sum
-    Write-Host ("Done: {0} checks, {1} rows, {2} failed -> {3}" -f `
-            $jobs.Count, $totalRows, $failed, $destination) -ForegroundColor DarkGray
+    Write-Host ("Done: {0} statement(s), {1} rows, {2} failed -> {3}" -f `
+            $index, $totalRows, $failed, $destination) -ForegroundColor DarkGray
     return
 }
 

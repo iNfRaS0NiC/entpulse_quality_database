@@ -16,8 +16,9 @@ Confirm the sport is actually undocumented: check `SPORTS.md` for a row and
 `SPORTS/` for a file. If either exists, this is an update to an existing sport, not an
 opening — target the smallest relevant part of the existing file instead.
 
-Ask for the exact database sport name if the user gave an informal one. `-Sport` matches
-`sport.name` exactly and fails on a near miss, which is cheaper to resolve now than
+Ask for the exact database sport name if the user gave an informal one. `-Sport` accepts a
+documented repository slug too, but a new sport has no mapping yet, so its exact `sport.name`
+is required and a near miss still fails during live discovery. Resolve it now rather than
 mid-batch.
 
 ## Stage 1 - run the catalogue
@@ -30,16 +31,29 @@ Start capped. Read what the first batch cost before letting the rest go: `WORKFL
 cost rule is not weakened by running many statements at once, and a large sport can time out
 check by check.
 
-Then run the remainder. Statements needing a value chosen from a summary result are listed
-and skipped, and appear as `SKIPPED` in the workbook — a run is never full coverage.
+Then run the remainder, and let it carry the drill-downs with it:
+
+```powershell
+.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-* -Sport "<Exact Sport Name>" -Chain -Format xlsx
+```
+
+`-Chain` fills each drill-down from the summary the statement itself names as its source and
+runs it once per value that summary ranks first. It replaces the hand-run follow-ups stage 2
+used to be, not the reading of them. Drop it, or lower `-ChainTop`, on a sport whose first
+batch was slow.
 
 Report to the user: which checks returned rows, which returned nothing, which failed with
 what message, and which were skipped. A failed check is `Not checked`, never `Not used`.
 
-## Stage 2 - run the drill-downs the findings justify
+## Stage 2 - read the chain, and run what it left
 
-For each skipped statement worth pursuing, read its summary result, let the user pick the
-value, then run the paired detail statement with it:
+A chained result is a sample of the busiest shapes, never coverage. The Overview says so in
+its own rows: `SKIPPED: N further value(s) … not pursued`, and `SKIPPED` for any drill-down
+the chain could not fill at all. Read those before anything else, because they are the
+difference between "this sport uses these shapes" and "these are the shapes it uses most".
+
+Where a value the chain skipped matters to a structural question, let the user pick it and
+run that statement on its own:
 
 ```powershell
 .\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-019 -Sport "<Exact Sport Name>" -Params ROUND_TYPE_ID=5
@@ -49,7 +63,8 @@ value, then run the paired detail statement with it:
 the structural question is answered; a full catalogue sweep is not the goal.
 
 Classify every result with the `WORKFLOW.md` evidence vocabulary as you go. A result whose
-row count equals the limit is truncated and supports only "these examples exist".
+row count equals the limit is truncated and supports only "these examples exist". A chained
+one supports only "these examples exist among the values pursued".
 
 ## Stage 3 - record what was confirmed
 
@@ -62,7 +77,8 @@ PREPARE_DOC_UPDATE SPORT=<Sport>
 Then, in this order:
 
 1. add one row to `SPORTS.md` immediately before the `SPORT INDEX` marker, with the slug
-   derived by the slug rule in that file;
+   derived by the slug rule in that file and the exact database `sport.name` in the final
+   `Database sport name` column;
 2. create `SPORTS/<SportSlug>.md` from `SPORTS/_TEMPLATE.md`, replacing every `<SPORT_ID>`
    placeholder with the confirmed numeric sport ID — including the ones inside the paste
    markers;
@@ -90,5 +106,7 @@ A structural finding never becomes a DQ check automatically.
 - run stage 3 or 4 without its explicit command;
 - treat execution output as evidence;
 - guess a parameter the runner reported as skipped;
+- report a chained result as the sport's whole use of a shape: `-Chain` pursues the values a
+  summary ranks first and says what it left, and that report is part of the finding;
 - fill a `params.json` value the sport file does not document as confirmed;
 - report a narrowed or truncated result as complete sport coverage.

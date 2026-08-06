@@ -45,6 +45,26 @@ an SQL bind variable. Never infer it from `statistic_typeFK`.
 String replacements such as `{{NAME_PATTERN}}` are inserted inside SQL quotes and must
 be SQL-escaped when the selected value contains a quote or backslash.
 
+## Source declaration
+
+A parameter whose value is chosen from another statement's result names that statement in
+the SQL, on the placeholder's own line, in one of two forms:
+
+```sql
+AND r.result_typeFK = {{RESULT_TYPE_ID}}  -- select result_type_id from GLOBAL-DISCOVERY-007 (EVENT_RESULTS_TYPES_CODES)
+-- {{ROUND_TYPE_ID}}: select round_type_id from GLOBAL-DISCOVERY-018 (EVENT_ROUND_TYPE_USAGE_SUMMARY)
+```
+
+The second form is for a placeholder appearing more than once, where no single occurrence is
+the one to hang the declaration on. Both name the column to read the value from and the
+`GLOBAL-DISCOVERY-NNN` that returns it, and the column name is the one that statement
+projects.
+
+The declaration is the record of where a value legitimately comes from, and reading it is
+what lets `TOOLS/Run-Query.ps1 -Chain` run a drill-down without a pairing list; `TOOLS/README.md`
+owns that behaviour. A drill-down added without a declaration fails `TOOLS/Test-Tools.ps1`.
+It is documentation first: a reader following the catalogue by hand needs the same answer.
+
 ## Registry
 
 The `Description` column mirrors each statement's `-- What it does:` comment in the SQL.

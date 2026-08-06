@@ -670,6 +670,230 @@ Test-That 'an already active filter is not activated twice' {
 Complete-Group
 
 # --------------------------------------------------------------------------------------
+# Chaining
+# --------------------------------------------------------------------------------------
+
+Start-Group 'Runner' 'Chaining'
+
+function New-ChainRow {
+    param([hashtable]$Cells)
+    return [pscustomobject]$Cells
+}
+
+function New-ChainStatement {
+    param([string]$CheckId, [string]$Name, [string]$Sql)
+    return [pscustomobject]@{ CheckId = $CheckId; Name = $Name; What = ''; File = 'x.sql'; Line = 1; Path = 'x.sql'; Sql = $Sql }
+}
+
+Test-That 'a source declared on the placeholder line is read' {
+    $sql = "SELECT 1 WHERE r.result_typeFK = {{RESULT_TYPE_ID}}  -- select result_type_id from GLOBAL-DISCOVERY-007 (EVENT_RESULTS_TYPES_CODES)"
+    $declared = Get-DeclaredFeeder -Text $sql
+
+    Assert-True $declared.ContainsKey('RESULT_TYPE_ID') 'the placeholder should be declared'
+    Assert-Equal 'result_type_id' $declared['RESULT_TYPE_ID'].Column 'column'
+    Assert-Equal 'GLOBAL-DISCOVERY-007' $declared['RESULT_TYPE_ID'].CheckId 'source CheckID'
+}
+
+Test-That 'a source declared on a comment line of its own is read' {
+    # GLOBAL-DISCOVERY-019 uses this form, because its placeholder appears twice on two lines
+    # and neither of them is the one to hang the declaration on.
+    $sql = "  -- {{ROUND_TYPE_ID}}: select round_type_id from GLOBAL-DISCOVERY-018 (EVENT_ROUND_TYPE_USAGE_SUMMARY)`n  e.round_typeFK = {{ROUND_TYPE_ID}}"
+    $declared = Get-DeclaredFeeder -Text $sql
+
+    Assert-Equal 1 $declared.Count 'one declaration'
+    Assert-Equal 'round_type_id' $declared['ROUND_TYPE_ID'].Column 'column'
+    Assert-Equal 'GLOBAL-DISCOVERY-018' $declared['ROUND_TYPE_ID'].CheckId 'source CheckID'
+}
+
+Test-That 'a comment naming no source declares nothing' {
+    $sql = "WHERE sdt.statistic_typeFK = {{STATISTIC_TYPE_ID}}  -- same statistic_type_id as the inner filter"
+    Assert-Equal 0 (Get-DeclaredFeeder -Text $sql).Count 'no declaration'
+}
+
+Test-That 'every drill-down in GLOBAL_QUERIES declares where its value comes from' {
+    # Asserted against the real files, because -Chain is only as good as the declarations and a
+    # statement added without one would silently stay skipped forever. The assignment is local
+    # to this case, which is how Get-CheckCatalogue is pointed at a catalogue for one test.
+    $RepoRoot = $RealRepoRoot
+    $automatic = @{}
+    foreach ($name in $DiscoverableParameters) { $automatic[$name] = 1 }
+
+    $undeclared = @()
+    foreach ($check in (Get-CheckCatalogue | Where-Object { $_.CheckId -like 'GLOBAL-DISCOVERY-*' })) {
+        $missing = @(Get-MissingPlaceholders -Text $check.Sql -Values $automatic)
+        if ($missing.Count -eq 0) { continue }
+
+        $declared = Get-DeclaredFeeder -Text $check.Sql
+        foreach ($name in $missing) {
+            if (-not $declared.ContainsKey($name)) { $undeclared += "$($check.CheckId).$name" }
+        }
+    }
+
+    Assert-Equal 0 $undeclared.Count ("undeclared drill-down parameters: " + ($undeclared -join ', '))
+}
+
+Test-That 'a quoted placeholder is told apart from a bare one' {
+    Assert-True (Test-QuotedPlaceholder -Text "x = '{{NAME_PATTERN}}'" -Name 'NAME_PATTERN') 'quoted'
+    Assert-True (-not (Test-QuotedPlaceholder -Text 'x = {{ROUND_TYPE_ID}}' -Name 'ROUND_TYPE_ID')) 'bare'
+}
+
+Test-That 'a bare placeholder takes the literal NULL and a quoted one is refused' {
+    # GLOBAL-DISCOVERY-019 carries an IS NULL arm, so NULL selects the events with no round
+    # type. A quoted comparison can match no such thing, and running it would cost a full scan
+    # to report nothing for a reason about SQL rather than about the sport.
+    Assert-Equal 'NULL' (ConvertTo-ChainValue -Text 'x = {{ROUND_TYPE_ID}}' -Name 'ROUND_TYPE_ID' -Value $null) 'bare null'
+    Assert-True ($null -eq (ConvertTo-ChainValue -Text "x = '{{NAME_PATTERN}}'" -Name 'NAME_PATTERN' -Value $null)) 'quoted null'
+}
+
+Test-That 'a chained string value is escaped for the quotes it lands in' {
+    $value = ConvertTo-ChainValue -Text "x = '{{NAME_PATTERN}}'" -Name 'NAME_PATTERN' -Value "O'Brien a\b"
+    Assert-Equal "O''Brien a\\b" $value 'escaped value'
+}
+
+Test-That 'a backslash is doubled, not quadrupled' {
+    # The replacement side of -replace is a regex replacement string, where '\\\\' is four
+    # literal characters. Get-SqlLiteral carried that form while nothing in the package had a
+    # backslash to expose it; a name pattern comes out of the data and can.
+    Assert-Equal 'a\\b' (Get-SqlEscaped -Text 'a\b') 'escaped backslash'
+    Assert-Equal "'a\\b'" (Get-SqlLiteral -Text 'a\b') 'escaped literal'
+}
+
+Test-That 'value combinations keep the source order and drop repeats' {
+    $rows = @(
+        (New-ChainRow @{ result_type_id = 1; value_pattern = '#' }),
+        (New-ChainRow @{ result_type_id = 1; value_pattern = '#' }),
+        (New-ChainRow @{ result_type_id = 9; value_pattern = '#' })
+    )
+    $sets = @(Get-ChainValueSet -Rows $rows -Columns @('result_type_id', 'value_pattern'))
+
+    Assert-Equal 2 $sets.Count 'distinct combinations'
+    Assert-Equal 1 $sets[0]['result_type_id'] 'the summary order is kept'
+    Assert-Equal 9 $sets[1]['result_type_id'] 'second combination'
+}
+
+Test-That 'columns are read as whole rows rather than crossed' {
+    # Crossing the columns would offer (1,'x') and (9,'y'), which no row reported and the sport
+    # may never have had.
+    $rows = @(
+        (New-ChainRow @{ result_type_id = 1; value_pattern = 'y' }),
+        (New-ChainRow @{ result_type_id = 9; value_pattern = 'x' })
+    )
+    $sets = @(Get-ChainValueSet -Rows $rows -Columns @('result_type_id', 'value_pattern'))
+
+    Assert-Equal 2 $sets.Count 'combination count'
+    Assert-Equal 'y' $sets[0]['value_pattern'] 'the pair reported for 1'
+    Assert-Equal 'x' $sets[1]['value_pattern'] 'the pair reported for 9'
+}
+
+$chainDetail = New-ChainStatement -CheckId 'GLOBAL-DISCOVERY-019' -Name 'EVENT_ROUND_TYPE_USAGE_DETAIL' `
+    -Sql "SELECT e.id FROM event e WHERE e.sportFK = {{SPORT_ID}}`n  -- {{ROUND_TYPE_ID}}: select round_type_id from GLOBAL-DISCOVERY-018 (EVENT_ROUND_TYPE_USAGE_SUMMARY)`n  AND e.round_typeFK = {{ROUND_TYPE_ID}}"
+
+$chainSummary = [pscustomobject]@{
+    Job  = (New-ChainStatement -CheckId 'GLOBAL-DISCOVERY-018' -Name 'EVENT_ROUND_TYPE_USAGE_SUMMARY' -Sql 'SELECT 1')
+    Rows = @(
+        (New-ChainRow @{ round_type_id = 5 }),
+        (New-ChainRow @{ round_type_id = 12 }),
+        (New-ChainRow @{ round_type_id = 7 })
+    )
+}
+
+$chainPending = @([pscustomobject]@{ Job = $chainDetail; Kind = 'NEEDS_SELECTION'; Missing = 'ROUND_TYPE_ID' })
+
+Test-That 'a drill-down is bound once per value its declared source ranks first' {
+    $wave = Get-ChainedJob -Pending $chainPending -Completed @($chainSummary) `
+        -ParamTable @{ SPORT_ID = 58 } -Top 2 -Budget 40 -TemplateIds @()
+
+    Assert-Equal 2 $wave.Jobs.Count 'chained job count'
+    Assert-True ($wave.Jobs[0].Sql -match 'e\.round_typeFK = 5') 'the first value should be substituted'
+    Assert-True ($wave.Jobs[1].Sql -match 'e\.round_typeFK = 12') 'the second value should be substituted'
+    Assert-True ($wave.Jobs[0].Sql -notmatch '\{\{') 'no placeholder should survive'
+    Assert-Equal 1 $wave.Resolved.Count 'the statement should be reported as chained'
+}
+
+Test-That 'a chained run keeps the CheckID and carries its values beside it' {
+    # POWERBI.md makes the CheckID the identity of a statement. Running one statement three
+    # times must not read as three checks, here or anywhere downstream of the workbook.
+    $wave = Get-ChainedJob -Pending $chainPending -Completed @($chainSummary) `
+        -ParamTable @{ SPORT_ID = 58 } -Top 1 -Budget 40 -TemplateIds @()
+
+    Assert-Equal 'GLOBAL-DISCOVERY-019' $wave.Jobs[0].CheckId 'the CheckID is unchanged'
+    Assert-Equal 'ROUND_TYPE_ID=5' $wave.Jobs[0].Parameters 'the values travel in Parameters'
+    Assert-Equal 'GLOBAL-DISCOVERY-019 [ROUND_TYPE_ID=5]' (Get-JobRunKey -Job $wave.Jobs[0]) 'run key'
+    Assert-Equal 'Informational' $wave.Jobs[0].Signal 'a chained discovery run is informational'
+}
+
+Test-That 'values the chain did not pursue are reported rather than dropped' {
+    $wave = Get-ChainedJob -Pending $chainPending -Completed @($chainSummary) `
+        -ParamTable @{ SPORT_ID = 58 } -Top 1 -Budget 40 -TemplateIds @()
+
+    $note = @($wave.Notes | Where-Object { $_.Kind -eq 'NOT_PURSUED' })
+    Assert-Equal 1 $note.Count 'one note'
+    Assert-True ($note[0].Reason -match '^2 further value') 'the note should count what was left'
+}
+
+Test-That 'the ceiling stops the chain and says so' {
+    $wave = Get-ChainedJob -Pending $chainPending -Completed @($chainSummary) `
+        -ParamTable @{ SPORT_ID = 58 } -Top 3 -Budget 2 -TemplateIds @()
+
+    Assert-Equal 2 $wave.Jobs.Count 'the budget should cap the wave'
+    Assert-True $wave.Capped 'reaching the ceiling should be reported'
+}
+
+Test-That 'two placeholders are refused unless one result carries both' {
+    # GLOBAL-DISCOVERY-027 declares RESULT_TYPE_ID against 007 and VALUE_PATTERN against 026.
+    # Before 026 has run there is no result holding the pair, and taking one from each source
+    # would invent a combination neither reported.
+    $detail = New-ChainStatement -CheckId 'GLOBAL-DISCOVERY-027' -Name 'EVENT_RESULTS_VALUE_PATTERNS_DETAIL' `
+        -Sql ("SELECT 1 WHERE r.result_typeFK = {{RESULT_TYPE_ID}}  -- select result_type_id from GLOBAL-DISCOVERY-007 (X)`n" +
+            "  AND p = '{{VALUE_PATTERN}}'  -- select value_pattern from GLOBAL-DISCOVERY-026 (Y)")
+
+    $inventory = [pscustomobject]@{
+        Job  = (New-ChainStatement -CheckId 'GLOBAL-DISCOVERY-007' -Name 'EVENT_RESULTS_TYPES_CODES' -Sql 'SELECT 1')
+        Rows = @((New-ChainRow @{ result_type_id = 1 }), (New-ChainRow @{ result_type_id = 9 }))
+    }
+    $pending = @([pscustomobject]@{ Job = $detail; Kind = 'NEEDS_SELECTION'; Missing = 'RESULT_TYPE_ID, VALUE_PATTERN' })
+
+    $early = Get-ChainedJob -Pending $pending -Completed @($inventory) -ParamTable @{} -Top 3 -Budget 40 -TemplateIds @()
+    Assert-Equal 0 $early.Jobs.Count 'nothing should be chained from two separate sources'
+    Assert-Equal 'NO_SOURCE' $early.Notes[0].Kind 'the reason should be recorded'
+
+    # Once the summary has run, one of its results carries both columns, already bound to the
+    # value it was itself given.
+    $summary = [pscustomobject]@{
+        Job  = (New-ChainStatement -CheckId 'GLOBAL-DISCOVERY-026' -Name 'EVENT_RESULTS_VALUE_PATTERNS_SUMMARY' -Sql 'SELECT 1')
+        Rows = @((New-ChainRow @{ result_type_id = 9; value_pattern = '#:#' }))
+    }
+    $late = Get-ChainedJob -Pending $pending -Completed @($inventory, $summary) -ParamTable @{} -Top 3 -Budget 40 -TemplateIds @()
+
+    Assert-Equal 1 $late.Jobs.Count 'the pair should chain once the summary carries both'
+    Assert-True ($late.Jobs[0].Sql -match 'r\.result_typeFK = 9') 'the co-occurring result type'
+    Assert-True ($late.Jobs[0].Sql -match "p = '#:#'") 'the co-occurring pattern'
+}
+
+Test-That 'a chained statement is narrowed like every other under -TemplateIds' {
+    $detail = New-ChainStatement -CheckId 'GLOBAL-DISCOVERY-019' -Name 'EVENT_ROUND_TYPE_USAGE_DETAIL' `
+        -Sql ("SELECT 1 WHERE e.round_typeFK = {{ROUND_TYPE_ID}}  -- select round_type_id from GLOBAL-DISCOVERY-018 (X)`n" +
+            "  -- AND t.tournament_templateFK = <tournament_template_id>")
+    $pending = @([pscustomobject]@{ Job = $detail; Kind = 'NEEDS_SELECTION'; Missing = 'ROUND_TYPE_ID' })
+
+    $wave = Get-ChainedJob -Pending $pending -Completed @($chainSummary) -ParamTable @{} -Top 1 -Budget 40 -TemplateIds @(44, 50)
+    Assert-Equal 1 $wave.Jobs.Count 'chained job count'
+    Assert-True ($wave.Jobs[0].Sql -match [regex]::Escape('t.tournament_templateFK IN (44, 50)')) 'the filter should be activated'
+}
+
+Test-That 'a chained statement carrying no template filter is dropped rather than run wide' {
+    $detail = New-ChainStatement -CheckId 'GLOBAL-DISCOVERY-019' -Name 'EVENT_ROUND_TYPE_USAGE_DETAIL' `
+        -Sql "SELECT 1 WHERE e.round_typeFK = {{ROUND_TYPE_ID}}  -- select round_type_id from GLOBAL-DISCOVERY-018 (X)"
+    $pending = @([pscustomobject]@{ Job = $detail; Kind = 'NEEDS_SELECTION'; Missing = 'ROUND_TYPE_ID' })
+
+    $wave = Get-ChainedJob -Pending $pending -Completed @($chainSummary) -ParamTable @{} -Top 1 -Budget 40 -TemplateIds @(44)
+    Assert-Equal 0 $wave.Jobs.Count 'an unnarrowable chained statement must not run'
+    Assert-Equal 1 (@($wave.Notes | Where-Object { $_.Kind -eq 'DROPPED' }).Count) 'the drop should be recorded'
+}
+
+Complete-Group
+
+# --------------------------------------------------------------------------------------
 # Catalogue parser
 # --------------------------------------------------------------------------------------
 
@@ -863,7 +1087,9 @@ Test-That 'flat run summary writes Signal and SignalReason columns' {
     $header = Get-Content -LiteralPath $path -TotalCount 1
     $saved = @(Import-Csv -LiteralPath $path)
     Assert-Equal 1 $saved.Count 'summary row count'
-    $expected = '"CheckId","Name","What","Rows","Seconds","Status",' +
+    # RunKey and Parameters follow the CheckID: a chained run repeats the CheckID by design,
+    # and these two are what tell one execution of it from the next.
+    $expected = '"CheckId","RunKey","Parameters","Name","What","Rows","Seconds","Status",' +
         '"Priority","Category","Signal","SignalReason"'
     Assert-Equal $expected $header 'summary column order'
     Assert-Equal 'Monitor' $saved[0].Signal 'saved signal'
@@ -900,17 +1126,17 @@ Test-That 'workbook Overview carries Signal and Signal reason' {
     Assert-True ($xml -match '>Signal reason<') 'Overview should name the Signal reason column'
     Assert-True ($xml -match '>Monitor<') 'Overview should carry the signal value'
     Assert-True ($xml -match 'population-wide fixture signal') 'Overview should carry the reason'
-    Assert-True ($xml -match 'hyperlink ref="G2"') 'Rows hyperlink should follow its column'
-    Assert-True ($xml -match 'sqref="H2:H2"') 'Status validation should follow its column'
+    Assert-True ($xml -match 'hyperlink ref="H2"') 'Rows hyperlink should follow its column'
+    Assert-True ($xml -match 'sqref="I2:I2"') 'Status validation should follow its column'
     Assert-True ($detailXml -match '>Signal<') 'detail tab should name the Signal field'
     Assert-True ($detailXml -match '>Signal reason<') 'detail tab should name the Signal reason field'
     Assert-True ($detailXml -match 'population-wide fixture signal') 'detail tab should carry the signal reason'
 
     # The signal columns are hidden, not dropped, so the values asserted above must still
-    # be in the part - and J:K is where the two of them land once Priority and Category take
-    # D and E.
-    Assert-True ($xml -match '<cols><col min="10" max="10"[^>]*hidden="1"') 'Signal should be hidden'
-    Assert-True ($xml -match '<col min="11" max="11"[^>]*hidden="1"/></cols>') 'Signal reason should be hidden'
+    # be in the part - and K:L is where the two of them land once Priority and Category take
+    # E and F and Parameters takes C.
+    Assert-True ($xml -match '<cols><col min="11" max="11"[^>]*hidden="1"') 'Signal should be hidden'
+    Assert-True ($xml -match '<col min="12" max="12"[^>]*hidden="1"/></cols>') 'Signal reason should be hidden'
     Assert-True ($xml.IndexOf('<cols>') -lt $xml.IndexOf('<sheetData>')) 'cols must precede sheetData'
     Assert-True ($detailXml -notmatch '<cols>') 'a check tab should hide nothing'
 }
@@ -944,9 +1170,10 @@ Test-That 'workbook carries the Check By column and the outcome statuses' {
     finally { $zip.Dispose() }
 
     Assert-True ($xml -match '>Check By<') 'Overview should name the Check By column'
-    Assert-True ($xml -match 'r="I1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit in Overview column I'
-    Assert-True ($xml -match 'r="D1"[^>]*><is><t[^>]*>Priority<') 'Priority should sit beside Check Name'
-    Assert-True ($xml -match 'r="E1"[^>]*><is><t[^>]*>Category<') 'Category should follow Priority'
+    Assert-True ($xml -match 'r="J1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit in Overview column J'
+    Assert-True ($xml -match 'r="C1"[^>]*><is><t[^>]*>Parameters<') 'Parameters should sit beside the CheckID it qualifies'
+    Assert-True ($xml -match 'r="E1"[^>]*><is><t[^>]*>Priority<') 'Priority should sit beside Check Name'
+    Assert-True ($xml -match 'r="F1"[^>]*><is><t[^>]*>Category<') 'Category should follow Priority'
     # Every value names an outcome, so a closed check says how it closed rather than only
     # that somebody got to it.
     Assert-True ($xml -match '"Not reviewed,Reviewing,On hold,No issue,Reported to IT,Fixed,No action needed"') 'the dropdown should offer the outcome statuses'

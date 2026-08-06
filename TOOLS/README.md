@@ -135,6 +135,9 @@ the account in use. The summary:
 | `BMX-DQ-001,BMX-DQ-005` | A chosen few |
 | `BMX-DQ-*` | Every match; more than one switches to batch mode |
 | `-MaxChecks 10` | Cap how many matched checks actually run |
+| `-Chain` | Also run the drill-downs, filled from the summaries the same run produced |
+| `-ChainTop 3,2` | How many values to pursue per chain level; default 3 then 2 |
+| `-ChainMax 40` | Ceiling on chained statements for the whole run |
 | `-WithPatterns` | Add the round-type and name-pattern statements to the run |
 | `-Preview 200` | Show more than the default 50 screen rows |
 | `-OutFile .\out.csv` | Write one check to a file |
@@ -348,6 +351,49 @@ An explicit `-SportId` or `-Params` always overrides a discovered value. Skippin
 only under `-Sport` and only to a batch: elsewhere an unfilled placeholder still stops the
 run, because there it is a mistake rather than a deferred choice.
 
+### Following the drill-downs in the same run
+
+Picking every one of those eight values by hand is a dozen further commands, each waiting on
+a result read in between. `-Chain` does that walk inside one run:
+
+```powershell
+.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-* -Sport BMX -Chain -Format xlsx
+```
+
+Nothing here is inferred about which summary feeds which drill-down. `GLOBAL_QUERIES` already
+writes the source on the placeholder's own line, in one of two forms:
+
+```sql
+AND r.result_typeFK = {{RESULT_TYPE_ID}}  -- select result_type_id from GLOBAL-DISCOVERY-007 (EVENT_RESULTS_TYPES_CODES)
+-- {{ROUND_TYPE_ID}}: select round_type_id from GLOBAL-DISCOVERY-018 (EVENT_ROUND_TYPE_USAGE_SUMMARY)
+```
+
+The runner reads that declaration, takes the values the named summary ranks first — every
+summary in the catalogue orders by frequency — and runs the drill-down once per value. A
+statement added later chains on its own declaration; there is no pairing list to maintain,
+and `TOOLS/Test-Tools.ps1` fails a drill-down that declares no source.
+
+Two rules keep the result honest:
+
+- **Values are taken as whole rows, never crossed.** `GLOBAL-DISCOVERY-027` needs a result
+  type and a value pattern together. Both are read from one run of `GLOBAL-DISCOVERY-026`,
+  which is itself already bound to one result type, so the pairs are ones the sport reported.
+  Where no single result carries every column a statement is missing, nothing is guessed: the
+  statement stays `SKIPPED` and the Overview says which pair could not be found together.
+- **A chained result is a sample, never coverage.** What the chain did not reach keeps a
+  `SKIPPED` row of its own — `SKIPPED: 9 further value(s) of name_pattern not pursued` — so
+  three tabs of one CheckID cannot be mistaken for three of three.
+
+`-ChainTop 3,2` sets how many values each level pursues, and `-ChainMax 40` caps the run;
+both report what they cut rather than quietly narrowing it. The CheckID never changes: a
+chained run carries its values in the workbook's `Parameters` column, because `POWERBI.md`
+makes the CheckID the identity of a statement and running one statement three times does not
+make three checks.
+
+`-Chain` applies only to `GLOBAL-DISCOVERY` statements. A DQ check short of a parameter is
+short of a confirmed fact about the sport, not of a value to sample, and `POWERBI.md` does
+not let one run on a guess.
+
 ### A parameter the sport can never supply
 
 A deferred choice and an impossible one look identical to the placeholder scanner: both are
@@ -558,14 +604,19 @@ Google Drive and open as Sheets.
 
 `Overview` is the first tab:
 
-| Sport | CheckID | Check Name | Priority | Category | What it does | Rows | Status | Check By | Signal | Signal reason |
-|---|---|---|---|---|---|---:|---|---|---|---|
-| BMX | BMX-DQ-001 | PARTICIPANT_MISSING_DATE_OF_BIRTH | 3 Missing value | MISSING_VALUES | Finds active participants of the selected types that … | 1064 | Not reviewed | | Monitor | Population-wide absence … |
+| Sport | CheckID | Parameters | Check Name | Priority | Category | What it does | Rows | Status | Check By | Signal | Signal reason |
+|---|---|---|---|---|---|---|---:|---|---|---|---|
+| BMX | BMX-DQ-001 | | PARTICIPANT_MISSING_DATE_OF_BIRTH | 3 Missing value | MISSING_VALUES | Finds active participants of the selected types that … | 1064 | Not reviewed | | Monitor | Population-wide absence … |
 
-`Signal` and `Signal reason` are columns J and K, and the workbook ships with both hidden.
+`Signal` and `Signal reason` are columns K and L, and the workbook ships with both hidden.
 They are the runner's own classification, settled before the run and unchanged by reading
-it, so the reviewer opens on the nine columns that are theirs to work through. Nothing is
-dropped: unhiding J:K brings back every value, and both still travel in `_summary.csv`.
+it, so the reviewer opens on the columns that are theirs to work through. Nothing is
+dropped: unhiding K:L brings back every value, and both still travel in `_summary.csv`.
+
+`Parameters` is empty for almost every row and fills only under `-Chain`, where one statement
+runs once per value it was fed. Those runs share a CheckID by design — the CheckID identifies
+the statement, not the execution — so `Parameters` is what tells them apart, and it is also
+where a `SKIPPED` row records the values the chain did not pursue.
 
 `Category` is the row's own `Category` from `POWERBI_REGISTRY.md`, and `Priority` is the
 band `POWERBI.md` derives from it — `1 Structure`, `2 Wrong value`, `3 Missing value`. The
@@ -647,8 +698,8 @@ Nothing in the runner reads either back.
 Then one tab per check:
 
 ```text
-     A                B                   C          D                E                F                G          H          I          J
-1    Check ID         Check Name          SQL Used   Priority         Category         What it does     Comment    Check By   Signal     Signal reason
+     A                B                   C          D                E                F                G          H          I          J                K
+1    Check ID         Check Name          SQL Used   Priority         Category         What it does     Comment    Check By   Signal     Signal reason    Parameters
 2    BMX-DQ-001       PARTICIPANT_MIS...  SQL        3 Missing value  MISSING_VALUES   Finds active ...                       Monitor    Population-wide…
 3    Return to Overview
 4
@@ -675,10 +726,11 @@ Unlike the Overview, a check tab leaves the signal fields visible — there are 
 them on a row that is already about one check.
 
 `SQL Used` stays at C on a check tab, because C2 is where the jump to the statement lives.
-Everything else shifted right by two when `Priority` and `Category` were added: `Rows` links
-from Overview column G, the `Status` dropdown binds to H, and the hidden signal pair is J:K.
-A change to these positions is a change to three places at once — the row builder, the
-validation `sqref`, and the assertions in `Test-Tools.ps1` that pin them.
+That is why `Parameters` is appended at K here while it sits at C on the Overview: inserting
+it would have taken the statement link with it. On the Overview, `Rows` links from column H,
+the `Status` dropdown binds to I, and the hidden signal pair is K:L. A change to these
+positions is a change to three places at once — the row builder, the validation `sqref`, and
+the assertions in `Test-Tools.ps1` that pin them.
 
 **A linked cell in Google Sheets is labelled from the hyperlink record, not from its own
 value.** With a `display` attribute Sheets shows that text; without one it falls back to
