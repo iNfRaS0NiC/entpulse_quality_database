@@ -856,3 +856,102 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Soccer-DQ-089
+    -- Name - EVENT_SCOPE_TIE_REFERENCE_INVALID
+    -- What it does: Finds two-legged ties whose reference to the other leg is not an event id, names its own event, or names an event that does not exist or belongs to another tournament.
+    CASE
+        WHEN x.not_an_id = 1 THEN 'Tie_Reference_Is_Not_An_Event_Id'
+        WHEN x.self_reference = 1 THEN 'Tie_Reference_Names_Its_Own_Event'
+        WHEN x.unresolved_reference = 1 THEN 'Tie_Reference_Resolves_To_No_Active_Event'
+        ELSE 'Tie_Reference_Leaves_Its_Own_Tournament'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.referenced_value,
+    x.reference_rows,
+    x.template_name,
+    x.tournament_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- A tie played over two legs is assembled under a 351 aggregate_score container, and the other
+-- leg is named by an event_scope_detail called ref_eventFK - a name and value pair rather than a
+-- column, so nothing in the database enforces that the value is an event at all. No check reads
+-- this layer today: GLOBAL-DQ-102 asserts the scope result's owner and never the container's own
+-- detail, and every other scope template reads periods, which this sport does not store.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(esd.id) AS reference_rows,
+        SUBSTRING(GROUP_CONCAT(DISTINCT TRIM(esd.value) SEPARATOR ', '), 1, 60) AS referenced_value,
+        MAX(CASE WHEN TRIM(esd.value) NOT REGEXP '^[1-9][0-9]*$'
+                 THEN 1 ELSE 0 END) AS not_an_id,
+        MAX(CASE WHEN TRIM(esd.value) REGEXP '^[1-9][0-9]*$'
+                  AND CAST(TRIM(esd.value) AS SIGNED) = e.id
+                 THEN 1 ELSE 0 END) AS self_reference,
+        MAX(CASE WHEN TRIM(esd.value) REGEXP '^[1-9][0-9]*$'
+                  AND CAST(TRIM(esd.value) AS SIGNED) <> e.id
+                  AND e2.id IS NULL
+                 THEN 1 ELSE 0 END) AS unresolved_reference,
+        MAX(CASE WHEN e2.id IS NOT NULL
+                  AND ts2.tournamentFK <> ts.tournamentFK
+                 THEN 1 ELSE 0 END) AS foreign_tournament
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_scope es ON es.eventFK = e.id AND es.del = 'no'
+                       AND es.scope_typeFK = 351
+    JOIN event_scope_detail esd ON esd.event_scopeFK = es.id AND esd.del = 'no'
+                               AND esd.name = 'ref_eventFK'
+    LEFT JOIN event e2 ON e2.id = CAST(TRIM(esd.value) AS SIGNED) AND e2.del = 'no'
+    LEFT JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    WHERE e.del = 'no'
+      AND tt.sportFK = 1
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name
+) x
+-- Four assertions and no fifth. What is deliberately NOT asserted is the direction: measured
+-- sport-wide on 2026-08-06, 17368 of 17604 containers name a leg that carries no container of
+-- its own, so a reference that is not reciprocated is the norm rather than a defect. The second
+-- leg holds the container because the aggregate is only known once it has been played. A rule
+-- requiring the other leg to point back would report the whole population and describe the
+-- design instead of finding anything in it. Every event carrying a container is eligible,
+-- finished or not, because the tie is assembled before its second leg is played.
+WHERE x.not_an_id = 1
+   OR x.self_reference = 1
+   OR x.unresolved_reference = 1
+   OR x.foreign_tournament = 1
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_scope es ON es.eventFK = e.id AND es.del = 'no'
+                   AND es.scope_typeFK = 351
+JOIN event_scope_detail esd ON esd.event_scopeFK = es.id AND esd.del = 'no'
+                           AND esd.name = 'ref_eventFK'
+WHERE e.del = 'no'
+  AND tt.sportFK = 1
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;
