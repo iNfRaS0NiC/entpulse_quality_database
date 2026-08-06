@@ -323,6 +323,13 @@ A tournament stage carries its country in two places at once: directly in
 and an age-class relation, with `SENIOR` among the age classes in use. `DATABASE.md` records
 that the two country paths are distinct, and this sport uses both.
 
+The sport does not attach a place below the country. No active `venue_object` row reaches an
+event or a stage of this sport on either level, and the city relation is absent from 776 of its
+790 stages and from 1784 of its 1801 Comp.Rank statistics — in every one of those findings the
+city is the only field missing, while name, gender, country and the dates hold throughout. The
+three checks that read a place therefore report one fact rather than three, which is why
+`GLOBAL-DQ-034`, `-035` and `-074` all carry a `Monitor` signal.
+
 `International` and `Unknown` are the two placeholder rows the `country` table holds. Neither
 reaches this sport through the direct column, the host-country relation or the statistic country
 relation, so a placeholder-country check reads a population that is empty today. They are

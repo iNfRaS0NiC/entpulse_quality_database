@@ -536,6 +536,14 @@
         "signal": "Blocked",
         "reason": "The two populations it needs never meet: every Comp.Rank carrying a Time value carries no object_discipline row, and every Comp.Rank carrying a discipline holds no Time. The check scopes on the sport's timed disciplines and reports a Time missing despite a Rank, so whatever discipline list it were given it would report every discipline-tagged statistic in the sport as defective - its normal shape. Blocked rather than not applicable because both structures are present and used; they are simply not attached to each other. It becomes meaningful the day one of the two is joined to the other, without the check changing. SPORTS/Modern-Pentathlon.md owns the evidence."
       },
+      "GLOBAL-DQ-034": {
+        "signal": "Monitor",
+        "reason": "776 of the sport's 790 active stages are reported, and one field accounts for every one of them: the city relation, missing in 776 of 776 findings while name, gender, country and the host-country rule hold throughout. The check asserts five things at once, so the count reads as five failures and is one. The proportion is the finding. It belongs beside GLOBAL-DQ-035 and GLOBAL-DQ-074, which report the same underlying fact on the statistic and venue layers: this sport does not attach places."
+      },
+      "GLOBAL-DQ-035": {
+        "signal": "Monitor",
+        "reason": "1784 of the sport's 1801 Comp.Rank statistics are reported, and as on the stage layer a single field accounts for all of them: the city relation, missing in 1784 of 1784 findings while name, Gender config and country are present throughout. At 99 percent the absence is the sport's normal state rather than a defect per statistic, so the proportion is the finding. See GLOBAL-DQ-034 for the same reading on stages and GLOBAL-DQ-074 for the venue layer."
+      },
       "GLOBAL-DQ-074": {
         "signal": "Monitor",
         "reason": "The sport attaches no venue anywhere: not one active venue_object row reaches an event or a tournament stage of this sport, on either of the two levels the check reads. It therefore reports every event, and the proportion - all of them - is the finding rather than any single row. It is Monitor and not Not applicable because venue_object is the global mechanism and the schema permits it here; what is absent is stored rows, not the structure, on the same reasoning SPORTS/Modern-Pentathlon.md already applies to the incident and scope layers. The check reports nothing the day venues start being recorded."
