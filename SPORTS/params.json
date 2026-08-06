@@ -534,6 +534,10 @@
       "GLOBAL-DQ-046": {
         "signal": "Blocked",
         "reason": "The two populations it needs never meet: every Comp.Rank carrying a Time value carries no object_discipline row, and every Comp.Rank carrying a discipline holds no Time. The check scopes on the sport's timed disciplines and reports a Time missing despite a Rank, so whatever discipline list it were given it would report every discipline-tagged statistic in the sport as defective - its normal shape. Blocked rather than not applicable because both structures are present and used; they are simply not attached to each other. It becomes meaningful the day one of the two is joined to the other, without the check changing. SPORTS/Modern-Pentathlon.md owns the evidence."
+      },
+      "GLOBAL-DQ-083": {
+        "signal": "Not applicable",
+        "reason": "The template requires a competition model of H2H, where an event is a contest between exactly two entries. This sport is Listing: an event is a field ranked against itself, and SPORTS.md records the model as measured from the sport's data rather than assigned. Every event in the sport would be reported. The exclusion is structural and independent of how many participants any event holds today, so it does not rest on a row count."
       }
     }
   }
