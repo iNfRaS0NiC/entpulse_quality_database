@@ -74,6 +74,20 @@ no other member type appears.
 The `points` and `comment` value shapes are the sport's own vocabulary, not a global one; a
 check reading either must be written against the list above rather than against a generic set.
 
+Every spelling in actual use is recorded as a legitimate status code, including the variants,
+so a vocabulary check reports what is genuinely unrecognised rather than the sport's own
+inconsistency. On this sport that leaves the numbers and the times stored in the `comment`
+field as the values such a check reports, which is the intended reading: neither is a status.
+
+`dns` and `dns.` are not interchangeable in the data. `dns.` carries a Rank on every
+participant that holds it, while `dns` does so on roughly a tenth — so the two spellings behave
+as different states rather than as one state written two ways, and which state `dns.` denotes is
+unresolved. `disq.` carries a Rank on none, which is consistent with a disqualification.
+
+`el` and `eliminated` frequently sit beside a stored Rank, so neither is recorded as meaning
+the participant has no result; `q`, `or`, `wr` and `q/or` always do, being a qualification or a
+record rather than an absence.
+
 <!-- MANUAL PASTE ZONE: 42 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
@@ -200,6 +214,15 @@ the reference catalogue and unused here.
 deprecated predecessor of Time and Time Difference, and this sport stores neither Duration nor
 Time Difference, only Time.
 
+All three of `1272` Duration, `1426` Time and `1427` Time Difference are declared for
+`statistic_type 11`, so the absence of the first and third is a state of this sport's data and
+not a structure it lacks. `1272` and `1427` are therefore recorded as parameters rather than
+declared not applicable: a check reading either is written for the day those rows appear, and
+excluding it now would disable it on exactly that day. Until then a check keyed on Time
+Difference alone audits an empty population and reports `eligible_count = 0`, which
+`POWERBI.md` classifies as a correct scope over a legitimately empty population — a sentinel,
+not a defect and not a misdirected scope.
+
 <!-- MANUAL PASTE ZONE: 42 REFERENCE VALUES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event and round representation
@@ -214,6 +237,12 @@ must therefore key on the round type ID and never on its name.
 
 `251` is `After Disciplines` and `260` is `Bonus Round`, both of which are sport-specific stages
 of a multi-discipline competition rather than knockout rounds.
+
+`173` `Final` is the sport's only medal round: nearly every event on it carries a Medal result,
+and every medal is awarded inside the Final event itself rather than on a separate bronze
+decider. A small number of Medal results sit on other round types, and a small number of Final
+events carry none; both are recorded here as the population a medal-round check reads, not as
+exceptions to be excluded from it.
 
 Event names follow the discipline the event stages: `Fencing`, `Swimming Final`, `Laser Run
 Final`, `Final Overall Classification`, and forms naming a segment boundary such as `Semi-Final

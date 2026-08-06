@@ -485,6 +485,8 @@
     "DATA_COMMENT_TYPE_ID": 1273,
     "DATA_MEDAL_TYPE_ID": 1277,
     "DATA_TIME_TYPE_ID": 1426,
+    "DATA_TIME_DIFFERENCE_TYPE_ID": 1427,
+    "DATA_DEPRECATED_DURATION_TYPE_ID": 1272,
     "DATA_TEAM_TYPE_ID": 1429,
     "CONFIG_START_DATE_TYPE_ID": 1463,
     "CONFIG_END_DATE_TYPE_ID": 1464,
@@ -494,7 +496,29 @@
     "RESULT_COMMENT_TYPE_ID": 104,
     "RESULT_MEDAL_TYPE_ID": 501,
     "ROUND_TYPE_LIST": "2, 38, 39, 40, 41, 42, 77, 89, 92, 152, 173, 178, 179, 251, 260",
+    "FINAL_ROUND_TYPE_LIST": "173",
+    "MEDAL_ROUND_TYPE_LIST": "173",
     "NUMERIC_RESULT_TYPE_LIST": "100, 102",
-    "NUMERIC_DATA_TYPE_LIST": "1270, 1271"
+    "NUMERIC_DATA_TYPE_LIST": "1270, 1271",
+    "RESULT_COMMENT_VALUE_LIST": "'eliminated', 'el', 'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'q', 'q/or', 'or', 'wr', 'n/a'",
+    "DATA_COMMENT_VALUE_LIST": "'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'disqualified', 'el', 'or', 'wr'",
+    "DATA_COMMENT_NO_RESULT_LIST": "'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'disqualified'",
+    "_notApplicable": {
+      "SCOPE_TYPE_ID": "the sport has never written an event_scope row, active or removed; a probe of the same relation path without the deleted filter found none either, so there is no scope layer to read",
+      "SCOPE_TYPE_LIST": "the sport has never written an event_scope row, so it has no scope container types to list",
+      "SCOPE_PERIOD_DATA_TYPE_LIST": "the sport has never written an event_scope row, so there is no period set to list; its segments are separate events carrying a discipline rather than periods inside one event",
+      "SCOPE_PERIOD_SENTINEL_LIST": "the sport has never written an event_scope row, so it has no vocabulary for a period that was not played",
+      "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "the sport has never written an event_scope row, so the scope layer stores no column for an extra period",
+      "EXTRA_PERIOD_STATUS_DESC_LIST": "the sport contests no head-to-head fixture that could go to an extra period, and stores no scope column for one",
+      "RESULT_FINAL_SCORE_TYPE_ID": "the sport is not head to head; an event is a field ranked against itself rather than a pair holding one deciding score, and its result types are Rank, Points, Comment and Medal only",
+      "RESULT_MIRROR_SCORE_TYPE_ID": "the sport is not head to head; no result type mirrors a deciding score",
+      "WINNER_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+      "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+      "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+      "RESULT_FULL_TIME_TYPE_ID": "no result type records elapsed time; a segment's time is stored on the Comp.Rank statistic rather than on the event result, so there is no absolute finishing time to assert on a result",
+      "RESULT_DURATION_TYPE_ID": "no result type records elapsed time or a gap to the leader; the result layer carries Rank, Points, Comment and Medal only",
+      "FULL_TIME_TOLERANCE_SECONDS": "the sport stores no time on a result, so there is no arithmetic between times to hold to a tolerance",
+      "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event (round type 173), so no separate round decides bronze"
+    }
   }
 }
