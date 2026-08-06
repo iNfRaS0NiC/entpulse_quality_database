@@ -331,6 +331,22 @@ Specialized relation from an owner object to `discipline`.
 Confirmed owner types: event (`5`) and, in limited statistic-type evidence, statistic
 (`83`). Event discipline and statistic discipline are independent relations.
 
+#### `category`
+
+Reference table naming a category a sport can belong to, reached only through
+`object_relation` (`REL-OBJECT-005`); `sport` carries no `categoryFK` column.
+
+| Important column | Structural meaning |
+|---|---|
+| `id` | Category identifier |
+| `name` | Category name |
+| `description` | Free-text purpose of the category |
+| `del` | Soft-delete flag |
+
+It holds one active row, `1` `OLYMPIC`, so the relation is a flag in practice rather than a
+classification. `DB-SEM-017` owns what the flag does and does not establish, including that
+its membership is incomplete.
+
 #### `language`
 
 Generic text-polymorphic translation store, structurally parallel to `property`.
@@ -726,6 +742,7 @@ The behavior attached to a concrete status detail is sport-specific until confir
 | 148 | `discipline` | Confirmed-data |
 | 151 | `tournament_age_class` | Confirmed-data |
 | 152 | `tournament_sub_set` | Confirmed-data |
+| 153 | `category` | Confirmed-data |
 | 157 | `tournament_set` | Confirmed-data |
 | 158 | `object_discipline` | Confirmed-data |
 | 159 | `object_relation` | Confirmed-data |
@@ -810,6 +827,7 @@ its target was not independently verified in the active evidence.
 | `REL-OBJECT-002` | `tournament_template` (`2`) | `tournament_sub_set` (`152`) | Confirmed-data |
 | `REL-OBJECT-003` | `statistic` (`83`) | `tournament_age_class` (`151`) | Confirmed-data; limited statistic-type evidence |
 | `REL-OBJECT-004` | `tournament_stage` (`4`) | `country` (`33`) | Confirmed-data — represents Host Country, distinct from the direct `tournament_stage.countryFK` column |
+| `REL-OBJECT-005` | `sport` (`1`) | `category` (`153`) | Confirmed-data — at most one per sport, and every one points at the single `category` row; membership is incomplete, see `DB-SEM-017` |
 
 ### `object_discipline`
 
@@ -1078,6 +1096,30 @@ Two things this rule is not:
 
 `POWERBI.md` owns the resulting query rule and `TOOLS/Test-Tools.ps1` enforces it against the
 package.
+
+### `DB-SEM-017` — `category` marks a sport as Olympic, and the marking is incomplete
+
+`category` is a reference table holding one active row: `1`, named `OLYMPIC` and described as
+"Used for Olympic sports". Because it holds one row, the relation reaching it is in practice a
+flag rather than a classification — a sport either carries it or does not, and no sport carries
+more than one. It is reached only through `object_relation` as `REL-OBJECT-005`; no `categoryFK`
+column exists on `sport`.
+
+53 of the 128 active sports carry it. **The set must not be read as authoritative**, because
+sports plainly inside the Olympic programme are missing from it: none of the three gymnastics
+sports carries the flag — `Artistic Gymnastics` (`40`), `Rhythmic Gymnastics` (`140`),
+`Trampoline Gymnastics` (`139`) — and `BMX` (`58`) does not, while `Cycling` (`30`) and
+`Track Cycling` (`55`) both do. Para sports carry none, which may be intentional rather than a
+gap: no row exists for them to point at.
+
+The distinction that matters when reading it: a sport without the flag is not thereby a
+non-Olympic sport. Absence means only that nothing was recorded. A check or a scope that treats
+the flag as the definition of the Olympic programme reports the recording gap as a fact about
+the sport, which is why the completeness statement belongs here rather than being left for a
+reader to discover.
+
+Whether the gap is a data state to be corrected or a deliberate scope of the marking is not
+established, and this file does not decide it.
 
 <!-- MANUAL PASTE ZONE: DATABASE STRUCTURAL SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 

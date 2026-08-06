@@ -162,7 +162,7 @@ Confirmed `object_relation` source/target combinations:
 
 | Source | Target | Note |
 |---|---|---|
-| `sport` (1) | `category` (153) | one relation, from the sport itself; `object_type 153` is `category`, which `DATABASE.md` does not list |
+| `sport` (1) | `category` (153) | one relation, from the sport itself, marking it Olympic; `REL-OBJECT-005` and `DB-SEM-017` |
 | `tournament_template` (2) | `tournament_sub_set` (152) | `REL-OBJECT-002` |
 | `tournament_stage` (4) | `tournament_age_class` (151) | `REL-OBJECT-001` |
 | `statistic` (83) | `country` (33) | as `DATABASE.md` records for the statistic layer |
@@ -344,9 +344,11 @@ statistic to the event it describes.
 
 ## Open questions
 
-- `object_type 153` is `category`, and the `sport` → `category` relation this sport carries is
-  absent from `DATABASE.md`'s `object_relation` table. Whether the relation is sport-specific or
-  a global mechanism nobody has documented is unresolved, and `DATABASE.md` owns the answer.
+- Resolved on 2026-08-06: the `sport` → `category` relation is a global mechanism, not a
+  sport-specific one. `DATABASE.md` now registers it as `REL-OBJECT-005` and describes it in
+  `DB-SEM-017`: `category` holds one row, `OLYMPIC`, and 53 of 128 sports carry the flag. This
+  sport is one of them. What remains open belongs to `DATABASE.md` rather than here — the
+  marking is incomplete, since no gymnastics sport and no BMX carries it.
 - `1456` Running Score is instantiated on a large number of statistics and empty in every one of
   them. Whether the field is written by a process that has stopped, or was never populated at
   all, is unknown; its stored-row count closely tracks that of the empty `1271` Points rows,
