@@ -80,6 +80,18 @@ remain actionable drill-down rows, but its complete output also includes mixed t
 whose generic participant gender is not authoritative for a male or female stage. The team
 role must be resolved before those rows can identify a repair.
 
+`GLOBAL-DQ-112` stays `Actionable`, and what it finds here is worth naming because the finding
+and its repair sit in different layers. Every row this sport has returned is
+`LINEUP_ATHLETE_IN_TWO_TEAMS`, always in a Team All-Around event, always one `participant` row
+placed in the Starter lineups of two different national teams at once — Brazil and Bangladesh,
+Singapore and North Korea, India and Bangladesh, Argentina and Colombia. Reviewed by colleagues,
+these are not one gymnast entered twice: they are two different people sharing a surname or a
+first name, for whom a single participant record was reused instead of a second one created. So
+the reading a bare id invites - "the lineup is wrong" - is the wrong one, and the correction
+belongs to the `participant` layer rather than to `lineup`. The check projects the athlete name
+and both team names for exactly this reason; two national teams beside one name is the shape
+that identifies the defect on sight.
+
 <!-- MANUAL PASTE ZONE: 40 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types

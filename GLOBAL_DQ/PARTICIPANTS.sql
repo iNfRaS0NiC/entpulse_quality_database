@@ -901,7 +901,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-112
     -- Name - EVENT_LINEUP_ATHLETE_ASSIGNED_MORE_THAN_ONCE
-    -- What it does: Finds events where one athlete occupies two places at once, repeated inside a single team's lineup or held by two teams.
+    -- What it does: Finds events where one athlete occupies two places at once, repeated inside a single team's lineup or held by two teams, naming every affected athlete and the teams holding them.
     CASE
         WHEN x.max_teams_holding > 1 THEN 'LINEUP_ATHLETE_IN_TWO_TEAMS'
         ELSE 'LINEUP_ATHLETE_REPEATED_IN_ONE_TEAM'
@@ -910,7 +910,7 @@ SELECT
     x.event_name,
     x.tournament_stage_name,
     x.affected_athletes,
-    x.sample_athlete,
+    x.affected_athlete_detail,
     NULL AS eligible_count,
     0 AS sort_order
 -- The two shapes are one question asked of the same row set, so they share a CheckID and
@@ -920,37 +920,59 @@ SELECT
 -- Eligibility is events holding a lineup at all. A sport that uses lineups thinly - and this
 -- one does, over about a hundred events - gets a small coverage count, and that number is
 -- itself the thing to read before any finding count is interpreted.
+-- The detail column names the athlete and the teams rather than only the id, because the id
+-- alone cannot be read: the shape this check most often finds is one participant record
+-- standing for two different people, and it is the two team names beside the name that say so.
+-- The lookups sit above the grouped set, so they run once per finding and never touch the scan.
 FROM (
     SELECT
         e.id AS event_id,
         e.name AS event_name,
         ts.name AS tournament_stage_name,
         COUNT(*) AS affected_athletes,
-        MAX(g.teams_holding) AS max_teams_holding,
-        MIN(CONCAT('athlete=', g.participantFK,
-                   ' rows=', g.lineup_rows,
-                   ' teams=', g.teams_holding)) AS sample_athlete
+        MAX(ga.teams_holding) AS max_teams_holding,
+        GROUP_CONCAT(CONCAT(COALESCE(ga.athlete_name, CONCAT('participantFK=', ga.participantFK)),
+                            ' (id=', ga.participantFK, ')',
+                            ' rows=', ga.lineup_rows,
+                            ' teams=', ga.teams_holding,
+                            ': ', COALESCE(ga.team_names, '(team name unavailable)'))
+                     ORDER BY ga.participantFK SEPARATOR ' | ') AS affected_athlete_detail
     FROM (
         SELECT
-            ep.eventFK AS event_id,
-            l.participantFK,
-            COUNT(*) AS lineup_rows,
-            COUNT(DISTINCT ep.id) AS teams_holding
-        FROM lineup l
-        JOIN event_participants ep ON ep.id = l.event_participantsFK AND ep.del = 'no'
-        JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
-        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
-        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
-        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
-             AND tt2.sportFK = {{SPORT_ID}}
-        WHERE l.del = 'no'
-          -- AND t2.tournament_templateFK = <tournament_template_id>
-          -- AND e2.startdate >= '<from_datetime>'
-          -- AND e2.startdate <  '<to_datetime>'
-        GROUP BY ep.eventFK, l.participantFK
-        HAVING COUNT(*) > 1
-    ) g
-    JOIN event e ON e.id = g.event_id AND e.del = 'no'
+            g.event_id,
+            g.participantFK,
+            g.lineup_rows,
+            g.teams_holding,
+            pa.name AS athlete_name,
+            (SELECT GROUP_CONCAT(DISTINCT tp.name ORDER BY tp.name SEPARATOR ', ')
+             FROM event_participants ep4
+             JOIN lineup l4 ON l4.event_participantsFK = ep4.id AND l4.del = 'no'
+                  AND l4.participantFK = g.participantFK
+             LEFT JOIN participant tp ON tp.id = ep4.participantFK
+             WHERE ep4.eventFK = g.event_id AND ep4.del = 'no') AS team_names
+        FROM (
+            SELECT
+                ep.eventFK AS event_id,
+                l.participantFK,
+                COUNT(*) AS lineup_rows,
+                COUNT(DISTINCT ep.id) AS teams_holding
+            FROM lineup l
+            JOIN event_participants ep ON ep.id = l.event_participantsFK AND ep.del = 'no'
+            JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+            JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+            JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+            JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+                 AND tt2.sportFK = {{SPORT_ID}}
+            WHERE l.del = 'no'
+              -- AND t2.tournament_templateFK = <tournament_template_id>
+              -- AND e2.startdate >= '<from_datetime>'
+              -- AND e2.startdate <  '<to_datetime>'
+            GROUP BY ep.eventFK, l.participantFK
+            HAVING COUNT(*) > 1
+        ) g
+        LEFT JOIN participant pa ON pa.id = g.participantFK
+    ) ga
+    JOIN event e ON e.id = ga.event_id AND e.del = 'no'
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
     GROUP BY e.id, e.name, ts.name
 ) x
