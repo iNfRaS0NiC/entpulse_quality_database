@@ -466,3 +466,94 @@ WHERE tt.sportFK = 42 AND tt.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_year, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - Modern-Pentathlon-DQ-096
+    -- Name - EVENT_RESULTS_ZERO_SCORE_WITHOUT_STATUS
+    -- What it does: Finds events holding competitors scored zero with no comment to say why, separating a whole field scored zero from a few competitors and from one.
+    CASE
+        WHEN g.zero_scored_participants * 2 >= g.field_size THEN 'ZERO_SCORE_ACROSS_THE_FIELD'
+        WHEN g.zero_scored_participants > 1                 THEN 'ZERO_SCORE_FOR_SEVERAL'
+        ELSE 'ZERO_SCORE_FOR_ONE'
+    END AS check_type,
+    g.event_id,
+    g.event_name,
+    g.stage_name,
+    g.template_name,
+    g.event_year,
+    g.field_size,
+    g.zero_scored_participants,
+    g.examples,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Zero is how a missing score is written in this sport, and nothing separates it from a score
+-- that really was zero except the comment beside it. A competitor scored zero and carrying any
+-- comment at all is therefore left alone here: the state is recorded, whatever it says.
+-- Deliberately counts rather than judging by discipline. The obvious rule - fencing and swimming
+-- cannot reach zero - does not survive contact with the sport: under the pre-2022 fencing scale
+-- a competitor winning no bouts in a field of seventy-five reaches zero and below arithmetically,
+-- so a per-discipline exemption would be a guess dressed as a fact. The count needs no such
+-- claim. A 2007 Fencing final scored zero on fifty-eight competitors out of fifty-eight is not a
+-- competition result under any scale that has ever been used.
+-- Three verdicts because they are three defects. A whole field is an event whose scores were
+-- never imported and is repaired in one move. A few competitors is a gap in an event that
+-- otherwise loaded. One competitor is where the legitimate zero lives - a rider eliminated on
+-- the show-jumping course scores zero by the rules - so it is kept separate rather than mixed
+-- into the same verdict as the other two, and it is the verdict a review can set aside first.
+-- The field size travels with the row so the proportion stays readable, and the competitors
+-- travel with it so the reviewer does not have to open the event to see who is affected.
+FROM (
+    SELECT z.event_id,
+           MIN(z.event_name)    AS event_name,
+           MIN(z.stage_name)    AS stage_name,
+           MIN(z.template_name) AS template_name,
+           MIN(z.event_year)    AS event_year,
+           COUNT(DISTINCT z.participant_id) AS field_size,
+           COUNT(DISTINCT CASE WHEN z.scored_zero = 1 AND z.has_comment = 0 THEN z.participant_id END) AS zero_scored_participants,
+           SUBSTRING(GROUP_CONCAT(CASE WHEN z.scored_zero = 1 AND z.has_comment = 0 THEN z.participant_name END
+                     ORDER BY z.participant_name SEPARATOR ', '), 1, 150) AS examples
+    FROM (
+        SELECT ts.name AS stage_name, tt.name AS template_name,
+               e.id AS event_id, e.name AS event_name, YEAR(e.startdate) AS event_year,
+               ep.participantFK AS participant_id, p.name AS participant_name,
+               MAX(CASE WHEN TRIM(rs.value) = '0' THEN 1 ELSE 0 END) AS scored_zero,
+               MAX(CASE WHEN rc.id IS NOT NULL AND TRIM(rc.value) <> '' THEN 1 ELSE 0 END) AS has_comment
+        FROM tournament_template tt
+        JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+        JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+        JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN result rs ON rs.event_participantsFK = ep.id AND rs.result_typeFK = 102 AND rs.del = 'no'
+        LEFT JOIN result rc ON rc.event_participantsFK = ep.id AND rc.result_typeFK = 104 AND rc.del = 'no'
+        WHERE tt.sportFK = 42 AND tt.del = 'no'
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+        GROUP BY e.id, ep.participantFK
+    ) z
+    GROUP BY z.event_id
+    HAVING zero_scored_participants > 0
+) g
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament_template tt
+JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result rs ON rs.event_participantsFK = ep.id AND rs.result_typeFK = 102 AND rs.del = 'no'
+WHERE tt.sportFK = 42 AND tt.del = 'no'
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, zero_scored_participants DESC;
