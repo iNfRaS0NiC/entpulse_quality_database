@@ -958,7 +958,7 @@ else.
 |---|---|
 | `cannot be loaded because running scripts is disabled` | Execution policy; see setup step 2 |
 | `Login failed for '<email>': <reason>` | The server's own validation message, verbatim |
-| `Query failed (HTTP 500): SQL must start with SELECT!` | The server accepts only `SELECT`/`WITH` |
+| `Query failed (HTTP 500): SQL must start with SELECT!` | The server accepts `SELECT` and nothing else. A `WITH ... AS (...)` common table expression is rejected by this rule, so write nested derived tables instead — which is what every statement in the package already does. Window functions are unaffected: the server is MySQL 8, and `LEAD`, `LAG` and `OVER` work inside a derived table |
 | `Query failed (HTTP 500): SQLSTATE[...]` | The MySQL error for the statement, verbatim |
 | `Missing parameter value(s): X` | A declared `{{X}}` token had no value. Only GLOBAL statements declare tokens |
 | `No CheckID matches 'X'` | Wrong ID or pattern; check `-ListChecks` |

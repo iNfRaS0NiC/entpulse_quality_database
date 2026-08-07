@@ -403,7 +403,8 @@ No PowerBI update required.
 - Use one SQL statement per Pool execution.
 - The first word is `SELECT`, alone on the first line.
 - Place the required three comments immediately below the first outer `SELECT`.
-- Do not depend on CTEs when the Pool rejects `WITH`.
+- Never write a CTE. The Pool rejects `WITH` outright, because `SELECT` must be the first
+  word; nest derived tables instead. `TOOLS/README.md` owns the server-side rule.
 - Use the exact approved sport and scope.
 - Never carry example IDs from another sport.
 - Do not append unrelated queries or suggestions when the user requests one query.
