@@ -400,6 +400,23 @@ Statistics are owned by the tournament (`object_typeFK = 3`) and name their even
 `1471` Event id config rather than through a foreign key, which is the only path from a
 statistic to the event it describes.
 
+A Rank is not always scoped to the event that stores it. Where a phase splits one ranked field
+across two events — `Semi-Final A - After Fencing` beside `Semi-Final B - After Fencing` — each
+event holds a scattered subset of the places and the two tile a single sequence only together:
+18 athletes on places 4, 6, 8, 9, 13 … 36 beside 17 on 2, 3, 5, 7, 10 … 31, disjoint and
+complete across the pair. Read alone, either event looks full of holes and neither starts at 1.
+The qualification groups do the opposite and number from 1 inside each group, so the scale is a
+property of the phase rather than of the sport.
+
+That is why `GLOBAL-DQ-119` carries a `Monitor` signal here, and the proportions are the reason
+it is `Monitor` and not something more decisive: of 1266 reported events, 52 are provably this
+legitimate split, 733 have no group sibling at all and must be self-contained, and 481 have
+siblings that neither tile cleanly nor stand alone. The fencing phases add their own pressure —
+the score is a discrete count of victories, so ties of three, four and seven athletes are
+ordinary, and each one is a chance to consume the wrong number of places. Some of what the check
+reports on those events is the same defect `Modern-Pentathlon-DQ-094` reports from the score
+side.
+
 <!-- MANUAL PASTE ZONE: 42 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

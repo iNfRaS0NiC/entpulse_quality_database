@@ -3257,3 +3257,127 @@ WHERE ep.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-119
+    -- Name - EVENT_RESULTS_RANK_SEQUENCE_BROKEN
+    -- What it does: Finds events whose Rank sequence is not a standard competition ranking - a place nobody holds, a tie that does not consume the places it stands for, or a sequence that does not start at one - naming each break where the sequence actually breaks rather than every place it shifts afterwards, together with a coverage count of all eligible events holding at least one usable Rank.
+    CASE
+        WHEN x.start_breaks > 0 THEN 'RANK_SEQUENCE_DOES_NOT_START_AT_ONE'
+        WHEN x.gaps > 0 THEN 'RANK_SEQUENCE_GAP'
+        ELSE 'RANK_SEQUENCE_TIE_DOES_NOT_SKIP'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.tournament_stage_name,
+    x.startdate,
+    x.breaks,
+    x.break_detail,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The assertion is the sequence as a whole, which is what separates this from the two
+-- Rank statements that already exist: GLOBAL-DQ-020 reads a single place against the field
+-- size and therefore cannot see a missing place in the middle of a full field, and
+-- GLOBAL-DQ-021 asks whether a tie is explained rather than what follows it.
+-- A break is reported where the sequence breaks, not at every place it displaces. The two
+-- are easy to confuse and produce wildly different output: asking instead whether each place
+-- equals one plus the number of competitors below it restates a single missing place once
+-- for every place after it, and one measured Artistic Gymnastics event turned five breaks
+-- into 212 rows. The event set is identical either way - verified row for row - so the
+-- cheaper and more legible form is the one kept, and it also runs in seconds rather than a
+-- minute because the sequence is walked once instead of counted per place.
+-- The start-at-one branch is not redundant with the step branch: a sequence running 2, 3, 4
+-- has correct steps throughout and is invisible without it. No sport currently holds one,
+-- which is a data state rather than a structural absence, so the branch stays.
+FROM (
+    SELECT
+        b.event_id,
+        e.name AS event_name,
+        ts.name AS tournament_stage_name,
+        e.startdate,
+        COUNT(*) AS breaks,
+        SUM(CASE WHEN b.break_kind = 'START' THEN 1 ELSE 0 END) AS start_breaks,
+        SUM(CASE WHEN b.break_kind = 'GAP' THEN 1 ELSE 0 END) AS gaps,
+        GROUP_CONCAT(b.break_text ORDER BY b.at_place SEPARATOR ' | ') AS break_detail
+    FROM (
+        SELECT
+            s.event_id,
+            s.rank_value AS at_place,
+            CASE
+                WHEN s.prev_rank IS NULL AND s.rank_value <> 1 THEN 'START'
+                WHEN s.next_rank > s.rank_value + s.places_taken THEN 'GAP'
+                ELSE 'TIE'
+            END AS break_kind,
+            CASE
+                WHEN s.prev_rank IS NULL AND s.rank_value <> 1
+                    THEN CONCAT('sequence starts at ', s.rank_value, ', expected 1')
+                ELSE CONCAT('place ', s.rank_value,
+                            CASE WHEN s.places_taken > 1
+                                 THEN CONCAT(' shared by ', s.places_taken) ELSE '' END,
+                            ' is followed by ', s.next_rank,
+                            ', expected ', s.rank_value + s.places_taken)
+            END AS break_text
+        FROM (
+            SELECT
+                ranked.event_id,
+                ranked.rank_value,
+                ranked.places_taken,
+                LAG(ranked.rank_value)  OVER (PARTITION BY ranked.event_id ORDER BY ranked.rank_value) AS prev_rank,
+                LEAD(ranked.rank_value) OVER (PARTITION BY ranked.event_id ORDER BY ranked.rank_value) AS next_rank
+            FROM (
+                SELECT
+                    e2.id AS event_id,
+                    CAST(r.value AS UNSIGNED) AS rank_value,
+                    COUNT(DISTINCT ep.id) AS places_taken
+                FROM event_participants ep
+                JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+                JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+                JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+                JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+                     AND tt2.sportFK = {{SPORT_ID}}
+                JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                     AND r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+                     AND r.value REGEXP '^[1-9][0-9]*$'
+                WHERE ep.del = 'no'
+                  -- AND t2.tournament_templateFK = <tournament_template_id>
+                  -- AND e2.startdate >= '<from_datetime>'
+                  -- AND e2.startdate <  '<to_datetime>'
+                GROUP BY e2.id, CAST(r.value AS UNSIGNED)
+            ) ranked
+        ) s
+        WHERE (s.prev_rank IS NULL AND s.rank_value <> 1)
+           OR (s.next_rank IS NOT NULL AND s.next_rank <> s.rank_value + s.places_taken)
+    ) b
+    JOIN event e ON e.id = b.event_id AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    GROUP BY b.event_id, e.name, ts.name, e.startdate
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE e.del = 'no'
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep3
+      JOIN result r3 ON r3.event_participantsFK = ep3.id AND r3.del = 'no'
+           AND r3.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+           AND r3.value REGEXP '^[1-9][0-9]*$'
+      WHERE ep3.eventFK = e.id AND ep3.del = 'no'
+  )
+
+ORDER BY sort_order, event_id;

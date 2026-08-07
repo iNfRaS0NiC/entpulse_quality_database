@@ -573,6 +573,10 @@
       "GLOBAL-DQ-083": {
         "signal": "Not applicable",
         "reason": "The template requires a competition model of H2H, where an event is a contest between exactly two entries. This sport is Listing: an event is a field ranked against itself, and SPORTS.md records the model as measured from the sport's data rather than assigned. Every event in the sport would be reported. The exclusion is structural and independent of how many participants any event holds today, so it does not rest on a row count."
+      },
+      "GLOBAL-DQ-119": {
+        "signal": "Monitor",
+        "reason": "1266 of the sport's 9525 ranked events are reported, and the output mixes three populations a count cannot separate. 52 are a legitimate shape the template cannot see: Semi-Final A and Semi-Final B split one ranked field, so each holds a scattered subset of places that tile 1..N only together, verified as disjoint and complete across the pair. 733 have no group sibling at all and their sequence must be self-contained, so those breaks are real. The remaining 481 have group siblings that neither tile cleanly nor stand alone and cannot be classified without being read. The sport's fencing phases also tie heavily on a discrete score, which multiplies the chances of skipping wrongly, and some rows restate what Modern-Pentathlon-DQ-094 EVENT_RESULTS_RANK_ORDER_CONTRADICTS_POINTS already reports on the same events. Monitor rather than Blocked because the invariant holds for the majority, and rather than Actionable because a reader who treats every row as a repair will correct places the sport stores deliberately. SPORTS/Modern-Pentathlon.md owns the evidence."
       }
     }
   }
