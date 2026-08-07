@@ -17,14 +17,20 @@
     file carry check_id and check_name as their first two columns.
 
     -Format xlsx collects a whole batch into a single workbook instead. Its first tab,
-    Overview, lists Sport, CheckID, Check Name, What it does, Rows and the Status and Check By
-    fields for every check, with each row count linking to its tab. Signal and Signal reason
-    follow, hidden. The check tabs are named after the "-- Name -" header, abbreviated to fit
-    Excel's 31-character limit, and there the identity sits above the data rather than on every
-    row: row 1 the labels, row 2 the CheckID, the name, the statement that ran as a single line
-    and what the check asserts, with empty Comment and Check By cells for the reviewer, row 3
-    the link back to Overview, and the result table from row 5. Upload that file to Google
+    Overview, lists Sport, CheckID, Check Name, What it does, Rows and the Status, Check By and
+    Comment fields for every check, with each row count linking to its tab. Signal and Signal
+    reason follow, hidden. The check tabs are named after the "-- Name -" header, abbreviated to
+    fit Excel's 31-character limit, and there the identity sits above the data rather than on
+    every row: row 1 the labels, row 2 the CheckID, the name, the statement that ran as a single
+    line and what the check asserts, with empty Comment and Check By cells for the reviewer, row
+    3 the link back to Overview, and the result table from row 5. Upload that file to Google
     Drive and open it as Sheets.
+
+    Overview's Comment is a formula reading the check tab's own Comment cell, so the comment is
+    written once, beside the rows that provoked it, and read from the board that lists every
+    check. The mirror is one-way by necessity: a cell holds a value or a formula and never both,
+    so typing into Overview's Comment replaces the link with what was typed and that row stops
+    following its tab.
 
     -Chain carries a discovery batch through its drill-downs. A statement whose parameter has
     to be picked out of a summary is normally skipped; under -Chain the runner reads the
@@ -2215,6 +2221,15 @@ function ConvertTo-SheetName {
     return $name
 }
 
+function New-XlsxFormula {
+    # A cell that computes instead of holding text. Wrapped in a type of its own so that
+    # Get-CellXml can tell it from a string that merely starts with '=', which a reviewer's
+    # comment legitimately might.
+    param([string]$Formula)
+
+    return [pscustomobject]@{ PSTypeName = 'Xlsx.Formula'; Formula = $Formula }
+}
+
 function Get-CellXml {
     # Style 1 is the hyperlink look defined in Get-StylesXml; 0 is the default.
     param([string]$Reference, $Value, [int]$Style = 0)
@@ -2222,6 +2237,15 @@ function Get-CellXml {
     if ($null -eq $Value) { return '' }
 
     $styleAttribute = if ($Style -gt 0) { ' s="{0}"' -f $Style } else { '' }
+
+    # No cached <v>: the value is whatever the other sheet holds when the file is opened,
+    # and a stale cached one would be shown until something forced a recalculation.
+    # Get-WorkbookXml sets fullCalcOnLoad so the reader computes it on open.
+    if ($Value.PSObject.TypeNames -contains 'Xlsx.Formula') {
+        if ([string]::IsNullOrEmpty($Value.Formula)) { return '' }
+        return '<c r="{0}"{1}><f>{2}</f></c>' -f `
+            $Reference, $styleAttribute, (ConvertTo-XmlText -Text $Value.Formula)
+    }
 
     if ($XlsxNumericTypes -contains $Value.GetType()) {
         # Invariant formatting, or a bg-BG decimal comma would make Excel read
@@ -2466,7 +2490,11 @@ function Save-Workbook {
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
             '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" ' +
             'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' +
-            $sheetTags.ToString() + '</sheets></workbook>')
+            $sheetTags.ToString() + '</sheets>' +
+            # The formula cells carry no cached result, so the reader is told to compute the
+            # book once on open. The schema fixes this order: calcPr comes after sheets.
+            '<calcPr calcId="0" fullCalcOnLoad="1"/>' +
+            '</workbook>')
 
         Add-ZipTextEntry -Zip $zip -Name 'xl/_rels/workbook.xml.rels' -Content (
             '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
@@ -2749,6 +2777,17 @@ function Save-RunWorkbook {
             'Rows'          = $rowsCell
             'Status'        = $seededStatus
             'Check By'      = ''
+            # Mirrored from the check tab rather than typed here: the comment is formed while
+            # reading the rows, so it is written where the rows are, and Overview is the board
+            # that shows all of them at once. One direction only - a cell holds a value or a
+            # formula, never both, so the two cannot each feed the other. This is the safer of
+            # the two directions: overwriting the mirror costs the mirror, while overwriting a
+            # mirror on the tab would cost the text somebody actually wrote.
+            'Comment'       = $(
+                if ($ran -and $tabOf.ContainsKey($runKey)) {
+                    New-XlsxFormula -Formula ("='" + ($tabOf[$runKey] -replace "'", "''") + "'!G2")
+                }
+                else { '' })
             'Signal'        = $signalValue
             'Signal reason' = [string]$entry.SignalReason
         }
@@ -2778,14 +2817,16 @@ function Save-RunWorkbook {
 
     # Signal and Signal reason are the runner's own classification, settled before the run
     # and unchanged by reading it, so they are collapsed out of the reviewer's way rather
-    # than dropped: K and L still carry every value for whoever needs to unhide them.
+    # than dropped: L and M still carry every value for whoever needs to unhide them. They
+    # moved one column right when Comment was inserted at K, beside the two other fields the
+    # reviewer owns.
     $sheets = @([pscustomobject]@{
             Name           = $overviewName
             Rows           = $overviewRows
             Header         = $null
             BackTo         = $null
             Links          = $links
-            HiddenColumns  = @(11, 12)
+            HiddenColumns  = @(12, 13)
             # Each value names an outcome rather than a stage of work, because "Completed"
             # hides the only thing the next reader needs: completed with what result. The
             # three closing values are the three ways a check can honestly end.
@@ -2995,8 +3036,10 @@ if ($Info) {
     Write-Line '-Format json' 'JSON, with check_id and check_name fields'
     Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, Overview first'
     Write-Host '  Overview lists Sport, CheckID, Parameters, Check Name, What it does, Rows' -ForegroundColor DarkGray
-    Write-Host '  and the Status and Check By fields to fill in, with Signal and Signal reason' -ForegroundColor DarkGray
-    Write-Host '  hidden behind them; each row count links to its tab. On a check tab' -ForegroundColor DarkGray
+    Write-Host '  and the Status, Check By and Comment fields, with Signal and Signal reason' -ForegroundColor DarkGray
+    Write-Host '  hidden behind them; each row count links to its tab. Overview Comment is a' -ForegroundColor DarkGray
+    Write-Host '  formula reading the tab it belongs to, so write the comment on the tab;' -ForegroundColor DarkGray
+    Write-Host '  typing over it here replaces the link. On a check tab' -ForegroundColor DarkGray
     Write-Host '  row 2 holds the CheckID, the name, the one-line SQL that ran and what' -ForegroundColor DarkGray
     Write-Host '  the check asserts, with empty Comment and Check By cells beside them;' -ForegroundColor DarkGray
     Write-Host '  A3 returns to Overview, and the result table starts on row 5. CSV and JSON keep' -ForegroundColor DarkGray

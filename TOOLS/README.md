@@ -611,14 +611,26 @@ Google Drive and open as Sheets.
 
 `Overview` is the first tab:
 
-| Sport | CheckID | Parameters | Check Name | Priority | Category | What it does | Rows | Status | Check By | Signal | Signal reason |
-|---|---|---|---|---|---|---|---:|---|---|---|---|
-| BMX | BMX-DQ-001 | | PARTICIPANT_MISSING_DATE_OF_BIRTH | 3 Missing value | MISSING_VALUES | Finds active participants of the selected types that … | 1064 | Not reviewed | | Monitor | Population-wide absence … |
+| Sport | CheckID | Parameters | Check Name | Priority | Category | What it does | Rows | Status | Check By | Comment | Signal | Signal reason |
+|---|---|---|---|---|---|---|---:|---|---|---|---|---|
+| BMX | BMX-DQ-001 | | PARTICIPANT_MISSING_DATE_OF_BIRTH | 3 Missing value | MISSING_VALUES | Finds active participants of the selected types that … | 1064 | Not reviewed | | `='PARTICIPANT_MISSING…'!G2` | Monitor | Population-wide absence … |
 
-`Signal` and `Signal reason` are columns K and L, and the workbook ships with both hidden.
+`Comment` at K is the one computed cell in the workbook: a formula reading `G2` on the check
+tab that row links to. The comment is therefore written once, on the tab, beside the rows
+that provoked it, and read from the board that lists every check.
+
+The mirror is one way, and cannot be two. A cell holds a value or a formula and never both,
+so two cells cannot each feed the other; a spreadsheet has no bidirectional binding to offer.
+Typing into Overview's `Comment` replaces the formula with what was typed, and that row stops
+following its tab — recovered by re-running the check or by pasting the formula back. This
+direction was chosen because losing a mirror costs a mirror, while a mirror on the check tab
+would have put the text somebody wrote at the same risk. A check that failed or was skipped
+has no tab and gets an empty cell rather than a formula pointing nowhere.
+
+`Signal` and `Signal reason` are columns L and M, and the workbook ships with both hidden.
 They are the runner's own classification, settled before the run and unchanged by reading
 it, so the reviewer opens on the columns that are theirs to work through. Nothing is
-dropped: unhiding K:L brings back every value, and both still travel in `_summary.csv`.
+dropped: unhiding L:M brings back every value, and both still travel in `_summary.csv`.
 
 `Parameters` is empty for almost every row and fills only under `-Chain`, where one statement
 runs once per value it was fed. Those runs share a CheckID by design — the CheckID identifies
@@ -754,7 +766,9 @@ keeps the line breaks it was written with, one line per row, and its first cell 
 to the results it produced.
 
 `Comment` and `Check By` are written as headings and nothing else: both columns belong to
-whoever reads the workbook, and the runner never puts a value in either. `Priority`,
+whoever reads the workbook, and the runner never puts a value in either. `G2` is where a
+comment is written for the whole check — the Overview column of the same name reads this
+cell and never the other way round. `Priority`,
 `Category`, `What it does`, `Signal` and `Signal reason` beside them are the same values the
 Overview carries, so a tab opened from a link explains itself without the reader going back.
 Unlike the Overview, a check tab leaves the signal fields visible — there are only two of
@@ -763,9 +777,9 @@ them on a row that is already about one check.
 `SQL Used` stays at C on a check tab, because C2 is where the jump to the statement lives.
 That is why `Parameters` is appended at K here while it sits at C on the Overview: inserting
 it would have taken the statement link with it. On the Overview, `Rows` links from column H,
-the `Status` dropdown binds to I, and the hidden signal pair is K:L. A change to these
-positions is a change to three places at once — the row builder, the validation `sqref`, and
-the assertions in `Test-Tools.ps1` that pin them.
+the `Status` dropdown binds to I, `Comment` computes at K, and the hidden signal pair is L:M.
+A change to these positions is a change to three places at once — the row builder, the
+validation `sqref`, and the assertions in `Test-Tools.ps1` that pin them.
 
 **A linked cell in Google Sheets is labelled from the hyperlink record, not from its own
 value.** With a `display` attribute Sheets shows that text; without one it falls back to

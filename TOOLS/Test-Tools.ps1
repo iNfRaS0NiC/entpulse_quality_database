@@ -1335,10 +1335,10 @@ Test-That 'workbook Overview carries Signal and Signal reason' {
     Assert-True ($detailXml -match 'population-wide fixture signal') 'detail tab should carry the signal reason'
 
     # The signal columns are hidden, not dropped, so the values asserted above must still
-    # be in the part - and K:L is where the two of them land once Priority and Category take
-    # E and F and Parameters takes C.
-    Assert-True ($xml -match '<cols><col min="11" max="11"[^>]*hidden="1"') 'Signal should be hidden'
-    Assert-True ($xml -match '<col min="12" max="12"[^>]*hidden="1"/></cols>') 'Signal reason should be hidden'
+    # be in the part - and L:M is where the two of them land once Priority and Category take
+    # E and F, Parameters takes C and Comment takes K.
+    Assert-True ($xml -match '<cols><col min="12" max="12"[^>]*hidden="1"') 'Signal should be hidden'
+    Assert-True ($xml -match '<col min="13" max="13"[^>]*hidden="1"/></cols>') 'Signal reason should be hidden'
     Assert-True ($xml.IndexOf('<cols>') -lt $xml.IndexOf('<sheetData>')) 'cols must precede sheetData'
     Assert-True ($detailXml -notmatch '<cols>') 'a check tab should hide nothing'
 }
@@ -1384,6 +1384,54 @@ Test-That 'workbook carries the Check By column and the outcome statuses' {
     # An empty manual field writes no cell at all, so the reviewer types into a blank.
     Assert-True ($detailXml -notmatch 'r="H2"') 'Check By should be left empty on a check tab'
     Assert-True ($detailXml -match 'r="I1"[^>]*><is><t[^>]*>Signal<') 'Signal should follow Check By on a check tab'
+}
+
+Test-That 'Overview Comment mirrors the check tab it belongs to' {
+    # The apostrophe is the point of the name: a sheet reference quotes the name, so a quote
+    # inside it has to be doubled or the formula ends early and the file opens broken.
+    $job = [pscustomobject]@{
+        CheckId = 'Fixtureball-DQ-001'; Name = "KEEPER'S_COMMENT"; What = 'mirrored'
+        Sql = 'SELECT 1;'
+    }
+    # A check that never ran has no tab, so its Comment cell must stay empty rather than
+    # point at a sheet that is not in the book.
+    $failed = [pscustomobject]@{
+        CheckId = 'Fixtureball-DQ-002'; Name = 'NEVER_RAN'; What = 'failed'
+        Sql = 'SELECT 2;'
+    }
+    $summary = @(
+        (New-RunSummaryRow -Job $job -Rows 1 -Seconds 1 -Status 'OK'),
+        (New-RunSummaryRow -Job $failed -Rows 0 -Seconds 1 -Status 'ERROR: fixture')
+    )
+    $collected = @([pscustomobject]@{
+            Job = $job
+            Rows = @([pscustomobject]@{ check_type = 'Fixture'; id = 1 })
+        })
+    $path = Join-Path $FixtureRoot 'run-with-comment.xlsx'
+    Save-RunWorkbook -Summary $summary -Collected $collected -Path $path | Out-Null
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem | Out-Null
+    $zip = [IO.Compression.ZipFile]::OpenRead($path)
+    try {
+        $entry = $zip.GetEntry('xl/worksheets/sheet1.xml')
+        $reader = New-Object IO.StreamReader($entry.Open())
+        try { $xml = $reader.ReadToEnd() } finally { $reader.Dispose() }
+
+        $bookEntry = $zip.GetEntry('xl/workbook.xml')
+        $bookReader = New-Object IO.StreamReader($bookEntry.Open())
+        try { $bookXml = $bookReader.ReadToEnd() } finally { $bookReader.Dispose() }
+    }
+    finally { $zip.Dispose() }
+
+    Assert-True ($xml -match 'r="K1"[^>]*><is><t[^>]*>Comment<') 'Comment should sit in Overview column K'
+    # Compared after decoding, because the part carries the formula XML-escaped and it is the
+    # formula the reader ends up with that has to be right.
+    $formula = [regex]::Match($xml, 'r="K2"[^>]*><f>(.*?)</f>').Groups[1].Value
+    Assert-Equal "='KEEPER''S_COMMENT'!G2" ([Net.WebUtility]::HtmlDecode($formula)) 'Comment should read G2 on the check tab, with the name quote doubled'
+    Assert-True ($xml -notmatch 'r="K3"') 'a check with no tab should get no Comment formula'
+    # A formula carrying no cached result shows nothing until the reader computes it.
+    Assert-True ($bookXml -match 'fullCalcOnLoad="1"') 'the workbook should be told to calculate on open'
+    Assert-True ($bookXml.IndexOf('</sheets>') -lt $bookXml.IndexOf('<calcPr')) 'calcPr must follow sheets'
 }
 
 Test-That 'an id window is activated and reports the object it keys on' {
