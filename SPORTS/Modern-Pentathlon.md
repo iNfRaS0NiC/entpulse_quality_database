@@ -438,5 +438,21 @@ statistic to the event it describes.
   sport. Whether the events should move to the twin or the flag on those rows is wrong is for
   the data owners; `DB-SEM-012` makes the pair deliberate, so this is a choice of variant
   rather than a missing row.
+- What the `100` rank result records in an event whose ranking does not follow its `102` points
+  is unresolved. Where the data is coherent the two agree exactly: a 2013 Fencing final runs
+  rank 1 to 1040 points down to rank 40 to 700 without one inversion. The Swimming final of the
+  same stage has no relation between them at all. Two readings of the ranking were tested and
+  both fail — it is not the competitor's Overall placing copied onto the segment, which holds on
+  only a tenth of the cases, and the points are not a running total, which the first two places
+  of that Swimming final contradict. `Modern-Pentathlon-DQ-094` reports that the two disagree
+  and deliberately does not say which of them is wrong.
+- Two disciplines are stored outside the seasons they existed in. `Laser Run` appears from 2004
+  although the combined running and shooting event replaced the separate two in 2009, and
+  `Obstacle` appears in 2013 to 2016 although it replaced riding in 2023. Neither can be turned
+  into a check from this database: the decisive test was whether the scale distinguishes them,
+  and it does not — `Obstacle`-named events average 506 points in 2013 to 2016 against 485 for
+  `Riding`-named ones, and 328 against 300 in 2023 to 2025. The names are therefore as
+  consistent with a regional label for the show-jumping round as with a wrong discipline, and
+  which it is belongs to the data owners.
 
 <!-- MANUAL PASTE ZONE: 42 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

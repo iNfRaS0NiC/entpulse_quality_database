@@ -266,3 +266,143 @@ JOIN (
 WHERE cpa.athlete_segments = cgs.group_segments
 
 ORDER BY sort_order, difference DESC;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - Modern-Pentathlon-DQ-094
+    -- Name - EVENT_RESULTS_RANK_ORDER_CONTRADICTS_POINTS
+    -- What it does: Finds events where a competitor placed ahead of another scored fewer points than them, one row per event with the size of the contradiction and its worst example.
+    CASE
+        WHEN g.contradicting_participants * 2 >= g.field_size THEN 'RANKING_CONTRADICTS_POINTS_THROUGHOUT'
+        ELSE 'RANKING_CONTRADICTS_POINTS_IN_PLACES'
+    END AS check_type,
+    g.event_id,
+    g.event_name,
+    g.stage_name,
+    g.template_name,
+    g.event_year,
+    g.stage_gender,
+    g.field_size,
+    g.contradicting_participants,
+    g.largest_contradicted_gap,
+    g.worst_example,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Pentathlon places competitors by the points they scored, so within one event the ranking and
+-- the score are two records of one ordering and each is a check on the other. Nothing else in
+-- the package reads them against each other.
+-- Where the data is coherent the agreement is exact, not approximate: a 2013 Fencing final runs
+-- rank 1 to 1040 points, 2 to 1020, 3 to 960 and on down to 40 to 700 without a single
+-- inversion, while the Swimming final of the same stage puts rank 3 above rank 1 by four
+-- hundred points. That contrast is why this is a strict ordinal rule with no tolerance. A
+-- threshold would need a number that ages with every change to the scoring scale, and the scale
+-- has changed more than once inside the period the sport is stored for.
+-- Ties are left alone. The rule fires only where one competitor is strictly ahead AND strictly
+-- lower scoring, so equal points sharing a rank, or a tie broken by a rule outside the points,
+-- is never reported.
+-- Reported per event rather than per competitor, because the count is what tells the reviewer
+-- which defect they have. Half the field or more contradicted means the ranking as a whole does
+-- not follow the points and one of the two orderings has to be replaced; a handful means
+-- individual rows are misplaced. The repairs differ, so the verdicts differ.
+-- The largest contradicted gap travels as a column rather than as a threshold, so a review can
+-- sort by severity without the check itself deciding what counts as severe.
+-- A score of zero is kept in scope but pushed to the back of the example. Zero is how a missing
+-- score is written here, so it wins the widest gap in almost any event it appears in and would
+-- otherwise be the only thing a reviewer ever sees. It is left in because removing it changes
+-- 83 contradicted competitors out of 7677 and nine events out of 750, which is not enough to
+-- narrow a rule over, and a competitor placed ahead on no score at all is still misplaced.
+-- Read across all years. Unlike Modern-Pentathlon-DQ-093 this asserts nothing about how the
+-- disciplines add up, so the 2009 change of format does not bear on it.
+-- What the ranking means in a contradicted event is not settled. Two readings were tested
+-- against the database and both fail: the rank is not the competitor's Overall placing copied
+-- onto the segment, and the points are not a running total. SPORTS/Modern-Pentathlon.md records
+-- that as an open question, so a reviewer knows the row says the two disagree and does not say
+-- which of them is wrong.
+FROM (
+    SELECT a.event_id,
+           MIN(a.event_name)    AS event_name,
+           MIN(a.stage_name)    AS stage_name,
+           MIN(a.template_name) AS template_name,
+           MIN(a.event_year)    AS event_year,
+           MIN(a.stage_gender)  AS stage_gender,
+           COUNT(DISTINCT a.participant_id) AS field_size,
+           COUNT(DISTINCT CASE WHEN b.participant_id IS NOT NULL THEN a.participant_id END) AS contradicting_participants,
+           MAX(b.points_value - a.points_value) AS largest_contradicted_gap,
+           SUBSTRING_INDEX(GROUP_CONCAT(
+               CONCAT(a.participant_name, ' rank ', a.rank_value, ' with ', a.points_value,
+                      ' behind ', b.participant_name, ' rank ', b.rank_value, ' with ', b.points_value)
+               ORDER BY (a.points_value = 0), (b.points_value - a.points_value) DESC SEPARATOR ' || '), ' || ', 1) AS worst_example
+    FROM (
+        SELECT ts.name AS stage_name, ts.gender AS stage_gender, tt.name AS template_name,
+               e.id AS event_id, e.name AS event_name, YEAR(e.startdate) AS event_year,
+               ep.participantFK AS participant_id, p.name AS participant_name,
+               CAST(rr.value AS SIGNED) AS rank_value,
+               CAST(rs.value AS SIGNED) AS points_value
+        FROM tournament_template tt
+        JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+        JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+        JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = 100 AND rr.del = 'no'
+             AND rr.value REGEXP '^[0-9]+$'
+        JOIN result rs ON rs.event_participantsFK = ep.id AND rs.result_typeFK = 102 AND rs.del = 'no'
+             AND rs.value REGEXP '^[0-9]+$'
+        WHERE tt.sportFK = 42 AND tt.del = 'no'
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+    ) a
+    LEFT JOIN (
+        SELECT e.id AS event_id, ep.participantFK AS participant_id, p.name AS participant_name,
+               CAST(rr.value AS SIGNED) AS rank_value,
+               CAST(rs.value AS SIGNED) AS points_value
+        FROM tournament_template tt
+        JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+        JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+        JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = 100 AND rr.del = 'no'
+             AND rr.value REGEXP '^[0-9]+$'
+        JOIN result rs ON rs.event_participantsFK = ep.id AND rs.result_typeFK = 102 AND rs.del = 'no'
+             AND rs.value REGEXP '^[0-9]+$'
+        WHERE tt.sportFK = 42 AND tt.del = 'no'
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+    ) b ON b.event_id = a.event_id
+       AND b.rank_value   > a.rank_value
+       AND b.points_value > a.points_value
+    GROUP BY a.event_id
+    HAVING contradicting_participants > 0
+) g
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(*) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT e.id AS event_id
+    FROM tournament_template tt
+    JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+    JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = 100 AND rr.del = 'no'
+         AND rr.value REGEXP '^[0-9]+$'
+    JOIN result rs ON rs.event_participantsFK = ep.id AND rs.result_typeFK = 102 AND rs.del = 'no'
+         AND rs.value REGEXP '^[0-9]+$'
+    WHERE tt.sportFK = 42 AND tt.del = 'no'
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id
+    HAVING COUNT(DISTINCT ep.participantFK) >= 2
+) c
+
+ORDER BY sort_order, contradicting_participants DESC;
