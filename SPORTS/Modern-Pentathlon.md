@@ -279,8 +279,19 @@ must therefore key on the round type ID and never on its name.
 `251` is `After Disciplines` and `260` is `Bonus Round`, both of which are sport-specific stages
 of a multi-discipline competition rather than knockout rounds.
 
-`Final` is the sport's only round that eliminates nobody; every other round it contests is an
-elimination round, by decision of 2026-08-06. `DATABASE.md` `DB-SEM-012` records that a round
+The rounds named `1` to `5` are not rounds in the competitive sense. They are the order of the
+disciplines inside one phase: `Fencing Final` is `1`, `Obstacle Final` is `2`, `Swimming Final`
+is `3` and `Laser Run Final` is `4`. Measured on one championship, the field is 63 across the
+two Qualifier groups, 36 across the two Semi Finals groups, and then 18 in each of `1`, `2`,
+`3`, `4` and in `Final` — identical, because everyone who reaches the final contests every
+discipline in it. Nobody is eliminated between them.
+
+`Qualifier` and `Semi Finals` are therefore the sport's only elimination rounds, and `Final`
+and the ordinals `1` to `5` eliminate nobody. Recorded by measurement of 2026-08-07, correcting
+a decision of 2026-08-06 that classified the ordinals as elimination rounds from their names
+alone. `After Disciplines`, `Bonus Round` and the round named `40` are left in neither list:
+what they do is not readable from the name, and `GLOBAL_DQ/README.md` records that a name the
+sport cannot classify belongs in neither list and is left unjudged rather than assumed. `DATABASE.md` `DB-SEM-012` records that a round
 name exists twice, once with `knockout = 'yes'` and once without, and that the pair is
 distinguished by ID rather than by name — so which variant a sport uses is a fact about that
 sport. This one uses the non-knockout variant of all ten of its elimination round names, while
