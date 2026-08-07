@@ -426,6 +426,7 @@ Full SQL never belongs here. It is stored in one sport-scoped file under
 | Modern-Pentathlon-DQ-094 | Modern-Pentathlon | — | WRONG_RESULTS | EVENT_RESULTS | EVENT_RESULTS_RANK_ORDER_CONTRADICTS_POINTS | `POWERBI_QUERIES/Modern-Pentathlon.sql` | Approved |
 | Modern-Pentathlon-DQ-095 | Modern-Pentathlon | — | WRONG_GENDER | EVENT | EVENT_NAME_MIXED_CONTRADICTS_STAGE_GENDER | `POWERBI_QUERIES/Modern-Pentathlon.sql` | Approved |
 | Modern-Pentathlon-DQ-096 | Modern-Pentathlon | — | WRONG_RESULTS | EVENT_RESULTS | EVENT_RESULTS_ZERO_SCORE_WITHOUT_STATUS | `POWERBI_QUERIES/Modern-Pentathlon.sql` | Approved |
+| Modern-Pentathlon-DQ-097 | Modern-Pentathlon | — | MISSING_VALUES | EVENT_RESULTS | EVENT_RESULTS_SEGMENT_SCORE_MISSING_WITHOUT_STATUS | `POWERBI_QUERIES/Modern-Pentathlon.sql` | Approved |
 | Soccer-DQ-001 | Soccer | GLOBAL-DQ-017 | WRONG_RESULTS | EVENT_RESULTS | EVENT_RESULTS_MISSING_FOR_FINISHED | `GLOBAL_DQ/RESULTS.sql` | Approved |
 | Soccer-DQ-002 | Soccer | GLOBAL-DQ-018 | WRONG_RESULTS | EVENT_RESULTS | EVENT_RESULTS_MEDAL_INVALID_VALUE | `GLOBAL_DQ/RESULTS.sql` | Approved |
 | Soccer-DQ-003 | Soccer | GLOBAL-DQ-027 | WRONG_RESULTS | COMP.RANK | COMP.RANK_RESULTS_MEDAL_INVALID_VALUE | `GLOBAL_DQ/STATISTICS.sql` | Approved |

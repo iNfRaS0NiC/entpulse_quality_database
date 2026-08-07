@@ -557,3 +557,161 @@ WHERE tt.sportFK = 42 AND tt.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, zero_scored_participants DESC;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - Modern-Pentathlon-DQ-097
+    -- Name - EVENT_RESULTS_SEGMENT_SCORE_MISSING_WITHOUT_STATUS
+    -- What it does: Finds competitors holding no score in one or more discipline events of their own phase with no comment anywhere in that phase to say why, separating most of the phase missing from part of it.
+    CASE
+        WHEN (gs.group_segments - pa.segments_scored) * 2 > gs.group_segments THEN 'MOST_SEGMENTS_MISSING_WITHOUT_STATUS'
+        ELSE 'SEGMENT_MISSING_WITHOUT_STATUS'
+    END AS check_type,
+    pa.participant_id,
+    pa.participant_name,
+    pa.stage_name,
+    pa.template_name,
+    CASE WHEN pa.prefix = '' THEN pa.phase ELSE CONCAT(pa.prefix, ' / ', pa.phase) END AS phase_group,
+    pa.event_year,
+    gs.group_segments,
+    pa.segments_scored,
+    gs.group_segments - pa.segments_scored AS segments_missing,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- A competitor entered in a phase is entered in its disciplines, so a discipline holding no score
+-- for them is either a withdrawal or a gap. The database can tell the two apart, because a
+-- withdrawal is written as a comment - DNS, DNF, DSQ - and this reads exactly that: the score is
+-- absent and nothing in the phase says why.
+-- The defect is therefore the missing status and not the missing score. A competitor who pulled
+-- out after the fencing legitimately has no swim time, and the row that should exist is the one
+-- recording that they pulled out. Repairing the status is what closes this, not inventing a
+-- score.
+-- The comment is read across the whole phase rather than the one event, because a withdrawal is
+-- recorded once and explains every discipline after it. Requiring it on each missing event would
+-- report the same competitor several times for one already-recorded fact.
+-- Two verdicts. More than half the phase missing is a competitor who barely appears in it and is
+-- very likely an entry that was never withdrawn; part of the phase is a narrower gap. Both are
+-- reported because both leave the sport unable to say why a discipline is blank.
+-- Reported per competitor and phase, the same unit Modern-Pentathlon-DQ-093 uses, so the two read
+-- together: 093 asserts the arithmetic only where every segment is present, and this is what it
+-- steps over.
+-- Read from 2009 onward for the reason 093 records: before that season the stored phases are
+-- short an entire discipline event, so every competitor in them would be reported for a format
+-- this package has not modelled rather than for a missing status.
+-- Groups of a single segment are out of scope. One discipline standing alone carries no
+-- expectation that a competitor appears in another, so there is nothing to be missing from.
+FROM (
+    SELECT ev.stage_id, ev.stage_name, ev.template_name, ev.prefix, ev.phase,
+           ep.participantFK AS participant_id, p.name AS participant_name,
+           MIN(ev.event_year) AS event_year,
+           COUNT(DISTINCT CASE WHEN ev.kind = 'segment' AND rs.id IS NOT NULL THEN ev.event_id END) AS segments_scored,
+           MAX(CASE WHEN LOWER(TRIM(rc.value)) IN ('dns', 'dns.', 'dnf', 'dsq', 'disq.', 'n/a') THEN 1 ELSE 0 END) AS has_no_result_status
+    FROM (
+        SELECT ts.id AS stage_id, ts.name AS stage_name, tt.name AS template_name,
+               e.id AS event_id, YEAR(e.startdate) AS event_year,
+               CASE WHEN LOCATE(' - ', e.name) > 0 THEN TRIM(SUBSTRING_INDEX(e.name, ' - ', 1)) ELSE '' END AS prefix,
+               CASE WHEN e.round_typeFK IN (179,152) THEN 'Qualifier'
+                    WHEN e.round_typeFK IN (2,178)   THEN 'Semi Finals'
+                    WHEN e.round_typeFK IN (38,39,40,41,42,173) THEN 'Final'
+                    ELSE CONCAT('Round ', e.round_typeFK) END AS phase,
+               CASE WHEN LOWER(e.name) LIKE '%overall%' THEN 'overall' ELSE 'segment' END AS kind
+        FROM tournament_template tt
+        JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+        JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+        JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+        WHERE tt.sportFK = 42 AND tt.del = 'no'
+          AND YEAR(e.startdate) >= 2009
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+    ) ev
+    JOIN event_participants ep ON ep.eventFK = ev.event_id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    LEFT JOIN result rs ON rs.event_participantsFK = ep.id AND rs.result_typeFK = 102 AND rs.del = 'no'
+         AND rs.value REGEXP '^[0-9]+$'
+    LEFT JOIN result rc ON rc.event_participantsFK = ep.id AND rc.result_typeFK = 104 AND rc.del = 'no'
+    GROUP BY ev.stage_id, ev.prefix, ev.phase, ep.participantFK
+) pa
+JOIN (
+    SELECT ev2.stage_id, ev2.prefix, ev2.phase, COUNT(DISTINCT ev2.event_id) AS group_segments
+    FROM (
+        SELECT ts.id AS stage_id, e.id AS event_id,
+               CASE WHEN LOCATE(' - ', e.name) > 0 THEN TRIM(SUBSTRING_INDEX(e.name, ' - ', 1)) ELSE '' END AS prefix,
+               CASE WHEN e.round_typeFK IN (179,152) THEN 'Qualifier'
+                    WHEN e.round_typeFK IN (2,178)   THEN 'Semi Finals'
+                    WHEN e.round_typeFK IN (38,39,40,41,42,173) THEN 'Final'
+                    ELSE CONCAT('Round ', e.round_typeFK) END AS phase,
+               CASE WHEN LOWER(e.name) LIKE '%overall%' THEN 'overall' ELSE 'segment' END AS kind
+        FROM tournament_template tt
+        JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+        JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+        JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+        WHERE tt.sportFK = 42 AND tt.del = 'no'
+          AND YEAR(e.startdate) >= 2009
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+    ) ev2
+    WHERE ev2.kind = 'segment'
+    GROUP BY ev2.stage_id, ev2.prefix, ev2.phase
+    HAVING group_segments >= 2
+) gs ON gs.stage_id = pa.stage_id AND gs.prefix = pa.prefix AND gs.phase = pa.phase
+WHERE pa.segments_scored < gs.group_segments
+  AND pa.has_no_result_status = 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(*) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT ev.stage_id, ev.prefix, ev.phase, ep.participantFK AS participant_id
+    FROM (
+        SELECT ts.id AS stage_id, e.id AS event_id,
+               CASE WHEN LOCATE(' - ', e.name) > 0 THEN TRIM(SUBSTRING_INDEX(e.name, ' - ', 1)) ELSE '' END AS prefix,
+               CASE WHEN e.round_typeFK IN (179,152) THEN 'Qualifier'
+                    WHEN e.round_typeFK IN (2,178)   THEN 'Semi Finals'
+                    WHEN e.round_typeFK IN (38,39,40,41,42,173) THEN 'Final'
+                    ELSE CONCAT('Round ', e.round_typeFK) END AS phase
+        FROM tournament_template tt
+        JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+        JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+        JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+        WHERE tt.sportFK = 42 AND tt.del = 'no'
+          AND YEAR(e.startdate) >= 2009
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+    ) ev
+    JOIN event_participants ep ON ep.eventFK = ev.event_id AND ep.del = 'no'
+    GROUP BY ev.stage_id, ev.prefix, ev.phase, ep.participantFK
+) cpa
+JOIN (
+    SELECT ev3.stage_id, ev3.prefix, ev3.phase, COUNT(DISTINCT ev3.event_id) AS group_segments
+    FROM (
+        SELECT ts.id AS stage_id, e.id AS event_id,
+               CASE WHEN LOCATE(' - ', e.name) > 0 THEN TRIM(SUBSTRING_INDEX(e.name, ' - ', 1)) ELSE '' END AS prefix,
+               CASE WHEN e.round_typeFK IN (179,152) THEN 'Qualifier'
+                    WHEN e.round_typeFK IN (2,178)   THEN 'Semi Finals'
+                    WHEN e.round_typeFK IN (38,39,40,41,42,173) THEN 'Final'
+                    ELSE CONCAT('Round ', e.round_typeFK) END AS phase,
+               CASE WHEN LOWER(e.name) LIKE '%overall%' THEN 'overall' ELSE 'segment' END AS kind
+        FROM tournament_template tt
+        JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+        JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+        JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+        WHERE tt.sportFK = 42 AND tt.del = 'no'
+          AND YEAR(e.startdate) >= 2009
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+    ) ev3
+    WHERE ev3.kind = 'segment'
+    GROUP BY ev3.stage_id, ev3.prefix, ev3.phase
+    HAVING group_segments >= 2
+) cgs ON cgs.stage_id = cpa.stage_id AND cgs.prefix = cpa.prefix AND cgs.phase = cpa.phase
+
+ORDER BY sort_order, segments_missing DESC, event_year DESC;
