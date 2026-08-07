@@ -197,6 +197,16 @@ ones, while `Fencing`, `Swimming`, `Riding`, `Laser Run` and `Overall` span it t
 discipline-scoped check must therefore not read an absent discipline in a given year as a
 defect, and must name the disciplines it audits rather than assuming the set is constant.
 
+An event name carries the discipline it stages, so the name and the `object_discipline`
+relation are two independent records of one fact and can be read against each other. The names
+wrap the discipline word in a phase prefix and a segment suffix — `Qualification A - After
+Fencing`, `Team-Relay Mix - After Obstacle` — so only the word inside is comparable, and
+`Overall` is one of the words because the sport stores it as a discipline in its own right.
+One pairing is legitimate rather than a contradiction: `Combined (Shooting/Running)` at the
+2012 and 2016 Summer Olympics carries `Laser Run`, which is what that discipline is. Where the
+two records disagree the disagreement holds for every edition of the template rather than for
+one event, so it is a mapping rather than an entry slip. `Modern-Pentathlon-DQ-092` asserts it.
+
 The discipline population differs between the two layers: every discipline above reaches
 events, but the statistic layer is dominated by `Overall`. A discipline-scoped check must be
 written against the layer it audits and must not infer one layer's discipline population from
