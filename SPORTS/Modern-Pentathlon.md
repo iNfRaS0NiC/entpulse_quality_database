@@ -99,6 +99,14 @@ unresolved. `disq.` carries a Rank on none, which is consistent with a disqualif
 the participant has no result; `q`, `or`, `wr` and `q/or` always do, being a qualification or a
 record rather than an absence.
 
+Six spellings are recorded as meaning the participant holds no classified result: `dns`,
+`dns.`, `dnf`, `dsq`, `disq.` and `n/a`. The first five follow from the paragraphs above.
+`n/a` is included by decision of 2026-08-07 on what the value means rather than on what it
+holds: it occurs on a single participant, and that one carries both a Rank and a Points value,
+which is too little to classify from and exactly the contradiction the rule exists to report.
+Reading it the other way — treating one row as proof that `n/a` is an ordinary status — would
+settle the question from the population, which this project does not do.
+
 A shared Rank is normal rather than exceptional, and the `102` points result is what says which
 shared rank is real. Two competitors scoring the same number of points in a segment genuinely
 occupy the same place, so the sport ties by design and a rule reading a shared rank as suspect

@@ -3104,3 +3104,88 @@ WHERE ep.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-117
+    -- Name - EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED_BY_SCORE
+    -- What it does: Finds Comment values outside the sport's status codes, or marking a participant as unclassified while a Rank, a Medal or a score is stored for that same participant.
+    CASE
+        WHEN LOWER(TRIM(x.comment_value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}}) AND x.medal_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_MEDAL'
+        WHEN LOWER(TRIM(x.comment_value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}}) AND x.rank_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_RANK'
+        WHEN LOWER(TRIM(x.comment_value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}}) AND x.score_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_SCORE'
+        ELSE 'COMMENT_INVALID_VALUE'
+    END AS check_type,
+    x.event_participants_id,
+    x.event_id,
+    x.event_name,
+    x.participant_name,
+    x.comment_value,
+    x.rank_value,
+    x.score_value,
+    x.medal_value,
+    x.tournament_template_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        p.name AS participant_name,
+        tt.name AS tournament_template_name,
+        rc.value AS comment_value,
+        (SELECT NULLIF(TRIM(r2.value), '') FROM result r2
+          WHERE r2.event_participantsFK = ep.id AND r2.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+            AND r2.del = 'no' AND r2.value IS NOT NULL LIMIT 1) AS rank_value,
+        (SELECT NULLIF(TRIM(r3.value), '') FROM result r3
+          WHERE r3.event_participantsFK = ep.id AND r3.result_typeFK = {{RESULT_SCORE_TYPE_ID}}
+            AND r3.del = 'no' AND r3.value IS NOT NULL LIMIT 1) AS score_value,
+        (SELECT NULLIF(TRIM(r5.value), '') FROM result r5
+          WHERE r5.event_participantsFK = ep.id AND r5.result_typeFK = {{RESULT_MEDAL_TYPE_ID}}
+            AND r5.del = 'no' AND r5.value IS NOT NULL LIMIT 1) AS medal_value
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN result rc ON rc.event_participantsFK = ep.id AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}} AND rc.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND rc.value IS NOT NULL
+      AND TRIM(rc.value) <> ''
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+) x
+WHERE LOWER(TRIM(x.comment_value)) NOT IN ({{RESULT_COMMENT_VALUE_LIST}})
+   OR (
+        LOWER(TRIM(x.comment_value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
+        AND (x.rank_value IS NOT NULL OR x.score_value IS NOT NULL
+             OR x.medal_value IS NOT NULL)
+      )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result rc ON rc.event_participantsFK = ep.id AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}} AND rc.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND rc.value IS NOT NULL
+  AND TRIM(rc.value) <> ''
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_id;

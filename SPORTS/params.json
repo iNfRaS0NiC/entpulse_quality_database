@@ -513,6 +513,7 @@
     "NUMERIC_RESULT_TYPE_LIST": "100, 102",
     "NUMERIC_DATA_TYPE_LIST": "1270, 1271",
     "RESULT_COMMENT_VALUE_LIST": "'eliminated', 'el', 'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'q', 'q/or', 'or', 'wr', 'n/a'",
+    "RESULT_COMMENT_NO_RESULT_LIST": "'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'n/a'",
     "DATA_COMMENT_VALUE_LIST": "'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'disqualified', 'el', 'or', 'wr'",
     "DATA_COMMENT_NO_RESULT_LIST": "'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'disqualified'",
     "_notApplicable": {
