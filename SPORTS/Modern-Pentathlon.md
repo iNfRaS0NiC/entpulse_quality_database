@@ -142,7 +142,9 @@ ask it directly: it now leaves a shared rank alone where the whole tied group ag
 declared in `RESULT_TIE_VALUE_TYPE_LIST`, which for this sport is the `102` points result. The
 reason 021 was unusable here — that it read a shared rank as suspect unless a Comment explained
 it, and so reported the sport's ordinary scoring — no longer holds. `Modern-Pentathlon-DQ-067`
-is therefore `Deprecated` and the invariant belongs to 021.
+is therefore `Deprecated` and the invariant belongs to `Modern-Pentathlon-DQ-098`, approved on
+2026-08-07 against the rewritten template. A new ID rather than the old one repointed: changing
+what an assigned CheckID stands for is the reuse `POWERBI.md` forbids.
 
 The Rank values divide cleanly. The largest field the sport contests holds 75 participants and
 ordinary ranks stop there; the only values above it are a handful in the 471 to 561 range, each
