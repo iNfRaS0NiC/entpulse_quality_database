@@ -107,6 +107,29 @@ which is too little to classify from and exactly the contradiction the rule exis
 Reading it the other way — treating one row as proof that `n/a` is an ordinary status — would
 settle the question from the population, which this project does not do.
 
+The `102` Points result closes an arithmetic across events. A competitor's Overall score is the
+sum of the scores they hold in the segment events of the same phase, and the sport stores each
+discipline as its own event, so the two are two records of one calculation. Verified on
+competitors through all three phases of a championship — Qualification, Semi-Final and Final —
+where the four segment scores add to the Overall to the point in each. An `After Fencing` event
+holds that discipline's own score and not a running total, despite what its name suggests.
+
+The phase a score belongs to is identified by the event name prefix and the round type
+together, because neither alone is enough: `Qualification A` and `Qualification B` are both
+round `179` inside one stage and only the prefix separates them, while the Final carries no
+prefix and is identified by rounds `38` to `42` with `173`. `Modern-Pentathlon-DQ-093` asserts
+the arithmetic.
+
+The arithmetic holds from 2009 and not before. Across the seasons up to 2008 the stored segment
+scores fail to account for the Overall in roughly seven competitor-groups in ten, while from
+2009 they agree in about ninety-five per cent. 2009 is the season the combined running and
+shooting discipline replaced the separate two. Tracing one 2007 competitor shows why the older
+groups fail: the four segments stored sum to 3002 against an Overall of 3896, and the group
+itself holds no event for the missing discipline — so the gap is an absent event rather than
+wrong arithmetic. Whether the older editions were imported without one of their five
+disciplines, or stored it somewhere this package has not looked, is unresolved and belongs to
+the data owners.
+
 A shared Rank is normal rather than exceptional, and the `102` points result is what says which
 shared rank is real. Two competitors scoring the same number of points in a segment genuinely
 occupy the same place, so the sport ties by design and a rule reading a shared rank as suspect
@@ -378,6 +401,13 @@ statistic to the event it describes.
   `DB-SEM-017`: `category` holds one row, `OLYMPIC`, and 53 of 128 sports carry the flag. This
   sport is one of them. What remains open belongs to `DATABASE.md` rather than here — the
   marking is incomplete, since no gymnastics sport and no BMX carries it.
+- Editions up to 2008 do not close the Overall arithmetic: the segment events stored account
+  for the Overall in only about three competitor-groups in ten, and a traced 2007 group is
+  short an entire discipline event rather than holding a wrong number. Whether one of the five
+  disciplines was never imported for those seasons, or is stored through a path this package
+  has not read, is unresolved. `Modern-Pentathlon-DQ-093` therefore reads from 2009 onward, so
+  the question stays visible here rather than arriving as six thousand rows of a format nobody
+  has modelled.
 - `1456` Running Score is instantiated on a large number of statistics and empty in every one of
   them. Whether the field is written by a process that has stopped, or was never populated at
   all, is unknown; its stored-row count closely tracks that of the empty `1271` Points rows,
