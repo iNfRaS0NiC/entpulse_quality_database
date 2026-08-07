@@ -42,6 +42,10 @@ most often needed:
 - After writing, report exactly which files, CheckIDs and rules changed.
 - Load only what the current sport and query domain need. Never load every sport file or
   every SQL file; `README.md` defines the minimal context profiles.
+- Opening an undocumented sport follows `.agents/skills/new-sport/SKILL.md`: run the GLOBAL
+  discovery catalogue for it, read the results, draft the sport file and its parameter entry,
+  and stop before DQ work. Read it before starting, whether or not the assistant loads skill
+  files on its own.
 - Run `TOOLS/Test-Package.ps1` after changing any `.sql` file, registry row or paste
   marker. It is the mechanical check for everything listed under "Hard rules" below.
 - Run `TOOLS/Test-Tools.ps1` after changing `TOOLS/Run-Query.ps1` or
