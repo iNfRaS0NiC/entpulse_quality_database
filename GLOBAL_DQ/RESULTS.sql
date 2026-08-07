@@ -292,35 +292,37 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-021
     -- Name - EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT
-    -- What it does: Finds event participants in finished events sharing a Rank with another where neither row carries a Comment to explain the tie.
-    'RANK_DUPLICATE_WITHOUT_COMMENT' AS check_type,
+    -- What it does: Finds event participants in finished events sharing a Rank with another where neither row carries a Comment and the values the sport ranks on do not account for the tie, separating a tie whose values disagree from one with no value stored at all.
+    CASE
+        WHEN tie.rows_with_any_value = 0 THEN 'RANK_DUPLICATE_WITHOUT_VALUE'
+        ELSE 'RANK_DUPLICATE_VALUES_DISAGREE'
+    END AS check_type,
     ep.id AS event_participants_id,
     e.id AS event_id,
     e.name AS event_name,
     tt.name AS template_name,
     p.name AS participant_name,
     CAST(r.value AS UNSIGNED) AS rank_value,
-    (
-        SELECT COUNT(DISTINCT ep2.id)
-        FROM event_participants ep2
-        JOIN result r2 ON r2.event_participantsFK = ep2.id
-             AND r2.result_typeFK = {{RESULT_RANK_TYPE_ID}}
-             AND r2.del = 'no'
-             AND r2.value REGEXP '^[1-9][0-9]*$'
-        WHERE ep2.eventFK = e.id
-          AND ep2.del = 'no'
-          AND CAST(r2.value AS UNSIGNED) = CAST(r.value AS UNSIGNED)
-          AND NOT EXISTS (
-              SELECT 1
-              FROM result rc2
-              WHERE rc2.event_participantsFK = ep2.id
-                AND rc2.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
-                AND rc2.del = 'no'
-                AND rc2.value IS NOT NULL
-                AND TRIM(rc2.value) <> ''
-          )
-    ) AS unexplained_duplicate_count,
+    tie.tied_count AS unexplained_duplicate_count,
     NULL AS eligible_count
+-- A tie the sport actually contested is not a defect, and the database can say which is which.
+-- Where every participant sharing a rank also carries the same value on one of the fields the
+-- sport ranks by, the duplicate is the result: two gymnasts on the same score share a place, two
+-- triathletes on the same time cross together. Only a duplicate the values fail to account for
+-- is reported.
+-- RESULT_TIE_VALUE_TYPE_LIST names those fields, and it is a list rather than one field because
+-- a sport may rank on more than one and store them unevenly. A tie is accounted for when the
+-- whole tied group agrees on at least one of the declared fields; agreement on one is enough,
+-- since any one of them being equal is the tie.
+-- Every tied row must carry the field, not merely the ones that have it. A group of three where
+-- two share a time and the third has none is not accounted for, because nothing says why the
+-- third is there.
+-- Where no tied row carries any declared value the finding stands and says so in its own
+-- verdict. Nothing justifies the duplicate, which is a different thing from values that
+-- disagree, and the two are repaired differently.
+-- Values are compared as quantities where they are numbers, so 13.800 and 13.8 are one value
+-- rather than two. A value that is not a plain number - a stored time such as 1:27:05.000 -
+-- keeps its own identity as text.
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -331,10 +333,96 @@ JOIN result r ON r.event_participantsFK = ep.id
      AND r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
      AND r.del = 'no'
      AND r.value REGEXP '^[1-9][0-9]*$'
+JOIN (
+    -- One row per event and shared rank, counting only the participants that carry no Comment,
+    -- with how many of the declared value fields the whole group agrees on. Built once for the
+    -- sport rather than asked again for every row, because the same tie is read by each of its
+    -- own members.
+    SELECT sz.event_id, sz.rank_value, sz.tied_count,
+           COALESCE(MAX(va.rows_with_value), 0) AS rows_with_any_value,
+           COALESCE(SUM(CASE WHEN va.rows_with_value = sz.tied_count AND va.distinct_values = 1
+                             THEN 1 ELSE 0 END), 0) AS agreeing_value_types
+    FROM (
+        SELECT ep2.eventFK AS event_id,
+               CAST(r2.value AS UNSIGNED) AS rank_value,
+               COUNT(DISTINCT ep2.id) AS tied_count
+        FROM event_participants ep2
+        JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+        JOIN result r2 ON r2.event_participantsFK = ep2.id
+             AND r2.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+             AND r2.del = 'no'
+             AND r2.value REGEXP '^[1-9][0-9]*$'
+        WHERE ep2.del = 'no'
+          AND tt2.sportFK = {{SPORT_ID}}
+          AND e2.status_type = 'finished'
+          AND e2.status_descFK = 6
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+          -- AND e2.startdate >= '<from_datetime>'
+          -- AND e2.startdate <  '<to_datetime>'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM result rc2
+              WHERE rc2.event_participantsFK = ep2.id
+                AND rc2.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+                AND rc2.del = 'no'
+                AND rc2.value IS NOT NULL
+                AND TRIM(rc2.value) <> ''
+          )
+        GROUP BY ep2.eventFK, CAST(r2.value AS UNSIGNED)
+        HAVING tied_count >= 2
+    ) sz
+    LEFT JOIN (
+        SELECT ep4.eventFK AS event_id,
+               CAST(r4.value AS UNSIGNED) AS rank_value,
+               rv.result_typeFK AS value_type,
+               COUNT(DISTINCT ep4.id) AS rows_with_value,
+               COUNT(DISTINCT CASE
+                         WHEN TRIM(rv.value) REGEXP '^-?[0-9]+([.][0-9]+)?$'
+                              THEN CAST(CAST(TRIM(rv.value) AS DECIMAL(20,6)) AS CHAR)
+                         ELSE NULLIF(TRIM(rv.value), '')
+                     END) AS distinct_values
+        FROM event_participants ep4
+        JOIN event e4 ON e4.id = ep4.eventFK AND e4.del = 'no'
+        JOIN tournament_stage ts4 ON ts4.id = e4.tournament_stageFK AND ts4.del = 'no'
+        JOIN tournament t4 ON t4.id = ts4.tournamentFK AND t4.del = 'no'
+        JOIN tournament_template tt4 ON tt4.id = t4.tournament_templateFK AND tt4.del = 'no'
+        JOIN result r4 ON r4.event_participantsFK = ep4.id
+             AND r4.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+             AND r4.del = 'no'
+             AND r4.value REGEXP '^[1-9][0-9]*$'
+        JOIN result rv ON rv.event_participantsFK = ep4.id
+             AND rv.result_typeFK IN ({{RESULT_TIE_VALUE_TYPE_LIST}})
+             AND rv.del = 'no'
+             AND rv.value IS NOT NULL
+             AND TRIM(rv.value) <> ''
+        WHERE ep4.del = 'no'
+          AND tt4.sportFK = {{SPORT_ID}}
+          AND e4.status_type = 'finished'
+          AND e4.status_descFK = 6
+          -- AND t4.tournament_templateFK = <tournament_template_id>
+          -- AND e4.startdate >= '<from_datetime>'
+          -- AND e4.startdate <  '<to_datetime>'
+          AND NOT EXISTS (
+              SELECT 1
+              FROM result rc4
+              WHERE rc4.event_participantsFK = ep4.id
+                AND rc4.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+                AND rc4.del = 'no'
+                AND rc4.value IS NOT NULL
+                AND TRIM(rc4.value) <> ''
+          )
+        GROUP BY ep4.eventFK, CAST(r4.value AS UNSIGNED), rv.result_typeFK
+    ) va ON va.event_id = sz.event_id AND va.rank_value = sz.rank_value
+    GROUP BY sz.event_id, sz.rank_value, sz.tied_count
+) tie ON tie.event_id = e.id AND tie.rank_value = CAST(r.value AS UNSIGNED)
 WHERE ep.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.status_type = 'finished'
   AND e.status_descFK = 6
+  AND tie.agreeing_value_types = 0
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -346,27 +434,6 @@ WHERE ep.del = 'no'
         AND rc.del = 'no'
         AND rc.value IS NOT NULL
         AND TRIM(rc.value) <> ''
-  )
-  AND EXISTS (
-      SELECT 1
-      FROM event_participants ep3
-      JOIN result r3 ON r3.event_participantsFK = ep3.id
-           AND r3.result_typeFK = {{RESULT_RANK_TYPE_ID}}
-           AND r3.del = 'no'
-           AND r3.value REGEXP '^[1-9][0-9]*$'
-      WHERE ep3.eventFK = e.id
-        AND ep3.del = 'no'
-        AND ep3.id <> ep.id
-        AND CAST(r3.value AS UNSIGNED) = CAST(r.value AS UNSIGNED)
-        AND NOT EXISTS (
-            SELECT 1
-            FROM result rc3
-            WHERE rc3.event_participantsFK = ep3.id
-              AND rc3.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
-              AND rc3.del = 'no'
-              AND rc3.value IS NOT NULL
-              AND TRIM(rc3.value) <> ''
-        )
   )
 
 UNION ALL
