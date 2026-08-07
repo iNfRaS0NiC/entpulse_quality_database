@@ -748,3 +748,155 @@ FROM (
 ) c
 
 ORDER BY sort_order, event_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Artistic-Gymnastics-DQ-099
+    -- Name - EVENT_RESULTS_RANK_ORDER_CONTRADICTS_SCORE
+    -- What it does: Finds a competitor placed behind another of the same qualification status while scoring more than them, one row per misplaced competitor with the competitor they were put behind.
+    'RANK_ORDER_CONTRADICTS_SCORE' AS check_type,
+    w.event_id,
+    w.event_name,
+    w.discipline_name,
+    w.stage_gender,
+    w.event_year,
+    w.template_name,
+    w.tournament_name,
+    w.participant_name,
+    w.rank_value,
+    w.score_value,
+    w.prev_name AS placed_ahead_of_them,
+    w.prev_rank AS their_rank,
+    w.prev_score AS their_score,
+    w.score_value - w.prev_score AS score_advantage,
+    CASE WHEN w.comment_group = '' THEN '(no comment)' ELSE w.comment_group END AS qualification_status,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Gymnastics places competitors by the score they were given, so within one field the ranking
+-- and the score are two records of one ordering. Artistic-Gymnastics-DQ-097 reads the case where
+-- one rank carries two different scores; this reads the other direction, where two ranks carry
+-- scores in the wrong order, and nothing else in the package asserts it.
+-- Compared only inside one qualification status, and that is what makes the rule true here. The
+-- two-per-country rule means a qualifying field is ordered Q first, then the reserves, then the
+-- rest, so a reserve outscoring a qualifier is the rule working rather than a defect: a 2005
+-- World Championships qualification puts Mark Holyoake 25th on 50.887 behind four gymnasts on
+-- less, because he was his country's third entry. Comparing across the whole field reports 72
+-- competitors in that one event and every one of them is correct.
+-- Read between neighbours in the ranking rather than between every pair. One misplaced row is
+-- ahead of everyone it should be behind, so pair counting multiplies a single defect by the
+-- number of competitors it jumped - rank 62 on 28.600 outscores six gymnasts ranked above it and
+-- is one break, not six. Neighbour counting reports 61 places across the sport where the order
+-- breaks; pair counting reports 221 rows for the same 61 defects.
+-- Equal ranks are excluded so this does not restate Artistic-Gymnastics-DQ-097, which owns the
+-- tie carrying two scores.
+-- The score advantage travels as a column rather than as a threshold. A team final putting
+-- 261.660 ahead of 360.035 and an apparatus final separated by five thousandths are both
+-- breaks in the same ordering, and which of them a review takes first is the review's call.
+-- Vault qualification needs reading with care and supplies seventeen of the sixty-one. A
+-- gymnast contesting the vault final performs two vaults and is placed on their average while
+-- the rest of the field is placed on one, so where a single event holds both populations some
+-- of those rows may be the format rather than a defect. The examples look like ordinary
+-- transpositions, but that cannot be shown from this database and is therefore said here
+-- rather than assumed away by dropping the round.
+FROM (
+    SELECT b.*,
+           LAG(b.score_value)      OVER (PARTITION BY b.event_id, b.comment_group ORDER BY b.rank_value, b.participant_id) AS prev_score,
+           LAG(b.rank_value)       OVER (PARTITION BY b.event_id, b.comment_group ORDER BY b.rank_value, b.participant_id) AS prev_rank,
+           LAG(b.participant_name) OVER (PARTITION BY b.event_id, b.comment_group ORDER BY b.rank_value, b.participant_id) AS prev_name
+    FROM (
+        SELECT e.id AS event_id, e.name AS event_name, d.name AS discipline_name,
+               ts.gender AS stage_gender, YEAR(e.startdate) AS event_year,
+               tt.name AS template_name, t.name AS tournament_name,
+               ep.participantFK AS participant_id, p.name AS participant_name,
+               CAST(rr.value AS SIGNED) AS rank_value,
+               CAST(rs.value AS DECIMAL(12,4)) AS score_value,
+               COALESCE(LOWER(TRIM((
+                   SELECT rc.value FROM result rc
+                   WHERE rc.event_participantsFK = ep.id AND rc.result_typeFK = 104 AND rc.del = 'no'
+                   LIMIT 1
+               ))), '') AS comment_group
+        FROM tournament_template tt
+        JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+        JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+        JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+        JOIN object_discipline od ON od.objectFK = e.id AND od.object_typeFK = 5 AND od.del = 'no'
+        JOIN discipline d ON d.id = od.disciplineFK
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = 100 AND rr.del = 'no'
+             AND rr.value REGEXP '^[0-9]+$'
+        JOIN result rs ON rs.event_participantsFK = ep.id AND rs.result_typeFK = 102 AND rs.del = 'no'
+             AND rs.value REGEXP '^[0-9]+([.][0-9]+)?$'
+        WHERE tt.sportFK = 40 AND tt.del = 'no'
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+    ) b
+) w
+WHERE w.prev_score IS NOT NULL
+  AND w.rank_value  > w.prev_rank
+  AND w.score_value > w.prev_score
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(*) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT cb.event_id, cb.participant_id
+    FROM (
+        SELECT e.id AS event_id, ep.participantFK AS participant_id,
+               COALESCE(LOWER(TRIM((
+                   SELECT rc.value FROM result rc
+                   WHERE rc.event_participantsFK = ep.id AND rc.result_typeFK = 104 AND rc.del = 'no'
+                   LIMIT 1
+               ))), '') AS comment_group
+        FROM tournament_template tt
+        JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+        JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+        JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+        JOIN object_discipline od ON od.objectFK = e.id AND od.object_typeFK = 5 AND od.del = 'no'
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = 100 AND rr.del = 'no'
+             AND rr.value REGEXP '^[0-9]+$'
+        JOIN result rs ON rs.event_participantsFK = ep.id AND rs.result_typeFK = 102 AND rs.del = 'no'
+             AND rs.value REGEXP '^[0-9]+([.][0-9]+)?$'
+        WHERE tt.sportFK = 40 AND tt.del = 'no'
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+    ) cb
+    JOIN (
+        SELECT cg.event_id, cg.comment_group
+        FROM (
+            SELECT e.id AS event_id, ep.participantFK AS participant_id,
+                   COALESCE(LOWER(TRIM((
+                       SELECT rc.value FROM result rc
+                       WHERE rc.event_participantsFK = ep.id AND rc.result_typeFK = 104 AND rc.del = 'no'
+                       LIMIT 1
+                   ))), '') AS comment_group
+            FROM tournament_template tt
+            JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+            JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+            JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+            JOIN object_discipline od ON od.objectFK = e.id AND od.object_typeFK = 5 AND od.del = 'no'
+            JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+            JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = 100 AND rr.del = 'no'
+                 AND rr.value REGEXP '^[0-9]+$'
+            JOIN result rs ON rs.event_participantsFK = ep.id AND rs.result_typeFK = 102 AND rs.del = 'no'
+                 AND rs.value REGEXP '^[0-9]+([.][0-9]+)?$'
+            WHERE tt.sportFK = 40 AND tt.del = 'no'
+              -- AND t.tournament_templateFK = <tournament_template_id>
+              -- AND e.startdate >= '<from_datetime>'
+              -- AND e.startdate <  '<to_datetime>'
+        ) cg
+        GROUP BY cg.event_id, cg.comment_group
+        HAVING COUNT(DISTINCT cg.participant_id) >= 2
+    ) cg2 ON cg2.event_id = cb.event_id AND cg2.comment_group = cb.comment_group
+    GROUP BY cb.event_id, cb.participant_id
+) cov
+
+ORDER BY sort_order, score_advantage DESC;
