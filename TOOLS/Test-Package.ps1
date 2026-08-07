@@ -298,7 +298,7 @@ Set-Metric 'Sport DQ statements' $dqStatements.Count
 # --------------------------------------------------------------------------------------
 
 $expected = @(
-    'README.md', 'CLAUDE.md', 'AI_INSTRUCTIONS.md', 'DATABASE.md', 'SPORTS.md',
+    'README.md', 'CLAUDE.md', 'AGENTS.md', 'AI_INSTRUCTIONS.md', 'DATABASE.md', 'SPORTS.md',
     'WORKFLOW.md', 'POWERBI.md', 'POWERBI_REGISTRY.md', 'VALIDATION_REPORT.md',
     'SPORTS/_TEMPLATE.md', 'SPORTS/params.json',
     'GLOBAL_QUERIES/README.md', 'GLOBAL_DQ/README.md',
@@ -307,6 +307,34 @@ $expected = @(
 $missing = @($expected | Where-Object { -not (Test-Path -LiteralPath (Join-Path $RepoRoot $_)) } |
     ForEach-Object { "missing: $_" })
 Add-Result -Group 'Package' -Name 'Expected Project 2.0 files present' -Findings $missing
+
+# `CLAUDE.md` and `AGENTS.md` are the same contract read by two different assistants, so they
+# are kept byte-identical rather than maintained twice. The alternative - one file pointing at
+# the other - was rejected: an assistant that does not follow the pointer starts with no rules
+# at all, which is a worse failure than a stale copy. This makes the copy impossible to leave
+# stale instead. The comparison is undirected, so it fails whichever of the two was edited.
+$entryPointFindings = @()
+$entryPointPaths = @{ 'CLAUDE.md' = $null; 'AGENTS.md' = $null }
+foreach ($name in @($entryPointPaths.Keys)) {
+    $path = Join-Path $RepoRoot $name
+    if (Test-Path -LiteralPath $path) {
+        $entryPointPaths[$name] = Get-Content -LiteralPath $path -Encoding UTF8
+    }
+}
+if ($null -ne $entryPointPaths['CLAUDE.md'] -and $null -ne $entryPointPaths['AGENTS.md']) {
+    $delta = @(Compare-Object -ReferenceObject $entryPointPaths['CLAUDE.md'] `
+                              -DifferenceObject $entryPointPaths['AGENTS.md'])
+    foreach ($d in $delta) {
+        $owner = if ($d.SideIndicator -eq '<=') { 'CLAUDE.md only' } else { 'AGENTS.md only' }
+        $entryPointFindings += "$($owner): $($d.InputObject.Trim())"
+    }
+    if ($entryPointFindings.Count -gt 0) {
+        $entryPointFindings = @(
+            "CLAUDE.md and AGENTS.md have drifted; copy the newer file over the other"
+        ) + $entryPointFindings
+    }
+}
+Add-Result -Group 'Package' -Name 'Entry-point files agree' -Findings $entryPointFindings
 
 # -Include is silently ignored when -Recurse is combined with -LiteralPath, so the extension
 # filter has to be a predicate. output/ is excluded because it holds query result exports the

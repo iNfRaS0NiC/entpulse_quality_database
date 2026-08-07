@@ -82,6 +82,25 @@ than only in their owner:
 - **Statistics context.** Any statement whose audited object is a `statistic`,
   `statistic_participantsN` or `statistic_dataN` row projects `template_name` and excludes
   IOC-purpose templates identically in every branch.
+- **Applicability is structural, never a row count.** A check is `Not applicable` for a sport
+  only when the sport does not store the structure the rule reads — no such column, layer or
+  relation. A status, type, discipline or value that simply has no rows today is a data
+  state, not a structural absence: excluding a check on that basis disables it for the day
+  those rows arrive, which is the day it was written for. Never classify from the current
+  population; where the two are hard to tell apart, ask. `TOOLS/README.md` owns the signal
+  vocabulary, `GLOBAL_DQ/README.md` the prerequisite column.
+- **Template filter: the foreign key, never the primary key.** A commented template filter
+  reads `t.tournament_templateFK`, not `tt.id`, wherever the statement already joins the
+  tournament that owns the template. The two select identical rows and are not the same query:
+  keying on the template's primary key makes the optimiser drive from `tournament_template` and
+  lose the index path into the statistic shards, and the same result then costs roughly ten
+  times as much — measured on Soccer, 2.5 seconds against 28.3, and about a minute per
+  Comp.Rank check across a batch. Only a statement auditing templates themselves, with no
+  tournament in scope, keeps `tt.id`. The alias belongs to the statement that declares it:
+  `tt` pairs with `t`, `tt2` with `t2`. `DATABASE.md` `DB-SEM-016` owns the database fact,
+  `POWERBI.md` the query contract, and `TOOLS/Test-Tools.ps1` fails a marker that keeps the
+  primary key where a tournament is joined.
+
 - **Paste markers.** A `MANUAL PASTE ZONE` marker is the fixed lower boundary of its
   section. Insert immediately before it, never after; keep it unchanged; never include it
   in inserted text. If it is missing, duplicated or misplaced, report it and stop. Markers
