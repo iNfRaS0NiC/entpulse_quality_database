@@ -406,3 +406,63 @@ FROM (
 ) c
 
 ORDER BY sort_order, contradicting_participants DESC;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - Modern-Pentathlon-DQ-095
+    -- Name - EVENT_NAME_MIXED_CONTRADICTS_STAGE_GENDER
+    -- What it does: Finds events whose name says the format is mixed while the stage holding them is recorded as a single gender or carries no gender at all.
+    CASE
+        WHEN ts.gender IS NULL OR TRIM(ts.gender) = '' THEN 'MIXED_NAME_ON_STAGE_WITHOUT_GENDER'
+        ELSE 'MIXED_NAME_CONTRADICTED_BY_STAGE_GENDER'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    ts.name AS stage_name,
+    ts.gender AS stage_gender,
+    tt.name AS template_name,
+    YEAR(e.startdate) AS event_year,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The event name and the stage gender are two records of one fact wherever the name names the
+-- format. This sport says it exactly one way - the relay events carry Mix in their name - and
+-- nothing else in the package reads a name against a gender. GLOBAL-DQ-014 compares the stage
+-- with its template, GLOBAL-DQ-043 compares the participants with the stage, and neither looks
+-- at what the event calls itself.
+-- Returns nothing today: all 663 events naming the mixed format sit on a mixed stage. That is a
+-- sentinel over a populated scope and not an empty one, so the eligible count says 663 rather
+-- than zero, and the day a mixed relay is filed under a single-gender stage the check is already
+-- in place. POWERBI.md owns that distinction.
+-- The missing gender is a separate verdict from the contradicting one because they are repaired
+-- differently: one stage has the wrong value, the other has none. The column is nullable, so the
+-- branch is structural even though no row reaches it now.
+FROM tournament_template tt
+JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+WHERE tt.sportFK = 42 AND tt.del = 'no'
+  AND LOWER(e.name) LIKE '%mix%'
+  AND (ts.gender IS NULL OR TRIM(ts.gender) = '' OR LOWER(TRIM(ts.gender)) <> 'mixed')
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament_template tt
+JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+WHERE tt.sportFK = 42 AND tt.del = 'no'
+  AND LOWER(e.name) LIKE '%mix%'
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_year, event_id;
