@@ -367,6 +367,13 @@ rather than a scope to correct. It exists to stop being silent when the first no
 event arrives holding results. `Artistic-Gymnastics-DQ-085` reads the same status family but
 also audits finished events, so its coverage is not zero.
 
+What separates the two readings of a zero is whether the statement can see the population at
+all, and here it demonstrably can: the same template reaches it in the sibling sports, holding
+10 not-started events in Modern Pentathlon, 11 in BMX and 3 in Triathlon. The zero is this
+sport's own state rather than a template blind to what it audits. Measured on 2026-08-07 over
+7 421 events running from 2003 to July 2026, 7 380 of them finished and 41 cancelled, with
+none dated in the future and none of the cancelled ones carrying a result.
+
 The complete active event-round inventory contains two different IDs named `Final` (`9`,
 `173`) and two named `Qualifier` (`152`, `179`). Round identity must therefore be read from
 `round_typeFK`, not from the display name alone. Detail runs for `9` and `152` confirm both
