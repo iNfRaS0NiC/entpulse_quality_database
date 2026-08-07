@@ -786,19 +786,23 @@ SELECT
 -- Read between neighbours in the ranking rather than between every pair. One misplaced row is
 -- ahead of everyone it should be behind, so pair counting multiplies a single defect by the
 -- number of competitors it jumped - rank 62 on 28.600 outscores six gymnasts ranked above it and
--- is one break, not six. Neighbour counting reports 61 places across the sport where the order
--- breaks; pair counting reports 221 rows for the same 61 defects.
+-- is one break, not six. Neighbour counting reports 44 places across the sport where the order
+-- breaks; pair counting reports several times that for the same defects.
 -- Equal ranks are excluded so this does not restate Artistic-Gymnastics-DQ-097, which owns the
 -- tie carrying two scores.
 -- The score advantage travels as a column rather than as a threshold. A team final putting
 -- 261.660 ahead of 360.035 and an apparatus final separated by five thousandths are both
 -- breaks in the same ordering, and which of them a review takes first is the review's call.
--- Vault qualification needs reading with care and supplies seventeen of the sixty-one. A
--- gymnast contesting the vault final performs two vaults and is placed on their average while
--- the rest of the field is placed on one, so where a single event holds both populations some
--- of those rows may be the format rather than a defect. The examples look like ordinary
--- transpositions, but that cannot be shown from this database and is therefore said here
--- rather than assumed away by dropping the round.
+-- Vault outside a final is excluded, and the exclusion is structural rather than a row count. A
+-- gymnast contesting the Vault final performs two vaults and is placed on their average, while
+-- one contesting only All-Around or Team performs a single vault and is placed on that, so a
+-- Vault qualification holds two score bases in one event with nothing stored to tell them
+-- apart. The comment cannot separate them: both populations carry the same Q or no comment at
+-- all. A lower-ranked gymnast holding a higher single score is therefore the format there, and
+-- SPORTS/Artistic-Gymnastics.md recorded on 2026-08-04 that no rank-follows-score rule may be
+-- written for it. That decision stands and this check honours it, at the cost of seventeen rows
+-- it would otherwise report. The Vault final is kept, because there the whole field is on the
+-- two-vault average.
 FROM (
     SELECT b.*,
            LAG(b.score_value)      OVER (PARTITION BY b.event_id, b.comment_group ORDER BY b.rank_value, b.participant_id) AS prev_score,
@@ -829,6 +833,7 @@ FROM (
         JOIN result rs ON rs.event_participantsFK = ep.id AND rs.result_typeFK = 102 AND rs.del = 'no'
              AND rs.value REGEXP '^[0-9]+([.][0-9]+)?$'
         WHERE tt.sportFK = 40 AND tt.del = 'no'
+          AND NOT (d.name = 'Vault' AND e.round_typeFK NOT IN (9, 173))
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
@@ -859,12 +864,14 @@ FROM (
         JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
         JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
         JOIN object_discipline od ON od.objectFK = e.id AND od.object_typeFK = 5 AND od.del = 'no'
+        JOIN discipline d ON d.id = od.disciplineFK
         JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
         JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = 100 AND rr.del = 'no'
              AND rr.value REGEXP '^[0-9]+$'
         JOIN result rs ON rs.event_participantsFK = ep.id AND rs.result_typeFK = 102 AND rs.del = 'no'
              AND rs.value REGEXP '^[0-9]+([.][0-9]+)?$'
         WHERE tt.sportFK = 40 AND tt.del = 'no'
+          AND NOT (d.name = 'Vault' AND e.round_typeFK NOT IN (9, 173))
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
@@ -883,12 +890,14 @@ FROM (
             JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
             JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
             JOIN object_discipline od ON od.objectFK = e.id AND od.object_typeFK = 5 AND od.del = 'no'
+            JOIN discipline d ON d.id = od.disciplineFK
             JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
             JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = 100 AND rr.del = 'no'
                  AND rr.value REGEXP '^[0-9]+$'
             JOIN result rs ON rs.event_participantsFK = ep.id AND rs.result_typeFK = 102 AND rs.del = 'no'
                  AND rs.value REGEXP '^[0-9]+([.][0-9]+)?$'
             WHERE tt.sportFK = 40 AND tt.del = 'no'
+              AND NOT (d.name = 'Vault' AND e.round_typeFK NOT IN (9, 173))
               -- AND t.tournament_templateFK = <tournament_template_id>
               -- AND e.startdate >= '<from_datetime>'
               -- AND e.startdate <  '<to_datetime>'

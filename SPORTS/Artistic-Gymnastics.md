@@ -402,6 +402,21 @@ stored tournament name is `2020` while their stages took place in 2021. The
 both findings and coverage; the check remains active for every future tournament-season
 contradiction.
 
+The `100` rank in a qualifying event records the competitor's qualification position and not
+their position on the score. The sport admits at most two gymnasts per country to a final, so
+the field is ordered in blocks: the qualifiers first, then the reserves, then everyone else,
+and each block is ordered on the score within itself. A reserve therefore legitimately holds a
+better score than a gymnast ranked above them. The `104` comment carries the block — `Q` for a
+qualifier, `R` for a reserve, empty for the rest — so it is the comment and not the rank that
+says which population a row belongs to.
+
+The consequence for any check reading the two together is that the ranking and the score may
+only be compared inside one comment value. A 2005 World Championships all-around qualification
+holds 24 rows on `Q` ranked 1 to 24, then four on `R` ranked 25 to 28 whose scores overlap the
+`Q` block: Mark Holyoake is 25th on 50.887 while four qualifiers scored less, because he was
+his country's third entry. Comparing across the whole field reports all 72 of them and every
+one is correct. `Artistic-Gymnastics-DQ-099` groups on the comment for this reason.
+
 <!-- MANUAL PASTE ZONE: 40 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Sport-specific DQ wave
@@ -436,6 +451,18 @@ mechanism for.
 `GLOBAL-DQ-113`, instantiated as `Artistic-Gymnastics-DQ-005`, already reports the one
 statistic mixing team and athlete rows on two incompatible scales, so no sport-specific check
 restates it.
+
+A ninth check, `Artistic-Gymnastics-DQ-099`, was approved on 2026-08-07 from a second sample
+of the event and Comp.Rank layers. It asserts that the ranking follows the score, which the
+2026-08-04 wave declined to write, and it is only writable because the two obstacles that
+stopped it then are now separated rather than argued away. The per-federation quota is handled
+by comparing inside one `104` comment value, so the Q, the R and the unmarked blocks are each
+read on their own. The Vault mixing is handled by exclusion: Vault is dropped outside a final,
+because there the comment cannot separate the two score bases and the rule above still holds.
+That costs 17 rows the check would otherwise report and leaves 44 over 156587 competitor
+entries, among them a 2015 World Championships team final placing a score of 360.035 seventh
+behind one of 261.660. The single Vault row that survives is a Vault final, which is the arm
+the exclusion keeps.
 
 <!-- MANUAL PASTE ZONE: 40 SPORT-SPECIFIC DQ WAVE — insert approved additions immediately before this marker; do not move or delete it. -->
 
