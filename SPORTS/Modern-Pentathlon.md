@@ -135,8 +135,14 @@ shared rank is real. Two competitors scoring the same number of points in a segm
 occupy the same place, so the sport ties by design and a rule reading a shared rank as suspect
 unless a Comment explains it reports its ordinary scoring. The score decides it instead: where a
 place is shared and the points behind it agree, the tie is the format; where the points differ,
-the ranking contradicts its own input. `GLOBAL-DQ-021` is therefore recorded as not applicable
-here and `GLOBAL-DQ-116` carries the invariant, reading the score rather than the Comment.
+the ranking contradicts its own input.
+
+`GLOBAL-DQ-116` carried that invariant until 2026-08-07, when `GLOBAL-DQ-021` was rewritten to
+ask it directly: it now leaves a shared rank alone where the whole tied group agrees on a value
+declared in `RESULT_TIE_VALUE_TYPE_LIST`, which for this sport is the `102` points result. The
+reason 021 was unusable here — that it read a shared rank as suspect unless a Comment explained
+it, and so reported the sport's ordinary scoring — no longer holds. `Modern-Pentathlon-DQ-067`
+is therefore `Deprecated` and the invariant belongs to 021.
 
 The Rank values divide cleanly. The largest field the sport contests holds 75 participants and
 ordinary ranks stop there; the only values above it are a handful in the 471 to 561 range, each

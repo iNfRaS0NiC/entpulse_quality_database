@@ -323,6 +323,11 @@ SELECT
 -- Values are compared as quantities where they are numbers, so 13.800 and 13.8 are one value
 -- rather than two. A value that is not a plain number - a stored time such as 1:27:05.000 -
 -- keeps its own identity as text.
+-- The eligible population is every event whose status_type is finished, not only the one
+-- carrying the plain finished detail. A contest decided after extra time or awarded on appeal
+-- is finished and its ranking is as assertable as any other; restricting to the one detail
+-- silently dropped those events. This absorbs GLOBAL-DQ-116, which asked the same question of
+-- a single score over exactly this population and is superseded here.
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -358,7 +363,6 @@ JOIN (
         WHERE ep2.del = 'no'
           AND tt2.sportFK = {{SPORT_ID}}
           AND e2.status_type = 'finished'
-          AND e2.status_descFK = 6
           -- AND t2.tournament_templateFK = <tournament_template_id>
           -- AND e2.startdate >= '<from_datetime>'
           -- AND e2.startdate <  '<to_datetime>'
@@ -401,7 +405,6 @@ JOIN (
         WHERE ep4.del = 'no'
           AND tt4.sportFK = {{SPORT_ID}}
           AND e4.status_type = 'finished'
-          AND e4.status_descFK = 6
           -- AND t4.tournament_templateFK = <tournament_template_id>
           -- AND e4.startdate >= '<from_datetime>'
           -- AND e4.startdate <  '<to_datetime>'
@@ -421,7 +424,6 @@ JOIN (
 WHERE ep.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.status_type = 'finished'
-  AND e.status_descFK = 6
   AND tie.agreeing_value_types = 0
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
@@ -454,7 +456,6 @@ JOIN result r ON r.event_participantsFK = ep.id
 WHERE ep.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.status_type = 'finished'
-  AND e.status_descFK = 6
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'

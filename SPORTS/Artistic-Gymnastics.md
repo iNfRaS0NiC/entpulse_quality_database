@@ -125,7 +125,10 @@ inside DQ scope, Extended Results being outside it by the decision below.
 `102 Points` is also the value the placing inside an event is decided from, and is recorded
 as `RESULT_SCORE_TYPE_ID` on that basis. Two gymnasts sharing a place must therefore share a
 score; where they do not, the placing contradicts the number it was derived from, which is
-what `GLOBAL-DQ-116` asserts. The score is stored with inconsistent precision — `13.800` and
+what `GLOBAL-DQ-021` asserts through `RESULT_TIE_VALUE_TYPE_LIST`. `GLOBAL-DQ-116` carried that
+assertion until 2026-08-07 and is superseded by it; `Artistic-Gymnastics-DQ-097` is `Deprecated`
+and `Artistic-Gymnastics-DQ-071` is where the sport now reads it. The score is stored with
+inconsistent precision — `13.800` and
 `13.8` both occur — so the check compares it as a quantity rather than as text; that is a
 property of the template rather than of this sport, recorded here because this sport is where
 it was found.
