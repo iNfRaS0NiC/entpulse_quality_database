@@ -855,7 +855,10 @@ FROM (
             -- The five rules below name a definite corruption. NON_ASCII_CHARACTER
             -- that follows cannot: it fires on a legitimate diacritic just as readily,
             -- so a corrupted name is reported under its own verdict as well.
-            IF(ts.name LIKE '%&#%' OR LOWER(ts.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp);', 'HTML_ENTITY', NULL),
+            -- The terminating semicolon is written \\x{3B} and must stay that way: the Pool cuts
+            -- a statement at the first literal ';' even inside quotes, which killed this check
+            -- outright. Two backslashes, because the SQL literal eats one before ICU sees it.
+            IF(ts.name LIKE '%&#%' OR LOWER(ts.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp)\\x{3B}', 'HTML_ENTITY', NULL),
             IF(HEX(ts.name) LIKE '%EFBFBD%', 'REPLACEMENT_CHARACTER', NULL),
             IF(HEX(ts.name) LIKE '%C2A0%', 'NON_BREAKING_SPACE', NULL),
             IF(HEX(ts.name) LIKE '%E2808B%', 'ZERO_WIDTH_SPACE', NULL),
@@ -932,7 +935,8 @@ FROM (
             -- The five rules below name a definite corruption. NON_ASCII_CHARACTER
             -- that follows cannot: it fires on a legitimate diacritic just as readily,
             -- so a corrupted name is reported under its own verdict as well.
-            IF(e.name LIKE '%&#%' OR LOWER(e.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp);', 'HTML_ENTITY', NULL),
+            -- Semicolon as \\x{3B}, never literal: the Pool cuts the statement at the first one.
+            IF(e.name LIKE '%&#%' OR LOWER(e.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp)\\x{3B}', 'HTML_ENTITY', NULL),
             IF(HEX(e.name) LIKE '%EFBFBD%', 'REPLACEMENT_CHARACTER', NULL),
             IF(HEX(e.name) LIKE '%C2A0%', 'NON_BREAKING_SPACE', NULL),
             IF(HEX(e.name) LIKE '%E2808B%', 'ZERO_WIDTH_SPACE', NULL),
@@ -1452,7 +1456,8 @@ FROM (
             IF(CHAR_LENGTH(t.name) <> CHAR_LENGTH(TRIM(t.name)), 'LEADING_OR_TRAILING_SPACE', NULL),
             IF(t.name LIKE '%  %', 'DOUBLE_SPACE', NULL),
             IF(t.name REGEXP '[[:cntrl:]]', 'CONTROL_CHARACTER', NULL),
-            IF(t.name LIKE '%&#%' OR LOWER(t.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp);', 'HTML_ENTITY', NULL),
+            -- Semicolon as \\x{3B}, never literal: the Pool cuts the statement at the first one.
+            IF(t.name LIKE '%&#%' OR LOWER(t.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp)\\x{3B}', 'HTML_ENTITY', NULL),
             IF(HEX(t.name) LIKE '%EFBFBD%', 'REPLACEMENT_CHARACTER', NULL),
             IF(HEX(t.name) LIKE '%C2A0%', 'NON_BREAKING_SPACE', NULL),
             IF(HEX(t.name) LIKE '%E2808B%', 'ZERO_WIDTH_SPACE', NULL),
@@ -1521,7 +1526,8 @@ FROM (
             IF(CHAR_LENGTH(tt.name) <> CHAR_LENGTH(TRIM(tt.name)), 'LEADING_OR_TRAILING_SPACE', NULL),
             IF(tt.name LIKE '%  %', 'DOUBLE_SPACE', NULL),
             IF(tt.name REGEXP '[[:cntrl:]]', 'CONTROL_CHARACTER', NULL),
-            IF(tt.name LIKE '%&#%' OR LOWER(tt.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp);', 'HTML_ENTITY', NULL),
+            -- Semicolon as \\x{3B}, never literal: the Pool cuts the statement at the first one.
+            IF(tt.name LIKE '%&#%' OR LOWER(tt.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp)\\x{3B}', 'HTML_ENTITY', NULL),
             IF(HEX(tt.name) LIKE '%EFBFBD%', 'REPLACEMENT_CHARACTER', NULL),
             IF(HEX(tt.name) LIKE '%C2A0%', 'NON_BREAKING_SPACE', NULL),
             IF(HEX(tt.name) LIKE '%E2808B%', 'ZERO_WIDTH_SPACE', NULL),

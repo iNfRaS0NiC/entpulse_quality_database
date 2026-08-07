@@ -1846,6 +1846,42 @@ Test-That 'one database sport name cannot map to two repository slugs' {
         "the duplicate mapping finding should be reported; output was:`n$($run.Text)"
 }
 
+Test-That 'a semicolon inside a string literal is reported' {
+    # The defect this rule exists for: the HTML-entity patterns ended on a literal ';', the
+    # executor cut every one of those statements there, and the whole name-format family -
+    # 32 approved checks across six sports - had been dying on an unterminated literal for as
+    # long as it had existed. Nothing in the SQL looks wrong to a reader.
+    $root = Copy-RepositoryFixture -Name 'literal-semicolon'
+    $path = Join-Path $root 'GLOBAL_DQ\HIERARCHY.sql'
+    $text = [IO.File]::ReadAllText($path)
+
+    $before = "REGEXP '&(amp|quot|apos|lt|gt|nbsp)\\x{3B}'"
+    if (-not $text.Contains($before)) { throw 'the escaped entity pattern was not found in the fixture copy' }
+    $text = $text.Replace($before, "REGEXP '&(amp|quot|apos|lt|gt|nbsp);'")
+    [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match "';' inside a string literal") `
+        "the cut finding should be reported; output was:`n$($run.Text)"
+}
+
+Test-That 'a semicolon inside a comment is left alone' {
+    # The rule must not over-fire: comments are stripped before execution, so a ';' in one is
+    # harmless - and the notes explaining this very rule contain one.
+    $root = Copy-RepositoryFixture -Name 'comment-semicolon'
+    $path = Join-Path $root 'GLOBAL_DQ\HIERARCHY.sql'
+    $text = [IO.File]::ReadAllText($path)
+
+    $anchor = '    -- Semicolon as \\x{3B}, never literal: the Pool cuts the statement at the first one.'
+    if (-not $text.Contains($anchor)) { throw 'the anchor comment was not found in the fixture copy' }
+    $text = $text.Replace($anchor, $anchor + "`n    -- A trailing note ending in a semicolon;")
+    [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 0 $run.ExitCode "validator exit code; output was:`n$($run.Text)"
+}
+
 Test-That 'a no-result value missing from the value list is reported' {
     # The defect this rule exists for: 'disq.' sat in both sports' NO_RESULT lists and in
     # neither VALUE list, so GLOBAL-DQ-052 reported it invalid and honoured it as a no-result

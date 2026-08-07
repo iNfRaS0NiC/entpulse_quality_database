@@ -157,6 +157,51 @@ function Get-MaskedSql {
     return $out.ToString()
 }
 
+# The Pool cuts a statement at the first literal ';' without noticing that it sits inside a
+# string, so the rest of the statement never reaches MySQL and what does arrive ends on an
+# unterminated literal. It is not a syntax error anyone can see by reading the SQL, and it
+# killed the whole name-format family - 32 approved checks across six sports - silently, for
+# as long as those statements had existed. Comments are stripped before execution and are
+# therefore safe; only string literals are scanned here. Returns character indexes so the
+# caller can report a line the same way the LIMIT rule does.
+function Get-StringLiteralSemicolonIndexes {
+    param([string]$Sql)
+
+    $chars = $Sql.ToCharArray()
+    $hits = @()
+    $inString = $false
+    $inComment = $false
+    $i = 0
+
+    while ($i -lt $chars.Length) {
+        $c = $chars[$i]
+
+        if ($inComment) {
+            if ($c -eq "`n") { $inComment = $false }
+            $i++
+            continue
+        }
+
+        if ($inString) {
+            # Mirrors Get-MaskedSql: '' is an escaped quote, \x is MySQL's backslash escape.
+            if ($c -eq '\' -and $i + 1 -lt $chars.Length) { $i += 2; continue }
+            if ($c -eq "'") {
+                if ($i + 1 -lt $chars.Length -and $chars[$i + 1] -eq "'") { $i += 2; continue }
+                $inString = $false; $i++; continue
+            }
+            if ($c -eq ';') { $hits += $i }
+            $i++
+            continue
+        }
+
+        if ($c -eq '-' -and $i + 1 -lt $chars.Length -and $chars[$i + 1] -eq '-') { $inComment = $true; $i += 2; continue }
+        if ($c -eq "'") { $inString = $true; $i++; continue }
+        $i++
+    }
+
+    return $hits
+}
+
 function Get-DepthMap {
     param([string]$Masked)
 
@@ -409,6 +454,19 @@ foreach ($s in $statements) {
     if ($s.Sql -notmatch ';\s*$') { $headerFindings += "$where ($($s.CheckId)): statement does not end with ';'" }
 }
 Add-Result -Group 'SQL' -Name 'Identity header shape' -Findings $headerFindings
+
+# A semicolon may only be the one that ends the statement. Anywhere inside a literal it is a
+# cut the executor makes and the reader cannot see; write the character as \\x{3B} in a regexp,
+# or choose a different one where SEPARATOR forbids an expression.
+$cutFindings = @()
+foreach ($s in $statements) {
+    foreach ($idx in @(Get-StringLiteralSemicolonIndexes -Sql $s.Sql)) {
+        $line = ([regex]::Matches($s.Sql.Substring(0, $idx), "`n")).Count + 1
+        $cutFindings += "$($s.File):$($s.Line) ($($s.CheckId)): ';' inside a string literal at statement line $line - the executor cuts the statement there"
+    }
+}
+Add-Result -Group 'SQL' -Name 'No semicolon inside a string literal' -Findings $cutFindings
+Set-Metric 'Statements cut by a literal semicolon' $cutFindings.Count
 
 $idFindings = @()
 $byId = $statements | Group-Object CheckId

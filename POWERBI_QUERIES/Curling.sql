@@ -427,7 +427,10 @@ FROM (
             WHEN (r.disciplineFK = 752 AND r.athletes_per_team <> 2)
               OR (r.disciplineFK = 753 AND r.athletes_per_team < 4)
             THEN CONCAT(COALESCE(tp.name, r.team_participant_id), ' = ', r.athletes_per_team)
-        END ORDER BY r.athletes_per_team SEPARATOR '; ') AS offending_teams
+        -- Separator ' | ' rather than '; ': the Pool cuts a statement at the first literal
+        -- semicolon even inside quotes, and SEPARATOR takes only a literal, so the character
+        -- itself has to change here where the entity patterns could escape theirs.
+        END ORDER BY r.athletes_per_team SEPARATOR ' | ') AS offending_teams
     FROM (
         SELECT
             s2.id AS statistic_id,
@@ -763,8 +766,11 @@ FROM (
         ts.name AS stage_name,
         tt.name AS template_name,
         t.name AS tournament_name,
+        -- Separator ' | ' rather than '; ' for the same reason as the roster check above: a
+        -- literal semicolon truncates the statement. The key is internal to the grouping, so
+        -- the character it joins on carries no meaning beyond being absent from the values.
         GROUP_CONCAT(CONCAT(ep.participantFK, '=', TRIM(r.value))
-                     ORDER BY ep.participantFK SEPARATOR '; ') AS score_key
+                     ORDER BY ep.participantFK SEPARATOR ' | ') AS score_key
     FROM event e
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
     JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'

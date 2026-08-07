@@ -1600,7 +1600,10 @@ FROM (
             -- The five rules below name a definite corruption. NON_ASCII_CHARACTER
             -- that follows cannot: it fires on a legitimate diacritic just as readily,
             -- so a corrupted name is reported under its own verdict as well.
-            IF(s.name LIKE '%&#%' OR LOWER(s.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp);', 'HTML_ENTITY', NULL),
+            -- The terminating semicolon is written \\x{3B} and must stay that way: the Pool cuts
+            -- a statement at the first literal ';' even inside quotes, which killed this check
+            -- outright. Two backslashes, because the SQL literal eats one before ICU sees it.
+            IF(s.name LIKE '%&#%' OR LOWER(s.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp)\\x{3B}', 'HTML_ENTITY', NULL),
             IF(HEX(s.name) LIKE '%EFBFBD%', 'REPLACEMENT_CHARACTER', NULL),
             IF(HEX(s.name) LIKE '%C2A0%', 'NON_BREAKING_SPACE', NULL),
             IF(HEX(s.name) LIKE '%E2808B%', 'ZERO_WIDTH_SPACE', NULL),

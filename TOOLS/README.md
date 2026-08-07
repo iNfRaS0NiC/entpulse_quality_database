@@ -906,10 +906,19 @@ sport identity there is nothing better to fall back on and both read `GLOBAL`.
 ```
 
 Parses every `.sql` file and registry in the repository and reports one line per check:
-identity headers, CheckID uniqueness, the DQ coverage contract, `UNION ALL` column counts,
-result-level `LIMIT`, registry-versus-SQL agreement, declared parameters, paste markers,
-registry row order, the sport index and `SPORTS/params.json`. Exit code 1 on any failure, so
-it drops into a hook or a pre-commit step unchanged.
+identity headers, semicolons inside string literals, CheckID uniqueness, the DQ coverage
+contract, `UNION ALL` column counts, result-level `LIMIT`, registry-versus-SQL agreement,
+declared parameters, paste markers, registry row order, the sport index and
+`SPORTS/params.json`. Exit code 1 on any failure, so it drops into a hook or a pre-commit
+step unchanged.
+
+The semicolon rule is the one whose absence cost the most. The executor cuts a statement at
+the first literal `;` without noticing that it sits inside a string, so the remainder never
+reaches MySQL and what does arrive ends on an unterminated literal. Nothing about the SQL
+looks wrong to a reader, and the whole name-format family — 32 approved checks across six
+sports — had been dying that way for as long as those statements existed. Write the character
+as `\\x{3B}` inside a regexp, or pick a different one where `SEPARATOR` accepts only a
+literal. A `;` in a comment is fine: comments are stripped before execution.
 
 `POWERBI_REGISTRY.md` declares that its rows sort by Sport and then by CheckID, so the order
 is checked rather than left to whoever appends the next row. Only the first displaced row is
