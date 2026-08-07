@@ -2152,6 +2152,13 @@ SELECT
         WHEN LOWER(TRIM(rt.name)) IN ({{ELIMINATION_ROUND_NAME_LIST}}) THEN 'yes'
         ELSE 'no'
     END AS knockout_expected,
+    (
+        SELECT GROUP_CONCAT(DISTINCT rt2.id ORDER BY rt2.id)
+        FROM round_type rt2
+        WHERE rt2.del = 'no'
+          AND LOWER(TRIM(rt2.name)) = LOWER(TRIM(rt.name))
+          AND rt2.knockout <> rt.knockout
+    ) AS correct_round_type_id,
     COUNT(DISTINCT e.id) AS event_count,
     SUBSTRING(GROUP_CONCAT(DISTINCT tt.name ORDER BY tt.name SEPARATOR ', '), 1, 200) AS templates,
     MIN(e.startdate) AS first_event_startdate,
@@ -2171,6 +2178,12 @@ SELECT
 -- id, so a sport storing the wrong member of a pair reports the whole population that uses
 -- it. That is the finding, not noise: the pair exists so that a round can be marked
 -- correctly, and using the wrong side is the defect this names.
+-- `correct_round_type_id` names the other side of that pair - the active round types sharing
+-- this name and carrying the flag this round should have. It is there because `round_type` is
+-- shared by every sport, so the flag on the reported row cannot be corrected without moving
+-- rounds in sports this run never looked at; what is repaired is the events, by pointing them
+-- at the id named here. It is `NULL` where no active counterpart exists, which is a different
+-- finding - the name has only the one variant and the flag is the only thing that can change.
 FROM round_type rt
 JOIN event e ON e.round_typeFK = rt.id AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -2190,7 +2203,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT rt.id) AS eligible_count,
     1 AS sort_order
 FROM round_type rt
@@ -2325,3 +2338,87 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-118
+    -- Name - EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND_DETAIL
+    -- What it does: Lists the events contested under a round type whose knockout flag contradicts the round, so the round types GLOBAL-DQ-097 names arrive as a repair list.
+    CASE
+        WHEN LOWER(TRIM(rt.name)) IN ({{ELIMINATION_ROUND_NAME_LIST}}) THEN 'ELIMINATION_ROUND_NOT_MARKED_KNOCKOUT'
+        ELSE 'NON_ELIMINATION_ROUND_MARKED_KNOCKOUT'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    ts.name AS tournament_stage_name,
+    t.name AS tournament_name,
+    tt.name AS template_name,
+    rt.id AS round_type_id,
+    rt.name AS round_type_name,
+    rt.knockout AS knockout_stored,
+    CASE
+        WHEN LOWER(TRIM(rt.name)) IN ({{ELIMINATION_ROUND_NAME_LIST}}) THEN 'yes'
+        ELSE 'no'
+    END AS knockout_expected,
+    (
+        SELECT GROUP_CONCAT(DISTINCT rt2.id ORDER BY rt2.id)
+        FROM round_type rt2
+        WHERE rt2.del = 'no'
+          AND LOWER(TRIM(rt2.name)) = LOWER(TRIM(rt.name))
+          AND rt2.knockout <> rt.knockout
+    ) AS correct_round_type_id,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The detail companion of `GLOBAL-DQ-097`, which reports one row per round type because that
+-- is where the defect lives. This one exists because that is not where it is repaired:
+-- `round_type` is shared by every sport, so the flag on the reported row cannot be corrected
+-- without moving rounds in sports the run never looked at, and what is changed instead is the
+-- events, one at a time, onto the id `correct_round_type_id` names. A summary row saying
+-- 67298 events is the size of the work; this is the work.
+-- The judgement is `GLOBAL-DQ-097`'s unchanged - the same two name lists, the same silence
+-- over a name in neither - so the two statements always agree on which round types are wrong
+-- and differ only in what one row stands for.
+-- No narrowing beyond the sport is written in, because the population is the summary's event
+-- count and that is a per-sport fact: a sport reporting a hundred events is read whole, and a
+-- sport reporting a hundred thousand activates the commented template or date filter and is
+-- read a template at a time. `WORKFLOW.md` owns that rule.
+FROM event e
+JOIN round_type rt ON rt.id = e.round_typeFK
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND (
+      (LOWER(TRIM(rt.name)) IN ({{ELIMINATION_ROUND_NAME_LIST}}) AND rt.knockout = 'no')
+      OR (LOWER(TRIM(rt.name)) IN ({{GROUP_ROUND_NAME_LIST}}) AND rt.knockout = 'yes')
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN round_type rt ON rt.id = e.round_typeFK
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND (
+      LOWER(TRIM(rt.name)) IN ({{ELIMINATION_ROUND_NAME_LIST}})
+      OR LOWER(TRIM(rt.name)) IN ({{GROUP_ROUND_NAME_LIST}})
+  )
+
+ORDER BY sort_order, event_startdate DESC;
