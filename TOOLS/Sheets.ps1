@@ -247,6 +247,14 @@ function New-SheetsMergePlan {
     }
     $usedTitles['Overview'] = $true
 
+    # Copied rather than used in place: adoption removes from it, and mutating the caller's
+    # state object would leave a second call on the same state seeing a different document.
+    $emptyTabs = @{}
+    if ($Existing -and $Existing.EmptyTabs) {
+        foreach ($title in @($Existing.EmptyTabs.Keys)) { $emptyTabs[[string]$title] = $true }
+    }
+    $emptyTabs.Remove('Overview')
+
     # A new document has one tab called Sheet1 and no Overview. The tab has to exist before
     # anything names it in a range - Google rejects the whole batch with "Unable to parse
     # range" otherwise - and Invoke-SheetsPlan sends every AddSheet before any write.
@@ -275,23 +283,80 @@ function New-SheetsMergePlan {
     # themselves, because a new Overview row carries a formula pointing at its check's tab and
     # cannot be written before that tab has a name. Resolving them in one pass also puts every
     # collision check in one place.
+    # The same pass sizes the grid. A tab is created with 1000 rows and Google will not grow
+    # one to meet a range that starts past its end: a 5 000-row result writes its first chunk,
+    # which stretches the grid to exactly that chunk, and the second chunk is then rejected
+    # for beginning beyond it - taking the whole batch, and so the whole document update, with
+    # it. Observed on the first full run of a sport, where nothing under the 2 000-row chunk
+    # size had ever reached it.
     $titleOf = @{}
+    $capacityOf = @{}
+    if ($Existing -and $Existing.RowCapacityOf) {
+        foreach ($key in $Existing.RowCapacityOf.Keys) { $capacityOf[[string]$key] = [int]$Existing.RowCapacityOf[$key] }
+    }
+
     foreach ($item in $Collected) {
         $runKey = Get-JobRunKey -Job $item.Job
+        $needed = $SheetsCheckTabResultRow + [math]::Min(@($item.Rows).Count, $MaxRows) + 1
+
         if ($tabOf.ContainsKey($runKey)) {
-            $titleOf[$runKey] = $tabOf[$runKey]
+            $title = $tabOf[$runKey]
+            $titleOf[$runKey] = $title
+
+            # Grown, never shrunk. Lowering rowCount deletes the rows below it, and on a tab
+            # somebody may have annotated that is not a decision this code gets to make.
+            $have = $(if ($capacityOf.ContainsKey($title)) { $capacityOf[$title] } else { 1000 })
+            $sheetId = $(if ($Existing -and $Existing.SheetIdOf -and $Existing.SheetIdOf.ContainsKey($title)) {
+                    [int]$Existing.SheetIdOf[$title]
+                }
+                else { $null })
+
+            if ($needed -gt $have -and $null -ne $sheetId) {
+                $plan += [pscustomobject]@{ Kind = 'Resize'; Sheet = $title; SheetId = $sheetId; Rows = $needed }
+                $capacityOf[$title] = $needed
+            }
             continue
         }
 
+        # A title already in the document blocks a new tab - except when the tab wearing it is
+        # empty. That is this code's own leftover: the tabs and the values travel in separate
+        # batches, so an update that fails on the second leaves a set of nameless tabs behind,
+        # and the next run cannot recognise them because a tab is matched by the Check ID in
+        # its own A2. Minting a second set beside them is what happened the first time a full
+        # sport was written: 99 empty tabs, then 99 more carrying a ~2.
         $wanted = Get-ShortSheetName -Name $(if ($item.Job.Name) { $item.Job.Name } else { $runKey })
         $title = $wanted
         $suffix = 2
-        while ($usedTitles.ContainsKey($title)) {
+        while ($usedTitles.ContainsKey($title) -and -not $emptyTabs.ContainsKey($title)) {
             $title = "$wanted~$suffix"
             $suffix++
         }
+
+        $adopted = $emptyTabs.ContainsKey($title)
+        # Claimed, so a second check cannot adopt the same leftover.
+        $emptyTabs.Remove($title)
         $usedTitles[$title] = $true
-        $plan += [pscustomobject]@{ Kind = 'AddSheet'; Sheet = $title }
+
+        if ($adopted) {
+            $have = $(if ($capacityOf.ContainsKey($title)) { $capacityOf[$title] } else { 1000 })
+            $sheetId = $(if ($Existing -and $Existing.SheetIdOf -and $Existing.SheetIdOf.ContainsKey($title)) {
+                    [int]$Existing.SheetIdOf[$title]
+                }
+                else { $null })
+            if ($needed -gt $have -and $null -ne $sheetId) {
+                $plan += [pscustomobject]@{ Kind = 'Resize'; Sheet = $title; SheetId = $sheetId; Rows = $needed }
+                $capacityOf[$title] = $needed
+            }
+        }
+        else {
+            $plan += [pscustomobject]@{
+                Kind  = 'AddSheet'
+                Sheet = $title
+                Rows  = [math]::Max($needed, 1000)
+            }
+            $capacityOf[$title] = [math]::Max($needed, 1000)
+        }
+
         $tabOf[$runKey] = $title
         $titleOf[$runKey] = $title
     }
@@ -609,9 +674,23 @@ function Read-SheetState {
     #>
     param([string]$SpreadsheetId)
 
-    $meta = Invoke-SheetsApi -Method Get -Path "$SpreadsheetId`?fields=properties.title,sheets.properties.title"
+    $meta = Invoke-SheetsApi -Method Get -Path ("$SpreadsheetId" +
+        '?fields=properties.title,sheets.properties.title,sheets.properties.sheetId' +
+        ',sheets.properties.gridProperties.rowCount')
     $titles = @($meta.sheets | ForEach-Object { [string]$_.properties.title })
     $hasOverview = ($titles -contains 'Overview')
+
+    # How many rows each tab's grid currently holds, and the id that identifies it. A write
+    # past the end of the grid is rejected outright - Google does not grow a sheet to meet a
+    # range that starts beyond it - so the plan has to know the capacity before it can decide
+    # to raise it, and updateSheetProperties names a sheet by id rather than by title.
+    $capacityOf = @{}
+    $idOf = @{}
+    foreach ($sheet in @($meta.sheets)) {
+        $title = [string]$sheet.properties.title
+        $capacityOf[$title] = [int]$sheet.properties.gridProperties.rowCount
+        $idOf[$title] = [int]$sheet.properties.sheetId
+    }
 
     # Only tabs that exist may be named in a range. Google rejects the whole batch with
     # "Unable to parse range" for one that does not, so a brand new document - which has a
@@ -626,6 +705,11 @@ function Read-SheetState {
     $rowOf = @{}
     $tabOf = @{}
     $emptyComment = @{}
+    # A tab holding no Check ID in its own A2. Almost always this run's predecessor: the tabs
+    # go in one batch and the values in another, so a document update that fails on the second
+    # leaves the first behind. Naming them lets the next run adopt its own leftovers instead
+    # of minting a second set beside them.
+    $emptyTabs = @{}
     $hasHeader = $false
 
     if ($reads.Count -gt 0) {
@@ -662,9 +746,12 @@ function Read-SheetState {
             $index = $i + $offset
             if ($index -ge $ranges.Count) { break }
             $rows = @($ranges[$index].values)
-            if ($rows.Count -eq 0 -or @($rows[0]).Count -eq 0) { continue }
-            $checkId = [string]@($rows[0])[0]
+
+            $checkId = ''
+            if ($rows.Count -gt 0 -and @($rows[0]).Count -gt 0) { $checkId = [string]@($rows[0])[0] }
+
             if (-not [string]::IsNullOrWhiteSpace($checkId)) { $tabOf[$checkId] = $checkTabs[$i] }
+            else { $emptyTabs[$checkTabs[$i]] = $true }
         }
     }
 
@@ -676,6 +763,9 @@ function Read-SheetState {
         OverviewRowOf     = $rowOf
         EmptyCommentOf    = $emptyComment
         TabOf             = $tabOf
+        EmptyTabs         = $emptyTabs
+        RowCapacityOf     = $capacityOf
+        SheetIdOf         = $idOf
     }
 }
 
@@ -728,11 +818,41 @@ function Invoke-SheetsPlan {
 
     $operations = @($Plan.Operations)
 
+    # Structure first, and in one call: a tab has to exist before a range names it, and a grid
+    # has to be big enough before a range reaches past its end. Both are rejected the same
+    # way, and a rejection takes the whole batch it travelled in.
     $adds = @($operations | Where-Object { $_.Kind -eq 'AddSheet' })
-    if ($adds.Count -gt 0) {
-        $requests = @($adds | ForEach-Object {
-                @{ addSheet = @{ properties = @{ title = $_.Sheet } } } })
-        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $requests } | Out-Null
+    $resizes = @($operations | Where-Object { $_.Kind -eq 'Resize' })
+    $structure = @()
+
+    foreach ($add in $adds) {
+        $rows = $(if ($add.PSObject.Properties.Name -contains 'Rows' -and $add.Rows) { [int]$add.Rows } else { 1000 })
+        $structure += @{
+            addSheet = @{
+                properties = @{
+                    title          = $add.Sheet
+                    gridProperties = @{ rowCount = $rows; columnCount = 26 }
+                }
+            }
+        }
+    }
+    foreach ($resize in $resizes) {
+        # By sheetId: updateSheetProperties identifies a sheet by id and not by title, and
+        # setting title here would rename the tab rather than find it. A tab this run is
+        # adding needs no resize, because it is created at the size it needs.
+        $structure += @{
+            updateSheetProperties = @{
+                properties = @{
+                    sheetId        = [int]$resize.SheetId
+                    gridProperties = @{ rowCount = [int]$resize.Rows }
+                }
+                fields     = 'gridProperties.rowCount'
+            }
+        }
+    }
+
+    if ($structure.Count -gt 0) {
+        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $structure } | Out-Null
     }
 
     $clears = @($operations | Where-Object { $_.Kind -eq 'Clear' })

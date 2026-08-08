@@ -2310,6 +2310,99 @@ Test-That 'a check with no tab gets no mirror pointing nowhere' {
         'no tab, no mirror'
 }
 
+Test-That 'a new tab is created at the size its result needs' {
+    # A tab is born with 1000 rows and Google will not grow one to meet a range starting past
+    # its end. A 5 000-row result writes its first chunk, which stretches the grid to exactly
+    # that chunk, and the second chunk is rejected for beginning beyond it - taking the whole
+    # batch, and so the whole document update, with it.
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'BIG_RESULT'; What = ''; Sql = 'SELECT 1;' }
+    $rows = @(1..5000 | ForEach-Object { [pscustomobject]@{ check_type = 'X'; id = $_ } })
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 5000 -Eligible 9000 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview')
+        RowCapacityOf = @{}; SheetIdOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
+        -Existing $existing -OutputFolder 'x'
+
+    $add = @($plan.Operations | Where-Object { $_.Kind -eq 'AddSheet' -and $_.Sheet -eq 'BIG_RESULT' })
+    Assert-Equal 1 $add.Count 'the tab is added'
+    Assert-True ($add[0].Rows -ge 5005) "created with room for the result; got $($add[0].Rows)"
+}
+
+Test-That 'an existing tab too small for this run is grown, by id, and never shrunk' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'GROWN'; What = ''; Sql = 'SELECT 1;' }
+    $rows = @(1..4000 | ForEach-Object { [pscustomobject]@{ check_type = 'X'; id = $_ } })
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 4000 -Eligible 9000 -Verdict 'New'))
+    $state = @{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'GROWN' }
+        Titles = @('Overview', 'GROWN'); SheetIdOf = @{ 'GROWN' = 771 }
+    }
+
+    $state['RowCapacityOf'] = @{ 'GROWN' = 1000 }
+    $grow = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
+        -Existing ([pscustomobject]$state) -OutputFolder 'x'
+    $resize = @($grow.Operations | Where-Object { $_.Kind -eq 'Resize' })
+    Assert-Equal 1 $resize.Count 'a tab short of room is grown'
+    Assert-Equal 771 $resize[0].SheetId 'named by sheetId, since updateSheetProperties cannot find one by title'
+    Assert-True ($resize[0].Rows -ge 4005) "to at least what the result needs; got $($resize[0].Rows)"
+
+    # Lowering rowCount deletes the rows below it, and on a tab somebody may have annotated
+    # that is not a decision this code gets to make.
+    $state['RowCapacityOf'] = @{ 'GROWN' = 20000 }
+    $keep = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
+        -Existing ([pscustomobject]$state) -OutputFolder 'x'
+    Assert-Equal 0 @($keep.Operations | Where-Object { $_.Kind -eq 'Resize' }).Count `
+        'a tab with room to spare is left as it is, never shrunk'
+}
+
+Test-That 'an empty tab left by a failed update is adopted, not duplicated' {
+    # The tabs and the values travel in separate batches. An update that fails on the second
+    # leaves nameless tabs behind, and the next run cannot recognise them because a tab is
+    # matched by the Check ID in its own A2. Observed live: 99 empty tabs, then 99 more
+    # carrying a ~2 beside them.
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'LEFTOVER'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{}
+        Titles = @('Overview', 'LEFTOVER')
+        EmptyTabs = @{ 'LEFTOVER' = $true }
+        RowCapacityOf = @{ 'LEFTOVER' = 1000 }; SheetIdOf = @{ 'LEFTOVER' = 42 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected `
+        @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
+
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'AddSheet' }).Count 'nothing is added'
+    Assert-True (@($plan.Operations | Where-Object { $_.Sheet -eq 'LEFTOVER' -and $_.Kind -eq 'Write' }).Count -gt 0) `
+        'the leftover is written into instead'
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Sheet -like '*~2' }).Count 'and no second set is minted'
+}
+
+Test-That 'two checks cannot adopt the same leftover' {
+    $first = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'SHARED'; What = ''; Sql = 'SELECT 1;' }
+    $second = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-004'; Name = 'SHARED'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @(
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'),
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-004' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $rows = @([pscustomobject]@{ check_type = 'X' })
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{}
+        Titles = @('Overview', 'SHARED'); EmptyTabs = @{ 'SHARED' = $true }
+        RowCapacityOf = @{ 'SHARED' = 1000 }; SheetIdOf = @{ 'SHARED' = 7 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected @(
+        [pscustomobject]@{ Job = $first; Rows = $rows },
+        [pscustomobject]@{ Job = $second; Rows = $rows })
+
+    $added = @($plan.Operations | Where-Object { $_.Kind -eq 'AddSheet' } | ForEach-Object { $_.Sheet })
+    Assert-Equal 1 $added.Count 'the second check gets a tab of its own'
+    Assert-Equal 'SHARED~2' $added[0] 'under a free title, since the leftover is already claimed'
+}
+
 Test-That 'a plan large enough to threaten the document says so' {
     $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'HUGE'; What = ''; Sql = 'SELECT 1;' }
     $rows = @(1..400 | ForEach-Object { [pscustomobject]@{ a = 1; b = 2; c = 3; d = 4; e = 5 } })
