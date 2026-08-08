@@ -1924,6 +1924,245 @@ Test-That 'an unreadable ledger is reported rather than overwritten' {
 Complete-Group
 
 # --------------------------------------------------------------------------------------
+# The live per-sport document
+#
+# Sheets.ps1 sends nothing, so all of this runs without a login. That is the point of the
+# split: the merge is where a permanent document can lose somebody's work, and a merge that
+# needs credentials to exercise is a merge nobody exercises.
+# --------------------------------------------------------------------------------------
+
+Start-Group 'Runner' 'Live sheet merge'
+
+function New-SheetFixtureEntry {
+    param([string]$CheckId, [int]$Findings, [int]$Eligible, [string]$Verdict, [string]$Status = 'Not reviewed')
+
+    return [pscustomobject]@{
+        Sport = 'Fixtureball'; CheckId = $CheckId; RunKey = $CheckId; Parameters = ''
+        Name = "NAME_$CheckId"; Priority = '3 Missing value'; Category = 'MISSING_VALUES'
+        What = 'a thing'; RowsCell = $Findings + 1; Signal = 'Actionable'; SignalReason = ''
+        Expected = 'Zero'; Findings = $Findings; Eligible = $Eligible
+        PrevFindings = $null; PrevEligible = $null; Change = $null
+        Verdict = $Verdict; PrevRunId = ''; SeededStatus = $Status
+    }
+}
+
+Test-That 'a column index becomes its spreadsheet letter' {
+    Assert-Equal 'A' (ConvertTo-SheetsColumnName -Index 1) 'first'
+    Assert-Equal 'Z' (ConvertTo-SheetsColumnName -Index 26) 'last single letter'
+    Assert-Equal 'AA' (ConvertTo-SheetsColumnName -Index 27) 'first double letter'
+    Assert-Equal 'U' (ConvertTo-SheetsColumnName -Index 21) 'the last Overview column'
+}
+
+Test-That 'the reviewer columns split the row into the spans a run may write' {
+    # Two ranges per row instead of eighteen. The API charges per range and a sport is fifty
+    # rows of twenty-one columns.
+    $spans = @(Split-SheetsWritableSpans -Width 21 -Reserved @(9, 10, 11))
+    Assert-Equal 2 $spans.Count 'two writable spans'
+    Assert-Equal 1 $spans[0].From 'first span starts at A'
+    Assert-Equal 8 $spans[0].To 'and stops before Status'
+    Assert-Equal 12 $spans[1].From 'second span resumes after Comment'
+    Assert-Equal 21 $spans[1].To 'and runs to the last column'
+}
+
+Test-That 'a check the document already holds is updated in the row it occupies' {
+    # Not at the position CheckID order would put it in. The reviewer may have sorted or
+    # moved the board, and a comment describes the row it sits on.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7 }
+        TabOf = @{}
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    $writes = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' })
+
+    Assert-Equal 2 $writes.Count 'two spans, written around the reviewer columns'
+    Assert-Equal 'A7:H7' $writes[0].Range 'the first span, on the row the check already has'
+    Assert-Equal 'L7:U7' $writes[1].Range 'the second span, resuming after Comment'
+    foreach ($write in $writes) {
+        Assert-True ($write.Range -notmatch '^[IJK]') "a run must never write $($write.Range)"
+    }
+}
+
+Test-That 'a check the document has never held is appended, seeded status and all' {
+    # The one time the reviewer columns are written: there is nothing of theirs to overwrite,
+    # and the seeded Status is what says the row needs no reading.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-009' -Findings 0 -Eligible 40 `
+                -Verdict 'Resolved' -Status 'No issue'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7 }
+        TabOf = @{}
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    # DQ-002 is in the document and not in this run, so it gets a Verdict cell of its own.
+    # The append is the whole-row write, and it is the one under test here.
+    $appended = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'A*:U*' -and $_.Range -ne 'A1:U1' })
+
+    Assert-Equal 1 $appended.Count 'one whole-row write'
+    Assert-Equal 'A8:U8' $appended[0].Range 'appended below the last row in use, not sorted into place'
+    Assert-Equal 'No issue' $appended[0].Values[0][8] 'the seeded status goes in on a new row'
+}
+
+Test-That 'the Overview header is written once and not on every run' {
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+
+    $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
+    $header = @($fresh.Operations | Where-Object { $_.Range -eq 'A1:U1' })
+    Assert-Equal 1 $header.Count 'an empty document gets its header'
+
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}; ResultRowsOf = @{}
+    }
+    $again = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    Assert-Equal 0 @($again.Operations | Where-Object { $_.Range -eq 'A1:U1' }).Count `
+        'and no later run rewrites it to change nothing'
+}
+
+Test-That 'a check that stopped running keeps its tab and is marked instead' {
+    # Deleting the row would take its comments with it, and those are the one thing in the
+    # document nobody can regenerate. Leaving it untouched would show last run's number as
+    # though it were this run's.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 2; 'Fixtureball-DQ-003' = 3 }
+        TabOf = @{}
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'DeleteSheet' }).Count 'nothing is deleted'
+    $marked = @($plan.Operations | Where-Object { $_.Range -eq 'T3:T3' })
+    Assert-Equal 1 $marked.Count 'the absent check gets its Verdict cell written'
+    Assert-Equal 'Not in this run' $marked[0].Values[0][0] 'saying it did not run rather than nothing'
+}
+
+Test-That 'a check tab is cleared past what it held before, not only past what it holds now' {
+    # Forty rows last run and three this one would otherwise leave thirty-seven stale rows
+    # under the three new ones, which reads as forty findings.
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'SHRANK'; What = ''; Sql = 'SELECT 1;' }
+    $rows = @(1..3 | ForEach-Object { [pscustomobject]@{ check_type = 'X'; id = $_ } })
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 2 }
+        TabOf = @{ 'Fixtureball-DQ-002' = 'SHRANK' }
+        ResultRowsOf = @{ 'Fixtureball-DQ-002' = 40 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
+        -Existing $existing -OutputFolder 'x'
+
+    $clear = @($plan.Operations | Where-Object { $_.Kind -eq 'Clear' })
+    Assert-Equal 1 $clear.Count 'one clear for the tab'
+    Assert-Equal 'A5:Z45' $clear[0].Range 'cleared to the previous run depth, not this one'
+}
+
+Test-That 'a check tab never writes the two cells the reviewer owns' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'OWNED'; What = 'a thing'; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 2 }
+        TabOf = @{ 'Fixtureball-DQ-002' = 'OWNED' }
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected `
+        @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) }) `
+        -Existing $existing -OutputFolder 'x'
+
+    $identity = @($plan.Operations | Where-Object { $_.Sheet -eq 'OWNED' -and $_.Range -like '*2' -and $_.Kind -eq 'Write' })
+    Assert-Equal 2 $identity.Count 'the identity row is written in two spans'
+    Assert-Equal 'A2:F2' $identity[0].Range 'up to What it does'
+    Assert-Equal 'I2:K2' $identity[1].Range 'resuming after Comment and Check By'
+}
+
+Test-That 'a result over the cap is cut and the tab says so on its own face' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'BIG'; What = ''; Sql = 'SELECT 1;' }
+    $rows = @(1..12 | ForEach-Object { [pscustomobject]@{ check_type = 'X'; id = $_ } })
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 12 -Eligible 900 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'BIG' }
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
+        -Existing $existing -OutputFolder "D:\out\run" -MaxRows 5
+
+    $note = @($plan.Operations | Where-Object { $_.Range -eq 'C3' })[0].Values[0][0]
+    Assert-True ($note -like '5 of 12 rows*') "the tab should name both counts; it said '$note'"
+    Assert-True ($note -like "*D:\out\run*") 'and where the full result is'
+
+    # Kind matters as well as the range: the clear that precedes the block starts at A5 too.
+    $written = @($plan.Operations | Where-Object {
+            $_.Sheet -eq 'BIG' -and $_.Kind -eq 'Write' -and $_.Range -like 'A5:*' })
+    Assert-Equal 1 $written.Count 'one result block'
+    Assert-Equal 6 $written[0].Values.Count 'a header plus five rows, not twelve'
+}
+
+Test-That 'a result under the cap carries no truncation note' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'SMALL'; What = ''; Sql = 'SELECT 1;' }
+    $rows = @(1..3 | ForEach-Object { [pscustomobject]@{ check_type = 'X'; id = $_ } })
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'SMALL' }
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
+        -Existing $existing -OutputFolder 'x' -MaxRows 20000
+
+    Assert-Equal '' @($plan.Operations | Where-Object { $_.Range -eq 'C3' })[0].Values[0][0] `
+        'nothing was cut, so the tab says nothing'
+}
+
+Test-That 'a plan large enough to threaten the document says so' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'HUGE'; What = ''; Sql = 'SELECT 1;' }
+    $rows = @(1..400 | ForEach-Object { [pscustomobject]@{ a = 1; b = 2; c = 3; d = 4; e = 5 } })
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 400 -Eligible 900 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'HUGE' }
+        ResultRowsOf = @{}
+    }
+
+    $under = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
+        -Existing $existing -OutputFolder 'x'
+    Assert-Equal '' $under.Warning 'an ordinary run says nothing'
+
+    # The threshold is a script variable, so a test can put it below the fixture rather than
+    # building a two-thousand-row one to reach eight million cells.
+    $keep = $SheetsCellBudgetWarning
+    $SheetsCellBudgetWarning = 100
+    try {
+        $over = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
+            -Existing $existing -OutputFolder 'x'
+    }
+    finally { $SheetsCellBudgetWarning = $keep }
+
+    Assert-True ($over.Warning -like '*10 000 000*') "the warning should name the real cap; it said '$($over.Warning)'"
+    Assert-True ($over.Cells -gt 100) 'and the plan should count what it writes'
+}
+
+Test-That 'a tab the document lacks is added before it is written to' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'BRAND_NEW'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}; ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected `
+        @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) }) `
+        -Existing $existing -OutputFolder 'x'
+
+    $ops = @($plan.Operations)
+    $addAt = [array]::IndexOf($ops, @($ops | Where-Object { $_.Kind -eq 'AddSheet' })[0])
+    $writeAt = [array]::IndexOf($ops, @($ops | Where-Object { $_.Sheet -eq 'BRAND_NEW' -and $_.Kind -eq 'Write' })[0])
+    Assert-True ($addAt -ge 0) 'the tab is added'
+    Assert-True ($addAt -lt $writeAt) 'and added before anything is written into it'
+}
+
+Complete-Group
+
+# --------------------------------------------------------------------------------------
 # Approved DQ semantic regressions
 #
 # Test-Package.ps1 intentionally stops at static package consistency; it cannot execute the

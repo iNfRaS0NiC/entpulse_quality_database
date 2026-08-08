@@ -293,6 +293,11 @@ if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
 $LedgerDirName = 'RUNS'
 $LedgerVersion = 1
 
+# The live per-sport document. Kept in its own file rather than added to this one: the merge
+# is where the defects live and it has to be testable without a login, so nothing in Sheets.ps1
+# reaches the network. It is dot-sourced rather than run, so -DotSourceOnly picks it up too.
+. (Join-Path $PSScriptRoot 'Sheets.ps1')
+
 # How far the audited population may move before a raw finding delta stops being comparable.
 # The database is corrected while it is being read, so small drift is the normal state and
 # flagging it would make the column noise; a population that moved by more than this makes

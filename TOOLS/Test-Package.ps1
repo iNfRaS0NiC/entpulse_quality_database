@@ -359,7 +359,8 @@ $expected = @(
     'WORKFLOW.md', 'POWERBI.md', 'POWERBI_REGISTRY.md', 'VALIDATION_REPORT.md',
     'SPORTS/_TEMPLATE.md', 'SPORTS/params.json',
     'GLOBAL_QUERIES/README.md', 'GLOBAL_DQ/README.md',
-    'TOOLS/README.md', 'TOOLS/Run-Query.ps1', 'TOOLS/Test-Package.ps1', 'TOOLS/Test-Tools.ps1'
+    'TOOLS/README.md', 'TOOLS/Run-Query.ps1', 'TOOLS/Sheets.ps1', 'TOOLS/Test-Package.ps1',
+    'TOOLS/Test-Tools.ps1'
 )
 $missing = @($expected | Where-Object { -not (Test-Path -LiteralPath (Join-Path $RepoRoot $_)) } |
     ForEach-Object { "missing: $_" })

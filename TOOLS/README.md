@@ -9,9 +9,12 @@ result to the screen, to CSV/JSON, or to a single `.xlsx` workbook.
 and fails when the package contradicts its own rules. Run it after changing SQL, a registry
 row or a paste marker; see "Package validation" below.
 
-`Test-Tools.ps1` tests these two scripts themselves - selection, parameter expansion, the
-catalogue parser and the workbook writer. Run it after changing either script; see "Tool
-tests" below.
+`Sheets.ps1` computes what a run would write into the live per-sport Google Sheet. It is
+dot-sourced by the runner and sends nothing itself; see "The live per-sport document".
+
+`Test-Tools.ps1` tests these scripts themselves - selection, parameter expansion, the
+catalogue parser, the workbook writer and the sheet merge. Run it after changing any of them;
+see "Tool tests" below.
 
 The tools change only how a statement reaches the server. Every rule about what a
 statement may contain still lives where it did:
@@ -1028,6 +1031,64 @@ destroy the only copy of it, and the history is the reason the file exists.
 Nothing prunes it. A sport running its catalogue weekly adds a few dozen small entries a
 week, which is years away from being a problem, and a silent cap would make a history read as
 complete when it was not.
+
+## The live per-sport document
+
+Reviewers work in Google Sheets, and until now every run produced a new workbook to upload.
+The numbers survived that — the ledger above is what carries them — but the `Status` and
+`Comment` a reviewer typed stayed in the previous Sheet, which is the complaint the whole of
+this began with. A new file per run strands review state by construction.
+
+So the destination becomes **one permanent Sheet per sport**, updated in place. `Sheets.ps1`
+decides what that update is. It holds no network code and sends nothing: given what a run
+produced and what the document already contains, it returns the list of operations that would
+bring the document up to date. The transport is separate on purpose — the merge is where a
+permanent document can lose somebody's work, and a merge that needs a login to exercise is a
+merge nobody exercises.
+
+**Status is at `I`, `Check By` at `J`, `Comment` at `K`, and a check tab's own two are `G2`
+and `H2`. A run never writes any of them.** That is the whole protection, and it is a better
+one than locking: Sheets has no lock to take, and two people editing at once is the normal
+case. The runner writes its own columns in two spans per row and steps over the reviewer's.
+The only exception is a row for a check the document has never held, where there is nothing
+of anyone's to overwrite and the seeded `Status` is what says the row needs no reading.
+
+Two rules follow from the document outliving the run, and both are easy to get wrong:
+
+- **A row is found by its CheckID, never by its position.** Writing the Overview as a
+  positional block is the obvious implementation and it corrupts the board: adding one check
+  in the middle shifts every row below it, and each comment then describes the check above
+  the one it was written for. An existing check is updated in the row it already occupies —
+  wherever the reviewer has since sorted it to — and a new one is appended at the bottom.
+  Sorting is theirs to do and theirs to keep.
+- **A tab is never deleted.** A check that stopped running keeps its tab and its comments,
+  and its `Verdict` reads `Not in this run` so the board does not show last run's number as
+  though it were this one's. Deleting it would throw away the one thing in the document
+  nobody can regenerate.
+
+A check tab is also cleared further than it is written. Forty rows last run and three this
+one would otherwise leave thirty-seven stale rows under the three new ones, which reads as
+forty findings.
+
+### How much of a result reaches the document
+
+Google caps a spreadsheet at **10 million cells**, and the cap is per document, not per tab —
+a sport is around fifty checks in one permanent file. A 14 000-row missing-value check is
+about 1% of that and writes in full; the problem is the handful of statements that return six
+figures, where one check can take a sixth of the document. Sheets is also slow to open and
+scroll well below the cap, and writing that many cells over the API costs minutes per run.
+
+So a check writes at most **20 000 rows** into the document, and a tab that was cut says so
+on its own face — `20 000 of 214 338 rows. The full result is in <run folder>` — because the
+person reading it a week later has only the tab. The full result is in the `.xlsx` snapshot,
+which is still written and still frozen per run.
+
+That number is a round figure standing in for a distribution nobody has measured. Once
+`RUNS/<Sport>.json` holds two runs it carries `findings` for every check of every sport, and
+the cap should be re-derived from that rather than left as a guess. A plan that would write
+more than 8 million cells prints a warning rather than truncating itself: the answers are to
+drop a check from the document, tighten a scope or split the sport, and none of those is the
+runner's to choose silently.
 
 ### It is a record, not evidence
 
