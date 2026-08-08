@@ -219,7 +219,8 @@ function New-SheetsMergePlan {
         $Collected,
         $Existing,
         [string]$OutputFolder,
-        [int]$MaxRows = $SheetsMaxRowsPerCheck
+        [int]$MaxRows = $SheetsMaxRowsPerCheck,
+        [switch]$Complete
     )
 
     $plan = @()
@@ -384,7 +385,14 @@ function New-SheetsMergePlan {
     # A check the document holds and this run did not produce. Not deleted and not left
     # looking current: the Verdict column says it did not run, so a reviewer reading the board
     # is not told last run's number as though it were this one's.
+    #
+    # Only a run that was meant to cover the sport may say this, which is what -Complete
+    # carries. A partial run - one CheckID after a reported fix, a wildcard, a capped batch -
+    # did not fail to produce the other ninety checks; it was never asked for them, and
+    # marking them would repaint the whole board every time somebody re-ran one thing. The
+    # rows it leaves alone keep the last full run's numbers, which is what they are.
     foreach ($runKey in @($rowOf.Keys)) {
+        if (-not $Complete) { break }
         if ($seen.ContainsKey($runKey)) { continue }
         $verdictColumn = [array]::IndexOf($SheetsOverviewColumns, 'Verdict') + 1
         $plan += [pscustomobject]@{

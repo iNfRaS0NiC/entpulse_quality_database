@@ -2065,12 +2065,30 @@ Test-That 'a check that stopped running keeps its tab and is marked instead' {
         TabOf = @{}
         ResultRowsOf = @{}
     }
-    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x' -Complete
 
     Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'DeleteSheet' }).Count 'nothing is deleted'
     $marked = @($plan.Operations | Where-Object { $_.Range -eq 'T3:T3' })
     Assert-Equal 1 $marked.Count 'the absent check gets its Verdict cell written'
     Assert-Equal 'Not in this run' $marked[0].Values[0][0] 'saying it did not run rather than nothing'
+}
+
+Test-That 'a partial run does not repaint the checks it was never asked for' {
+    # Re-running one check after a reported fix would otherwise mark the other ninety Not in
+    # this run, and the board would flip-flop on every such run. A partial run did not fail
+    # to produce them; it was never asked.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 2; 'Fixtureball-DQ-003' = 3 }
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview')
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Range -eq 'T3:T3' }).Count `
+        'the row this run was not asked about keeps the last full run numbers'
+    Assert-True (@($plan.Operations | Where-Object { $_.Range -like '*2:*2' }).Count -gt 0) `
+        'while the check that did run is still updated'
 }
 
 Test-That 'a check tab is cleared to its end, not to a depth this code believes it has' {

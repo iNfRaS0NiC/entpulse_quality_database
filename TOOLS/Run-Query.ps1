@@ -3258,8 +3258,14 @@ function Save-RunSheet {
             $enriched += $copy
         }
 
+        # A run is complete when it was asked for the sport's whole approved catalogue and
+        # nothing capped it. Only such a run may mark the checks it did not produce; anything
+        # narrower was never asked for them. A skipped check is not affected either way - it
+        # has a summary row of its own and reports SKIPPED.
+        $complete = ($RunAll -and $MaxChecks -le 0)
+
         $plan = New-SheetsMergePlan -Summary $enriched -Collected $Collected -Existing $state `
-            -OutputFolder $OutputFolder
+            -OutputFolder $OutputFolder -Complete:$complete
         if ($plan.Warning) { Write-Host "  $($plan.Warning)" -ForegroundColor Yellow }
 
         $sent = Invoke-SheetsPlan -SpreadsheetId $id -Plan $plan

@@ -1079,6 +1079,13 @@ Two rules follow from the document outliving the run, and both are easy to get w
   though it were this one's. Deleting it would throw away the one thing in the document
   nobody can regenerate.
 
+Only a run asked for the sport's whole catalogue — `-RunAll`, uncapped — marks the checks it
+did not produce. A partial run did not fail to produce the other ninety; it was never asked
+for them, and marking them would repaint the whole board every time somebody re-ran one check
+after a reported fix. The rows such a run leaves alone keep the last full run's numbers, which
+is what they are. A *skipped* check is unaffected either way: it has a summary row of its own
+and reports `SKIPPED`.
+
 A check tab is also cleared to its end before it is written, rather than to a depth this code
 believes it has. Forty rows last run and three this one would otherwise leave thirty-seven
 stale rows under the three new ones, which reads as forty findings — and a remembered depth is
