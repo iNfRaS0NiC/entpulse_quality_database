@@ -2107,7 +2107,7 @@ Test-That 'a check tab is cleared to its end, not to a depth this code believes 
     $plan = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
         -Existing $existing -OutputFolder 'x'
 
-    $clear = @($plan.Operations | Where-Object { $_.Kind -eq 'Clear' })
+    $clear = @($plan.Operations | Where-Object { $_.Kind -eq 'Clear' -and $_.Sheet -eq 'SHRANK' })
     Assert-Equal 1 $clear.Count 'one clear for the tab'
     Assert-Equal 'A5:Z' $clear[0].Range 'open ended, so nothing stale can survive below the new rows'
 
@@ -2156,10 +2156,14 @@ Test-That 'a check tab never writes the two cells the reviewer owns' {
         @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) }) `
         -Existing $existing -OutputFolder 'x'
 
-    $identity = @($plan.Operations | Where-Object { $_.Sheet -eq 'OWNED' -and $_.Range -like '*2' -and $_.Kind -eq 'Write' })
+    # The spans only; C2 is written separately as the link to the statement.
+    $identity = @($plan.Operations | Where-Object {
+            $_.Sheet -eq 'OWNED' -and $_.Kind -eq 'Write' -and $_.Range -match '^[A-Z]2:[A-Z]2$' })
     Assert-Equal 2 $identity.Count 'the identity row is written in two spans'
     Assert-Equal 'A2:F2' $identity[0].Range 'up to What it does'
     Assert-Equal 'I2:K2' $identity[1].Range 'resuming after Comment and Check By'
+    Assert-Equal 0 @($plan.Operations | Where-Object {
+            $_.Sheet -eq 'OWNED' -and $_.Range -in @('G2', 'H2') }).Count 'and never through G2 or H2'
 }
 
 Test-That 'a result over the cap is cut and the tab says so on its own face' {
@@ -2217,7 +2221,8 @@ Test-That 'two checks abbreviating to one title do not collide' {
         [pscustomobject]@{ Job = $first; Rows = $rows },
         [pscustomobject]@{ Job = $second; Rows = $rows })
 
-    $added = @($plan.Operations | Where-Object { $_.Kind -eq 'AddSheet' } | ForEach-Object { $_.Sheet })
+    $added = @($plan.Operations | Where-Object { $_.Kind -eq 'AddSheet' -and $_.Sheet -ne 'SQL' } |
+        ForEach-Object { $_.Sheet })
     Assert-Equal 2 $added.Count 'both tabs are added'
     Assert-Equal 2 (@($added | Select-Object -Unique)).Count 'and under different titles'
     Assert-True ($added -contains 'SAME_NAME~2') "the second is suffixed; got $($added -join ', ')"
@@ -2375,7 +2380,8 @@ Test-That 'an empty tab left by a failed update is adopted, not duplicated' {
     $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected `
         @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
 
-    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'AddSheet' }).Count 'nothing is added'
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'AddSheet' -and $_.Sheet -ne 'SQL' }).Count `
+        'no check tab is added'
     Assert-True (@($plan.Operations | Where-Object { $_.Sheet -eq 'LEFTOVER' -and $_.Kind -eq 'Write' }).Count -gt 0) `
         'the leftover is written into instead'
     Assert-Equal 0 @($plan.Operations | Where-Object { $_.Sheet -like '*~2' }).Count 'and no second set is minted'
@@ -2398,7 +2404,8 @@ Test-That 'two checks cannot adopt the same leftover' {
         [pscustomobject]@{ Job = $first; Rows = $rows },
         [pscustomobject]@{ Job = $second; Rows = $rows })
 
-    $added = @($plan.Operations | Where-Object { $_.Kind -eq 'AddSheet' } | ForEach-Object { $_.Sheet })
+    $added = @($plan.Operations | Where-Object { $_.Kind -eq 'AddSheet' -and $_.Sheet -ne 'SQL' } |
+        ForEach-Object { $_.Sheet })
     Assert-Equal 1 $added.Count 'the second check gets a tab of its own'
     Assert-Equal 'SHARED~2' $added[0] 'under a free title, since the leftover is already claimed'
 }
@@ -2444,6 +2451,91 @@ Test-That 'a Sheet1 somebody has used is left alone, and a front Overview is not
         'a tab with anything in it is nobody else to delete'
     Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'MoveSheet' }).Count `
         'and an Overview already at the front is not moved to change nothing'
+}
+
+Test-That 'a check tab carries its header row and both of its links' {
+    # Without row 1 the tab shows "1 Structure" and a category over nothing, and a reader has
+    # to go back to Overview to learn what D2 and E2 are.
+    $job = [pscustomobject]@{
+        CheckId = 'Fixtureball-DQ-002'; Name = 'LINKED'; What = 'a thing'
+        Sql = "SELECT 1`nFROM t;"
+    }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected `
+        @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
+
+    $header = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A1:K1' })
+    Assert-Equal 1 $header.Count 'the header row is written'
+    Assert-Equal 'Priority' $header[0].Values[0][3] 'so D names what D2 holds'
+    Assert-Equal 'Category' $header[0].Values[0][4] 'and E names what E2 holds'
+
+    $back = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A3' })
+    Assert-Equal 1 $back.Count 'A3 carries the way back'
+    Assert-True ($back[0].Values[0][0] -like '*Return to Overview*') 'labelled for a reader'
+    Assert-Equal $false $back[0].Raw 'as a formula, or it arrives as the text of one'
+
+    $sql = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'C2' })
+    Assert-Equal 1 $sql.Count 'C2 links forward to the statement'
+    Assert-True ($sql[0].Values[0][0] -like '*range=A1*') 'at the block this check owns'
+}
+
+Test-That 'the SQL tab holds every statement, each linking back to its results' {
+    $first = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'ONE'; What = ''; Sql = "SELECT 1`nFROM t;" }
+    $second = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-004'; Name = 'TWO'; What = ''; Sql = "SELECT 2`nFROM t;" }
+    $summary = @(
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'),
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-004' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $rows = @([pscustomobject]@{ check_type = 'X' })
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected @(
+        [pscustomobject]@{ Job = $first; Rows = $rows },
+        [pscustomobject]@{ Job = $second; Rows = $rows })
+
+    Assert-Equal 1 @($plan.Operations | Where-Object { $_.Kind -eq 'AddSheet' -and $_.Sheet -eq 'SQL' }).Count 'the SQL tab is added'
+    $block = @($plan.Operations | Where-Object { $_.Sheet -eq 'SQL' -and $_.Kind -eq 'Write' -and $_.Raw -ne $false })
+    Assert-Equal 1 $block.Count 'one block write for the whole tab'
+    $flat = (@($block[0].Values) | ForEach-Object { @($_)[0] }) -join "`n"
+    Assert-True ($flat -like '*SELECT 1*') 'the first statement is on it'
+    Assert-True ($flat -like '*SELECT 2*') 'and so is the second'
+    Assert-True ($flat -like '*FROM t;*') 'keeping the line breaks it was written with'
+
+    $backs = @($plan.Operations | Where-Object { $_.Sheet -eq 'SQL' -and $_.Raw -eq $false })
+    Assert-Equal 2 $backs.Count 'each block links back to its results'
+    Assert-True ($backs[0].Values[0][0] -like '*Fixtureball-DQ-002*') 'labelled with the CheckID'
+
+    # The two C2 links must point at different blocks, or every check opens the same statement.
+    $c2 = @($plan.Operations | Where-Object { $_.Range -eq 'C2' } | ForEach-Object { $_.Values[0][0] })
+    Assert-Equal 2 (@($c2 | Select-Object -Unique)).Count 'and the two forward links differ'
+}
+
+Test-That 'the signal pair is hidden only on the run that creates the board' {
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+
+    $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
+    $hide = @($fresh.Operations | Where-Object { $_.Kind -eq 'HideColumns' })
+    Assert-Equal 1 $hide.Count 'hidden when Overview is created'
+    Assert-Equal 12 $hide[0].From 'from L'
+    Assert-Equal 13 $hide[0].To 'to M'
+
+    # Somebody who unhides them has decided something; putting them back every week is the
+    # same defect as overwriting a comment.
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
+    }
+    Assert-Equal 0 @((New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
+                -OutputFolder 'x').Operations | Where-Object { $_.Kind -eq 'HideColumns' }).Count `
+        'and never re-hidden afterwards'
 }
 
 Test-That 'a plan large enough to threaten the document says so' {

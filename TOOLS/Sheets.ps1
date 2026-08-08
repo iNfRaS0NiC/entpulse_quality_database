@@ -116,6 +116,24 @@ $SheetsOverviewColumns = @(
 $SheetsOverviewReviewerColumns = @(9, 10, 11)
 $SheetsCheckTabReviewerColumns = @(7, 8)
 
+# Row 1 of a check tab. Without it D2 and E2 hold "1 Structure" and "NO_RELATED_RECORDS" over
+# nothing, and a reader has to go back to Overview to learn what they are.
+$SheetsCheckTabColumns = @(
+    'Check ID', 'Check Name', 'SQL Used', 'Priority', 'Category', 'What it does',
+    'Comment', 'Check By', 'Signal', 'Signal reason', 'Parameters')
+
+# Signal and Signal reason are the runner's own classification, settled before the run and
+# unchanged by reading it, so the reviewer opens on the columns that are theirs. Hidden once,
+# on the run that creates Overview, and never re-hidden: somebody who unhides them has decided
+# something, and putting them back every week is the same defect as overwriting a comment.
+$SheetsOverviewHiddenColumns = @(12, 13)
+
+# The tab holding every statement the run sent, and the name of the token a link to it uses.
+# A link needs the target tab's numeric id, which is not known until the tab has been created,
+# so the plan writes the token and the transport resolves it once the ids come back.
+$SheetsSqlTabName = 'SQL'
+$SheetsGidToken = '{{GID:%NAME%}}'
+
 # Where a check tab's result block starts. Rows 1 and 2 are the identity, row 3 the link back
 # to Overview and any truncation note, row 4 blank so the results below stay a self-contained
 # block for sorting and filtering.
@@ -163,6 +181,17 @@ function Split-SheetsWritableSpans {
     # the caller the multi-element one: @(...) around the call then sees a single item holding
     # the array rather than the spans themselves.
     return $spans
+}
+
+function New-SheetsGidLink {
+    # A link to another tab of the same document, and optionally to a cell in it. The tab is
+    # named rather than numbered because a tab this run is creating has no number yet;
+    # Invoke-SheetsPlan substitutes the real one once the structure batch has answered.
+    param([string]$Sheet, [string]$Text, [string]$Cell)
+
+    $target = '#gid=' + ($SheetsGidToken -replace '%NAME%', $Sheet)
+    if ($Cell) { $target += '&range=' + $Cell }
+    return '=HYPERLINK("{0}","{1}")' -f $target, ($Text -replace '"', '""')
 }
 
 function New-SheetsOverviewRow {
@@ -260,6 +289,12 @@ function New-SheetsMergePlan {
     # range" otherwise - and Invoke-SheetsPlan sends every AddSheet before any write.
     if (-not $Existing -or -not $Existing.HasOverviewSheet) {
         $plan += [pscustomobject]@{ Kind = 'AddSheet'; Sheet = 'Overview' }
+        $plan += [pscustomobject]@{
+            Kind  = 'HideColumns'
+            Sheet = 'Overview'
+            From  = ($SheetsOverviewHiddenColumns | Measure-Object -Minimum).Minimum
+            To    = ($SheetsOverviewHiddenColumns | Measure-Object -Maximum).Maximum
+        }
     }
 
     # Google gives a new spreadsheet one tab called Sheet1, and it is nobody's: it exists
@@ -501,7 +536,15 @@ function New-SheetsMergePlan {
         $cells += 1
     }
 
-    # Then the check tabs.
+    # Then the check tabs, and the SQL tab built alongside them.
+    #
+    # One tab holding every statement, rather than the statement in each check tab's own C2.
+    # A cell of a few thousand characters displays as nothing and pushes the result table out
+    # of shape, and the statement keeps the line breaks it was written with here. Each block
+    # links back to the results it produced, and each check's C2 links forward to its block.
+    $sqlLines = @()
+    $sqlBackLinks = @()
+
     foreach ($item in $Collected) {
         $runKey = Get-JobRunKey -Job $item.Job
         $rows = @($item.Rows)
@@ -511,6 +554,29 @@ function New-SheetsMergePlan {
 
         # Settled in the pass above, along with any AddSheet it needed.
         $title = $titleOf[$runKey]
+
+        # This check's block on the SQL tab: a heading row that links back to these results,
+        # then the statement one line per row, then a blank row. The heading row's number is
+        # what C2 above links forward to.
+        $sqlRow = $sqlLines.Count + 1
+        $sqlBackLinks += [pscustomobject]@{
+            Row   = $sqlRow
+            Value = (New-SheetsGidLink -Sheet $title -Text ([string]$item.Job.CheckId))
+        }
+        $sqlLines += , @('')
+        foreach ($line in @([string]$item.Job.Sql -split "`r?`n")) { $sqlLines += , @($line) }
+        $sqlLines += , @('')
+
+        # Row 1 names the columns. Unlike Overview's header it is rewritten every run rather
+        # than seeded once, because none of it is anybody's: the reviewer's cells on a check
+        # tab are G2 and H2, one row below their headings.
+        $plan += [pscustomobject]@{
+            Kind   = 'Write'
+            Sheet  = $title
+            Range  = (New-SheetsRange -FromColumn 1 -FromRow 1 -ToColumn $SheetsCheckTabColumns.Count -ToRow 1)
+            Values = @(, $SheetsCheckTabColumns)
+        }
+        $cells += $SheetsCheckTabColumns.Count
 
         # Row 2 holds the identity, and G2/H2 in the middle of it belong to the reviewer, so
         # the same two-span treatment applies as on Overview.
@@ -537,6 +603,26 @@ function New-SheetsMergePlan {
                 Values = @(, $slice)
             }
             $cells += $slice.Count
+        }
+
+        # C2 and A3, the two links a check tab carries. Both are formulas, so both go in the
+        # USER_ENTERED batch, and both land after the row that wrote plain text into C2.
+        #
+        # A3 rather than row 2, and row 4 left blank below it, so the result table starting at
+        # row 5 stays a self-contained block that sorts and filters on its own.
+        $plan += [pscustomobject]@{
+            Kind   = 'Write'
+            Raw    = $false
+            Sheet  = $title
+            Range  = 'C2'
+            Values = @(, @((New-SheetsGidLink -Sheet $SheetsSqlTabName -Text 'SQL' -Cell ('A' + $sqlRow))))
+        }
+        $plan += [pscustomobject]@{
+            Kind   = 'Write'
+            Raw    = $false
+            Sheet  = $title
+            Range  = 'A3'
+            Values = @(, @((New-SheetsGidLink -Sheet 'Overview' -Text 'Return to Overview')))
         }
 
         # What was written, and what was not. A truncated tab says so on its own face rather
@@ -586,6 +672,54 @@ function New-SheetsMergePlan {
         }
     }
 
+    # The SQL tab, once the blocks are known. Rewritten whole every run: a statement can
+    # change between runs, and unlike a check tab there is nothing on it that is anybody's.
+    if ($sqlLines.Count -gt 0) {
+        $sqlNeeded = $sqlLines.Count + 10
+        if ($usedTitles.ContainsKey($SheetsSqlTabName)) {
+            $have = $(if ($capacityOf.ContainsKey($SheetsSqlTabName)) { $capacityOf[$SheetsSqlTabName] } else { 1000 })
+            $sqlId = $(if ($Existing -and $Existing.SheetIdOf -and $Existing.SheetIdOf.ContainsKey($SheetsSqlTabName)) {
+                    [int]$Existing.SheetIdOf[$SheetsSqlTabName]
+                }
+                else { $null })
+            if ($sqlNeeded -gt $have -and $null -ne $sqlId) {
+                $plan += [pscustomobject]@{
+                    Kind = 'Resize'; Sheet = $SheetsSqlTabName; SheetId = $sqlId; Rows = $sqlNeeded
+                }
+            }
+        }
+        else {
+            $plan += [pscustomobject]@{
+                Kind  = 'AddSheet'
+                Sheet = $SheetsSqlTabName
+                Rows  = [math]::Max($sqlNeeded, 1000)
+            }
+            $usedTitles[$SheetsSqlTabName] = $true
+        }
+
+        $plan += [pscustomobject]@{ Kind = 'Clear'; Sheet = $SheetsSqlTabName; Range = 'A1:B' }
+        $plan += [pscustomobject]@{
+            Kind   = 'Write'
+            Sheet  = $SheetsSqlTabName
+            Range  = (New-SheetsRange -FromColumn 1 -FromRow 1 -ToColumn 1 -ToRow $sqlLines.Count)
+            Values = $sqlLines
+        }
+        $cells += $sqlLines.Count
+
+        # The heading rows are links, so they go in the USER_ENTERED batch and land on top of
+        # the blank cells the block write leaves for them.
+        foreach ($back in $sqlBackLinks) {
+            $plan += [pscustomobject]@{
+                Kind   = 'Write'
+                Raw    = $false
+                Sheet  = $SheetsSqlTabName
+                Range  = ('A{0}' -f $back.Row)
+                Values = @(, @($back.Value))
+            }
+        }
+        $cells += $sqlBackLinks.Count
+    }
+
     # A run rewrites essentially every cell it owns, so what this plan writes is a fair proxy
     # for what the document will hold. Reported rather than acted on: the answers are to drop
     # a check from the document, tighten a scope or split the sport, and none of those is the
@@ -596,12 +730,18 @@ function New-SheetsMergePlan {
             'and Sheets is slow well below that.') -f $cells
     }
 
+    $known = @{}
+    if ($Existing -and $Existing.SheetIdOf) {
+        foreach ($key in $Existing.SheetIdOf.Keys) { $known[[string]$key] = [int]$Existing.SheetIdOf[$key] }
+    }
+
     return [pscustomobject]@{
-        Operations = $plan
-        Cells      = $cells
-        Warning    = $warning
-        RowOf      = $rowOf
-        TabOf      = $tabOf
+        Operations    = $plan
+        Cells         = $cells
+        Warning       = $warning
+        RowOf         = $rowOf
+        TabOf         = $tabOf
+        KnownSheetIds = $known
     }
 }
 
@@ -902,8 +1042,43 @@ function Invoke-SheetsPlan {
         }
     }
 
+    # Every tab id this run can name: the ones the document already had, plus the ones the
+    # structure batch has just minted. A link carries the target's numeric id and nothing
+    # knows a new tab's id until Google answers, which is why the plan writes a token.
+    $gidOf = @{}
+    if ($Plan.PSObject.Properties.Name -contains 'KnownSheetIds' -and $Plan.KnownSheetIds) {
+        foreach ($key in $Plan.KnownSheetIds.Keys) { $gidOf[[string]$key] = [int]$Plan.KnownSheetIds[$key] }
+    }
+
     if ($structure.Count -gt 0) {
-        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $structure } | Out-Null
+        $answer = Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $structure }
+        foreach ($reply in @($answer.replies)) {
+            if ($reply.addSheet) {
+                $gidOf[[string]$reply.addSheet.properties.title] = [int]$reply.addSheet.properties.sheetId
+            }
+        }
+    }
+
+    # Hiding needs a tab id too, so it waits for the batch that creates the tab.
+    $hides = @($operations | Where-Object { $_.Kind -eq 'HideColumns' })
+    $second = @()
+    foreach ($hide in $hides) {
+        if (-not $gidOf.ContainsKey($hide.Sheet)) { continue }
+        $second += @{
+            updateDimensionProperties = @{
+                range      = @{
+                    sheetId    = [int]$gidOf[$hide.Sheet]
+                    dimension  = 'COLUMNS'
+                    startIndex = [int]$hide.From - 1
+                    endIndex   = [int]$hide.To
+                }
+                properties = @{ hiddenByUser = $true }
+                fields     = 'hiddenByUser'
+            }
+        }
+    }
+    if ($second.Count -gt 0) {
+        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $second } | Out-Null
     }
 
     $clears = @($operations | Where-Object { $_.Kind -eq 'Clear' })
@@ -935,6 +1110,32 @@ function Invoke-SheetsPlan {
         # sent as RAW arrives as the literal text of one.
         $isRaw = $true
         if ($write.PSObject.Properties.Name -contains 'Raw' -and $write.Raw -eq $false) { $isRaw = $false }
+
+        # Only a formula carries a link, so only the USER_ENTERED side needs resolving. A
+        # token whose tab does not exist would leave a literal in the cell, so it is dropped
+        # rather than written: a broken link is worse than a missing one, because it reads as
+        # something that ought to work.
+        if (-not $isRaw) {
+            # A plain loop, not ForEach-Object: a pipeline block runs in a child scope, so a
+            # flag set inside one never reaches the variable being tested out here.
+            $unresolved = $false
+            $resolved = @()
+            foreach ($row in $rows) {
+                $cells = @()
+                foreach ($cell in @($row)) {
+                    $text = [string]$cell
+                    foreach ($name in @($gidOf.Keys)) {
+                        $text = $text.Replace(($SheetsGidToken -replace '%NAME%', $name), [string]$gidOf[$name])
+                    }
+                    if ($text -like '*{{GID:*') { $unresolved = $true }
+                    $cells += $text
+                }
+                $resolved += , $cells
+            }
+            if ($unresolved) { continue }
+            $range['values'] = $resolved
+        }
+
         if ($isRaw) { $raw += $range } else { $entered += $range }
     }
 

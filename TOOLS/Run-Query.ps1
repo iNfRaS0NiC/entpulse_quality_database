@@ -4410,7 +4410,14 @@ if ($isWorkbook -and -not $OutFile) {
 $script:PreviousRun = Import-PreviousRunEntries -Jobs $jobs
 $singleSummary = @(New-RunSummaryRow -Job $job -Rows $count -Seconds ([math]::Round($elapsed.TotalSeconds, 1)) `
         -Status 'OK' -Eligible (Get-CoverageCount -Rows $rows) -Findings (Get-FindingCount -Rows $rows))
-$singleLedger = @(Save-RunLedger -Summary $singleSummary `
+# The document is brought up to date from a single check too. It was left out at first
+# because a partial run marked every check it had not produced as Not in this run, which one
+# re-run would have used to repaint the whole board; bbe58d8 restricted that to a full pass,
+# and with it gone there is no reason a fix verified here should not show where people read.
+$singleSheet = Save-RunSheet -Summary $singleSummary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
+    -Sport (Get-RunSport -Jobs $jobs) -OutputFolder $(if ($OutFile) { Split-Path -Parent $OutFile } else { '' })
+
+$singleLedger = @(Save-RunLedger -Summary $singleSummary -SheetId $singleSheet `
         -Output $(if ($OutFile) { Split-Path -Parent $OutFile } else { '' }))
 
 # The reading a single re-run is usually for. Printed rather than left in the ledger, because
