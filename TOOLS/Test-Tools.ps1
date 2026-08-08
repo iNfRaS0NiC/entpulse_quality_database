@@ -2403,6 +2403,49 @@ Test-That 'two checks cannot adopt the same leftover' {
     Assert-Equal 'SHARED~2' $added[0] 'under a free title, since the leftover is already claimed'
 }
 
+Test-That 'the default Sheet1 is removed once, and Overview is brought to the front' {
+    # Sheet1 exists because the document does, not because anybody made it. Overview is
+    # created after it and would otherwise open second for good.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Sheet1', 'Overview')
+        EmptyTabs = @{ 'Sheet1' = $true }
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Sheet1' = 0; 'Overview' = 55 }
+        SheetIndexOf = @{ 'Sheet1' = 0; 'Overview' = 1 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    $ops = @($plan.Operations)
+
+    $drop = @($ops | Where-Object { $_.Kind -eq 'DeleteSheet' })
+    Assert-Equal 1 $drop.Count 'Sheet1 is removed'
+    Assert-Equal 'Sheet1' $drop[0].Sheet 'and nothing else is'
+
+    $move = @($ops | Where-Object { $_.Kind -eq 'MoveSheet' })
+    Assert-Equal 1 $move.Count 'Overview is moved'
+    Assert-Equal 0 $move[0].Index 'to the front'
+    Assert-True ([array]::IndexOf($ops, $drop[0]) -lt [array]::IndexOf($ops, $move[0])) `
+        'removal before the move, since deleting shifts every index after it'
+}
+
+Test-That 'a Sheet1 somebody has used is left alone, and a front Overview is not moved' {
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview', 'Sheet1')
+        # Not in EmptyTabs: it carries something, so it stopped being the default.
+        EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Sheet1' = 0; 'Overview' = 55 }
+        SheetIndexOf = @{ 'Overview' = 0; 'Sheet1' = 1 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'DeleteSheet' }).Count `
+        'a tab with anything in it is nobody else to delete'
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'MoveSheet' }).Count `
+        'and an Overview already at the front is not moved to change nothing'
+}
+
 Test-That 'a plan large enough to threaten the document says so' {
     $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'HUGE'; What = ''; Sql = 'SELECT 1;' }
     $rows = @(1..400 | ForEach-Object { [pscustomobject]@{ a = 1; b = 2; c = 3; d = 4; e = 5 } })

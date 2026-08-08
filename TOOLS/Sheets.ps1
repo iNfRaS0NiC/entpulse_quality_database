@@ -262,6 +262,37 @@ function New-SheetsMergePlan {
         $plan += [pscustomobject]@{ Kind = 'AddSheet'; Sheet = 'Overview' }
     }
 
+    # Google gives a new spreadsheet one tab called Sheet1, and it is nobody's: it exists
+    # because the document does. Removed once, on the run that first writes here, and only
+    # while it is still untouched - the moment somebody puts anything in it, it stops being
+    # the default and becomes theirs, which is the same line every other rule here draws.
+    #
+    # This is the one exception to a tab never being deleted, and it is narrow on purpose: it
+    # names one title, and only when empty. Nothing else in this file removes a tab.
+    if ($Existing -and $Existing.EmptyTabs -and $Existing.EmptyTabs.ContainsKey('Sheet1') -and
+        $Existing.SheetIdOf -and $Existing.SheetIdOf.ContainsKey('Sheet1')) {
+        $plan += [pscustomobject]@{
+            Kind    = 'DeleteSheet'
+            Sheet   = 'Sheet1'
+            SheetId = [int]$Existing.SheetIdOf['Sheet1']
+        }
+        $emptyTabs.Remove('Sheet1')
+        $usedTitles.Remove('Sheet1')
+    }
+
+    # Overview is the board and belongs at the front. It is created after Sheet1 exists, so
+    # without this it opens second on a new document and stays there.
+    if ($Existing -and $Existing.SheetIndexOf -and $Existing.SheetIdOf -and
+        $Existing.SheetIndexOf.ContainsKey('Overview') -and
+        [int]$Existing.SheetIndexOf['Overview'] -ne 0) {
+        $plan += [pscustomobject]@{
+            Kind    = 'MoveSheet'
+            Sheet   = 'Overview'
+            SheetId = [int]$Existing.SheetIdOf['Overview']
+            Index   = 0
+        }
+    }
+
     # A document nobody has written to yet has no header. Written once, and never again: on
     # every later run row 1 is already right, and rewriting it would be an API call a run
     # makes to change nothing.
@@ -686,10 +717,14 @@ function Read-SheetState {
     # to raise it, and updateSheetProperties names a sheet by id rather than by title.
     $capacityOf = @{}
     $idOf = @{}
+    $indexOf = @{}
+    $position = 0
     foreach ($sheet in @($meta.sheets)) {
         $title = [string]$sheet.properties.title
         $capacityOf[$title] = [int]$sheet.properties.gridProperties.rowCount
         $idOf[$title] = [int]$sheet.properties.sheetId
+        $indexOf[$title] = $position
+        $position++
     }
 
     # Only tabs that exist may be named in a range. Google rejects the whole batch with
@@ -766,6 +801,7 @@ function Read-SheetState {
         EmptyTabs         = $emptyTabs
         RowCapacityOf     = $capacityOf
         SheetIdOf         = $idOf
+        SheetIndexOf      = $indexOf
     }
 }
 
@@ -847,6 +883,21 @@ function Invoke-SheetsPlan {
                     gridProperties = @{ rowCount = [int]$resize.Rows }
                 }
                 fields     = 'gridProperties.rowCount'
+            }
+        }
+    }
+
+    # Requests apply in order, so the removal goes before the move: deleting a sheet shifts
+    # every index after it, and Overview's target of 0 has to be read against the document as
+    # it will be, not as it was.
+    foreach ($drop in @($operations | Where-Object { $_.Kind -eq 'DeleteSheet' })) {
+        $structure += @{ deleteSheet = @{ sheetId = [int]$drop.SheetId } }
+    }
+    foreach ($move in @($operations | Where-Object { $_.Kind -eq 'MoveSheet' })) {
+        $structure += @{
+            updateSheetProperties = @{
+                properties = @{ sheetId = [int]$move.SheetId; index = [int]$move.Index }
+                fields     = 'index'
             }
         }
     }
