@@ -3028,7 +3028,8 @@ if ($Info) {
     Write-Section 'AD-HOC SQL'
     Write-Line "$Entry -Sql `"SELECT COUNT(*) AS c FROM sport;`"" 'run a literal statement'
     Write-Line "$Entry -File .\scratch.sql" 'run a file'
-    Write-Host '  The server only accepts statements starting with SELECT or WITH.' -ForegroundColor DarkGray
+    Write-Host '  The server only accepts statements starting with SELECT. It rejects WITH,' -ForegroundColor DarkGray
+    Write-Host '  so nest derived tables instead of writing a CTE; window functions are fine.' -ForegroundColor DarkGray
 
     Write-Section 'OUTPUT'
     Write-Line '-Format table' 'default, on-screen preview'
