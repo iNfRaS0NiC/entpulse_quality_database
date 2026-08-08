@@ -74,12 +74,24 @@ function Set-SheetsAddressFamily {
 # sixth of the document by itself. Sheets also becomes slow to open and scroll well before
 # the limit, and writing that many cells over the API costs minutes per run.
 #
-# 20 000 is chosen to clear the largest counts actually seen - a 14 000-row missing-value
-# check writes in full, at about 1% of the budget - while stopping the handful of statements
-# that return six figures. It is a round number standing in for a distribution nobody has
-# measured yet: once RUNS/<Sport>.json holds two runs it carries findings for every check of
-# every sport, and the number should be re-derived from that rather than left as a guess.
-$SheetsMaxRowsPerCheck = 20000
+# Re-derived from a run of all six documented sports on 2026-08-08 - 496 checks, no failures -
+# rather than left at the 20 000 first guessed here. What that measured:
+#
+#   largest single check   Curling-DQ-041, 17 626 rows
+#   largest sport in total Curling, 79 523 rows over 105 checks, about 636 000 cells
+#   six-figure results     none, under each sport's documented scope
+#
+# So the first guess was tight in the wrong place. Three Curling checks sat within 12% of it,
+# where one heavier import would have started truncating a legitimate result - while the
+# document it was protecting was at 6.4% of Google's limit, with room to spare by an order of
+# magnitude.
+#
+# 50 000 is roughly three times the largest count seen and still only about 4% of a document
+# for one check, so the guard against a genuinely pathological result survives without
+# threatening anything real. Worth re-deriving again if a sport is ever run outside its
+# documented scope: Soccer sport-wide is the known six-figure case, and it does not arise
+# under the 28 client templates SPORTS/Soccer.md scopes it to.
+$SheetsMaxRowsPerCheck = 50000
 
 # When the whole document would pass this, the run says so. A warning rather than a truncation
 # because the answer is a decision - drop a check from the document, tighten a scope, split

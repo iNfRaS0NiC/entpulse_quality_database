@@ -1175,17 +1175,34 @@ about 1% of that and writes in full; the problem is the handful of statements th
 figures, where one check can take a sixth of the document. Sheets is also slow to open and
 scroll well below the cap, and writing that many cells over the API costs minutes per run.
 
-So a check writes at most **20 000 rows** into the document, and a tab that was cut says so
-on its own face — `20 000 of 214 338 rows. The full result is in <run folder>` — because the
+So a check writes at most **50 000 rows** into the document, and a tab that was cut says so
+on its own face — `50 000 of 214 338 rows. The full result is in <run folder>` — because the
 person reading it a week later has only the tab. The full result is in the `.xlsx` snapshot,
 which is still written and still frozen per run.
 
-That number is a round figure standing in for a distribution nobody has measured. Once
-`RUNS/<Sport>.json` holds two runs it carries `findings` for every check of every sport, and
-the cap should be re-derived from that rather than left as a guess. A plan that would write
-more than 8 million cells prints a warning rather than truncating itself: the answers are to
-drop a check from the document, tighten a scope or split the sport, and none of those is the
-runner's to choose silently.
+That number was measured rather than guessed. All six documented sports were run on
+2026-08-08 — 496 checks, no failures — and what it found was that the first figure written
+here, 20 000, was tight in the wrong place:
+
+| | |
+|---|---|
+| Largest single check | `Curling-DQ-041`, 17 626 rows |
+| Largest sport in total | Curling, 79 523 rows over 105 checks — about 636 000 cells |
+| Six-figure results | none, under each sport's documented scope |
+
+Three Curling checks sat within 12% of the old cap, where one heavier import would have begun
+truncating a legitimate result — while the document that cap was protecting was at 6.4% of
+Google's limit. 50 000 is about three times the largest count seen and still roughly 4% of a
+document for one check, so the guard against a pathological result survives without
+threatening anything real.
+
+Worth re-deriving again if a sport is ever run outside its documented scope. Soccer sport-wide
+is the known six-figure case, and it does not arise under the 28 client templates
+`SPORTS/Soccer.md` scopes it to — narrowed, Soccer was the *smallest* of the six.
+
+A plan that would write more than 8 million cells prints a warning rather than truncating
+itself: the answers are to drop a check from the document, tighten a scope or split the sport,
+and none of those is the runner's to choose silently.
 
 ### It is a record, not evidence
 
