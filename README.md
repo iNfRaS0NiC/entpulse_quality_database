@@ -33,6 +33,7 @@ copied into a separate SQL file for every sport.
 | `POWERBI.md` | Stable DQ authorization, identity, coverage, scope and storage policy |
 | `POWERBI_REGISTRY.md` | Compact index of assigned DQ CheckIDs, families and statuses |
 | `POWERBI_QUERIES/<SportSlug>.sql` | Approved executable DQ SQL authored for one sport |
+| `RUNS/<SportSlug>.json` | Run history for one sport: what each run returned, for the next run to compare against. Never evidence |
 | `WORKFLOW.md` | Operational commands, routing and update workflow |
 | `TOOLS/README.md` | Query-runner setup, command set, output shapes and troubleshooting |
 | `TOOLS/Run-Query.ps1` | Executes registered statements against the Content Query Builder |

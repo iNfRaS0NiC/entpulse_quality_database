@@ -151,6 +151,21 @@ nothing to act on yet, and `TOOLS/README.md` owns why none of the three signals 
 Coverage values are operational evidence only. They are not structural findings and do
 not belong in `DATABASE.md` or `SPORTS/<SportSlug>.md`.
 
+### What the check should return next time
+
+The table above reads one run. A re-run after the findings have been corrected asks a further
+question the coverage row cannot answer on its own: was this check supposed to come back
+empty? Most are, and some are not — a check whose findings are population-wide keeps its rows
+however much is corrected, and one with an agreed remainder keeps exactly that many. Left
+unwritten, the answer lives in whoever ran it last.
+
+`SPORTS/params.json` records it per sport under `_expected`, in the same shape as
+`_checkSignal` and with the same enforcement; `TOOLS/README.md` owns the vocabulary and the
+default each signal implies. The rule that matters here is the one this file already applies
+to applicability: **the expectation is read off the check's invariant, never off the last
+run's count.** A check that returned nothing today is not thereby a `Zero` check, and
+recording it as one is how a sentinel gets retired on its own zero.
+
 ## Audited-object granularity
 
 Finding rows report the audited object, not raw child records.

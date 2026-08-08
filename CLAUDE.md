@@ -48,7 +48,12 @@ most often needed:
   `TOOLS/Test-Package.ps1`. It tests those two scripts rather than the package.
 - Results produced by `TOOLS/Run-Query.ps1` are execution output, never evidence. A
   finding enters the repository only through the `PREPARE_DOC_UPDATE` sequence in
-  `WORKFLOW.md`.
+  `WORKFLOW.md`. `RUNS/<Sport>.json` is the one exception to where that output is written,
+  not to what it is worth: the runner appends each run's row, finding and eligible counts
+  there so the next run can be compared with it. It is a record of what a run returned, never
+  a basis for a structural claim, and nothing may be cited from it. `TOOLS/README.md` owns
+  the file; `SPORTS/params.json` `_expected` owns what each check should return once the data
+  is corrected.
 
 ## Hard rules
 

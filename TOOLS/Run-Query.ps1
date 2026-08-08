@@ -194,6 +194,11 @@ param(
 
     [switch]$Relogin,
 
+    # Keep this run out of RUNS/<Sport>.json. An experiment, a re-run of one check to see
+    # whether it still errors, a narrowed run that is not the sport's periodic pass - none of
+    # those should sit in the history the next run compares itself against.
+    [switch]$NoLedger,
+
     # Dot-source the file for its functions and stop before Main. TOOLS/Test-Tools.ps1 uses
     # it to exercise selection, parameter expansion, the parser and the workbook writer
     # without a login or a statement. Nothing in a normal run passes it.
@@ -206,6 +211,11 @@ $ErrorActionPreference = 'Stop'
 # to the repository slug before any output is built. Read by Get-SportFromCheckId for the
 # workbook's Sport column and the run folder name.
 $script:RunSportName = ''
+
+# When this invocation began, stamped once so every ledger entry a run writes carries the
+# same moment however long the run took. UTC because the ledger is tracked in git and read on
+# more than one machine; the run folder keeps the local time a person recognises.
+$script:RunStartedUtc = (Get-Date).ToUniversalTime()
 
 # Every choice the run made for itself, and every one it left open. A run decides some things
 # by itself - the busiest statistic type, the values a chain pursues - and defers others, and
@@ -265,6 +275,36 @@ if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
     $drive = (Split-Path -Qualifier $OutputRoot) + '\'
     if (-not (Test-Path $drive)) { $OutputRoot = Join-Path $RepoRoot 'output' }
 }
+
+# Where the run's own history lives. RUNS/<Sport>.json holds one entry per run per statement:
+# the row count, the findings, the eligible population and the expectation each was read
+# against. It exists because a re-run after colleagues have corrected the data is otherwise
+# read against a memory of the last one, and a memory does not survive fifty checks.
+#
+# Unlike everything else a run writes, this is inside the working copy and tracked in git.
+# The history is the point, and a file under the output root has none: it is per-machine,
+# unbacked and invisible to anyone else. That places it next to a rule it must not be
+# mistaken for. CLAUDE.md is explicit that results are execution output and never evidence,
+# and that stands unchanged - the ledger records what a run returned and what a reviewer said
+# about it, and neither becomes a structural finding except through PREPARE_DOC_UPDATE.
+$LedgerDirName = 'RUNS'
+$LedgerVersion = 1
+
+# How far the audited population may move before a raw finding delta stops being comparable.
+# The database is corrected while it is being read, so small drift is the normal state and
+# flagging it would make the column noise; a population that moved by more than this makes
+# "was 40, now 3" a statement about two different scopes rather than about the data.
+$LedgerEligibleDriftPct = 5
+
+# How far the finding rate may move on a check whose findings are population-wide before the
+# run calls it a change rather than the same picture. Wider than the drift threshold on
+# purpose: a proportion bounces where a population does not.
+$LedgerRateMovePct = 10
+
+# What the previous run recorded for each statement, read once before the batch starts. A
+# lookup rather than a file read per check, and settled before this run appends its own entry
+# so nothing can compare itself against itself.
+$script:PreviousRun = @{}
 
 # Small pause between statements in a batch, so a long catalogue does not hammer the API.
 $BatchDelayMs = 250
@@ -1664,20 +1704,46 @@ function Get-StatementRows {
 # never guessed.
 $DiscoverableParameters = @('SPORT_ID', 'STATISTIC_TYPE_ID', 'STATISTIC_OWNER_TYPE_ID', 'SHARD_ID')
 
-# The two keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
+# The three keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
 # _notApplicable holds the parameters the sport is documented as unable to supply, mapped to
 # the reason. _checkSignal holds what a check's output is worth for this sport, for the ones
-# that are not simply actionable. Test-Package.ps1 declares the same two names; the pair of
-# files is the contract for both blocks.
+# that are not simply actionable. _expected holds what a re-run should return once the data
+# has been corrected. Test-Package.ps1 declares the same three names; the pair of files is
+# the contract for all three blocks.
 $NotApplicableKey = '_notApplicable'
 $CheckSignalKey = '_checkSignal'
-$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey)
+$ExpectedKey = '_expected'
+$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey)
 
 # What a recorded signal may say. Actionable is the default and is never recorded: writing it
 # down for every check would make the block a second copy of the registry. Deprecated is
 # deliberately absent - POWERBI_REGISTRY.md's Status column owns that, and a value with two
 # owners drifts.
 $CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable')
+
+# What a re-run should return after the reported findings have been corrected. This is a
+# different question from the signal, and the difference is the whole reason the block
+# exists: the signal says what today's rows are worth, the expectation says what tomorrow's
+# count should be. Reading a re-run without it means remembering, per check, which ones were
+# ever supposed to reach zero - which is exactly what stops working at fifty checks.
+#
+#   Zero      every finding row is a defect, so a corrected sport returns the COVERAGE row alone
+#   Non-zero  rows remain however much is corrected: the proportion is the finding, not the row
+#   Residual  a known and agreed number of rows stays behind; anything above it is new
+#
+# The expectation is read off the check's invariant, never off the last run's count. A check
+# that happens to return nothing today is not thereby a Zero check, exactly as CLAUDE.md
+# refuses to let an empty population decide applicability.
+$CheckExpectValues = @('Zero', 'Non-zero', 'Residual')
+
+# The default each signal implies, so only the exception is written down. Blocked and Not
+# applicable are absent rather than empty: a check that must not run yet, or that reads a
+# layer the sport does not have, has no count anybody should be expecting.
+$ExpectedBySignal = @{
+    'Actionable'    = 'Zero'
+    'Monitor'       = 'Non-zero'
+    'Informational' = 'Non-zero'
+}
 
 # What to work through first, banded from the Category POWERBI_REGISTRY.md already records
 # against every row. A broken structure outranks a wrong value, and a wrong value outranks an
@@ -1798,6 +1864,67 @@ function Get-SportCheckSignal {
     return $resolved
 }
 
+function Get-SportCheckExpected {
+    # What a re-run of each check should return for this sport once the reported findings have
+    # been corrected, keyed the same way _checkSignal is: by the GLOBAL-DQ template ID or by
+    # the sport's own CheckID. Anything absent takes the default its signal implies.
+    #
+    # Only the exception is recorded, for the same reason Actionable is never written down: a
+    # value on every check would make the block a second copy of something already derivable.
+    param([string]$SportName)
+
+    $resolved = @{}
+    $path = Join-Path $RepoRoot 'SPORTS\params.json'
+    if (-not (Test-Path -LiteralPath $path)) { return $resolved }
+
+    try {
+        $params = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+    catch {
+        return $resolved
+    }
+
+    $entry = $params.PSObject.Properties | Where-Object { $_.Name -eq $SportName }
+    if (-not $entry) { return $resolved }
+
+    $block = $entry.Value.PSObject.Properties | Where-Object { $_.Name -eq $ExpectedKey }
+    if (-not $block) { return $resolved }
+
+    foreach ($property in $block.Value.PSObject.Properties) {
+        $expect = [string]$property.Value.expect
+        if ($CheckExpectValues -notcontains $expect) {
+            # Reported rather than dropped, as an unreadable signal is: the reader otherwise
+            # assumes the block is being honoured. Test-Package.ps1 fails on the same condition.
+            Write-Host ("  SPORTS/params.json: $($property.Name) expects '$expect', which is not one of: " +
+                ($CheckExpectValues -join ', ')) -ForegroundColor Yellow
+            continue
+        }
+
+        $residual = $null
+        if ($expect -eq 'Residual') {
+            $parsed = 0
+            if ([int]::TryParse([string]$property.Value.residual, [ref]$parsed)) { $residual = $parsed }
+        }
+
+        $resolved[$property.Name] = [pscustomobject]@{
+            Expect   = $expect
+            Residual = $residual
+            Reason   = [string]$property.Value.reason
+        }
+    }
+    return $resolved
+}
+
+function Get-ExpectedForSignal {
+    # The expectation a signal implies on its own. Empty for Blocked and Not applicable,
+    # which describe checks nobody should be reading a count from.
+    param([string]$Signal)
+
+    if ([string]::IsNullOrWhiteSpace($Signal)) { return '' }
+    if ($ExpectedBySignal.ContainsKey($Signal)) { return $ExpectedBySignal[$Signal] }
+    return ''
+}
+
 function Get-CoverageCount {
     # The eligible_count a statement reports in its COVERAGE row: how many objects it actually
     # audited. Returns $null for a statement that declares no COVERAGE branch, which is every
@@ -1816,6 +1943,31 @@ function Get-CoverageCount {
         $total = $(if ($null -eq $total) { $value } else { $total + $value })
     }
     return $total
+}
+
+function Get-FindingCount {
+    # The rows that are findings, which is the row count less its COVERAGE row or rows. The
+    # raw count cannot be compared between two runs on its own: every DQ statement returns a
+    # COVERAGE row whether or not it found anything, so a clean check reports 1 and a check
+    # with one finding reports 2. Subtracting it is what makes "was 40, now 3" mean what it
+    # reads as.
+    #
+    # Returns $null where there is no check_type column to subtract by - a discovery
+    # statement, or a failed one - rather than guessing that every row was a finding.
+    param($Rows)
+
+    $all = @($Rows | Where-Object { $null -ne $_ })
+    if ($all.Count -eq 0) { return $null }
+
+    $coverage = 0
+    $typed = $false
+    foreach ($row in $all) {
+        if ($row.PSObject.Properties.Name -notcontains 'check_type') { continue }
+        $typed = $true
+        if ([string]$row.check_type -eq 'COVERAGE') { $coverage++ }
+    }
+    if (-not $typed) { return $null }
+    return $all.Count - $coverage
 }
 
 function Get-SeededStatus {
@@ -1895,6 +2047,51 @@ function Set-JobCheckSignal {
 
         $job | Add-Member -NotePropertyName Signal -NotePropertyValue $signal -Force
         $job | Add-Member -NotePropertyName SignalReason -NotePropertyValue $reason -Force
+        $hydrated += $job
+    }
+
+    return $hydrated
+}
+
+function Set-JobCheckExpectation {
+    # What each check should return on a corrected re-run. Runs after Set-JobCheckSignal
+    # rather than inside it because the default is derived from the signal, so the signal has
+    # to be settled first; a recorded expectation then overrides that default.
+    #
+    # Keyed like the signal block: the template ID first, then the sport's own CheckID, so a
+    # sport that replaced a template with its own statement classifies the statement it runs.
+    param($Jobs, [string]$SportName)
+
+    $expectations = $(if ([string]::IsNullOrWhiteSpace($SportName)) { @{} }
+        else { Get-SportCheckExpected -SportName $SportName })
+    $hydrated = @()
+
+    foreach ($job in @($Jobs)) {
+        $recorded = $null
+        $keys = @()
+        if ($job.PSObject.Properties.Name -contains 'Template' -and $job.Template) {
+            $keys += [string]$job.Template
+        }
+        if ($job.CheckId) { $keys += [string]$job.CheckId }
+
+        foreach ($key in $keys) {
+            if ($expectations.ContainsKey($key)) {
+                $recorded = $expectations[$key]
+                break
+            }
+        }
+
+        $signal = $(if ($job.PSObject.Properties.Name -contains 'Signal') { [string]$job.Signal } else { '' })
+
+        $expect = $(if ($recorded) { $recorded.Expect } else { Get-ExpectedForSignal -Signal $signal })
+        $residual = $(if ($recorded) { $recorded.Residual } else { $null })
+        $why = $(if ($recorded) { $recorded.Reason }
+            elseif ($expect) { "derived from signal $signal" }
+            else { '' })
+
+        $job | Add-Member -NotePropertyName Expected -NotePropertyValue $expect -Force
+        $job | Add-Member -NotePropertyName ExpectedResidual -NotePropertyValue $residual -Force
+        $job | Add-Member -NotePropertyName ExpectedReason -NotePropertyValue $why -Force
         $hydrated += $job
     }
 
@@ -2617,7 +2814,9 @@ function New-RunSummaryRow {
         $Job,
         [int]$Rows,
         [double]$Seconds,
-        [string]$Status
+        [string]$Status,
+        $Eligible = $null,
+        $Findings = $null
     )
 
     $signal = 'Actionable'
@@ -2647,6 +2846,32 @@ function New-RunSummaryRow {
     $parameters = ''
     if ($Job.PSObject.Properties.Name -contains 'Parameters') { $parameters = [string]$Job.Parameters }
 
+    # Eligible and Findings are what make one run comparable with the next, and neither is
+    # recoverable from Rows. A raw count mixes the COVERAGE row in with the findings, and it
+    # says nothing about the population those findings came out of - so "was 40, now 3" reads
+    # as an improvement whether the sport shrank or the data was corrected. Both were being
+    # computed already and thrown away with the terminal.
+    $expected = ''
+    $expectedResidual = $null
+    $expectedReason = ''
+    if ($Job.PSObject.Properties.Name -contains 'Expected') { $expected = [string]$Job.Expected }
+    if ($Job.PSObject.Properties.Name -contains 'ExpectedResidual') { $expectedResidual = $Job.ExpectedResidual }
+    if ($Job.PSObject.Properties.Name -contains 'ExpectedReason') { $expectedReason = [string]$Job.ExpectedReason }
+
+    # Computed here rather than in the workbook writer so one place decides it and every
+    # destination agrees: the Overview, the flat summary and the ledger entry this run
+    # appends all read the same value. $script:PreviousRun was settled before the batch
+    # started, so nothing can compare itself against the entry it is about to write.
+    $previous = $(if ($script:PreviousRun.ContainsKey($runKey)) { $script:PreviousRun[$runKey] } else { $null })
+    $ran = -not ($Status -like 'ERROR*' -or $Status -like 'SKIPPED*')
+    $verdict = Get-CheckVerdict -Expected $expected -Residual $expectedResidual `
+        -Findings $Findings -Eligible $Eligible -Previous $previous -Ran $ran
+
+    $change = $null
+    if ($null -ne $Findings -and $null -ne $previous -and $null -ne $previous.Findings) {
+        $change = [int]$Findings - [int]$previous.Findings
+    }
+
     return [pscustomobject]@{
         CheckId     = $Job.CheckId
         RunKey      = $runKey
@@ -2654,18 +2879,281 @@ function New-RunSummaryRow {
         Name        = $Job.Name
         What        = $Job.What
         Rows        = $Rows
+        Findings    = $Findings
+        Eligible    = $Eligible
         Seconds     = $Seconds
         Status      = $Status
         Priority    = Get-CheckPriority -Category $category
         Category    = $category
         Signal      = $signal
         SignalReason = $reason
+        Expected     = $expected
+        ExpectedResidual = $expectedResidual
+        ExpectedReason   = $expectedReason
+        Verdict      = $verdict
+        Change       = $change
+        PrevFindings = $(if ($previous) { $previous.Findings } else { $null })
+        PrevEligible = $(if ($previous) { $previous.Eligible } else { $null })
+        PrevRunId    = $(if ($previous) { [string]$previous.RunId } else { '' })
     }
 }
 
 function Save-RunSummaryCsv {
     param($Summary, [string]$Path)
     $Summary | Export-Csv -LiteralPath $Path -NoTypeInformation -Encoding UTF8
+}
+
+function Get-LedgerPath {
+    # $RepoRoot is read at call time rather than folded into a constant at load time, as every
+    # other reader of a repository file does: pointing it at a fixture is how Test-Tools.ps1
+    # exercises this without writing into the working copy.
+    param([string]$Sport)
+    return Join-Path (Join-Path $RepoRoot $LedgerDirName) ("{0}.json" -f $Sport)
+}
+
+function Read-RunLedger {
+    # The sport's ledger as it stands, or an empty one. A file that cannot be parsed is
+    # reported and left alone rather than replaced: a run overwriting a history it could not
+    # read would destroy the only copy of it, and the history is the reason the file exists.
+    param([string]$Sport)
+
+    $path = Get-LedgerPath -Sport $Sport
+    if (-not (Test-Path -LiteralPath $path)) {
+        return [pscustomobject]@{ sport = $Sport; ledgerVersion = $LedgerVersion; runs = @() }
+    }
+
+    try {
+        $ledger = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
+    }
+    catch {
+        Write-Host ("  RUNS/{0}.json could not be read, so this run was not recorded: {1}" -f `
+                $Sport, $_.Exception.Message) -ForegroundColor Yellow
+        return $null
+    }
+
+    if ($null -eq $ledger.runs) {
+        $ledger | Add-Member -NotePropertyName runs -NotePropertyValue @() -Force
+    }
+    return $ledger
+}
+
+function Import-PreviousRunEntries {
+    # What the last run recorded for each statement this run is about to execute, keyed by
+    # run key. Walked forward so the newest entry wins.
+    #
+    # A run that failed or was skipped is passed over rather than recorded as the previous
+    # one. Comparing against an error says nothing, and the reading a reviewer wants is
+    # against the last time the check actually produced a number - which may be two runs ago.
+    param($Jobs)
+
+    $previous = @{}
+    $sports = @($Jobs | ForEach-Object { Get-SportFromCheckId -CheckId $_.CheckId } | Select-Object -Unique)
+
+    foreach ($sport in $sports) {
+        if ($sport -in @('AD-HOC', 'GLOBAL', '')) { continue }
+        $ledger = Read-RunLedger -Sport $sport
+        if ($null -eq $ledger) { continue }
+
+        foreach ($run in @($ledger.runs)) {
+            foreach ($check in @($run.checks)) {
+                if ($null -eq $check.findings) { continue }
+                $status = [string]$check.status
+                if ($status -like 'ERROR*' -or $status -like 'SKIPPED*') { continue }
+
+                $previous[[string]$check.runKey] = [pscustomobject]@{
+                    RunId      = [string]$run.runId
+                    StartedUtc = [string]$run.startedUtc
+                    Findings   = $check.findings
+                    Eligible   = $check.eligible
+                }
+            }
+        }
+    }
+    return $previous
+}
+
+function Get-CheckVerdict {
+    # What this run says when read against the last one. The expectation decides what counts
+    # as good news, which is the whole reason it is recorded: forty rows is a failure to
+    # correct anything on one check and exactly the right answer on another.
+    param(
+        [string]$Expected,
+        $Residual,
+        $Findings,
+        $Eligible,
+        $Previous,
+        [bool]$Ran
+    )
+
+    # A failed or skipped statement produced nothing to judge, and the Rows cell already says
+    # ERROR or SKIPPED. A verdict beside it would assert that somebody read an output that
+    # does not exist. Same for a statement with no COVERAGE row to subtract - a discovery
+    # census has no findings to count.
+    if (-not $Ran) { return '' }
+    if ($null -eq $Findings) { return '' }
+
+    # POWERBI.md is explicit that this is never clean data, so it outranks every comparison:
+    # a check auditing nothing returns the same numbers whether the scope is misdirected or
+    # the population is legitimately empty, and both want a person before anything else.
+    if ($null -ne $Eligible -and [int]$Eligible -eq 0) { return 'Audited nothing' }
+
+    $now = [int]$Findings
+
+    # Read before any comparison, because zero findings is a statement about the data and not
+    # about the population it came out of. A check that should reach zero and did is resolved
+    # however much the sport grew; a check whose findings are population-wide and returned
+    # none is almost certainly broken, and that is worth saying loudly rather than filing as
+    # the best result on the board.
+    if ($Expected -eq 'Zero' -and $now -eq 0) { return 'Resolved' }
+    if ($Expected -eq 'Non-zero' -and $now -eq 0) { return 'Unexpectedly empty' }
+
+    # An agreed remainder is an absolute count of rows somebody decided to leave, so it is
+    # judged against itself rather than against the run before it.
+    if ($Expected -eq 'Residual') {
+        $limit = $(if ($null -ne $Residual) { [int]$Residual } else { 0 })
+        if ($now -gt $limit) { return 'Above residual' }
+        return 'As expected'
+    }
+
+    if ($null -eq $Previous -or $null -eq $Previous.Findings) { return 'New' }
+    $before = [int]$Previous.Findings
+
+    if ($Expected -eq 'Non-zero') {
+        # The proportion is the finding, so the proportion is what is compared.
+        $rateNow = $null
+        $ratePrev = $null
+        if ($null -ne $Eligible -and [int]$Eligible -gt 0) { $rateNow = $now / [double][int]$Eligible }
+        if ($null -ne $Previous.Eligible -and [int]$Previous.Eligible -gt 0) {
+            $ratePrev = $before / [double][int]$Previous.Eligible
+        }
+
+        if ($null -eq $rateNow -or $null -eq $ratePrev -or $ratePrev -eq 0) {
+            # Nothing to take a proportion of, so the counts are all there is to compare.
+            if ($now -lt $before) { return 'Improved' }
+            if ($now -eq $before) { return 'As expected' }
+            return 'Regressed'
+        }
+
+        $move = [math]::Abs($rateNow - $ratePrev) / $ratePrev * 100
+        if ($move -le $LedgerRateMovePct) { return 'As expected' }
+        if ($rateNow -lt $ratePrev) { return 'Improved' }
+        return 'Regressed'
+    }
+
+    # Everything from here compares two raw counts, and a raw delta is only comparable while
+    # the population behind it is. If the sport gained a fifth again as many objects, fewer
+    # findings may still be worse data, and reporting that as an improvement is the one wrong
+    # answer this column can give.
+    #
+    # The guard sits here rather than above the Non-zero branch on purpose. That branch
+    # already divides by the population, so a moved one is what it handles correctly rather
+    # than something it needs protecting from; running the guard first would have reported
+    # Scope moved for a check whose proportion had not shifted at all.
+    if ($null -ne $Eligible -and $null -ne $Previous.Eligible -and [int]$Previous.Eligible -gt 0) {
+        $drift = [math]::Abs([int]$Eligible - [int]$Previous.Eligible) / [double][int]$Previous.Eligible * 100
+        if ($drift -gt $LedgerEligibleDriftPct) { return 'Scope moved' }
+    }
+
+    # Expected Zero, or a check the sport gave no expectation at all - a plain reading of the
+    # two counts, which is the most that can be said without one.
+    if ($now -lt $before) { return 'Improved' }
+    if ($now -eq $before) { return 'Unchanged' }
+    return 'Regressed'
+}
+
+function New-LedgerCheckEntry {
+    # One statement's result as the next run will read it. Findings and eligible are carried
+    # rather than the row count alone, because the row count cannot be compared: it includes
+    # the COVERAGE row, and it says nothing about the population the findings came out of.
+    param($Entry)
+
+    $ordered = [ordered]@{
+        checkId    = [string]$Entry.CheckId
+        runKey     = [string]$Entry.RunKey
+        parameters = [string]$Entry.Parameters
+        name       = [string]$Entry.Name
+        category   = [string]$Entry.Category
+        signal     = [string]$Entry.Signal
+        expected   = [string]$Entry.Expected
+        verdict    = [string]$Entry.Verdict
+        rows       = $Entry.Rows
+        findings   = $Entry.Findings
+        eligible   = $Entry.Eligible
+        seconds    = $Entry.Seconds
+        status     = [string]$Entry.Status
+    }
+    if ($null -ne $Entry.ExpectedResidual) { $ordered['residual'] = $Entry.ExpectedResidual }
+    return [pscustomobject]$ordered
+}
+
+function Save-RunLedger {
+    # Append this run to RUNS/<Sport>.json, one file per sport, newest last so a git diff of
+    # the file is the run that was just added and nothing else.
+    #
+    # Discovery statements are left out. They are a census by construction - a round type with
+    # a count is not a finding that can be resolved - and recording them would fill the sport's
+    # history with numbers nobody is going to compare. The pattern statements -RunAll carries
+    # alongside the checks are exactly those, so a -RunAll ledger entry holds the checks only.
+    #
+    # A run that mixes sports writes to each sport's own file, because a ledger keyed on
+    # anything but the sport cannot be read by the next run of that sport.
+    param($Summary, [string]$Output)
+
+    if ($NoLedger) { return @() }
+
+    $recordable = @($Summary | Where-Object {
+            -not [string]::IsNullOrWhiteSpace([string]$_.CheckId) -and
+            ([string]$_.CheckId) -notlike $DiscoveryCheckIdPattern
+        })
+    if ($recordable.Count -eq 0) { return @() }
+
+    # The run folder's own name, so an entry points at the frozen artifact that produced it.
+    # A run printed to the screen has no folder, and falls back to the same stamp the folder
+    # would have carried rather than to an empty string nothing can be ordered by.
+    $runId = $(if ([string]::IsNullOrWhiteSpace($Output)) {
+            $script:RunStartedUtc.ToLocalTime().ToString('dd.MM.yyyy HH-mm-ss')
+        }
+        else { Split-Path -Leaf $Output })
+    $written = @()
+
+    foreach ($group in ($recordable | Group-Object { Get-SportFromCheckId -CheckId $_.CheckId })) {
+        $sport = [string]$group.Name
+        # AD-HOC has no sport to file under, and GLOBAL means the run carried no sport
+        # identity - Get-SportFromCheckId already resolves one when there is one.
+        if ($sport -in @('AD-HOC', 'GLOBAL', '')) { continue }
+
+        $ledger = Read-RunLedger -Sport $sport
+        if ($null -eq $ledger) { continue }
+
+        $run = [pscustomobject][ordered]@{
+            runId      = $runId
+            startedUtc = $script:RunStartedUtc.ToString('yyyy-MM-ddTHH:mm:ssZ')
+            output     = [string]$Output
+            checks     = @($group.Group | ForEach-Object { New-LedgerCheckEntry -Entry $_ })
+        }
+
+        $ledger.runs = @($ledger.runs) + $run
+        $ledger.ledgerVersion = $LedgerVersion
+        $ledger.sport = $sport
+
+        $path = Get-LedgerPath -Sport $sport
+        $dir = Split-Path -Parent $path
+        if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
+
+        # No byte-order mark, for the same reason _decisions.json has none: ConvertFrom-Json
+        # reads one as part of the first property name, so the next run could not read back
+        # the file this one wrote.
+        try {
+            [IO.File]::WriteAllText($path, ($ledger | ConvertTo-Json -Depth 6),
+                (New-Object Text.UTF8Encoding $false))
+            $written += $path
+        }
+        catch {
+            Write-Host ("  RUNS/{0}.json could not be written: {1}" -f $sport, $_.Exception.Message) -ForegroundColor Yellow
+        }
+    }
+
+    return $written
 }
 
 function Save-RunDecisions {
@@ -2790,6 +3278,19 @@ function Save-RunWorkbook {
                 else { '' })
             'Signal'        = $signalValue
             'Signal reason' = [string]$entry.SignalReason
+            # Appended after the hidden signal pair rather than inserted beside Rows, because
+            # H, I, K and L:M are pinned in three places at once - this row builder, the
+            # validation sqref below and the assertions in Test-Tools.ps1 - and moving them
+            # would break the row-count link, the Status dropdown and the Comment mirror
+            # together. The comparison block therefore starts at N.
+            'Expected'      = [string]$entry.Expected
+            'Findings'      = $entry.Findings
+            'Eligible'      = $entry.Eligible
+            'Prev findings' = $entry.PrevFindings
+            'Prev eligible' = $entry.PrevEligible
+            'Change'        = $entry.Change
+            'Verdict'       = [string]$entry.Verdict
+            'Last run'      = [string]$entry.PrevRunId
         }
         # Rows carries the jump to the tab, so its column moves with it - H since Parameters
         # was inserted at C.
@@ -2820,6 +3321,10 @@ function Save-RunWorkbook {
     # than dropped: L and M still carry every value for whoever needs to unhide them. They
     # moved one column right when Comment was inserted at K, beside the two other fields the
     # reviewer owns.
+    #
+    # The comparison block at N:U stays visible, hidden pair or not. It is the answer to the
+    # question a re-run is for - was this supposed to come back empty, and did it - and a
+    # column somebody has to unhide is a column nobody reads.
     $sheets = @([pscustomobject]@{
             Name           = $overviewName
             Rows           = $overviewRows
@@ -3038,7 +3543,9 @@ if ($Info) {
     Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, Overview first'
     Write-Host '  Overview lists Sport, CheckID, Parameters, Check Name, What it does, Rows' -ForegroundColor DarkGray
     Write-Host '  and the Status, Check By and Comment fields, with Signal and Signal reason' -ForegroundColor DarkGray
-    Write-Host '  hidden behind them; each row count links to its tab. Overview Comment is a' -ForegroundColor DarkGray
+    Write-Host '  hidden behind them, and N:U carrying Expected, Findings, Eligible, the same' -ForegroundColor DarkGray
+    Write-Host '  two from the previous run, Change, Verdict and Last run.' -ForegroundColor DarkGray
+    Write-Host '  Each row count links to its tab. Overview Comment is a' -ForegroundColor DarkGray
     Write-Host '  formula reading the tab it belongs to, so write the comment on the tab;' -ForegroundColor DarkGray
     Write-Host '  typing over it here replaces the link. On a check tab' -ForegroundColor DarkGray
     Write-Host '  row 2 holds the CheckID, the name, the one-line SQL that ran and what' -ForegroundColor DarkGray
@@ -3047,6 +3554,16 @@ if ($Info) {
     Write-Host '  check_id and check_name as columns, having nowhere else to put them.' -ForegroundColor DarkGray
     Write-Host '  Files are named after the CheckID: BMX-DQ-003.csv' -ForegroundColor DarkGray
     Write-Host '  Upload the .xlsx to Google Drive and open it as Sheets to get the tabs.' -ForegroundColor DarkGray
+
+    Write-Section 'HISTORY'
+    Write-Line "$Entry ... -NoLedger" 'keep this run out of the sport history'
+    Write-Host '  Each run appends its row, finding and eligible counts to RUNS\<Sport>.json,' -ForegroundColor DarkGray
+    Write-Host '  then reads itself against the last one and writes a Verdict per check:' -ForegroundColor DarkGray
+    Write-Host '  Resolved, Improved, Unchanged, Regressed, As expected, Above residual,' -ForegroundColor DarkGray
+    Write-Host '  Unexpectedly empty, Scope moved, Audited nothing, New.' -ForegroundColor DarkGray
+    Write-Host '  What counts as good news comes from _expected in SPORTS\params.json.' -ForegroundColor DarkGray
+    Write-Host '  A record of what a run returned, never evidence: a finding still enters the' -ForegroundColor DarkGray
+    Write-Host '  repository only through PREPARE_DOC_UPDATE.' -ForegroundColor DarkGray
 
     Write-Section 'SESSION'
     Write-Line "$Entry ... -Relogin" 'throw away the cached cookie and log in again'
@@ -3189,6 +3706,10 @@ if ($WithPatterns) {
 # because the discovery rule is a property of the statement rather than of the sport it is
 # pointed at, and a run started with -SportId alone must not lose it.
 $jobs = @(Set-JobCheckSignal -Jobs $jobs -SportName $(if ($sportIdentity) { $ResolvedSportSlug } else { '' }))
+
+# The expectation is derived from the signal just set, then overridden by anything the sport
+# records, so this cannot be folded into the call above.
+$jobs = @(Set-JobCheckExpectation -Jobs $jobs -SportName $(if ($sportIdentity) { $ResolvedSportSlug } else { '' }))
 
 # ----- parameters ----------------------------------------------------------------------
 
@@ -3414,6 +3935,17 @@ if ($isBatch) {
         Write-Host "Running $($jobs.Count) checks into $OutDir" -ForegroundColor DarkGray
     }
 
+    # Read before the first statement is sent. Every verdict this run computes is against
+    # this snapshot, and it is taken before the run appends an entry of its own, so no check
+    # can end up compared against itself.
+    $script:PreviousRun = Import-PreviousRunEntries -Jobs $jobs
+    if ($script:PreviousRun.Count -gt 0) {
+        Write-Host ("Comparing against the last recorded run of {0} check(s)." -f $script:PreviousRun.Count) -ForegroundColor DarkGray
+    }
+    else {
+        Write-Host 'No earlier run recorded for this sport: every verdict this run writes is New.' -ForegroundColor DarkGray
+    }
+
     $summary = @()
     $collected = @()
     $index = 0
@@ -3450,10 +3982,17 @@ if ($isBatch) {
             $rowCount = 0
             $status = 'OK'
             $runKey = Get-JobRunKey -Job $job
+            # Read here rather than after the loop: a check that came back with its COVERAGE
+            # row alone never reaches $collected under a flat format, and a failed one never
+            # reaches it at all, so this is the only point where every check still has rows.
+            $eligible = $null
+            $findings = $null
 
             try {
                 $rows = Get-StatementRows -Statement $job.Sql -CheckId $runKey
                 $rowCount = @($rows).Count
+                $eligible = Get-CoverageCount -Rows $rows
+                $findings = Get-FindingCount -Rows $rows
 
                 if ($rowCount -gt 0) {
                     if ($isWorkbook) {
@@ -3482,7 +4021,8 @@ if ($isBatch) {
 
             $elapsed = ((Get-Date) - $started).TotalSeconds
             $summary += New-RunSummaryRow -Job $job -Rows $rowCount `
-                -Seconds ([math]::Round($elapsed, 1)) -Status $status
+                -Seconds ([math]::Round($elapsed, 1)) -Status $status `
+                -Eligible $eligible -Findings $findings
 
             $colour = if ($status -like 'ERROR*') { 'Red' } else { 'DarkGray' }
             Write-Host ("[{0}/{1}] {2}  rows={3}  {4:n1}s  {5}" -f `
@@ -3642,8 +4182,12 @@ if ($isBatch) {
     }
 
     $decisionFile = Save-RunDecisions -Decisions $script:RunDecision -Path $decisionPath
+    # The run folder, not the workbook inside it: the ledger's runId is what ties an entry to
+    # the frozen artifact that produced it, and that artifact is the whole folder.
+    $runFolder = $(if ($isWorkbook) { Split-Path -Parent $workbookPath } else { $OutDir })
+    $ledgerFiles = @(Save-RunLedger -Summary $summary -Output $runFolder)
 
-    $summary | Format-Table CheckId, Parameters, Name, Signal, Rows, Seconds, Status -AutoSize
+    $summary | Format-Table CheckId, Parameters, Name, Signal, Rows, Findings, Eligible, Seconds, Status -AutoSize
 
     if ($isWorkbook -and $shortened.Count -gt 0) {
         Write-Host "Tab names capped at Excel's 31-character limit:" -ForegroundColor DarkGray
@@ -3686,6 +4230,15 @@ if ($isBatch) {
         if ($decisionFile) { Write-Host "  $decisionFile" -ForegroundColor DarkGray }
     }
 
+    if ($ledgerFiles.Count -gt 0) {
+        Write-Host ("Recorded in {0}. It is a run record, not evidence: a finding still enters" -f `
+                ($ledgerFiles -join ', ')) -ForegroundColor DarkGray
+        Write-Host '  the repository only through PREPARE_DOC_UPDATE.' -ForegroundColor DarkGray
+    }
+    elseif ($NoLedger) {
+        Write-Host 'Not recorded in RUNS/: -NoLedger was given, so the next run compares against the one before this.' -ForegroundColor DarkGray
+    }
+
     $failed = @($summary | Where-Object { $_.Status -like 'ERROR*' }).Count
     $totalRows = ($summary | Measure-Object Rows -Sum).Sum
     Write-Host ("Done: {0} statement(s), {1} rows, {2} failed -> {3}" -f `
@@ -3713,6 +4266,38 @@ Write-Host ("Rows: {0}   Elapsed: {1:n1}s" -f $count, $elapsed.TotalSeconds) -Fo
 if ($isWorkbook -and -not $OutFile) {
     $folder = if ($OutDir) { $OutDir } else { Get-RunFolder -Jobs $jobs }
     $OutFile = Join-Path $folder ((Get-SafeFileName -CheckId $job.CheckId) + '.xlsx')
+}
+
+# Recorded like a batch is, and after the output path is settled so the entry can point at
+# the folder it produced. Re-running one check on its own is the commonest thing to do after
+# colleagues report a fix, so leaving it out would put a hole in the history exactly where
+# the history is being consulted. -NoLedger is how an experiment stays out.
+$script:PreviousRun = Import-PreviousRunEntries -Jobs $jobs
+$singleSummary = @(New-RunSummaryRow -Job $job -Rows $count -Seconds ([math]::Round($elapsed.TotalSeconds, 1)) `
+        -Status 'OK' -Eligible (Get-CoverageCount -Rows $rows) -Findings (Get-FindingCount -Rows $rows))
+$singleLedger = @(Save-RunLedger -Summary $singleSummary `
+        -Output $(if ($OutFile) { Split-Path -Parent $OutFile } else { '' }))
+
+# The reading a single re-run is usually for. Printed rather than left in the ledger, because
+# somebody who ran one check after a reported fix is standing at the terminal waiting for it.
+$singleRow = $singleSummary[0]
+if ($singleRow.Verdict) {
+    $verdictColour = switch ($singleRow.Verdict) {
+        { $_ -in @('Resolved', 'Improved', 'As expected') } { 'Green' }
+        { $_ -in @('Regressed', 'Above residual', 'Unexpectedly empty', 'Audited nothing') } { 'Yellow' }
+        default { 'DarkGray' }
+    }
+    $against = $(if ($null -ne $singleRow.PrevFindings) {
+            ' (was {0}, run {1})' -f $singleRow.PrevFindings, $singleRow.PrevRunId
+        }
+        else { '' })
+    Write-Host ("{0}: {1} finding(s) of {2} eligible, expected {3}{4}" -f `
+            $singleRow.Verdict, $singleRow.Findings, $singleRow.Eligible,
+            $(if ($singleRow.Expected) { $singleRow.Expected } else { 'nothing recorded' }),
+            $against) -ForegroundColor $verdictColour
+}
+if ($singleLedger.Count -gt 0) {
+    Write-Host ("Recorded in {0}" -f ($singleLedger -join ', ')) -ForegroundColor DarkGray
 }
 
 if ($OutFile) {

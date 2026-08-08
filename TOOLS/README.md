@@ -147,6 +147,7 @@ the account in use. The summary:
 | `-TemplateIds 44,50,65` | Narrow the run to these tournament templates |
 | `-WithoutRegistryBranch` | Drop the optional sport-registry branch where a statement marks one |
 | `-Sql "SELECT ..."` / `-File .\q.sql` | Ad-hoc statement |
+| `-NoLedger` | Keep this run out of `RUNS/<Sport>.json` |
 | `-Relogin` | Discard the cached cookie and authenticate again |
 
 ### Parameters
@@ -503,6 +504,62 @@ The sport file still owns the reasoning; this is the machine-readable half of it
 a description of the check's output, not a decision about its future — deprecating a check is
 a separate act, recorded in `POWERBI_REGISTRY.md`.
 
+### What a re-run should return once the data is corrected
+
+The third reserved key is `_expected`, and it answers the question the signal does not. The
+signal says what today's rows are worth. This says what tomorrow's count should be, after
+colleagues have worked through the findings and the sport is run again.
+
+The two are close enough to be confused and the difference is the whole reason this exists.
+Reading a re-run without it means remembering, check by check, which ones were ever supposed
+to reach zero — and across a sport's whole catalogue that memory is the first thing to go. A
+check that comes back with forty rows is either a failure to correct anything or exactly what
+it is meant to return, and nothing in the workbook said which.
+
+Three values, and only the exception is written down:
+
+| Expect | Means |
+|---|---|
+| `Zero` | every finding row is a defect, so a corrected sport returns the `COVERAGE` row alone |
+| `Non-zero` | rows remain however much is corrected: the proportion is the finding, not the row |
+| `Residual` | a known and agreed number of rows stays behind; anything above it is new |
+
+The default comes from the signal, so most checks need no entry at all:
+
+| Signal | Expects |
+|---|---|
+| `Actionable` | `Zero` |
+| `Monitor` | `Non-zero` |
+| `Informational` | `Non-zero` |
+| `Blocked`, `Not applicable` | nothing — no count anybody should be expecting |
+
+```json
+"BMX": {
+  "SPORT_ID": 58,
+  "_expected": {
+    "BMX-DQ-014": {
+      "expect": "Residual",
+      "residual": 12,
+      "reason": "twelve historical rows predate the source that would fix them; the sport file names them"
+    }
+  }
+}
+```
+
+`Test-Package.ps1` holds the block to the same contract the two beside it keep. Every key
+names a `GLOBAL-DQ-NNN` template the sport instantiates or one of its own CheckIDs, every
+reason is non-empty, `Residual` carries its count and nothing else does, and the check has an
+`Approved` row — an expectation about a check that does not run is a statement about nothing,
+which is the rule `Monitor` already keeps. One more finding is specific to this block: **an
+entry restating the value its signal already implies is rejected.** A value written in two
+places is a value that can disagree with itself, and the block exists for the exceptions.
+
+**The expectation is read off the check's invariant, never off the last run's count.** A
+check that happens to return nothing today is not thereby a `Zero` check, exactly as
+`CLAUDE.md` refuses to let an empty population decide applicability. Recording `Zero` because
+a run came back clean is the same mistake in a new column, and it is worse here: a wrong
+expectation is not a missing judgement but a judgement the tooling repeats at every run.
+
 On a sport with a large event or statistic volume, run a capped batch first —
 `-MaxChecks 8` — and read what it costs before letting the whole catalogue go.
 
@@ -626,6 +683,11 @@ following its tab — recovered by re-running the check or by pasting the formul
 direction was chosen because losing a mirror costs a mirror, while a mirror on the check tab
 would have put the text somebody wrote at the same risk. A check that failed or was skipped
 has no tab and gets an empty cell rather than a formula pointing nowhere.
+
+Columns N to U hold the comparison with the run before this one — `Expected`, `Findings`,
+`Eligible`, `Prev findings`, `Prev eligible`, `Change`, `Verdict`, `Last run`. See "What the
+run before this one returned" for what each verdict means and why the block sits after `M`
+rather than beside `Rows`.
 
 `Signal` and `Signal reason` are columns L and M, and the workbook ships with both hidden.
 They are the runner's own classification, settled before the run and unchanged by reading
@@ -838,6 +900,131 @@ uses hyphens rather than colons because Windows rejects `:` in a path.
 back to `output\` inside the repository, which `.gitignore` excludes. `-OutDir` and
 `-OutFile` override the whole scheme for one run.
 
+## What the run before this one returned
+
+Every run is a folder with a date on it, and nothing reads the folder before it. That is
+fine for one check and stops working for a sport: after colleagues have corrected a round of
+findings the sport is run again, and the only way to tell what moved is to open the previous
+workbook beside the new one and compare by eye, check by check.
+
+`RUNS/<Sport>.json` is the run's own history. One entry per run, appended, newest last so a
+`git diff` of the file is the run that was just added and nothing else:
+
+```json
+{
+  "sport": "BMX",
+  "ledgerVersion": 1,
+  "runs": [
+    {
+      "runId": "BMX 07.08.2026 09-09-47",
+      "startedUtc": "2026-08-07T06:09:47Z",
+      "output": "D:\\SQL's Output\\BMX 07.08.2026 09-09-47",
+      "checks": [
+        { "checkId": "BMX-DQ-001", "runKey": "BMX-DQ-001", "parameters": "",
+          "name": "PARTICIPANT_MISSING_DATE_OF_BIRTH", "category": "MISSING_VALUES",
+          "signal": "Monitor", "expected": "Non-zero",
+          "rows": 1065, "findings": 1064, "eligible": 12043,
+          "seconds": 3.2, "status": "OK" }
+      ]
+    }
+  ]
+}
+```
+
+**`findings` and `eligible` are carried rather than the row count alone, because the row
+count cannot be compared.** It includes the `COVERAGE` row, so a clean check reports 1 and a
+check with one finding reports 2. And on its own it says nothing about the population those
+findings came out of: a check that fell from 40 to 3 while its `eligible_count` fell by the
+same proportion corrected nothing. Both numbers were being computed already — `Get-CoverageCount`
+reads the coverage branch to seed the workbook's `Status` — and both were thrown away with
+the terminal. They now also travel in `_summary.csv`.
+
+### The verdict
+
+Each run reads itself against the last recorded one and writes the answer per check. The
+expectation decides what counts as good news, which is the whole reason it is recorded:
+forty rows is a failure to correct anything on one check and exactly the right answer on
+another.
+
+| Verdict | When |
+|---|---|
+| `New` | no earlier run to compare against — this one is the base |
+| `Resolved` | expected `Zero`, and no findings came back |
+| `Improved` / `Unchanged` / `Regressed` | expected `Zero`, and the findings fell, held or rose |
+| `As expected` | expected `Non-zero` and the proportion held; or `Residual` and the findings are within the agreed count |
+| `Above residual` | expected `Residual`, and more rows came back than were agreed to stay |
+| `Unexpectedly empty` | expected `Non-zero`, and nothing came back |
+| `Scope moved` | the audited population shifted by more than 5%, so the raw delta compares two different scopes |
+| `Audited nothing` | `eligible_count` is 0, which is never clean data |
+| *(empty)* | the statement failed, was skipped, or has no `COVERAGE` row to read findings from |
+
+Four of these carry the reasoning that is easy to get wrong:
+
+**`Unexpectedly empty` is the inverse of the mistake this whole column exists to prevent.** A
+check whose findings are population-wide cannot correct itself to nothing, so an empty result
+means it broke — a scope that stopped resolving, a join that stopped matching. Without an
+expectation recorded against it, that check comes back with zero rows and reads as the best
+result on the board.
+
+**`Resolved` and `Unexpectedly empty` are decided before anything is compared,** because zero
+findings is a statement about the data and not about the population it came out of. A sport
+that grew by half still resolves.
+
+**`Scope moved` guards a raw count, and only a raw count.** A check expected to reach zero is
+read by subtraction, so a population that moved makes "was 40, now 3" a claim about two
+different scopes. A `Non-zero` check is read by proportion instead — 1064 of 12 000 and 1170
+of 13 200 are the same picture — so the guard does not apply to it and would misfire if it
+did. Ordinary drift stays quiet: colleagues are correcting the data while it is being read,
+and a threshold that fired every run would be noise.
+
+**`Above residual` is absolute.** An agreed remainder is a count of specific rows somebody
+decided to leave, so exceeding it means new rows arrived, whatever the population did.
+
+The Overview carries the block at **N:U** — `Expected`, `Findings`, `Eligible`,
+`Prev findings`, `Prev eligible`, `Change`, `Verdict`, `Last run` — appended after the hidden
+signal pair rather than inserted beside `Rows`. `H`, `I`, `K` and `L:M` are pinned in three
+places at once, and moving them would break the row-count link, the `Status` dropdown and the
+`Comment` mirror together. The block stays visible: it is the answer to the question a re-run
+is for, and a column somebody has to unhide is a column nobody reads.
+
+A single check run to the screen prints its verdict rather than only filing it, since
+somebody re-running one check after a reported fix is standing at the terminal waiting for
+exactly that line.
+
+Three things are deliberately outside it:
+
+- **Discovery statements.** A round type with a count is a census, not a finding that can be
+  resolved, so the pattern statements `-RunAll` carries alongside the checks are left out
+  rather than filling the history with numbers nobody will compare.
+- **A run with `-NoLedger`.** An experiment, a re-run of one check to see whether it still
+  errors, a narrowed run that is not the sport's periodic pass — none of those should sit in
+  the history the next run compares itself against.
+- **Anything a reviewer wrote.** Not yet: the `Comment` and `Status` a reviewer types still
+  live in the workbook and still do not survive the next run. Carrying them is the step after
+  this one.
+
+A run mixing sports writes to each sport's own file, because a ledger keyed on anything but
+the sport cannot be read by the next run of that sport. A file that cannot be parsed is
+reported and left exactly as it was: a run overwriting a history it could not read would
+destroy the only copy of it, and the history is the reason the file exists.
+
+Nothing prunes it. A sport running its catalogue weekly adds a few dozen small entries a
+week, which is years away from being a problem, and a silent cap would make a history read as
+complete when it was not.
+
+### It is a record, not evidence
+
+`RUNS/` is inside the working copy and tracked in git, which every other thing a run writes
+is not. That is the point — a per-machine file under the output root has no history, no
+backup and no way to reach a colleague — but it places the ledger next to a rule it must not
+be mistaken for.
+
+`CLAUDE.md` is explicit that results produced by this runner are execution output and never
+evidence, and that stands unchanged. The ledger records what a run returned; it does not make
+any of it a structural finding. A finding still enters the repository only through the
+`PREPARE_DOC_UPDATE` sequence in `WORKFLOW.md`, and a coverage count still does not belong in
+`DATABASE.md` or a sport file. What the ledger is for is the next run, not the next document.
+
 ## Batch behaviour
 
 More than one matched CheckID switches to batch mode.
@@ -849,9 +1036,9 @@ More than one matched CheckID switches to batch mode.
   and merged, as described under "A result too large for one request".
 - Statements are sent one at a time with a short pause between them.
 - Row counts and durations are printed per check as the run proceeds. `_summary.csv` keeps
-  both, the `Signal` and `SignalReason`, plus the server's message for a failure; the
-  workbook's Overview tab keeps the same signal metadata and row count and marks a failure
-  `ERROR`.
+  both, the `Findings` and `Eligible` counts, the `Signal` and `SignalReason`, the `Expected`
+  value and its reason, plus the server's message for a failure; the workbook's Overview tab
+  keeps the signal metadata and row count and marks a failure `ERROR`.
 
 A batch inherits the cost constraints in `WORKFLOW.md`. Running the whole catalogue for a
 large sport can time out check by check; narrow the scope in the statement rather than

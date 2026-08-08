@@ -37,15 +37,27 @@ $ErrorActionPreference = 'Stop'
 # The character still has to be produced, because a deprecated registry row uses it.
 $EmDash = [string][char]0x2014
 
-# The two keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
+# The three keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
 # Run-Query.ps1 declares the same names; both files are the contract for those blocks.
 $NotApplicableKey = '_notApplicable'
 $CheckSignalKey = '_checkSignal'
-$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey)
+$ExpectedKey = '_expected'
+$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey)
 
 # Actionable is the default and is never recorded. Deprecated is absent on purpose:
 # POWERBI_REGISTRY.md's Status column owns it, and a value with two owners drifts.
 $CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable')
+
+# What a re-run should return once the findings have been corrected, and the default each
+# signal implies. Only the exception is recorded, so an entry restating its own default is a
+# finding: the block would otherwise grow into a second copy of something already derivable,
+# and every copy drifts. Run-Query.ps1 declares the same pair.
+$CheckExpectValues = @('Zero', 'Non-zero', 'Residual')
+$ExpectedBySignal = @{
+    'Actionable'    = 'Zero'
+    'Monitor'       = 'Non-zero'
+    'Informational' = 'Non-zero'
+}
 
 # The priority band each registry Category falls in. Run-Query.ps1 declares the same map and
 # puts the band in the workbook; this side exists so a category added to the registry without
@@ -999,12 +1011,20 @@ if (Test-Path -LiteralPath $paramsPath) {
             # value carries its own rule. Blocked says the check must not be approved yet;
             # Monitor and Not applicable describe a check that is approved and running, so
             # classifying one that is not approved is a statement about nothing.
+            # Read once for both blocks below: each classifies a check by the template the
+            # sport instantiates or by its own CheckID, and each has a rule about whether that
+            # check is approved to run.
+            $sportRows = @($registryRows |
+                Where-Object { $_.Cells.Count -eq $expectedColumns -and $_.Cells[1] -eq $sport -and $_.Cells[7] -eq 'Approved' })
+            $approvedFamilies = @($sportRows | ForEach-Object { Remove-Backtick $_.Cells[2] })
+            $approvedIds = @($sportRows | ForEach-Object { $_.Cells[0] })
+            $signalOf = @{}
+
             $signalBlock = $property.Value.PSObject.Properties | Where-Object { $_.Name -eq $CheckSignalKey }
             if ($signalBlock) {
-                $sportRows = @($registryRows |
-                    Where-Object { $_.Cells.Count -eq $expectedColumns -and $_.Cells[1] -eq $sport -and $_.Cells[7] -eq 'Approved' })
-                $approvedFamilies = @($sportRows | ForEach-Object { Remove-Backtick $_.Cells[2] })
-                $approvedIds = @($sportRows | ForEach-Object { $_.Cells[0] })
+                foreach ($recorded in $signalBlock.Value.PSObject.Properties) {
+                    $signalOf[$recorded.Name] = [string]$recorded.Value.signal
+                }
 
                 foreach ($entry in $signalBlock.Value.PSObject.Properties) {
                     $key = $entry.Name
@@ -1044,6 +1064,73 @@ if (Test-Path -LiteralPath $paramsPath) {
                     }
                     if ($signal -eq 'Monitor' -and -not $isApproved) {
                         $sportFindings += "SPORTS/params.json: '$sport' classifies $key as 'Monitor' but POWERBI_REGISTRY.md has no Approved row for it; Monitor describes a check that runs"
+                    }
+                }
+            }
+
+            # What a re-run should return once the reported findings have been corrected. The
+            # signal already implies an answer for every check, so this block records only the
+            # checks whose answer is not the implied one - and an entry that restates the
+            # default is a finding rather than a harmless repetition, because a value written
+            # in two places is a value that can disagree with itself.
+            #
+            # An expectation about a check with no Approved row is a statement about nothing,
+            # which is the same rule Monitor carries and for the same reason. It also catches
+            # the confusion worth catching: a Blocked check must not have an Approved row, so
+            # an expectation recorded against one is caught here rather than read as a promise
+            # about output that is not being produced.
+            $expectedBlock = $property.Value.PSObject.Properties | Where-Object { $_.Name -eq $ExpectedKey }
+            if ($expectedBlock) {
+                foreach ($entry in $expectedBlock.Value.PSObject.Properties) {
+                    $key = $entry.Name
+                    $expect = [string]$entry.Value.expect
+                    $reason = [string]$entry.Value.reason
+
+                    $isTemplate = $key -cmatch '^GLOBAL-DQ-\d{3}$'
+                    $isOwn = $key -cmatch "^$([regex]::Escape($sport))-DQ-\d+$"
+                    if (-not $isTemplate -and -not $isOwn) {
+                        $sportFindings += "SPORTS/params.json: '$sport' $ExpectedKey key '$key' is neither a GLOBAL-DQ template ID nor a $sport CheckID"
+                        continue
+                    }
+                    if ($isTemplate -and @($globalDq | Where-Object { $_.CheckId -eq $key }).Count -eq 0) {
+                        $sportFindings += "SPORTS/params.json: '$sport' records an expectation for $key, which is not an existing GLOBAL-DQ template"
+                        continue
+                    }
+
+                    if ($CheckExpectValues -notcontains $expect) {
+                        $sportFindings += "SPORTS/params.json: '$sport' expects '$expect' from $key; allowed: $($CheckExpectValues -join ', ')"
+                        continue
+                    }
+                    if ([string]::IsNullOrWhiteSpace($reason)) {
+                        $sportFindings += "SPORTS/params.json: '$sport' records no reason for expecting '$expect' from $key"
+                    }
+
+                    # Residual is a count of rows that are known and agreed to stay behind, so
+                    # the count is the whole content of the classification. Without it the
+                    # entry says only "some rows remain", which is Non-zero written at length.
+                    $residualText = [string]$entry.Value.residual
+                    $residual = 0
+                    $hasResidual = [int]::TryParse($residualText, [ref]$residual)
+                    if ($expect -eq 'Residual') {
+                        if (-not $hasResidual -or $residual -lt 0) {
+                            $sportFindings += "SPORTS/params.json: '$sport' expects 'Residual' from $key but records no residual count"
+                        }
+                    }
+                    elseif ($residualText -ne '') {
+                        $sportFindings += "SPORTS/params.json: '$sport' records a residual count for $key, which expects '$expect' rather than 'Residual'"
+                    }
+
+                    # The signal recorded for the same check, or Actionable, which is the
+                    # default nobody writes down.
+                    $signal = $(if ($signalOf.ContainsKey($key)) { $signalOf[$key] } else { 'Actionable' })
+                    $implied = $(if ($ExpectedBySignal.ContainsKey($signal)) { $ExpectedBySignal[$signal] } else { '' })
+                    if ($expect -eq $implied) {
+                        $sportFindings += "SPORTS/params.json: '$sport' records '$expect' for $key, which is already what signal '$signal' implies; record only the exception"
+                    }
+
+                    $isApproved = $(if ($isTemplate) { $approvedFamilies -contains $key } else { $approvedIds -contains $key })
+                    if (-not $isApproved) {
+                        $sportFindings += "SPORTS/params.json: '$sport' records an expectation for $key but POWERBI_REGISTRY.md has no Approved row for it; an expectation describes a check that runs"
                     }
                 }
             }

@@ -210,6 +210,13 @@ FROM t;
         "signal": "Monitor",
         "reason": "classified in the fixture, to prove a running check carries its signal"
       }
+    },
+    "_expected": {
+      "Fixtureball-DQ-002": {
+        "expect": "Residual",
+        "residual": 4,
+        "reason": "four rows in the fixture are agreed to stay, to prove the count is carried"
+      }
     }
   }
 }
@@ -1290,9 +1297,13 @@ Test-That 'flat run summary writes Signal and SignalReason columns' {
     $saved = @(Import-Csv -LiteralPath $path)
     Assert-Equal 1 $saved.Count 'summary row count'
     # RunKey and Parameters follow the CheckID: a chained run repeats the CheckID by design,
-    # and these two are what tell one execution of it from the next.
-    $expected = '"CheckId","RunKey","Parameters","Name","What","Rows","Seconds","Status",' +
-        '"Priority","Category","Signal","SignalReason"'
+    # and these two are what tell one execution of it from the next. Findings and Eligible sit
+    # beside Rows because they are what make two runs comparable: Rows counts the COVERAGE row
+    # in with the findings, and says nothing about the population they came out of.
+    $expected = '"CheckId","RunKey","Parameters","Name","What","Rows","Findings","Eligible",' +
+        '"Seconds","Status","Priority","Category","Signal","SignalReason",' +
+        '"Expected","ExpectedResidual","ExpectedReason",' +
+        '"Verdict","Change","PrevFindings","PrevEligible","PrevRunId"'
     Assert-Equal $expected $header 'summary column order'
     Assert-Equal 'Monitor' $saved[0].Signal 'saved signal'
     Assert-Equal 'population-wide fixture signal' $saved[0].SignalReason 'saved signal reason'
@@ -1341,6 +1352,50 @@ Test-That 'workbook Overview carries Signal and Signal reason' {
     Assert-True ($xml -match '<col min="13" max="13"[^>]*hidden="1"/></cols>') 'Signal reason should be hidden'
     Assert-True ($xml.IndexOf('<cols>') -lt $xml.IndexOf('<sheetData>')) 'cols must precede sheetData'
     Assert-True ($detailXml -notmatch '<cols>') 'a check tab should hide nothing'
+}
+
+Test-That 'workbook Overview carries the comparison block without moving what was there' {
+    $job = [pscustomobject]@{
+        CheckId = 'Fixtureball-DQ-001'; Name = 'COMPARED'; What = 'compared'
+        Sql = 'SELECT 1;'; Expected = 'Zero'
+    }
+    # A previous run to be read against, so the block has something to show rather than the
+    # empty cells a first run would produce.
+    $script:PreviousRun = @{ 'Fixtureball-DQ-001' = [pscustomobject]@{
+            RunId = 'Fixtureball 01.01.2026 09-00-00'; Findings = 40; Eligible = 900 } }
+    $summary = @(New-RunSummaryRow -Job $job -Rows 4 -Seconds 1 -Status 'OK' -Eligible 900 -Findings 3)
+    $script:PreviousRun = @{}
+
+    $collected = @([pscustomobject]@{
+            Job = $job
+            Rows = @([pscustomobject]@{ check_type = 'COVERAGE'; eligible_count = 900 })
+        })
+    $path = Join-Path $FixtureRoot 'run-with-comparison.xlsx'
+    Save-RunWorkbook -Summary $summary -Collected $collected -Path $path | Out-Null
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem | Out-Null
+    $zip = [IO.Compression.ZipFile]::OpenRead($path)
+    try {
+        $entry = $zip.GetEntry('xl/worksheets/sheet1.xml')
+        $reader = New-Object IO.StreamReader($entry.Open())
+        try { $xml = $reader.ReadToEnd() } finally { $reader.Dispose() }
+    }
+    finally { $zip.Dispose() }
+
+    foreach ($column in @('Expected', 'Findings', 'Eligible', 'Prev findings', 'Prev eligible',
+            'Change', 'Verdict', 'Last run')) {
+        Assert-True ($xml -match (">{0}<" -f [regex]::Escape($column))) "Overview should name the $column column"
+    }
+    Assert-True ($xml -match '>Improved<') 'Overview should carry the verdict'
+    Assert-True ($xml -match 'Fixtureball 01.01.2026 09-00-00') 'and which run it was read against'
+
+    # The whole reason the block is appended rather than inserted: these three are pinned in
+    # the row builder, the validation sqref and here at once, and an inserted column would
+    # break the row-count link, the Status dropdown and the Comment mirror together.
+    Assert-True ($xml -match 'hyperlink ref="H2"') 'Rows should still link from H'
+    Assert-True ($xml -match 'sqref="I2:I2"') 'Status validation should still bind to I'
+    Assert-True ($xml -match '<col min="12" max="12"[^>]*hidden="1"') 'Signal should still be hidden at L'
+    Assert-True ($xml -match '<col min="13" max="13"[^>]*hidden="1"/></cols>') 'Signal reason should still be M, and the last hidden one'
 }
 
 Test-That 'workbook carries the Check By column and the outcome statuses' {
@@ -1568,6 +1623,277 @@ Test-That 'the statement lives on the SQL sheet and C2 jumps to it' {
     Assert-True ($sqlXml -match '>SELECT 1<') 'the first line stands alone'
     Assert-True ($sqlXml -match '>FROM t;<') 'and so does the second'
     Assert-True ($sqlXml -match 'location="&apos;SQL_OFF_THE_TAB&apos;!A1"') 'the block should link back to its results'
+}
+
+Complete-Group
+
+# --------------------------------------------------------------------------------------
+# Expectations and the run ledger
+#
+# What a re-run should return, and whether the run before it can still be read. Both exist
+# for the same reason: a catalogue of fifty checks cannot be re-read after a round of
+# corrections by remembering which ones were ever supposed to reach zero.
+# --------------------------------------------------------------------------------------
+
+$RepoRoot = $fixtureRoot
+
+Start-Group 'Runner' 'Expectations and ledger'
+
+Test-That 'findings are the row count less the COVERAGE row' {
+    $rows = @(
+        [pscustomobject]@{ check_type = 'Missing_DOB'; eligible_count = $null },
+        [pscustomobject]@{ check_type = 'Missing_DOB'; eligible_count = $null },
+        [pscustomobject]@{ check_type = 'COVERAGE'; eligible_count = 900 })
+    Assert-Equal 2 (Get-FindingCount -Rows $rows) 'two findings out of three rows'
+    Assert-Equal 900 (Get-CoverageCount -Rows $rows) 'the eligible population'
+}
+
+Test-That 'a check reporting its COVERAGE row alone has no findings' {
+    $rows = @([pscustomobject]@{ check_type = 'COVERAGE'; eligible_count = 40 })
+    Assert-Equal 0 (Get-FindingCount -Rows $rows) 'a clean check found nothing'
+}
+
+Test-That 'a statement with no check_type reports no finding count rather than guessing' {
+    # A discovery census has no COVERAGE row to subtract, so calling every row a finding
+    # would put a number in the ledger that means nothing when the next run compares it.
+    $rows = @([pscustomobject]@{ round_type_id = 5; events = 412 })
+    Assert-Equal $null (Get-FindingCount -Rows $rows) 'no finding count without a check_type'
+}
+
+Test-That 'an expectation is derived from the signal when the sport records none' {
+    $jobs = @(
+        [pscustomobject]@{ CheckId = 'Fixtureball-DQ-001'; Signal = 'Monitor' },
+        [pscustomobject]@{ CheckId = 'Fixtureball-DQ-004'; Signal = 'Actionable' },
+        [pscustomobject]@{ CheckId = 'Fixtureball-DQ-003'; Signal = 'Blocked' })
+    $hydrated = @(Set-JobCheckExpectation -Jobs $jobs -SportName 'Fixtureball')
+
+    Assert-Equal 'Non-zero' $hydrated[0].Expected 'a Monitor check keeps rows however much is corrected'
+    Assert-Equal 'Zero' $hydrated[1].Expected 'an actionable check should reach its COVERAGE row alone'
+    Assert-Equal '' $hydrated[2].Expected 'a blocked check has no count anybody should expect'
+}
+
+Test-That 'a recorded expectation overrides the one the signal implies' {
+    $jobs = @([pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Signal = 'Actionable' })
+    $hydrated = @(Set-JobCheckExpectation -Jobs $jobs -SportName 'Fixtureball')
+
+    Assert-Equal 'Residual' $hydrated[0].Expected 'the recorded value wins over the derived one'
+    Assert-Equal 4 $hydrated[0].ExpectedResidual 'the residual count is carried'
+    Assert-True ($hydrated[0].ExpectedReason -like '*agreed to stay*') 'the reason travels with it'
+}
+
+Test-That 'an expectation recorded against a template reaches the sport statement that runs it' {
+    # The sport's CheckID is what the registry makes the stable identifier, but a sport that
+    # instantiates a template classifies the template. Both keys have to resolve.
+    $jobs = @([pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Template = 'GLOBAL-DQ-002'; Signal = 'Actionable' })
+    $hydrated = @(Set-JobCheckExpectation -Jobs $jobs -SportName 'Fixtureball')
+    Assert-Equal 'Residual' $hydrated[0].Expected 'the sport CheckID resolves when the template records nothing'
+}
+
+Test-That 'the run summary carries findings, eligible and the expectation' {
+    $job = [pscustomobject]@{
+        CheckId = 'Fixtureball-DQ-002'; Name = 'SPORT_AUTHORED'; What = 'a thing'
+        Signal = 'Actionable'; Expected = 'Residual'; ExpectedResidual = 4; ExpectedReason = 'agreed'
+    }
+    $row = New-RunSummaryRow -Job $job -Rows 6 -Seconds 1 -Status 'OK' -Eligible 900 -Findings 5
+    Assert-Equal 5 $row.Findings 'findings'
+    Assert-Equal 900 $row.Eligible 'eligible'
+    Assert-Equal 'Residual' $row.Expected 'expectation'
+    Assert-Equal 4 $row.ExpectedResidual 'residual count'
+}
+
+Test-That 'a run is appended to the sport ledger, newest last' {
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'SPORT_AUTHORED'; What = 'a thing'; Expected = 'Zero' }
+    $first = @(New-RunSummaryRow -Job $job -Rows 41 -Seconds 1 -Status 'OK' -Eligible 900 -Findings 40)
+    Save-RunLedger -Summary $first -Output 'Fixtureball 01.01.2026 09-00-00' | Out-Null
+
+    $second = @(New-RunSummaryRow -Job $job -Rows 4 -Seconds 1 -Status 'OK' -Eligible 900 -Findings 3)
+    $written = @(Save-RunLedger -Summary $second -Output 'Fixtureball 02.01.2026 09-00-00')
+
+    Assert-Equal 1 $written.Count 'one file per sport'
+    $ledger = Get-Content -LiteralPath $written[0] -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert-Equal 'Fixtureball' $ledger.sport 'the ledger names its sport'
+    Assert-Equal 2 @($ledger.runs).Count 'both runs are kept'
+    Assert-Equal 'Fixtureball 02.01.2026 09-00-00' $ledger.runs[-1].runId 'newest last, so a diff shows the run just added'
+    Assert-Equal 40 $ledger.runs[0].checks[0].findings 'the first run keeps its findings'
+    Assert-Equal 3 $ledger.runs[-1].checks[0].findings 'and the second keeps its own'
+    Assert-Equal 900 $ledger.runs[-1].checks[0].eligible 'the population both were read against'
+}
+
+Test-That 'a discovery statement is left out of the ledger' {
+    # A round type with a count is not a finding that can be resolved, so recording it would
+    # fill the history with numbers nobody is going to compare.
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $script:RunSportName = 'Fixtureball'
+    $discovery = [pscustomobject]@{ CheckId = 'GLOBAL-DISCOVERY-018'; Name = 'ROUND_TYPES'; What = 'census' }
+    $check = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'SPORT_AUTHORED'; What = 'a thing' }
+    $summary = @(
+        (New-RunSummaryRow -Job $discovery -Rows 9 -Seconds 1 -Status 'OK'),
+        (New-RunSummaryRow -Job $check -Rows 4 -Seconds 1 -Status 'OK' -Eligible 900 -Findings 3))
+
+    $written = @(Save-RunLedger -Summary $summary -Output 'Fixtureball 03.01.2026 09-00-00')
+    $script:RunSportName = ''
+
+    $ledger = Get-Content -LiteralPath $written[0] -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert-Equal 1 @($ledger.runs[-1].checks).Count 'only the check is recorded'
+    Assert-Equal 'Fixtureball-DQ-002' $ledger.runs[-1].checks[0].checkId 'and it is the DQ one'
+}
+
+Test-That 'a run mixing sports writes to each sport ledger' {
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $summary = @(
+        (New-RunSummaryRow -Job ([pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'A'; What = '' }) `
+            -Rows 1 -Seconds 1 -Status 'OK' -Eligible 5 -Findings 0),
+        (New-RunSummaryRow -Job ([pscustomobject]@{ CheckId = 'Otherball-DQ-001'; Name = 'B'; What = '' }) `
+            -Rows 1 -Seconds 1 -Status 'OK' -Eligible 7 -Findings 0))
+
+    $written = @(Save-RunLedger -Summary $summary -Output 'MIXED 04.01.2026 09-00-00')
+    Assert-Equal 2 $written.Count 'a ledger keyed on anything but the sport cannot be read by that sport'
+    Assert-True (Test-Path -LiteralPath (Join-Path $ledgerDir 'Fixtureball.json')) 'Fixtureball has its own file'
+    Assert-True (Test-Path -LiteralPath (Join-Path $ledgerDir 'Otherball.json')) 'and so does Otherball'
+}
+
+Test-That 'a check with no earlier run is New rather than judged' {
+    Assert-Equal 'New' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 40 `
+            -Eligible 900 -Previous $null -Ran $true) 'the first run is the base'
+}
+
+Test-That 'a check that should reach zero and did is Resolved' {
+    $before = [pscustomobject]@{ Findings = 40; Eligible = 900; RunId = 'a' }
+    Assert-Equal 'Resolved' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 0 `
+            -Eligible 900 -Previous $before -Ran $true) 'nothing left to correct'
+}
+
+Test-That 'Resolved is read before the population is, because zero is absolute' {
+    # Zero findings says something about the data, not about how many objects it came out
+    # of, so a sport that grew by half still resolves rather than reporting Scope moved.
+    $before = [pscustomobject]@{ Findings = 40; Eligible = 900; RunId = 'a' }
+    Assert-Equal 'Resolved' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 0 `
+            -Eligible 1400 -Previous $before -Ran $true) 'a moved scope does not unresolve a clean check'
+}
+
+Test-That 'a population-wide check returning nothing is Unexpectedly empty' {
+    # The one case where zero is the alarming answer: a check whose findings are the whole
+    # population cannot correct itself to nothing, so an empty result means it broke.
+    $before = [pscustomobject]@{ Findings = 1064; Eligible = 12000; RunId = 'a' }
+    Assert-Equal 'Unexpectedly empty' (Get-CheckVerdict -Expected 'Non-zero' -Residual $null `
+            -Findings 0 -Eligible 12000 -Previous $before -Ran $true) 'zero is wrong here'
+}
+
+Test-That 'a check that audited nothing outranks every comparison' {
+    $before = [pscustomobject]@{ Findings = 40; Eligible = 900; RunId = 'a' }
+    Assert-Equal 'Audited nothing' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 0 `
+            -Eligible 0 -Previous $before -Ran $true) 'eligible_count 0 is never clean data'
+}
+
+Test-That 'findings falling against a steady population is Improved, and rising is Regressed' {
+    $before = [pscustomobject]@{ Findings = 40; Eligible = 900; RunId = 'a' }
+    Assert-Equal 'Improved' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 3 `
+            -Eligible 900 -Previous $before -Ran $true) 'fewer findings'
+    Assert-Equal 'Unchanged' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 40 `
+            -Eligible 900 -Previous $before -Ran $true) 'the same findings'
+    Assert-Equal 'Regressed' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 51 `
+            -Eligible 900 -Previous $before -Ran $true) 'more findings'
+}
+
+Test-That 'a population that moved makes the raw delta incomparable' {
+    # 900 to 1200 is a third again as many objects. Three findings out of 1200 may be worse
+    # data than forty out of 900, and calling that an improvement is the one wrong answer
+    # this column can give.
+    $before = [pscustomobject]@{ Findings = 40; Eligible = 900; RunId = 'a' }
+    Assert-Equal 'Scope moved' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 3 `
+            -Eligible 1200 -Previous $before -Ran $true) 'the two runs audited different scopes'
+
+    # Drift below the threshold is the normal state - colleagues are correcting the data
+    # while it is being read - so it must not fire on every run.
+    Assert-Equal 'Improved' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 3 `
+            -Eligible 920 -Previous $before -Ran $true) 'ordinary drift is not a moved scope'
+}
+
+Test-That 'an agreed remainder is judged against its own count' {
+    $before = [pscustomobject]@{ Findings = 40; Eligible = 900; RunId = 'a' }
+    Assert-Equal 'As expected' (Get-CheckVerdict -Expected 'Residual' -Residual 12 -Findings 12 `
+            -Eligible 900 -Previous $before -Ran $true) 'exactly the agreed remainder'
+    Assert-Equal 'As expected' (Get-CheckVerdict -Expected 'Residual' -Residual 12 -Findings 5 `
+            -Eligible 900 -Previous $before -Ran $true) 'below it'
+    Assert-Equal 'Above residual' (Get-CheckVerdict -Expected 'Residual' -Residual 12 -Findings 13 `
+            -Eligible 900 -Previous $before -Ran $true) 'one row more than was agreed'
+}
+
+Test-That 'a population-wide check is compared by proportion, not by count' {
+    # 1064 of 12000 and 1170 of 13200 are the same picture; the raw count rose by a hundred.
+    $before = [pscustomobject]@{ Findings = 1064; Eligible = 12000; RunId = 'a' }
+    Assert-Equal 'As expected' (Get-CheckVerdict -Expected 'Non-zero' -Residual $null `
+            -Findings 1170 -Eligible 13200 -Previous $before -Ran $true) 'the same proportion'
+    Assert-Equal 'Regressed' (Get-CheckVerdict -Expected 'Non-zero' -Residual $null `
+            -Findings 2400 -Eligible 12000 -Previous $before -Ran $true) 'the proportion doubled'
+}
+
+Test-That 'a failed or unreadable statement gets no verdict at all' {
+    $before = [pscustomobject]@{ Findings = 40; Eligible = 900; RunId = 'a' }
+    Assert-Equal '' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings $null `
+            -Eligible $null -Previous $before -Ran $false) 'a failed statement produced nothing to judge'
+    Assert-Equal '' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings $null `
+            -Eligible $null -Previous $before -Ran $true) 'nor did one with no COVERAGE row'
+}
+
+Test-That 'the previous run is read from the ledger, skipping the runs that failed' {
+    # Comparing against an error says nothing. The reading a reviewer wants is against the
+    # last run that actually produced a number, which may be two runs back.
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'A'; What = '' }
+    Save-RunLedger -Summary @(New-RunSummaryRow -Job $job -Rows 41 -Seconds 1 -Status 'OK' `
+            -Eligible 900 -Findings 40) -Output 'run-one' | Out-Null
+    Save-RunLedger -Summary @(New-RunSummaryRow -Job $job -Rows 0 -Seconds 1 `
+            -Status 'ERROR: fixture') -Output 'run-two' | Out-Null
+
+    $previous = Import-PreviousRunEntries -Jobs @($job)
+    Assert-Equal 40 $previous['Fixtureball-DQ-002'].Findings 'the last run that produced a number'
+    Assert-Equal 'run-one' $previous['Fixtureball-DQ-002'].RunId 'and the run it came from'
+}
+
+Test-That 'the summary carries the verdict and what it was read against' {
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'A'; What = ''; Expected = 'Zero' }
+    Save-RunLedger -Summary @(New-RunSummaryRow -Job $job -Rows 41 -Seconds 1 -Status 'OK' `
+            -Eligible 900 -Findings 40) -Output 'run-one' | Out-Null
+
+    $script:PreviousRun = Import-PreviousRunEntries -Jobs @($job)
+    $row = New-RunSummaryRow -Job $job -Rows 4 -Seconds 1 -Status 'OK' -Eligible 900 -Findings 3
+    $script:PreviousRun = @{}
+
+    Assert-Equal 'Improved' $row.Verdict 'the verdict'
+    Assert-Equal -37 $row.Change 'the signed change'
+    Assert-Equal 40 $row.PrevFindings 'what it was read against'
+    Assert-Equal 'run-one' $row.PrevRunId 'and which run that was'
+}
+
+Test-That 'an unreadable ledger is reported rather than overwritten' {
+    # The history is the whole reason the file exists, so a run that cannot read it must not
+    # replace it with one entry of its own.
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+    New-Item -ItemType Directory -Path $ledgerDir -Force | Out-Null
+
+    $path = Join-Path $ledgerDir 'Fixtureball.json'
+    [IO.File]::WriteAllText($path, '{ not json at all', (New-Object Text.UTF8Encoding $false))
+
+    $summary = @(New-RunSummaryRow -Job ([pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'A'; What = '' }) `
+            -Rows 1 -Seconds 1 -Status 'OK' -Eligible 5 -Findings 0)
+    $written = @(Save-RunLedger -Summary $summary -Output 'Fixtureball 05.01.2026 09-00-00')
+
+    Assert-Equal 0 $written.Count 'nothing is written over a history that could not be read'
+    Assert-Equal '{ not json at all' (Get-Content -LiteralPath $path -Raw) 'and the file is left exactly as it was'
 }
 
 Complete-Group
@@ -1811,6 +2137,85 @@ Test-That 'two swapped registry rows are reported as out of order' {
     $run = Invoke-PackageValidator -Root $root
     Assert-Equal 1 $run.ExitCode 'validator exit code'
     Assert-True ($run.Text -match 'is out of order') "the order finding should be reported; output was:`n$($run.Text)"
+}
+
+function Set-FixtureExpectation {
+    # Writes an _expected block into a throwaway copy's SPORTS/params.json. The block is the
+    # thing under test, so it is injected as text rather than round-tripped through
+    # ConvertTo-Json, which would reformat the whole file and hide what changed.
+    param([string]$Root, [string]$Sport, [string]$Block)
+
+    $path = Join-Path $Root 'SPORTS\params.json'
+    $text = [IO.File]::ReadAllText($path)
+    $anchor = '  "{0}": {{' -f $Sport
+    $index = $text.IndexOf($anchor)
+    if ($index -lt 0) { throw "the $Sport entry was not found in the fixture copy" }
+
+    $insertAt = $index + $anchor.Length
+    $text = $text.Insert($insertAt, "`n    `"_expected`": {`n$Block`n    },")
+    [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+}
+
+Test-That 'an expectation restating the default its signal implies is reported' {
+    # The block records exceptions. A value written in two places is a value that can
+    # disagree with itself, which is the same reason Actionable is never written down.
+    $root = Copy-RepositoryFixture -Name 'expected-restates-default'
+    Set-FixtureExpectation -Root $root -Sport 'BMX' -Block @'
+      "BMX-DQ-003": {
+        "expect": "Zero",
+        "reason": "restates what an actionable check already implies"
+      }
+'@
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match 'record only the exception') `
+        "the restated-default finding should be reported; output was:`n$($run.Text)"
+}
+
+Test-That 'a Residual expectation without its count is reported' {
+    $root = Copy-RepositoryFixture -Name 'expected-no-residual'
+    Set-FixtureExpectation -Root $root -Sport 'BMX' -Block @'
+      "BMX-DQ-003": {
+        "expect": "Residual",
+        "reason": "says some rows stay behind without saying how many"
+      }
+'@
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match 'records no residual count') `
+        "the missing-count finding should be reported; output was:`n$($run.Text)"
+}
+
+Test-That 'an expectation for a check with no Approved row is reported' {
+    $root = Copy-RepositoryFixture -Name 'expected-unapproved'
+    Set-FixtureExpectation -Root $root -Sport 'BMX' -Block @'
+      "BMX-DQ-994": {
+        "expect": "Non-zero",
+        "reason": "no registry row assigns this CheckID"
+      }
+'@
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match 'an expectation describes a check that runs') `
+        "the unapproved finding should be reported; output was:`n$($run.Text)"
+}
+
+Test-That 'an expectation outside the vocabulary is reported' {
+    $root = Copy-RepositoryFixture -Name 'expected-unknown-value'
+    Set-FixtureExpectation -Root $root -Sport 'BMX' -Block @'
+      "BMX-DQ-003": {
+        "expect": "Fewer",
+        "reason": "not one of the three the runner can read"
+      }
+'@
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match "expects 'Fewer'") `
+        "the vocabulary finding should be reported; output was:`n$($run.Text)"
 }
 
 Test-That 'a sport index row without its database name is reported' {
