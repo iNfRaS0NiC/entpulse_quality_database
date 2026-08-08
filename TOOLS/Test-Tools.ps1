@@ -1770,6 +1770,17 @@ Test-That 'a check that should reach zero and did is Resolved' {
             -Eligible 900 -Previous $before -Ran $true) 'nothing left to correct'
 }
 
+Test-That 'a check that was clean and stayed clean is not called Resolved' {
+    # Resolved claims work landed. Said every week about a check that has never had a finding,
+    # it buries the rows that did change among the ones that never do. Seen on the first live
+    # run, where a check with no findings in either run reported Resolved.
+    $clean = [pscustomobject]@{ Findings = 0; Eligible = 7166; RunId = 'a' }
+    Assert-Equal 'Clean' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 0 `
+            -Eligible 7166 -Previous $clean -Ran $true) 'clean then, clean now'
+    Assert-Equal 'Clean' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 0 `
+            -Eligible 7166 -Previous $null -Ran $true) 'and a first run that found nothing resolved nothing either'
+}
+
 Test-That 'Resolved is read before the population is, because zero is absolute' {
     # Zero findings says something about the data, not about how many objects it came out
     # of, so a sport that grew by half still resolves rather than reporting Scope moved.
@@ -2014,11 +2025,33 @@ Test-That 'the Overview header is written once and not on every run' {
     Assert-Equal 1 $header.Count 'an empty document gets its header'
 
     $existing = [pscustomobject]@{
-        HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}; ResultRowsOf = @{}
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}
     }
     $again = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
     Assert-Equal 0 @($again.Operations | Where-Object { $_.Range -eq 'A1:U1' }).Count `
         'and no later run rewrites it to change nothing'
+}
+
+Test-That 'a document without an Overview tab has one added before anything names it' {
+    # A new spreadsheet has a single Sheet1. Google rejects an entire batch with "Unable to
+    # parse range" if one range names a tab that does not exist, so the very first run would
+    # fail on its own header write. Observed live against an empty document.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
+
+    $ops = @($plan.Operations)
+    $add = @($ops | Where-Object { $_.Kind -eq 'AddSheet' -and $_.Sheet -eq 'Overview' })
+    Assert-Equal 1 $add.Count 'Overview is added'
+    $addAt = [array]::IndexOf($ops, $add[0])
+    $writeAt = [array]::IndexOf($ops, @($ops | Where-Object { $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' })[0])
+    Assert-True ($addAt -lt $writeAt) 'before the first thing written into it'
+
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}
+    }
+    $again = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    Assert-Equal 0 @($again.Operations | Where-Object { $_.Kind -eq 'AddSheet' -and $_.Sheet -eq 'Overview' }).Count `
+        'and not added a second time'
 }
 
 Test-That 'a check that stopped running keeps its tab and is marked instead' {
@@ -2040,9 +2073,11 @@ Test-That 'a check that stopped running keeps its tab and is marked instead' {
     Assert-Equal 'Not in this run' $marked[0].Values[0][0] 'saying it did not run rather than nothing'
 }
 
-Test-That 'a check tab is cleared past what it held before, not only past what it holds now' {
+Test-That 'a check tab is cleared to its end, not to a depth this code believes it has' {
     # Forty rows last run and three this one would otherwise leave thirty-seven stale rows
-    # under the three new ones, which reads as forty findings.
+    # under the three new ones, which reads as forty findings. Clearing to a remembered depth
+    # is only right while the memory is: a -TestRun that wrote the sheet without recording, a
+    # hand edit, a write that failed halfway. The end of the tab is a fact.
     $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'SHRANK'; What = ''; Sql = 'SELECT 1;' }
     $rows = @(1..3 | ForEach-Object { [pscustomobject]@{ check_type = 'X'; id = $_ } })
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
@@ -2050,14 +2085,44 @@ Test-That 'a check tab is cleared past what it held before, not only past what i
         HasOverviewHeader = $true
         OverviewRowOf = @{ 'Fixtureball-DQ-002' = 2 }
         TabOf = @{ 'Fixtureball-DQ-002' = 'SHRANK' }
-        ResultRowsOf = @{ 'Fixtureball-DQ-002' = 40 }
     }
     $plan = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
         -Existing $existing -OutputFolder 'x'
 
     $clear = @($plan.Operations | Where-Object { $_.Kind -eq 'Clear' })
     Assert-Equal 1 $clear.Count 'one clear for the tab'
-    Assert-Equal 'A5:Z45' $clear[0].Range 'cleared to the previous run depth, not this one'
+    Assert-Equal 'A5:Z' $clear[0].Range 'open ended, so nothing stale can survive below the new rows'
+
+    $ops = @($plan.Operations)
+    $clearAt = [array]::IndexOf($ops, $clear[0])
+    $writeAt = [array]::IndexOf($ops, @($ops | Where-Object {
+                $_.Kind -eq 'Write' -and $_.Sheet -eq 'SHRANK' -and $_.Range -like 'A5:*' })[0])
+    Assert-True ($clearAt -lt $writeAt) 'and cleared before the new rows land on top'
+}
+
+Test-That 'a write too large for one request is split at its own first row' {
+    $rows = @(1..7 | ForEach-Object { , @("r$_", $_) })
+    $operation = [pscustomobject]@{ Kind = 'Write'; Sheet = 'BIG'; Range = 'A5:B11'; Values = $rows }
+    $chunks = @(Split-SheetsWriteChunks -Operation $operation -ChunkSize 3)
+
+    Assert-Equal 3 $chunks.Count 'seven rows in threes'
+    Assert-Equal 'A5:B7' $chunks[0].Range 'the first chunk starts where the block does'
+    Assert-Equal 'A8:B10' $chunks[1].Range 'the second continues without a gap'
+    Assert-Equal 'A11:B11' $chunks[2].Range 'and the last is the remainder, not a full chunk'
+    Assert-Equal 7 (@($chunks | ForEach-Object { @($_.Values).Count }) | Measure-Object -Sum).Sum 'no row is lost or repeated'
+}
+
+Test-That 'a write that fits is not split' {
+    $operation = [pscustomobject]@{ Kind = 'Write'; Sheet = 'S'; Range = 'A5:B6'; Values = @(, @('a', 1)) }
+    Assert-Equal 1 @(Split-SheetsWriteChunks -Operation $operation -ChunkSize 2000).Count 'one operation in, one out'
+}
+
+Test-That 'a null cell is sent as empty rather than as JSON null' {
+    # The API rejects a null inside a value range, and every run has them: a check with no
+    # previous run has no Prev findings, no Change and no Last run.
+    Assert-Equal '' (ConvertTo-SheetsCellValue -Value $null) 'null becomes empty'
+    Assert-Equal 12 (ConvertTo-SheetsCellValue -Value 12) 'a number stays a number'
+    Assert-Equal 'Resolved' (ConvertTo-SheetsCellValue -Value 'Resolved') 'a string stays a string'
 }
 
 Test-That 'a check tab never writes the two cells the reviewer owns' {
@@ -2114,6 +2179,46 @@ Test-That 'a result under the cap carries no truncation note' {
 
     Assert-Equal '' @($plan.Operations | Where-Object { $_.Range -eq 'C3' })[0].Values[0][0] `
         'nothing was cut, so the tab says nothing'
+}
+
+Test-That 'two checks abbreviating to one title do not collide' {
+    # addSheet fails outright on a duplicate title, and it is sent in the same batch as every
+    # other tab this run adds - so one collision would cost the whole document update.
+    $first = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'SAME_NAME'; What = ''; Sql = 'SELECT 1;' }
+    $second = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-004'; Name = 'SAME_NAME'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @(
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'),
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-004' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $rows = @([pscustomobject]@{ check_type = 'X' })
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}
+        Titles = @('Overview')
+    }
+
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected @(
+        [pscustomobject]@{ Job = $first; Rows = $rows },
+        [pscustomobject]@{ Job = $second; Rows = $rows })
+
+    $added = @($plan.Operations | Where-Object { $_.Kind -eq 'AddSheet' } | ForEach-Object { $_.Sheet })
+    Assert-Equal 2 $added.Count 'both tabs are added'
+    Assert-Equal 2 (@($added | Select-Object -Unique)).Count 'and under different titles'
+    Assert-True ($added -contains 'SAME_NAME~2') "the second is suffixed; got $($added -join ', ')"
+}
+
+Test-That 'a title the document already uses is not minted a second time' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'TAKEN'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    # The tab exists but carries a different check's id in A2, so this check has no tab of its
+    # own and needs one - under a title that is free.
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}
+        Titles = @('Overview', 'TAKEN')
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected `
+        @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
+
+    Assert-Equal 'TAKEN~2' @($plan.Operations | Where-Object { $_.Kind -eq 'AddSheet' })[0].Sheet `
+        'the existing tab is left alone and a free title is used'
 }
 
 Test-That 'a plan large enough to threaten the document says so' {

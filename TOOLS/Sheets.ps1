@@ -17,6 +17,57 @@
     .ps1 without a BOM as ANSI, so a literal em dash would arrive mojibaked and fail to parse.
 #>
 
+$SheetsApiRoot = 'https://sheets.googleapis.com/v4/spreadsheets'
+$SheetsTokenUrl = 'https://oauth2.googleapis.com/token'
+$SheetsScope = 'https://www.googleapis.com/auth/spreadsheets'
+
+# The title Google gives a spreadsheet nobody has named. The runner names the document only
+# while it still reads exactly this, and never again: a colleague who renames it has decided
+# something, and an instrument that quietly puts its own name back every week is the same
+# defect as one that overwrites a comment.
+$SheetsUntitled = 'Untitled spreadsheet'
+
+# Rows per write request. A single 20 000-row block is megabytes of JSON in one body, which is
+# slow to build, slow to send and all-or-nothing if it fails.
+$SheetsWriteChunk = 2000
+
+$script:SheetsAccessToken = ''
+$script:SheetsTokenExpiry = [datetime]::MinValue
+
+function Set-SheetsAddressFamily {
+    <#
+        Refuse IPv6 for a host whose IPv6 is dead.
+
+        sheets.googleapis.com resolves to eight IPv6 addresses before its first IPv4 one, and
+        on a network that cannot route 2001:4860::/32 every one of them has to time out before
+        .NET Framework tries IPv4. It has no Happy Eyeballs: the addresses are walked in order,
+        each waiting out its own connect timeout. Measured here, the first request to the host
+        took 168 seconds and every request after it 207 milliseconds, because by then the
+        connection was established and pooled.
+
+        The fix is the bind delegate, and which of its two forms is used matters. Returning a
+        mismatched local endpoint for an IPv6 remote reads as a failed bind and .NET retries the
+        same address, which is slower than doing nothing - it ran past seven minutes. Throwing
+        makes it abandon that address and move to the next, and the same first request then
+        takes three seconds.
+
+        This is a workaround for a network fault rather than a fix for one. If the IPv6 route
+        starts working, or IPv6 is disabled on the adapter, this becomes a no-op that costs
+        nothing.
+    #>
+    param([string]$Uri)
+
+    $point = [Net.ServicePointManager]::FindServicePoint([Uri]$Uri)
+    if ($point.BindIPEndPointDelegate) { return }
+    $point.BindIPEndPointDelegate = {
+        param($servicePoint, $remoteEndPoint, $retryCount)
+        if ($remoteEndPoint.AddressFamily -eq [Net.Sockets.AddressFamily]::InterNetworkV6) {
+            throw (New-Object InvalidOperationException 'IPv6 refused for this host')
+        }
+        return $null
+    }
+}
+
 # How many result rows one check may put in the live document. The hard limit is Google's, at
 # 10 million cells per spreadsheet, and it is a document budget rather than a per-tab one: a
 # sport is around fifty checks in one permanent file, so a single six-figure check can take a
@@ -172,6 +223,24 @@ function New-SheetsMergePlan {
         foreach ($key in $Existing.TabOf.Keys) { $tabOf[$key] = [string]$Existing.TabOf[$key] }
     }
 
+    # Every title already in the document, plus the ones this plan is about to mint. Two check
+    # names can abbreviate to the same string, and addSheet fails outright on a duplicate
+    # title - which would take the whole run's document update with it. Sheets allows 100
+    # characters where Excel allows 31, so nothing is truncated here; only collisions are
+    # resolved, the same way the workbook resolves them.
+    $usedTitles = @{}
+    if ($Existing -and $Existing.Titles) {
+        foreach ($title in @($Existing.Titles)) { $usedTitles[[string]$title] = $true }
+    }
+    $usedTitles['Overview'] = $true
+
+    # A new document has one tab called Sheet1 and no Overview. The tab has to exist before
+    # anything names it in a range - Google rejects the whole batch with "Unable to parse
+    # range" otherwise - and Invoke-SheetsPlan sends every AddSheet before any write.
+    if (-not $Existing -or -not $Existing.HasOverviewSheet) {
+        $plan += [pscustomobject]@{ Kind = 'AddSheet'; Sheet = 'Overview' }
+    }
+
     # A document nobody has written to yet has no header. Written once, and never again: on
     # every later run row 1 is already right, and rewriting it would be an API call a run
     # makes to change nothing.
@@ -254,10 +323,19 @@ function New-SheetsMergePlan {
                 ([string]$_.RunKey -eq $runKey) -or ([string]$_.CheckId -eq $runKey) })
         $entry = $(if ($entry.Count -gt 0) { $entry[0] } else { $null })
 
-        $title = $(if ($tabOf.ContainsKey($runKey)) { $tabOf[$runKey] }
-            else { Get-ShortSheetName -Name $(if ($item.Job.Name) { $item.Job.Name } else { $runKey }) })
-
-        if (-not $tabOf.ContainsKey($runKey)) {
+        $title = ''
+        if ($tabOf.ContainsKey($runKey)) {
+            $title = $tabOf[$runKey]
+        }
+        else {
+            $wanted = Get-ShortSheetName -Name $(if ($item.Job.Name) { $item.Job.Name } else { $runKey })
+            $title = $wanted
+            $suffix = 2
+            while ($usedTitles.ContainsKey($title)) {
+                $title = "$wanted~$suffix"
+                $suffix++
+            }
+            $usedTitles[$title] = $true
             $plan += [pscustomobject]@{ Kind = 'AddSheet'; Sheet = $title }
             $tabOf[$runKey] = $title
         }
@@ -303,19 +381,20 @@ function New-SheetsMergePlan {
             Values = @(, @($note))
         }
 
-        # Cleared before it is written, and cleared further than it is written, because a
-        # check that found forty rows last run and three this one would otherwise show three
-        # new rows above thirty-seven stale ones - which reads as forty findings.
-        $previousRows = 0
-        if ($Existing -and $Existing.ResultRowsOf -and $Existing.ResultRowsOf.ContainsKey($runKey)) {
-            $previousRows = [int]$Existing.ResultRowsOf[$runKey]
-        }
-        $clearTo = [math]::Max($previousRows, $written.Count) + $SheetsCheckTabResultRow
+        # Cleared before it is written, and to the end of the tab rather than to a remembered
+        # depth. A check that found forty rows last run and three this one would otherwise
+        # leave thirty-seven stale rows under the three new ones, which reads as forty
+        # findings.
+        #
+        # Open-ended on purpose. Clearing to a depth this code believes the tab has is only
+        # right while that belief is: a run recorded with -TestRun, an edit somebody made by
+        # hand, a failed write halfway through - any of those and the remembered number is
+        # short, which leaves exactly the stale rows this exists to remove. The end of the
+        # tab is a fact rather than a belief, and costs the same one request.
         $plan += [pscustomobject]@{
             Kind  = 'Clear'
             Sheet = $title
-            Range = (New-SheetsRange -FromColumn 1 -FromRow $SheetsCheckTabResultRow `
-                    -ToColumn 26 -ToRow $clearTo)
+            Range = '{0}{1}:Z' -f (ConvertTo-SheetsColumnName -Index 1), $SheetsCheckTabResultRow
         }
 
         if ($written.Count -gt 0) {
@@ -352,4 +431,278 @@ function New-SheetsMergePlan {
         RowOf      = $rowOf
         TabOf      = $tabOf
     }
+}
+
+# ----- transport -------------------------------------------------------------------------
+#
+# Everything above computes; everything below sends. The split is what lets the merge be
+# tested without a login, and nothing below decides anything the merge has not already
+# decided.
+
+function Get-SheetsAccessToken {
+    # The refresh token is long-lived and recorded once by Connect-Sheets.ps1; an access token
+    # lasts an hour. Cached for the process with a minute of margin, because a run that takes
+    # fifty minutes must not fail on the last check for a token that expired mid-request.
+    param([switch]$Force)
+
+    if (-not $Force -and $script:SheetsAccessToken -and (Get-Date) -lt $script:SheetsTokenExpiry) {
+        return $script:SheetsAccessToken
+    }
+
+    foreach ($name in @('EP_SHEETS_CLIENT_ID', 'EP_SHEETS_CLIENT_SECRET', 'EP_SHEETS_REFRESH_TOKEN')) {
+        if ([string]::IsNullOrWhiteSpace([Environment]::GetEnvironmentVariable($name))) {
+            throw ("$name is not set. Run TOOLS\Connect-Sheets.ps1 once to authorise the " +
+                'Google account; TOOLS\README.md has the console steps that come before it.')
+        }
+    }
+
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+    Set-SheetsAddressFamily -Uri $SheetsTokenUrl
+
+    try {
+        $response = Invoke-RestMethod -Method Post -Uri $SheetsTokenUrl -TimeoutSec 60 -Body @{
+            client_id     = $env:EP_SHEETS_CLIENT_ID
+            client_secret = $env:EP_SHEETS_CLIENT_SECRET
+            refresh_token = $env:EP_SHEETS_REFRESH_TOKEN
+            grant_type    = 'refresh_token'
+        }
+    }
+    catch {
+        # invalid_grant is the one worth naming, because its cause is never in this code and
+        # the message Google returns does not say what to do about it.
+        $detail = $_.Exception.Message
+        if ($detail -like '*400*') {
+            $detail += ("`n  The refresh token was rejected. It is revoked by a password change, by " +
+                'removing the app from the account, or after seven days if the OAuth consent screen ' +
+                'is External and still in Testing. Re-run TOOLS\Connect-Sheets.ps1 -Force.')
+        }
+        throw "Google refused the refresh token: $detail"
+    }
+
+    $script:SheetsAccessToken = [string]$response.access_token
+    $script:SheetsTokenExpiry = (Get-Date).AddSeconds([int]$response.expires_in - 60)
+    return $script:SheetsAccessToken
+}
+
+function Invoke-SheetsApi {
+    param(
+        [string]$Method,
+        [string]$Path,
+        $Body
+    )
+
+    $uri = "$SheetsApiRoot/$Path"
+    Set-SheetsAddressFamily -Uri $uri
+    $headers = @{ Authorization = 'Bearer ' + (Get-SheetsAccessToken) }
+
+    $arguments = @{
+        Method     = $Method
+        Uri        = $uri
+        Headers    = $headers
+        TimeoutSec = 180
+    }
+    if ($null -ne $Body) {
+        $arguments['Body'] = ($Body | ConvertTo-Json -Depth 12 -Compress)
+        $arguments['ContentType'] = 'application/json; charset=utf-8'
+    }
+
+    try { return Invoke-RestMethod @arguments }
+    catch {
+        # Google's own message is in the body and says far more than the status line does -
+        # which range was malformed, which sheet does not exist, which scope is missing.
+        $detail = $_.Exception.Message
+        if ($_.Exception.Response) {
+            try {
+                $reader = New-Object IO.StreamReader($_.Exception.Response.GetResponseStream())
+                $detail = $reader.ReadToEnd()
+            }
+            catch { }
+        }
+        throw "Sheets API $Method $Path failed: $detail"
+    }
+}
+
+function Read-SheetState {
+    <#
+        What the document already holds, in the shape New-SheetsMergePlan expects.
+
+        Two reads, not more. The tab list and the Overview CheckID column are enough: an
+        existing check is found by its CheckID and updated in the row it occupies, and a tab
+        is found by the Check ID its own A2 carries rather than by guessing at the title,
+        because the title is an abbreviation of the check name and the name can change.
+    #>
+    param([string]$SpreadsheetId)
+
+    $meta = Invoke-SheetsApi -Method Get -Path "$SpreadsheetId`?fields=properties.title,sheets.properties.title"
+    $titles = @($meta.sheets | ForEach-Object { [string]$_.properties.title })
+    $hasOverview = ($titles -contains 'Overview')
+
+    # Only tabs that exist may be named in a range. Google rejects the whole batch with
+    # "Unable to parse range" for one that does not, so a brand new document - which has a
+    # single Sheet1 and no Overview - would fail on the read before anything could be written.
+    $reads = @()
+    if ($hasOverview) { $reads += 'Overview!A1:B' }
+    $checkTabs = @($titles | Where-Object { $_ -ne 'Overview' })
+    foreach ($title in $checkTabs) { $reads += "'" + ($title -replace "'", "''") + "'!A2" }
+
+    $rowOf = @{}
+    $tabOf = @{}
+    $hasHeader = $false
+
+    if ($reads.Count -gt 0) {
+        $query = ($reads | ForEach-Object { 'ranges=' + [uri]::EscapeDataString($_) }) -join '&'
+        $values = Invoke-SheetsApi -Method Get -Path "$SpreadsheetId/values:batchGet`?$query&majorDimension=ROWS"
+        $ranges = @($values.valueRanges)
+
+        $offset = 0
+        if ($hasOverview -and $ranges.Count -gt 0) {
+            $rows = @($ranges[0].values)
+            # Row 1 is the header when there is one at all; CheckID is column B.
+            $hasHeader = ($rows.Count -gt 0 -and @($rows[0]).Count -gt 0 -and
+                -not [string]::IsNullOrWhiteSpace([string]@($rows[0])[0]))
+            for ($r = 1; $r -lt $rows.Count; $r++) {
+                $cells = @($rows[$r])
+                if ($cells.Count -lt 2) { continue }
+                $checkId = [string]$cells[1]
+                if (-not [string]::IsNullOrWhiteSpace($checkId)) { $rowOf[$checkId] = $r + 1 }
+            }
+            $offset = 1
+        }
+
+        # A tab is matched to its check by the Check ID its own A2 carries, never by its
+        # title: the title is an abbreviation of the check name, and a name can change without
+        # the check becoming a different one.
+        for ($i = 0; $i -lt $checkTabs.Count; $i++) {
+            $index = $i + $offset
+            if ($index -ge $ranges.Count) { break }
+            $rows = @($ranges[$index].values)
+            if ($rows.Count -eq 0 -or @($rows[0]).Count -eq 0) { continue }
+            $checkId = [string]@($rows[0])[0]
+            if (-not [string]::IsNullOrWhiteSpace($checkId)) { $tabOf[$checkId] = $checkTabs[$i] }
+        }
+    }
+
+    return [pscustomobject]@{
+        Title             = [string]$meta.properties.title
+        Titles            = $titles
+        HasOverviewSheet  = $hasOverview
+        HasOverviewHeader = $hasHeader
+        OverviewRowOf     = $rowOf
+        TabOf             = $tabOf
+    }
+}
+
+function Split-SheetsWriteChunks {
+    # One write operation into as many as its row count needs. A 20 000-row block is megabytes
+    # of JSON in a single body: slow to build, slow to send, and lost entirely if it fails.
+    param($Operation, [int]$ChunkSize = $SheetsWriteChunk)
+
+    $values = @($Operation.Values)
+    if ($values.Count -le $ChunkSize) { return @($Operation) }
+
+    # Only a range anchored at a known first row can be split, which every result block is.
+    if ($Operation.Range -notmatch '^([A-Z]+)(\d+):([A-Z]+)(\d+)$') { return @($Operation) }
+    $fromColumn = $matches[1]
+    $fromRow = [int]$matches[2]
+    $toColumn = $matches[3]
+
+    $chunks = @()
+    $offset = 0
+    while ($offset -lt $values.Count) {
+        $slice = @($values | Select-Object -Skip $offset -First $ChunkSize)
+        $start = $fromRow + $offset
+        $chunks += [pscustomobject]@{
+            Kind   = 'Write'
+            Sheet  = $Operation.Sheet
+            Range  = '{0}{1}:{2}{3}' -f $fromColumn, $start, $toColumn, ($start + $slice.Count - 1)
+            Values = $slice
+        }
+        $offset += $ChunkSize
+    }
+    return $chunks
+}
+
+function ConvertTo-SheetsCellValue {
+    # Sheets takes strings, numbers and booleans. A $null becomes an empty string rather than
+    # a JSON null, which the API rejects inside a value range.
+    param($Value)
+
+    if ($null -eq $Value) { return '' }
+    if ($Value -is [bool]) { return $Value }
+    if ($Value -is [int] -or $Value -is [long] -or $Value -is [double] -or $Value -is [decimal]) { return $Value }
+    return [string]$Value
+}
+
+function Invoke-SheetsPlan {
+    # Send a plan. Ordered rather than batched into one call: tabs have to exist before
+    # anything is written into them, and stale rows have to be gone before new ones land on
+    # top of them. Within each of those three phases the requests are batched.
+    param([string]$SpreadsheetId, $Plan)
+
+    $operations = @($Plan.Operations)
+
+    $adds = @($operations | Where-Object { $_.Kind -eq 'AddSheet' })
+    if ($adds.Count -gt 0) {
+        $requests = @($adds | ForEach-Object {
+                @{ addSheet = @{ properties = @{ title = $_.Sheet } } } })
+        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $requests } | Out-Null
+    }
+
+    $clears = @($operations | Where-Object { $_.Kind -eq 'Clear' })
+    if ($clears.Count -gt 0) {
+        $ranges = @($clears | ForEach-Object { "'" + ($_.Sheet -replace "'", "''") + "'!" + $_.Range })
+        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId/values:batchClear" -Body @{ ranges = $ranges } | Out-Null
+    }
+
+    $writes = @()
+    foreach ($operation in @($operations | Where-Object { $_.Kind -eq 'Write' })) {
+        $writes += Split-SheetsWriteChunks -Operation $operation
+    }
+
+    $data = @()
+    foreach ($write in $writes) {
+        $rows = @()
+        foreach ($row in @($write.Values)) {
+            $rows += , @(@($row) | ForEach-Object { ConvertTo-SheetsCellValue -Value $_ })
+        }
+        $data += @{
+            range  = "'" + ($write.Sheet -replace "'", "''") + "'!" + $write.Range
+            values = $rows
+        }
+    }
+
+    if ($data.Count -gt 0) {
+        # RAW, not USER_ENTERED. A finding is data, and a check name beginning with a hyphen
+        # or a value Sheets would read as a date must arrive as what the database returned.
+        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId/values:batchUpdate" -Body @{
+            valueInputOption = 'RAW'
+            data             = $data
+        } | Out-Null
+    }
+
+    return [pscustomobject]@{
+        Added   = $adds.Count
+        Cleared = $clears.Count
+        Written = $writes.Count
+    }
+}
+
+function Set-SheetTitleIfUnnamed {
+    # Named once, while Google's own placeholder is still there, and never again. A colleague
+    # who renames the document has decided something, and putting the runner's name back every
+    # week is the same defect as overwriting a comment.
+    param([string]$SpreadsheetId, [string]$CurrentTitle, [string]$Title)
+
+    if ([string]::IsNullOrWhiteSpace($Title)) { return $false }
+    if ($CurrentTitle -ne $SheetsUntitled -and -not [string]::IsNullOrWhiteSpace($CurrentTitle)) { return $false }
+
+    Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{
+        requests = @(@{
+                updateSpreadsheetProperties = @{
+                    properties = @{ title = $Title }
+                    fields     = 'title'
+                }
+            })
+    } | Out-Null
+    return $true
 }

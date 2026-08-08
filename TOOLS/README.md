@@ -12,6 +12,10 @@ row or a paste marker; see "Package validation" below.
 `Sheets.ps1` computes what a run would write into the live per-sport Google Sheet. It is
 dot-sourced by the runner and sends nothing itself; see "The live per-sport document".
 
+`Connect-Sheets.ps1` is the one-time Google authorisation for that document. It is the only
+interactive script in the package: it opens a browser, waits for a person, and is meant to be
+run once per machine and forgotten.
+
 `Test-Tools.ps1` tests these scripts themselves - selection, parameter expansion, the
 catalogue parser, the workbook writer and the sheet merge. Run it after changing any of them;
 see "Tool tests" below.
@@ -151,6 +155,9 @@ the account in use. The summary:
 | `-WithoutRegistryBranch` | Drop the optional sport-registry branch where a statement marks one |
 | `-Sql "SELECT ..."` / `-File .\q.sql` | Ad-hoc statement |
 | `-TestRun` | A run that leaves no trace: results written under `TEST …`, nothing recorded |
+| `-SheetId 1qyz…` | The live per-sport document to update. Needed once; remembered afterwards |
+| `-SheetTitle "…"` | What to call it, used only while it is still `Untitled spreadsheet` |
+| `-NoSheet` | Record the run, but leave the live document alone |
 | `-Relogin` | Discard the cached cookie and authenticate again |
 
 ### Parameters
@@ -952,7 +959,8 @@ another.
 | Verdict | When |
 |---|---|
 | `New` | no earlier run to compare against — this one is the base |
-| `Resolved` | expected `Zero`, and no findings came back |
+| `Clean` | expected `Zero`, no findings came back, and none came back last time either |
+| `Resolved` | expected `Zero`, no findings came back, and last time there were some |
 | `Improved` / `Unchanged` / `Regressed` | expected `Zero`, and the findings fell, held or rose |
 | `As expected` | expected `Non-zero` and the proportion held; or `Residual` and the findings are within the agreed count |
 | `Above residual` | expected `Residual`, and more rows came back than were agreed to stay |
@@ -972,6 +980,11 @@ result on the board.
 **`Resolved` and `Unexpectedly empty` are decided before anything is compared,** because zero
 findings is a statement about the data and not about the population it came out of. A sport
 that grew by half still resolves.
+
+**`Resolved` and `Clean` are the same zero and not the same news.** `Resolved` claims work
+landed, so it is said only where work landed; a check that was clean last week and is clean
+this week has resolved nothing. Saying otherwise every week buries the rows that did change
+among the ones that never do.
 
 **`Scope moved` guards a raw count, and only a raw count.** A check expected to reach zero is
 read by subtraction, so a population that moved makes "was 40, now 3" a claim about two
@@ -1066,9 +1079,81 @@ Two rules follow from the document outliving the run, and both are easy to get w
   though it were this one's. Deleting it would throw away the one thing in the document
   nobody can regenerate.
 
-A check tab is also cleared further than it is written. Forty rows last run and three this
-one would otherwise leave thirty-seven stale rows under the three new ones, which reads as
-forty findings.
+A check tab is also cleared to its end before it is written, rather than to a depth this code
+believes it has. Forty rows last run and three this one would otherwise leave thirty-seven
+stale rows under the three new ones, which reads as forty findings — and a remembered depth is
+only right while the memory is, which a `-TestRun`, a hand edit or a half-finished write all
+break. The end of the tab is a fact.
+
+One thing the live document does not yet carry that the workbook does: Overview's `Comment`
+is a plain cell here rather than a formula mirroring the check tab's `G2`. Both are the
+reviewer's and neither is overwritten, so nothing is lost — but a comment written on a tab
+does not yet show up on the board.
+
+### Pointing a sport at its document
+
+Create the Sheet yourself, share it with whoever reviews, and give the runner its id once —
+the part of the URL between `/d/` and `/edit`:
+
+```powershell
+.\TOOLS\Run-Query.ps1 -Sport Artistic-Gymnastics -RunAll -SheetId 1qyz...uris
+```
+
+The id is recorded in that sport's `RUNS/<Sport>.json` **after** the document has taken a
+write, so a mistyped one never becomes the sport's remembered address. From then on the
+periodic run needs nothing:
+
+```powershell
+.\TOOLS\Run-Query.ps1 -Sport Artistic-Gymnastics -RunAll
+```
+
+The document is created by a person rather than by the runner on purpose. One made through
+the API is born in whoever authorised it's Drive with no one else on it, and sharing is then
+a manual step anyway — later, and in a place nobody thinks to look.
+
+While the title is still Google's own `Untitled spreadsheet`, the first run names it
+`Enetpulse DQ - <Sport>`, or whatever `-SheetTitle` says. After that it is never renamed:
+somebody who titles the document has decided something, and putting the runner's name back
+every week is the same defect as overwriting a comment.
+
+A run that mixes sports updates no document, because the document is per sport and there is
+no honest way to guess which of two a mixed run belongs to. `-TestRun` skips it as it skips
+the ledger, and `-NoSheet` skips only the document for a run that should still be recorded.
+
+**A failure here does not end the run.** By the time the document is written the statements
+have all executed and the workbook is on disk, so an expired token or a revoked share must
+not throw that away. It is reported, and the next run brings the document up to date.
+
+### Authorising, once
+
+The document needs a Google account, and the account is authorised once per machine:
+
+```powershell
+.\TOOLS\Connect-Sheets.ps1
+```
+
+It opens a browser, waits for the account to approve, and writes the refresh token into
+`TOOLS/secrets.local.ps1`, which `.gitignore` excludes alongside the Query Builder
+credentials already there. Every later run exchanges that token for an access token by
+itself, with no browser and no interaction.
+
+Before it can work, two values from Google Cloud Console must be in that file:
+
+```powershell
+$env:EP_SHEETS_CLIENT_ID     = '....apps.googleusercontent.com'
+$env:EP_SHEETS_CLIENT_SECRET = 'GOCSPX-....'
+```
+
+They come from **APIs and Services -> Credentials -> Create credentials -> OAuth client ID**,
+with application type **Desktop app**, in a project that has the **Google Sheets API**
+enabled. A Desktop client accepts any loopback port without registering it, so nothing in the
+console has to match anything here.
+
+**Set the OAuth consent screen to `Internal`, not `External`.** An External app sits in
+`Testing` status, and Google expires its refresh tokens after seven days — so the runner would
+work for a week and then fail with `invalid_grant` until somebody authorised it again. Internal
+has no such expiry. If a later run does start failing that way, the token was revoked, and
+`Connect-Sheets.ps1 -Force` replaces it.
 
 ### How much of a result reaches the document
 

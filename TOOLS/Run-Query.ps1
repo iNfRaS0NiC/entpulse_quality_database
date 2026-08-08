@@ -202,6 +202,20 @@ param(
     # which ones were real.
     [switch]$TestRun,
 
+    # The live per-sport Google Sheet to update, as the id out of its URL: the part between
+    # /d/ and /edit. Needed once per sport - after a run has written to it the id is kept in
+    # that sport's RUNS/<Sport>.json, and later runs find it there.
+    [string]$SheetId,
+
+    # What to call the document, used only while it is still called Untitled spreadsheet.
+    # Defaults to "Enetpulse DQ - <Sport>". A document somebody has already named is left
+    # alone, whoever named it.
+    [string]$SheetTitle,
+
+    # Skip the live document for this run, and write only the workbook. For a run that is real
+    # enough to record but that should not reach the people reading the sheet.
+    [switch]$NoSheet,
+
     # Dot-source the file for its functions and stop before Main. TOOLS/Test-Tools.ps1 uses
     # it to exercise selection, parameter expansion, the parser and the workbook writer
     # without a login or a statement. Nothing in a normal run passes it.
@@ -3017,7 +3031,15 @@ function Get-CheckVerdict {
     # however much the sport grew; a check whose findings are population-wide and returned
     # none is almost certainly broken, and that is worth saying loudly rather than filing as
     # the best result on the board.
-    if ($Expected -eq 'Zero' -and $now -eq 0) { return 'Resolved' }
+    if ($Expected -eq 'Zero' -and $now -eq 0) {
+        # Resolved claims work landed, so it is only said where work landed. A check that was
+        # clean last week and is clean this week has resolved nothing, and reporting it as a
+        # weekly success buries the rows that did change among the ones that never do.
+        if ($null -ne $Previous -and $null -ne $Previous.Findings -and [int]$Previous.Findings -gt 0) {
+            return 'Resolved'
+        }
+        return 'Clean'
+    }
     if ($Expected -eq 'Non-zero' -and $now -eq 0) { return 'Unexpectedly empty' }
 
     # An agreed remainder is an absolute count of rows somebody decided to leave, so it is
@@ -3110,7 +3132,7 @@ function Save-RunLedger {
     #
     # A run that mixes sports writes to each sport's own file, because a ledger keyed on
     # anything but the sport cannot be read by the next run of that sport.
-    param($Summary, [string]$Output)
+    param($Summary, [string]$Output, [string]$SheetId)
 
     if ($TestRun) { return @() }
 
@@ -3149,6 +3171,12 @@ function Save-RunLedger {
         $ledger.ledgerVersion = $LedgerVersion
         $ledger.sport = $sport
 
+        # Recorded only after the document was actually written to, so a mistyped id never
+        # becomes the sport's remembered one. From here a periodic run needs no -SheetId.
+        if (-not [string]::IsNullOrWhiteSpace($SheetId)) {
+            $ledger | Add-Member -NotePropertyName sheetId -NotePropertyValue $SheetId -Force
+        }
+
         $path = Get-LedgerPath -Sport $sport
         $dir = Split-Path -Parent $path
         if ($dir -and -not (Test-Path $dir)) { New-Item -ItemType Directory -Path $dir -Force | Out-Null }
@@ -3156,8 +3184,11 @@ function Save-RunLedger {
         # No byte-order mark, for the same reason _decisions.json has none: ConvertFrom-Json
         # reads one as part of the first property name, so the next run could not read back
         # the file this one wrote.
+        # With a trailing newline, because unlike everything else a run writes this file is
+        # inside the working copy, and Test-Package.ps1 holds every tracked text file to that.
+        # ConvertTo-Json does not end with one.
         try {
-            [IO.File]::WriteAllText($path, ($ledger | ConvertTo-Json -Depth 6),
+            [IO.File]::WriteAllText($path, (($ledger | ConvertTo-Json -Depth 6) + "`r`n"),
                 (New-Object Text.UTF8Encoding $false))
             $written += $path
         }
@@ -3167,6 +3198,81 @@ function Save-RunLedger {
     }
 
     return $written
+}
+
+function Save-RunSheet {
+    <#
+        Bring the sport's live document up to date with this run.
+
+        The sheet id is given once with -SheetId and kept in the sport's ledger afterwards, so
+        a periodic run needs nothing but -RunAll. A run that mixes sports updates nothing: the
+        document is per sport, and there is no honest way to guess which of two sports a mixed
+        run belongs in.
+
+        A failure here is reported and does not end the run. By the time this is reached the
+        statements have all executed and the workbook is on disk, so an expired token or a
+        revoked share must not throw that away - the sheet can be brought up to date by running
+        again, and the results cannot.
+    #>
+    param($Summary, $Collected, [string]$Sport, [string]$OutputFolder)
+
+    if ($TestRun -or $NoSheet) { return $null }
+    if ($Sport -in @('MIXED', 'AD-HOC', 'GLOBAL', '')) { return $null }
+
+    $id = $SheetId
+    if ([string]::IsNullOrWhiteSpace($id)) {
+        $ledger = Read-RunLedger -Sport $Sport
+        if ($ledger -and $ledger.PSObject.Properties.Name -contains 'sheetId') { $id = [string]$ledger.sheetId }
+    }
+    if ([string]::IsNullOrWhiteSpace($id)) { return $null }
+
+    try {
+        Write-Host 'Updating the live document.' -ForegroundColor DarkGray
+        $state = Read-SheetState -SpreadsheetId $id
+
+        $title = $(if ($SheetTitle) { $SheetTitle } else { "Enetpulse DQ - $Sport" })
+        if (Set-SheetTitleIfUnnamed -SpreadsheetId $id -CurrentTitle $state.Title -Title $title) {
+            Write-Host "  named it '$title'" -ForegroundColor DarkGray
+        }
+
+        # Three fields the workbook derives while building its Overview and the summary row
+        # does not carry: which sport the CheckID belongs to, what the Rows cell reads for a
+        # check that failed, and the status the board opens on. Derived here through the same
+        # Get-SeededStatus the workbook uses, so the two cannot come to different conclusions
+        # about the same check.
+        $enriched = @()
+        foreach ($entry in $Summary) {
+            $rowsCell = switch -Wildcard ($entry.Status) {
+                'ERROR*' { 'ERROR' }
+                'SKIPPED*' { 'SKIPPED' }
+                default { $entry.Rows }
+            }
+            $ran = ($rowsCell -isnot [string])
+            $signal = $(if ($entry.Signal) { [string]$entry.Signal } else { 'Actionable' })
+
+            $copy = $entry.PSObject.Copy()
+            $copy | Add-Member -NotePropertyName Sport -NotePropertyValue (Get-SportFromCheckId -CheckId $entry.CheckId) -Force
+            $copy | Add-Member -NotePropertyName RowsCell -NotePropertyValue $rowsCell -Force
+            $copy | Add-Member -NotePropertyName SeededStatus -NotePropertyValue `
+                (Get-SeededStatus -Signal $signal -Rows $rowsCell -Ran $ran -Eligible $entry.Eligible) -Force
+            $enriched += $copy
+        }
+
+        $plan = New-SheetsMergePlan -Summary $enriched -Collected $Collected -Existing $state `
+            -OutputFolder $OutputFolder
+        if ($plan.Warning) { Write-Host "  $($plan.Warning)" -ForegroundColor Yellow }
+
+        $sent = Invoke-SheetsPlan -SpreadsheetId $id -Plan $plan
+        Write-Host ("  {0} tab(s) added, {1} cleared, {2} range(s) written" -f `
+                $sent.Added, $sent.Cleared, $sent.Written) -ForegroundColor DarkGray
+        Write-Host "  https://docs.google.com/spreadsheets/d/$id/edit" -ForegroundColor DarkGray
+        return $id
+    }
+    catch {
+        Write-Host "  the live document was not updated: $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host '  the results are still on disk; running again brings the document up to date.' -ForegroundColor Yellow
+        return $null
+    }
 }
 
 function Save-RunDecisions {
@@ -3575,7 +3681,7 @@ if ($Info) {
     Write-Host '  against the last real one.' -ForegroundColor DarkGray
     Write-Host '  Each run appends its row, finding and eligible counts to RUNS\<Sport>.json,' -ForegroundColor DarkGray
     Write-Host '  then reads itself against the last one and writes a Verdict per check:' -ForegroundColor DarkGray
-    Write-Host '  Resolved, Improved, Unchanged, Regressed, As expected, Above residual,' -ForegroundColor DarkGray
+    Write-Host '  Clean, Resolved, Improved, Unchanged, Regressed, As expected, Above residual,' -ForegroundColor DarkGray
     Write-Host '  Unexpectedly empty, Scope moved, Audited nothing, New.' -ForegroundColor DarkGray
     Write-Host '  What counts as good news comes from _expected in SPORTS\params.json.' -ForegroundColor DarkGray
     Write-Host '  A record of what a run returned, never evidence: a finding still enters the' -ForegroundColor DarkGray
@@ -4204,7 +4310,11 @@ if ($isBatch) {
     # The run folder, not the workbook inside it: the ledger's runId is what ties an entry to
     # the frozen artifact that produced it, and that artifact is the whole folder.
     $runFolder = $(if ($isWorkbook) { Split-Path -Parent $workbookPath } else { $OutDir })
-    $ledgerFiles = @(Save-RunLedger -Summary $summary -Output $runFolder)
+
+    # Before the ledger, so the id is only remembered once the document has taken a write.
+    $sheetUsed = Save-RunSheet -Summary $summary -Collected $collected `
+        -Sport (Get-RunSport -Jobs $jobs) -OutputFolder $runFolder
+    $ledgerFiles = @(Save-RunLedger -Summary $summary -Output $runFolder -SheetId $sheetUsed)
 
     $summary | Format-Table CheckId, Parameters, Name, Signal, Rows, Findings, Eligible, Seconds, Status -AutoSize
 

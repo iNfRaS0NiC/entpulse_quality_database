@@ -1,0 +1,163 @@
+{
+    "sport":  "Artistic-Gymnastics",
+    "ledgerVersion":  1,
+    "runs":  [
+                 {
+                     "runId":  "Artistic-Gymnastics 08.08.2026 06-25-37",
+                     "startedUtc":  "2026-08-08T04:25:37Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 08.08.2026 06-25-37",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-090",
+                                        "runKey":  "Artistic-Gymnastics-DQ-090",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULT_SET_DUPLICATED_ACROSS_DISCIPLINES",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7166,
+                                        "seconds":  5.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-091",
+                                        "runKey":  "Artistic-Gymnastics-DQ-091",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_MEMBERS_DISAGREE_ON_TEAM_RESULT",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  206,
+                                        "seconds":  6.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-092",
+                                        "runKey":  "Artistic-Gymnastics-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DISCIPLINE_INCOMPATIBLE_WITH_GENDER",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  3987,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 08.08.2026 06-29-16",
+                     "startedUtc":  "2026-08-08T04:29:15Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 08.08.2026 06-29-16",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-090",
+                                        "runKey":  "Artistic-Gymnastics-DQ-090",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULT_SET_DUPLICATED_ACROSS_DISCIPLINES",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7166,
+                                        "seconds":  5.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-091",
+                                        "runKey":  "Artistic-Gymnastics-DQ-091",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_MEMBERS_DISAGREE_ON_TEAM_RESULT",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  206,
+                                        "seconds":  6.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-092",
+                                        "runKey":  "Artistic-Gymnastics-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DISCIPLINE_INCOMPATIBLE_WITH_GENDER",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  3987,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 08.08.2026 06-32-53",
+                     "startedUtc":  "2026-08-08T04:32:53Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 08.08.2026 06-32-53",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-090",
+                                        "runKey":  "Artistic-Gymnastics-DQ-090",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULT_SET_DUPLICATED_ACROSS_DISCIPLINES",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7166,
+                                        "seconds":  5.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-091",
+                                        "runKey":  "Artistic-Gymnastics-DQ-091",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_MEMBERS_DISAGREE_ON_TEAM_RESULT",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  206,
+                                        "seconds":  6.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-092",
+                                        "runKey":  "Artistic-Gymnastics-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DISCIPLINE_INCOMPATIBLE_WITH_GENDER",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  3987,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 }
+             ],
+    "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"
+}
