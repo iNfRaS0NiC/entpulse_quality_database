@@ -1878,6 +1878,31 @@ Test-That 'the summary carries the verdict and what it was read against' {
     Assert-Equal 'run-one' $row.PrevRunId 'and which run that was'
 }
 
+Test-That 'a test run records nothing and names its folder so' {
+    # The two halves have to hold together: recording nothing is worthless if the folder is
+    # indistinguishable from a real run's, and marking the folder is worthless if the entry
+    # went in anyway and moved the baseline.
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'A'; What = '' }
+    $summary = @(New-RunSummaryRow -Job $job -Rows 1 -Seconds 1 -Status 'OK' -Eligible 5 -Findings 0)
+
+    $TestRun = $true
+    try {
+        $written = @(Save-RunLedger -Summary $summary -Output 'TEST Fixtureball 01.01.2026 09-00-00')
+        $folder = Get-RunFolder -Jobs @($job)
+    }
+    finally { $TestRun = $false }
+
+    Assert-Equal 0 $written.Count 'a test run appends nothing'
+    Assert-True (-not (Test-Path -LiteralPath $ledgerDir)) 'and creates no ledger at all'
+    Assert-True ((Split-Path -Leaf $folder) -like 'TEST Fixtureball *') 'the folder says which runs can be deleted'
+
+    $real = Get-RunFolder -Jobs @($job)
+    Assert-True ((Split-Path -Leaf $real) -notlike 'TEST *') 'a real run keeps its plain name'
+}
+
 Test-That 'an unreadable ledger is reported rather than overwritten' {
     # The history is the whole reason the file exists, so a run that cannot read it must not
     # replace it with one entry of its own.

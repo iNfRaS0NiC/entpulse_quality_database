@@ -147,7 +147,7 @@ the account in use. The summary:
 | `-TemplateIds 44,50,65` | Narrow the run to these tournament templates |
 | `-WithoutRegistryBranch` | Drop the optional sport-registry branch where a statement marks one |
 | `-Sql "SELECT ..."` / `-File .\q.sql` | Ad-hoc statement |
-| `-NoLedger` | Keep this run out of `RUNS/<Sport>.json` |
+| `-TestRun` | A run that leaves no trace: results written under `TEST …`, nothing recorded |
 | `-Relogin` | Discard the cached cookie and authenticate again |
 
 ### Parameters
@@ -996,12 +996,29 @@ Three things are deliberately outside it:
 - **Discovery statements.** A round type with a count is a census, not a finding that can be
   resolved, so the pattern statements `-RunAll` carries alongside the checks are left out
   rather than filling the history with numbers nobody will compare.
-- **A run with `-NoLedger`.** An experiment, a re-run of one check to see whether it still
-  errors, a narrowed run that is not the sport's periodic pass — none of those should sit in
-  the history the next run compares itself against.
+- **A run with `-TestRun`.** See below.
 - **Anything a reviewer wrote.** Not yet: the `Comment` and `Status` a reviewer types still
   live in the workbook and still do not survive the next run. Carrying them is the step after
   this one.
+
+### A run that leaves no trace
+
+Trying a new statement, checking whether a reported fix took, running a narrowed slice that
+is not the sport's periodic pass — those are not the sport's history, and a run that files
+itself as one moves the baseline every later run is read against.
+
+```powershell
+.\TOOLS\Run-Query.ps1 -Sport BMX -RunAll -TestRun
+```
+
+The run executes normally and its verdicts are still computed against the last recorded run,
+because a test is worth more when it says what moved. What it does not do is record: nothing
+is appended to `RUNS/BMX.json`, so the next real run still compares against the last real one.
+
+**Results are still written**, because a run nobody can read proves nothing. The folder is
+named `TEST BMX 08.08.2026 14-22-05`, so it can be deleted on sight rather than by
+remembering which of ten folders were real. `-OutDir` and `-OutFile` still override the whole
+scheme, and a run given one of those is named whatever it was told.
 
 A run mixing sports writes to each sport's own file, because a ledger keyed on anything but
 the sport cannot be read by the next run of that sport. A file that cannot be parsed is

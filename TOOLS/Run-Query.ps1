@@ -194,10 +194,13 @@ param(
 
     [switch]$Relogin,
 
-    # Keep this run out of RUNS/<Sport>.json. An experiment, a re-run of one check to see
-    # whether it still errors, a narrowed run that is not the sport's periodic pass - none of
-    # those should sit in the history the next run compares itself against.
-    [switch]$NoLedger,
+    # A run that leaves no trace. Trying a new statement, checking whether a fix took, running
+    # a narrowed slice that is not the sport's periodic pass: none of those should sit in the
+    # history the next run compares itself against, and none should touch what a reviewer is
+    # looking at. The results are still written, under a folder named TEST <Sport> <stamp>, so
+    # the run can be read and the folder can be deleted without anyone having to remember
+    # which ones were real.
+    [switch]$TestRun,
 
     # Dot-source the file for its functions and stop before Main. TOOLS/Test-Tools.ps1 uses
     # it to exercise selection, parameter expansion, the parser and the workbook writer
@@ -2313,7 +2316,12 @@ function Get-RunFolder {
 
     # Windows rejects ':' in a path, so the run time separates with hyphens.
     $stamp = Get-Date -Format 'dd.MM.yyyy HH-mm-ss'
-    return Join-Path $OutputRoot ('{0} {1}' -f (Get-RunSport -Jobs $Jobs), $stamp)
+
+    # A test run still writes its results - a run you cannot read proves nothing - but it says
+    # so in the folder name. Ten of them otherwise pile up beside the real ones and the only
+    # thing separating them is whoever remembers which was which.
+    $prefix = $(if ($TestRun) { 'TEST ' } else { '' })
+    return Join-Path $OutputRoot ('{0}{1} {2}' -f $prefix, (Get-RunSport -Jobs $Jobs), $stamp)
 }
 
 function Get-JobRunKey {
@@ -3099,7 +3107,7 @@ function Save-RunLedger {
     # anything but the sport cannot be read by the next run of that sport.
     param($Summary, [string]$Output)
 
-    if ($NoLedger) { return @() }
+    if ($TestRun) { return @() }
 
     $recordable = @($Summary | Where-Object {
             -not [string]::IsNullOrWhiteSpace([string]$_.CheckId) -and
@@ -3556,7 +3564,10 @@ if ($Info) {
     Write-Host '  Upload the .xlsx to Google Drive and open it as Sheets to get the tabs.' -ForegroundColor DarkGray
 
     Write-Section 'HISTORY'
-    Write-Line "$Entry ... -NoLedger" 'keep this run out of the sport history'
+    Write-Line "$Entry ... -TestRun" 'a run that leaves no trace'
+    Write-Host '  Results still land on disk, under TEST <Sport> <stamp> so the folder can be' -ForegroundColor DarkGray
+    Write-Host '  deleted on sight. Nothing is recorded, so the next real run still compares' -ForegroundColor DarkGray
+    Write-Host '  against the last real one.' -ForegroundColor DarkGray
     Write-Host '  Each run appends its row, finding and eligible counts to RUNS\<Sport>.json,' -ForegroundColor DarkGray
     Write-Host '  then reads itself against the last one and writes a Verdict per check:' -ForegroundColor DarkGray
     Write-Host '  Resolved, Improved, Unchanged, Regressed, As expected, Above residual,' -ForegroundColor DarkGray
@@ -3919,6 +3930,9 @@ if (-not $script:Session) {
 # ----- batch run -----------------------------------------------------------------------
 
 if ($isBatch) {
+    if ($TestRun) {
+        Write-Host 'Test run: results are written, nothing is recorded.' -ForegroundColor Yellow
+    }
     if ($isWorkbook) {
         # One workbook for the whole run, so it can be uploaded as a single file.
         $workbookPath = $OutFile
@@ -4235,8 +4249,8 @@ if ($isBatch) {
                 ($ledgerFiles -join ', ')) -ForegroundColor DarkGray
         Write-Host '  the repository only through PREPARE_DOC_UPDATE.' -ForegroundColor DarkGray
     }
-    elseif ($NoLedger) {
-        Write-Host 'Not recorded in RUNS/: -NoLedger was given, so the next run compares against the one before this.' -ForegroundColor DarkGray
+    elseif ($TestRun) {
+        Write-Host 'Test run: nothing recorded in RUNS/, so the next real run still compares against the last real one.' -ForegroundColor DarkGray
     }
 
     $failed = @($summary | Where-Object { $_.Status -like 'ERROR*' }).Count
@@ -4271,7 +4285,7 @@ if ($isWorkbook -and -not $OutFile) {
 # Recorded like a batch is, and after the output path is settled so the entry can point at
 # the folder it produced. Re-running one check on its own is the commonest thing to do after
 # colleagues report a fix, so leaving it out would put a hole in the history exactly where
-# the history is being consulted. -NoLedger is how an experiment stays out.
+# the history is being consulted. -TestRun is how an experiment stays out.
 $script:PreviousRun = Import-PreviousRunEntries -Jobs $jobs
 $singleSummary = @(New-RunSummaryRow -Job $job -Rows $count -Seconds ([math]::Round($elapsed.TotalSeconds, 1)) `
         -Status 'OK' -Eligible (Get-CoverageCount -Rows $rows) -Findings (Get-FindingCount -Rows $rows))
