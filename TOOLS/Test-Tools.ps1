@@ -2221,6 +2221,77 @@ Test-That 'a title the document already uses is not minted a second time' {
         'the existing tab is left alone and a free title is used'
 }
 
+Test-That 'a new row seeds the Comment mirror, and a later run leaves it alone' {
+    # Written once, on the row that did not exist before. On any later run K is the
+    # reviewer's, whether it still holds the formula or the text they typed over it.
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'MIRRORED'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $collected = @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
+
+    $fresh = New-SheetsMergePlan -Summary $summary -Collected $collected -OutputFolder 'x' -Existing (
+        [pscustomobject]@{ HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}; Titles = @('Overview') })
+    $mirror = @($fresh.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'K*' })
+
+    Assert-Equal 1 $mirror.Count 'one mirror written'
+    Assert-Equal "='MIRRORED'!G2" $mirror[0].Values[0][0] 'pointing at the tab it belongs to'
+    Assert-Equal $false $mirror[0].Raw 'sent as USER_ENTERED, or it arrives as the text of a formula'
+
+    # And the mirror must come after the row write that leaves K empty, since both land in
+    # the same run and the later one wins.
+    $ops = @($fresh.Operations)
+    $rowAt = [array]::IndexOf($ops, @($ops | Where-Object { $_.Range -like 'A*:U*' -and $_.Range -ne 'A1:U1' })[0])
+    Assert-True ($rowAt -lt [array]::IndexOf($ops, $mirror[0])) 'the mirror lands on top of the empty cell'
+
+    $second = New-SheetsMergePlan -Summary $summary -Collected $collected -OutputFolder 'x' -Existing (
+        [pscustomobject]@{
+            HasOverviewSheet = $true; HasOverviewHeader = $true
+            OverviewRowOf = @{ 'Fixtureball-DQ-002' = 2 }
+            EmptyCommentOf = @{}
+            TabOf = @{ 'Fixtureball-DQ-002' = 'MIRRORED' }; Titles = @('Overview', 'MIRRORED') })
+    Assert-Equal 0 @($second.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'K*' }).Count `
+        'a row that already exists keeps whatever is in its Comment cell'
+}
+
+Test-That 'an existing row with an empty Comment is seeded, and one with anything in it is not' {
+    # A row written before the mirror existed, or one whose cell was cleared, otherwise never
+    # gets one. An empty cell holds nothing of anyone's; a cell with text in it holds the only
+    # thing in the document that cannot be regenerated.
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'MIRRORED'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $collected = @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
+
+    $state = @{
+        HasOverviewSheet = $true; HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 4 }
+        TabOf = @{ 'Fixtureball-DQ-002' = 'MIRRORED' }; Titles = @('Overview', 'MIRRORED')
+    }
+
+    $state['EmptyCommentOf'] = @{ 'Fixtureball-DQ-002' = $true }
+    $seeded = New-SheetsMergePlan -Summary $summary -Collected $collected -OutputFolder 'x' `
+        -Existing ([pscustomobject]$state)
+    $mirror = @($seeded.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'K*' })
+    Assert-Equal 1 $mirror.Count 'the empty cell is seeded'
+    Assert-Equal 'K4:K4' $mirror[0].Range 'on the row the check already occupies'
+    Assert-Equal "='MIRRORED'!G2" $mirror[0].Values[0][0] 'pointing at its own tab'
+
+    $state['EmptyCommentOf'] = @{}
+    $kept = New-SheetsMergePlan -Summary $summary -Collected $collected -OutputFolder 'x' `
+        -Existing ([pscustomobject]$state)
+    Assert-Equal 0 @($kept.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'K*' }).Count `
+        'and a cell somebody has written in is left alone'
+}
+
+Test-That 'a check with no tab gets no mirror pointing nowhere' {
+    # A check that failed or was skipped has no tab, so a formula would reference a sheet
+    # that does not exist and show as #REF on the board.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 0 -Eligible 9 -Verdict 'New'))
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -OutputFolder 'x' -Existing (
+        [pscustomobject]@{ HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}; Titles = @('Overview') })
+
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'K*' }).Count `
+        'no tab, no mirror'
+}
+
 Test-That 'a plan large enough to threaten the document says so' {
     $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'HUGE'; What = ''; Sql = 'SELECT 1;' }
     $rows = @(1..400 | ForEach-Object { [pscustomobject]@{ a = 1; b = 2; c = 3; d = 4; e = 5 } })

@@ -258,6 +258,31 @@ function New-SheetsMergePlan {
         $nextRow = ([int](($rowOf.Values | Measure-Object -Maximum).Maximum)) + 1
     }
 
+    # Tab titles are settled before the Overview rows rather than while writing the tabs
+    # themselves, because a new Overview row carries a formula pointing at its check's tab and
+    # cannot be written before that tab has a name. Resolving them in one pass also puts every
+    # collision check in one place.
+    $titleOf = @{}
+    foreach ($item in $Collected) {
+        $runKey = Get-JobRunKey -Job $item.Job
+        if ($tabOf.ContainsKey($runKey)) {
+            $titleOf[$runKey] = $tabOf[$runKey]
+            continue
+        }
+
+        $wanted = Get-ShortSheetName -Name $(if ($item.Job.Name) { $item.Job.Name } else { $runKey })
+        $title = $wanted
+        $suffix = 2
+        while ($usedTitles.ContainsKey($title)) {
+            $title = "$wanted~$suffix"
+            $suffix++
+        }
+        $usedTitles[$title] = $true
+        $plan += [pscustomobject]@{ Kind = 'AddSheet'; Sheet = $title }
+        $tabOf[$runKey] = $title
+        $titleOf[$runKey] = $title
+    }
+
     $cells = 0
     $seen = @{}
 
@@ -282,6 +307,24 @@ function New-SheetsMergePlan {
                 }
                 $cells += $slice.Count
             }
+
+            # An empty Comment cell holds nothing of anyone's, so seeding the mirror into it
+            # costs nothing and is the only way a row written before the mirror existed - or
+            # one whose cell was cleared - ever gets one. A cell with anything in it, formula
+            # or text, is left alone.
+            $wanted = $(if ($Existing -and $Existing.EmptyCommentOf) { [bool]$Existing.EmptyCommentOf[$runKey] } else { $false })
+            if ($wanted -and $titleOf.ContainsKey($runKey)) {
+                $commentColumn = [array]::IndexOf($SheetsOverviewColumns, 'Comment') + 1
+                $plan += [pscustomobject]@{
+                    Kind   = 'Write'
+                    Raw    = $false
+                    Sheet  = 'Overview'
+                    Range  = (New-SheetsRange -FromColumn $commentColumn -FromRow $row `
+                            -ToColumn $commentColumn -ToRow $row)
+                    Values = @(, @("='" + ($titleOf[$runKey] -replace "'", "''") + "'!G2"))
+                }
+                $cells += 1
+            }
         }
         else {
             # A check the document has never held. This is the one time the run writes the
@@ -294,6 +337,33 @@ function New-SheetsMergePlan {
                 Values = @(, $values)
             }
             $cells += $values.Count
+
+            # Comment mirrors the check tab's G2, so a comment is written once beside the rows
+            # that provoked it and read from the board that lists every check. Seeded on a new
+            # row only: on every later run the cell is the reviewer's, whether it still holds
+            # this formula or the text they typed over it.
+            #
+            # The mirror is one way and cannot be two. A cell holds a value or a formula and
+            # never both, so two cells cannot each feed the other. This is the safer
+            # direction: typing over the mirror costs a mirror, while a mirror on the check
+            # tab would have put the words somebody wrote at the same risk.
+            #
+            # Raw = $false because a formula sent as RAW arrives as the literal text of one.
+            # It is emitted after the row write above, and Invoke-SheetsPlan sends the RAW
+            # batch first, so it lands on top of the empty cell that write leaves at K.
+            if ($titleOf.ContainsKey($runKey)) {
+                $commentColumn = [array]::IndexOf($SheetsOverviewColumns, 'Comment') + 1
+                $plan += [pscustomobject]@{
+                    Kind   = 'Write'
+                    Raw    = $false
+                    Sheet  = 'Overview'
+                    Range  = (New-SheetsRange -FromColumn $commentColumn -FromRow $nextRow `
+                            -ToColumn $commentColumn -ToRow $nextRow)
+                    Values = @(, @("='" + ($titleOf[$runKey] -replace "'", "''") + "'!G2"))
+                }
+                $cells += 1
+            }
+
             $rowOf[$runKey] = $nextRow
             $nextRow++
         }
@@ -323,22 +393,8 @@ function New-SheetsMergePlan {
                 ([string]$_.RunKey -eq $runKey) -or ([string]$_.CheckId -eq $runKey) })
         $entry = $(if ($entry.Count -gt 0) { $entry[0] } else { $null })
 
-        $title = ''
-        if ($tabOf.ContainsKey($runKey)) {
-            $title = $tabOf[$runKey]
-        }
-        else {
-            $wanted = Get-ShortSheetName -Name $(if ($item.Job.Name) { $item.Job.Name } else { $runKey })
-            $title = $wanted
-            $suffix = 2
-            while ($usedTitles.ContainsKey($title)) {
-                $title = "$wanted~$suffix"
-                $suffix++
-            }
-            $usedTitles[$title] = $true
-            $plan += [pscustomobject]@{ Kind = 'AddSheet'; Sheet = $title }
-            $tabOf[$runKey] = $title
-        }
+        # Settled in the pass above, along with any AddSheet it needed.
+        $title = $titleOf[$runKey]
 
         # Row 2 holds the identity, and G2/H2 in the middle of it belong to the reviewer, so
         # the same two-span treatment applies as on Overview.
@@ -540,13 +596,16 @@ function Read-SheetState {
     # Only tabs that exist may be named in a range. Google rejects the whole batch with
     # "Unable to parse range" for one that does not, so a brand new document - which has a
     # single Sheet1 and no Overview - would fail on the read before anything could be written.
+    # Through K rather than through B, because the merge needs to know which Comment cells are
+    # empty as well as which checks are on the board.
     $reads = @()
-    if ($hasOverview) { $reads += 'Overview!A1:B' }
+    if ($hasOverview) { $reads += 'Overview!A1:K' }
     $checkTabs = @($titles | Where-Object { $_ -ne 'Overview' })
     foreach ($title in $checkTabs) { $reads += "'" + ($title -replace "'", "''") + "'!A2" }
 
     $rowOf = @{}
     $tabOf = @{}
+    $emptyComment = @{}
     $hasHeader = $false
 
     if ($reads.Count -gt 0) {
@@ -564,7 +623,14 @@ function Read-SheetState {
                 $cells = @($rows[$r])
                 if ($cells.Count -lt 2) { continue }
                 $checkId = [string]$cells[1]
-                if (-not [string]::IsNullOrWhiteSpace($checkId)) { $rowOf[$checkId] = $r + 1 }
+                if ([string]::IsNullOrWhiteSpace($checkId)) { continue }
+                $rowOf[$checkId] = $r + 1
+
+                # K is column index 10. A short row means the API stopped at the last
+                # non-empty cell, so anything short of K has an empty Comment.
+                if ($cells.Count -lt 11 -or [string]::IsNullOrWhiteSpace([string]$cells[10])) {
+                    $emptyComment[$checkId] = $true
+                }
             }
             $offset = 1
         }
@@ -588,6 +654,7 @@ function Read-SheetState {
         HasOverviewSheet  = $hasOverview
         HasOverviewHeader = $hasHeader
         OverviewRowOf     = $rowOf
+        EmptyCommentOf    = $emptyComment
         TabOf             = $tabOf
     }
 }
@@ -659,24 +726,39 @@ function Invoke-SheetsPlan {
         $writes += Split-SheetsWriteChunks -Operation $operation
     }
 
-    $data = @()
+    $raw = @()
+    $entered = @()
     foreach ($write in $writes) {
         $rows = @()
         foreach ($row in @($write.Values)) {
             $rows += , @(@($row) | ForEach-Object { ConvertTo-SheetsCellValue -Value $_ })
         }
-        $data += @{
+        $range = @{
             range  = "'" + ($write.Sheet -replace "'", "''") + "'!" + $write.Range
             values = $rows
         }
+
+        # Raw is the default and is what almost everything wants. A finding is data: a name
+        # beginning with a hyphen, or a value Sheets would read as a date, has to arrive as
+        # what the database returned. Only the Comment mirror opts out, because a formula
+        # sent as RAW arrives as the literal text of one.
+        $isRaw = $true
+        if ($write.PSObject.Properties.Name -contains 'Raw' -and $write.Raw -eq $false) { $isRaw = $false }
+        if ($isRaw) { $raw += $range } else { $entered += $range }
     }
 
-    if ($data.Count -gt 0) {
-        # RAW, not USER_ENTERED. A finding is data, and a check name beginning with a hyphen
-        # or a value Sheets would read as a date must arrive as what the database returned.
+    # RAW first. The whole-row write of a new Overview row leaves K empty and the mirror lands
+    # on top of it, so the order of these two calls is what decides which value survives.
+    if ($raw.Count -gt 0) {
         Invoke-SheetsApi -Method Post -Path "$SpreadsheetId/values:batchUpdate" -Body @{
             valueInputOption = 'RAW'
-            data             = $data
+            data             = $raw
+        } | Out-Null
+    }
+    if ($entered.Count -gt 0) {
+        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId/values:batchUpdate" -Body @{
+            valueInputOption = 'USER_ENTERED'
+            data             = $entered
         } | Out-Null
     }
 

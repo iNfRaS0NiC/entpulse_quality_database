@@ -157,6 +157,140 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 08.08.2026 07-42-25",
+                     "startedUtc":  "2026-08-08T05:42:25Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 08.08.2026 07-42-25",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-090",
+                                        "runKey":  "Artistic-Gymnastics-DQ-090",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULT_SET_DUPLICATED_ACROSS_DISCIPLINES",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7166,
+                                        "seconds":  5.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-091",
+                                        "runKey":  "Artistic-Gymnastics-DQ-091",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_MEMBERS_DISAGREE_ON_TEAM_RESULT",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  206,
+                                        "seconds":  6.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-092",
+                                        "runKey":  "Artistic-Gymnastics-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DISCIPLINE_INCOMPATIBLE_WITH_GENDER",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  3987,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-093",
+                                        "runKey":  "Artistic-Gymnastics-DQ-093",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NO_RESULT_COMMENT_CARRIES_RANK",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  1301,
+                                        "seconds":  2.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 08.08.2026 07-45-52",
+                     "startedUtc":  "2026-08-08T05:45:51Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 08.08.2026 07-45-52",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-090",
+                                        "runKey":  "Artistic-Gymnastics-DQ-090",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULT_SET_DUPLICATED_ACROSS_DISCIPLINES",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7166,
+                                        "seconds":  5.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-091",
+                                        "runKey":  "Artistic-Gymnastics-DQ-091",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_MEMBERS_DISAGREE_ON_TEAM_RESULT",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  206,
+                                        "seconds":  6.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-092",
+                                        "runKey":  "Artistic-Gymnastics-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DISCIPLINE_INCOMPATIBLE_WITH_GENDER",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  3987,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-093",
+                                        "runKey":  "Artistic-Gymnastics-DQ-093",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NO_RESULT_COMMENT_CARRIES_RANK",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  1301,
+                                        "seconds":  2.5,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"

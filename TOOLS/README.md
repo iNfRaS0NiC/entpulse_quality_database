@@ -1085,10 +1085,22 @@ stale rows under the three new ones, which reads as forty findings — and a rem
 only right while the memory is, which a `-TestRun`, a hand edit or a half-finished write all
 break. The end of the tab is a fact.
 
-One thing the live document does not yet carry that the workbook does: Overview's `Comment`
-is a plain cell here rather than a formula mirroring the check tab's `G2`. Both are the
-reviewer's and neither is overwritten, so nothing is lost — but a comment written on a tab
-does not yet show up on the board.
+Overview's `Comment` mirrors the check tab's `G2`, as it does in the workbook: the comment is
+written once beside the rows that provoked it, and read from the board that lists every check.
+The formula is seeded when the row is created, and afterwards on any run where the cell is
+still empty — an empty cell holds nothing of anyone's, so seeding it costs nothing, and it is
+the only way a row written before the mirror existed ever gets one. A cell with anything in
+it, formula or typed text, is left alone.
+
+The mirror is one way and cannot be two. A cell holds a value or a formula and never both, so
+two cells cannot each feed the other. Typing into Overview's `Comment` replaces the formula and
+that row stops following its tab, recovered by clearing the cell and running again. This
+direction was chosen because losing a mirror costs a mirror, while a mirror on the check tab
+would have put the words somebody wrote at the same risk.
+
+It is also the one thing a run sends as `USER_ENTERED` rather than `RAW`. Everything else is
+data — a name beginning with a hyphen, a value Sheets would read as a date — and has to arrive
+as what the database returned; a formula sent that way arrives as the literal text of one.
 
 ### Pointing a sport at its document
 
