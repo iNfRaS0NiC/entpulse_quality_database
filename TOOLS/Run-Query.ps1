@@ -324,6 +324,16 @@ $HistoryRunColumns = 12
 # "is this moving" without opening anything. Short enough to stay one readable cell.
 $TrendRunCount = 5
 
+# What separates the runs in that cell. Built from its code point rather than typed, as
+# Test-Package.ps1 builds its em dash: these scripts stay pure ASCII because Windows
+# PowerShell 5.1 reads a .ps1 without a BOM as ANSI, and the rule is about the source file
+# rather than about what it writes. The cell gets the real arrow.
+#
+# Not '>', which is what this was first written with. In a cell full of numbers that reads as
+# a comparison operator, so "100 > 105" states something plainly false. The series is
+# chronological and the separator should say so and nothing else.
+$TrendSeparator = ' ' + [string][char]0x2192 + ' '
+
 # The last few findings counts per run key, read once before the batch alongside the previous
 # run. Same snapshot rule: taken before this run appends, so nothing counts itself twice.
 $script:RecentFindings = @{}
@@ -2986,7 +2996,7 @@ function New-RunSummaryRow {
     $series += $(if (-not $ran) { 'ERR' }
         elseif ($null -eq $Findings) { '-' }
         else { [string][int]$Findings })
-    $trend = $(if ($series.Count -gt 1) { $series -join ' > ' } else { '' })
+    $trend = $(if ($series.Count -gt 1) { $series -join $TrendSeparator } else { '' })
 
     return [pscustomobject]@{
         CheckId     = $Job.CheckId

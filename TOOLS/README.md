@@ -700,7 +700,9 @@ Columns N to V hold the comparison with the run before this one — `Expected`, 
 "What the run before this one returned" for what each verdict means and why the block sits
 after `M` rather than beside `Rows`.
 
-`Trend` is the last five finding counts for that check, this run last: `40 > 12 > 3 > 1`. The
+`Trend` is the last five finding counts for that check, this run last: `40 → 12 → 3 → 1`.
+The separator is an arrow rather than `>`, which in a cell full of numbers reads as a
+comparison operator and makes `100 > 105` state something plainly false. The
 board compares against one run and the ledger holds them all; this is the middle, and it is
 the answer to "is this moving" without opening anything. A run where the check failed reads
 `ERR` in the series rather than being skipped — a gap that is drawn over is a week nobody
