@@ -1925,6 +1925,84 @@ Test-That 'the summary carries the verdict and what it was read against' {
     Assert-Equal 'run-one' $row.PrevRunId 'and which run that was'
 }
 
+Test-That 'a recorded run can say when it started, and falls back to its folder name' {
+    $utc = Get-RunStamp -Run ([pscustomobject]@{
+            startedUtc = '2026-08-01T06:30:00Z'; runId = 'Fixtureball 09.09.2026 23-00-00' })
+    Assert-Equal '2026-08-01' $utc.ToString('yyyy-MM-dd') 'startedUtc wins over the folder name'
+
+    # dd.MM.yyyy, read under the invariant culture. A machine set to en-US would otherwise
+    # take this for the third of July.
+    $folder = Get-RunStamp -Run ([pscustomobject]@{ runId = 'Fixtureball 07.03.2026 18-45-00' })
+    Assert-Equal '2026-03-07 18:45' $folder.ToString('yyyy-MM-dd HH:mm') 'the folder name when there is nothing else'
+    Assert-Equal $null (Get-RunStamp -Run ([pscustomobject]@{ runId = 'nothing datable' })) 'and neither'
+}
+
+Test-That 'the Trends column dates to the day, and to the minute when a day repeats' {
+    # Decided once for the whole column rather than per row: two rows formatted differently
+    # read as two different measures.
+    $day = { param($s) [pscustomobject]@{ Stamp = [datetime]$s; Value = '0' } }
+    $spread = @{ a = @((& $day '2026-08-01 09:00'), (& $day '2026-08-08 09:00')) }
+    Assert-Equal 'dd.MM' (Get-TrendStampFormat -Recent $spread `
+            -Current ([datetime]'2026-08-15 09:00')) 'a weekly cadence needs no clock'
+
+    $twice = @{ a = @((& $day '2026-08-01 09:00'), (& $day '2026-08-01 17:00')) }
+    Assert-Equal 'dd.MM HH:mm' (Get-TrendStampFormat -Recent $twice `
+            -Current ([datetime]'2026-08-15 09:00')) 'two runs on one day would print one label twice'
+
+    # This run is a point of the series too, so it settles the format like any other.
+    Assert-Equal 'dd.MM HH:mm' (Get-TrendStampFormat -Recent $spread `
+            -Current ([datetime]'2026-08-08 17:00')) 'including when the repeat is today'
+
+    # A point the ledger cannot date must not decide the format for the ones it can.
+    $undated = @{ a = @([pscustomobject]@{ Stamp = $null; Value = '0' }, (& $day '2026-08-01 09:00')) }
+    Assert-Equal 'dd.MM' (Get-TrendStampFormat -Recent $undated `
+            -Current ([datetime]'2026-08-08 09:00')) 'an undatable point abstains'
+}
+
+Test-That 'a trend point leads with the count and degrades to it when undated' {
+    $script:TrendStampFormat = 'dd.MM'
+    Assert-Equal '12 (01.08)' (Format-TrendPoint -Value '12' -Stamp ([datetime]'2026-08-01 09:00')) 'count first'
+    Assert-Equal 'ERR' (Format-TrendPoint -Value 'ERR' -Stamp $null) 'no empty bracket'
+}
+
+Test-That 'the trend carries a date against every count, this run included' {
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'A'; What = ''; Expected = 'Zero' }
+    $started = $script:RunStartedUtc
+    try {
+        foreach ($pair in @(@('2026-08-01T07:00:00Z', 40), @('2026-08-08T07:00:00Z', 12))) {
+            $script:RunStartedUtc = [datetime]::Parse($pair[0], [Globalization.CultureInfo]::InvariantCulture,
+                [Globalization.DateTimeStyles]::AdjustToUniversal -bor [Globalization.DateTimeStyles]::AssumeUniversal)
+            Save-RunLedger -Output ("run-{0}" -f $pair[1]) -Summary @(New-RunSummaryRow -Job $job `
+                    -Rows ($pair[1] + 1) -Seconds 1 -Status 'OK' -Findings $pair[1] -Eligible 900) | Out-Null
+        }
+
+        $script:RunStartedUtc = [datetime]::Parse('2026-08-15T07:00:00Z', [Globalization.CultureInfo]::InvariantCulture,
+            [Globalization.DateTimeStyles]::AdjustToUniversal -bor [Globalization.DateTimeStyles]::AssumeUniversal)
+        $script:RecentFindings = Import-RecentFindings -Jobs @($job)
+        $script:TrendStampFormat = Get-TrendStampFormat -Recent $script:RecentFindings `
+            -Current $script:RunStartedUtc.ToLocalTime()
+        $row = New-RunSummaryRow -Job $job -Rows 1 -Seconds 1 -Status 'OK' -Eligible 900 -Findings 0
+    }
+    finally {
+        $script:RunStartedUtc = $started
+        $script:RecentFindings = @{}
+        $script:TrendStampFormat = 'dd.MM'
+    }
+
+    # Local time, so the labels follow the clock the reader is looking at rather than UTC.
+    $stamps = @(@('2026-08-01T07:00:00Z', '2026-08-08T07:00:00Z', '2026-08-15T07:00:00Z') | ForEach-Object {
+            ([datetime]::Parse($_, [Globalization.CultureInfo]::InvariantCulture,
+                [Globalization.DateTimeStyles]::AdjustToUniversal -bor
+                [Globalization.DateTimeStyles]::AssumeUniversal)).ToLocalTime().ToString('dd.MM')
+        })
+    $arrow = ' ' + [string][char]0x2192 + ' '
+    $expected = ('40 ({0})' -f $stamps[0]), ('12 ({0})' -f $stamps[1]), ('0 ({0})' -f $stamps[2]) -join $arrow
+    Assert-Equal $expected $row.Trend 'three dated points, this run last'
+}
+
 Test-That 'a test run records nothing and names its folder so' {
     # The two halves have to hold together: recording nothing is worthless if the folder is
     # indistinguishable from a real run's, and marking the folder is worthless if the entry
@@ -2103,14 +2181,14 @@ Test-That 'a check the document has never held is appended, seeded status and al
 
 Test-That 'the Overview header is rewritten every run, so a new column gets a name' {
     # It used to be written once, which held exactly as long as the board never gained a
-    # column. Trend was added, the header of a document created before it stayed twenty-one
+    # column. Trends was added, the header of a document created before it stayed twenty-one
     # cells wide, and Sheets filled the twenty-second with a placeholder of its own.
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
 
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
     $header = @($fresh.Operations | Where-Object { $_.Range -eq 'A1:V1' })
     Assert-Equal 1 $header.Count 'an empty document gets its header'
-    Assert-Equal 'Trend' $header[0].Values[0][21] 'out to the last column the board writes'
+    Assert-Equal 'Trends' $header[0].Values[0][21] 'out to the last column the board writes'
 
     $existing = [pscustomobject]@{
         HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}

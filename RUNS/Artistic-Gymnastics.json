@@ -1603,6 +1603,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "09.08.2026 18-40-52",
+                     "startedUtc":  "2026-08-09T16:40:52Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-090",
+                                        "runKey":  "Artistic-Gymnastics-DQ-090",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULT_SET_DUPLICATED_ACROSS_DISCIPLINES",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7166,
+                                        "seconds":  4.8,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"

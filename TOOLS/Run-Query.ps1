@@ -319,10 +319,22 @@ $LedgerVersion = 1
 # for one check shows every run it has.
 $HistoryRunColumns = 12
 
-# How many runs the Trend column carries, this one included. The document compares against
+# How many runs the Trends column carries, this one included. The document compares against
 # one run and the ledger holds them all; this is the middle, and the middle is what answers
 # "is this moving" without opening anything. Short enough to stay one readable cell.
 $TrendRunCount = 5
+
+# How each point in that cell is dated. A bare series says a check moved but not when, and
+# "when" is the whole question after colleagues report a fix: four zeroes in a row mean one
+# thing across four weeks and another across one afternoon.
+#
+# Two formats rather than one, chosen per run over the whole tail rather than per row, so the
+# column stays a single shape a reader can scan. The short one is what a weekly cadence wants;
+# the long one appears only when two runs in the window fall on the same calendar day, which
+# is exactly when the date alone would print the same label twice and say nothing.
+$TrendStampShort = 'dd.MM'
+$TrendStampLong = 'dd.MM HH:mm'
+$script:TrendStampFormat = $TrendStampShort
 
 # What separates the runs in that cell. Built from its code point rather than typed, as
 # Test-Package.ps1 builds its em dash: these scripts stay pure ASCII because Windows
@@ -2989,11 +3001,18 @@ function New-RunSummaryRow {
         $change = [int]$Findings - [int]$previous.Findings
     }
 
-    # This run last, so the series reads forward and ends on today. One cell, fixed width,
-    # answering "is this moving" without opening the ledger or the console.
+    # This run last, so the series reads forward and ends on today. One cell answering "is this
+    # moving, and over what span" without opening the ledger or the console. Each point is
+    # dated, because a check that has read zero four times says one thing across four weeks
+    # and another across one afternoon of re-runs, and the numbers alone cannot tell them apart.
     $series = @()
-    if ($script:RecentFindings.ContainsKey($runKey)) { $series += @($script:RecentFindings[$runKey]) }
-    $series += $(if (-not $ran) { 'ERR' }
+    if ($script:RecentFindings.ContainsKey($runKey)) {
+        foreach ($point in @($script:RecentFindings[$runKey])) {
+            $series += Format-TrendPoint -Value ([string]$point.Value) -Stamp $point.Stamp
+        }
+    }
+    $series += Format-TrendPoint -Stamp $script:RunStartedUtc.ToLocalTime() -Value $(
+        if (-not $ran) { 'ERR' }
         elseif ($null -eq $Findings) { '-' }
         else { [string][int]$Findings })
     $trend = $(if ($series.Count -gt 1) { $series -join $TrendSeparator } else { '' })
@@ -3099,8 +3118,40 @@ function Import-PreviousRunEntries {
     return $previous
 }
 
+function Get-RunStamp {
+    # When a recorded run started, in local time, or $null if the entry cannot say.
+    #
+    # startedUtc is the authority because it is unambiguous and machine-written. The runId is
+    # the fallback and not the other way round: it is the output folder's name, a person can
+    # rename a folder, and a run printed to the screen never had one. Both are parsed under
+    # the invariant culture - dd.MM.yyyy is the folder convention here and would be read as
+    # MM.dd.yyyy by a machine set to en-US.
+    param($Run)
+
+    $utc = [string]$Run.startedUtc
+    if (-not [string]::IsNullOrWhiteSpace($utc)) {
+        $parsed = [datetime]::MinValue
+        $styles = [Globalization.DateTimeStyles]::AssumeUniversal -bor `
+            [Globalization.DateTimeStyles]::AdjustToUniversal
+        if ([datetime]::TryParse($utc, [Globalization.CultureInfo]::InvariantCulture, $styles, [ref]$parsed)) {
+            return [datetime]::SpecifyKind($parsed, [DateTimeKind]::Utc).ToLocalTime()
+        }
+    }
+
+    if ([string]$Run.runId -match '(\d{2}\.\d{2}\.\d{4} \d{2}-\d{2}-\d{2})$') {
+        $parsed = [datetime]::MinValue
+        if ([datetime]::TryParseExact($matches[1], 'dd.MM.yyyy HH-mm-ss',
+                [Globalization.CultureInfo]::InvariantCulture,
+                [Globalization.DateTimeStyles]::None, [ref]$parsed)) {
+            return $parsed
+        }
+    }
+    return $null
+}
+
 function Import-RecentFindings {
-    # The last few recorded findings counts for each statement about to run, oldest first.
+    # The last few recorded findings for each statement about to run, oldest first, each
+    # carrying the moment its run started so the series can date itself.
     #
     # Unlike Import-PreviousRunEntries this keeps the failed runs. A comparison against an
     # error says nothing and is skipped there; a series with a gap in it is a different thing,
@@ -3116,15 +3167,19 @@ function Import-RecentFindings {
         if ($null -eq $ledger) { continue }
 
         foreach ($run in @($ledger.runs)) {
+            $stamp = Get-RunStamp -Run $run
             foreach ($check in @($run.checks)) {
                 $key = [string]$check.runKey
                 if (-not $recent.ContainsKey($key)) { $recent[$key] = @() }
 
                 $status = [string]$check.status
-                $recent[$key] += $(if ($status -like 'ERROR*' -or $status -like 'SKIPPED*' -or $null -eq $check.findings) {
-                        'ERR'
-                    }
-                    else { [string][int]$check.findings })
+                $recent[$key] += [pscustomobject]@{
+                    Stamp = $stamp
+                    Value = $(if ($status -like 'ERROR*' -or $status -like 'SKIPPED*' -or $null -eq $check.findings) {
+                            'ERR'
+                        }
+                        else { [string][int]$check.findings })
+                }
             }
         }
     }
@@ -3135,6 +3190,42 @@ function Import-RecentFindings {
         $recent[$key] = @(@($recent[$key]) | Select-Object -Last ($Count - 1))
     }
     return $recent
+}
+
+function Get-TrendStampFormat {
+    # Whether this run's Trends column dates its points to the day or to the minute.
+    #
+    # Decided once over every point any row will show, this run's own included, rather than
+    # per row: two rows formatted differently in one column read as two different measures,
+    # and the reader has no way to know the difference is only in how crowded one check's
+    # history happens to be.
+    param($Recent, [datetime]$Current)
+
+    $seen = @{}
+    if ($null -ne $Current) { $seen[$Current.ToString('yyyy-MM-dd')] = 1 }
+
+    foreach ($key in @($Recent.Keys)) {
+        foreach ($point in @($Recent[$key])) {
+            if ($null -eq $point.Stamp) { continue }
+            $day = ([datetime]$point.Stamp).ToString('yyyy-MM-dd')
+            # Any repeat at all settles it: two points would otherwise carry the same label
+            # while standing for different runs.
+            if ($seen.ContainsKey($day)) { return $TrendStampLong }
+            $seen[$day] = 1
+        }
+    }
+    return $TrendStampShort
+}
+
+function Format-TrendPoint {
+    # One point of the series: the finding count, then when it was measured. The count leads
+    # because the shape of the series is what the column is for and the eye should get it
+    # first; an undatable point degrades to the bare number rather than to an empty bracket.
+    param([string]$Value, $Stamp)
+
+    if ($null -eq $Stamp) { return $Value }
+    return '{0} ({1})' -f $Value, ([datetime]$Stamp).ToString($script:TrendStampFormat,
+        [Globalization.CultureInfo]::InvariantCulture)
 }
 
 function Get-CheckVerdict {
@@ -4350,6 +4441,8 @@ if ($isBatch) {
     # can end up compared against itself.
     $script:PreviousRun = Import-PreviousRunEntries -Jobs $jobs
     $script:RecentFindings = Import-RecentFindings -Jobs $jobs
+    $script:TrendStampFormat = Get-TrendStampFormat -Recent $script:RecentFindings `
+        -Current $script:RunStartedUtc.ToLocalTime()
     if ($script:PreviousRun.Count -gt 0) {
         Write-Host ("Comparing against the last recorded run of {0} check(s)." -f $script:PreviousRun.Count) -ForegroundColor DarkGray
     }
@@ -4689,6 +4782,8 @@ if ($isWorkbook -and -not $OutFile) {
 # the history is being consulted. -TestRun is how an experiment stays out.
 $script:PreviousRun = Import-PreviousRunEntries -Jobs $jobs
 $script:RecentFindings = Import-RecentFindings -Jobs $jobs
+$script:TrendStampFormat = Get-TrendStampFormat -Recent $script:RecentFindings `
+    -Current $script:RunStartedUtc.ToLocalTime()
 $singleSummary = @(New-RunSummaryRow -Job $job -Rows $count -Seconds ([math]::Round($elapsed.TotalSeconds, 1)) `
         -Status 'OK' -Eligible (Get-CoverageCount -Rows $rows) -Findings (Get-FindingCount -Rows $rows))
 # The document is brought up to date from a single check too. It was left out at first

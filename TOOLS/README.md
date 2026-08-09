@@ -696,17 +696,30 @@ would have put the text somebody wrote at the same risk. A check that failed or 
 has no tab and gets an empty cell rather than a formula pointing nowhere.
 
 Columns N to V hold the comparison with the run before this one — `Expected`, `Findings`,
-`Eligible`, `Prev findings`, `Prev eligible`, `Change`, `Verdict`, `Last run`, `Trend`. See
+`Eligible`, `Prev findings`, `Prev eligible`, `Change`, `Verdict`, `Last run`, `Trends`. See
 "What the run before this one returned" for what each verdict means and why the block sits
 after `M` rather than beside `Rows`.
 
-`Trend` is the last five finding counts for that check, this run last: `40 → 12 → 3 → 1`.
-The separator is an arrow rather than `>`, which in a cell full of numbers reads as a
-comparison operator and makes `100 > 105` state something plainly false. The
-board compares against one run and the ledger holds them all; this is the middle, and it is
-the answer to "is this moving" without opening anything. A run where the check failed reads
-`ERR` in the series rather than being skipped — a gap that is drawn over is a week nobody
-measured, shown as a smooth line.
+`Trends` is the last five finding counts for that check, this run last, each dated:
+`40 (18.07) → 12 (25.07) → 3 (01.08) → 1 (08.08)`. The separator is an arrow rather than `>`,
+which in a cell full of numbers reads as a comparison operator and makes `100 > 105` state
+something plainly false. The board compares against one run and the ledger holds them all;
+this is the middle, and it is the answer to "is this moving" without opening anything. A run
+where the check failed reads `ERR` in the series rather than being skipped — a gap that is
+drawn over is a week nobody measured, shown as a smooth line.
+
+The date is part of the point rather than decoration. Four zeroes in a row mean one thing
+across four weeks and another across one afternoon of re-runs while a fix was being tested,
+and the counts alone cannot tell those apart. Each label is the local time the run started,
+taken from the ledger's `startedUtc`, falling back to the run folder's name and then — if
+neither can be read — to no label at all rather than to a guess.
+
+Two date formats, and the run picks one for the whole column: `dd.MM` normally, `dd.MM HH:mm`
+as soon as two runs in the window fall on the same calendar day. Choosing per row would put
+two shapes in one column and leave a reader to work out that the difference is only in how
+crowded one check's history happens to be. The clock therefore appears exactly when the date
+alone would print the same label against two different runs, which in practice means a day
+spent re-running one check.
 
 **The series is per check, not per column.** It shows every run of *that* check, so two rows
 whose third value sits in the same place are not necessarily describing the same day: a check
