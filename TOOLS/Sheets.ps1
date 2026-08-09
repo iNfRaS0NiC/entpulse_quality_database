@@ -602,16 +602,23 @@ function New-SheetsMergePlan {
     # rebuilt from empty and the hand-made one went with it - leaving a rule that would never
     # restore what it had helped lose, and five more sports each needing somebody to remember.
     #
-    # An existing one is still kept rather than replaced, name and columns and all. Only the
-    # extent is corrected, which is the part that goes stale: a table covers the checks that
-    # existed when it was made, and the next run appends below it.
+    # An existing one keeps its name rather than being replaced. Its extent does not: both
+    # ends of it go stale, and for different reasons.
+    #
+    # Rows, because a table covers the checks that existed when it was made and the next run
+    # appends below it. Columns, because the board gains one now and then - and unlike a
+    # comment, no column here is anybody's choice to preserve. Every one of the 22 is written
+    # by this code. Keeping a remembered width was the wrong caution: Trend was added, the
+    # table still ended at the column before it, and the new column sat outside the table with
+    # no header of its own for as long as nobody looked.
     $board = $(if ($Existing -and $Existing.TableOf -and $Existing.TableOf.ContainsKey('Overview')) {
             $Existing.TableOf['Overview']
         }
         else { $null })
     $lastRow = $nextRow - 1
 
-    if ($lastRow -gt 1 -and (-not $board -or $board.ToRow -ne $lastRow)) {
+    if ($lastRow -gt 1 -and (-not $board -or $board.ToRow -ne $lastRow -or
+            $board.ToCol -ne $width -or $board.FromCol -ne 0 -or $board.FromRow -ne 0)) {
         $plan += [pscustomobject]@{
             Kind    = 'Table'
             Sheet   = 'Overview'
@@ -620,8 +627,8 @@ function New-SheetsMergePlan {
             Name    = $(if ($board) { $board.Name } else { 'Overview' })
             FromRow = 0
             ToRow   = $lastRow
-            FromCol = $(if ($board) { $board.FromCol } else { 0 })
-            ToCol   = $(if ($board) { $board.ToCol } else { $width })
+            FromCol = 0
+            ToCol   = $width
         }
     }
 

@@ -2682,7 +2682,7 @@ Test-That 'a board holding only its header is not made a table' {
         'a table over nothing but a heading is not a table'
 }
 
-Test-That 'a table somebody made on Overview has its extent kept, columns and all' {
+Test-That 'a stale table on Overview is widened to the columns the board writes' {
     # Nothing here creates one. But a table made today covers today checks, and the next run
     # appends below it, so the range is exactly what goes stale.
     $summary = @(
@@ -2693,16 +2693,32 @@ Test-That 'a table somebody made on Overview has its extent kept, columns and al
         OverviewRowOf = @{ 'Fixtureball-DQ-002' = 2 }
         EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
         RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
-        # Their table, covering one data row and a column beyond what this writes.
-        TableOf = @{ 'Overview' = [pscustomobject]@{ Id = 'B1'; Name = 'Table1'; FromRow = 0; ToRow = 2; FromCol = 0; ToCol = 22 } }
+        # A table made before the board gained a column: too short and too narrow.
+        TableOf = @{ 'Overview' = [pscustomobject]@{ Id = 'B1'; Name = 'Table1'; FromRow = 0; ToRow = 2; FromCol = 0; ToCol = 15 } }
     }
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
 
     $board = @($plan.Operations | Where-Object { $_.Kind -eq 'Table' -and $_.Sheet -eq 'Overview' })
     Assert-Equal 1 $board.Count 'the extent is corrected'
     Assert-Equal 3 $board[0].ToRow 'down to the row the appended check now occupies'
-    Assert-Equal 22 $board[0].ToCol 'keeping whichever columns they chose'
-    Assert-Equal 'Table1' $board[0].Name 'and their own name for it'
+    # No column here is anybody's choice to preserve - every one is written by the runner - so
+    # a remembered width just leaves the newest column outside the table without a header.
+    Assert-Equal 22 $board[0].ToCol 'and out to every column the board writes'
+    Assert-Equal 'Table1' $board[0].Name 'while keeping their own name for it'
+}
+
+Test-That 'a table already the right shape is left alone' {
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 2 }
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
+        TableOf = @{ 'Overview' = [pscustomobject]@{ Id = 'B1'; Name = 'Overview'; FromRow = 0; ToRow = 2; FromCol = 0; ToCol = 22 } }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'Table' }).Count `
+        'no request is sent to change nothing'
 }
 
 Test-That 'the SQL tab holds every statement, each linking back to its results' {
