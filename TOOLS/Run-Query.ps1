@@ -313,6 +313,12 @@ if ([string]::IsNullOrWhiteSpace($OutputRoot)) {
 $LedgerDirName = 'RUNS'
 $LedgerVersion = 1
 
+# How many runs -History puts across the page when it pivots. A run id is thirty characters
+# and the numbers under it are two or three, so the width is set by the count of columns
+# rather than by anything in them. What is cut is reported, never dropped quietly, and asking
+# for one check shows every run it has.
+$HistoryRunColumns = 12
+
 # The live per-sport document. Kept in its own file rather than added to this one: the merge
 # is where the defects live and it has to be testable without a login, so nothing in Sheets.ps1
 # reaches the network. It is dot-sourced rather than run, so -DotSourceOnly picks it up too.
@@ -3311,17 +3317,52 @@ function Show-CheckHistory {
         return
     }
 
-    # Grouped by check rather than interleaved: a wildcard over a sport is a hundred checks,
-    # and a single flat table of them sorted by run is unreadable.
-    foreach ($group in ($rows | Group-Object CheckId | Sort-Object Name)) {
+    $checks = @($rows | ForEach-Object { $_.CheckId } | Select-Object -Unique | Sort-Object)
+    $runs = @($rows | ForEach-Object { $_.Run } | Select-Object -Unique)
+
+    if ($checks.Count -eq 1) {
+        # One check: the run is the interesting axis, so it gets a row each and every column
+        # the ledger holds.
         Write-Host ''
-        Write-Host $group.Name -ForegroundColor Cyan
-        $group.Group | Format-Table Run, Findings, Eligible, Rate, Verdict, Status -AutoSize
+        Write-Host $checks[0] -ForegroundColor Cyan
+        $rows | Format-Table Run, Findings, Eligible, Rate, Verdict, Status -AutoSize
+    }
+    else {
+        # A sport is a hundred checks, and a hundred one-row tables is not a table. Pivoted
+        # instead: the check is the row, the run is the column, and the cell is the finding
+        # count - which is the shape the question "what moved" is actually asked in.
+        #
+        # Columns are numbered rather than dated because a run id is thirty characters and
+        # twelve of them across is not a console width. The legend below carries the dates.
+        $shown = @($runs | Select-Object -Last $HistoryRunColumns)
+        $label = @{}
+        for ($i = 0; $i -lt $shown.Count; $i++) { $label[$shown[$i]] = 'R{0}' -f ($i + 1) }
+
+        $table = @()
+        foreach ($check in $checks) {
+            $line = [ordered]@{ CheckId = $check }
+            $series = @()
+            foreach ($run in $shown) {
+                $hit = @($rows | Where-Object { $_.CheckId -eq $check -and $_.Run -eq $run })[0]
+                $cell = $(if ($hit) { $(if ($hit.Status -like 'OK*') { $hit.Findings } else { 'ERR' }) } else { '' })
+                $line[$label[$run]] = $cell
+                if ($hit -and $hit.Status -like 'OK*' -and $null -ne $hit.Findings) { $series += [int]$hit.Findings }
+            }
+            # First against last, which is the whole point of looking at more than two runs.
+            $line['Net'] = $(if ($series.Count -ge 2) { $series[-1] - $series[0] } else { '' })
+            $table += [pscustomobject]$line
+        }
+        $table | Format-Table -AutoSize
+
+        Write-Host 'Columns, oldest first:' -ForegroundColor DarkGray
+        foreach ($run in $shown) { Write-Host ("  {0,-4} {1}" -f $label[$run], $run) -ForegroundColor DarkGray }
+        if ($runs.Count -gt $shown.Count) {
+            Write-Host ("  {0} earlier run(s) not shown. Ask for one check to see all of them." -f `
+                ($runs.Count - $shown.Count)) -ForegroundColor Yellow
+        }
     }
 
-    $runs = @($rows | ForEach-Object { $_.Run } | Select-Object -Unique).Count
-    Write-Host ("{0} check(s) over {1} recorded run(s)." -f `
-        (@($rows | ForEach-Object { $_.CheckId } | Select-Object -Unique)).Count, $runs) -ForegroundColor DarkGray
+    Write-Host ("{0} check(s) over {1} recorded run(s)." -f $checks.Count, $runs.Count) -ForegroundColor DarkGray
     Write-Host '  A run made with -TestRun is deliberately absent: it was asked to leave no trace.' -ForegroundColor DarkGray
 }
 

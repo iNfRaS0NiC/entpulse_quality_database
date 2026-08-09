@@ -1036,9 +1036,31 @@ Artistic-Gymnastics 09.08.2026 10-11-18        1      825  0,12%  New       OK
 Artistic-Gymnastics 16.08.2026 09-02-44        0      831  0,00%  Resolved  OK
 ```
 
-Oldest first, so the first run and the tenth sit side by side. It takes a wildcard as well —
-`-History 'Artistic-Gymnastics-DQ-0*'` — and groups by check, because a hundred checks
-interleaved by run is not a table anybody reads.
+Oldest first, so the first run and the tenth sit side by side.
+
+A wildcard reaches a whole sport, and the shape changes with it — a hundred one-row tables is
+not a table, so the check becomes the row and the run becomes the column:
+
+```powershell
+.\TOOLS\Run-Query.ps1 -History 'Artistic-Gymnastics-DQ-*'
+```
+
+```text
+CheckId                     R1  R2  R3  Net
+-------                     --  --  --  ---
+Artistic-Gymnastics-DQ-020   1   1   0   -1
+Artistic-Gymnastics-DQ-022  32  33  41    9
+
+Columns, oldest first:
+  R1   Artistic-Gymnastics 09.08.2026 10-11-18
+  ...
+```
+
+`Net` is the last run against the first, which is the reason for looking at more than two.
+Columns are numbered because a run id is thirty characters and a dozen of them across is not
+a console width; the legend underneath carries the dates. At most twelve runs are shown and
+anything older is counted rather than dropped silently — ask for one check to see all of it.
+A run where the check failed reads `ERR` rather than a number, so it cannot pass for a zero.
 
 `Rate` is `findings / eligible`, carried because a raw count is only comparable while the
 population behind it is, and over ten runs it rarely stays still. `Verdict` is what that run
