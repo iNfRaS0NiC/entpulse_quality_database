@@ -21,11 +21,16 @@ $SheetsApiRoot = 'https://sheets.googleapis.com/v4/spreadsheets'
 $SheetsTokenUrl = 'https://oauth2.googleapis.com/token'
 $SheetsScope = 'https://www.googleapis.com/auth/spreadsheets'
 
-# The title Google gives a spreadsheet nobody has named. The runner names the document only
-# while it still reads exactly this, and never again: a colleague who renames it has decided
-# something, and an instrument that quietly puts its own name back every week is the same
-# defect as one that overwrites a comment.
+# The title Google gives a spreadsheet nobody has named. The runner names the document while
+# it still reads exactly this, and never over a title somebody chose: a colleague who renames
+# it has decided something, and an instrument that quietly puts its own name back every week
+# is the same defect as one that overwrites a comment.
 $SheetsUntitled = 'Untitled spreadsheet'
+
+# Titles this runner has given documents in the past. A document still carrying one of these
+# is wearing a name nobody chose, so a change to the naming pattern reaches it. Add the old
+# pattern here whenever the pattern changes; nothing else may go in this list.
+$SheetsFormerTitles = @('Enetpulse DQ - *')
 
 # Rows per write request. A single 20 000-row block is megabytes of JSON in one body, which is
 # slow to build, slow to send and all-or-nothing if it fails.
@@ -111,40 +116,74 @@ $SheetsOverviewColumns = @(
     'Expected', 'Findings', 'Eligible', 'Prev findings', 'Prev eligible', 'Change',
     'Verdict', 'Last run', 'Trends')
 
-# Who owns what. The runner writes around these and never through them: they hold the only
-# thing in the document that cannot be regenerated, which is what a person concluded from
-# reading it. Everything else the runner can rebuild from the run.
-#
-# Overview I, J and K are Status, Check By and Comment. A check tab's G2 and H2 are the same
-# two fields for one check. Note that a check tab's Comment is the source and Overview's is a
-# formula reading it - so overwriting either would cost the text, and the runner writes
-# neither.
-$SheetsOverviewReviewerColumns = @(9, 10, 11)
-$SheetsCheckTabReviewerColumns = @(7, 8)
-
 # Row 1 of a check tab. Without it D2 and E2 hold "1 Structure" and "NO_RELATED_RECORDS" over
 # nothing, and a reader has to go back to Overview to learn what they are.
 #
-# G and H are fixed and everything else is arranged around them. Overview's Comment mirror
-# points at G2 literally, and H is Check By beside it, so moving either would strand every
-# comment already written and break 103 formulas at once.
-#
 # Priority is gone: it is derived from Category and exists to sort the board, and by the time
 # a tab is open the sorting has done its work. Category keeps a place further out. The six
-# added at I are the ones a person wants while looking at the rows themselves - whether this
-# was ever supposed to reach zero, out of how large a population, and whether the last fix
-# moved it.
+# after Check By are the ones a person wants while looking at the rows themselves - whether
+# this was ever supposed to reach zero, out of how large a population, and whether the last
+# fix moved it.
+#
+# Signal and Signal reason are gone from here as well. They are the runner's own
+# classification of the check, settled before the statement was sent and unchanged by reading
+# what it returned, so on a tab opened to look at findings they are two columns of noise
+# between the identity and the reviewer's own cells. Overview still carries both, hidden.
 $SheetsCheckTabColumns = @(
-    'Check ID', 'Check Name', 'SQL Used', 'What it does', 'Signal', 'Signal reason',
+    'Check ID', 'Check Name', 'SQL Used', 'What it does',
     'Comment', 'Check By',
     'Expected', 'Findings', 'Eligible', 'Prev findings', 'Change', 'Verdict', 'Trends',
     'Category', 'Parameters')
 
-# Signal and Signal reason are the runner's own classification, settled before the run and
-# unchanged by reading it, so the reviewer opens on the columns that are theirs. Hidden once,
-# on the run that creates Overview, and never re-hidden: somebody who unhides them has decided
-# something, and putting them back every week is the same defect as overwriting a comment.
-$SheetsOverviewHiddenColumns = @(12, 13)
+# Who owns what. The runner writes around these and never through them: they hold the only
+# thing in the document that cannot be regenerated, which is what a person concluded from
+# reading it. Everything else the runner can rebuild from the run.
+#
+# Overview's are Status, Check By and Comment; a check tab's are the same two fields for one
+# check. Note that a check tab's Comment is the source and Overview's is a formula reading it
+# - so overwriting either would cost the text, and the runner writes neither.
+#
+# Found by name rather than written as numbers. They were 7 and 8 on a check tab and moved to
+# 5 and 6 when Signal and Signal reason came out, and a comment at the old literal 7 would
+# have been the reviewer's text sitting in what is now Expected while Comment was overwritten
+# every run. Nothing here needs to know a position that the column list already states.
+$SheetsOverviewReviewerColumns = @(9, 10, 11)
+$SheetsCheckTabReviewerColumns = @(
+    ([array]::IndexOf($SheetsCheckTabColumns, 'Comment') + 1),
+    ([array]::IndexOf($SheetsCheckTabColumns, 'Check By') + 1))
+
+# Columns Overview ships hidden. Signal and Signal reason are the runner's classification,
+# settled before the run and unchanged by reading it. Parameters is empty for every check of
+# a sport that takes none and identical for every check of one that does, so it is a column
+# of repetition next to the two things a reviewer navigates by. All three stay in the sheet
+# and in _summary.csv; unhiding brings back every value.
+#
+# Hidden once, on the run that creates Overview, and never re-hidden: somebody who unhides one
+# has decided something, and putting it back every week is the same defect as overwriting a
+# comment. Contiguous runs are hidden together and gaps are not bridged, so hiding C does not
+# take D through K with it.
+$SheetsOverviewHiddenColumns = @(3, 12, 13)
+
+# How Overview colours its Rows column, and what each band means.
+#
+# Rows is the raw row count of the result, so a clean check returns exactly one - the COVERAGE
+# branch and nothing else. One is therefore the good case, and zero is not: a statement that
+# returned nothing at all did not run the coverage contract and is a defect in the check.
+#
+# Above that the bands are a size judgement rather than a severity one. Severity is Priority,
+# which comes from the category and does not move; this says how much work is in front of
+# whoever opens the tab, which is the question the board is scanned for.
+#
+# Rewritten every run rather than set once, and only over rules that cover exactly this
+# column: a threshold changed here has to reach a document created before the change, and the
+# alternative - adding three more rules each week - fills the sheet with duplicates. A rule
+# somebody adds themselves on the Rows column will not survive the next run. Any other column
+# is theirs.
+$SheetsRowsBands = @(
+    [pscustomobject]@{ Type = 'NUMBER_EQ'; Values = @('1'); Colour = '#188038' }
+    [pscustomobject]@{ Type = 'NUMBER_BETWEEN'; Values = @('2', '100'); Colour = '#B06000' }
+    [pscustomobject]@{ Type = 'NUMBER_GREATER'; Values = @('100'); Colour = '#C5221F' }
+)
 
 # The tab holding every statement the run sent, and the name of the token a link to it uses.
 # A link needs the target tab's numeric id, which is not known until the tab has been created,
@@ -201,6 +240,35 @@ function Split-SheetsWritableSpans {
     return $spans
 }
 
+function Split-SheetsColumnRuns {
+    # A set of column indices as contiguous spans, ascending. The API hides a range rather than
+    # a list, so a scattered set is several ranges and collapsing it to one min..max would hide
+    # everything in between.
+    param([int[]]$Columns)
+
+    $runs = @()
+    $current = $null
+    foreach ($column in @($Columns | Sort-Object -Unique)) {
+        if ($null -ne $current -and $column -eq ($current.To + 1)) { $current.To = $column; continue }
+        if ($null -ne $current) { $runs += $current }
+        $current = [pscustomobject]@{ From = $column; To = $column }
+    }
+    if ($null -ne $current) { $runs += $current }
+    return $runs
+}
+
+function ConvertTo-SheetsColour {
+    # #RRGGBB as the API wants it: three channels from zero to one, not from zero to 255.
+    param([string]$Hex)
+
+    $value = $Hex.TrimStart('#')
+    return @{
+        red   = [int]::Parse($value.Substring(0, 2), 'HexNumber') / 255
+        green = [int]::Parse($value.Substring(2, 2), 'HexNumber') / 255
+        blue  = [int]::Parse($value.Substring(4, 2), 'HexNumber') / 255
+    }
+}
+
 function ConvertTo-SheetsTableName {
     # A table name has to be usable inside a formula, so Sheets allows letters, digits and
     # underscores and refuses to start on a digit. A CheckID is full of hyphens, which is why
@@ -213,15 +281,36 @@ function ConvertTo-SheetsTableName {
     return $safe
 }
 
+function New-SheetsCommentMirror {
+    # The formula Overview's Comment holds: a reference to the Comment cell of that check's own
+    # tab. Derived from the column list rather than written as a literal, for the reason given
+    # beside $SheetsCheckTabReviewerColumns - the cell was G2, is E2, and the two places that
+    # emit this must not be able to disagree with the layout or with each other.
+    param([string]$Sheet)
+
+    $cell = (ConvertTo-SheetsColumnName -Index ([array]::IndexOf($SheetsCheckTabColumns, 'Comment') + 1)) + '2'
+    return "='" + ($Sheet -replace "'", "''") + "'!" + $cell
+}
+
 function New-SheetsGidLink {
     # A link to another tab of the same document, and optionally to a cell in it. The tab is
     # named rather than numbered because a tab this run is creating has no number yet;
     # Invoke-SheetsPlan substitutes the real one once the structure batch has answered.
-    param([string]$Sheet, [string]$Text, [string]$Cell)
+    param([string]$Sheet, $Text, [string]$Cell)
 
     $target = '#gid=' + ($SheetsGidToken -replace '%NAME%', $Sheet)
     if ($Cell) { $target += '&range=' + $Cell }
-    return '=HYPERLINK("{0}","{1}")' -f $target, ($Text -replace '"', '""')
+
+    # A number goes in unquoted, so the cell holds a number. Overview's Rows is the only caller
+    # that passes one, and the difference is not cosmetic: quoted, it is text that sorts
+    # 1, 10, 2 and that a conditional format comparing against 100 never matches. Formatted
+    # under the invariant culture, because a machine set to bg-BG writes a decimal comma and
+    # Sheets would read the formula as two arguments.
+    $label = $(if ($Text -is [string] -or $null -eq $Text) {
+            '"' + ([string]$Text -replace '"', '""') + '"'
+        }
+        else { [string]::Format([Globalization.CultureInfo]::InvariantCulture, '{0}', $Text) })
+    return '=HYPERLINK("{0}",{1})' -f $target, $label
 }
 
 function New-SheetsOverviewRow {
@@ -320,12 +409,42 @@ function New-SheetsMergePlan {
     # range" otherwise - and Invoke-SheetsPlan sends every AddSheet before any write.
     if (-not $Existing -or -not $Existing.HasOverviewSheet) {
         $plan += [pscustomobject]@{ Kind = 'AddSheet'; Sheet = 'Overview' }
-        $plan += [pscustomobject]@{
-            Kind  = 'HideColumns'
-            Sheet = 'Overview'
-            From  = ($SheetsOverviewHiddenColumns | Measure-Object -Minimum).Minimum
-            To    = ($SheetsOverviewHiddenColumns | Measure-Object -Maximum).Maximum
+
+        # One operation per contiguous run, not one spanning the lowest to the highest. That
+        # shortcut held while the hidden columns were the adjacent L and M; adding C to the
+        # list would have hidden C through M and taken Check Name, Rows and Status with it.
+        foreach ($span in @(Split-SheetsColumnRuns -Columns $SheetsOverviewHiddenColumns)) {
+            $plan += [pscustomobject]@{
+                Kind = 'HideColumns'; Sheet = 'Overview'; From = $span.From; To = $span.To
+            }
         }
+    }
+
+    # The colour bands on Rows, replacing whatever this run finds on that one column. Emitted
+    # on every run and not only at creation: a band changed in the source has to reach the
+    # documents that already exist, which is the defect that left one board with a column
+    # Sheets had to name for itself.
+    $rowsColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1
+    $existingRules = @()
+    if ($Existing -and $Existing.ConditionalFormatsOf -and $Existing.ConditionalFormatsOf.ContainsKey('Overview')) {
+        $existingRules = @($Existing.ConditionalFormatsOf['Overview'])
+    }
+    $drop = @()
+    for ($index = 0; $index -lt $existingRules.Count; $index++) {
+        # Only a rule covering exactly this column. One drawn across the whole board, or over
+        # any other column, was somebody's and is left where it is.
+        $ranges = @($existingRules[$index].ranges)
+        $mine = @($ranges | Where-Object {
+                [int]$_.startColumnIndex -eq ($rowsColumnIndex - 1) -and
+                [int]$_.endColumnIndex -eq $rowsColumnIndex })
+        if ($mine.Count -eq $ranges.Count -and $ranges.Count -gt 0) { $drop += $index }
+    }
+    $plan += [pscustomobject]@{
+        Kind   = 'FormatRules'
+        Sheet  = 'Overview'
+        Column = $rowsColumnIndex
+        Drop   = $drop
+        Rules  = $SheetsRowsBands
     }
 
     # Google gives a new spreadsheet one tab called Sheet1, and it is nobody's: it exists
@@ -481,7 +600,7 @@ function New-SheetsMergePlan {
         $rowsColumn = [array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1
         $rowsLink = $null
         if ($titleOf.ContainsKey($runKey)) {
-            $rowsLink = New-SheetsGidLink -Sheet $titleOf[$runKey] -Text ([string]$entry.RowsCell)
+            $rowsLink = New-SheetsGidLink -Sheet $titleOf[$runKey] -Text $entry.RowsCell
         }
 
         if ($rowOf.ContainsKey($runKey)) {
@@ -512,7 +631,7 @@ function New-SheetsMergePlan {
                     Sheet  = 'Overview'
                     Range  = (New-SheetsRange -FromColumn $commentColumn -FromRow $row `
                             -ToColumn $commentColumn -ToRow $row)
-                    Values = @(, @("='" + ($titleOf[$runKey] -replace "'", "''") + "'!G2"))
+                    Values = @(, @((New-SheetsCommentMirror -Sheet $titleOf[$runKey])))
                 }
                 $cells += 1
             }
@@ -550,7 +669,7 @@ function New-SheetsMergePlan {
                     Sheet  = 'Overview'
                     Range  = (New-SheetsRange -FromColumn $commentColumn -FromRow $nextRow `
                             -ToColumn $commentColumn -ToRow $nextRow)
-                    Values = @(, @("='" + ($titleOf[$runKey] -replace "'", "''") + "'!G2"))
+                    Values = @(, @((New-SheetsCommentMirror -Sheet $titleOf[$runKey])))
                 }
                 $cells += 1
             }
@@ -668,7 +787,7 @@ function New-SheetsMergePlan {
 
         # Row 1 names the columns. Unlike Overview's header it is rewritten every run rather
         # than seeded once, because none of it is anybody's: the reviewer's cells on a check
-        # tab are G2 and H2, one row below their headings.
+        # tab are one row below their headings.
         $plan += [pscustomobject]@{
             Kind   = 'Write'
             Sheet  = $title
@@ -677,15 +796,13 @@ function New-SheetsMergePlan {
         }
         $cells += $SheetsCheckTabColumns.Count
 
-        # Row 2 holds the identity, and G2/H2 in the middle of it belong to the reviewer, so
-        # the same two-span treatment applies as on Overview.
+        # Row 2 holds the identity, and Comment and Check By in the middle of it belong to the
+        # reviewer, so the same two-span treatment applies as on Overview.
         $identity = @(
             [string]$item.Job.CheckId
             [string]$item.Job.Name
             'SQL'
             [string]$item.Job.What
-            [string]$(if ($entry) { $entry.Signal } else { '' })
-            [string]$(if ($entry) { $entry.SignalReason } else { '' })
             ''
             ''
             [string]$(if ($entry) { $entry.Expected } else { '' })
@@ -977,7 +1094,8 @@ function Read-SheetState {
 
     $meta = Invoke-SheetsApi -Method Get -Path ("$SpreadsheetId" +
         '?fields=properties.title,sheets.properties.title,sheets.properties.sheetId' +
-        ',sheets.properties.gridProperties.rowCount,sheets.tables')
+        ',sheets.properties.gridProperties.rowCount,sheets.tables' +
+        ',sheets.conditionalFormats.ranges')
     $titles = @($meta.sheets | ForEach-Object { [string]$_.properties.title })
     $hasOverview = ($titles -contains 'Overview')
 
@@ -989,6 +1107,7 @@ function Read-SheetState {
     $idOf = @{}
     $indexOf = @{}
     $tableOf = @{}
+    $formatsOf = @{}
     $position = 0
     foreach ($sheet in @($meta.sheets)) {
         $title = [string]$sheet.properties.title
@@ -996,6 +1115,12 @@ function Read-SheetState {
         $idOf[$title] = [int]$sheet.properties.sheetId
         $indexOf[$title] = $position
         $position++
+
+        # Ranges only. A conditional format rule is identified for replacement by what it
+        # covers and nothing else, so the condition and the colours are weight the read does
+        # not need to carry - and the ranges come back in the order the rules are indexed in,
+        # which is what deleting one depends on.
+        $formatsOf[$title] = @($sheet.conditionalFormats)
 
         # At most one table per tab is tracked, which is all this writes and all a check tab
         # has room to mean. A table somebody made themselves is kept and its extent corrected
@@ -1090,6 +1215,7 @@ function Read-SheetState {
         SheetIdOf         = $idOf
         SheetIndexOf      = $indexOf
         TableOf           = $tableOf
+        ConditionalFormatsOf = $formatsOf
     }
 }
 
@@ -1208,8 +1334,8 @@ function Invoke-SheetsPlan {
         }
     }
 
-    $script:SheetsStage = 'hiding the signal columns'
-    # Hiding needs a tab id too, so it waits for the batch that creates the tab.
+    $script:SheetsStage = 'hiding columns and colouring Rows'
+    # Both need a tab id, so they wait for the batch that creates the tab.
     $hides = @($operations | Where-Object { $_.Kind -eq 'HideColumns' })
     $second = @()
     foreach ($hide in $hides) {
@@ -1227,6 +1353,50 @@ function Invoke-SheetsPlan {
             }
         }
     }
+
+    foreach ($rules in @($operations | Where-Object { $_.Kind -eq 'FormatRules' })) {
+        if (-not $gidOf.ContainsKey($rules.Sheet)) { continue }
+        $sheetId = [int]$gidOf[$rules.Sheet]
+
+        # Highest index first. Each deletion renumbers the rules after it, so removing 0 then 1
+        # removes the original 0 and 2 and leaves the rule in the middle behind.
+        foreach ($index in @(@($rules.Drop) | Sort-Object -Descending)) {
+            $second += @{ deleteConditionalFormatRule = @{ sheetId = $sheetId; index = [int]$index } }
+        }
+
+        $at = 0
+        foreach ($band in @($rules.Rules)) {
+            $second += @{
+                addConditionalFormatRule = @{
+                    index = $at
+                    rule  = @{
+                        # No endRowIndex, so the band covers the column however far the board
+                        # grows. startRowIndex 1 keeps it off the header.
+                        ranges     = @(@{
+                                sheetId          = $sheetId
+                                startRowIndex    = 1
+                                startColumnIndex = [int]$rules.Column - 1
+                                endColumnIndex   = [int]$rules.Column
+                            })
+                        booleanRule = @{
+                            condition = @{
+                                type   = [string]$band.Type
+                                values = @(@($band.Values) | ForEach-Object { @{ userEnteredValue = [string]$_ } })
+                            }
+                            format    = @{
+                                textFormat = @{
+                                    bold                 = $true
+                                    foregroundColorStyle = @{ rgbColor = (ConvertTo-SheetsColour -Hex $band.Colour) }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            $at++
+        }
+    }
+
     if ($second.Count -gt 0) {
         Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $second } | Out-Null
     }
@@ -1352,14 +1522,34 @@ function Invoke-SheetsPlan {
     }
 }
 
-function Set-SheetTitleIfUnnamed {
-    # Named once, while Google's own placeholder is still there, and never again. A colleague
-    # who renames the document has decided something, and putting the runner's name back every
-    # week is the same defect as overwriting a comment.
-    param([string]$SpreadsheetId, [string]$CurrentTitle, [string]$Title)
+function Test-SheetsTitleIsOurs {
+    # Whether the document's current title is one the runner may replace. Separated from the
+    # call that replaces it so the decision can be tested without a login, which is the same
+    # split the merge and the transport are on.
+    #
+    # Google's placeholder counts, and so does any name this runner has given a document: a
+    # name we produced ourselves is nobody's decision, which is why changing the naming pattern
+    # does not strand the documents named under the old one. Everything else is somebody's.
+    param([string]$CurrentTitle, [string]$Title)
 
     if ([string]::IsNullOrWhiteSpace($Title)) { return $false }
-    if ($CurrentTitle -ne $SheetsUntitled -and -not [string]::IsNullOrWhiteSpace($CurrentTitle)) { return $false }
+    if ($CurrentTitle -eq $Title) { return $false }
+    if ([string]::IsNullOrWhiteSpace($CurrentTitle) -or $CurrentTitle -eq $SheetsUntitled) { return $true }
+
+    foreach ($pattern in $SheetsFormerTitles) {
+        if ($CurrentTitle -like $pattern) { return $true }
+    }
+    return $false
+}
+
+function Set-SheetTitleIfUnnamed {
+    # Named while Google's own placeholder is still there, or while the title is one this
+    # runner gave it, and never over a title somebody chose. A colleague who renames the
+    # document has decided something, and putting the runner's name back every week is the
+    # same defect as overwriting a comment.
+    param([string]$SpreadsheetId, [string]$CurrentTitle, [string]$Title)
+
+    if (-not (Test-SheetsTitleIsOurs -CurrentTitle $CurrentTitle -Title $Title)) { return $false }
 
     Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{
         requests = @(@{

@@ -2326,10 +2326,10 @@ Test-That 'a check tab never writes the two cells the reviewer owns' {
     $identity = @($plan.Operations | Where-Object {
             $_.Sheet -eq 'OWNED' -and $_.Kind -eq 'Write' -and $_.Range -match '^[A-Z]2:[A-Z]2$' })
     Assert-Equal 2 $identity.Count 'the identity row is written in two spans'
-    Assert-Equal 'A2:F2' $identity[0].Range 'up to Signal reason'
-    Assert-Equal 'I2:Q2' $identity[1].Range 'resuming after Comment and Check By'
+    Assert-Equal 'A2:D2' $identity[0].Range 'up to What it does'
+    Assert-Equal 'G2:O2' $identity[1].Range 'resuming after Comment and Check By'
     Assert-Equal 0 @($plan.Operations | Where-Object {
-            $_.Sheet -eq 'OWNED' -and $_.Range -in @('G2', 'H2') }).Count 'and never through G2 or H2'
+            $_.Sheet -eq 'OWNED' -and $_.Range -in @('E2', 'F2') }).Count 'and never through E2 or F2'
 }
 
 Test-That 'a result over the cap is cut and the tab says so on its own face' {
@@ -2422,7 +2422,7 @@ Test-That 'a new row seeds the Comment mirror, and a later run leaves it alone' 
     $mirror = @($fresh.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'K*' })
 
     Assert-Equal 1 $mirror.Count 'one mirror written'
-    Assert-Equal "='MIRRORED'!G2" $mirror[0].Values[0][0] 'pointing at the tab it belongs to'
+    Assert-Equal "='MIRRORED'!E2" $mirror[0].Values[0][0]'pointing at the tab it belongs to'
     Assert-Equal $false $mirror[0].Raw 'sent as USER_ENTERED, or it arrives as the text of a formula'
 
     # And the mirror must come after the row write that leaves K empty, since both land in
@@ -2461,7 +2461,7 @@ Test-That 'an existing row with an empty Comment is seeded, and one with anythin
     $mirror = @($seeded.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'K*' })
     Assert-Equal 1 $mirror.Count 'the empty cell is seeded'
     Assert-Equal 'K4:K4' $mirror[0].Range 'on the row the check already occupies'
-    Assert-Equal "='MIRRORED'!G2" $mirror[0].Values[0][0] 'pointing at its own tab'
+    Assert-Equal "='MIRRORED'!E2" $mirror[0].Values[0][0]'pointing at its own tab'
 
     $state['EmptyCommentOf'] = @{}
     $kept = New-SheetsMergePlan -Summary $summary -Collected $collected -OutputFolder 'x' `
@@ -2635,18 +2635,19 @@ Test-That 'a check tab carries its header row and both of its links' {
     $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected `
         @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
 
-    $header = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A1:Q1' })
+    $header = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A1:O1' })
     Assert-Equal 1 $header.Count 'the header row is written'
     Assert-Equal 'What it does' $header[0].Values[0][3] 'so D names what D2 holds'
-    Assert-Equal 'Signal' $header[0].Values[0][4] 'and E names what E2 holds'
 
-    # G and H are fixed: Overview's mirror points at G2 literally, so moving either would
-    # strand every comment already written.
-    Assert-Equal 'Comment' $header[0].Values[0][6] 'Comment stays at G'
-    Assert-Equal 'Check By' $header[0].Values[0][7] 'and Check By at H'
-    Assert-Equal 'Expected' $header[0].Values[0][8] 'the comparison block starts at I'
-    Assert-Equal 'Verdict' $header[0].Values[0][13] 'and ends with the verdict at N'
+    # The mirror is derived from this list rather than written as a literal, so the two cannot
+    # disagree - but a reader still has to be told where the reviewer's cells are.
+    Assert-Equal 'Comment' $header[0].Values[0][4] 'Comment at E'
+    Assert-Equal 'Check By' $header[0].Values[0][5] 'and Check By at F'
+    Assert-Equal 'Expected' $header[0].Values[0][6] 'the comparison block starts at G'
+    Assert-Equal 'Verdict' $header[0].Values[0][11] 'and ends with the verdict at L'
     Assert-True ($header[0].Values[0] -notcontains 'Priority') 'Priority is gone, being a board sort'
+    Assert-True ($header[0].Values[0] -notcontains 'Signal') 'and so is the signal pair'
+    Assert-True ($header[0].Values[0] -notcontains 'Signal reason') 'both of it'
 
     $back = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A3' })
     Assert-Equal 1 $back.Count 'A3 carries the way back'
@@ -2838,14 +2839,18 @@ Test-That 'the SQL tab holds every statement, each linking back to its results' 
     Assert-Equal 2 (@($c2 | Select-Object -Unique)).Count 'and the two forward links differ'
 }
 
-Test-That 'the signal pair is hidden only on the run that creates the board' {
+Test-That 'the hidden columns are hidden only on the run that creates the board' {
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
 
+    # One operation per contiguous run. Collapsing the set to its lowest and highest would
+    # hide C through M and take Check Name, Rows and Status with it.
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
     $hide = @($fresh.Operations | Where-Object { $_.Kind -eq 'HideColumns' })
-    Assert-Equal 1 $hide.Count 'hidden when Overview is created'
-    Assert-Equal 12 $hide[0].From 'from L'
-    Assert-Equal 13 $hide[0].To 'to M'
+    Assert-Equal 2 $hide.Count 'hidden when Overview is created, and the gap is not bridged'
+    Assert-Equal 3 $hide[0].From 'Parameters at C'
+    Assert-Equal 3 $hide[0].To 'and only C'
+    Assert-Equal 12 $hide[1].From 'from L'
+    Assert-Equal 13 $hide[1].To 'to M'
 
     # Somebody who unhides them has decided something; putting them back every week is the
     # same defect as overwriting a comment.
@@ -2857,6 +2862,60 @@ Test-That 'the signal pair is hidden only on the run that creates the board' {
     Assert-Equal 0 @((New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
                 -OutputFolder 'x').Operations | Where-Object { $_.Kind -eq 'HideColumns' }).Count `
         'and never re-hidden afterwards'
+}
+
+Test-That 'the runner renames a document it named itself, and nobody else' {
+    $new = 'DQ Fixtureball Enetpulse'
+    Assert-True (Test-SheetsTitleIsOurs -CurrentTitle 'Untitled spreadsheet' -Title $new) 'the placeholder'
+    Assert-True (Test-SheetsTitleIsOurs -CurrentTitle '' -Title $new) 'and no title at all'
+
+    # The pattern changed once. A document still wearing the old one is wearing a name nobody
+    # chose, so the change reaches it rather than leaving one board named unlike the rest.
+    Assert-True (Test-SheetsTitleIsOurs -CurrentTitle 'Enetpulse DQ - Fixtureball' -Title $new) `
+        'and a name this runner gave it under the old pattern'
+
+    Assert-Equal $false (Test-SheetsTitleIsOurs -CurrentTitle 'Petar - do not touch' -Title $new) `
+        'a title somebody chose is theirs'
+    Assert-Equal $false (Test-SheetsTitleIsOurs -CurrentTitle $new -Title $new) 'and one already right is not rewritten'
+}
+
+Test-That 'the Rows colour bands are rewritten every run, over that column only' {
+    # Set once, they could never reach a document created before a threshold changed - the
+    # defect that left one board with a column Sheets had to name for itself. Added without
+    # removing, they would stack three more rules a week.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+
+    $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
+    $rules = @($fresh.Operations | Where-Object { $_.Kind -eq 'FormatRules' })
+    Assert-Equal 1 $rules.Count 'a new document gets its bands'
+    Assert-Equal 8 $rules[0].Column 'on Rows at H'
+    Assert-Equal 0 @($rules[0].Drop).Count 'with nothing to remove'
+    Assert-Equal 3 @($rules[0].Rules).Count 'clean, a handful, and a hundred or more'
+
+    # Column H is index 7 to 8; a rule over the whole board, or over any other column, is
+    # somebody else's and survives.
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
+        ConditionalFormatsOf = @{ 'Overview' = @(
+                [pscustomobject]@{ ranges = @([pscustomobject]@{ startColumnIndex = 7; endColumnIndex = 8 }) }
+                [pscustomobject]@{ ranges = @([pscustomobject]@{ startColumnIndex = 0; endColumnIndex = 22 }) }
+                [pscustomobject]@{ ranges = @([pscustomobject]@{ startColumnIndex = 7; endColumnIndex = 8 }) }
+            ) }
+    }
+    $again = @(@(New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
+                -OutputFolder 'x').Operations | Where-Object { $_.Kind -eq 'FormatRules' })
+    Assert-Equal 1 $again.Count 'and an existing one gets them again'
+    Assert-Equal '0 2' (@($again[0].Drop) -join ' ') 'replacing only the rules that cover Rows'
+}
+
+Test-That 'the Rows cell holds a number, so it sorts and compares as one' {
+    # Quoted, it is text: it sorts 1, 10, 2 and a band comparing against 100 never matches it.
+    # An errored check has no count to hold and keeps its word, quoted.
+    $link = New-SheetsGidLink -Sheet 'TAB' -Text 42
+    Assert-True ($link -like '*,42)') 'a count goes in unquoted'
+    Assert-True ((New-SheetsGidLink -Sheet 'TAB' -Text 'ERROR') -like '*,"ERROR")') 'a word does not'
 }
 
 Test-That 'a plan large enough to threaten the document says so' {

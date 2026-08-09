@@ -213,9 +213,9 @@ param(
     # that sport's RUNS/<Sport>.json, and later runs find it there.
     [string]$SheetId,
 
-    # What to call the document, used only while it is still called Untitled spreadsheet.
-    # Defaults to "Enetpulse DQ - <Sport>". A document somebody has already named is left
-    # alone, whoever named it.
+    # What to call the document, used while it is still called Untitled spreadsheet or still
+    # carries a name this runner gave it. Defaults to "DQ <Sport> Enetpulse". A document
+    # somebody has named themselves is left alone, whoever named it.
     [string]$SheetTitle,
 
     # Skip the live document for this run, and write only the workbook. For a run that is real
@@ -3554,7 +3554,7 @@ function Save-RunSheet {
         Write-Host 'Updating the live document.' -ForegroundColor DarkGray
         $state = Read-SheetState -SpreadsheetId $id
 
-        $title = $(if ($SheetTitle) { $SheetTitle } else { "Enetpulse DQ - $Sport" })
+        $title = $(if ($SheetTitle) { $SheetTitle } else { "DQ $Sport Enetpulse" })
         if (Set-SheetTitleIfUnnamed -SpreadsheetId $id -CurrentTitle $state.Title -Title $title) {
             Write-Host "  named it '$title'" -ForegroundColor DarkGray
         }

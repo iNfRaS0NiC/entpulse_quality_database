@@ -695,42 +695,11 @@ direction was chosen because losing a mirror costs a mirror, while a mirror on t
 would have put the text somebody wrote at the same risk. A check that failed or was skipped
 has no tab and gets an empty cell rather than a formula pointing nowhere.
 
-Columns N to V hold the comparison with the run before this one — `Expected`, `Findings`,
-`Eligible`, `Prev findings`, `Prev eligible`, `Change`, `Verdict`, `Last run`, `Trends`. See
-"What the run before this one returned" for what each verdict means and why the block sits
-after `M` rather than beside `Rows`.
-
-`Trends` is the last five finding counts for that check, this run last, each dated:
-`40 (18.07) → 12 (25.07) → 3 (01.08) → 1 (08.08)`. The separator is an arrow rather than `>`,
-which in a cell full of numbers reads as a comparison operator and makes `100 > 105` state
-something plainly false. The board compares against one run and the ledger holds them all;
-this is the middle, and it is the answer to "is this moving" without opening anything. A run
-where the check failed reads `ERR` in the series rather than being skipped — a gap that is
-drawn over is a week nobody measured, shown as a smooth line.
-
-The date is part of the point rather than decoration. Four zeroes in a row mean one thing
-across four weeks and another across one afternoon of re-runs while a fix was being tested,
-and the counts alone cannot tell those apart. Each label is the local time the run started,
-taken from the ledger's `startedUtc`, falling back to the run folder's name and then — if
-neither can be read — to no label at all rather than to a guess.
-
-Two date formats, and the run picks one for the whole column: `dd.MM` normally, `dd.MM HH:mm`
-as soon as two runs in the window fall on the same calendar day. Choosing per row would put
-two shapes in one column and leave a reader to work out that the difference is only in how
-crowded one check's history happens to be. The clock therefore appears exactly when the date
-alone would print the same label against two different runs, which in practice means a day
-spent re-running one check.
-
-**The series is per check, not per column.** It shows every run of *that* check, so two rows
-whose third value sits in the same place are not necessarily describing the same day: a check
-re-run four times while a fix was being tested has four entries where its neighbours have one.
-That is the right behaviour for the question the column answers, and the wrong basis for
-comparing two checks against each other. `-History` carries the run each number came from.
-
-It lives on the board rather than on a tab of its own for one reason: a separate history tab
-is a second copy of the ledger, and a run that fails to reach the document leaves it looking
-complete while quietly missing the newest run. A column goes stale with the row it sits in,
-and the whole board goes stale together — visibly, and fixed by the next successful run.
+Columns N to U hold the comparison with the run before this one — `Expected`, `Findings`,
+`Eligible`, `Prev findings`, `Prev eligible`, `Change`, `Verdict`, `Last run`. See "What the
+run before this one returned" for what each verdict means and why the block sits after `M`
+rather than beside `Rows`. `Trends` is on the live document only; the workbook is a snapshot
+of one run and a series belongs where the series is maintained.
 
 `Signal` and `Signal reason` are columns L and M, and the workbook ships with both hidden.
 They are the runner's own classification, settled before the run and unchanged by reading
@@ -1152,12 +1121,17 @@ bring the document up to date. The transport is separate on purpose — the merg
 permanent document can lose somebody's work, and a merge that needs a login to exercise is a
 merge nobody exercises.
 
-**Status is at `I`, `Check By` at `J`, `Comment` at `K`, and a check tab's own two are `G2`
-and `H2`. A run never writes any of them.** That is the whole protection, and it is a better
+**Status is at `I`, `Check By` at `J`, `Comment` at `K`, and a check tab's own two are `E2`
+and `F2`. A run never writes any of them.** That is the whole protection, and it is a better
 one than locking: Sheets has no lock to take, and two people editing at once is the normal
 case. The runner writes its own columns in two spans per row and steps over the reviewer's.
 The only exception is a row for a check the document has never held, where there is nothing
 of anyone's to overwrite and the seeded `Status` is what says the row needs no reading.
+
+None of those four positions is written as a number anywhere but in the column lists at the
+top of `Sheets.ps1`; the reviewer's columns and the cell the mirror points at are derived from
+them. A check tab's pair was `G2` and `H2` until `Signal` and `Signal reason` came out of that
+tab, and a literal left behind would have put somebody's comment in what is now `Expected`.
 
 Two rules follow from the document outliving the run, and both are easy to get wrong:
 
@@ -1185,7 +1159,77 @@ stale rows under the three new ones, which reads as forty findings — and a rem
 only right while the memory is, which a `-TestRun`, a hand edit or a half-finished write all
 break. The end of the tab is a fact.
 
-Overview's `Comment` mirrors the check tab's `G2`, as it does in the workbook: the comment is
+### What the board carries that the workbook does not
+
+`Overview` runs `A` to `V`, the workbook's twenty-one columns plus `Trends` at `V`.
+
+`Trends` is the last five finding counts for that check, this run last, each dated:
+`40 (18.07) → 12 (25.07) → 3 (01.08) → 1 (08.08)`. The separator is an arrow rather than `>`,
+which in a cell full of numbers reads as a comparison operator and makes `100 > 105` state
+something plainly false. The board compares against one run and the ledger holds them all;
+this is the middle, and it is the answer to "is this moving" without opening anything. A run
+where the check failed reads `ERR` in the series rather than being skipped — a gap that is
+drawn over is a week nobody measured, shown as a smooth line.
+
+The date is part of the point rather than decoration. Four zeroes in a row mean one thing
+across four weeks and another across one afternoon of re-runs while a fix was being tested,
+and the counts alone cannot tell those apart. Each label is the local time the run started,
+taken from the ledger's `startedUtc`, falling back to the run folder's name and then — if
+neither can be read — to no label at all rather than to a guess.
+
+Two date formats, and the run picks one for the whole column: `dd.MM` normally, `dd.MM HH:mm`
+as soon as two runs in the window fall on the same calendar day. Choosing per row would put
+two shapes in one column and leave a reader to work out that the difference is only in how
+crowded one check's history happens to be. The clock therefore appears exactly when the date
+alone would print the same label against two different runs, which in practice means a day
+spent re-running one check.
+
+**The series is per check, not per column.** It shows every run of *that* check, so two rows
+whose third value sits in the same place are not necessarily describing the same day: a check
+re-run four times while a fix was being tested has four entries where its neighbours have one.
+That is the right behaviour for the question the column answers, and the wrong basis for
+comparing two checks against each other. `-History` carries the run each number came from.
+
+It lives on the board rather than on a tab of its own for one reason: a separate history tab
+is a second copy of the ledger, and a run that fails to reach the document leaves it looking
+complete while quietly missing the newest run. A column goes stale with the row it sits in,
+and the whole board goes stale together — visibly, and fixed by the next successful run.
+
+`Rows` is coloured by how much work is behind it: **1 in green**, since a clean check returns
+exactly the `COVERAGE` row and nothing else; **2 to 100 in orange**; **above 100 in red**. That
+is a size judgement and not a severity one — severity is `Priority`, which comes from the
+category and does not move. Zero is deliberately uncoloured: a statement that returned nothing
+at all did not honour the coverage contract, and the defect is in the check.
+
+The cell is a link to the check's tab and a number at the same time, which is why the count
+goes into the `HYPERLINK` formula unquoted. Quoted it is text: it sorts 1, 10, 2 and a band
+comparing against 100 never matches it. A check that failed holds the word `ERROR` instead,
+quoted, and no band colours it.
+
+The three bands are rewritten on every run over that one column, so a threshold changed in
+`TOOLS/Sheets.ps1` reaches documents created before the change. A conditional format somebody
+adds on `Rows` will not survive the next run; on any other column it is theirs and is left
+alone.
+
+Three columns ship hidden. `Signal` and `Signal reason` at `L` and `M` are the runner's own
+classification, settled before the run and unchanged by reading it. `Parameters` at `C` is
+empty for every check of a sport that takes none and identical for every check of one that
+does, which is a column of repetition sitting between `CheckID` and `Check Name` — unhide it
+on a chained sport, where it is what tells two runs of the same statement apart. Nothing is
+dropped: unhiding brings back every value, and all three travel in `_summary.csv`.
+
+Hiding happens once, on the run that creates `Overview`. Somebody who unhides a column has
+decided something, and putting it back every week is the same defect as overwriting a comment.
+The cost of that rule is that a document created before a column joined the list does not gain
+it on its own.
+
+A check tab is `A` to `O`: the identity, then `Comment` and `Check By`, then the same
+comparison block the board carries, then `Category` and `Parameters`. `Signal` and `Signal
+reason` are not among them. They classify the check rather than describe what it returned, and
+they were settled before the statement was sent — two columns of noise on a tab somebody opened
+to look at findings. `Overview` still carries both, hidden.
+
+Overview's `Comment` mirrors the check tab's `E2`, as it does in the workbook: the comment is
 written once beside the rows that provoked it, and read from the board that lists every check.
 The formula is seeded when the row is created, and afterwards on any run where the cell is
 still empty — an empty cell holds nothing of anyone's, so seeding it costs nothing, and it is
@@ -1224,9 +1268,15 @@ the API is born in whoever authorised it's Drive with no one else on it, and sha
 a manual step anyway — later, and in a place nobody thinks to look.
 
 While the title is still Google's own `Untitled spreadsheet`, the first run names it
-`Enetpulse DQ - <Sport>`, or whatever `-SheetTitle` says. After that it is never renamed:
-somebody who titles the document has decided something, and putting the runner's name back
-every week is the same defect as overwriting a comment.
+`DQ <Sport> Enetpulse`, or whatever `-SheetTitle` says. A title somebody chose is never
+overwritten: titling the document is a decision, and putting the runner's name back every
+week is the same defect as overwriting a comment.
+
+A title the runner itself gave is not such a decision, so a change to the naming pattern
+reaches the documents named under the old one — `Enetpulse DQ - <Sport>` was the pattern until
+2026-08-09 and is corrected on the next run. `$SheetsFormerTitles` in `TOOLS/Sheets.ps1` is
+the list of patterns this runner has used, and the only thing that may go in it. Every name
+outside that list belongs to whoever typed it.
 
 A run that mixes sports updates no document, because the document is per sport and there is
 no honest way to guess which of two a mixed run belongs to. `-TestRun` skips it as it skips
