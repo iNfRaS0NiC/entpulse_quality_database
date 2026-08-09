@@ -2068,7 +2068,9 @@ Test-That 'a check the document already holds is updated in the row it occupies'
         ResultRowsOf = @{}
     }
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
-    $writes = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' })
+    # Row 1 excluded: the header is rewritten every run and is not this check's row.
+    $writes = @($plan.Operations | Where-Object {
+            $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' -and $_.Range -notlike '*1:*1' })
 
     Assert-Equal 2 $writes.Count 'two spans, written around the reviewer columns'
     Assert-Equal 'A7:H7' $writes[0].Range 'the first span, on the row the check already has'
@@ -2099,19 +2101,23 @@ Test-That 'a check the document has never held is appended, seeded status and al
     Assert-Equal 'No issue' $appended[0].Values[0][8] 'the seeded status goes in on a new row'
 }
 
-Test-That 'the Overview header is written once and not on every run' {
+Test-That 'the Overview header is rewritten every run, so a new column gets a name' {
+    # It used to be written once, which held exactly as long as the board never gained a
+    # column. Trend was added, the header of a document created before it stayed twenty-one
+    # cells wide, and Sheets filled the twenty-second with a placeholder of its own.
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
 
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
     $header = @($fresh.Operations | Where-Object { $_.Range -eq 'A1:V1' })
     Assert-Equal 1 $header.Count 'an empty document gets its header'
+    Assert-Equal 'Trend' $header[0].Values[0][21] 'out to the last column the board writes'
 
     $existing = [pscustomobject]@{
         HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}
     }
     $again = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
-    Assert-Equal 0 @($again.Operations | Where-Object { $_.Range -eq 'A1:V1' }).Count `
-        'and no later run rewrites it to change nothing'
+    Assert-Equal 1 @($again.Operations | Where-Object { $_.Range -eq 'A1:V1' }).Count `
+        'and a document that already has one gets it again, in case the board has grown'
 }
 
 Test-That 'a document without an Overview tab has one added before anything names it' {

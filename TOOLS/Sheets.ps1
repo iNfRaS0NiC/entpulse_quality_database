@@ -359,16 +359,19 @@ function New-SheetsMergePlan {
         }
     }
 
-    # A document nobody has written to yet has no header. Written once, and never again: on
-    # every later run row 1 is already right, and rewriting it would be an API call a run
-    # makes to change nothing.
-    if (-not $Existing -or -not $Existing.HasOverviewHeader) {
-        $plan += [pscustomobject]@{
-            Kind   = 'Write'
-            Sheet  = 'Overview'
-            Range  = (New-SheetsRange -FromColumn 1 -FromRow 1 -ToColumn $width -ToRow 1)
-            Values = @(, $SheetsOverviewColumns)
-        }
+    # Written every run, like a check tab's. It used to be written once, on the reasoning that
+    # row 1 was already right on every later run and rewriting it would be a call that changes
+    # nothing - which held exactly as long as the board never gained a column. Trend was added,
+    # the header of a document created before it stayed twenty-one cells wide, and Sheets
+    # filled the twenty-second with a placeholder of its own the moment the table reached it.
+    #
+    # One saved range was not worth a board that cannot describe its own newest column. Nothing
+    # in row 1 is anybody's: the reviewer's cells on Overview are I, J and K, one row below.
+    $plan += [pscustomobject]@{
+        Kind   = 'Write'
+        Sheet  = 'Overview'
+        Range  = (New-SheetsRange -FromColumn 1 -FromRow 1 -ToColumn $width -ToRow 1)
+        Values = @(, $SheetsOverviewColumns)
     }
 
     $nextRow = 2
