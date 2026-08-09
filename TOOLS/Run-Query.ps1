@@ -319,6 +319,15 @@ $LedgerVersion = 1
 # for one check shows every run it has.
 $HistoryRunColumns = 12
 
+# How many runs the Trend column carries, this one included. The document compares against
+# one run and the ledger holds them all; this is the middle, and the middle is what answers
+# "is this moving" without opening anything. Short enough to stay one readable cell.
+$TrendRunCount = 5
+
+# The last few findings counts per run key, read once before the batch alongside the previous
+# run. Same snapshot rule: taken before this run appends, so nothing counts itself twice.
+$script:RecentFindings = @{}
+
 # The live per-sport document. Kept in its own file rather than added to this one: the merge
 # is where the defects live and it has to be testable without a login, so nothing in Sheets.ps1
 # reaches the network. It is dot-sourced rather than run, so -DotSourceOnly picks it up too.
@@ -2970,6 +2979,15 @@ function New-RunSummaryRow {
         $change = [int]$Findings - [int]$previous.Findings
     }
 
+    # This run last, so the series reads forward and ends on today. One cell, fixed width,
+    # answering "is this moving" without opening the ledger or the console.
+    $series = @()
+    if ($script:RecentFindings.ContainsKey($runKey)) { $series += @($script:RecentFindings[$runKey]) }
+    $series += $(if (-not $ran) { 'ERR' }
+        elseif ($null -eq $Findings) { '-' }
+        else { [string][int]$Findings })
+    $trend = $(if ($series.Count -gt 1) { $series -join ' > ' } else { '' })
+
     return [pscustomobject]@{
         CheckId     = $Job.CheckId
         RunKey      = $runKey
@@ -2993,6 +3011,7 @@ function New-RunSummaryRow {
         PrevFindings = $(if ($previous) { $previous.Findings } else { $null })
         PrevEligible = $(if ($previous) { $previous.Eligible } else { $null })
         PrevRunId    = $(if ($previous) { [string]$previous.RunId } else { '' })
+        Trend        = $trend
     }
 }
 
@@ -3068,6 +3087,44 @@ function Import-PreviousRunEntries {
         }
     }
     return $previous
+}
+
+function Import-RecentFindings {
+    # The last few recorded findings counts for each statement about to run, oldest first.
+    #
+    # Unlike Import-PreviousRunEntries this keeps the failed runs. A comparison against an
+    # error says nothing and is skipped there; a series with a gap in it is a different thing,
+    # and hiding the gap would draw a smooth line through a week nobody measured.
+    param($Jobs, [int]$Count = $TrendRunCount)
+
+    $recent = @{}
+    $sports = @($Jobs | ForEach-Object { Get-SportFromCheckId -CheckId $_.CheckId } | Select-Object -Unique)
+
+    foreach ($sport in $sports) {
+        if ($sport -in @('AD-HOC', 'GLOBAL', '')) { continue }
+        $ledger = Read-RunLedger -Sport $sport
+        if ($null -eq $ledger) { continue }
+
+        foreach ($run in @($ledger.runs)) {
+            foreach ($check in @($run.checks)) {
+                $key = [string]$check.runKey
+                if (-not $recent.ContainsKey($key)) { $recent[$key] = @() }
+
+                $status = [string]$check.status
+                $recent[$key] += $(if ($status -like 'ERROR*' -or $status -like 'SKIPPED*' -or $null -eq $check.findings) {
+                        'ERR'
+                    }
+                    else { [string][int]$check.findings })
+            }
+        }
+    }
+
+    # Trimmed to the tail here rather than while collecting, because the ledger is walked
+    # oldest first and the interesting end is the other one.
+    foreach ($key in @($recent.Keys)) {
+        $recent[$key] = @(@($recent[$key]) | Select-Object -Last ($Count - 1))
+    }
+    return $recent
 }
 
 function Get-CheckVerdict {
@@ -4282,6 +4339,7 @@ if ($isBatch) {
     # this snapshot, and it is taken before the run appends an entry of its own, so no check
     # can end up compared against itself.
     $script:PreviousRun = Import-PreviousRunEntries -Jobs $jobs
+    $script:RecentFindings = Import-RecentFindings -Jobs $jobs
     if ($script:PreviousRun.Count -gt 0) {
         Write-Host ("Comparing against the last recorded run of {0} check(s)." -f $script:PreviousRun.Count) -ForegroundColor DarkGray
     }
@@ -4620,6 +4678,7 @@ if ($isWorkbook -and -not $OutFile) {
 # colleagues report a fix, so leaving it out would put a hole in the history exactly where
 # the history is being consulted. -TestRun is how an experiment stays out.
 $script:PreviousRun = Import-PreviousRunEntries -Jobs $jobs
+$script:RecentFindings = Import-RecentFindings -Jobs $jobs
 $singleSummary = @(New-RunSummaryRow -Job $job -Rows $count -Seconds ([math]::Round($elapsed.TotalSeconds, 1)) `
         -Status 'OK' -Eligible (Get-CoverageCount -Rows $rows) -Findings (Get-FindingCount -Rows $rows))
 # The document is brought up to date from a single check too. It was left out at first

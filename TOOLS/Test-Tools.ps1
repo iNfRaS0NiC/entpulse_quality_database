@@ -1339,7 +1339,7 @@ Test-That 'flat run summary writes Signal and SignalReason columns' {
     $expected = '"CheckId","RunKey","Parameters","Name","What","Rows","Findings","Eligible",' +
         '"Seconds","Status","Priority","Category","Signal","SignalReason",' +
         '"Expected","ExpectedResidual","ExpectedReason",' +
-        '"Verdict","Change","PrevFindings","PrevEligible","PrevRunId"'
+        '"Verdict","Change","PrevFindings","PrevEligible","PrevRunId","Trend"'
     Assert-Equal $expected $header 'summary column order'
     Assert-Equal 'Monitor' $saved[0].Signal 'saved signal'
     Assert-Equal 'population-wide fixture signal' $saved[0].SignalReason 'saved signal reason'
@@ -2049,12 +2049,12 @@ Test-That 'a column index becomes its spreadsheet letter' {
 Test-That 'the reviewer columns split the row into the spans a run may write' {
     # Two ranges per row instead of eighteen. The API charges per range and a sport is fifty
     # rows of twenty-one columns.
-    $spans = @(Split-SheetsWritableSpans -Width 21 -Reserved @(9, 10, 11))
+    $spans = @(Split-SheetsWritableSpans -Width 22 -Reserved @(9, 10, 11))
     Assert-Equal 2 $spans.Count 'two writable spans'
     Assert-Equal 1 $spans[0].From 'first span starts at A'
     Assert-Equal 8 $spans[0].To 'and stops before Status'
     Assert-Equal 12 $spans[1].From 'second span resumes after Comment'
-    Assert-Equal 21 $spans[1].To 'and runs to the last column'
+    Assert-Equal 22 $spans[1].To 'and runs to the last column'
 }
 
 Test-That 'a check the document already holds is updated in the row it occupies' {
@@ -2072,7 +2072,7 @@ Test-That 'a check the document already holds is updated in the row it occupies'
 
     Assert-Equal 2 $writes.Count 'two spans, written around the reviewer columns'
     Assert-Equal 'A7:H7' $writes[0].Range 'the first span, on the row the check already has'
-    Assert-Equal 'L7:U7' $writes[1].Range 'the second span, resuming after Comment'
+    Assert-Equal 'L7:V7' $writes[1].Range 'the second span, resuming after Comment'
     foreach ($write in $writes) {
         Assert-True ($write.Range -notmatch '^[IJK]') "a run must never write $($write.Range)"
     }
@@ -2092,10 +2092,10 @@ Test-That 'a check the document has never held is appended, seeded status and al
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
     # DQ-002 is in the document and not in this run, so it gets a Verdict cell of its own.
     # The append is the whole-row write, and it is the one under test here.
-    $appended = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'A*:U*' -and $_.Range -ne 'A1:U1' })
+    $appended = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'A*:V*' -and $_.Range -ne 'A1:V1' })
 
     Assert-Equal 1 $appended.Count 'one whole-row write'
-    Assert-Equal 'A8:U8' $appended[0].Range 'appended below the last row in use, not sorted into place'
+    Assert-Equal 'A8:V8' $appended[0].Range 'appended below the last row in use, not sorted into place'
     Assert-Equal 'No issue' $appended[0].Values[0][8] 'the seeded status goes in on a new row'
 }
 
@@ -2103,14 +2103,14 @@ Test-That 'the Overview header is written once and not on every run' {
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
 
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
-    $header = @($fresh.Operations | Where-Object { $_.Range -eq 'A1:U1' })
+    $header = @($fresh.Operations | Where-Object { $_.Range -eq 'A1:V1' })
     Assert-Equal 1 $header.Count 'an empty document gets its header'
 
     $existing = [pscustomobject]@{
         HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}
     }
     $again = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
-    Assert-Equal 0 @($again.Operations | Where-Object { $_.Range -eq 'A1:U1' }).Count `
+    Assert-Equal 0 @($again.Operations | Where-Object { $_.Range -eq 'A1:V1' }).Count `
         'and no later run rewrites it to change nothing'
 }
 
@@ -2243,7 +2243,7 @@ Test-That 'a check tab never writes the two cells the reviewer owns' {
             $_.Sheet -eq 'OWNED' -and $_.Kind -eq 'Write' -and $_.Range -match '^[A-Z]2:[A-Z]2$' })
     Assert-Equal 2 $identity.Count 'the identity row is written in two spans'
     Assert-Equal 'A2:F2' $identity[0].Range 'up to Signal reason'
-    Assert-Equal 'I2:P2' $identity[1].Range 'resuming after Comment and Check By'
+    Assert-Equal 'I2:Q2' $identity[1].Range 'resuming after Comment and Check By'
     Assert-Equal 0 @($plan.Operations | Where-Object {
             $_.Sheet -eq 'OWNED' -and $_.Range -in @('G2', 'H2') }).Count 'and never through G2 or H2'
 }
@@ -2551,7 +2551,7 @@ Test-That 'a check tab carries its header row and both of its links' {
     $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected `
         @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
 
-    $header = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A1:P1' })
+    $header = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A1:Q1' })
     Assert-Equal 1 $header.Count 'the header row is written'
     Assert-Equal 'What it does' $header[0].Values[0][3] 'so D names what D2 holds'
     Assert-Equal 'Signal' $header[0].Values[0][4] 'and E names what E2 holds'
@@ -2667,7 +2667,7 @@ Test-That 'a board with no table gets one' {
     Assert-Equal 'Overview' $board[0].Name 'under the plain name, one board to a document'
     Assert-Equal 0 $board[0].FromRow 'starting on the header row'
     Assert-Equal 3 $board[0].ToRow 'and covering both appended checks'
-    Assert-Equal 21 $board[0].ToCol 'across every column the board writes'
+    Assert-Equal 22 $board[0].ToCol 'across every column the board writes'
 }
 
 Test-That 'a board holding only its header is not made a table' {

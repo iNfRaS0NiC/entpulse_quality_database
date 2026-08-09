@@ -109,7 +109,7 @@ $SheetsOverviewColumns = @(
     'Sport', 'CheckID', 'Parameters', 'Check Name', 'Priority', 'Category', 'What it does',
     'Rows', 'Status', 'Check By', 'Comment', 'Signal', 'Signal reason',
     'Expected', 'Findings', 'Eligible', 'Prev findings', 'Prev eligible', 'Change',
-    'Verdict', 'Last run')
+    'Verdict', 'Last run', 'Trend')
 
 # Who owns what. The runner writes around these and never through them: they hold the only
 # thing in the document that cannot be regenerated, which is what a person concluded from
@@ -137,7 +137,7 @@ $SheetsCheckTabReviewerColumns = @(7, 8)
 $SheetsCheckTabColumns = @(
     'Check ID', 'Check Name', 'SQL Used', 'What it does', 'Signal', 'Signal reason',
     'Comment', 'Check By',
-    'Expected', 'Findings', 'Eligible', 'Prev findings', 'Change', 'Verdict',
+    'Expected', 'Findings', 'Eligible', 'Prev findings', 'Change', 'Verdict', 'Trend',
     'Category', 'Parameters')
 
 # Signal and Signal reason are the runner's own classification, settled before the run and
@@ -252,6 +252,7 @@ function New-SheetsOverviewRow {
         $Entry.Change
         [string]$Entry.Verdict
         [string]$Entry.PrevRunId
+        [string]$Entry.Trend
     )
 }
 
@@ -683,6 +684,7 @@ function New-SheetsMergePlan {
             $(if ($entry) { $entry.PrevFindings } else { $null })
             $(if ($entry) { $entry.Change } else { $null })
             [string]$(if ($entry) { $entry.Verdict } else { '' })
+            [string]$(if ($entry) { $entry.Trend } else { '' })
             [string]$(if ($entry) { $entry.Category } else { '' })
             [string]$(if ($entry) { $entry.Parameters } else { '' })
         )

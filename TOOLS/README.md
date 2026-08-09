@@ -695,10 +695,27 @@ direction was chosen because losing a mirror costs a mirror, while a mirror on t
 would have put the text somebody wrote at the same risk. A check that failed or was skipped
 has no tab and gets an empty cell rather than a formula pointing nowhere.
 
-Columns N to U hold the comparison with the run before this one — `Expected`, `Findings`,
-`Eligible`, `Prev findings`, `Prev eligible`, `Change`, `Verdict`, `Last run`. See "What the
-run before this one returned" for what each verdict means and why the block sits after `M`
-rather than beside `Rows`.
+Columns N to V hold the comparison with the run before this one — `Expected`, `Findings`,
+`Eligible`, `Prev findings`, `Prev eligible`, `Change`, `Verdict`, `Last run`, `Trend`. See
+"What the run before this one returned" for what each verdict means and why the block sits
+after `M` rather than beside `Rows`.
+
+`Trend` is the last five finding counts for that check, this run last: `40 > 12 > 3 > 1`. The
+board compares against one run and the ledger holds them all; this is the middle, and it is
+the answer to "is this moving" without opening anything. A run where the check failed reads
+`ERR` in the series rather than being skipped — a gap that is drawn over is a week nobody
+measured, shown as a smooth line.
+
+**The series is per check, not per column.** It shows every run of *that* check, so two rows
+whose third value sits in the same place are not necessarily describing the same day: a check
+re-run four times while a fix was being tested has four entries where its neighbours have one.
+That is the right behaviour for the question the column answers, and the wrong basis for
+comparing two checks against each other. `-History` carries the run each number came from.
+
+It lives on the board rather than on a tab of its own for one reason: a separate history tab
+is a second copy of the ledger, and a run that fails to reach the document leaves it looking
+complete while quietly missing the newest run. A column goes stale with the row it sits in,
+and the whole board goes stale together — visibly, and fixed by the next successful run.
 
 `Signal` and `Signal reason` are columns L and M, and the workbook ships with both hidden.
 They are the runner's own classification, settled before the run and unchanged by reading
