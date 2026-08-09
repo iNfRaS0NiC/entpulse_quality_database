@@ -3269,14 +3269,19 @@ function Save-RunSheet {
         if ($plan.Warning) { Write-Host "  $($plan.Warning)" -ForegroundColor Yellow }
 
         $sent = Invoke-SheetsPlan -SpreadsheetId $id -Plan $plan
-        Write-Host ("  {0} tab(s) added, {1} cleared, {2} range(s) written" -f `
-                $sent.Added, $sent.Cleared, $sent.Written) -ForegroundColor DarkGray
+        Write-Host ("  {0} tab(s) added, {1} cleared, {2} range(s) written, {3} table(s)" -f `
+                $sent.Added, $sent.Cleared, $sent.Written, $sent.Tables) -ForegroundColor DarkGray
         Write-Host "  https://docs.google.com/spreadsheets/d/$id/edit" -ForegroundColor DarkGray
         return $id
     }
     catch {
-        Write-Host "  the live document was not updated: $($_.Exception.Message)" -ForegroundColor Yellow
-        Write-Host '  the results are still on disk; running again brings the document up to date.' -ForegroundColor Yellow
+        # Which phase, because the earlier ones are already applied and saying otherwise sends
+        # somebody to look at a document that is in fact current except for one thing.
+        $stage = $(if ($script:SheetsStage) { $script:SheetsStage } else { 'starting' })
+        Write-Host "  the live document update failed while $stage" -ForegroundColor Yellow
+        Write-Host "  $($_.Exception.Message)" -ForegroundColor Yellow
+        Write-Host '  Whatever ran before that stage is applied. The results are on disk either way,' -ForegroundColor Yellow
+        Write-Host '  and running again brings the document fully up to date.' -ForegroundColor Yellow
         return $null
     }
 }

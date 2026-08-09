@@ -2160,8 +2160,8 @@ Test-That 'a check tab never writes the two cells the reviewer owns' {
     $identity = @($plan.Operations | Where-Object {
             $_.Sheet -eq 'OWNED' -and $_.Kind -eq 'Write' -and $_.Range -match '^[A-Z]2:[A-Z]2$' })
     Assert-Equal 2 $identity.Count 'the identity row is written in two spans'
-    Assert-Equal 'A2:F2' $identity[0].Range 'up to What it does'
-    Assert-Equal 'I2:K2' $identity[1].Range 'resuming after Comment and Check By'
+    Assert-Equal 'A2:F2' $identity[0].Range 'up to Signal reason'
+    Assert-Equal 'I2:P2' $identity[1].Range 'resuming after Comment and Check By'
     Assert-Equal 0 @($plan.Operations | Where-Object {
             $_.Sheet -eq 'OWNED' -and $_.Range -in @('G2', 'H2') }).Count 'and never through G2 or H2'
 }
@@ -2469,10 +2469,18 @@ Test-That 'a check tab carries its header row and both of its links' {
     $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected `
         @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
 
-    $header = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A1:K1' })
+    $header = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A1:P1' })
     Assert-Equal 1 $header.Count 'the header row is written'
-    Assert-Equal 'Priority' $header[0].Values[0][3] 'so D names what D2 holds'
-    Assert-Equal 'Category' $header[0].Values[0][4] 'and E names what E2 holds'
+    Assert-Equal 'What it does' $header[0].Values[0][3] 'so D names what D2 holds'
+    Assert-Equal 'Signal' $header[0].Values[0][4] 'and E names what E2 holds'
+
+    # G and H are fixed: Overview's mirror points at G2 literally, so moving either would
+    # strand every comment already written.
+    Assert-Equal 'Comment' $header[0].Values[0][6] 'Comment stays at G'
+    Assert-Equal 'Check By' $header[0].Values[0][7] 'and Check By at H'
+    Assert-Equal 'Expected' $header[0].Values[0][8] 'the comparison block starts at I'
+    Assert-Equal 'Verdict' $header[0].Values[0][13] 'and ends with the verdict at N'
+    Assert-True ($header[0].Values[0] -notcontains 'Priority') 'Priority is gone, being a board sort'
 
     $back = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A3' })
     Assert-Equal 1 $back.Count 'A3 carries the way back'
@@ -2482,6 +2490,102 @@ Test-That 'a check tab carries its header row and both of its links' {
     $sql = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'C2' })
     Assert-Equal 1 $sql.Count 'C2 links forward to the statement'
     Assert-True ($sql[0].Values[0][0] -like '*range=A1*') 'at the block this check owns'
+}
+
+Test-That 'the row count on Overview is the way in to the check tab' {
+    # A reviewer scans the board and clicks through. Rows carries the link, as it does in the
+    # workbook; Findings, Eligible and Change stay plain numbers so they still sort and filter.
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'JUMPED'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{ 'Fixtureball-DQ-002' = 4 }
+        EmptyCommentOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'JUMPED' }
+        Titles = @('Overview', 'JUMPED'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'JUMPED' = 9 }; SheetIndexOf = @{ 'Overview' = 0 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected `
+        @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
+
+    $link = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'H4:H4' })
+    Assert-Equal 1 $link.Count 'Rows carries a link'
+    Assert-Equal $false $link[0].Raw 'as a formula'
+    Assert-True ($link[0].Values[0][0] -like '*JUMPED*') 'pointing at this check own tab'
+}
+
+Test-That 'a check with no tab keeps a plain row count rather than a link to nowhere' {
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 0 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{ 'Fixtureball-DQ-002' = 4 }
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Range -eq 'H4:H4' }).Count 'no link is written'
+}
+
+Test-That 'a result block is declared a table, and an existing one is corrected not replaced' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'TABLED'; What = ''; Sql = 'SELECT 1;' }
+    $rows = @(1..3 | ForEach-Object { [pscustomobject]@{ check_type = 'X'; id = $_ } })
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 9 -Verdict 'New'))
+    $state = @{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'TABLED' }
+        Titles = @('Overview', 'TABLED'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'TABLED' = 9 }; SheetIndexOf = @{ 'Overview' = 0 }
+    }
+
+    $state['TableOf'] = @{}
+    $fresh = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
+        -Existing ([pscustomobject]$state) -OutputFolder 'x'
+    $table = @($fresh.Operations | Where-Object { $_.Kind -eq 'Table' -and $_.Sheet -eq 'TABLED' })
+    Assert-Equal 1 $table.Count 'the result block is declared a table'
+    Assert-Equal 'Fixtureball_DQ_002' $table[0].Name 'under a name a formula can carry'
+    Assert-Equal 4 $table[0].FromRow 'starting on the header row of the block'
+    Assert-Equal 8 $table[0].ToRow 'and ending past the last row it holds'
+    Assert-Equal 0 $fresh.KnownTables.Count 'with nothing existing to update'
+
+    # A tab that already carries one is updated. The range is what goes stale as a result
+    # grows or shrinks; the table itself is fine.
+    $state['TableOf'] = @{ 'TABLED' = [pscustomobject]@{ Id = 'T1'; Name = 'old'; FromRow = 4; ToRow = 99; FromCol = 0; ToCol = 4 } }
+    $again = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
+        -Existing ([pscustomobject]$state) -OutputFolder 'x'
+    Assert-Equal 'T1' $again.KnownTables['TABLED'].Id 'the existing table is carried to the transport'
+    Assert-Equal 8 @($again.Operations | Where-Object { $_.Kind -eq 'Table' -and $_.Sheet -eq 'TABLED' })[0].ToRow `
+        'and its extent corrected to this run'
+}
+
+Test-That 'a table name is made formula-safe' {
+    # Sheets allows letters, digits and underscores and refuses to start on a digit, and a
+    # CheckID is full of hyphens. The live run that found this came back with "The table name
+    # is invalid"; the probe before it was called probe, and proved only that a legal name is
+    # legal.
+    Assert-Equal 'Artistic_Gymnastics_DQ_021' (ConvertTo-SheetsTableName -Name 'Artistic-Gymnastics-DQ-021') 'hyphens'
+    Assert-Equal 'GLOBAL_DQ_009' (ConvertTo-SheetsTableName -Name 'GLOBAL-DQ-009') 'and the template form'
+    Assert-Equal '_2024_thing' (ConvertTo-SheetsTableName -Name '2024 thing') 'a leading digit is prefixed'
+    Assert-Equal 'Already_fine' (ConvertTo-SheetsTableName -Name 'Already_fine') 'a legal name is untouched'
+}
+
+Test-That 'a table somebody made on Overview has its extent kept, columns and all' {
+    # Nothing here creates one. But a table made today covers today checks, and the next run
+    # appends below it, so the range is exactly what goes stale.
+    $summary = @(
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'),
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-004' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 2 }
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
+        # Their table, covering one data row and a column beyond what this writes.
+        TableOf = @{ 'Overview' = [pscustomobject]@{ Id = 'B1'; Name = 'Table1'; FromRow = 0; ToRow = 2; FromCol = 0; ToCol = 22 } }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+
+    $board = @($plan.Operations | Where-Object { $_.Kind -eq 'Table' -and $_.Sheet -eq 'Overview' })
+    Assert-Equal 1 $board.Count 'the extent is corrected'
+    Assert-Equal 3 $board[0].ToRow 'down to the row the appended check now occupies'
+    Assert-Equal 22 $board[0].ToCol 'keeping whichever columns they chose'
+    Assert-Equal 'Table1' $board[0].Name 'and their own name for it'
 }
 
 Test-That 'the SQL tab holds every statement, each linking back to its results' {

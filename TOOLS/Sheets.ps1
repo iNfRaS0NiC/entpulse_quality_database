@@ -34,6 +34,12 @@ $SheetsWriteChunk = 2000
 $script:SheetsAccessToken = ''
 $script:SheetsTokenExpiry = [datetime]::MinValue
 
+# How far the last document update got. The phases have to be sent in order - a tab before a
+# range names it, a clear before the rows that replace it - so a failure in a later one leaves
+# the earlier ones applied. Without this the run reports "the document was not updated" for a
+# document that was, which is the wrong thing to tell somebody deciding whether to look at it.
+$script:SheetsStage = ''
+
 function Set-SheetsAddressFamily {
     <#
         Refuse IPv6 for a host whose IPv6 is dead.
@@ -118,9 +124,21 @@ $SheetsCheckTabReviewerColumns = @(7, 8)
 
 # Row 1 of a check tab. Without it D2 and E2 hold "1 Structure" and "NO_RELATED_RECORDS" over
 # nothing, and a reader has to go back to Overview to learn what they are.
+#
+# G and H are fixed and everything else is arranged around them. Overview's Comment mirror
+# points at G2 literally, and H is Check By beside it, so moving either would strand every
+# comment already written and break 103 formulas at once.
+#
+# Priority is gone: it is derived from Category and exists to sort the board, and by the time
+# a tab is open the sorting has done its work. Category keeps a place further out. The six
+# added at I are the ones a person wants while looking at the rows themselves - whether this
+# was ever supposed to reach zero, out of how large a population, and whether the last fix
+# moved it.
 $SheetsCheckTabColumns = @(
-    'Check ID', 'Check Name', 'SQL Used', 'Priority', 'Category', 'What it does',
-    'Comment', 'Check By', 'Signal', 'Signal reason', 'Parameters')
+    'Check ID', 'Check Name', 'SQL Used', 'What it does', 'Signal', 'Signal reason',
+    'Comment', 'Check By',
+    'Expected', 'Findings', 'Eligible', 'Prev findings', 'Change', 'Verdict',
+    'Category', 'Parameters')
 
 # Signal and Signal reason are the runner's own classification, settled before the run and
 # unchanged by reading it, so the reviewer opens on the columns that are theirs. Hidden once,
@@ -181,6 +199,18 @@ function Split-SheetsWritableSpans {
     # the caller the multi-element one: @(...) around the call then sees a single item holding
     # the array rather than the spans themselves.
     return $spans
+}
+
+function ConvertTo-SheetsTableName {
+    # A table name has to be usable inside a formula, so Sheets allows letters, digits and
+    # underscores and refuses to start on a digit. A CheckID is full of hyphens, which is why
+    # the first live run of this came back with "The table name is invalid" - the probe that
+    # went before it was called "probe" and proved only that a legal name is legal.
+    param([string]$Name)
+
+    $safe = [regex]::Replace([string]$Name, '[^A-Za-z0-9_]', '_')
+    if ($safe -notmatch '^[A-Za-z_]') { $safe = '_' + $safe }
+    return $safe
 }
 
 function New-SheetsGidLink {
@@ -437,6 +467,19 @@ function New-SheetsMergePlan {
 
         $values = New-SheetsOverviewRow -Entry $entry -SeededStatus ([string]$entry.SeededStatus)
 
+        # Rows doubles as the way in to the check's own tab, as it does in the workbook. It is
+        # written as a plain number first and replaced by the link afterwards, so a check with
+        # no tab - one that failed or was skipped - simply keeps the number and reads ERROR or
+        # SKIPPED rather than offering a link to nowhere.
+        #
+        # The numeric columns a reviewer sorts and filters on are Findings, Eligible and
+        # Change, and all three stay plain. Rows is the one that can afford to be a formula.
+        $rowsColumn = [array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1
+        $rowsLink = $null
+        if ($titleOf.ContainsKey($runKey)) {
+            $rowsLink = New-SheetsGidLink -Sheet $titleOf[$runKey] -Text ([string]$entry.RowsCell)
+        }
+
         if ($rowOf.ContainsKey($runKey)) {
             # The row exists, so the reviewer's three columns are theirs and the run writes
             # around them - two spans rather than one, and never through I, J or K.
@@ -511,6 +554,20 @@ function New-SheetsMergePlan {
             $rowOf[$runKey] = $nextRow
             $nextRow++
         }
+
+        # Written for both an existing row and a new one, and after either, so it lands on top
+        # of the plain number the row write left there.
+        if ($rowsLink) {
+            $plan += [pscustomobject]@{
+                Kind   = 'Write'
+                Raw    = $false
+                Sheet  = 'Overview'
+                Range  = (New-SheetsRange -FromColumn $rowsColumn -FromRow $rowOf[$runKey] `
+                        -ToColumn $rowsColumn -ToRow $rowOf[$runKey])
+                Values = @(, @($rowsLink))
+            }
+            $cells += 1
+        }
     }
 
     # A check the document holds and this run did not produce. Not deleted and not left
@@ -534,6 +591,26 @@ function New-SheetsMergePlan {
             Values = @(, @('Not in this run'))
         }
         $cells += 1
+    }
+
+    # A table on Overview is the reviewer's own doing - nothing here creates one - but its
+    # range is exactly what goes stale, because a table made today covers today's checks and
+    # the next run appends below it. So an existing one is kept and its extent corrected,
+    # holding on to whichever columns they chose.
+    if ($Existing -and $Existing.TableOf -and $Existing.TableOf.ContainsKey('Overview')) {
+        $board = $Existing.TableOf['Overview']
+        $lastRow = $nextRow - 1
+        if ($board.ToRow -ne $lastRow) {
+            $plan += [pscustomobject]@{
+                Kind    = 'Table'
+                Sheet   = 'Overview'
+                Name    = $board.Name
+                FromRow = 0
+                ToRow   = $lastRow
+                FromCol = $board.FromCol
+                ToCol   = $board.ToCol
+            }
+        }
     }
 
     # Then the check tabs, and the SQL tab built alongside them.
@@ -584,13 +661,18 @@ function New-SheetsMergePlan {
             [string]$item.Job.CheckId
             [string]$item.Job.Name
             'SQL'
-            [string]$(if ($entry) { $entry.Priority } else { '' })
-            [string]$(if ($entry) { $entry.Category } else { '' })
             [string]$item.Job.What
-            ''
-            ''
             [string]$(if ($entry) { $entry.Signal } else { '' })
             [string]$(if ($entry) { $entry.SignalReason } else { '' })
+            ''
+            ''
+            [string]$(if ($entry) { $entry.Expected } else { '' })
+            $(if ($entry) { $entry.Findings } else { $null })
+            $(if ($entry) { $entry.Eligible } else { $null })
+            $(if ($entry) { $entry.PrevFindings } else { $null })
+            $(if ($entry) { $entry.Change } else { $null })
+            [string]$(if ($entry) { $entry.Verdict } else { '' })
+            [string]$(if ($entry) { $entry.Category } else { '' })
             [string]$(if ($entry) { $entry.Parameters } else { '' })
         )
         $identitySpans = Split-SheetsWritableSpans -Width $identity.Count -Reserved $SheetsCheckTabReviewerColumns
@@ -669,6 +751,25 @@ function New-SheetsMergePlan {
                 Values = $table
             }
             $cells += $header.Count * ($written.Count + 1)
+
+            # The result block as a table: a styled header, filter buttons and banded rows,
+            # without any of it being written as formatting. The range has to be maintained
+            # rather than set once, because every run replaces a different number of rows and
+            # a table left at last week's extent either cuts the result short or trails empty
+            # rows past its end.
+            #
+            # No column types are declared. Left to guess, Sheets reads a value like 2019-03
+            # as a date and shows an error over data that is exactly what the database
+            # returned.
+            $plan += [pscustomobject]@{
+                Kind    = 'Table'
+                Sheet   = $title
+                Name    = (ConvertTo-SheetsTableName -Name ([string]$item.Job.CheckId))
+                FromRow = $SheetsCheckTabResultRow - 1
+                ToRow   = $SheetsCheckTabResultRow + $written.Count
+                FromCol = 0
+                ToCol   = $header.Count
+            }
         }
     }
 
@@ -735,6 +836,11 @@ function New-SheetsMergePlan {
         foreach ($key in $Existing.SheetIdOf.Keys) { $known[[string]$key] = [int]$Existing.SheetIdOf[$key] }
     }
 
+    $tables = @{}
+    if ($Existing -and $Existing.TableOf) {
+        foreach ($key in $Existing.TableOf.Keys) { $tables[[string]$key] = $Existing.TableOf[$key] }
+    }
+
     return [pscustomobject]@{
         Operations    = $plan
         Cells         = $cells
@@ -742,6 +848,7 @@ function New-SheetsMergePlan {
         RowOf         = $rowOf
         TabOf         = $tabOf
         KnownSheetIds = $known
+        KnownTables   = $tables
     }
 }
 
@@ -847,7 +954,7 @@ function Read-SheetState {
 
     $meta = Invoke-SheetsApi -Method Get -Path ("$SpreadsheetId" +
         '?fields=properties.title,sheets.properties.title,sheets.properties.sheetId' +
-        ',sheets.properties.gridProperties.rowCount')
+        ',sheets.properties.gridProperties.rowCount,sheets.tables')
     $titles = @($meta.sheets | ForEach-Object { [string]$_.properties.title })
     $hasOverview = ($titles -contains 'Overview')
 
@@ -858,6 +965,7 @@ function Read-SheetState {
     $capacityOf = @{}
     $idOf = @{}
     $indexOf = @{}
+    $tableOf = @{}
     $position = 0
     foreach ($sheet in @($meta.sheets)) {
         $title = [string]$sheet.properties.title
@@ -865,6 +973,22 @@ function Read-SheetState {
         $idOf[$title] = [int]$sheet.properties.sheetId
         $indexOf[$title] = $position
         $position++
+
+        # At most one table per tab is tracked, which is all this writes and all a check tab
+        # has room to mean. A table somebody made themselves is kept and its extent corrected
+        # rather than replaced: the range is what goes stale as a result grows or shrinks, and
+        # correcting it is the whole of what maintenance means here.
+        $table = @($sheet.tables)[0]
+        if ($table) {
+            $tableOf[$title] = [pscustomobject]@{
+                Id       = [string]$table.tableId
+                Name     = [string]$table.name
+                FromRow  = [int]$table.range.startRowIndex
+                ToRow    = [int]$table.range.endRowIndex
+                FromCol  = [int]$table.range.startColumnIndex
+                ToCol    = [int]$table.range.endColumnIndex
+            }
+        }
     }
 
     # Only tabs that exist may be named in a range. Google rejects the whole batch with
@@ -942,6 +1066,7 @@ function Read-SheetState {
         RowCapacityOf     = $capacityOf
         SheetIdOf         = $idOf
         SheetIndexOf      = $indexOf
+        TableOf           = $tableOf
     }
 }
 
@@ -994,6 +1119,7 @@ function Invoke-SheetsPlan {
 
     $operations = @($Plan.Operations)
 
+    $script:SheetsStage = 'adding and sizing tabs'
     # Structure first, and in one call: a tab has to exist before a range names it, and a grid
     # has to be big enough before a range reaches past its end. Both are rejected the same
     # way, and a rejection takes the whole batch it travelled in.
@@ -1059,6 +1185,7 @@ function Invoke-SheetsPlan {
         }
     }
 
+    $script:SheetsStage = 'hiding the signal columns'
     # Hiding needs a tab id too, so it waits for the batch that creates the tab.
     $hides = @($operations | Where-Object { $_.Kind -eq 'HideColumns' })
     $second = @()
@@ -1081,6 +1208,7 @@ function Invoke-SheetsPlan {
         Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $second } | Out-Null
     }
 
+    $script:SheetsStage = 'clearing stale rows'
     $clears = @($operations | Where-Object { $_.Kind -eq 'Clear' })
     if ($clears.Count -gt 0) {
         $ranges = @($clears | ForEach-Object { "'" + ($_.Sheet -replace "'", "''") + "'!" + $_.Range })
@@ -1139,6 +1267,7 @@ function Invoke-SheetsPlan {
         if ($isRaw) { $raw += $range } else { $entered += $range }
     }
 
+    $script:SheetsStage = 'writing values'
     # RAW first. The whole-row write of a new Overview row leaves K empty and the mirror lands
     # on top of it, so the order of these two calls is what decides which value survives.
     if ($raw.Count -gt 0) {
@@ -1154,10 +1283,49 @@ function Invoke-SheetsPlan {
         } | Out-Null
     }
 
+    $script:SheetsStage = 'declaring the result tables'
+    # Tables last: the tab has to exist and its rows have to be in place before a range is
+    # declared over them. A tab that already carries one is updated rather than given a
+    # second - the range is the part that goes stale, not the table.
+    $tableOps = @($operations | Where-Object { $_.Kind -eq 'Table' })
+    $tableRequests = @()
+    $known = @{}
+    if ($Plan.PSObject.Properties.Name -contains 'KnownTables' -and $Plan.KnownTables) {
+        foreach ($key in $Plan.KnownTables.Keys) { $known[[string]$key] = $Plan.KnownTables[$key] }
+    }
+
+    foreach ($table in $tableOps) {
+        if (-not $gidOf.ContainsKey($table.Sheet)) { continue }
+        $range = @{
+            sheetId          = [int]$gidOf[$table.Sheet]
+            startRowIndex    = [int]$table.FromRow
+            endRowIndex      = [int]$table.ToRow
+            startColumnIndex = [int]$table.FromCol
+            endColumnIndex   = [int]$table.ToCol
+        }
+
+        if ($known.ContainsKey($table.Sheet)) {
+            $tableRequests += @{
+                updateTable = @{
+                    table  = @{ tableId = [string]$known[$table.Sheet].Id; range = $range }
+                    fields = 'range'
+                }
+            }
+        }
+        else {
+            $tableRequests += @{ addTable = @{ table = @{ name = [string]$table.Name; range = $range } } }
+        }
+    }
+
+    if ($tableRequests.Count -gt 0) {
+        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $tableRequests } | Out-Null
+    }
+
     return [pscustomobject]@{
         Added   = $adds.Count
         Cleared = $clears.Count
         Written = $writes.Count
+        Tables  = $tableRequests.Count
     }
 }
 
