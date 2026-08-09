@@ -133,6 +133,7 @@ the account in use. The summary:
 |---|---|
 | `-ListChecks` | Every CheckID with its name, source file and line |
 | `-ListChecks BMX-DQ-0*` | The same list, filtered by wildcard |
+| `-History BMX-DQ-003` | Every recorded run of a check, oldest first |
 | `-Sport BMX` | Discover the structural parameters and fill them in |
 | `-Sport "Water Polo"` | Accept the exact database name or documented repository slug |
 | `-SportSlug Water-Polo -DatabaseSportName "Water Polo"` | State both identities explicitly while opening a sport |
@@ -1016,6 +1017,44 @@ Three things are deliberately outside it:
 - **Anything a reviewer wrote.** Not yet: the `Comment` and `Status` a reviewer types still
   live in the workbook and still do not survive the next run. Carrying them is the step after
   this one.
+
+### Reading the whole history
+
+The board compares this run with the one before it, and that is all it shows. Everything
+else is in the ledger, and `-History` is how it is read back:
+
+```powershell
+.\TOOLS\Run-Query.ps1 -History Artistic-Gymnastics-DQ-021
+```
+
+```text
+Artistic-Gymnastics-DQ-021
+
+Run                                     Findings Eligible Rate   Verdict   Status
+---                                     -------- -------- ----   -------   ------
+Artistic-Gymnastics 09.08.2026 10-11-18        1      825  0,12%  New       OK
+Artistic-Gymnastics 16.08.2026 09-02-44        0      831  0,00%  Resolved  OK
+```
+
+Oldest first, so the first run and the tenth sit side by side. It takes a wildcard as well —
+`-History 'Artistic-Gymnastics-DQ-0*'` — and groups by check, because a hundred checks
+interleaved by run is not a table anybody reads.
+
+`Rate` is `findings / eligible`, carried because a raw count is only comparable while the
+population behind it is, and over ten runs it rarely stays still. `Verdict` is what that run
+concluded at the time, not what today would conclude.
+
+The sport comes from the CheckID prefix, so nothing else has to be passed. It reads the ledger
+and nothing else: no credentials, no network, and no run.
+
+**A run made with `-TestRun` is absent, by its own request.** So is anything that has not been
+run at all — the command says so rather than printing an empty table that reads like a clean
+result.
+
+Two properties of the ledger matter when reading it back. Each entry keeps the `signal` and
+`expected` that were in force **at the time of that run**, so reclassifying a check later does
+not rewrite what earlier runs meant. And because the file is tracked, `git log -p
+RUNS/<Sport>.json` gives the history of the history — though only for runs somebody committed.
 
 ### A run that leaves no trace
 

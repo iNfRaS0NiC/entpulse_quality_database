@@ -1950,6 +1950,52 @@ Test-That 'a test run records nothing and names its folder so' {
     Assert-True ((Split-Path -Leaf $real) -notlike 'TEST *') 'a real run keeps its plain name'
 }
 
+Test-That 'the history of a check is every recorded run of it, oldest first' {
+    # The document compares this run with the one before it and nothing else. This is where
+    # the first run and the tenth sit side by side.
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'TRACKED'; What = ''; Expected = 'Zero' }
+    foreach ($pair in @(@(40, 900), @(12, 900), @(0, 910))) {
+        $script:PreviousRun = Import-PreviousRunEntries -Jobs @($job)
+        Save-RunLedger -Output ("run-{0}" -f $pair[0]) -Summary @(New-RunSummaryRow -Job $job `
+                -Rows ($pair[0] + 1) -Seconds 1 -Status 'OK' -Findings $pair[0] -Eligible $pair[1]) | Out-Null
+    }
+    $script:PreviousRun = @{}
+
+    $rows = @(Get-CheckHistory -Pattern 'Fixtureball-DQ-002' -Sport 'Fixtureball')
+    Assert-Equal 3 $rows.Count 'every run appears'
+    Assert-Equal 40 $rows[0].Findings 'oldest first'
+    Assert-Equal 0 $rows[2].Findings 'and newest last'
+    Assert-Equal 'Improved' $rows[1].Verdict 'each carrying the verdict that run recorded'
+    Assert-Equal 'Resolved' $rows[2].Verdict 'including the one that closed it'
+
+    # The proportion, because a raw count is only comparable while the population is.
+    Assert-Equal '4,44%' $rows[0].Rate 'the rate is computed from the run own numbers'
+}
+
+Test-That 'a history of a check nobody has run says so rather than lying with an empty table' {
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+    Assert-Equal 0 @(Get-CheckHistory -Pattern 'Fixtureball-DQ-002' -Sport 'Fixtureball').Count 'nothing recorded'
+}
+
+Test-That 'a history pattern reaches more than one check' {
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $first = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'A'; What = '' }
+    $second = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-004'; Name = 'B'; What = '' }
+    Save-RunLedger -Output 'one' -Summary @(
+        (New-RunSummaryRow -Job $first -Rows 2 -Seconds 1 -Status 'OK' -Findings 1 -Eligible 10),
+        (New-RunSummaryRow -Job $second -Rows 3 -Seconds 1 -Status 'OK' -Findings 2 -Eligible 20)) | Out-Null
+
+    $all = @(Get-CheckHistory -Pattern 'Fixtureball-DQ-*' -Sport 'Fixtureball')
+    Assert-Equal 2 $all.Count 'both checks are returned'
+    Assert-Equal 1 @(Get-CheckHistory -Pattern 'Fixtureball-DQ-004' -Sport 'Fixtureball').Count 'and one can be asked for alone'
+}
+
 Test-That 'an unreadable ledger is reported rather than overwritten' {
     # The history is the whole reason the file exists, so a run that cannot read it must not
     # replace it with one entry of its own.

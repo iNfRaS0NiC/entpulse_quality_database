@@ -189,6 +189,12 @@ param(
 
     [switch]$ListChecks,
 
+    # What a check has returned across every recorded run, read out of RUNS/<Sport>.json. The
+    # live document compares this run with the one before it and nothing else; this is where
+    # the first run and the tenth sit side by side. Takes a CheckID or a wildcard, and finds
+    # the sport in the prefix.
+    [string]$History,
+
     # Prints the full command set. The cqb wrapper maps a bare "info" onto this.
     [switch]$Info,
 
@@ -3259,6 +3265,66 @@ function Save-RunLedger {
     return $written
 }
 
+function Get-CheckHistory {
+    # Every recorded run of the checks a pattern matches, oldest first, as rows a caller can
+    # print or sort. Reads the ledger and nothing else: no credentials, no network, and no
+    # opinion about what the numbers mean beyond the verdict each run already recorded.
+    param([string]$Pattern, [string]$Sport)
+
+    $ledger = Read-RunLedger -Sport $Sport
+    if ($null -eq $ledger) { return @() }
+
+    $rows = @()
+    foreach ($run in @($ledger.runs)) {
+        foreach ($check in @($run.checks)) {
+            if ([string]$check.runKey -notlike $Pattern -and [string]$check.checkId -notlike $Pattern) { continue }
+
+            # The proportion, because a raw count is only comparable while the population is,
+            # and over ten runs it rarely stays still.
+            $rate = ''
+            if ($null -ne $check.findings -and $null -ne $check.eligible -and [int]$check.eligible -gt 0) {
+                $rate = '{0:N2}%' -f ([double][int]$check.findings / [int]$check.eligible * 100)
+            }
+
+            $rows += [pscustomobject]@{
+                CheckId  = [string]$check.checkId
+                Run      = [string]$run.runId
+                Started  = [string]$run.startedUtc
+                Findings = $check.findings
+                Eligible = $check.eligible
+                Rate     = $rate
+                Verdict  = [string]$check.verdict
+                Status   = [string]$check.status
+            }
+        }
+    }
+    return $rows
+}
+
+function Show-CheckHistory {
+    param([string]$Pattern, [string]$Sport)
+
+    $rows = @(Get-CheckHistory -Pattern $Pattern -Sport $Sport)
+    if ($rows.Count -eq 0) {
+        Write-Host ("Nothing recorded for '{0}' in RUNS\{1}.json." -f $Pattern, $Sport) -ForegroundColor Yellow
+        Write-Host '  A check appears here once it has been run without -TestRun.' -ForegroundColor DarkGray
+        return
+    }
+
+    # Grouped by check rather than interleaved: a wildcard over a sport is a hundred checks,
+    # and a single flat table of them sorted by run is unreadable.
+    foreach ($group in ($rows | Group-Object CheckId | Sort-Object Name)) {
+        Write-Host ''
+        Write-Host $group.Name -ForegroundColor Cyan
+        $group.Group | Format-Table Run, Findings, Eligible, Rate, Verdict, Status -AutoSize
+    }
+
+    $runs = @($rows | ForEach-Object { $_.Run } | Select-Object -Unique).Count
+    Write-Host ("{0} check(s) over {1} recorded run(s)." -f `
+        (@($rows | ForEach-Object { $_.CheckId } | Select-Object -Unique)).Count, $runs) -ForegroundColor DarkGray
+    Write-Host '  A run made with -TestRun is deliberately absent: it was asked to leave no trace.' -ForegroundColor DarkGray
+}
+
 function Save-RunSheet {
     <#
         Bring the sport's live document up to date with this run.
@@ -3651,6 +3717,7 @@ if ($Info) {
     Write-Line $(if ($env:EP_QB_COMMAND) { "$Entry info" } else { "$Entry -Info" }) 'this page'
     Write-Line "$Entry -ListChecks" 'every CheckID with its name and source line'
     Write-Line "$Entry -ListChecks BMX-DQ-0*" 'filter the list by wildcard'
+    Write-Line "$Entry -History BMX-DQ-003" 'every recorded run of a check, oldest first'
 
     Write-Section 'RUN ONE'
     Write-Line "$Entry BMX-DQ-003" 'to the screen'
@@ -3762,6 +3829,21 @@ if ($Info) {
     Write-Host "  Credentials live in TOOLS\secrets.local.ps1 (git-ignored)." -ForegroundColor DarkGray
     Write-Host "  Cached cookie: $StatePath" -ForegroundColor DarkGray
     Write-Host ''
+    return
+}
+
+if ($History) {
+    # A local read of the ledger, so it sits with -ListChecks above the login rather than
+    # below it: asking what a check has done before should never need credentials.
+    $sport = $(if ($ResolvedSportSlug) { $ResolvedSportSlug }
+        elseif ($History -match '^(.+)-DQ-') { $matches[1] }
+        else { '' })
+
+    if (-not $sport -or $sport -eq 'GLOBAL') {
+        throw ("-History needs to know the sport, and '$History' does not name one. Pass a sport " +
+            "CheckID such as BMX-DQ-003, or add -Sport.")
+    }
+    Show-CheckHistory -Pattern $History -Sport $sport
     return
 }
 
