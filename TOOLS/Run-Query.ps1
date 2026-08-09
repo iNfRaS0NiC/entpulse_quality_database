@@ -417,6 +417,58 @@ function Get-CheckCatalogue {
     return $catalogue
 }
 
+function Select-RegistryChecks {
+    <#
+        A sport CheckID that names no statement of its own, resolved the way -RunAll resolves
+        it: through the registry row, to the template that row instantiates.
+
+        Most checks are like this. Artistic Gymnastics approves 99 and only 10 are statements
+        the sport wrote; the other 89 are rows pointing at a GLOBAL_DQ template. Without this,
+        nine in ten checks could only be run by running the whole sport - fifteen minutes to
+        see whether one correction took.
+
+        Approved rows only. A Deprecated row keeps its CheckID for good and must not run
+        because somebody typed it.
+    #>
+    param([string]$Pattern, $Catalogue)
+
+    if ($Pattern -notmatch '^(.+)-DQ-') { return @() }
+    $sport = $matches[1]
+    if ($sport -eq 'GLOBAL') { return @() }
+
+    $rows = @()
+    try { $rows = @(Get-RegistryRow -SportName $sport) } catch { return @() }
+
+    $byId = @{}
+    foreach ($entry in $Catalogue) { $byId[$entry.CheckId] = $entry }
+
+    $jobs = @()
+    foreach ($row in @($rows | Where-Object { $_.Status -eq 'Approved' -and $_.CheckId -like $Pattern } | Sort-Object CheckId)) {
+        # The Query file decides which statement runs, exactly as it does under -RunAll: a
+        # GLOBAL_DQ path means the row instantiates its Family, anything else means the sport
+        # authored its own and the row's own CheckID names it.
+        $wanted = $(if ($row.QueryFile -like 'GLOBAL_DQ/*') { $row.Family } else { $row.CheckId })
+        if (-not $byId.ContainsKey($wanted)) { continue }
+        $statement = $byId[$wanted]
+
+        # The row's CheckID travels with the result, never the template's. Signal and the
+        # expectation are hydrated later, off Template and CheckId, by the same two passes
+        # every other selection goes through.
+        $jobs += [pscustomobject]@{
+            CheckId  = $row.CheckId
+            Name     = $statement.Name
+            What     = $statement.What
+            File     = $statement.File
+            Line     = $statement.Line
+            Path     = $statement.Path
+            Sql      = $statement.Sql
+            Template = $(if ($wanted -eq $row.CheckId) { '' } else { $wanted })
+            Category = $row.Category
+        }
+    }
+    return $jobs
+}
+
 function Select-Checks {
     param([string[]]$Patterns)
 
@@ -425,6 +477,13 @@ function Select-Checks {
 
     foreach ($pattern in $Patterns) {
         $hits = @($catalogue | Where-Object { $_.CheckId -like $pattern } | Sort-Object CheckId)
+
+        # A sport CheckID naming no statement is the normal case rather than the exception,
+        # so the registry is consulted before this is called a miss.
+        if ($hits.Count -eq 0) {
+            $hits = @(Select-RegistryChecks -Pattern $pattern -Catalogue $catalogue)
+        }
+
         if ($hits.Count -eq 0) {
             throw "No CheckID matches '$pattern'. Use -ListChecks to see available IDs."
         }
@@ -3787,6 +3846,31 @@ elseif ($File) {
 }
 elseif ($CheckId) {
     $jobs = @(Select-Checks -Patterns $CheckId)
+
+    # A sport CheckID carries its sport in the prefix, and most of them resolve to a template
+    # whose {{...}} placeholders only that sport can fill. So a run given nothing but the ID
+    # adopts the identity the ID already states, rather than stopping on a placeholder the
+    # user had no reason to think was involved.
+    #
+    # Only when every selected check agrees, and never over an explicit -Sport: a run naming
+    # two sports has no single identity to adopt, and one that was told its sport was told.
+    if (-not $sportIdentity) {
+        # Wrapped in @() before indexing, not only before counting. Select-Object -Unique over
+        # one item returns the string itself rather than a one-element array, and indexing a
+        # string takes a character: the first attempt at this resolved the sport as "A".
+        $prefixes = @(@($jobs | ForEach-Object {
+                    if ([string]$_.CheckId -match '^(.+)-DQ-') { $matches[1] } }) | Select-Object -Unique)
+        if ($prefixes.Count -eq 1 -and $prefixes[0] -ne 'GLOBAL') {
+            $inferred = Resolve-SportIdentity -SportValue $prefixes[0]
+            if ($inferred) {
+                $sportIdentity = $inferred
+                $ResolvedSportSlug = $inferred.Slug
+                $ResolvedDatabaseSportName = $inferred.DatabaseName
+                $script:RunSportName = $ResolvedSportSlug
+                Write-Host "Sport taken from the CheckID: $ResolvedSportSlug" -ForegroundColor DarkGray
+            }
+        }
+    }
 }
 else {
     throw 'Nothing to run. Pass a CheckID, -File, -Sql or -RunAll with -Sport. Use -ListChecks to list registered CheckIDs.'

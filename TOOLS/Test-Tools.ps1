@@ -363,6 +363,42 @@ Test-That 'only the non-actionable checks are reported as classified' {
     Assert-Equal 'Fixtureball-DQ-001' $fixtureSelection.Classified[0].CheckId 'classified CheckID'
 }
 
+Test-That 'a sport CheckID with no statement of its own resolves through the registry' {
+    # Nine in ten checks are like this: a registry row pointing at a GLOBAL_DQ template. Until
+    # this resolved, they could only be run by running the whole sport - fifteen minutes to
+    # see whether one correction took.
+    $resolved = @(Select-Checks -Patterns @('Fixtureball-DQ-001'))
+    Assert-Equal 1 $resolved.Count 'the row is found'
+    Assert-Equal 'Fixtureball-DQ-001' $resolved[0].CheckId 'and carries the sport CheckID, not the template'
+    Assert-Equal 'GLOBAL-DQ-001' $resolved[0].Template 'while naming the template it instantiates'
+    Assert-Equal 'FIRST_TEMPLATE' $resolved[0].Name 'with the template statement behind it'
+    Assert-Equal 'MISSING_VALUES' $resolved[0].Category 'and the category off its row'
+}
+
+Test-That 'a sport statement still wins over the registry path' {
+    # Fixtureball-DQ-004 is the sport own version of what GLOBAL-DQ-002 expresses. The .sql
+    # catalogue has it, so it is found there and the registry is never consulted.
+    $own = @(Select-Checks -Patterns @('Fixtureball-DQ-004'))
+    Assert-Equal 1 $own.Count 'found'
+    Assert-Equal 'SECOND_TEMPLATE' $own[0].Name 'the sport own statement'
+    Assert-True (-not $own[0].Template) 'and no template, because it is not an instantiation'
+}
+
+Test-That 'a deprecated row is not run because somebody typed its CheckID' {
+    # The ID stays reserved for good. Being able to name it is not permission to run it.
+    $threw = $false
+    try { Select-Checks -Patterns @('Fixtureball-DQ-003') | Out-Null }
+    catch { $threw = $true }
+    Assert-True $threw 'a Deprecated row does not resolve'
+}
+
+Test-That 'a wildcard reaches registry rows as well as statements' {
+    $all = @(Select-Checks -Patterns @('Fixtureball-DQ-*') | ForEach-Object { $_.CheckId })
+    Assert-True ($all -contains 'Fixtureball-DQ-002') 'the sport statement'
+    Assert-True ($all -contains 'Fixtureball-DQ-004') 'and the other one'
+    Assert-True ($all -notcontains 'Fixtureball-DQ-003') 'but never the deprecated row'
+}
+
 Test-That '-RunAll excludes another sport rows' {
     Assert-True ($fixtureIds -notcontains 'Otherball-DQ-001') 'Otherball-DQ-001 must not be selected for Fixtureball'
 }
