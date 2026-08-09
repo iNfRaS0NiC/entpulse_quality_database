@@ -2647,6 +2647,41 @@ Test-That 'a table name is made formula-safe' {
     Assert-Equal 'Already_fine' (ConvertTo-SheetsTableName -Name 'Already_fine') 'a legal name is untouched'
 }
 
+Test-That 'a board with no table gets one' {
+    # It used to be created only by hand and merely maintained here. That held until the
+    # document was rebuilt from empty and the hand-made one went with it, leaving a rule that
+    # would never restore what it had helped lose.
+    $summary = @(
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'),
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-004' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
+        TableOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+
+    $board = @($plan.Operations | Where-Object { $_.Kind -eq 'Table' -and $_.Sheet -eq 'Overview' })
+    Assert-Equal 1 $board.Count 'the board is declared a table'
+    Assert-Equal 'Overview' $board[0].Name 'under the plain name, one board to a document'
+    Assert-Equal 0 $board[0].FromRow 'starting on the header row'
+    Assert-Equal 3 $board[0].ToRow 'and covering both appended checks'
+    Assert-Equal 21 $board[0].ToCol 'across every column the board writes'
+}
+
+Test-That 'a board holding only its header is not made a table' {
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
+        TableOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary @() -Collected @() -Existing $existing -OutputFolder 'x'
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'Table' }).Count `
+        'a table over nothing but a heading is not a table'
+}
+
 Test-That 'a table somebody made on Overview has its extent kept, columns and all' {
     # Nothing here creates one. But a table made today covers today checks, and the next run
     # appends below it, so the range is exactly what goes stale.

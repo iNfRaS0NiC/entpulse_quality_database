@@ -593,23 +593,34 @@ function New-SheetsMergePlan {
         $cells += 1
     }
 
-    # A table on Overview is the reviewer's own doing - nothing here creates one - but its
-    # range is exactly what goes stale, because a table made today covers today's checks and
-    # the next run appends below it. So an existing one is kept and its extent corrected,
-    # holding on to whichever columns they chose.
-    if ($Existing -and $Existing.TableOf -and $Existing.TableOf.ContainsKey('Overview')) {
-        $board = $Existing.TableOf['Overview']
-        $lastRow = $nextRow - 1
-        if ($board.ToRow -ne $lastRow) {
-            $plan += [pscustomobject]@{
-                Kind    = 'Table'
-                Sheet   = 'Overview'
-                Name    = $board.Name
-                FromRow = 0
-                ToRow   = $lastRow
-                FromCol = $board.FromCol
-                ToCol   = $board.ToCol
-            }
+    # Overview is a table like every result block, and for the same reasons: the styled header
+    # stays put while scrolling, and the filter buttons are how a hundred rows get read.
+    #
+    # It used to be created only by hand and merely maintained here, on the reasoning that a
+    # table on the board was the reviewer's own decision. That held until the document was
+    # rebuilt from empty and the hand-made one went with it - leaving a rule that would never
+    # restore what it had helped lose, and five more sports each needing somebody to remember.
+    #
+    # An existing one is still kept rather than replaced, name and columns and all. Only the
+    # extent is corrected, which is the part that goes stale: a table covers the checks that
+    # existed when it was made, and the next run appends below it.
+    $board = $(if ($Existing -and $Existing.TableOf -and $Existing.TableOf.ContainsKey('Overview')) {
+            $Existing.TableOf['Overview']
+        }
+        else { $null })
+    $lastRow = $nextRow - 1
+
+    if ($lastRow -gt 1 -and (-not $board -or $board.ToRow -ne $lastRow)) {
+        $plan += [pscustomobject]@{
+            Kind    = 'Table'
+            Sheet   = 'Overview'
+            # One board to a document, so the plain name is free and stays readable in a
+            # formula. An existing table keeps whatever it was called.
+            Name    = $(if ($board) { $board.Name } else { 'Overview' })
+            FromRow = 0
+            ToRow   = $lastRow
+            FromCol = $(if ($board) { $board.FromCol } else { 0 })
+            ToCol   = $(if ($board) { $board.ToCol } else { $width })
         }
     }
 
