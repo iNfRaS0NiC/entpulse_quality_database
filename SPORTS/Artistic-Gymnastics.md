@@ -150,15 +150,22 @@ belong to Extended Results. By explicit decision of 2026-08-04 they remain in th
 structural inventory but are outside the initial Artistic Gymnastics DQ scope. This boundary
 assigns no check and does not classify the fields as unused.
 
-`GLOBAL-DQ-053` is a `Monitor` for this sport. Event-layer Medal and Rank values include
-tie and ordinal-storage shapes in which a direct Gold=1, Silver=2, Bronze=3 comparison is
-not sufficient to classify one participant row as defective. Exact swapped medal/rank pairs
-remain drill-down targets, but the mismatch row alone is not the repair unit.
+`GLOBAL-DQ-053` is `Actionable`. A medal that does not stand for the place it was awarded
+for, or a medal row carrying no Rank at all, is one defective participant row and is repaired
+as one, so a corrected sport returns the `COVERAGE` row alone.
 
-`GLOBAL-DQ-037` is a `Monitor` for the same tie-aware reason at event-set level. Legitimate
-ties and duplicated bronze placements prevent the aggregate invalid-set result from being a
-direct repair list; no-medal, contradictory and missing-medal subtypes remain useful
-drill-down targets. `GLOBAL-DQ-049` is likewise monitored because legitimate `All-Around`
+It was a `Monitor` until 2026-08-10, on the argument that event-layer Medal and Rank values
+include tie and ordinal-storage shapes in which a direct Gold=1, Silver=2, Bronze=3
+comparison is not sufficient to classify one participant row as defective. That argument
+describes how a *set* of medals can legitimately be read; it does not make a single
+mismatched row correct. The classification was withdrawn on that ground.
+
+`GLOBAL-DQ-037` is a `Monitor` at event-set level, for a reason of its own rather than the
+one above: legitimate ties and duplicated bronze placements prevent the aggregate
+invalid-set result from being a direct repair list, and no-medal, contradictory and
+missing-medal subtypes remain useful drill-down targets.
+
+`GLOBAL-DQ-049` is likewise monitored because legitimate `All-Around`
 and `All-Round` compounds dominate its generic name-format output, while double spaces and
 Cyrillic lookalikes remain actionable subtypes.
 

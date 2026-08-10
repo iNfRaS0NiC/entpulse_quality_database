@@ -318,10 +318,6 @@
         "signal": "Monitor",
         "reason": "The generic Comp.Rank name rule also matches legitimate hyphenated and diacritic-bearing names. Double spaces and Cyrillic lookalikes remain actionable drill-down subtypes. SPORTS/Artistic-Gymnastics.md owns the reasoning."
       },
-      "GLOBAL-DQ-053": {
-        "signal": "Monitor",
-        "reason": "Event Medal and Rank rows include tie and ordinal-storage shapes for which a direct Gold=1, Silver=2, Bronze=3 comparison does not identify one repair row. Exact swaps remain drill-down targets. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
       "GLOBAL-DQ-065": {
         "signal": "Monitor",
         "reason": "Artistic Gymnastics teams within one competition legitimately field different numbers of gymnasts, so an uneven Comp.Rank athlete count is population context rather than one row-level defect. It is the statistic-layer twin of GLOBAL-DQ-068 and is monitored for the same reason. SPORTS/Artistic-Gymnastics.md owns the reasoning."
