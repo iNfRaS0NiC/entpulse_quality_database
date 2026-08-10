@@ -774,23 +774,23 @@ check that failed shows `ERROR` instead, so it cannot be misread as a clean zero
 left unlinked because it has no tab; the reason is on the console and in `_summary.csv`,
 along with the durations.
 
-`Status` is a manual tracking field. Its dropdown names outcomes rather than stages of work,
-because "completed" hides the only thing the next reader needs — completed with what result:
+`Status` is a manual tracking field, and its dropdown offers the same six words the live
+document does — one list, `$SheetsStatusBands` in `TOOLS/Sheets.ps1`, read by both:
 
 | Open | Closed |
 |---|---|
-| `Not reviewed`, `Reviewing`, `On hold` | `No issue`, `Reported to IT`, `Fixed`, `No action needed` |
+| `Not reviewed`, `Reviewing` | `Clean`, `Monitor Only`, `Completed`, `IT Fix` |
 
-`No action needed` is the reviewer's counterpart to the `Informational` signal: the check ran,
-it was read, and there was never anything in it to act on.
+`Monitor Only` is the reviewer's counterpart to the `Informational` signal: the check ran, it
+was read, and there was never anything in it to act on.
 
 Two of those the workbook settles itself, so a reviewer opens on the rows that actually want
 reading:
 
 | Seeded as | When |
 |---|---|
-| `No action needed` | the signal is `Informational` — nothing in the output is correctable |
-| `No issue` | the check returned exactly one row, its `COVERAGE` row, **and that row counts a population above zero** |
+| `Monitor Only` | the signal is `Informational` — nothing in the output is correctable |
+| `Clean` | the check returned exactly one row, its `COVERAGE` row, **and that row counts a population above zero** |
 | `Not reviewed` | everything else |
 
 The one-row rule is the coverage contract read back: every DQ statement returns a `COVERAGE`
@@ -1211,6 +1211,24 @@ The three bands are rewritten on every run over that one column, so a threshold 
 adds on `Rows` will not survive the next run; on any other column it is theirs and is left
 alone.
 
+`Status` is a closed vocabulary rather than free text, offered as a coloured dropdown down the
+whole column: **Not reviewed**, **Clean**, **Monitor Only**, **Reviewing**, **Completed**,
+**IT Fix**. The list is `$SheetsStatusBands` in `TOOLS/Sheets.ps1`, and the workbook's dropdown
+reads the same constant, because a workbook and a board that disagree about the words are how
+the column came to hold nine spellings of five ideas across six boards. Validation is strict, so
+a seventh word is refused rather than flagged.
+
+A superseded spelling still on a board is renamed on the next run — `No issue` and `No Changes`
+to `Clean`, `No action needed` to `Monitor Only`, `Fixed` to `Completed`, `For IT` and
+`Reported to IT` to `IT Fix`, and the observed typo `Monitor Olnly` to `Monitor Only`. That is
+the single case in which the runner writes into a reviewer's column, and it is narrow on
+purpose: the map is a closed list of synonyms, so it renames a conclusion and never forms one.
+A word nobody declared is left exactly as typed.
+
+Seeding uses the same vocabulary: an informational check opens on `Monitor Only`, a check that
+came back with its `COVERAGE` row alone over a real population opens on `Clean`, and everything
+else — including every failure — opens on `Not reviewed`.
+
 Three columns ship hidden. `Signal` and `Signal reason` at `L` and `M` are the runner's own
 classification, settled before the run and unchanged by reading it. `Parameters` at `C` is
 empty for every check of a sport that takes none and identical for every check of one that
@@ -1228,6 +1246,22 @@ comparison block the board carries, then `Category` and `Parameters`. `Signal` a
 reason` are not among them. They classify the check rather than describe what it returned, and
 they were settled before the statement was sent — two columns of noise on a tab somebody opened
 to look at findings. `Overview` still carries both, hidden.
+
+Rows 1 to 3 of a check tab are a table of their own, named for the check's number and what the
+block is — `DQ_104_Overview`. It exists for the same reason the result table below it does: a
+named block is one a sort or a filter will not run past, and without it a filter set on the
+results reaches up into the identity and hides it. The name carries underscores because a table
+name is a formula identifier; the heading in `A1` carries the spaces. `Return to Overview` in
+`A3` is bold and in Google's link blue, so the one control on the tab reads as a control rather
+than as another line of the identity above it.
+
+The `SQL` tab is shared: one block per check, and each check tab's `C2` points at a row number
+in it. A run therefore **merges** into it rather than rewriting it from what the run held. The
+order the tab already has is kept and a check new to it is appended, which leaves most row
+numbers still; `C2` is rewritten for a check this run held, and for one it did not whose block
+moved underneath it. Rewriting the tab from the run instead — which is what it did until
+2026-08-10 — meant a run of a single check cleared the column, left its own statement alone on
+it and pointed every other check's `C2` at a blank row, which looks exactly like a working link.
 
 Overview's `Comment` mirrors the check tab's `E2`, as it does in the workbook: the comment is
 written once beside the rows that provoked it, and read from the board that lists every check.

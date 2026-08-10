@@ -1467,10 +1467,10 @@ Test-That 'workbook carries the Check By column and the outcome statuses' {
     Assert-True ($xml -match 'r="C1"[^>]*><is><t[^>]*>Parameters<') 'Parameters should sit beside the CheckID it qualifies'
     Assert-True ($xml -match 'r="E1"[^>]*><is><t[^>]*>Priority<') 'Priority should sit beside Check Name'
     Assert-True ($xml -match 'r="F1"[^>]*><is><t[^>]*>Category<') 'Category should follow Priority'
-    # Every value names an outcome, so a closed check says how it closed rather than only
-    # that somebody got to it.
-    Assert-True ($xml -match '"Not reviewed,Reviewing,On hold,No issue,Reported to IT,Fixed,No action needed"') 'the dropdown should offer the outcome statuses'
-    Assert-True ($xml -match '>No issue<') 'a check returning only its COVERAGE row should open as No issue'
+    # One vocabulary for the workbook and the live board, taken from $SheetsStatusBands so
+    # the two cannot drift; the column held nine spellings of five ideas when they could.
+    Assert-True ($xml -match '"Not reviewed,Clean,Monitor Only,Reviewing,Completed,IT Fix"') 'the dropdown should offer the outcome statuses'
+    Assert-True ($xml -match '>Clean<') 'a check returning only its COVERAGE row should open as Clean'
     Assert-True ($detailXml -match 'r="H1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit after Comment on a check tab'
     # An empty manual field writes no cell at all, so the reviewer types into a blank.
     Assert-True ($detailXml -notmatch 'r="H2"') 'Check By should be left empty on a check tab'
@@ -1569,9 +1569,9 @@ Test-That 'merging shards concatenates findings and sums coverage' {
 }
 
 Test-That 'the workbook seeds the two statuses it can settle itself' {
-    Assert-Equal 'No action needed' (Get-SeededStatus -Signal 'Informational' -Rows 40 -Ran $true -Eligible $null) `
+    Assert-Equal 'Monitor Only' (Get-SeededStatus -Signal 'Informational' -Rows 40 -Ran $true -Eligible $null) `
         'an informational check has nothing to act on whatever it returned'
-    Assert-Equal 'No issue' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible 20000) `
+    Assert-Equal 'Clean' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible 20000) `
         'only the COVERAGE row, over a population, means nothing was found today'
     Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 12 -Ran $true -Eligible 20000) `
         'findings wait for a reviewer'
@@ -1590,7 +1590,7 @@ Test-That 'the workbook seeds the two statuses it can settle itself' {
 Test-That 'a check that audited nothing is never called clean' {
     # The whole point of the coverage contract. Both of these return one row and no findings;
     # only the eligible_count inside that row says whether anything was looked at.
-    Assert-Equal 'No issue' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible 952) `
+    Assert-Equal 'Clean' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible 952) `
         'zero findings over a real population is clean data'
     Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible 0) `
         'zero findings over nothing is not clean data and wants a person'
@@ -2723,19 +2723,29 @@ Test-That 'a result block is declared a table, and an existing one is corrected 
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
         -Existing ([pscustomobject]$state) -OutputFolder 'x'
     $table = @($fresh.Operations | Where-Object { $_.Kind -eq 'Table' -and $_.Sheet -eq 'TABLED' })
-    Assert-Equal 1 $table.Count 'the result block is declared a table'
-    Assert-Equal 'Fixtureball_DQ_002' $table[0].Name 'under a name a formula can carry'
-    Assert-Equal 4 $table[0].FromRow 'starting on the header row of the block'
-    Assert-Equal 8 $table[0].ToRow 'and ending past the last row it holds'
+    # Two: the identity block at the top and the results below it. Found by name rather than
+    # by position, so neither assertion depends on which the planner happens to emit first.
+    Assert-Equal 2 $table.Count 'the result block and the identity block are each declared a table'
+    $result = @($table | Where-Object { $_.Name -eq 'Fixtureball_DQ_002' })
+    Assert-Equal 1 $result.Count 'the result block is named for the check'
+    Assert-Equal 4 $result[0].FromRow 'starting on the header row of the block'
+    Assert-Equal 8 $result[0].ToRow 'and ending past the last row it holds'
+    # The identity block takes the check's number and nothing else: every tab in the document
+    # is the same sport, so the sport in the name would distinguish none of them.
+    $identity = @($table | Where-Object { $_.Name -eq 'DQ_002_Overview' })
+    Assert-Equal 1 $identity.Count 'the identity block is named for the check number alone'
+    Assert-Equal 0 $identity[0].FromRow 'covering the header'
+    Assert-Equal 3 $identity[0].ToRow 'the identity row and the way back'
     Assert-Equal 0 $fresh.KnownTables.Count 'with nothing existing to update'
 
     # A tab that already carries one is updated. The range is what goes stale as a result
     # grows or shrinks; the table itself is fine.
-    $state['TableOf'] = @{ 'TABLED' = [pscustomobject]@{ Id = 'T1'; Name = 'old'; FromRow = 4; ToRow = 99; FromCol = 0; ToCol = 4 } }
+    $state['TableOf'] = @{ 'TABLED' = @([pscustomobject]@{ Id = 'T1'; Name = 'old'; FromRow = 4; ToRow = 99; FromCol = 0; ToCol = 4 }) }
     $again = New-SheetsMergePlan -Summary $summary -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
         -Existing ([pscustomobject]$state) -OutputFolder 'x'
-    Assert-Equal 'T1' $again.KnownTables['TABLED'].Id 'the existing table is carried to the transport'
-    Assert-Equal 8 @($again.Operations | Where-Object { $_.Kind -eq 'Table' -and $_.Sheet -eq 'TABLED' })[0].ToRow `
+    Assert-Equal 'T1' @($again.KnownTables['TABLED'])[0].Id 'the existing table is carried to the transport'
+    Assert-Equal 8 @($again.Operations | Where-Object {
+            $_.Kind -eq 'Table' -and $_.Sheet -eq 'TABLED' -and $_.Name -eq 'Fixtureball_DQ_002' })[0].ToRow `
         'and its extent corrected to this run'
 }
 
@@ -2905,7 +2915,8 @@ Test-That 'the Rows colour bands are rewritten every run, over that column only'
 
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
     $rules = @($fresh.Operations | Where-Object { $_.Kind -eq 'FormatRules' })
-    Assert-Equal 1 $rules.Count 'a new document gets its bands'
+    # Two columns carry bands now - Rows and Status.
+    Assert-Equal 2 $rules.Count 'a new document gets its bands'
     Assert-Equal 8 $rules[0].Column 'on Rows at H'
     Assert-Equal 0 @($rules[0].Drop).Count 'with nothing to remove'
     Assert-Equal 3 @($rules[0].Rules).Count 'clean, a handful, and a hundred or more'
@@ -2920,12 +2931,107 @@ Test-That 'the Rows colour bands are rewritten every run, over that column only'
                 [pscustomobject]@{ ranges = @([pscustomobject]@{ startColumnIndex = 7; endColumnIndex = 8 }) }
                 [pscustomobject]@{ ranges = @([pscustomobject]@{ startColumnIndex = 0; endColumnIndex = 22 }) }
                 [pscustomobject]@{ ranges = @([pscustomobject]@{ startColumnIndex = 7; endColumnIndex = 8 }) }
+                [pscustomobject]@{ ranges = @([pscustomobject]@{ startColumnIndex = 8; endColumnIndex = 9 }) }
             ) }
     }
     $again = @(@(New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
                 -OutputFolder 'x').Operations | Where-Object { $_.Kind -eq 'FormatRules' })
-    Assert-Equal 1 $again.Count 'and an existing one gets them again'
+    Assert-Equal 2 $again.Count 'and an existing one gets them again'
     Assert-Equal '0 2' (@($again[0].Drop) -join ' ') 'replacing only the rules that cover Rows'
+    # Status is column I, one to the right. The two drop lists are computed in a single pass
+    # over the original rule list: each deletion renumbers what follows it, so two passes each
+    # counting from zero would have the second one delete a rule the first had already shifted.
+    Assert-Equal 9 $again[1].Column 'and Status at I gets its own'
+    Assert-Equal '3' (@($again[1].Drop) -join ' ') 'replacing only the rules that cover Status'
+    Assert-Equal 6 @($again[1].Rules).Count 'one band per status the vocabulary allows'
+    Assert-Equal 'TEXT_EQ' $again[1].Rules[0].Type 'matched on the word, not on a number'
+    Assert-True ([bool]$again[1].Rules[0].Background) 'and filled, because what it wants to look like is a chip'
+}
+
+Test-That 'the SQL tab is merged, so a narrow run does not delete the rest of the catalogue' {
+    # The defect this was written for. The SQL tab is shared - one block per check, and each
+    # check tab's C2 points at a row number in it - but it was rewritten from whatever the run
+    # held. A run of one check therefore cleared the column, left its own statement alone on
+    # it, and pointed every other check's C2 at a blank row. It looked like a working link.
+    $job = [pscustomobject]@{
+        CheckId = 'Fixtureball-DQ-002'; Name = 'TWO'; What = ''
+        Sql     = "SELECT 2 REVISED;`nAND more;"
+    }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; StatusOf = @{}
+        TabOf = @{ 'Fixtureball-DQ-001' = 'ONE'; 'Fixtureball-DQ-002' = 'TWO'; 'Fixtureball-DQ-003' = 'THREE' }
+        Titles = @('Overview', 'SQL', 'ONE', 'TWO', 'THREE'); EmptyTabs = @{}
+        RowCapacityOf = @{}; ConditionalFormatsOf = @{}
+        SheetIdOf = @{ 'Overview' = 5; 'SQL' = 6; 'ONE' = 7; 'TWO' = 8; 'THREE' = 9 }
+        SheetIndexOf = @{ 'Overview' = 0 }
+        # Heading row, statement, trailing blank. Three blocks of three rows each.
+        SqlBlocks = @(
+            [pscustomobject]@{ CheckId = 'Fixtureball-DQ-001'; Row = 1; Lines = @('SELECT 1;', '') }
+            [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Row = 4; Lines = @('SELECT 2;', '') }
+            [pscustomobject]@{ CheckId = 'Fixtureball-DQ-003'; Row = 7; Lines = @('SELECT 3;', '') }
+        )
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' `
+        -Collected @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
+
+    $block = @($plan.Operations | Where-Object { $_.Kind -eq 'Write' -and $_.Sheet -eq 'SQL' -and $_.Values.Count -gt 1 })
+    Assert-Equal 1 $block.Count 'the tab is written as one block'
+    $written = @(@($block[0].Values) | ForEach-Object { [string]@($_)[0] })
+    Assert-True ($written -contains 'SELECT 1;') 'a check this run did not hold keeps its statement'
+    Assert-True ($written -contains 'SELECT 3;') 'and so does the one after it'
+    Assert-True ($written -contains 'SELECT 2 REVISED;') 'while the run replaces its own'
+    Assert-True ($written -contains 'AND more;') 'with every line of it'
+    Assert-Equal 0 @($written | Where-Object { $_ -eq 'SELECT 2;' }).Count 'rather than being added beside the old one'
+
+    # DQ-001 keeps rows 1-3. DQ-002 grew by a line, so DQ-003 slid from row 7 to row 8.
+    $backLinks = @($plan.Operations | Where-Object { $_.Kind -eq 'Write' -and $_.Sheet -eq 'SQL' -and $_.Values.Count -eq 1 })
+    Assert-Equal 3 $backLinks.Count 'every block keeps a heading, not only this run own'
+
+    $anchorOf = @{}
+    foreach ($op in @($plan.Operations | Where-Object { $_.Kind -eq 'Write' -and $_.Range -eq 'C2' })) {
+        $anchorOf[[string]$op.Sheet] = [string]$op.Values[0][0]
+    }
+    Assert-True ($anchorOf.ContainsKey('TWO')) 'the check that ran gets its link'
+    Assert-True ($anchorOf['TWO'] -like '*range=A4*') 'pointing at the row its block still starts on'
+    # The one that matters: a tab this run never touched, whose block moved under it.
+    Assert-True ($anchorOf.ContainsKey('THREE')) 'and so does a check that only shifted'
+    Assert-True ($anchorOf['THREE'] -like '*range=A8*') 'pointing at where it moved to'
+    Assert-Equal $false ($anchorOf.ContainsKey('ONE')) 'a block that did not move is left alone'
+}
+
+Test-That 'Status is a closed vocabulary, and a superseded spelling is renamed to it' {
+    # Free text drifted: six boards held nine spellings of five ideas, because the workbook
+    # offered one vocabulary, the seeding code wrote a second, and the live board enforced
+    # neither. The dropdown closes it; the map below keeps the closing from costing anything.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7; 'Fixtureball-DQ-003' = 8; 'Fixtureball-DQ-004' = 9 }
+        StatusOf = @{
+            'Fixtureball-DQ-002' = 'No issue'      # superseded
+            'Fixtureball-DQ-003' = 'Reviewing'     # already current
+            'Fixtureball-DQ-004' = 'Ask Petar'     # nobody declared this one
+        }
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
+        ConditionalFormatsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+
+    $validation = @($plan.Operations | Where-Object { $_.Kind -eq 'Validation' })
+    Assert-Equal 1 $validation.Count 'the Status column carries a dropdown'
+    Assert-Equal 9 $validation[0].Column 'at I'
+    Assert-Equal 'Not reviewed Clean Monitor Only Reviewing Completed IT Fix' (@($validation[0].Values) -join ' ') `
+        'offering exactly the declared outcomes'
+
+    # I7 and nothing else. This is the one place the runner writes into a reviewer's column,
+    # and it renames a conclusion rather than forming one.
+    $renames = @($plan.Operations | Where-Object { $_.Kind -eq 'Write' -and $_.Sheet -eq 'Overview' -and $_.Range -match '^I\d+$' })
+    Assert-Equal 1 $renames.Count 'only the superseded spelling is rewritten'
+    Assert-Equal 'I7' $renames[0].Range 'in the row that holds it'
+    Assert-Equal 'Clean' $renames[0].Values[0][0] 'under the word that now means it'
 }
 
 Test-That 'the Rows cell holds a number, so it sorts and compares as one' {

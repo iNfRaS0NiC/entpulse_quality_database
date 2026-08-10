@@ -185,10 +185,59 @@ $SheetsRowsBands = @(
     [pscustomobject]@{ Type = 'NUMBER_GREATER'; Values = @('100'); Colour = '#C5221F' }
 )
 
+# The outcomes a reviewer may record, and the only ones. Status was free text until now, and
+# free text drifted: six boards between them held nine spellings of five ideas, because the
+# workbook offered one vocabulary, the seeding code wrote a second, and whoever typed into the
+# live board was constrained by neither.
+#
+# Closed rather than open on purpose. The column is read across sports to answer how much of
+# the catalogue has been through review, and a synonym nobody declared is invisible to that
+# question while looking perfectly reasonable in its own cell.
+#
+# The order is the order the dropdown offers, which is roughly the order a check moves
+# through: unseen, judged harmless, judged worth watching, being looked at, dealt with,
+# handed on. Colour carries the same reading at a glance, and is why each carries a
+# background rather than only a text colour - a chip is what the reviewer sees, not a word.
+$SheetsStatusBands = @(
+    [pscustomobject]@{ Value = 'Not reviewed'; Background = '#FCE8E6'; Colour = '#C5221F' }
+    [pscustomobject]@{ Value = 'Clean'; Background = '#E6F4EA'; Colour = '#137333' }
+    [pscustomobject]@{ Value = 'Monitor Only'; Background = '#F3E8FD'; Colour = '#7627BB' }
+    [pscustomobject]@{ Value = 'Reviewing'; Background = '#E8F0FE'; Colour = '#1967D2' }
+    [pscustomobject]@{ Value = 'Completed'; Background = '#CEEAD6'; Colour = '#0B6B3A' }
+    [pscustomobject]@{ Value = 'IT Fix'; Background = '#FEF7E0'; Colour = '#B06000' }
+)
+
+# What each superseded spelling meant, so that adopting the vocabulary above does not throw
+# away a conclusion somebody already reached. Applied once per cell, when a run finds one of
+# these still on a board; a cell already holding a current value is never touched.
+#
+# This is the single exception to Status being the reviewer's alone, and it is narrow by
+# construction: it renames a conclusion, it never forms one. Every mapping below is between
+# two words for the same finding, and a spelling not listed here is left exactly as typed
+# rather than guessed at.
+#
+# 'Monitor Olnly' is in the list because it was in the data, five times on one board. A
+# typo is a spelling of an idea like any other, and correcting it silently on the next run is
+# better than a dropdown that rejects five cells nobody can now explain.
+$SheetsStatusLegacy = @{
+    'No issue'         = 'Clean'
+    'No Changes'       = 'Clean'
+    'No action needed' = 'Monitor Only'
+    'Monitor Olnly'    = 'Monitor Only'
+    'Fixed'            = 'Completed'
+    'For IT'           = 'IT Fix'
+    'Reported to IT'   = 'IT Fix'
+    'On hold'          = 'Reviewing'
+}
+
 # The tab holding every statement the run sent, and the name of the token a link to it uses.
 # A link needs the target tab's numeric id, which is not known until the tab has been created,
 # so the plan writes the token and the transport resolves it once the ids come back.
 $SheetsSqlTabName = 'SQL'
+
+# The blue a link is drawn in. Google's own link colour, so a formula link the runner formats
+# and one Sheets formats itself do not sit beside each other in two different blues.
+$SheetsLinkColour = '#1155CC'
 $SheetsGidToken = '{{GID:%NAME%}}'
 
 # Where a check tab's result block starts. Rows 1 and 2 are the identity, row 3 the link back
@@ -279,6 +328,21 @@ function ConvertTo-SheetsTableName {
     $safe = [regex]::Replace([string]$Name, '[^A-Za-z0-9_]', '_')
     if ($safe -notmatch '^[A-Za-z_]') { $safe = '_' + $safe }
     return $safe
+}
+
+function ConvertTo-SheetsIdentityTableName {
+    # The name of a check tab's identity table: the check's own number and what the block is,
+    # without the sport. Every tab in the document belongs to one sport, so the prefix would
+    # repeat on all of them and distinguish none.
+    #
+    # Falls back to the whole CheckID for anything not shaped like one - an ad-hoc statement
+    # has no number to take - because a table still needs a name and a collision is worse than
+    # a long one.
+    param([string]$CheckId)
+
+    $stem = [string]$CheckId
+    if ($stem -match '(DQ-\d+)$') { $stem = $Matches[1] }
+    return (ConvertTo-SheetsTableName -Name ($stem + '_Overview'))
 }
 
 function New-SheetsCommentMirror {
@@ -425,26 +489,75 @@ function New-SheetsMergePlan {
     # documents that already exist, which is the defect that left one board with a column
     # Sheets had to name for itself.
     $rowsColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1
+    $statusColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Status') + 1
     $existingRules = @()
     if ($Existing -and $Existing.ConditionalFormatsOf -and $Existing.ConditionalFormatsOf.ContainsKey('Overview')) {
         $existingRules = @($Existing.ConditionalFormatsOf['Overview'])
     }
-    $drop = @()
+
+    # Both columns' rules are dropped in one pass. Deleting by index renumbers what follows,
+    # so two planner entries each computing its own indexes against the same original list
+    # would have the second one delete a rule the first had already shifted.
+    $dropOf = @{ $rowsColumnIndex = @(); $statusColumnIndex = @() }
     for ($index = 0; $index -lt $existingRules.Count; $index++) {
-        # Only a rule covering exactly this column. One drawn across the whole board, or over
-        # any other column, was somebody's and is left where it is.
+        # Only a rule covering exactly one of these columns. One drawn across the whole board,
+        # or over any other column, was somebody's and is left where it is.
         $ranges = @($existingRules[$index].ranges)
-        $mine = @($ranges | Where-Object {
-                [int]$_.startColumnIndex -eq ($rowsColumnIndex - 1) -and
-                [int]$_.endColumnIndex -eq $rowsColumnIndex })
-        if ($mine.Count -eq $ranges.Count -and $ranges.Count -gt 0) { $drop += $index }
+        if ($ranges.Count -eq 0) { continue }
+        foreach ($column in @($rowsColumnIndex, $statusColumnIndex)) {
+            $mine = @($ranges | Where-Object {
+                    [int]$_.startColumnIndex -eq ($column - 1) -and
+                    [int]$_.endColumnIndex -eq $column })
+            if ($mine.Count -eq $ranges.Count) { $dropOf[$column] += $index }
+        }
     }
     $plan += [pscustomobject]@{
         Kind   = 'FormatRules'
         Sheet  = 'Overview'
         Column = $rowsColumnIndex
-        Drop   = $drop
+        Drop   = $dropOf[$rowsColumnIndex]
         Rules  = $SheetsRowsBands
+    }
+
+    # Status: the same treatment, plus the dropdown that makes the column a closed vocabulary.
+    # Colour without the list would be decoration - a chip appears only for a value somebody
+    # happened to spell the way the rule expects - so the two are emitted together and neither
+    # is useful alone.
+    $plan += [pscustomobject]@{
+        Kind   = 'FormatRules'
+        Sheet  = 'Overview'
+        Column = $statusColumnIndex
+        Drop   = $dropOf[$statusColumnIndex]
+        Rules  = @($SheetsStatusBands | ForEach-Object {
+                [pscustomobject]@{
+                    Type       = 'TEXT_EQ'
+                    Values     = @($_.Value)
+                    Colour     = $_.Colour
+                    Background = $_.Background
+                }
+            })
+    }
+    $plan += [pscustomobject]@{
+        Kind   = 'Validation'
+        Sheet  = 'Overview'
+        Column = $statusColumnIndex
+        Values = @($SheetsStatusBands | ForEach-Object { $_.Value })
+    }
+
+    # A superseded spelling still on the board, renamed to the word that now means it. This is
+    # the one place the runner writes into a reviewer's column, and it is why the map is a
+    # closed list of synonyms rather than anything that reads a result: no conclusion is
+    # formed here, only respelled. A value already current, or one nobody declared, is left.
+    foreach ($checkId in @($rowOf.Keys)) {
+        if (-not $Existing.StatusOf -or -not $Existing.StatusOf.ContainsKey($checkId)) { continue }
+        $was = [string]$Existing.StatusOf[$checkId]
+        if (-not $SheetsStatusLegacy.ContainsKey($was)) { continue }
+        $plan += [pscustomobject]@{
+            Kind   = 'Write'
+            Sheet  = 'Overview'
+            Range  = ((ConvertTo-SheetsColumnName -Index $statusColumnIndex) + [string]$rowOf[$checkId])
+            Values = @(, @([string]$SheetsStatusLegacy[$was]))
+        }
     }
 
     # Google gives a new spreadsheet one tab called Sheet1, and it is nobody's: it exists
@@ -760,8 +873,23 @@ function New-SheetsMergePlan {
     # A cell of a few thousand characters displays as nothing and pushes the result table out
     # of shape, and the statement keeps the line breaks it was written with here. Each block
     # links back to the results it produced, and each check's C2 links forward to its block.
-    $sqlLines = @()
-    $sqlBackLinks = @()
+    # The SQL tab is shared, and this run may hold only part of the catalogue. Its blocks are
+    # therefore merged into what the tab already carries rather than written over it: a narrow
+    # run used to clear the whole column and leave behind its own single statement, which took
+    # every other check's statement with it and left their C2 links pointing at blank rows.
+    #
+    # The order the tab already has is kept, and a check new to it is appended. That keeps
+    # most row numbers still, so most C2 links need no rewrite at all.
+    $sqlOrder = @()
+    $sqlOf = @{}
+    $sqlTitleOf = @{}
+    $sqlWasRow = @{}
+    foreach ($block in @($(if ($Existing) { $Existing.SqlBlocks } else { @() }))) {
+        if (-not $block -or -not $block.CheckId) { continue }
+        $sqlOrder += [string]$block.CheckId
+        $sqlOf[[string]$block.CheckId] = @($block.Lines)
+        $sqlWasRow[[string]$block.CheckId] = [int]$block.Row
+    }
 
     foreach ($item in $Collected) {
         $runKey = Get-JobRunKey -Job $item.Job
@@ -776,14 +904,11 @@ function New-SheetsMergePlan {
         # This check's block on the SQL tab: a heading row that links back to these results,
         # then the statement one line per row, then a blank row. The heading row's number is
         # what C2 above links forward to.
-        $sqlRow = $sqlLines.Count + 1
-        $sqlBackLinks += [pscustomobject]@{
-            Row   = $sqlRow
-            Value = (New-SheetsGidLink -Sheet $title -Text ([string]$item.Job.CheckId))
-        }
-        $sqlLines += , @('')
-        foreach ($line in @([string]$item.Job.Sql -split "`r?`n")) { $sqlLines += , @($line) }
-        $sqlLines += , @('')
+        $sqlKey = [string]$item.Job.CheckId
+        if (-not $sqlKey) { $sqlKey = $runKey }
+        if (-not $sqlOf.ContainsKey($sqlKey)) { $sqlOrder += $sqlKey }
+        $sqlOf[$sqlKey] = @(@([string]$item.Job.Sql -split "`r?`n") + @(''))
+        $sqlTitleOf[$sqlKey] = $title
 
         # Row 1 names the columns. Unlike Overview's header it is rewritten every run rather
         # than seeded once, because none of it is anybody's: the reviewer's cells on a check
@@ -827,8 +952,10 @@ function New-SheetsMergePlan {
             $cells += $slice.Count
         }
 
-        # C2 and A3, the two links a check tab carries. Both are formulas, so both go in the
-        # USER_ENTERED batch, and both land after the row that wrote plain text into C2.
+        # A3, the way back. A formula, so it goes in the USER_ENTERED batch and lands after the
+        # row that wrote plain text over it. C2 is the other link a check tab carries and is
+        # written further down, once the SQL tab's rows are settled: its target is a row number
+        # on a tab this run only partly owns, and that number is not known until the merge.
         #
         # A3 rather than row 2, and row 4 left blank below it, so the result table starting at
         # row 5 stays a self-contained block that sorts and filters on its own.
@@ -836,15 +963,42 @@ function New-SheetsMergePlan {
             Kind   = 'Write'
             Raw    = $false
             Sheet  = $title
-            Range  = 'C2'
-            Values = @(, @((New-SheetsGidLink -Sheet $SheetsSqlTabName -Text 'SQL' -Cell ('A' + $sqlRow))))
-        }
-        $plan += [pscustomobject]@{
-            Kind   = 'Write'
-            Raw    = $false
-            Sheet  = $title
             Range  = 'A3'
             Values = @(, @((New-SheetsGidLink -Sheet 'Overview' -Text 'Return to Overview')))
+        }
+
+        # The way back is the one control on the tab, sitting under a header row and above a
+        # result table that both draw the eye harder than it does. Sheets already underlines a
+        # formula link; bold and an explicit blue are what make it read as the control rather
+        # than as a line of the identity block above it.
+        $plan += [pscustomobject]@{
+            Kind       = 'Format'
+            Sheet      = $title
+            FromRow    = 2
+            ToRow      = 3
+            FromCol    = 0
+            ToCol      = 1
+            Bold       = $true
+            Colour     = $SheetsLinkColour
+        }
+
+        # Rows 1 to 3 as a table of their own: the header, the identity, and the way back. It
+        # is what the result table below already is - a named block that Sheets will not let a
+        # sort or a filter run past - and without it a filter set on the results reaches up
+        # into the identity and hides it.
+        #
+        # Named for the check rather than for the sport and the check, because inside a
+        # document that is one sport the prefix is the same on every tab and says nothing. A
+        # table name is a formula identifier, so it carries underscores where the heading in
+        # A1 carries spaces; the two are the same words.
+        $plan += [pscustomobject]@{
+            Kind    = 'Table'
+            Sheet   = $title
+            Name    = (ConvertTo-SheetsIdentityTableName -CheckId ([string]$item.Job.CheckId))
+            FromRow = 0
+            ToRow   = 3
+            FromCol = 0
+            ToCol   = $SheetsCheckTabColumns.Count
         }
 
         # What was written, and what was not. A truncated tab says so on its own face rather
@@ -913,8 +1067,51 @@ function New-SheetsMergePlan {
         }
     }
 
-    # The SQL tab, once the blocks are known. Rewritten whole every run: a statement can
-    # change between runs, and unlike a check tab there is nothing on it that is anybody's.
+    # The SQL tab, once the blocks are known. The column is rewritten whole - nothing on it is
+    # anybody's, and a statement can change between runs - but from the merge rather than from
+    # this run, which is the distinction the tab lost and had to be given back.
+    #
+    # The merged column, and where each block's heading lands in it. Built here rather than as
+    # the checks were collected, because a block belonging to a check this run did not hold
+    # still occupies rows and still shifts everything under it.
+    $sqlLines = @()
+    $sqlBackLinks = @()
+    $sqlRowOf = @{}
+    foreach ($key in $sqlOrder) {
+        $sqlRowOf[$key] = $sqlLines.Count + 1
+        $sqlLines += , @('')
+        foreach ($line in @($sqlOf[$key])) { $sqlLines += , @([string]$line) }
+    }
+
+    # Every heading, not only this run's. The label is a link back to the check's own tab, and
+    # for a check this run did not hold that tab is whatever the document already calls it.
+    foreach ($key in $sqlOrder) {
+        $target = $(if ($sqlTitleOf.ContainsKey($key)) { $sqlTitleOf[$key] }
+            elseif ($tabOf.ContainsKey($key)) { $tabOf[$key] } else { '' })
+        $sqlBackLinks += [pscustomobject]@{
+            Row   = $sqlRowOf[$key]
+            Value = $(if ($target) { New-SheetsGidLink -Sheet $target -Text $key } else { $key })
+        }
+    }
+
+    # C2 on each check tab, pointing at its block. Written for a check this run held, and for
+    # one it did not whose block moved - a link to a row that now holds somebody else's SQL is
+    # worse than a stale count, because it looks right.
+    foreach ($key in $sqlOrder) {
+        $moved = (-not $sqlWasRow.ContainsKey($key)) -or ($sqlWasRow[$key] -ne $sqlRowOf[$key])
+        $mine = $sqlTitleOf.ContainsKey($key)
+        if (-not $moved -and -not $mine) { continue }
+        $target = $(if ($mine) { $sqlTitleOf[$key] } elseif ($tabOf.ContainsKey($key)) { $tabOf[$key] } else { '' })
+        if (-not $target) { continue }
+        $plan += [pscustomobject]@{
+            Kind   = 'Write'
+            Raw    = $false
+            Sheet  = $target
+            Range  = ((ConvertTo-SheetsColumnName -Index ([array]::IndexOf($SheetsCheckTabColumns, 'SQL Used') + 1)) + '2')
+            Values = @(, @((New-SheetsGidLink -Sheet $SheetsSqlTabName -Text 'SQL' -Cell ('A' + $sqlRowOf[$key]))))
+        }
+    }
+
     if ($sqlLines.Count -gt 0) {
         $sqlNeeded = $sqlLines.Count + 10
         if ($usedTitles.ContainsKey($SheetsSqlTabName)) {
@@ -1122,21 +1319,24 @@ function Read-SheetState {
         # which is what deleting one depends on.
         $formatsOf[$title] = @($sheet.conditionalFormats)
 
-        # At most one table per tab is tracked, which is all this writes and all a check tab
-        # has room to mean. A table somebody made themselves is kept and its extent corrected
-        # rather than replaced: the range is what goes stale as a result grows or shrinks, and
-        # correcting it is the whole of what maintenance means here.
-        $table = @($sheet.tables)[0]
-        if ($table) {
-            $tableOf[$title] = [pscustomobject]@{
-                Id       = [string]$table.tableId
-                Name     = [string]$table.name
-                FromRow  = [int]$table.range.startRowIndex
-                ToRow    = [int]$table.range.endRowIndex
-                FromCol  = [int]$table.range.startColumnIndex
-                ToCol    = [int]$table.range.endColumnIndex
-            }
-        }
+        # Every table on the tab, not the first of them. A check tab carries two - the identity
+        # block at the top and the results below it - and reading only one made the planner
+        # hand the identity block's range to whichever table happened to come back first,
+        # which on an established board is the result table.
+        #
+        # A table somebody made themselves is kept and its extent corrected rather than
+        # replaced: the range is what goes stale as a result grows or shrinks, and correcting
+        # it is the whole of what maintenance means here.
+        $tableOf[$title] = @(@($sheet.tables) | Where-Object { $_ } | ForEach-Object {
+                [pscustomobject]@{
+                    Id      = [string]$_.tableId
+                    Name    = [string]$_.name
+                    FromRow = [int]$_.range.startRowIndex
+                    ToRow   = [int]$_.range.endRowIndex
+                    FromCol = [int]$_.range.startColumnIndex
+                    ToCol   = [int]$_.range.endColumnIndex
+                }
+            })
     }
 
     # Only tabs that exist may be named in a range. Google rejects the whole batch with
@@ -1146,18 +1346,24 @@ function Read-SheetState {
     # empty as well as which checks are on the board.
     $reads = @()
     if ($hasOverview) { $reads += 'Overview!A1:K' }
-    $checkTabs = @($titles | Where-Object { $_ -ne 'Overview' })
+    # The SQL tab whole, because a run that holds only some of the checks still has to leave
+    # the blocks belonging to the others where they were. Column A is all of it.
+    $hasSql = ($titles -contains $SheetsSqlTabName)
+    if ($hasSql) { $reads += ($SheetsSqlTabName + '!A1:A') }
+    $checkTabs = @($titles | Where-Object { $_ -ne 'Overview' -and $_ -ne $SheetsSqlTabName })
     foreach ($title in $checkTabs) { $reads += "'" + ($title -replace "'", "''") + "'!A2" }
 
     $rowOf = @{}
     $tabOf = @{}
     $emptyComment = @{}
+    $statusOf = @{}
     # A tab holding no Check ID in its own A2. Almost always this run's predecessor: the tabs
     # go in one batch and the values in another, so a document update that fails on the second
     # leaves the first behind. Naming them lets the next run adopt its own leftovers instead
     # of minting a second set beside them.
     $emptyTabs = @{}
     $hasHeader = $false
+    $sqlBlocks = @()
 
     if ($reads.Count -gt 0) {
         $query = ($reads | ForEach-Object { 'ranges=' + [uri]::EscapeDataString($_) }) -join '&'
@@ -1182,8 +1388,35 @@ function Read-SheetState {
                 if ($cells.Count -lt 11 -or [string]::IsNullOrWhiteSpace([string]$cells[10])) {
                     $emptyComment[$checkId] = $true
                 }
+
+                # The Status as it stands, so the merge can tell a superseded spelling from a
+                # current one. Read and not written back here: what to do with it is the
+                # planner's decision, and this function only reports the document.
+                $statusIndex = [array]::IndexOf($SheetsOverviewColumns, 'Status')
+                if ($cells.Count -gt $statusIndex) {
+                    $statusOf[$checkId] = [string]$cells[$statusIndex]
+                }
             }
             $offset = 1
+        }
+
+        # The SQL tab as blocks. A heading row carries a link whose label is the CheckID and
+        # nothing else, which is what separates it from the statement lines under it; a line
+        # of SQL never has that shape.
+        if ($hasSql -and $ranges.Count -gt $offset) {
+            $lines = @(@($ranges[$offset].values) | ForEach-Object { [string]@($_)[0] })
+            $offset++
+            $current = $null
+            for ($r = 0; $r -lt $lines.Count; $r++) {
+                $text = [string]$lines[$r]
+                if ($text -match '^[A-Za-z][A-Za-z0-9-]*-(DQ|DISCOVERY)-[0-9]+$') {
+                    if ($current) { $sqlBlocks += $current }
+                    $current = [pscustomobject]@{ CheckId = $text; Row = $r + 1; Lines = @() }
+                    continue
+                }
+                if ($current) { $current.Lines += $text }
+            }
+            if ($current) { $sqlBlocks += $current }
         }
 
         # A tab is matched to its check by the Check ID its own A2 carries, never by its
@@ -1209,12 +1442,14 @@ function Read-SheetState {
         HasOverviewHeader = $hasHeader
         OverviewRowOf     = $rowOf
         EmptyCommentOf    = $emptyComment
+        StatusOf          = $statusOf
         TabOf             = $tabOf
         EmptyTabs         = $emptyTabs
         RowCapacityOf     = $capacityOf
         SheetIdOf         = $idOf
         SheetIndexOf      = $indexOf
         TableOf           = $tableOf
+        SqlBlocks         = $sqlBlocks
         ConditionalFormatsOf = $formatsOf
     }
 }
@@ -1383,17 +1618,79 @@ function Invoke-SheetsPlan {
                                 type   = [string]$band.Type
                                 values = @(@($band.Values) | ForEach-Object { @{ userEnteredValue = [string]$_ } })
                             }
-                            format    = @{
-                                textFormat = @{
-                                    bold                 = $true
-                                    foregroundColorStyle = @{ rgbColor = (ConvertTo-SheetsColour -Hex $band.Colour) }
+                            # A band may carry a fill as well as a text colour. Rows does not:
+                            # a column of numbers reads better coloured than blocked out. A
+                            # Status does, because what it wants to look like is a chip.
+                            format    = $(
+                                $format = @{
+                                    textFormat = @{
+                                        bold                 = $true
+                                        foregroundColorStyle = @{ rgbColor = (ConvertTo-SheetsColour -Hex $band.Colour) }
+                                    }
                                 }
-                            }
+                                if ($band.PSObject.Properties.Name -contains 'Background' -and $band.Background) {
+                                    $format['backgroundColorStyle'] = @{
+                                        rgbColor = (ConvertTo-SheetsColour -Hex $band.Background)
+                                    }
+                                }
+                                $format
+                            )
                         }
                     }
                 }
             }
             $at++
+        }
+    }
+
+    foreach ($format in @($operations | Where-Object { $_.Kind -eq 'Format' })) {
+        if (-not $gidOf.ContainsKey($format.Sheet)) { continue }
+        $textFormat = @{}
+        if ($format.PSObject.Properties.Name -contains 'Bold') { $textFormat['bold'] = [bool]$format.Bold }
+        if ($format.PSObject.Properties.Name -contains 'Colour' -and $format.Colour) {
+            $textFormat['foregroundColorStyle'] = @{ rgbColor = (ConvertTo-SheetsColour -Hex $format.Colour) }
+        }
+        if ($textFormat.Count -eq 0) { continue }
+        $second += @{
+            repeatCell = @{
+                range  = @{
+                    sheetId          = [int]$gidOf[$format.Sheet]
+                    startRowIndex    = [int]$format.FromRow
+                    endRowIndex      = [int]$format.ToRow
+                    startColumnIndex = [int]$format.FromCol
+                    endColumnIndex   = [int]$format.ToCol
+                }
+                cell   = @{ userEnteredFormat = @{ textFormat = $textFormat } }
+                # Only the two properties named. A cell's alignment, wrap and fill are the
+                # reviewer's, and a blanket userEnteredFormat would reset all of them.
+                fields = 'userEnteredFormat.textFormat.bold,userEnteredFormat.textFormat.foregroundColorStyle'
+            }
+        }
+    }
+
+    # The dropdown. setDataValidation over the column from row 2 down, with showCustomUi so
+    # Sheets draws a chip rather than a bare cell, and strict so a value outside the list is
+    # refused instead of merely flagged. Rewritten every run for the reason the colour bands
+    # are: a vocabulary changed in the source has to reach a document that already exists.
+    foreach ($validation in @($operations | Where-Object { $_.Kind -eq 'Validation' })) {
+        if (-not $gidOf.ContainsKey($validation.Sheet)) { continue }
+        $second += @{
+            setDataValidation = @{
+                range = @{
+                    sheetId          = [int]$gidOf[$validation.Sheet]
+                    startRowIndex    = 1
+                    startColumnIndex = [int]$validation.Column - 1
+                    endColumnIndex   = [int]$validation.Column
+                }
+                rule  = @{
+                    condition    = @{
+                        type   = 'ONE_OF_LIST'
+                        values = @(@($validation.Values) | ForEach-Object { @{ userEnteredValue = [string]$_ } })
+                    }
+                    showCustomUi = $true
+                    strict       = $true
+                }
+            }
         }
     }
 
@@ -1487,6 +1784,7 @@ function Invoke-SheetsPlan {
         foreach ($key in $Plan.KnownTables.Keys) { $known[[string]$key] = $Plan.KnownTables[$key] }
     }
 
+    $claimed = @{}
     foreach ($table in $tableOps) {
         if (-not $gidOf.ContainsKey($table.Sheet)) { continue }
         $range = @{
@@ -1497,11 +1795,33 @@ function Invoke-SheetsPlan {
             endColumnIndex   = [int]$table.ToCol
         }
 
-        if ($known.ContainsKey($table.Sheet)) {
+        # Which of the tab's existing tables this one is. By name first, because that is the
+        # identity a table keeps across runs. By overlap second, because the first run after
+        # this feature finds a block that was already a table under another name - one Sheets
+        # named for itself, or one somebody made by hand - and two tables may not cover the
+        # same cells. Claimed, so two planned tables cannot both adopt the same existing one.
+        $match = $null
+        foreach ($candidate in @($known[$table.Sheet])) {
+            if (-not $candidate) { continue }
+            if ($claimed.ContainsKey([string]$candidate.Id)) { continue }
+            $overlaps = ([int]$candidate.FromRow -lt [int]$table.ToRow -and
+                [int]$candidate.ToRow -gt [int]$table.FromRow)
+            if (([string]$candidate.Name -eq [string]$table.Name) -or $overlaps) {
+                $match = $candidate
+                break
+            }
+        }
+
+        if ($match) {
+            $claimed[[string]$match.Id] = $true
             $tableRequests += @{
                 updateTable = @{
-                    table  = @{ tableId = [string]$known[$table.Sheet].Id; range = $range }
-                    fields = 'range'
+                    table  = @{
+                        tableId = [string]$match.Id
+                        name    = [string]$table.Name
+                        range   = $range
+                    }
+                    fields = 'range,name'
                 }
             }
         }

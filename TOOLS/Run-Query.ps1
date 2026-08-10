@@ -2115,8 +2115,8 @@ function Get-SeededStatus {
     param([string]$Signal, $Rows, [bool]$Ran, $Eligible)
 
     if (-not $Ran) { return 'Not reviewed' }
-    if ($Signal -eq 'Informational') { return 'No action needed' }
-    if ($Rows -eq 1 -and $null -ne $Eligible -and $Eligible -gt 0) { return 'No issue' }
+    if ($Signal -eq 'Informational') { return 'Monitor Only' }
+    if ($Rows -eq 1 -and $null -ne $Eligible -and $Eligible -gt 0) { return 'Clean' }
     return 'Not reviewed'
 }
 
@@ -3786,12 +3786,12 @@ function Save-RunWorkbook {
             BackTo         = $null
             Links          = $links
             HiddenColumns  = @(12, 13)
-            # Each value names an outcome rather than a stage of work, because "Completed"
-            # hides the only thing the next reader needs: completed with what result. The
-            # three closing values are the three ways a check can honestly end.
+            # The same vocabulary the live board offers, taken from the same list, because a
+            # workbook and a board that disagree about the words are how the column came to
+            # hold nine spellings of five ideas in the first place. $SheetsStatusBands owns it.
             Validation     = @{
                 Sqref  = "I2:I$overviewRow"
-                Values = 'Not reviewed,Reviewing,On hold,No issue,Reported to IT,Fixed,No action needed'
+                Values = (@($SheetsStatusBands | ForEach-Object { $_.Value }) -join ',')
             }
         })
 
