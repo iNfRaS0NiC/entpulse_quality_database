@@ -1078,9 +1078,18 @@ function New-SheetsMergePlan {
             Kind    = 'Format'; Sheet = $title
             FromRow = 0; ToRow = $null; FromCol = 1; ToCol = 40; Align = 'CENTER'
         }
+
+        # Column A in two pieces, above and below the way back, rather than skipped whole.
+        # Skipping it left the CheckID in A2 and every check_type in the result block below
+        # ranged left on a board that is centred everywhere else - the link needed one cell
+        # left alone, not a column.
         $plan += [pscustomobject]@{
             Kind    = 'Format'; Sheet = $title
-            FromRow = 0; ToRow = 1; FromCol = 0; ToCol = 1; Align = 'CENTER'
+            FromRow = 0; ToRow = 2; FromCol = 0; ToCol = 1; Align = 'CENTER'
+        }
+        $plan += [pscustomobject]@{
+            Kind    = 'Format'; Sheet = $title
+            FromRow = 3; ToRow = $null; FromCol = 0; ToCol = 1; Align = 'CENTER'
         }
 
         # The two headings that name the reviewer's own columns, on a header row that is

@@ -3007,6 +3007,15 @@ Test-That 'a check tab centres everything but the way out, which it widens inste
     Assert-Equal 1 $width.Count 'and its column is widened so it is not clipped'
     Assert-Equal 1 $width[0].From 'column A'
 
+    # One cell left alone, not a column. Skipping column A whole left the CheckID in A2 and
+    # every check_type in the result block ranged left on an otherwise centred board.
+    $columnA = @($formats | Where-Object { $_.FromCol -eq 0 -and $_.Align -eq 'CENTER' })
+    Assert-Equal 2 $columnA.Count 'column A is centred above and below the link'
+    Assert-Equal '0 3' ((@($columnA | ForEach-Object { $_.FromRow }) | Sort-Object) -join ' ') `
+        'the header and identity above it, the result block below'
+    Assert-Equal 2 @($columnA | Where-Object { $_.FromRow -eq 0 })[0].ToRow 'stopping short of the link'
+    Assert-Equal $null @($columnA | Where-Object { $_.FromRow -eq 3 })[0].ToRow 'and following the results down'
+
     # C2 is the darker blue: it sits inside the identity row rather than alone on a line.
     $sql = @($formats | Where-Object { $_.FromRow -eq 1 -and $_.Colour -eq $SheetsSqlLinkColour })
     Assert-Equal 1 $sql.Count 'the statement link is darker'
