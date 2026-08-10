@@ -329,16 +329,25 @@ logical storage layer. `Name` must match the SQL identity header exactly.
 
 ### Category and the priority it implies
 
-Every category belongs to one of three bands, and the band says what a reviewer works
+Every category belongs to one of four bands, and the band says what a reviewer works
 through first. A broken structure outranks a wrong value, and a wrong value outranks an
 empty field: a relation that does not resolve breaks everything read through it, whereas an
 empty field is one fact nobody has entered yet. Recorded by decision of 2026-08-05.
+
+The fourth band is not a defect family and is not ranked against the other three. A pattern
+summary reports how something is spelled or used, so its rows are groups with counts rather
+than things to correct; it takes a number instead of a blank so that it sorts below the work
+rather than into the middle of it. Added by decision of 2026-08-10, when the four PATTERNS.sql
+summaries a whole run injects reached the board with no priority and no category at all. The
+category is derived from the statement's file, which holds nothing else, rather than authored
+per CheckID - the same rule by which those statements are selected.
 
 | Band | Categories | What is wrong |
 |---|---|---|
 | `1 Structure` | `WRONG_STRUCTURE`, `NO_RELATED_RECORDS` | the shape or the relation itself |
 | `2 Wrong value` | `WRONG_RESULTS`, `WRONG_GENDER`, `WRONG_DISCIPLINE`, `DATE_RANGE_MISMATCH`, `MALFORMED_NAME` | the value is present and wrong |
 | `3 Missing value` | `MISSING_VALUES` | the field is empty |
+| `4 Patterns` | `PATTERNS` | nothing is wrong — the rows are a census of how something is spelled or used, and a group with a count is not a thing to correct |
 
 The band is **derived** from the category, never authored per check, so a check cannot
 disagree with its own category. The numeric prefix is what makes an ordinary sort produce

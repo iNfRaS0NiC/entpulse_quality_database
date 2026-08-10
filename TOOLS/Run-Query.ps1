@@ -1887,6 +1887,10 @@ $CheckPriorityByCategory = @{
     'DATE_RANGE_MISMATCH' = '2 Wrong value'
     'MALFORMED_NAME'      = '2 Wrong value'
     'MISSING_VALUES'      = '3 Missing value'
+    # Not a defect family at all: a pattern summary is a census of how something is spelled or
+    # used, and its rows are groups with counts rather than things to correct. It sorts below
+    # every band that names a defect, which is what a fourth number buys over a blank.
+    'PATTERNS'            = '4 Patterns'
 }
 
 # Discovery is a census by construction: its rows are categories with counts, and a category
@@ -2964,6 +2968,15 @@ function New-RunSummaryRow {
     $category = ''
     if ($Job.PSObject.Properties.Name -contains 'Category') {
         $category = [string]$Job.Category
+    }
+
+    # A pattern summary is the one statement outside the registry whose family is knowable
+    # without anybody authoring it: PATTERNS.sql holds nothing else. Taken from the file rather
+    # than from a list of CheckIDs, for the reason -WithPatterns selects them that way - a
+    # pattern statement added later is classified on its own without a list to keep in step.
+    if (-not $category -and $Job.PSObject.Properties.Name -contains 'File' -and
+        [string]$Job.File -eq 'PATTERNS.sql') {
+        $category = 'PATTERNS'
     }
 
     # RunKey, not CheckId, is what a workbook keys a tab and a coverage count by: -Chain runs

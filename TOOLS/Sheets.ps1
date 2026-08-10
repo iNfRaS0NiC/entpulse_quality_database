@@ -235,9 +235,25 @@ $SheetsStatusLegacy = @{
 # so the plan writes the token and the transport resolves it once the ids come back.
 $SheetsSqlTabName = 'SQL'
 
-# The blue a link is drawn in. Google's own link colour, so a formula link the runner formats
-# and one Sheets formats itself do not sit beside each other in two different blues.
-$SheetsLinkColour = '#1155CC'
+# The two blues a link is drawn in. The way back out of a tab is the brighter one, because it
+# is the control somebody is looking for; the jump to the statement is the darker, because it
+# sits inside a row of identity and should not outshout the check's own name beside it.
+$SheetsLinkColour = '#1A73E8'
+$SheetsSqlLinkColour = '#1155CC'
+
+# The header of a check tab's identity block, against the green Sheets gives a table by
+# default. Two blocks sit on the tab and they are not the same kind of thing - one says which
+# check this is, the other is what it returned - so they are not the same colour either.
+$SheetsIdentityHeaderColour = '#A61C00'
+
+# Comment and Check By are the reviewer's, on a header row that is otherwise the runner's.
+# Yellow on the dark header says so before anything is read.
+$SheetsReviewerHeaderColour = '#FFFF00'
+
+# Wide enough for 'Return to Overview' to be read whole. Column A of a check tab holds the
+# link in row 3 and a result value below it, and at the default width the link was clipped by
+# whatever sat in B - a control nobody can read is not a control.
+$SheetsCheckTabFirstColumnWidth = 175
 $SheetsGidToken = '{{GID:%NAME%}}'
 
 # Where a check tab's result block starts. Rows 1 and 2 are the identity, row 3 the link back
@@ -519,30 +535,32 @@ function New-SheetsMergePlan {
         Rules  = $SheetsRowsBands
     }
 
-    # Status: the same treatment, plus the dropdown that makes the column a closed vocabulary.
-    # Colour without the list would be decoration - a chip appears only for a value somebody
-    # happened to spell the way the rule expects - so the two are emitted together and neither
-    # is useful alone.
-    $plan += [pscustomobject]@{
-        Kind   = 'FormatRules'
-        Sheet  = 'Overview'
-        Column = $statusColumnIndex
-        Drop   = $dropOf[$statusColumnIndex]
-        Rules  = @($SheetsStatusBands | ForEach-Object {
-                [pscustomobject]@{
-                    Type       = 'TEXT_EQ'
-                    Values     = @($_.Value)
-                    Colour     = $_.Colour
-                    Background = $_.Background
-                }
-            })
-    }
     $plan += [pscustomobject]@{
         Kind   = 'Validation'
         Sheet  = 'Overview'
         Column = $statusColumnIndex
         Name   = 'Status'
         Values = @($SheetsStatusBands | ForEach-Object { $_.Value })
+    }
+
+    # The whole board centred, header and rows alike, and following the sheet down rather than
+    # stopping where this run's rows did.
+    $plan += [pscustomobject]@{
+        Kind    = 'Format'; Sheet = 'Overview'
+        FromRow = 0; ToRow = $null; FromCol = 0; ToCol = $width; Align = 'CENTER'
+    }
+
+    # The three headings that name the reviewer's own columns. Status is one of them even
+    # though the runner seeds it: what the seed says is a starting point, and the column is
+    # theirs to move.
+    foreach ($own in @('Status', 'Check By', 'Comment')) {
+        $at = [array]::IndexOf($SheetsOverviewColumns, $own)
+        if ($at -lt 0) { continue }
+        $plan += [pscustomobject]@{
+            Kind    = 'Format'; Sheet = 'Overview'
+            FromRow = 0; ToRow = 1; FromCol = $at; ToCol = ($at + 1)
+            Bold    = $true; Colour = $SheetsReviewerHeaderColour; Align = 'CENTER'
+        }
     }
 
     # A superseded spelling still on the board, renamed to the word that now means it. This is
@@ -853,6 +871,63 @@ function New-SheetsMergePlan {
         else { $null })
     $lastRow = $nextRow - 1
 
+    # Status: the same treatment as Rows, plus the dropdown that makes the column a closed
+    # vocabulary. Colour without the list would be decoration - a chip appears only for a value
+    # somebody happened to spell the way the rule expects - so neither is useful alone.
+    #
+    # Bounded to the board's last row, where Rows is left unbounded, and the difference is the
+    # whole point of it. A dropdown has no colour field of its own anywhere in the API: what
+    # Sheets shows as a swatch beside each item in the dropdown editor is a conditional format
+    # rule it has matched to that item, and it matches on the rule covering the same range the
+    # validation does. A validation that belongs to a table covers the table, so a rule running
+    # to the bottom of the sheet colours the cells correctly and still leaves every swatch in
+    # the editor blank - which is what a board looked like on 2026-08-10.
+    if ($lastRow -gt 1) {
+        $plan += [pscustomobject]@{
+            Kind   = 'FormatRules'
+            Sheet  = 'Overview'
+            Column = $statusColumnIndex
+            EndRow = $lastRow
+            Drop   = $dropOf[$statusColumnIndex]
+            Rules  = @($SheetsStatusBands | ForEach-Object {
+                    [pscustomobject]@{
+                        Type       = 'TEXT_EQ'
+                        Values     = @($_.Value)
+                        Colour     = $_.Colour
+                        Background = $_.Background
+                    }
+                })
+        }
+    }
+
+    # The board sorted by Priority at the end of every run.
+    #
+    # This is a deliberate exception to the rule stated at the top of this function - that
+    # sorting is the reviewer's to do and theirs to keep - and it is safe only because of the
+    # other rule beside it: a row is found by its CheckID and never by its position, so moving
+    # rows costs nothing that a run depends on. What it does cost is a reviewer's own ordering,
+    # which is why it is stated here rather than left to be discovered. Asked for on
+    # 2026-08-10: the band is what says what to work through first, and a board that does not
+    # open in that order makes everybody sort it by hand every week.
+    #
+    # Priority carries a numeric prefix precisely so that a plain text sort produces the band
+    # order, and CheckID second so that the order inside a band is stable rather than whatever
+    # the previous sort happened to leave.
+    if ($lastRow -gt 1) {
+        $plan += [pscustomobject]@{
+            Kind    = 'Sort'
+            Sheet   = 'Overview'
+            FromRow = 1
+            ToRow   = $lastRow
+            FromCol = 0
+            ToCol   = $width
+            By      = @(
+                ([array]::IndexOf($SheetsOverviewColumns, 'Priority'))
+                ([array]::IndexOf($SheetsOverviewColumns, 'CheckID'))
+            )
+        }
+    }
+
     if ($lastRow -gt 1 -and (-not $board -or $board.ToRow -ne $lastRow -or
             $board.ToCol -ne $width -or $board.FromCol -ne 0 -or $board.FromRow -ne 0)) {
         $plan += [pscustomobject]@{
@@ -973,14 +1048,51 @@ function New-SheetsMergePlan {
         # formula link; bold and an explicit blue are what make it read as the control rather
         # than as a line of the identity block above it.
         $plan += [pscustomobject]@{
-            Kind       = 'Format'
-            Sheet      = $title
-            FromRow    = 2
-            ToRow      = 3
-            FromCol    = 0
-            ToCol      = 1
-            Bold       = $true
-            Colour     = $SheetsLinkColour
+            Kind    = 'Format'; Sheet = $title
+            FromRow = 2; ToRow = 3; FromCol = 0; ToCol = 1
+            Bold    = $true; Colour = $SheetsLinkColour; Align = 'LEFT'
+        }
+
+        # Left, alone on the tab. Everything else is centred, but a link reads as a control
+        # only if it starts where the eye already is, and centring it inside a widened column
+        # puts it somewhere nobody looks.
+        $plan += [pscustomobject]@{
+            Kind = 'ColumnWidth'; Sheet = $title
+            From = 1; To = 1; Width = $SheetsCheckTabFirstColumnWidth
+        }
+
+        # C2, the jump to the statement. Darker than the way back, and bold, because it sits
+        # inside the identity row rather than alone on a line of its own.
+        $plan += [pscustomobject]@{
+            Kind    = 'Format'; Sheet = $title
+            FromRow = 1; ToRow = 2
+            FromCol = ([array]::IndexOf($SheetsCheckTabColumns, 'SQL Used'))
+            ToCol   = ([array]::IndexOf($SheetsCheckTabColumns, 'SQL Used') + 1)
+            Bold    = $true; Colour = $SheetsSqlLinkColour
+        }
+
+        # Everything on the tab centred, header and data alike, except the column the way back
+        # sits in. Without an end row it follows the tab down, so a result that grows next week
+        # is centred too.
+        $plan += [pscustomobject]@{
+            Kind    = 'Format'; Sheet = $title
+            FromRow = 0; ToRow = $null; FromCol = 1; ToCol = 40; Align = 'CENTER'
+        }
+        $plan += [pscustomobject]@{
+            Kind    = 'Format'; Sheet = $title
+            FromRow = 0; ToRow = 1; FromCol = 0; ToCol = 1; Align = 'CENTER'
+        }
+
+        # The two headings that name the reviewer's own columns, on a header row that is
+        # otherwise the runner's.
+        foreach ($own in @('Comment', 'Check By')) {
+            $at = [array]::IndexOf($SheetsCheckTabColumns, $own)
+            if ($at -lt 0) { continue }
+            $plan += [pscustomobject]@{
+                Kind    = 'Format'; Sheet = $title
+                FromRow = 0; ToRow = 1; FromCol = $at; ToCol = ($at + 1)
+                Bold    = $true; Colour = $SheetsReviewerHeaderColour; Align = 'CENTER'
+            }
         }
 
         # Rows 1 to 3 as a table of their own: the header, the identity, and the way back. It
@@ -993,13 +1105,14 @@ function New-SheetsMergePlan {
         # table name is a formula identifier, so it carries underscores where the heading in
         # A1 carries spaces; the two are the same words.
         $plan += [pscustomobject]@{
-            Kind    = 'Table'
-            Sheet   = $title
-            Name    = (ConvertTo-SheetsIdentityTableName -CheckId ([string]$item.Job.CheckId))
-            FromRow = 0
-            ToRow   = 3
-            FromCol = 0
-            ToCol   = $SheetsCheckTabColumns.Count
+            Kind         = 'Table'
+            Sheet        = $title
+            Name         = (ConvertTo-SheetsIdentityTableName -CheckId ([string]$item.Job.CheckId))
+            FromRow      = 0
+            ToRow        = 3
+            FromCol      = 0
+            ToCol        = $SheetsCheckTabColumns.Count
+            HeaderColour = $SheetsIdentityHeaderColour
         }
 
         # What was written, and what was not. A truncated tab says so on its own face rather
@@ -1602,16 +1715,20 @@ function Invoke-SheetsPlan {
         }
     }
 
-    foreach ($rules in @($operations | Where-Object { $_.Kind -eq 'FormatRules' })) {
-        if (-not $gidOf.ContainsKey($rules.Sheet)) { continue }
+    # Every deletion first, across every column, highest index first - then the additions.
+    #
+    # Each deletion renumbers the rules after it, which is why they descend. The reason they
+    # are gathered across operations rather than done a column at a time is the same rule one
+    # level up: two columns each deleting by indexes read off the same original list will have
+    # the second delete whatever the first has already shifted into those positions. That cost
+    # a board its entire Rows colouring and left three stale Status rules behind it, and
+    # computing both index lists in a single pass - which the planner does - is not enough on
+    # its own to prevent it.
+    $ruleOps = @($operations | Where-Object { $_.Kind -eq 'FormatRules' -and $gidOf.ContainsKey($_.Sheet) })
+    $second += @(Get-SheetsRuleDeletions -RuleOps $ruleOps -GidOf $gidOf)
+
+    foreach ($rules in $ruleOps) {
         $sheetId = [int]$gidOf[$rules.Sheet]
-
-        # Highest index first. Each deletion renumbers the rules after it, so removing 0 then 1
-        # removes the original 0 and 2 and leaves the rule in the middle behind.
-        foreach ($index in @(@($rules.Drop) | Sort-Object -Descending)) {
-            $second += @{ deleteConditionalFormatRule = @{ sheetId = $sheetId; index = [int]$index } }
-        }
-
         $at = 0
         foreach ($band in @($rules.Rules)) {
             $second += @{
@@ -1620,12 +1737,18 @@ function Invoke-SheetsPlan {
                     rule  = @{
                         # No endRowIndex, so the band covers the column however far the board
                         # grows. startRowIndex 1 keeps it off the header.
-                        ranges     = @(@{
-                                sheetId          = $sheetId
-                                startRowIndex    = 1
-                                startColumnIndex = [int]$rules.Column - 1
-                                endColumnIndex   = [int]$rules.Column
-                            })
+                        ranges     = @($(
+                                $band_range = @{
+                                    sheetId          = $sheetId
+                                    startRowIndex    = 1
+                                    startColumnIndex = [int]$rules.Column - 1
+                                    endColumnIndex   = [int]$rules.Column
+                                }
+                                if ($rules.PSObject.Properties.Name -contains 'EndRow' -and $rules.EndRow) {
+                                    $band_range['endRowIndex'] = [int]$rules.EndRow
+                                }
+                                $band_range
+                            ))
                         booleanRule = @{
                             condition = @{
                                 type   = [string]$band.Type
@@ -1656,39 +1779,73 @@ function Invoke-SheetsPlan {
         }
     }
 
-    foreach ($format in @($operations | Where-Object { $_.Kind -eq 'Format' })) {
-        if (-not $gidOf.ContainsKey($format.Sheet)) { continue }
-        $textFormat = @{}
-        if ($format.PSObject.Properties.Name -contains 'Bold') { $textFormat['bold'] = [bool]$format.Bold }
-        if ($format.PSObject.Properties.Name -contains 'Colour' -and $format.Colour) {
-            $textFormat['foregroundColorStyle'] = @{ rgbColor = (ConvertTo-SheetsColour -Hex $format.Colour) }
-        }
-        if ($textFormat.Count -eq 0) { continue }
-        $second += @{
-            repeatCell = @{
-                range  = @{
-                    sheetId          = [int]$gidOf[$format.Sheet]
-                    startRowIndex    = [int]$format.FromRow
-                    endRowIndex      = [int]$format.ToRow
-                    startColumnIndex = [int]$format.FromCol
-                    endColumnIndex   = [int]$format.ToCol
-                }
-                cell   = @{ userEnteredFormat = @{ textFormat = $textFormat } }
-                # Only the two properties named. A cell's alignment, wrap and fill are the
-                # reviewer's, and a blanket userEnteredFormat would reset all of them.
-                fields = 'userEnteredFormat.textFormat.bold,userEnteredFormat.textFormat.foregroundColorStyle'
-            }
-        }
-    }
-
-    # The dropdown. setDataValidation over the column from row 2 down, with showCustomUi so
-    # Sheets draws a chip rather than a bare cell, and strict so a value outside the list is
-    # refused instead of merely flagged. Rewritten every run for the reason the colour bands
-    # are: a vocabulary changed in the source has to reach a document that already exists.
+    # The dropdown, and it goes before anything that formats the same cells. Giving a table
+    # column a type clears the formats of the cells under it, so an alignment applied first
+    # simply vanishes - which is what left one column of an otherwise centred board stubbornly
+    # not centred. Rewritten every run for the reason the colour bands are: a vocabulary
+    # changed in the source has to reach a document that already exists.
     foreach ($validation in @($operations | Where-Object { $_.Kind -eq 'Validation' })) {
         if (-not $gidOf.ContainsKey($validation.Sheet)) { continue }
         $second += (New-SheetsValidationRequest -Validation $validation `
                 -Tables @($knownTables[$validation.Sheet]) -SheetId ([int]$gidOf[$validation.Sheet]))
+    }
+
+    foreach ($wide in @($operations | Where-Object { $_.Kind -eq 'ColumnWidth' })) {
+        if (-not $gidOf.ContainsKey($wide.Sheet)) { continue }
+        $second += @{
+            updateDimensionProperties = @{
+                range      = @{
+                    sheetId    = [int]$gidOf[$wide.Sheet]
+                    dimension  = 'COLUMNS'
+                    startIndex = [int]$wide.From - 1
+                    endIndex   = [int]$wide.To
+                }
+                properties = @{ pixelSize = [int]$wide.Width }
+                fields     = 'pixelSize'
+            }
+        }
+    }
+
+    foreach ($format in @($operations | Where-Object { $_.Kind -eq 'Format' })) {
+        if (-not $gidOf.ContainsKey($format.Sheet)) { continue }
+        $textFormat = @{}
+        $fields = @()
+        if ($format.PSObject.Properties.Name -contains 'Bold') {
+            $textFormat['bold'] = [bool]$format.Bold
+            $fields += 'userEnteredFormat.textFormat.bold'
+        }
+        if ($format.PSObject.Properties.Name -contains 'Colour' -and $format.Colour) {
+            $textFormat['foregroundColorStyle'] = @{ rgbColor = (ConvertTo-SheetsColour -Hex $format.Colour) }
+            $fields += 'userEnteredFormat.textFormat.foregroundColorStyle'
+        }
+        $cell = @{}
+        if ($textFormat.Count -gt 0) { $cell['textFormat'] = $textFormat }
+        if ($format.PSObject.Properties.Name -contains 'Align' -and $format.Align) {
+            $cell['horizontalAlignment'] = [string]$format.Align
+            $fields += 'userEnteredFormat.horizontalAlignment'
+        }
+        if ($fields.Count -eq 0) { continue }
+
+        $range = @{
+            sheetId          = [int]$gidOf[$format.Sheet]
+            startRowIndex    = [int]$format.FromRow
+            startColumnIndex = [int]$format.FromCol
+            endColumnIndex   = [int]$format.ToCol
+        }
+        # No endRowIndex means to the bottom of the tab, which is what a column-wide rule
+        # wants: the board grows and the alignment should not stop where this run's rows did.
+        if ($format.PSObject.Properties.Name -contains 'ToRow' -and $null -ne $format.ToRow) {
+            $range['endRowIndex'] = [int]$format.ToRow
+        }
+        $second += @{
+            repeatCell = @{
+                range  = $range
+                cell   = @{ userEnteredFormat = $cell }
+                # Only the properties named. A cell's wrap and fill are the reviewer's, and a
+                # blanket userEnteredFormat would reset every one of them.
+                fields = ($fields -join ',')
+            }
+        }
     }
 
     if ($second.Count -gt 0) {
@@ -1770,6 +1927,31 @@ function Invoke-SheetsPlan {
         } | Out-Null
     }
 
+    $script:SheetsStage = 'sorting the board'
+    # After the values, never before them: sorting rows the run has not written yet orders
+    # last week's board and then overwrites it in this week's order.
+    $sortRequests = @()
+    foreach ($sort in @($operations | Where-Object { $_.Kind -eq 'Sort' })) {
+        if (-not $gidOf.ContainsKey($sort.Sheet)) { continue }
+        $sortRequests += @{
+            sortRange = @{
+                range     = @{
+                    sheetId          = [int]$gidOf[$sort.Sheet]
+                    startRowIndex    = [int]$sort.FromRow
+                    endRowIndex      = [int]$sort.ToRow
+                    startColumnIndex = [int]$sort.FromCol
+                    endColumnIndex   = [int]$sort.ToCol
+                }
+                sortSpecs = @(@($sort.By) | ForEach-Object {
+                        @{ dimensionIndex = [int]$_; sortOrder = 'ASCENDING' }
+                    })
+            }
+        }
+    }
+    if ($sortRequests.Count -gt 0) {
+        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $sortRequests } | Out-Null
+    }
+
     $script:SheetsStage = 'declaring the result tables'
     # Tables last: the tab has to exist and its rows have to be in place before a range is
     # declared over them. A tab that already carries one is updated rather than given a
@@ -1806,21 +1988,22 @@ function Invoke-SheetsPlan {
             }
         }
 
+        $body = @{ name = [string]$table.Name; range = $range }
+        $fields = 'range,name'
+        if ($table.PSObject.Properties.Name -contains 'HeaderColour' -and $table.HeaderColour) {
+            $body['rowsProperties'] = @{
+                headerColorStyle = @{ rgbColor = (ConvertTo-SheetsColour -Hex $table.HeaderColour) }
+            }
+            $fields += ',rowsProperties.headerColorStyle'
+        }
+
         if ($match) {
             $claimed[[string]$match.Id] = $true
-            $tableRequests += @{
-                updateTable = @{
-                    table  = @{
-                        tableId = [string]$match.Id
-                        name    = [string]$table.Name
-                        range   = $range
-                    }
-                    fields = 'range,name'
-                }
-            }
+            $body['tableId'] = [string]$match.Id
+            $tableRequests += @{ updateTable = @{ table = $body; fields = $fields } }
         }
         else {
-            $tableRequests += @{ addTable = @{ table = @{ name = [string]$table.Name; range = $range } } }
+            $tableRequests += @{ addTable = @{ table = $body } }
         }
     }
 
@@ -1834,6 +2017,34 @@ function Invoke-SheetsPlan {
         Written = $writes.Count
         Tables  = $tableRequests.Count
     }
+}
+
+function Get-SheetsRuleDeletions {
+    <#
+        Every conditional-rule deletion a run makes, in the order they have to be sent.
+
+        Highest index first, because each deletion renumbers the rules after it. Gathered
+        across all the operations rather than done a column at a time, because that is the same
+        rule one level up: two columns each deleting by indexes read off the same original list
+        will have the second delete whatever the first has already shifted into those
+        positions. That cost a board its entire Rows colouring and left three stale Status
+        rules behind, and computing both index lists in a single pass - which the planner
+        already does - is not enough on its own to prevent it.
+
+        Separated for the reason Test-SheetsTitleIsOurs is: the ordering is worth pinning and a
+        login is not.
+    #>
+    param($RuleOps, $GidOf)
+
+    $drops = @()
+    foreach ($rules in @($RuleOps)) {
+        foreach ($index in @($rules.Drop)) {
+            $drops += [pscustomobject]@{ SheetId = [int]$GidOf[$rules.Sheet]; Index = [int]$index }
+        }
+    }
+    return @(@($drops | Sort-Object -Property Index -Descending) | ForEach-Object {
+            @{ deleteConditionalFormatRule = @{ sheetId = $_.SheetId; index = $_.Index } }
+        })
 }
 
 function New-SheetsValidationRequest {

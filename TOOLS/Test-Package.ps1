@@ -71,6 +71,9 @@ $CheckPriorityByCategory = @{
     'DATE_RANGE_MISMATCH' = '2 Wrong value'
     'MALFORMED_NAME'      = '2 Wrong value'
     'MISSING_VALUES'      = '3 Missing value'
+    # Not a defect family: a pattern summary is a census, and it sorts below every band that
+    # names something correctable. Carried here as well so the two maps cannot disagree.
+    'PATTERNS'            = '4 Patterns'
 }
 
 if (-not $RepoRoot) { $RepoRoot = Split-Path -Parent $PSScriptRoot }

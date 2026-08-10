@@ -2937,15 +2937,110 @@ Test-That 'the Rows colour bands are rewritten every run, over that column only'
     $again = @(@(New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
                 -OutputFolder 'x').Operations | Where-Object { $_.Kind -eq 'FormatRules' })
     Assert-Equal 2 $again.Count 'and an existing one gets them again'
-    Assert-Equal '0 2' (@($again[0].Drop) -join ' ') 'replacing only the rules that cover Rows'
+    $rowsRule = @($again | Where-Object { $_.Column -eq 8 })
+    $statusRule = @($again | Where-Object { $_.Column -eq 9 })
+    Assert-Equal '0 2' (@($rowsRule[0].Drop) -join ' ') 'replacing only the rules that cover Rows'
     # Status is column I, one to the right. The two drop lists are computed in a single pass
     # over the original rule list: each deletion renumbers what follows it, so two passes each
     # counting from zero would have the second one delete a rule the first had already shifted.
-    Assert-Equal 9 $again[1].Column 'and Status at I gets its own'
-    Assert-Equal '3' (@($again[1].Drop) -join ' ') 'replacing only the rules that cover Status'
-    Assert-Equal 6 @($again[1].Rules).Count 'one band per status the vocabulary allows'
-    Assert-Equal 'TEXT_EQ' $again[1].Rules[0].Type 'matched on the word, not on a number'
-    Assert-True ([bool]$again[1].Rules[0].Background) 'and filled, because what it wants to look like is a chip'
+    Assert-Equal 1 $statusRule.Count 'and Status at I gets its own'
+    Assert-Equal '3' (@($statusRule[0].Drop) -join ' ') 'replacing only the rules that cover Status'
+    Assert-Equal 6 @($statusRule[0].Rules).Count 'one band per status the vocabulary allows'
+    Assert-Equal 'TEXT_EQ' $statusRule[0].Rules[0].Type 'matched on the word, not on a number'
+    Assert-True ([bool]$statusRule[0].Rules[0].Background) 'and filled, because what it wants to look like is a chip'
+
+    # Rows runs to the bottom of the sheet; Status stops at the last row of the board. Sheets
+    # shows a colour inside the dropdown editor only for a rule covering the same range the
+    # validation does, and a validation on a table column covers the table.
+    Assert-Equal $null $rowsRule[0].EndRow 'Rows follows the board down'
+    Assert-True ([int]$statusRule[0].EndRow -gt 1) 'Status stops where the board does'
+}
+
+Test-That 'the board is centred, its owned headings named, and sorted by priority' {
+    $summary = @(
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'),
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-003' -Findings 0 -Eligible 9 -Verdict 'New'))
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
+    $formats = @($plan.Operations | Where-Object { $_.Kind -eq 'Format' -and $_.Sheet -eq 'Overview' })
+
+    # One rule over the whole board, with no end row, so next week's rows are centred too.
+    $whole = @($formats | Where-Object { $_.FromCol -eq 0 -and $_.ToCol -eq 22 })
+    Assert-Equal 1 $whole.Count 'the whole board takes one alignment rule'
+    Assert-Equal 'CENTER' $whole[0].Align 'centred'
+    Assert-Equal $null $whole[0].ToRow 'and unbounded, so it follows the board down'
+
+    # Status at I, Check By at J, Comment at K - the three the runner writes around.
+    $owned = @($formats | Where-Object { $_.Colour -eq $SheetsReviewerHeaderColour })
+    Assert-Equal 3 $owned.Count 'the reviewer three are named on the header row'
+    Assert-Equal '8 9 10' ((@($owned | ForEach-Object { $_.FromCol }) | Sort-Object) -join ' ') `
+        'at Status, Check By and Comment'
+    Assert-Equal 1 $owned[0].ToRow 'on the header row alone, not down the column'
+    Assert-True ([bool]$owned[0].Bold) 'and bold'
+
+    $sort = @($plan.Operations | Where-Object { $_.Kind -eq 'Sort' })
+    Assert-Equal 1 $sort.Count 'the board is sorted'
+    # Priority carries a numeric prefix so a text sort produces the band order; CheckID second
+    # keeps the order inside a band stable rather than whatever the last sort left.
+    Assert-Equal '4 1' (@($sort[0].By) -join ' ') 'by Priority, then CheckID'
+    Assert-Equal 1 $sort[0].FromRow 'below the header'
+}
+
+Test-That 'a check tab centres everything but the way out, which it widens instead' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'WIDE'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $state = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'WIDE' }
+        Titles = @('Overview', 'WIDE'); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'WIDE' = 9 }; SheetIndexOf = @{ 'Overview' = 0 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $state -OutputFolder 'x' `
+        -Collected @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
+    $formats = @($plan.Operations | Where-Object { $_.Kind -eq 'Format' -and $_.Sheet -eq 'WIDE' })
+
+    # A3 is the one thing left alone: a link reads as a control only if it starts where the
+    # eye already is, so it is widened rather than centred.
+    $back = @($formats | Where-Object { $_.FromRow -eq 2 -and $_.FromCol -eq 0 })
+    Assert-Equal 'LEFT' $back[0].Align 'the way back stays left'
+    Assert-Equal $SheetsLinkColour $back[0].Colour 'in the brighter blue'
+    $width = @($plan.Operations | Where-Object { $_.Kind -eq 'ColumnWidth' -and $_.Sheet -eq 'WIDE' })
+    Assert-Equal 1 $width.Count 'and its column is widened so it is not clipped'
+    Assert-Equal 1 $width[0].From 'column A'
+
+    # C2 is the darker blue: it sits inside the identity row rather than alone on a line.
+    $sql = @($formats | Where-Object { $_.FromRow -eq 1 -and $_.Colour -eq $SheetsSqlLinkColour })
+    Assert-Equal 1 $sql.Count 'the statement link is darker'
+    Assert-Equal 2 $sql[0].FromCol 'at SQL Used, column C'
+    Assert-True ([bool]$sql[0].Bold) 'and bold'
+
+    # The identity block is a different kind of thing from the results, so a different colour.
+    $tables = @($plan.Operations | Where-Object { $_.Kind -eq 'Table' -and $_.Sheet -eq 'WIDE' })
+    $identity = @($tables | Where-Object { $_.Name -eq 'DQ_002_Overview' })
+    Assert-Equal $SheetsIdentityHeaderColour $identity[0].HeaderColour 'the identity block is red'
+    $result = @($tables | Where-Object { $_.Name -eq 'Fixtureball_DQ_002' })
+    Assert-Equal $null $result[0].HeaderColour 'the result block keeps the default'
+}
+
+Test-That 'every conditional rule is deleted before any is added, highest index first' {
+    # Two columns, each with its own drop list read off the same original rule list. Done a
+    # column at a time - delete Rows, add Rows, delete Status - the second set of indexes is
+    # already stale, because the first deletion shifted everything under it. That is exactly
+    # what happened on a live board: the Rows colouring vanished entirely and three Status
+    # rules from the run before were left behind.
+    $ops = @(
+        [pscustomobject]@{ Kind = 'FormatRules'; Sheet = 'Overview'; Column = 8; Drop = @(6, 7, 8) }
+        [pscustomobject]@{ Kind = 'FormatRules'; Sheet = 'Overview'; Column = 9; Drop = @(0, 1, 2, 3, 4, 5) }
+    )
+    $deletions = @(Get-SheetsRuleDeletions -RuleOps $ops -GidOf @{ 'Overview' = 5 })
+    Assert-Equal 9 $deletions.Count 'every rule both columns claim is deleted'
+    $order = @($deletions | ForEach-Object { $_.deleteConditionalFormatRule.index })
+    Assert-Equal '8 7 6 5 4 3 2 1 0' ($order -join ' ') 'in one descending pass across both columns'
+    Assert-Equal 5 $deletions[0].deleteConditionalFormatRule.sheetId 'against the tab that holds them'
+
+    # Nothing to drop on a fresh document, and no request for it.
+    $fresh = @(Get-SheetsRuleDeletions -RuleOps @(
+            [pscustomobject]@{ Kind = 'FormatRules'; Sheet = 'Overview'; Column = 8; Drop = @() }) -GidOf @{ 'Overview' = 5 })
+    Assert-Equal 0 $fresh.Count 'a new document deletes nothing'
 }
 
 Test-That 'a dropdown on a table column is set through the table, not through the cells' {
