@@ -2003,6 +2003,24 @@ Test-That 'the trend carries a date against every count, this run included' {
     Assert-Equal $expected $row.Trend 'three dated points, this run last'
 }
 
+Test-That 'an ad-hoc statement files itself under no sport at all' {
+    # A basename with no -DQ- in it falls through Get-SportFromCheckId to everything before
+    # the first hyphen, so -File comprank.sql once created RUNS/comprank.json inside the
+    # working copy - a tracked file named after a scratch query. Both ad-hoc forms carry an
+    # empty CheckId now, and AD-HOC is what Save-RunLedger refuses to file.
+    Assert-Equal 'AD-HOC' (Get-SportFromCheckId -CheckId '') 'nothing to read a sport out of'
+    Assert-Equal 'AD-HOC' (Get-SportFromCheckId -CheckId $null) 'nor out of nothing at all'
+
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $adhoc = [pscustomobject]@{ CheckId = ''; Name = 'comprank'; What = '' }
+    $written = @(Save-RunLedger -Summary @(New-RunSummaryRow -Job $adhoc -Rows 3 -Seconds 1 `
+                -Status 'OK' -Eligible 9 -Findings 2) -Output 'run-one')
+    Assert-Equal 0 $written.Count 'no ledger is written for it'
+    Assert-True (-not (Test-Path -LiteralPath $ledgerDir)) 'and no RUNS directory is created'
+}
+
 Test-That 'a test run records nothing and names its folder so' {
     # The two halves have to hold together: recording nothing is worthless if the folder is
     # indistinguishable from a real run's, and marking the folder is worthless if the entry

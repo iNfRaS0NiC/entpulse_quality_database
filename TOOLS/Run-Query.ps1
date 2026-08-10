@@ -4118,9 +4118,17 @@ elseif ($Sql) {
     $jobs = @([pscustomobject]@{ CheckId = ''; Name = ''; What = ''; Sql = $Sql })
 }
 elseif ($File) {
+    # The file's name labels the run and is not its CheckId, which is empty here as it is
+    # under -Sql: both are ad-hoc statements that came from nowhere in the catalogue.
+    #
+    # It used to be the CheckId, and the cost was not cosmetic. Get-SportFromCheckId reads a
+    # prefix out of a CheckId, and a basename with no -DQ- in it falls through to everything
+    # before the first hyphen - so a run of comprank.sql filed itself under a sport called
+    # "comprank" and Save-RunLedger created RUNS/comprank.json, inside the working copy and
+    # tracked in git. Two of those reached a commit before anybody noticed.
     $jobs = @([pscustomobject]@{
-            CheckId = [IO.Path]::GetFileNameWithoutExtension($File)
-            Name    = ''
+            CheckId = ''
+            Name    = [IO.Path]::GetFileNameWithoutExtension($File)
             What    = ''
             Sql     = (Get-Content -LiteralPath $File -Raw)
         })
