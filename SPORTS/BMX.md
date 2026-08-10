@@ -162,6 +162,13 @@ check that names this. `GLOBAL-DQ-046` reads the same absence as a rank/time mis
 therefore reports its whole eligible population for this sport; it has to be read after
 `GLOBAL-DQ-029` and not as an independent finding.
 
+`PRECISION_DATA_TYPE_LIST` is `1272` for the same reason, and it is the one parameter here
+that deliberately names a deprecated field. The alternatives are both empty: `1426 Time` holds
+nothing, and `1271 Points` occurs under IOC-purpose templates only, which every statistics
+statement excludes — the absence `NUMERIC_DATA_TYPE_LIST` already records. Auditing the
+superseded field is not an endorsement of it; 321 statistics hold 6 171 duration values there
+and anything reading this sport's Comp.Rank times reads them from `1272`.
+
 <!-- MANUAL PASTE ZONE: 58 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values

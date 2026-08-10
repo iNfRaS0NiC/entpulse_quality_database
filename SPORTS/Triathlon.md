@@ -150,6 +150,20 @@ a time, a status vocabulary or a medal code, so a check auditing a numeric resul
 nothing to read here. `GLOBAL-DQ-076` is skipped for this sport because its prerequisite is
 absent, not because a parameter is unrecorded, and `NUMERIC_RESULT_TYPE_LIST` stays empty.
 
+`PRECISION_RESULT_TYPE_LIST` is `101, 557` and does not contradict that. The two parameters
+ask different questions of the same columns: `NUMERIC_RESULT_TYPE_LIST` names the fields that
+hold a measured quantity, which a time is not — `01:00:15` is not a number and `GLOBAL-DQ-076`
+would report every row of it. `PRECISION_RESULT_TYPE_LIST` names the fields whose written
+scale is fixed by convention, which a time certainly has. Keeping them separate is what lets
+`GLOBAL-DQ-120` audit the sport's durations without widening the check beside it.
+
+**The written form of a duration changes at the hour.** Under an hour the sport stores
+`56:04.000`; at or above it, `01:00:15` — a different notation, and the milliseconds are gone.
+Three Sprint Distance events cross that boundary and so carry both forms in one race:
+`2685294`, `5744951` and `5956610`, measured on 2026-08-10. `GLOBAL-DQ-120` reports them on
+the precision difference. The notation difference is real as well, and no check asserts it
+yet.
+
 <!-- MANUAL PASTE ZONE: 50 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types

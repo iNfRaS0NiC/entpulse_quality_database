@@ -3161,6 +3161,50 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "10.08.2026 07-48-29",
+                     "startedUtc":  "2026-08-10T05:48:29Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-102",
+                                        "runKey":  "Artistic-Gymnastics-DQ-102",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_PRECISION_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  36,
+                                        "findings":  35,
+                                        "eligible":  7233,
+                                        "seconds":  3.4,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "10.08.2026 07-48-44",
+                     "startedUtc":  "2026-08-10T05:48:44Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-103",
+                                        "runKey":  "Artistic-Gymnastics-DQ-103",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_PRECISION_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  53,
+                                        "findings":  52,
+                                        "eligible":  4219,
+                                        "seconds":  8.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"

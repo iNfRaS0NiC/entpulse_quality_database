@@ -1,6 +1,8 @@
 {
   "BMX": {
     "SPORT_ID": 58,
+    "PRECISION_RESULT_TYPE_LIST": "101, 102, 557",
+    "PRECISION_DATA_TYPE_LIST": "1272",
     "EVENT_PARTICIPANT_TYPE_LIST": "'athlete'",
     "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
     "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
@@ -83,6 +85,8 @@
   },
   "Triathlon": {
     "SPORT_ID": 50,
+    "PRECISION_RESULT_TYPE_LIST": "101, 557",
+    "PRECISION_DATA_TYPE_LIST": "1426",
     "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
     "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
     "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
@@ -234,6 +238,8 @@
   },
   "Artistic-Gymnastics": {
     "SPORT_ID": 40,
+    "PRECISION_RESULT_TYPE_LIST": "102",
+    "PRECISION_DATA_TYPE_LIST": "1271",
     "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
     "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
     "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
@@ -471,6 +477,8 @@
   },
   "Modern-Pentathlon": {
     "SPORT_ID": 42,
+    "PRECISION_RESULT_TYPE_LIST": "102",
+    "PRECISION_DATA_TYPE_LIST": "1271",
     "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
     "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
     "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",

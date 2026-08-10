@@ -3386,3 +3386,92 @@ WHERE sp.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_participants_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-121
+    -- Name - COMP.RANK_RESULTS_NUMERIC_PRECISION_INCONSISTENT
+    -- What it does: Finds Comp.Rank whose participants' values in one numeric data field are not all written to the same number of decimal places, separating a value stored with no decimal point at all from a fraction shorter than its neighbours.
+    CASE
+        -- A value with no point at all is a different repair from a short fraction: the
+        -- separator has to be added as well as the digits, and it is the shape a feed
+        -- produces when it drops a trailing zero group rather than one digit.
+        WHEN y.types_with_integer > 0 THEN 'PRECISION_MIXED_WITH_INTEGER'
+        ELSE 'PRECISION_MIXED_DECIMAL_PLACES'
+    END AS check_type,
+    y.statistic_id,
+    y.statistic_name,
+    y.template_name,
+    y.tournament_name,
+    y.affected_data_types,
+    y.decimal_places_seen,
+    y.worst_shape_count,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        x.statistic_id,
+        x.statistic_name,
+        x.template_name,
+        x.tournament_name,
+        GROUP_CONCAT(DISTINCT x.statistic_data_typeFK) AS affected_data_types,
+        GROUP_CONCAT(DISTINCT x.places_seen SEPARATOR ' | ') AS decimal_places_seen,
+        MAX(x.shape_count) AS worst_shape_count,
+        SUM(CASE WHEN x.has_integer = 1 THEN 1 ELSE 0 END) AS types_with_integer
+    FROM (
+        SELECT
+            s.id AS statistic_id,
+            s.name AS statistic_name,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            sd.statistic_data_typeFK,
+            -- The written form, not the value. The event-layer twin is GLOBAL-DQ-120 and
+            -- reads the same invariant one layer down.
+            COUNT(DISTINCT CASE WHEN sd.value LIKE '%.%'
+                    THEN LENGTH(SUBSTRING_INDEX(sd.value, '.', -1)) ELSE 0 END) AS shape_count,
+            MAX(CASE WHEN sd.value LIKE '%.%' THEN 0 ELSE 1 END) AS has_integer,
+            GROUP_CONCAT(DISTINCT CASE WHEN sd.value LIKE '%.%'
+                    THEN LENGTH(SUBSTRING_INDEX(sd.value, '.', -1)) ELSE 0 END) AS places_seen
+        FROM statistic s
+        JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+        JOIN statistic_data{{SHARD_ID}} sd
+          ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+         AND sd.del = 'no'
+         AND sd.statistic_data_typeFK IN ({{PRECISION_DATA_TYPE_LIST}})
+         AND sd.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.][0-9]+)?$'
+        WHERE s.del = 'no'
+          AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+          AND s.object_typeFK = 3
+          AND tt.sportFK = {{SPORT_ID}}
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          -- AND t.tournament_templateFK = <tournament_template_id>
+        GROUP BY s.id, s.name, tt.name, t.name, sd.statistic_data_typeFK
+        HAVING shape_count > 1
+    ) x
+    GROUP BY x.statistic_id, x.statistic_name, x.template_name, x.tournament_name
+) y
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN statistic_data{{SHARD_ID}} sd
+  ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+ AND sd.del = 'no'
+ AND sd.statistic_data_typeFK IN ({{PRECISION_DATA_TYPE_LIST}})
+ AND sd.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.][0-9]+)?$'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND t.tournament_templateFK = <tournament_template_id>
+;

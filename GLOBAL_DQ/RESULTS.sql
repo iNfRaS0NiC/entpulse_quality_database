@@ -3381,3 +3381,94 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-120
+    -- Name - EVENT_RESULTS_NUMERIC_PRECISION_INCONSISTENT
+    -- What it does: Finds events whose participants' values in one numeric result field are not all written to the same number of decimal places, separating a value stored with no decimal point at all from a fraction shorter than its neighbours.
+    CASE
+        -- A value with no point at all is a different repair from a short fraction: the
+        -- separator has to be added as well as the digits, and it is the shape a feed
+        -- produces when it drops a trailing zero group rather than one digit.
+        WHEN y.types_with_integer > 0 THEN 'PRECISION_MIXED_WITH_INTEGER'
+        ELSE 'PRECISION_MIXED_DECIMAL_PLACES'
+    END AS check_type,
+    y.event_id,
+    y.event_name,
+    y.template_name,
+    y.tournament_name,
+    y.affected_result_types,
+    y.decimal_places_seen,
+    y.worst_shape_count,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        x.event_id,
+        x.event_name,
+        x.template_name,
+        x.tournament_name,
+        GROUP_CONCAT(DISTINCT x.result_typeFK) AS affected_result_types,
+        GROUP_CONCAT(DISTINCT x.places_seen SEPARATOR ' | ') AS decimal_places_seen,
+        MAX(x.shape_count) AS worst_shape_count,
+        SUM(CASE WHEN x.has_integer = 1 THEN 1 ELSE 0 END) AS types_with_integer
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            r.result_typeFK,
+            -- The written form, not the value. A number carries its precision in how it was
+            -- typed, and 13.6 beside 13.733 is one score written to a different scale rather
+            -- than a different score - the two are equal to a reader and unequal to anything
+            -- that compares the strings. A value with no point counts as zero places.
+            COUNT(DISTINCT CASE WHEN r.value LIKE '%.%'
+                    THEN LENGTH(SUBSTRING_INDEX(r.value, '.', -1)) ELSE 0 END) AS shape_count,
+            MAX(CASE WHEN r.value LIKE '%.%' THEN 0 ELSE 1 END) AS has_integer,
+            GROUP_CONCAT(DISTINCT CASE WHEN r.value LIKE '%.%'
+                    THEN LENGTH(SUBSTRING_INDEX(r.value, '.', -1)) ELSE 0 END) AS places_seen
+        FROM event e
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+         AND r.result_typeFK IN ({{PRECISION_RESULT_TYPE_LIST}})
+         -- Plain decimals and clock notation alike, because a duration written 1:20.616 and
+         -- one written 26.567 are both three places and neither is this check's business.
+         -- Whether two notations may stand side by side is a separate question about
+         -- magnitudes, and anything that is not a number at all belongs to GLOBAL-DQ-076.
+         AND r.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.][0-9]+)?$'
+        WHERE e.del = 'no'
+          AND tt.sportFK = {{SPORT_ID}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+        GROUP BY e.id, e.name, tt.name, t.name, r.result_typeFK
+        HAVING shape_count > 1
+    ) x
+    GROUP BY x.event_id, x.event_name, x.template_name, x.tournament_name
+) y
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+ AND r.result_typeFK IN ({{PRECISION_RESULT_TYPE_LIST}})
+ AND r.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.][0-9]+)?$'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+;

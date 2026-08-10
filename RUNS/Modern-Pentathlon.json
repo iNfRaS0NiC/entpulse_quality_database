@@ -1,0 +1,50 @@
+{
+    "sport":  "Modern-Pentathlon",
+    "ledgerVersion":  1,
+    "runs":  [
+                 {
+                     "runId":  "10.08.2026 07-49-35",
+                     "startedUtc":  "2026-08-10T05:49:35Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-101",
+                                        "runKey":  "Modern-Pentathlon-DQ-101",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_PRECISION_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9449,
+                                        "seconds":  3.9,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "10.08.2026 07-49-40",
+                     "startedUtc":  "2026-08-10T05:49:40Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-102",
+                                        "runKey":  "Modern-Pentathlon-DQ-102",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_PRECISION_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  1212,
+                                        "seconds":  7.7,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 }
+             ]
+}

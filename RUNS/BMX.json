@@ -1373,6 +1373,50 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "10.08.2026 07-48-56",
+                     "startedUtc":  "2026-08-10T05:48:56Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-092",
+                                        "runKey":  "BMX-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_PRECISION_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  115,
+                                        "findings":  114,
+                                        "eligible":  8244,
+                                        "seconds":  1.9,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "10.08.2026 07-49-05",
+                     "startedUtc":  "2026-08-10T05:49:05Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-093",
+                                        "runKey":  "BMX-DQ-093",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_PRECISION_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  321,
+                                        "seconds":  6,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE"

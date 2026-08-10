@@ -1463,6 +1463,50 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "10.08.2026 07-49-14",
+                     "startedUtc":  "2026-08-10T05:49:14Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-098",
+                                        "runKey":  "Triathlon-DQ-098",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_PRECISION_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  3601,
+                                        "seconds":  3.2,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "10.08.2026 07-49-22",
+                     "startedUtc":  "2026-08-10T05:49:22Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-099",
+                                        "runKey":  "Triathlon-DQ-099",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_PRECISION_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3379,
+                                        "seconds":  9.5,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"
