@@ -98,6 +98,18 @@ leakage, which is why the accepted set is recorded per sport rather than globall
 `REL` marks a placing penalty and not the absence of a result, so a relegated rider is
 expected to carry a rank.
 
+`GLOBAL-DQ-122` returns 1 391 findings over 9 325 finished ranked events, and the shape of
+the gap matters more than its size. It is neither an era nor a round type: the absence runs
+from 2004 to 2025 at roughly one event in ten every year, and it appears in every round the
+sport holds — `Heats` 823 of 2 838, `Final` 209 of 539, `Qualifier` 144 of 1 169,
+`Semi Finals` 75, `Quarter Finals` 53. The same round type is clean in the majority of its
+own events, which rules out the reading that a moto is placed without a time by design.
+What is left is a standing coverage gap in the feed: `101 Duration` reaches 7 994 of the
+9 325 events, and where it is missing the placing rests on nothing stored.
+
+`RESULT_TIE_VALUE_TYPE_LIST` for this sport is `101` alone, so no second field can stand in
+for the duration the way `557` does for Triathlon.
+
 <!-- MANUAL PASTE ZONE: 58 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types

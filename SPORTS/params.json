@@ -215,7 +215,8 @@
       "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
       "WINNER_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
       "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
-      "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored"
+      "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
+      "RESULT_TIE_VALUE_TYPE_LIST": "the sport is head to head; the pairing settles the place, so no result field holds a quantity a place is read from"
     },
     "_checkSignal": {
       "GLOBAL-DQ-058": {
@@ -406,7 +407,8 @@
       "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "extra time is a result type of its own rather than a scope period, so the scope layer stores no column for one",
       "WINNER_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event. Result type 549 Final Outcome carries won and lost per event participant, and the event property layer - measured across every property name the scope uses - contains no Winner property for GLOBAL-DQ-087 to read. The vocabulary exists, it simply does not live where that check looks",
       "WINNER_HOME_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write",
-      "WINNER_AWAY_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write"
+      "WINNER_AWAY_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write",
+      "RESULT_TIE_VALUE_TYPE_LIST": "the sport is head to head; the pairing settles the place, so no result field holds a quantity a place is read from"
     },
     "_checkSignal": {
       "GLOBAL-DQ-009": {

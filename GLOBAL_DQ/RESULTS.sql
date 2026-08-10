@@ -3472,3 +3472,102 @@ WHERE e.del = 'no'
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-122
+    -- Name - EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE
+    -- What it does: Finds finished events whose ranked participants hold no value in any result field their placing is read from, separating an event holding none at all from one holding them for part of the field, and excusing a participant whose Comment records that they did not finish.
+    CASE
+        -- An event holding none at all and an event holding some are two different repairs.
+        -- The first lost a whole result set and its ranking rests on nothing stored; the
+        -- second has the set and is short of rows in it, which is what a feed produces when
+        -- a late entrant or a corrected place is appended without its value.
+        WHEN x.with_value = 0 THEN 'DECIDING_VALUE_ABSENT_FROM_EVENT'
+        ELSE 'DECIDING_VALUE_MISSING_FOR_PART_OF_FIELD'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.template_name,
+    x.tournament_name,
+    x.stage_name,
+    x.event_startdate,
+    x.ranked_participants,
+    x.with_value,
+    x.excused_participants,
+    (x.ranked_participants - x.with_value - x.excused_participants) AS missing_unexcused,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.name AS stage_name,
+        e.startdate AS event_startdate,
+        COUNT(DISTINCT ep.id) AS ranked_participants,
+        COUNT(DISTINCT CASE WHEN rv.id IS NOT NULL THEN ep.id END) AS with_value,
+        -- Excused only where the value is absent. A participant who did not finish and still
+        -- holds a value is neither a finding nor an excuse, and counting them here would let
+        -- one missing row hide behind another participant's Comment.
+        COUNT(DISTINCT CASE WHEN rv.id IS NULL AND rc.id IS NOT NULL THEN ep.id END)
+            AS excused_participants
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    -- The Rank is what makes a participant auditable here. A field entry carrying no place
+    -- was never classified, which is GLOBAL-DQ-036's question rather than this one's.
+    JOIN result rr ON rr.event_participantsFK = ep.id AND rr.del = 'no'
+     AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+     AND rr.value IS NOT NULL
+     AND TRIM(rr.value) <> ''
+    -- Any one of the sport's deciding fields accounts for the place, which is the same
+    -- reading GLOBAL-DQ-116 gave the list: a timed sport storing both a duration and a full
+    -- time is not short of a result because it kept only one of them for a participant.
+    LEFT JOIN result rv ON rv.event_participantsFK = ep.id AND rv.del = 'no'
+     AND rv.result_typeFK IN ({{RESULT_TIE_VALUE_TYPE_LIST}})
+     AND rv.value IS NOT NULL
+     AND TRIM(rv.value) <> ''
+    LEFT JOIN result rc ON rc.event_participantsFK = ep.id AND rc.del = 'no'
+     AND LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
+     AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND e.status_type = 'finished'
+      AND e.status_descFK = 6
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, tt.name, t.name, ts.name, e.startdate
+) x
+WHERE x.with_value + x.excused_participants < x.ranked_participants
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result rr ON rr.event_participantsFK = ep.id AND rr.del = 'no'
+ AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+ AND rr.value IS NOT NULL
+ AND TRIM(rr.value) <> ''
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, missing_unexcused DESC, event_startdate DESC;

@@ -169,6 +169,22 @@ missing-medal subtypes remain useful drill-down targets.
 and `All-Round` compounds dominate its generic name-format output, while double spaces and
 Cyrillic lookalikes remain actionable subtypes.
 
+`GLOBAL-DQ-122` audits the field the placing is read from rather than the placing itself.
+Every check that touches `102 Points` reads it only where it is there, so an event holding
+Rank and Medal while Points is wholly absent passes all of them: `GLOBAL-DQ-017` counts the
+Rank as a result and calls the event covered, `GLOBAL-DQ-069` needs a row before it can read
+a value, and `Artistic-Gymnastics-DQ-099` joins the score and falls silent without it. What
+that combination looks like in the data is a placing derived from nothing stored.
+
+The sport upholds the rule almost perfectly: 2 findings over 7 242 finished ranked events.
+Event `5723515`, a 2005 Southeast Asian Games final, ranks six athletes and awards three
+medals with no Points row at all; event `5651206`, a 2012 World Championships qualifier,
+ranks six and comments them `Q`, `Q`, `Q`, `Q`, `R1`, `R2` — qualified from a score the
+record does not hold. The third event the raw shape turns up, `5736212`, is not a finding:
+its one participant without a score is commented `DNF`, and `RESULT_COMMENT_NO_RESULT_LIST`
+excuses exactly that. The excuse is what separates a non-finisher from a lost value, and it
+is why the check reads the Comment at all.
+
 <!-- MANUAL PASTE ZONE: 40 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types

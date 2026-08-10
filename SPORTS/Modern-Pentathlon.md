@@ -152,6 +152,21 @@ occurring once and all on `Team-Relay Mix - After Laser Run` events. Nothing sit
 two groups, so the sport's plausible maximum is recorded at 100 — inside that gap, with headroom
 for a larger field than any contested so far.
 
+`GLOBAL-DQ-122` returns 329 findings over 9 517 finished ranked events, an order of
+magnitude above the sport it was first written against. That is a difference in the data
+rather than in the rule: the sport is multi-discipline, and its per-discipline events carry
+`102 Points` unevenly. Whole Fencing finals ranking fifty athletes hold Rank and nothing
+else — checked directly, the participants of `5244203`, `5187928`, `5187935`, `5187939`,
+`5187962` and `5187951` hold `100 Rank` and no other result type between them. Riding
+finals and the `Team-Relay - After …` cumulative events supply most of the remainder, short
+by one or two participants rather than wholly empty.
+
+The volume is not grounds for reclassifying the check. What is still open is whether a
+fencing placing is meant to be read from Points at all or from a discipline score this
+layer does not store, and that question belongs to the colleague review rather than to the
+statement. Until it is answered the finding count should be read as a population to be
+sorted, not as 329 repairs.
+
 <!-- MANUAL PASTE ZONE: 42 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types

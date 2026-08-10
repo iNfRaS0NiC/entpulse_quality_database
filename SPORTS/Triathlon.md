@@ -164,6 +164,13 @@ Three Sprint Distance events cross that boundary and so carry both forms in one 
 the precision difference. The notation difference is real as well, and no check asserts it
 yet.
 
+`GLOBAL-DQ-122` is clean: 0 findings over 3 601 finished ranked events. The eligible count
+is the sport's entire finished ranked population, so this is a correct scope over data that
+holds, not an empty one. `101 Duration` and `557 Full-time duration` each reach all 3 601
+events, and the statement accepts either — `RESULT_TIE_VALUE_TYPE_LIST` is `557, 101` and
+holding any one listed field accounts for the place. Exactly one participant in the sport
+lacks `557` while holding `101`, and that is correctly not a finding.
+
 <!-- MANUAL PASTE ZONE: 50 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
