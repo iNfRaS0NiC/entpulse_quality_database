@@ -2948,6 +2948,56 @@ Test-That 'the Rows colour bands are rewritten every run, over that column only'
     Assert-True ([bool]$again[1].Rules[0].Background) 'and filled, because what it wants to look like is a chip'
 }
 
+Test-That 'a dropdown on a table column is set through the table, not through the cells' {
+    # Sheets refuses setDataValidation on a column that carries a type inside a table -
+    # "This operation is not allowed on cells in typed columns" - and the rejection takes the
+    # whole batch with it. Two boards were already in that state, put there by hand, and the
+    # run that met them wrote no colours, no values and left the SQL tab broken.
+    $validation = [pscustomobject]@{
+        Kind = 'Validation'; Sheet = 'Overview'; Column = 9; Name = 'Status'
+        Values = @('Not reviewed', 'Clean')
+    }
+    $tables = @([pscustomobject]@{
+            Id = 'BOARD'; Name = 'Overview'; FromRow = 0; ToRow = 99; FromCol = 0; ToCol = 22
+            Columns = @(
+                [pscustomobject]@{ columnIndex = 7; columnName = 'Rows' }
+                [pscustomobject]@{ columnIndex = 8; columnName = 'Status'; columnType = 'DROPDOWN' }
+                [pscustomobject]@{ columnIndex = 9; columnName = 'Check By' }
+            )
+        })
+
+    $sent = New-SheetsValidationRequest -Validation $validation -Tables $tables -SheetId 5
+    Assert-True ([bool]$sent.updateTable) 'the table is asked, not the cells'
+    Assert-Equal $null $sent.setDataValidation 'setDataValidation would be refused'
+    Assert-Equal 'BOARD' $sent.updateTable.table.tableId 'on the table that covers the column'
+    Assert-Equal 'columnProperties' $sent.updateTable.fields 'changing only the column list'
+
+    # The whole column list goes back, because a partial one replaces it: sending only Status
+    # would drop the names Sheets holds for all the others.
+    $columns = @($sent.updateTable.table.columnProperties)
+    Assert-Equal 3 $columns.Count 'every column it already had is resent'
+    $status = @($columns | Where-Object { $_.columnIndex -eq 8 })
+    Assert-Equal 'DROPDOWN' $status[0].columnType 'the typed column keeps its type'
+    Assert-Equal 'Not reviewed Clean' (@($status[0].dataValidationRule.condition.values |
+            ForEach-Object { $_.userEnteredValue }) -join ' ') 'under this run vocabulary'
+    Assert-Equal 'Rows' @($columns | Where-Object { $_.columnIndex -eq 7 })[0].columnName 'and the others are untouched'
+
+    # A table whose column list has no entry for it yet - the state the boards that had no
+    # dropdown were in - gains one rather than being left alone.
+    $untyped = @([pscustomobject]@{
+            Id = 'BOARD'; Name = 'Overview'; FromRow = 0; ToRow = 99; FromCol = 0; ToCol = 22; Columns = @()
+        })
+    $added = @((New-SheetsValidationRequest -Validation $validation -Tables $untyped -SheetId 5).updateTable.table.columnProperties)
+    Assert-Equal 1 $added.Count 'the column is added to the list'
+    Assert-Equal 'Status' $added[0].columnName 'under the name the planner gave it'
+
+    # No table over that column: the cells take it directly, as they do on a plain tab.
+    $plain = New-SheetsValidationRequest -Validation $validation -Tables @() -SheetId 5
+    Assert-True ([bool]$plain.setDataValidation) 'a column outside a table takes it directly'
+    Assert-Equal $true $plain.setDataValidation.rule.strict 'and is refused a word nobody declared'
+    Assert-Equal 8 $plain.setDataValidation.range.startColumnIndex 'over the column the planner named'
+}
+
 Test-That 'the SQL tab is merged, so a narrow run does not delete the rest of the catalogue' {
     # The defect this was written for. The SQL tab is shared - one block per check, and each
     # check tab's C2 points at a row number in it - but it was rewritten from whatever the run

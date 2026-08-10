@@ -541,6 +541,7 @@ function New-SheetsMergePlan {
         Kind   = 'Validation'
         Sheet  = 'Overview'
         Column = $statusColumnIndex
+        Name   = 'Status'
         Values = @($SheetsStatusBands | ForEach-Object { $_.Value })
     }
 
@@ -847,7 +848,7 @@ function New-SheetsMergePlan {
     # table still ended at the column before it, and the new column sat outside the table with
     # no header of its own for as long as nobody looked.
     $board = $(if ($Existing -and $Existing.TableOf -and $Existing.TableOf.ContainsKey('Overview')) {
-            $Existing.TableOf['Overview']
+            @($Existing.TableOf['Overview'])[0]
         }
         else { $null })
     $lastRow = $nextRow - 1
@@ -1335,6 +1336,10 @@ function Read-SheetState {
                     ToRow   = [int]$_.range.endRowIndex
                     FromCol = [int]$_.range.startColumnIndex
                     ToCol   = [int]$_.range.endColumnIndex
+                    # Carried because a table's column may hold a type, and a typed column
+                    # refuses setDataValidation outright: its dropdown belongs to the table.
+                    # Updating them means resending the whole list, so the whole list is read.
+                    Columns = @($_.columnProperties)
                 }
             })
     }
@@ -1502,6 +1507,14 @@ function Invoke-SheetsPlan {
     param([string]$SpreadsheetId, $Plan)
 
     $operations = @($Plan.Operations)
+
+    # Every table the document already has, keyed by tab. Built here rather than in the table
+    # stage because the dropdown needs it too: a column inside a table carries its validation
+    # on the table, and the two stages must not disagree about which tables exist.
+    $knownTables = @{}
+    if ($Plan.PSObject.Properties.Name -contains 'KnownTables' -and $Plan.KnownTables) {
+        foreach ($key in $Plan.KnownTables.Keys) { $knownTables[[string]$key] = $Plan.KnownTables[$key] }
+    }
 
     $script:SheetsStage = 'adding and sizing tabs'
     # Structure first, and in one call: a tab has to exist before a range names it, and a grid
@@ -1674,24 +1687,8 @@ function Invoke-SheetsPlan {
     # are: a vocabulary changed in the source has to reach a document that already exists.
     foreach ($validation in @($operations | Where-Object { $_.Kind -eq 'Validation' })) {
         if (-not $gidOf.ContainsKey($validation.Sheet)) { continue }
-        $second += @{
-            setDataValidation = @{
-                range = @{
-                    sheetId          = [int]$gidOf[$validation.Sheet]
-                    startRowIndex    = 1
-                    startColumnIndex = [int]$validation.Column - 1
-                    endColumnIndex   = [int]$validation.Column
-                }
-                rule  = @{
-                    condition    = @{
-                        type   = 'ONE_OF_LIST'
-                        values = @(@($validation.Values) | ForEach-Object { @{ userEnteredValue = [string]$_ } })
-                    }
-                    showCustomUi = $true
-                    strict       = $true
-                }
-            }
-        }
+        $second += (New-SheetsValidationRequest -Validation $validation `
+                -Tables @($knownTables[$validation.Sheet]) -SheetId ([int]$gidOf[$validation.Sheet]))
     }
 
     if ($second.Count -gt 0) {
@@ -1779,10 +1776,7 @@ function Invoke-SheetsPlan {
     # second - the range is the part that goes stale, not the table.
     $tableOps = @($operations | Where-Object { $_.Kind -eq 'Table' })
     $tableRequests = @()
-    $known = @{}
-    if ($Plan.PSObject.Properties.Name -contains 'KnownTables' -and $Plan.KnownTables) {
-        foreach ($key in $Plan.KnownTables.Keys) { $known[[string]$key] = $Plan.KnownTables[$key] }
-    }
+    $known = $knownTables
 
     $claimed = @{}
     foreach ($table in $tableOps) {
@@ -1839,6 +1833,92 @@ function Invoke-SheetsPlan {
         Cleared = $clears.Count
         Written = $writes.Count
         Tables  = $tableRequests.Count
+    }
+}
+
+function New-SheetsValidationRequest {
+    <#
+        The one request that puts a dropdown on a column, and which of the two forms it takes.
+
+        A column inside a table may carry a type of its own, and Sheets then refuses
+        setDataValidation on it outright - "This operation is not allowed on cells in typed
+        columns", because the dropdown belongs to the table rather than to the cells. Two
+        boards were already in that state, put there by hand, and the rejection took the whole
+        batch down with it: no colours, no values written, and the SQL tab left exactly as the
+        run before had broken it.
+
+        So a table covering the column is asked first, and only a column outside one is given
+        validation directly. Separated from the transport for the reason Test-SheetsTitleIsOurs
+        is: the decision is worth testing and a login is not.
+
+        The table's column list is resent whole. A partial one replaces it, so sending only the
+        column being changed would drop the names Sheets holds for all the others - which is
+        why Read-SheetState carries every column rather than the one in question.
+    #>
+    param($Validation, $Tables, [int]$SheetId)
+
+    $index = [int]$Validation.Column - 1
+    $condition = @{
+        type   = 'ONE_OF_LIST'
+        values = @(@($Validation.Values) | ForEach-Object { @{ userEnteredValue = [string]$_ } })
+    }
+
+    $board = $null
+    foreach ($candidate in @($Tables)) {
+        if (-not $candidate) { continue }
+        if ([int]$candidate.FromCol -le $index -and [int]$candidate.ToCol -gt $index) {
+            $board = $candidate
+            break
+        }
+    }
+
+    if (-not $board) {
+        return @{
+            setDataValidation = @{
+                range = @{
+                    sheetId          = $SheetId
+                    startRowIndex    = 1
+                    startColumnIndex = $index
+                    endColumnIndex   = [int]$Validation.Column
+                }
+                rule  = @{
+                    condition    = $condition
+                    showCustomUi = $true
+                    strict       = $true
+                }
+            }
+        }
+    }
+
+    $columns = @()
+    $replaced = $false
+    foreach ($column in @($board.Columns)) {
+        if (-not $column) { continue }
+        if ([int]$column.columnIndex -eq $index) {
+            $columns += @{
+                columnIndex        = $index
+                columnName         = [string]$column.columnName
+                columnType         = 'DROPDOWN'
+                dataValidationRule = @{ condition = $condition }
+            }
+            $replaced = $true
+        }
+        else { $columns += $column }
+    }
+    if (-not $replaced) {
+        $columns += @{
+            columnIndex        = $index
+            columnName         = [string]$Validation.Name
+            columnType         = 'DROPDOWN'
+            dataValidationRule = @{ condition = $condition }
+        }
+    }
+
+    return @{
+        updateTable = @{
+            table  = @{ tableId = [string]$board.Id; columnProperties = $columns }
+            fields = 'columnProperties'
+        }
     }
 }
 
