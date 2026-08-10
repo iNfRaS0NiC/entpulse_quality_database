@@ -326,10 +326,6 @@
         "signal": "Monitor",
         "reason": "Populated team lineups within one Artistic Gymnastics event can legitimately have different roster sizes, so the difference is population context. GLOBAL-DQ-058 remains the actionable check for a team with no lineup. SPORTS/Artistic-Gymnastics.md owns the reasoning."
       },
-      "GLOBAL-DQ-072": {
-        "signal": "Monitor",
-        "reason": "Comp.Rank medals occur in tie-aware, ordinal and team-inherited shapes, so a stored Rank shifted from the simple 1/2/3 mapping is not automatically an independent defect. Non-standard deltas and broken sequences remain drill-down targets. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
       "GLOBAL-DQ-079": {
         "signal": "Monitor",
         "reason": "The template-name format rule flags the legitimate compound World Cup All-Around, so its current Artistic Gymnastics output is semantic naming context rather than a direct repair list. SPORTS/Artistic-Gymnastics.md owns the reasoning."

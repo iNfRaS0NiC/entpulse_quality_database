@@ -318,11 +318,17 @@ this sport does not store, so it is permanently unrunnable here for the same rea
 `1456 Running Score` has active rows, but its complete current value-pattern
 inventory contains only the empty state; no non-empty active use was confirmed.
 
-`GLOBAL-DQ-072` is a `Monitor` for this sport. Comp.Rank medal rows commonly occur in
-tie-aware, ordinal or team-inherited result shapes, so a medal whose stored Rank is shifted
-from the simple 1/2/3 mapping is not automatically one independent defect. Non-standard
-deltas and broken ranking sequences remain the rows to prioritise within that monitored
-population.
+`GLOBAL-DQ-072` is `Actionable`. It is the Comp.Rank twin of `GLOBAL-DQ-053` at the event
+layer and carries the same invariant: a medal whose stored Rank does not stand for the place
+it was awarded for is one defective statistic row, and a corrected sport returns the
+`COVERAGE` row alone.
+
+It was a `Monitor` until 2026-08-10, on the argument that Comp.Rank medal rows occur in
+tie-aware, ordinal or team-inherited result shapes in which a Rank shifted from the simple
+1/2/3 mapping is not automatically one independent defect. That was withdrawn with the same
+reasoning as its event-layer twin: those shapes describe how a *set* of medals is arranged,
+and none of them makes an individual medal stand for a place it was not awarded for. The
+five rows it reports are repairs.
 
 `GLOBAL-DQ-026` monitors the aggregate Comp.Rank medal-set population because legitimate
 ties, duplicated bronze placements and team-inherited medal rows can all create repeated

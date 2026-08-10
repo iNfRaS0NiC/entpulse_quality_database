@@ -3139,6 +3139,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "10.08.2026 05-40-46",
+                     "startedUtc":  "2026-08-10T03:40:46Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-040",
+                                        "runKey":  "Artistic-Gymnastics-DQ-040",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_RANK_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  15080,
+                                        "seconds":  7.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"
