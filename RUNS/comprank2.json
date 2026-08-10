@@ -1,0 +1,28 @@
+{
+    "sport":  "comprank2",
+    "ledgerVersion":  1,
+    "runs":  [
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-10T13:27:52Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\97d4c039-72e9-4f4b-b750-4355ddfcd08b\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "comprank2",
+                                        "runKey":  "comprank2",
+                                        "parameters":  "",
+                                        "name":  "",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "",
+                                        "rows":  22,
+                                        "findings":  null,
+                                        "eligible":  null,
+                                        "seconds":  1,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 }
+             ]
+}

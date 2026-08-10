@@ -1121,6 +1121,39 @@ reader to discover.
 Whether the gap is a data state to be corrected or a deliberate scope of the marking is not
 established, and this file does not decide it.
 
+### `DB-SEM-018` — Whether a stage produces a Comp.Rank is not stored on the stage
+
+The editing tool offers a per-stage `Competition Rank` yes/no setting. **Nothing in this
+schema holds it.** `tournament_stage` has no column for it — its columns are `id`, `name`,
+`tournamentFK`, `gender`, `countryFK`, `enetID`, `startdate`, `enddate`, `n`, `locked`, `ut`,
+`del` and nothing else — and no `property` row carries it either: the only property name
+observed on `tournament_stage` objects is `Cup`. Do not go looking for the flag here.
+
+What the database holds is the consequence: a `statistic` row with `statistic_typeFK = 11`.
+The check that answers "is Comp.Rank set" is therefore an existence test against `statistic`,
+and it answers a question one step removed from the setting — a stage whose flag is on but
+whose statistic was never generated is indistinguishable here from one whose flag is off.
+
+**The owner is the tournament in practice, not the stage.** `DB-SEM-013` records that a
+minority of statistics are owned by `tournament_stage` (`object_typeFK = 4`) rather than
+`tournament` (`3`); for Comp.Rank the split measured on 2026-08-10 is 78 084 tournament-owned
+against 1 778 stage-owned, and across the twenty sports with the most stages since 2025 the
+stage-owned count is zero. The stage-owned minority is not the current shape. An existence
+test must still read both, because it is a per-sport exception rather than a retired one.
+
+**Presence is nowhere near universal, and that is the point of measuring it.** Over stages
+starting from 2025, the proportion whose tournament carries a Comp.Rank ranges from all of
+them to none: Triathlon 186 of 186, Snowboarding 125 of 238, Cycling 238 of 469, Basketball
+267 of 1 084, Soccer 32 of 2 563, and none at all for Tennis, Motorsports, Badminton, Horse
+Racing, Table Tennis, Athletics, Darts or League of Legends. Artistic Swimming (`47`) carries
+none across 18 tournaments in 2024 to 2026, which is why its numeric Comp.Rank fields sit
+under IOC-purpose templates alone.
+
+These are counts from one reading and go stale on their own; they are recorded to establish
+the shape — that Comp.Rank presence is a per-sport population fact — rather than as figures
+to be cited. A check asserting that every stage has one would report the shape of the feed
+for most sports rather than a defect.
+
 <!-- MANUAL PASTE ZONE: DATABASE STRUCTURAL SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---
