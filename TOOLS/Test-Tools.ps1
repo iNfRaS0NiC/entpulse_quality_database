@@ -3314,6 +3314,11 @@ Test-That 'the log accumulates rather than being replaced by the latest run' {
             $_.Kind -eq 'Write' -and $_.Sheet -eq $SheetsReviewLogTabName })
     Assert-Equal 3 @($write[0].Values).Count 'the header, what was there and what this run dropped'
     Assert-Equal 'Fixtureball-DQ-009' @($write[0].Values[1])[0] 'the older entry is kept'
+
+    # A row logged before the vocabulary existed is renamed too. Left alone it keeps the
+    # spelling of its own run, so a filter on Fixed misses every row logged earlier - the drift
+    # the closed list exists to stop, in the one place nobody would look for it.
+    Assert-Equal 'Fixed' @($write[0].Values[1])[3] 'and reads in the spelling the column now offers'
     Assert-Equal 'Fixtureball-DQ-002' @($write[0].Values[2])[0] 'and this run appends under it'
     Assert-Equal 0 @($plan.Operations | Where-Object {
             $_.Kind -eq 'AddSheet' -and $_.Sheet -eq $SheetsReviewLogTabName }).Count `

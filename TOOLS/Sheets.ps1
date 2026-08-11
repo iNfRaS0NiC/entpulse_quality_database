@@ -1698,10 +1698,20 @@ function New-SheetsMergePlan {
     # a failed run from leaving a half-written block behind.
     $logRows = @()
     $logSeen = @{}
+    $logStatusAt = [array]::IndexOf($SheetsReviewLogColumns, $SheetsRowReviewColumns[0])
     foreach ($was in @($(if ($Existing) { $Existing.ReviewLog } else { @() }))) {
         if (-not $was) { continue }
         $line = @($SheetsReviewLogColumns | ForEach-Object { [string]$was.$_ })
         if ([string]::IsNullOrWhiteSpace(($line -join ''))) { continue }
+
+        # Renamed here too, and not only where a note is put back beside its finding. A row
+        # logged before the vocabulary existed keeps the spelling of its own run otherwise, so
+        # the same conclusion reads two ways depending on when it was dropped and a filter on
+        # Fixed misses every row logged earlier - which is the drift the closed list exists to
+        # stop, reappearing in the one place nobody would look for it.
+        if ($logStatusAt -ge 0) {
+            $line[$logStatusAt] = ConvertTo-SheetsReviewStatus -Value $line[$logStatusAt]
+        }
         $logSeen[($line[0] + "`u{001F}" + $line[2] + "`u{001F}" + $line[3] + "`u{001F}" + $line[4])] = $true
         $logRows += , $line
     }
