@@ -540,6 +540,10 @@
       "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event (round type 173), so no separate round decides bronze"
     },
     "_checkSignal": {
+      "GLOBAL-DQ-028": {
+        "signal": "Not applicable",
+        "reason": "Structural: 1427 Time Difference does not exist in this sport. Not one row under any template, IOC or otherwise, so there is no leader/gap convention for the check to find broken - it reads a field the sport has never written. The absence is the sport's scoring model rather than a gap: modern pentathlon ranks on points, its event results carry Rank, Points, Comment and Medal and no duration or full time across 234 806 rows and 9 525 events, and its own deciding value is recorded as RESULT_TIE_VALUE_TYPE_LIST 102. Note what is nearby and does not change this: 1426 Time does exist, 753 rows over 44 statistics, but only under IOC templates, which every statistic check excludes in every branch by contract - so it is outside the eligible population of this check and of every other. Both parameters stay recorded because GLOBAL-DQ-029 and GLOBAL-DQ-057 read them meaningfully and would be skipped without them. Measured 2026-08-11; SPORTS/Modern-Pentathlon.md owns the evidence."
+      },
       "GLOBAL-DQ-046": {
         "signal": "Blocked",
         "reason": "The two populations it needs never meet: every Comp.Rank carrying a Time value carries no object_discipline row, and every Comp.Rank carrying a discipline holds no Time. The check scopes on the sport's timed disciplines and reports a Time missing despite a Rank, so whatever discipline list it were given it would report every discipline-tagged statistic in the sport as defective - its normal shape. Blocked rather than not applicable because both structures are present and used; they are simply not attached to each other. It becomes meaningful the day one of the two is joined to the other, without the check changing. SPORTS/Modern-Pentathlon.md owns the evidence."

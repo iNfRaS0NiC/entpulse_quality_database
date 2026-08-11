@@ -287,9 +287,34 @@ Confirmed data value shapes:
 | `1271` Points | integer, an empty value on a substantial minority, and a decimal on a few |
 | `1273` Comment | `DNS`, `DNF`, `EL`, `DSQ`, `Disq.`, `Dns.`, `Disqualified`, `OR`, `WR` |
 | `1277` Medal | `gold`, `silver`, `bronze` only |
-| `1426` Time | `#:#.#` and `#.#` |
+| `1426` Time | `#:#.#` and `#.#`, and **under IOC templates only** — 753 rows over 44 statistics, none outside them |
 | `1429` Team | a participant ID, always numeric |
 | `1456` Running Score | empty in every stored row |
+
+`1427` Time Difference is absent from the sport entirely: not one row under any template, IOC
+or otherwise. With `1426` confined to IOC templates, which every statistic check excludes in
+every branch, **the sport presents no time to any DQ check at all.** The two facts read
+alike from a distance and are different in kind — one field the sport has never written, one
+written only where the checks do not look — and both were measured on 2026-08-11.
+
+This is the sport's scoring model rather than a gap. Modern pentathlon ranks on points: its
+event results carry `100` Rank, `102` Points, `104` Comment and `501` Medal and nothing else,
+over 234 806 rows and 9 525 events, and the sport's own deciding value is recorded as
+`RESULT_TIE_VALUE_TYPE_LIST` `102`.
+
+`GLOBAL-DQ-028` COMP.RANK_RESULTS_TIME_DIFFERENCE_FORMAT_MISMATCH_TO_RANK is therefore
+`Not applicable` here, recorded in `SPORTS/params.json`. It audits the format of a field the
+sport has never written, and its `eligible_count` of 0 is the shape of that rather than a
+misdirected scope: the scope is exactly right and the population cannot arrive without the
+sport changing how it scores.
+
+Two neighbouring checks are **not** affected and keep running, which is why the parameters
+stay recorded rather than being declared not applicable:
+
+| Check | Why it still works without a single time row |
+|---|---|
+| `GLOBAL-DQ-029` COMP.RANK_RESULTS_DEPRECATED_DURATION_USED | asks whether the deprecated `1272` is still being written. Its population is every Comp.Rank participant, so its zero is a real answer over a real population rather than an empty scope. `1272` has no rows either |
+| `GLOBAL-DQ-057` COMP.RANK_RESULTS_COMMENT_INVALID_OR_CONTRADICTED | reads Time as one of three contradiction signals beside Rank and Medal. Its population is Comment rows; the time arm simply never contributes here |
 
 Statistic names take two shapes: a short category name — `Male Individual`, `Female
 Individual`, `Men's team`, `Women's team`, `Men's relay`, `Women's relay` — and a composite
