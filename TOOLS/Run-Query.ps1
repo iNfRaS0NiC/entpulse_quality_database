@@ -4814,9 +4814,19 @@ if ($isBatch) {
             -Alternatives @('run it with -Params <NAME>=<value>', 'record the area as Not checked')
     }
 
-    # The one decision POWERBI.md fixes to exactly two answers, so it is the one the run can
-    # state completely. It cannot be a third thing, and it is never clean data.
-    $audited = @($collected | Where-Object { 0 -eq (Get-CoverageCount -Rows $_.Rows) })
+    # The one decision POWERBI.md fixes to a closed set of answers, so it is the one the run
+    # can state completely. It is never clean data.
+    #
+    # A check the sport has already classified as Not applicable is not raised. The zero is
+    # still not clean data and the classification does not make it so - it records which of the
+    # answers this one is, and re-asking a question the sport file has answered is the same
+    # defect as overwriting a comment somebody wrote. Modern-Pentathlon GLOBAL-DQ-028 is the
+    # case: it audits a Time Difference field the sport has never written, which is settled and
+    # cannot change without the sport changing how it scores.
+    $audited = @($collected | Where-Object {
+            0 -eq (Get-CoverageCount -Rows $_.Rows) -and
+            [string]$_.Job.Signal -ne 'Not applicable'
+        })
     foreach ($item in $audited) {
         Add-RunDecision -Kind 'Audited nothing' -Subject (Get-JobRunKey -Job $item.Job) -Chose 'deferred' `
             -Why 'eligible_count is 0, which POWERBI.md says is never clean data' `

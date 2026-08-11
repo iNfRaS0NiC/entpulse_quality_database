@@ -131,15 +131,35 @@ Interpretation:
 |---|---|
 | Finding rows + `eligible_count > 0` | The query reached its scope and found violations |
 | No finding rows + `eligible_count > 0` | The scope was checked and no violations were found |
-| `eligible_count = 0` | One of two different things; never clean data. Read the next paragraph before acting |
+| `eligible_count = 0` | One of three different things; never clean data. Read the next paragraph before acting |
 | Missing `COVERAGE` row or failed statement | The result is not validated |
 
-A zero coverage count has two causes and they call for opposite responses:
+A zero coverage count has three causes and the first two call for opposite responses:
 
 | Cause | What it looks like | What to do |
 |---|---|---|
 | **Misdirected scope** | The statement anchors on the wrong type, shard, owner level or filter, so it audits objects the rule was never about | Correct the scope. The result proves nothing until you do |
 | **Sentinel** | The scope is exactly right and the population it audits is legitimately empty today | Nothing. Zero is the check's correct answer for now, and the check exists to stop being silent when the population appears |
+| **Not applicable** | The scope is exactly right and the population cannot arrive without the sport changing what it stores | Record the check as `Not applicable` in `SPORTS/params.json` with the evidence. The zero is still not clean data; the classification says which answer it is |
+
+The third was added by decision of 2026-08-11, with `Modern-Pentathlon` `GLOBAL-DQ-028`. It
+differs from a sentinel in what would have to happen for the population to appear. A sentinel
+waits for rows that the sport already has the structure to write; this waits for the sport to
+change how it scores, which is not a data correction and not something the check is watching
+for. Modern pentathlon ranks on points and has never written a Time Difference row, so the
+check audits a field that does not exist there.
+
+It is deliberately narrow, because it is the reading `CLAUDE.md` warns against taking cheaply:
+"no rows, so it does not apply here" retires a sentinel precisely when the row it waits for
+arrives. What separates the two is evidence about the **structure**, gathered across every
+layer rather than the one the check reads — the Modern Pentathlon case only settled after the
+event-level result types were inventoried as well as the Comp.Rank ones, and it nearly settled
+the wrong way because a neighbouring field existed under IOC templates, which every statistic
+check excludes.
+
+A check classified this way stops being raised as an open decision by the run. That is the
+one thing the classification buys: the question has been answered in the sport file, and
+re-asking it every week is the same defect as overwriting a comment somebody wrote.
 
 The distinction is never readable from the number itself, so the sport file must say which
 one applies and why, naming the check. Without that sentence a later reader has to re-derive
