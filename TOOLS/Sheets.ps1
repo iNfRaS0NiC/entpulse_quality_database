@@ -299,7 +299,7 @@ $SheetsCheckTabResultRow = 5
 # every cell already written. Status went the other way for a reason that does not apply here:
 # it is read across sports to answer how much of the catalogue has been reviewed, and these are
 # read by the person who wrote them.
-$SheetsRowReviewColumns = @('Review Status', 'Review note')
+$SheetsRowReviewColumns = @('Review Status', 'Review Note')
 
 # What the first of them used to be called. A tab is found by its heading, so a rename would
 # otherwise make every existing column invisible to the run that follows it - and invisible
@@ -311,7 +311,7 @@ $SheetsRowReviewFormerColumns = @('Review')
 # check that returned 1130 rows and now returns 800 has to be explainable, and "which 330 went
 # and what had they been marked" is the question that answers it. Appended to, never rewritten.
 $SheetsReviewLogTabName = 'Review log'
-$SheetsReviewLogColumns = @('CheckID', 'Check tab', 'Finding key', 'Review', 'Review note',
+$SheetsReviewLogColumns = @('CheckID', 'Check tab', 'Finding key', 'Review Status', 'Review Note',
     'Dropped on', 'Why')
 
 # What a note is tied to. Not the row number - a fix removes a row and everything under it

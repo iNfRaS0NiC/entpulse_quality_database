@@ -1316,7 +1316,7 @@ every result block carries two more columns to the right of whatever the stateme
 | Column | Holds |
 |---|---|
 | `Review Status` | what was concluded about this one finding — free text, kept short |
-| `Review note` | why, in the reviewer's own words |
+| `Review Note` | why, in the reviewer's own words |
 
 The split is by convention rather than in the code: either column being filled marks the row,
 and both travel together. `Review Status` is the one a column is filtered and counted by, which

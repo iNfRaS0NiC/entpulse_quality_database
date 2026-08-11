@@ -3070,6 +3070,8 @@ Test-That 'a reviewer column is found under the name it had as well as the one i
     $current = @('check_type', 'event_id', 'eligible_count') + $SheetsRowReviewColumns
     Assert-Equal 3 (Get-SheetsReviewColumnIndex -Header $current) 'the heading it has now'
 
+    # Only the first column is looked for; the second is the one beside it, so its own heading
+    # can change without anything having to remember what it used to be.
     foreach ($former in $SheetsRowReviewFormerColumns) {
         $old = @('check_type', 'event_id', 'eligible_count', $former, 'Review note')
         Assert-Equal 3 (Get-SheetsReviewColumnIndex -Header $old) "the heading '$former' it had before"
@@ -3111,7 +3113,7 @@ Test-That 'a first run writes the reviewer columns and logs nothing' {
             $_.Kind -eq 'Write' -and $_.Sheet -eq 'FRESH' -and $_.Range -like 'A5:*' })
     Assert-Equal 1 $block.Count 'the result block is written once'
     $header = @($block[0].Values[0])
-    Assert-Equal 'check_type event_id Review Status Review note' ($header -join ' ') `
+    Assert-Equal 'check_type event_id Review Status Review Note' ($header -join ' ') `
         'the reviewer columns are appended to what the statement returned'
     Assert-Equal 4 @($block[0].Values[1]).Count 'and every row is as wide as the header'
 
@@ -3162,7 +3164,7 @@ Test-That 'the log accumulates rather than being replaced by the latest run' {
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
     $older = [pscustomobject]@{
         'CheckID' = 'Fixtureball-DQ-009'; 'Check tab' = 'OTHER'; 'Finding key' = 'X | 1'
-        'Review' = 'fixed'; 'Review note' = ''; 'Dropped on' = '01.08.2026 09-00-00'
+        'Review Status' = 'fixed'; 'Review Note' = ''; 'Dropped on' = '01.08.2026 09-00-00'
         'Why' = 'the finding is no longer in the result'
     }
     $state = [pscustomobject]@{
