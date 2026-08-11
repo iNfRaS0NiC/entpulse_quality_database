@@ -2820,18 +2820,25 @@ Test-That 'a stale table on Overview is widened to the columns the board writes'
     Assert-Equal 'Table1' $board[0].Name 'while keeping their own name for it'
 }
 
-Test-That 'a table already the right shape is left alone' {
+Test-That 'the board is redeclared every run, and keeps the name it was given' {
+    # It used to be declared only when its extent had moved, which was right while the extent
+    # was all the declaration carried. It now carries the header colour too, and a colour
+    # changed in the source has to reach a document whose row count happens to be unchanged.
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
     $existing = [pscustomobject]@{
         HasOverviewSheet = $true; HasOverviewHeader = $true
         OverviewRowOf = @{ 'Fixtureball-DQ-002' = 2 }
         EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
         RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
-        TableOf = @{ 'Overview' = [pscustomobject]@{ Id = 'B1'; Name = 'Overview'; FromRow = 0; ToRow = 2; FromCol = 0; ToCol = 22 } }
+        TableOf = @{ 'Overview' = @([pscustomobject]@{ Id = 'B1'; Name = 'Petar board'; FromRow = 0; ToRow = 2; FromCol = 0; ToCol = 22 }) }
     }
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
-    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'Table' }).Count `
-        'no request is sent to change nothing'
+    $board = @($plan.Operations | Where-Object { $_.Kind -eq 'Table' -and $_.Sheet -eq 'Overview' })
+    Assert-Equal 1 $board.Count 'the board is declared'
+    # The board holds rows, so it wears the same red as a result block rather than the grey
+    # that marks a block naming a check.
+    Assert-Equal $SheetsDataHeaderColour $board[0].HeaderColour 'in the colour a block of data wears'
+    Assert-Equal 'Petar board' $board[0].Name 'under whatever somebody renamed it to'
 }
 
 Test-That 'the SQL tab holds every statement, each linking back to its results' {
@@ -3025,9 +3032,67 @@ Test-That 'a check tab centres everything but the way out, which it widens inste
     # The identity block is a different kind of thing from the results, so a different colour.
     $tables = @($plan.Operations | Where-Object { $_.Kind -eq 'Table' -and $_.Sheet -eq 'WIDE' })
     $identity = @($tables | Where-Object { $_.Name -eq 'DQ_002_Overview' })
-    Assert-Equal $SheetsIdentityHeaderColour $identity[0].HeaderColour 'the identity block is red'
+    # The block naming the check recedes; the block holding rows takes the colour every other
+    # block of data wears, the board included.
+    Assert-Equal $SheetsIdentityHeaderColour $identity[0].HeaderColour 'the identity block recedes into grey'
     $result = @($tables | Where-Object { $_.Name -eq 'Fixtureball_DQ_002' })
-    Assert-Equal $null $result[0].HeaderColour 'the result block keeps the default'
+    Assert-Equal $SheetsDataHeaderColour $result[0].HeaderColour 'the result block wears the data colour'
+    Assert-True ($SheetsIdentityHeaderColour -ne $SheetsDataHeaderColour) 'and the two are not the same'
+}
+
+Test-That 'a trend colours each count against the one before it' {
+    $points = @(
+        [pscustomobject]@{ Value = '10'; Stamp = $null }
+        [pscustomobject]@{ Value = '4'; Stamp = $null }
+        [pscustomobject]@{ Value = '4'; Stamp = $null }
+        [pscustomobject]@{ Value = '9'; Stamp = $null }
+    )
+    $series = New-TrendSeries -Points $points
+    Assert-Equal '10 -> 4 -> 4 -> 9' ($series.Text -replace [regex]::Escape($TrendSeparator), ' -> ') `
+        'the series reads forward and ends on today'
+    Assert-Equal 'level down level up' (@($series.Runs | ForEach-Object { $_.Direction }) -join ' ') `
+        'the first has nothing to be compared against, then down, level, up'
+
+    # Offsets into the string, not into the list of points: a colour is applied by character.
+    # '10' at 0, then three characters of separator, so '4' begins at 5.
+    Assert-Equal '0 5' (@($series.Runs | Select-Object -First 2 | ForEach-Object { $_.Start }) -join ' ') `
+        'each number starts where the text says it does'
+    Assert-Equal 2 $series.Runs[0].Length 'and runs as far as its digits'
+
+    # A failed run is not a measurement. 5 then ERR then 3 has gone down by two, and comparing
+    # 3 against ERR would let an outage read as progress.
+    $withError = New-TrendSeries -Points @(
+        [pscustomobject]@{ Value = '5'; Stamp = $null }
+        [pscustomobject]@{ Value = 'ERR'; Stamp = $null }
+        [pscustomobject]@{ Value = '3'; Stamp = $null })
+    Assert-Equal 'level level down' (@($withError.Runs | ForEach-Object { $_.Direction }) -join ' ') `
+        'an error takes the level colour and is not what the next point is measured against'
+}
+
+Test-That 'the trend cell is written as runs, with the dates between them left plain' {
+    $runs = @(
+        [pscustomobject]@{ Start = 0; Length = 2; Direction = 'level' }
+        [pscustomobject]@{ Start = 20; Length = 1; Direction = 'down' }
+    )
+    $op = New-SheetsTrendRichText -Sheet 'Overview' -Row 7 -Column 22 -Text ('10 (09.08 10:11) -> 4') -Runs $runs
+    Assert-Equal 'RichText' $op.Kind 'the cell carries structure, not just a value'
+    Assert-Equal 22 $op.Column 'at Trends'
+
+    # Every coloured number needs a plain run straight after it, or the colour bleeds through
+    # the timestamp and the arrow into the next count.
+    Assert-Equal 4 @($op.Runs).Count 'two numbers, and a reset after each'
+    Assert-Equal '0 2 20 21' (@($op.Runs | ForEach-Object { $_.Start }) -join ' ') 'in ascending order'
+    Assert-Equal $true $op.Runs[0].Bold 'the number is bold'
+    Assert-Equal $false $op.Runs[1].Bold 'the date after it is not'
+    Assert-Equal $null $op.Runs[1].Colour 'and takes no colour of its own'
+    Assert-Equal $SheetsTrendColours['down'] $op.Runs[2].Colour 'a fall is green'
+
+    # One point is not a trend, and colouring it would assert a direction nobody measured.
+    Assert-Equal $null (New-SheetsTrendRichText -Sheet 'Overview' -Row 7 -Column 22 -Text '3' `
+            -Runs @([pscustomobject]@{ Start = 0; Length = 1; Direction = 'level' })) `
+        'a series of one is left alone'
+    Assert-Equal $null (New-SheetsTrendRichText -Sheet 'Overview' -Row 7 -Column 22 -Text '' -Runs @()) `
+        'and so is an empty one'
 }
 
 Test-That 'every conditional rule is deleted before any is added, highest index first' {

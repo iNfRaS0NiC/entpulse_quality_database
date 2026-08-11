@@ -241,14 +241,33 @@ $SheetsSqlTabName = 'SQL'
 $SheetsLinkColour = '#1A73E8'
 $SheetsSqlLinkColour = '#1155CC'
 
-# The header of a check tab's identity block, against the green Sheets gives a table by
-# default. Two blocks sit on the tab and they are not the same kind of thing - one says which
-# check this is, the other is what it returned - so they are not the same colour either.
-$SheetsIdentityHeaderColour = '#A61C00'
+# The two header colours a document uses, and why there are two.
+#
+# The split is between a block that names a check and a block that holds rows. A check tab
+# carries one of each: rows 1 to 3 say which check this is, and everything from row 5 down is
+# what it returned. The identity recedes into grey, because it is a label and the rows under
+# it are what the eye came for; every block holding rows takes the red, the board included, so
+# that a heading over data looks the same wherever data appears.
+#
+# Both are from Sheets' own table palette rather than mixed by hand. The first red was picked
+# blind off a screenshot and read as too bright beside the green the palette gives by default.
+$SheetsIdentityHeaderColour = '#626E7A'
+$SheetsDataHeaderColour = '#CA1744'
+
+# Which way the count moved, in the colour a reader already expects it in. Down is the check
+# improving, so green; up is it getting worse, so red; level is neither and stays black rather
+# than being given a third meaning. Bold throughout, because the numbers are what the column is
+# for and the timestamps beside them are context.
+$SheetsTrendColours = @{
+    'down'  = '#137333'
+    'up'    = '#C5221F'
+    'level' = '#000000'
+}
 
 # Comment and Check By are the reviewer's, on a header row that is otherwise the runner's.
-# Yellow on the dark header says so before anything is read.
-$SheetsReviewerHeaderColour = '#FFFF00'
+# Bold and white against the header's own colour: the weight is enough to separate them, and
+# the yellow that did it first fought the header rather than sitting on it.
+$SheetsReviewerHeaderColour = '#FFFFFF'
 
 # Wide enough for 'Return to Overview' to be read whole. Column A of a check tab holds the
 # link in row 3 and a result value below it, and at the default width the link was clipped by
@@ -754,6 +773,11 @@ function New-SheetsMergePlan {
             # costs nothing and is the only way a row written before the mirror existed - or
             # one whose cell was cleared - ever gets one. A cell with anything in it, formula
             # or text, is left alone.
+            $rich = New-SheetsTrendRichText -Sheet 'Overview' -Row $row `
+                -Column ([array]::IndexOf($SheetsOverviewColumns, 'Trends') + 1) `
+                -Text ([string]$entry.Trend) -Runs $entry.TrendRuns
+            if ($rich) { $plan += $rich }
+
             $wanted = $(if ($Existing -and $Existing.EmptyCommentOf) { [bool]$Existing.EmptyCommentOf[$runKey] } else { $false })
             if ($wanted -and $titleOf.ContainsKey($runKey)) {
                 $commentColumn = [array]::IndexOf($SheetsOverviewColumns, 'Comment') + 1
@@ -779,6 +803,11 @@ function New-SheetsMergePlan {
                 Values = @(, $values)
             }
             $cells += $values.Count
+
+            $rich = New-SheetsTrendRichText -Sheet 'Overview' -Row $nextRow `
+                -Column ([array]::IndexOf($SheetsOverviewColumns, 'Trends') + 1) `
+                -Text ([string]$entry.Trend) -Runs $entry.TrendRuns
+            if ($rich) { $plan += $rich }
 
             # Comment mirrors the check tab's G2, so a comment is written once beside the rows
             # that provoked it and read from the board that lists every check. Seeded on a new
@@ -928,8 +957,10 @@ function New-SheetsMergePlan {
         }
     }
 
-    if ($lastRow -gt 1 -and (-not $board -or $board.ToRow -ne $lastRow -or
-            $board.ToCol -ne $width -or $board.FromCol -ne 0 -or $board.FromRow -ne 0)) {
+    # Emitted whenever there is a board, not only when its extent moved. The extent is one of
+    # the things this declaration carries and the header colour is another, and a colour
+    # changed in the source has to reach a document whose row count happens to be unchanged.
+    if ($lastRow -gt 1) {
         $plan += [pscustomobject]@{
             Kind    = 'Table'
             Sheet   = 'Overview'
@@ -940,6 +971,7 @@ function New-SheetsMergePlan {
             ToRow   = $lastRow
             FromCol = 0
             ToCol   = $width
+            HeaderColour = $SheetsDataHeaderColour
         }
     }
 
@@ -1026,6 +1058,16 @@ function New-SheetsMergePlan {
                 Values = @(, $slice)
             }
             $cells += $slice.Count
+        }
+
+        # The same colouring on the tab's own copy of the series. Written after the identity
+        # row above, which put the plain string there first: if the rich write is ever refused,
+        # the cell still reads correctly and only loses its colour.
+        if ($entry) {
+            $rich = New-SheetsTrendRichText -Sheet $title -Row 2 `
+                -Column ([array]::IndexOf($SheetsCheckTabColumns, 'Trends') + 1) `
+                -Text ([string]$entry.Trend) -Runs $entry.TrendRuns
+            if ($rich) { $plan += $rich }
         }
 
         # A3, the way back. A formula, so it goes in the USER_ENTERED batch and lands after the
@@ -1179,13 +1221,14 @@ function New-SheetsMergePlan {
             # as a date and shows an error over data that is exactly what the database
             # returned.
             $plan += [pscustomobject]@{
-                Kind    = 'Table'
-                Sheet   = $title
-                Name    = (ConvertTo-SheetsTableName -Name ([string]$item.Job.CheckId))
-                FromRow = $SheetsCheckTabResultRow - 1
-                ToRow   = $SheetsCheckTabResultRow + $written.Count
-                FromCol = 0
-                ToCol   = $header.Count
+                Kind         = 'Table'
+                Sheet        = $title
+                Name         = (ConvertTo-SheetsTableName -Name ([string]$item.Job.CheckId))
+                FromRow      = $SheetsCheckTabResultRow - 1
+                ToRow        = $SheetsCheckTabResultRow + $written.Count
+                FromCol      = 0
+                ToCol        = $header.Count
+                HeaderColour = $SheetsDataHeaderColour
             }
         }
     }
@@ -1936,6 +1979,56 @@ function Invoke-SheetsPlan {
         } | Out-Null
     }
 
+    $script:SheetsStage = 'colouring the trend'
+    # After the values, because the plain string goes in with the row and this replaces it.
+    # updateCells rather than a value write: a cell's runs are structure, not content, and the
+    # values endpoint has no way to carry them.
+    $richOps = @($operations | Where-Object { $_.Kind -eq 'RichText' -and $gidOf.ContainsKey($_.Sheet) })
+    if ($richOps.Count -gt 0) {
+        $richRequests = @()
+        foreach ($rich in $richOps) {
+            $richRequests += @{
+                updateCells = @{
+                    range  = @{
+                        sheetId          = [int]$gidOf[$rich.Sheet]
+                        startRowIndex    = [int]$rich.Row - 1
+                        endRowIndex      = [int]$rich.Row
+                        startColumnIndex = [int]$rich.Column - 1
+                        endColumnIndex   = [int]$rich.Column
+                    }
+                    rows   = @(@{
+                            values = @(@{
+                                    userEnteredValue = @{ stringValue = [string]$rich.Text }
+                                    textFormatRuns   = @(@($rich.Runs) | ForEach-Object {
+                                            $format = @{ bold = [bool]$_.Bold }
+                                            if ($_.Colour) {
+                                                $format['foregroundColorStyle'] = @{
+                                                    rgbColor = (ConvertTo-SheetsColour -Hex $_.Colour)
+                                                }
+                                            }
+                                            # startIndex is omitted at zero, which is what the
+                                            # API expects for a run beginning at the first
+                                            # character; sending 0 explicitly is rejected.
+                                            $run = @{ format = $format }
+                                            if ([int]$_.Start -gt 0) { $run['startIndex'] = [int]$_.Start }
+                                            $run
+                                        })
+                                })
+                        })
+                    # The value and its runs, and nothing else. The cell's alignment and fill
+                    # were settled earlier and are not this write's business.
+                    fields = 'userEnteredValue,textFormatRuns'
+                }
+            }
+        }
+        foreach ($chunk in @(0..[math]::Floor(($richRequests.Count - 1) / 200))) {
+            $slice = @($richRequests | Select-Object -Skip ($chunk * 200) -First 200)
+            if ($slice.Count -gt 0) {
+                Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $slice } | Out-Null
+            }
+        }
+    }
+
     $script:SheetsStage = 'sorting the board'
     # After the values, never before them: sorting rows the run has not written yet orders
     # last week's board and then overwrites it in this week's order.
@@ -2025,6 +2118,43 @@ function Invoke-SheetsPlan {
         Cleared = $clears.Count
         Written = $writes.Count
         Tables  = $tableRequests.Count
+    }
+}
+
+function New-SheetsTrendRichText {
+    <#
+        The Trends cell as rich text: the counts coloured by which way they moved, the
+        timestamps between them left alone.
+
+        A cell holds one string, so the colouring has to be textFormatRuns - a list of offsets
+        into that string, each one applying until the next begins. Which means every coloured
+        number needs a plain run immediately after it, or the colour bleeds through the date
+        and into the arrow.
+
+        Returns nothing when there is one point or none: a series of one is not a trend, and
+        colouring it would assert a direction nobody measured.
+    #>
+    param([string]$Sheet, [int]$Row, [int]$Column, [string]$Text, $Runs)
+
+    if ([string]::IsNullOrEmpty($Text) -or @($Runs).Count -lt 2) { return $null }
+
+    $formatted = @()
+    foreach ($run in @($Runs)) {
+        $colour = $(if ($SheetsTrendColours.ContainsKey([string]$run.Direction)) {
+                $SheetsTrendColours[[string]$run.Direction]
+            }
+            else { $SheetsTrendColours['level'] })
+        $formatted += [pscustomobject]@{ Start = [int]$run.Start; Bold = $true; Colour = $colour }
+        $formatted += [pscustomobject]@{ Start = ([int]$run.Start + [int]$run.Length); Bold = $false; Colour = $null }
+    }
+
+    return [pscustomobject]@{
+        Kind   = 'RichText'
+        Sheet  = $Sheet
+        Row    = $Row
+        Column = $Column
+        Text   = $Text
+        Runs   = @($formatted | Sort-Object -Property Start)
     }
 }
 

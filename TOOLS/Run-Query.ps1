@@ -3018,17 +3018,22 @@ function New-RunSummaryRow {
     # moving, and over what span" without opening the ledger or the console. Each point is
     # dated, because a check that has read zero four times says one thing across four weeks
     # and another across one afternoon of re-runs, and the numbers alone cannot tell them apart.
-    $series = @()
+    $points = @()
     if ($script:RecentFindings.ContainsKey($runKey)) {
         foreach ($point in @($script:RecentFindings[$runKey])) {
-            $series += Format-TrendPoint -Value ([string]$point.Value) -Stamp $point.Stamp
+            $points += [pscustomobject]@{ Value = [string]$point.Value; Stamp = $point.Stamp }
         }
     }
-    $series += Format-TrendPoint -Stamp $script:RunStartedUtc.ToLocalTime() -Value $(
-        if (-not $ran) { 'ERR' }
-        elseif ($null -eq $Findings) { '-' }
-        else { [string][int]$Findings })
-    $trend = $(if ($series.Count -gt 1) { $series -join $TrendSeparator } else { '' })
+    $points += [pscustomobject]@{
+        Stamp = $script:RunStartedUtc.ToLocalTime()
+        Value = $(
+            if (-not $ran) { 'ERR' }
+            elseif ($null -eq $Findings) { '-' }
+            else { [string][int]$Findings })
+    }
+    $series = New-TrendSeries -Points $points
+    $trend = $(if ($points.Count -gt 1) { $series.Text } else { '' })
+    $trendRuns = $(if ($points.Count -gt 1) { $series.Runs } else { @() })
 
     return [pscustomobject]@{
         CheckId     = $Job.CheckId
@@ -3054,12 +3059,17 @@ function New-RunSummaryRow {
         PrevEligible = $(if ($previous) { $previous.Eligible } else { $null })
         PrevRunId    = $(if ($previous) { [string]$previous.RunId } else { '' })
         Trend        = $trend
+        TrendRuns    = $trendRuns
     }
 }
 
 function Save-RunSummaryCsv {
+    # TrendRuns is left out. It is character offsets into the Trend string - structure for the
+    # live document's colouring, not a fact about the run - and in a flat file it would arrive
+    # as the word System.Object[] in a column nobody can read.
     param($Summary, [string]$Path)
-    $Summary | Export-Csv -LiteralPath $Path -NoTypeInformation -Encoding UTF8
+    $Summary | Select-Object -Property * -ExcludeProperty TrendRuns |
+        Export-Csv -LiteralPath $Path -NoTypeInformation -Encoding UTF8
 }
 
 function Get-LedgerPath {
@@ -3239,6 +3249,55 @@ function Format-TrendPoint {
     if ($null -eq $Stamp) { return $Value }
     return '{0} ({1})' -f $Value, ([datetime]$Stamp).ToString($script:TrendStampFormat,
         [Globalization.CultureInfo]::InvariantCulture)
+}
+
+function New-TrendSeries {
+    <#
+        The trend as one string plus where the numbers sit inside it.
+
+        A count is coloured against the count before it - down is the check improving, up is
+        it getting worse, level is neither - so the column answers "which way is this moving"
+        without the reader subtracting anything. Only the number is coloured; the timestamp
+        beside it is context and stays as it is.
+
+        A run that failed contributes ERR and is not a measurement, so it takes the level
+        colour and does not become the thing the next point is compared against: a check that
+        read 5, errored, then read 3 has gone down by two, and saying otherwise would make an
+        outage look like progress.
+
+        Returns the offsets rather than the formatting, because where a number starts is a fact
+        about the string and which green to use is not.
+    #>
+    param($Points)
+
+    $text = ''
+    $runs = @()
+    $previous = $null
+
+    foreach ($point in @($Points)) {
+        if ($text.Length -gt 0) { $text += $TrendSeparator }
+
+        $value = [string]$point.Value
+        $start = $text.Length
+        $text += (Format-TrendPoint -Value $value -Stamp $point.Stamp)
+
+        $current = 0
+        $numeric = [int]::TryParse($value, [ref]$current)
+        $direction = 'level'
+        if ($numeric -and $null -ne $previous) {
+            if ($current -lt $previous) { $direction = 'down' }
+            elseif ($current -gt $previous) { $direction = 'up' }
+        }
+        if ($numeric) { $previous = $current }
+
+        $runs += [pscustomobject]@{
+            Start     = $start
+            Length    = $value.Length
+            Direction = $direction
+        }
+    }
+
+    return [pscustomobject]@{ Text = $text; Runs = $runs }
 }
 
 function Get-CheckVerdict {
