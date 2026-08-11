@@ -299,7 +299,13 @@ $SheetsCheckTabResultRow = 5
 # every cell already written. Status went the other way for a reason that does not apply here:
 # it is read across sports to answer how much of the catalogue has been reviewed, and these are
 # read by the person who wrote them.
-$SheetsRowReviewColumns = @('Review', 'Review note')
+$SheetsRowReviewColumns = @('Review Status', 'Review note')
+
+# What the first of them used to be called. A tab is found by its heading, so a rename would
+# otherwise make every existing column invisible to the run that follows it - and invisible
+# here means overwritten. Kept for the same reason $SheetsStatusLegacy is: a heading is a name
+# for something, and renaming the name must not throw away the thing.
+$SheetsRowReviewFormerColumns = @('Review')
 
 # Where a note goes when the finding it belonged to is no longer in the result. Not the bin: a
 # check that returned 1130 rows and now returns 800 has to be explainable, and "which 330 went
@@ -441,6 +447,23 @@ function Get-SheetsFindingKey {
         $parts += $value.Trim()
     }
     return ($parts -join "`u{001F}")
+}
+
+function Get-SheetsReviewColumnIndex {
+    # Where the reviewer's block starts in a result header, under its current heading or any it
+    # has had before. Only the first of the two columns is looked for, because they are adjacent
+    # and the second follows from it.
+    #
+    # The former names matter more than they look. A tab is found by its heading, so renaming a
+    # column makes every existing one invisible to the next run - and invisible here means
+    # cleared and rewritten empty, which is exactly the loss these columns were added to stop.
+    param($Header)
+
+    foreach ($name in (@($SheetsRowReviewColumns[0]) + $SheetsRowReviewFormerColumns)) {
+        $at = [array]::IndexOf(@($Header), $name)
+        if ($at -ge 0) { return $at }
+    }
+    return -1
 }
 
 function New-SheetsCarriedReview {
@@ -1776,7 +1799,8 @@ function Read-SheetReviewNotes {
     $candidates = @()
     foreach ($title in @($HeaderOf.Keys)) {
         $header = @($HeaderOf[$title])
-        $at = [array]::IndexOf($header, $SheetsRowReviewColumns[0])
+
+        $at = Get-SheetsReviewColumnIndex -Header $header
         if ($at -ge 0) {
             $candidates += [pscustomobject]@{
                 Title  = [string]$title

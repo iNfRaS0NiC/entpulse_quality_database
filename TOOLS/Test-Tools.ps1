@@ -3062,6 +3062,23 @@ Test-That 'a re-shaped check parks every note instead of matching them by luck' 
     Assert-True ($carried.Dropped[0].Why -like '*re-shaped*') 'saying the shape changed, not that it was fixed'
 }
 
+Test-That 'a reviewer column is found under the name it had as well as the one it has' {
+    # A tab is found by its heading, so renaming a column makes every existing one invisible to
+    # the next run - and invisible here means cleared and rewritten empty, which is the loss
+    # these columns exist to stop. Artistic Gymnastics carried 104 tabs headed 'Review' for a
+    # day before it became 'Review Status'.
+    $current = @('check_type', 'event_id', 'eligible_count') + $SheetsRowReviewColumns
+    Assert-Equal 3 (Get-SheetsReviewColumnIndex -Header $current) 'the heading it has now'
+
+    foreach ($former in $SheetsRowReviewFormerColumns) {
+        $old = @('check_type', 'event_id', 'eligible_count', $former, 'Review note')
+        Assert-Equal 3 (Get-SheetsReviewColumnIndex -Header $old) "the heading '$former' it had before"
+    }
+
+    Assert-Equal -1 (Get-SheetsReviewColumnIndex -Header @('check_type', 'event_id')) `
+        'and a tab that has never had one says so'
+}
+
 Test-That 'a note written where there was nowhere better is still a note' {
     # Before the reviewer columns existed there was nowhere to put a per-row conclusion, and on
     # Triathlon 388 of them went into eligible_count - the coverage column, overwritten every
@@ -3094,7 +3111,7 @@ Test-That 'a first run writes the reviewer columns and logs nothing' {
             $_.Kind -eq 'Write' -and $_.Sheet -eq 'FRESH' -and $_.Range -like 'A5:*' })
     Assert-Equal 1 $block.Count 'the result block is written once'
     $header = @($block[0].Values[0])
-    Assert-Equal 'check_type event_id Review Review note' ($header -join ' ') `
+    Assert-Equal 'check_type event_id Review Status Review note' ($header -join ' ') `
         'the reviewer columns are appended to what the statement returned'
     Assert-Equal 4 @($block[0].Values[1]).Count 'and every row is as wide as the header'
 

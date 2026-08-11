@@ -1315,8 +1315,20 @@ every result block carries two more columns to the right of whatever the stateme
 
 | Column | Holds |
 |---|---|
-| `Review` | what was concluded about this one finding — free text |
+| `Review Status` | what was concluded about this one finding — free text, kept short |
 | `Review note` | why, in the reviewer's own words |
+
+The split is by convention rather than in the code: either column being filled marks the row,
+and both travel together. `Review Status` is the one a column is filtered and counted by, which
+is why it holds a word and not a sentence — a paragraph there makes "how many of these 63 are
+closed" unanswerable, and it is the question the column is for. It is also the one that can
+become a dropdown once the words settle, which a sentence would prevent.
+
+A former heading is still recognised. A tab is found by its heading, so renaming a column makes
+every existing one invisible to the next run — and invisible here means cleared and rewritten
+empty, the exact loss these columns were added to stop. `$SheetsRowReviewFormerColumns` lists
+what the block has been called before, and a tab written under an old name is read and rewritten
+under the current one without anybody touching it.
 
 They exist because there was nowhere else. On Triathlon the reviewers used `eligible_count`,
 which is the coverage column and is overwritten every run: 388 cells of real review sitting in
