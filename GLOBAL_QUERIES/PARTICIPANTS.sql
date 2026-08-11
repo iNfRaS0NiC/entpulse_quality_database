@@ -249,6 +249,11 @@ FROM (
             WHERE op.object = 'sport'
               AND op.objectFK = {{SPORT_ID}}
               AND op.del = 'no'
+              -- Every type here has to name a natural person: two records for one person is a
+              -- thing to merge, whereas two teams of the same name in different years are two
+              -- teams. 006 lists the roles a sport registers alongside the types, and the
+              -- athlete role is the one that answers for a person.
+              -- {{PERSON_PARTICIPANT_TYPE_LIST}}: select participant_type from GLOBAL-DISCOVERY-006 (SPORT_REGISTRY_PARTICIPANT_TYPES) where registry_participant_role = athlete
               AND p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
               AND p.name IS NOT NULL
               -- A single-part name has no order to differ in and no surname to match on,

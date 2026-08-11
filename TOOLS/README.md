@@ -607,6 +607,22 @@ Anything the run already matched is not added twice, and the switch applies afte
 `-MaxChecks`, because the cap exists to trim the matched set while these were asked for by
 name. Without `-Sport`, an unfilled placeholder stops the run as it always does.
 
+A short named list rides along besides the pattern summaries — today `GLOBAL-DISCOVERY-033`,
+the duplicate-person candidates. Named rather than derived, because the file it lives in also
+holds drill-downs, so the rule that picks `PATTERNS.sql` on the strength of its file cannot
+be pointed at it. Its parameters are tested against what the sport has **recorded** as well as
+what `-Sport` discovers: `PERSON_PARTICIPANT_TYPE_LIST` is not something a run works out for
+itself, but every sport in the package states it, and a statement needing only a value already
+written down is no less automatic for it. A sport that has not recorded one is left out by
+name and the run says so.
+
+These carry a defect category in spite of being discovery, which no other `GLOBAL-DISCOVERY`
+statement does. A census has no defect family; a list of people entered twice does, and it is
+correctable by merging. So `033` lands on a board under `2 Wrong value` / `DUPLICATE_RECORD`
+while keeping the `Informational` signal that makes it `Monitor Only` expecting a non-zero
+count — watch it, do not drive it to zero. `POWERBI.md` owns the band, `Run-Query.ps1` the
+list.
+
 ### Everything for one sport
 
 ```powershell
@@ -831,6 +847,17 @@ Then one tab per check:
 The identity sits on rows 1 and 2 rather than on every data row. Row 3 holds the link back
 to Overview, and row 4 is blank so the result table below stays a self-contained block for
 sorting and filtering.
+
+On the live board the tab is frozen to row 5, so the whole identity block and the result's
+own column names stay in view while the rows scroll. Sheets makes a table's header sticky by
+itself, and with two tables on the tab the one it chose was the identity at the top — which
+kept the check's name in sight, the one thing a reader already knows, and took the column
+names away.
+
+`Check ID`, `Check Name` and `What it does` range left; everything else on the tab is
+centred. They read as sentences rather than as values, and centring a sentence starts it in a
+different place on every tab and hides a clipped ending in the middle of the cell. `SQL Used`
+between them stays centred: it is a one-word control, not a sentence.
 
 C2 reads `SQL` and jumps to the statement, which lives on the `SQL` tab at the end of the
 workbook rather than in the cell. It used to be the statement itself, collapsed onto one

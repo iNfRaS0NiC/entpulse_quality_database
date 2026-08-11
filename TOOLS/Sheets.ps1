@@ -1103,6 +1103,17 @@ function New-SheetsMergePlan {
             From = 1; To = 1; Width = $SheetsCheckTabFirstColumnWidth
         }
 
+        # Everything above the results held still while they scroll. Sheets makes a table's own
+        # header sticky, and with two tables on the tab the one it picked was the identity at
+        # the top - so scrolling a result of a thousand rows kept the check's name in view and
+        # took the column names away, which are the labels somebody scrolling actually needs.
+        #
+        # Five rows rather than one: the identity block is three rows and row 4 is the gap, so
+        # freezing to the result header keeps both, and the block below starts under it.
+        $plan += [pscustomobject]@{
+            Kind = 'Freeze'; Sheet = $title; Rows = $SheetsCheckTabResultRow
+        }
+
         # C2, the jump to the statement. Darker than the way back, and bold, because it sits
         # inside the identity row rather than alone on a line of its own.
         $plan += [pscustomobject]@{
@@ -1122,16 +1133,31 @@ function New-SheetsMergePlan {
         }
 
         # Column A in two pieces, above and below the way back, rather than skipped whole.
-        # Skipping it left the CheckID in A2 and every check_type in the result block below
-        # ranged left on a board that is centred everywhere else - the link needed one cell
-        # left alone, not a column.
-        $plan += [pscustomobject]@{
-            Kind    = 'Format'; Sheet = $title
-            FromRow = 0; ToRow = 2; FromCol = 0; ToCol = 1; Align = 'CENTER'
-        }
+        # Skipping it left every check_type in the result block below ranged left on a board
+        # that is centred everywhere else - the link needed one cell left alone, not a column.
+        #
+        # The upper piece is the identity block, and it ranges left with the two columns beside
+        # it; the lower piece is the result and stays centred with the rest of the tab.
         $plan += [pscustomobject]@{
             Kind    = 'Format'; Sheet = $title
             FromRow = 3; ToRow = $null; FromCol = 0; ToCol = 1; Align = 'CENTER'
+        }
+
+        # The three columns that read as sentences rather than as values: the check's ID, its
+        # name and the line saying what it does. Centring a sentence puts its first word
+        # somewhere different on every tab, so the eye has to find the start before it can read
+        # - and What it does is long enough to be clipped, which centring hides in the middle
+        # instead of at the end. Header and value together, so the column reads as one thing.
+        #
+        # After the sweep that centres the tab, because these are its exceptions. SQL Used
+        # stays centred: it is a one-word control, not a sentence.
+        foreach ($ranged in @('Check ID', 'Check Name', 'What it does')) {
+            $at = [array]::IndexOf($SheetsCheckTabColumns, $ranged)
+            if ($at -lt 0) { continue }
+            $plan += [pscustomobject]@{
+                Kind    = 'Format'; Sheet = $title
+                FromRow = 0; ToRow = 2; FromCol = $at; ToCol = ($at + 1); Align = 'LEFT'
+            }
         }
 
         # The two headings that name the reviewer's own columns, on a header row that is
@@ -1840,6 +1866,22 @@ function Invoke-SheetsPlan {
         if (-not $gidOf.ContainsKey($validation.Sheet)) { continue }
         $second += (New-SheetsValidationRequest -Validation $validation `
                 -Tables @($knownTables[$validation.Sheet]) -SheetId ([int]$gidOf[$validation.Sheet]))
+    }
+
+    # In the second batch rather than the structural one: a tab this run creates has no id
+    # until Google answers the first batch, and freezing is a property of a sheet that has to
+    # be named by id.
+    foreach ($freeze in @($operations | Where-Object { $_.Kind -eq 'Freeze' })) {
+        if (-not $gidOf.ContainsKey($freeze.Sheet)) { continue }
+        $second += @{
+            updateSheetProperties = @{
+                properties = @{
+                    sheetId        = [int]$gidOf[$freeze.Sheet]
+                    gridProperties = @{ frozenRowCount = [int]$freeze.Rows }
+                }
+                fields     = 'gridProperties.frozenRowCount'
+            }
+        }
     }
 
     foreach ($wide in @($operations | Where-Object { $_.Kind -eq 'ColumnWidth' })) {

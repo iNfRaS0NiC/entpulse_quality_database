@@ -1886,6 +1886,10 @@ $CheckPriorityByCategory = @{
     'WRONG_DISCIPLINE'    = '2 Wrong value'
     'DATE_RANGE_MISMATCH' = '2 Wrong value'
     'MALFORMED_NAME'      = '2 Wrong value'
+    # Two records where the database should hold one. The value in each is present and may be
+    # perfectly correct on its own - what is wrong is that there are two of them, and every
+    # count read through either is short by whatever the other carries. Recorded 2026-08-11.
+    'DUPLICATE_RECORD'    = '2 Wrong value'
     'MISSING_VALUES'      = '3 Missing value'
     # Not a defect family at all: a pattern summary is a census of how something is spelled or
     # used, and its rows are groups with counts rather than things to correct. It sorts below
@@ -1899,6 +1903,27 @@ $CheckPriorityByCategory = @{
 # left to infer it from the shape of each result.
 $DiscoveryCheckIdPattern = 'GLOBAL-DISCOVERY-*'
 $DiscoverySignalReason = 'Discovery: the output describes the population rather than finding defects in it, so no row is correctable.'
+
+# The discovery statements that ride along with a whole-sport run besides the pattern
+# summaries, and the defect family each one reports. Two separate things are being said here
+# and both are exceptions to a rule above, so both are written down rather than derived.
+#
+# Riding along: -WithPatterns selects PATTERNS.sql on the strength of its file, which holds
+# nothing but census summaries. A statement elsewhere in GLOBAL_QUERIES has to be named,
+# because the file it lives in also holds drill-downs whose parameter is a value read out of
+# another result - and choosing one of those automatically would put a sample on the board
+# dressed up as coverage.
+#
+# The family: discovery carries no category, because a census has no defect family. These do.
+# GLOBAL-DISCOVERY-033 groups people whose records look like two entries for one person, and
+# a duplicate is correctable by merging - so it takes a real category and the band that
+# follows from it, while staying Informational, which is what puts it on the board as
+# Monitor Only expecting a non-zero count. Watch it, do not drive it to zero.
+#
+# Recorded by decision of 2026-08-11.
+$RideAlongDiscovery = @{
+    'GLOBAL-DISCOVERY-033' = 'DUPLICATE_RECORD'
+}
 
 function Get-SportFileParameters {
     # Values a sport has already had confirmed and recorded. These outrank discovery: the
@@ -2977,6 +3002,13 @@ function New-RunSummaryRow {
     if (-not $category -and $Job.PSObject.Properties.Name -contains 'File' -and
         [string]$Job.File -eq 'PATTERNS.sql') {
         $category = 'PATTERNS'
+    }
+
+    # A discovery statement that reports a defect family in spite of being discovery. Named
+    # one by one where $RideAlongDiscovery is declared, and applied last so a registry row
+    # naming the same CheckID still wins.
+    if (-not $category -and $Job.CheckId -and $RideAlongDiscovery.ContainsKey([string]$Job.CheckId)) {
+        $category = $RideAlongDiscovery[[string]$Job.CheckId]
     }
 
     # RunKey, not CheckId, is what a workbook keys a tab and a coverage count by: -Chain runs
@@ -4275,6 +4307,43 @@ if ($WithPatterns) {
         $jobs = @($jobs) + $added
         Write-Host ("Adding {0} pattern statement(s): {1}" -f `
                 $added.Count, (($added | ForEach-Object { $_.CheckId }) -join ', ')) -ForegroundColor DarkGray
+    }
+
+    # The named discovery statements, on the same terms. Their parameters are tested against
+    # what the sport has recorded as well as what -Sport discovers: PERSON_PARTICIPANT_TYPE_LIST
+    # is not something a run can work out for itself, but every sport in the package states it,
+    # and a statement that only needs a value already written down is no less automatic for it.
+    # A sport that has not recorded one is skipped by name rather than failing on a placeholder.
+    if ($RideAlongDiscovery.Count -gt 0) {
+        $supplied = @{}
+        foreach ($name in $DiscoverableParameters) { $supplied[$name] = $true }
+        if ($sportIdentity) {
+            foreach ($name in (Get-SportFileParameters -SportName $ResolvedSportSlug).Keys) {
+                $supplied[[string]$name] = $true
+            }
+        }
+
+        $alongside = @(Get-CheckCatalogue |
+            Where-Object { $RideAlongDiscovery.ContainsKey([string]$_.CheckId) } |
+            Where-Object { -not $alreadyMatched.ContainsKey($_.CheckId) } |
+            Sort-Object CheckId)
+
+        $carried = @()
+        foreach ($one in $alongside) {
+            $missing = @(Get-MissingPlaceholders -Text $one.Sql -Values $supplied)
+            if ($missing.Count -gt 0) {
+                Write-Host ("  {0} left out: the sport supplies no {1}." -f `
+                        $one.CheckId, ($missing -join ', ')) -ForegroundColor DarkGray
+                continue
+            }
+            $carried += $one
+        }
+
+        if ($carried.Count -gt 0) {
+            $jobs = @($jobs) + $carried
+            Write-Host ("Adding {0} discovery statement(s) alongside: {1}" -f `
+                    $carried.Count, (($carried | ForEach-Object { $_.CheckId }) -join ', ')) -ForegroundColor DarkGray
+        }
     }
 }
 

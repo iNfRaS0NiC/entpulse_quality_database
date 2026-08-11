@@ -345,9 +345,22 @@ per CheckID - the same rule by which those statements are selected.
 | Band | Categories | What is wrong |
 |---|---|---|
 | `1 Structure` | `WRONG_STRUCTURE`, `NO_RELATED_RECORDS` | the shape or the relation itself |
-| `2 Wrong value` | `WRONG_RESULTS`, `WRONG_GENDER`, `WRONG_DISCIPLINE`, `DATE_RANGE_MISMATCH`, `MALFORMED_NAME` | the value is present and wrong |
+| `2 Wrong value` | `WRONG_RESULTS`, `WRONG_GENDER`, `WRONG_DISCIPLINE`, `DATE_RANGE_MISMATCH`, `MALFORMED_NAME`, `DUPLICATE_RECORD` | the value is present and wrong |
 | `3 Missing value` | `MISSING_VALUES` | the field is empty |
 | `4 Patterns` | `PATTERNS` | nothing is wrong — the rows are a census of how something is spelled or used, and a group with a count is not a thing to correct |
+
+`DUPLICATE_RECORD` sits in the second band and not the first. Two records for one person do
+not break a relation — each resolves perfectly well — but every count read through either is
+short by whatever the other carries, which is a value that is present and wrong. Added by
+decision of 2026-08-11, with `GLOBAL-DISCOVERY-033`.
+
+A discovery statement carries no category, because a census has no defect family. That rule
+has a named exception list in `TOOLS/Run-Query.ps1`: a statement whose rows *are* correctable
+takes a real category and the band that follows from it, while keeping the `Informational`
+signal that puts it on a board as `Monitor Only` expecting a non-zero count. The two say
+different things — the category says what kind of defect this is, the signal says whether
+anyone is driving it to zero — and a duplicate-candidate list is the case where the answers
+differ.
 
 The band is **derived** from the category, never authored per check, so a check cannot
 disagree with its own category. The numeric prefix is what makes an ordinary sort produce

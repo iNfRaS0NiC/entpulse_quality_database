@@ -753,15 +753,26 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-030
     -- Name - COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT
-    -- What it does: Finds Comp.Rank participants who are neither an event participant nor a lineup member anywhere under their own tournament.
+    -- What it does: Finds Comp.Rank statistics holding participants who are neither an event participant nor a lineup member anywhere under their own tournament.
     'PARTICIPANT_NOT_IN_TOURNAMENT' AS check_type,
-    sp.id AS statistic_participants_id,
     s.id AS statistic_id,
     tt.name AS template_name,
     t.name AS tournament_name,
-    p.id AS participant_id,
-    p.name AS participant_name,
+    COUNT(DISTINCT sp.participantFK) AS stray_participants,
+    COUNT(DISTINCT sp.id) AS stray_participant_rows,
+    GROUP_CONCAT(DISTINCT p.id ORDER BY p.id SEPARATOR ' | ') AS participant_ids,
+    GROUP_CONCAT(DISTINCT p.name ORDER BY p.name SEPARATOR ' | ') AS participant_names,
     NULL AS eligible_count
+-- One row per Comp.Rank statistic, not per stray participant. The two read very differently:
+-- on Triathlon the same 1130 stray rows are 63 statistics, and the row-level shape repeated a
+-- tournament's name up to 54 times for what is one table with one thing wrong with it. Whoever
+-- fixes this works a statistic at a time, so that is the audited object and the coverage
+-- counts statistics to match.
+--
+-- The two lists are convenience and the counts beside them are authoritative: the server caps
+-- GROUP_CONCAT at 1024 characters and truncates silently past it, which the widest group
+-- measured already reaches. A list naming fewer people than stray_participants says has been
+-- cut, and the ids are the ones to trust first because they are shorter.
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -793,13 +804,14 @@ WHERE s.del = 'no'
       WHERE ts3.tournamentFK = t.id
         AND ts3.del = 'no'
   )
+GROUP BY s.id, tt.name, t.name
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT sp.id) AS eligible_count
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'

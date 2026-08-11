@@ -3014,14 +3014,28 @@ Test-That 'a check tab centres everything but the way out, which it widens inste
     Assert-Equal 1 $width.Count 'and its column is widened so it is not clipped'
     Assert-Equal 1 $width[0].From 'column A'
 
-    # One cell left alone, not a column. Skipping column A whole left the CheckID in A2 and
-    # every check_type in the result block ranged left on an otherwise centred board.
+    # The result block under the link is centred with the rest of the tab, and follows it down
+    # so a result that grows next week is centred too.
     $columnA = @($formats | Where-Object { $_.FromCol -eq 0 -and $_.Align -eq 'CENTER' })
-    Assert-Equal 2 $columnA.Count 'column A is centred above and below the link'
-    Assert-Equal '0 3' ((@($columnA | ForEach-Object { $_.FromRow }) | Sort-Object) -join ' ') `
-        'the header and identity above it, the result block below'
-    Assert-Equal 2 @($columnA | Where-Object { $_.FromRow -eq 0 })[0].ToRow 'stopping short of the link'
-    Assert-Equal $null @($columnA | Where-Object { $_.FromRow -eq 3 })[0].ToRow 'and following the results down'
+    Assert-Equal 1 $columnA.Count 'column A is centred below the link'
+    Assert-Equal 3 $columnA[0].FromRow 'from the row under it'
+    Assert-Equal $null $columnA[0].ToRow 'and following the results down'
+
+    # The three columns that read as sentences range left, header and value together. Centring
+    # a sentence puts its first word somewhere different on every tab, and What it does is long
+    # enough to be clipped - which centring hides in the middle instead of at the end.
+    $ranged = @($formats | Where-Object { $_.Align -eq 'LEFT' -and $_.FromRow -eq 0 })
+    Assert-Equal '0 1 3' ((@($ranged | ForEach-Object { $_.FromCol }) | Sort-Object) -join ' ') `
+        'Check ID, Check Name and What it does, with SQL Used left centred between them'
+    foreach ($one in $ranged) {
+        Assert-Equal 2 $one.ToRow 'the heading and the value, and nothing below them'
+    }
+
+    # The identity block held still while the results scroll, so the column names stay in view
+    # rather than the check's own name, which is on the tab it was reached from anyway.
+    $freeze = @($plan.Operations | Where-Object { $_.Kind -eq 'Freeze' -and $_.Sheet -eq 'WIDE' })
+    Assert-Equal 1 $freeze.Count 'the tab freezes'
+    Assert-Equal $SheetsCheckTabResultRow $freeze[0].Rows 'down to the result header, row 5'
 
     # C2 is the darker blue: it sits inside the identity row rather than alone on a line.
     $sql = @($formats | Where-Object { $_.FromRow -eq 1 -and $_.Colour -eq $SheetsSqlLinkColour })
@@ -3409,8 +3423,23 @@ Test-That 'GLOBAL-DQ-030 accepts direct event participants and active lineup mem
         'lineup member predicate'
     Assert-Equal 0 ([regex]::Matches($branches[1], 'event_participants|JOIN\s+lineup')).Count `
         'coverage must remain independent of participation representation'
-    Assert-True ($branches[1] -match 'COUNT\s*\(\s*DISTINCT\s+sp\.id\s*\)\s+AS\s+eligible_count') `
-        'coverage must count statistic-participant rows'
+
+    # The audited object is the statistic, not the stray participant row. Whoever corrects this
+    # works a Comp.Rank table at a time, and the row-level shape repeated one tournament's name
+    # up to 54 times for what is one table with one thing wrong with it.
+    Assert-True ($branches[0] -match '(?im)^\s*GROUP BY\s+s\.id\s*,') `
+        'findings grouped to one row per statistic'
+    Assert-True ($branches[1] -match 'COUNT\s*\(\s*DISTINCT\s+s\.id\s*\)\s+AS\s+eligible_count') `
+        'coverage must count the same object the findings do'
+
+    # The stray people still travel with the row. Two counts and two lists, because the server
+    # caps GROUP_CONCAT at 1024 characters and truncates past it without saying so - the counts
+    # are what make a cut list visible.
+    foreach ($column in @('stray_participants', 'stray_participant_rows',
+            'participant_ids', 'participant_names')) {
+        Assert-True ($branches[0] -match [regex]::Escape("AS $column")) "findings carry $column"
+    }
+
     Assert-Equal 2 ([regex]::Matches($sql, "tt\.name\s+NOT\s+LIKE\s+'%\(IOC\)%'")).Count `
         'IOC exclusion in findings and coverage'
 }
