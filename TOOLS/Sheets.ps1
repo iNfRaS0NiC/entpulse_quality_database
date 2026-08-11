@@ -36,6 +36,11 @@ $SheetsFormerTitles = @('Enetpulse DQ - *')
 # slow to build, slow to send and all-or-nothing if it fails.
 $SheetsWriteChunk = 2000
 
+# How many ranges one batchGet asks for. Each is a query parameter, so the whole read is one
+# URL, and a board of a hundred tabs now asks for two ranges per tab - its Check ID and its
+# result header. Sixty keeps the URL comfortably inside what a GET is served at.
+$SheetsReadChunk = 60
+
 $script:SheetsAccessToken = ''
 $script:SheetsTokenExpiry = [datetime]::MinValue
 
@@ -280,6 +285,40 @@ $SheetsGidToken = '{{GID:%NAME%}}'
 # block for sorting and filtering.
 $SheetsCheckTabResultRow = 5
 
+# The two columns a reviewer owns inside a result block, appended to the right of whatever the
+# statement returned.
+#
+# They exist because there was nowhere else. The runner protects Comment and Check By, but both
+# are about the check - one pair for a tab holding a thousand findings - and somebody working
+# through those findings one at a time needs to mark the one in front of them. On Triathlon
+# they used eligible_count, which is the coverage column and is overwritten every run: 388
+# cells of real review sitting in the one place guaranteed to be destroyed.
+#
+# Free text, not a dropdown. The words they reached for - fixed, no issue, in progress, not
+# found, no change - are a vocabulary nobody has agreed yet, and a closed list would reject
+# every cell already written. Status went the other way for a reason that does not apply here:
+# it is read across sports to answer how much of the catalogue has been reviewed, and these are
+# read by the person who wrote them.
+$SheetsRowReviewColumns = @('Review', 'Review note')
+
+# Where a note goes when the finding it belonged to is no longer in the result. Not the bin: a
+# check that returned 1130 rows and now returns 800 has to be explainable, and "which 330 went
+# and what had they been marked" is the question that answers it. Appended to, never rewritten.
+$SheetsReviewLogTabName = 'Review log'
+$SheetsReviewLogColumns = @('CheckID', 'Check tab', 'Finding key', 'Review', 'Review note',
+    'Dropped on', 'Why')
+
+# What a note is tied to. Not the row number - a fix removes a row and everything under it
+# moves up, which would slide every note one finding along - and not the whole row either,
+# because a name corrected elsewhere in the same row would orphan a note that is still about
+# the same finding.
+#
+# The id columns, then. A result carries its audited object's id by the coverage contract, and
+# ids are the part of a row that does not change while the row means the same thing; the names,
+# counts and values beside them are the payload. Plural forms are deliberately not id columns:
+# participant_ids on GLOBAL-DQ-030 is a list that grows and shrinks as people are corrected.
+$SheetsFindingIdColumn = '_id$'
+
 function ConvertTo-SheetsColumnName {
     # 1 -> A, 26 -> Z, 27 -> AA. The API takes A1 notation and the planner works in numbers,
     # because the reviewer-owned columns are easier to reason about as indices.
@@ -363,6 +402,118 @@ function ConvertTo-SheetsTableName {
     $safe = [regex]::Replace([string]$Name, '[^A-Za-z0-9_]', '_')
     if ($safe -notmatch '^[A-Za-z_]') { $safe = '_' + $safe }
     return $safe
+}
+
+function Get-SheetsFindingKeyColumns {
+    # Which of a result's columns identify the finding, as indices into its header. The id
+    # columns, and every one of them rather than the first: a Comp.Rank row naming a statistic
+    # and a participant is one finding about that pair, and keying on the statistic alone would
+    # give two of its rows the same key.
+    #
+    # A result with no id column at all falls back to every column, which keys on the whole row.
+    # That is conservative rather than clever - it parks a note whenever anything in the row
+    # changed - and it is the right failure for a statement whose findings have no id to be
+    # about.
+    param($Header)
+
+    $columns = @($Header)
+    if ($columns.Count -eq 0) { return @() }
+
+    # Column 0 is check_type by the coverage contract, and it always leads: a statement emitting
+    # two of them is making two different assertions, and the same object can appear under both.
+    $ids = @(0)
+    for ($i = 1; $i -lt $columns.Count; $i++) {
+        if ([string]$columns[$i] -match $SheetsFindingIdColumn) { $ids += $i }
+    }
+    if ($ids.Count -gt 1) { return $ids }
+    return @(0..($columns.Count - 1))
+}
+
+function Get-SheetsFindingKey {
+    # One finding's identity: what it is a finding of, and about which objects. The check type
+    # leads because a statement emitting two of them is making two different assertions, and the
+    # same object can legitimately appear under both.
+    param($Row, $Columns)
+
+    $parts = @()
+    foreach ($index in @($Columns)) {
+        $value = $(if ($index -lt @($Row).Count) { [string]@($Row)[$index] } else { '' })
+        $parts += $value.Trim()
+    }
+    return ($parts -join "`u{001F}")
+}
+
+function New-SheetsCarriedReview {
+    <#
+        Last run's notes matched to this run's findings, and what could not be matched.
+
+        Returns two columns the length of the result - the review and the note for each row,
+        empty where there was nothing - and the list of notes with nowhere to go. Nothing is
+        guessed: a note goes back only against a finding with the same key, and everything else
+        is reported so it can be logged rather than quietly dropped.
+
+        A check whose shape changed is the case worth naming. When the columns a key is built
+        from are not the ones it was built from last time, the old keys cannot match the new
+        ones however similar the findings are - GLOBAL-DQ-030 went from one row per stray
+        participant to one row per statistic on 2026-08-11 and its 310 notes were keyed on a
+        column the new result does not emit. That is not a fix and must not read like one, so
+        those notes are dropped with the reason spelled out.
+    #>
+    param($Header, $Rows, $Was, $Notes)
+
+    $review = @()
+    $note = @()
+    foreach ($row in @($Rows)) { $review += ''; $note += '' }
+
+    # Filtered rather than taken as given. An empty array reaching an untyped parameter arrives
+    # as $null, and @($null) is one element rather than none - which read as a single nameless
+    # note and had every first run announcing that the check had been re-shaped.
+    $held = @(@($Notes) | Where-Object { $_ })
+    if ($held.Count -eq 0) {
+        return [pscustomobject]@{ Review = $review; Note = $note; Dropped = @() }
+    }
+
+    # Both keyed the same way or not comparable at all. The old header is what the notes were
+    # keyed against when they were read; the new one is what this run will key against.
+    $wasHeader = @(@($Was) | Where-Object { $null -ne $_ })
+    $now = @(Get-SheetsFindingKeyColumns -Header $Header)
+    $before = @(Get-SheetsFindingKeyColumns -Header $wasHeader)
+    $sameShape = (($wasHeader.Count -gt 0) -and
+        ((@($now | ForEach-Object { [string]@($Header)[$_] }) -join '|') -eq
+         (@($before | ForEach-Object { [string]$wasHeader[$_] }) -join '|')))
+
+    if (-not $sameShape) {
+        $dropped = @($held | ForEach-Object {
+                [pscustomobject]@{
+                    Key = $_.Key; Review = $_.Review; Note = $_.Note
+                    Why = 'the check was re-shaped, so the columns a note is tied to are not the ones it was written against'
+                }
+            })
+        return [pscustomobject]@{ Review = $review; Note = $note; Dropped = $dropped }
+    }
+
+    $rowOfKey = @{}
+    for ($r = 0; $r -lt @($Rows).Count; $r++) {
+        $values = @($Header | ForEach-Object { @($Rows)[$r].$_ })
+        $key = Get-SheetsFindingKey -Row $values -Columns $now
+        if (-not $rowOfKey.ContainsKey($key)) { $rowOfKey[$key] = $r }
+    }
+
+    $dropped = @()
+    foreach ($one in $held) {
+        if ($rowOfKey.ContainsKey($one.Key)) {
+            $at = $rowOfKey[$one.Key]
+            $review[$at] = [string]$one.Review
+            $note[$at] = [string]$one.Note
+            continue
+        }
+        $dropped += [pscustomobject]@{
+            Key = $one.Key; Review = $one.Review; Note = $one.Note
+            Why = 'the finding is no longer in the result'
+        }
+    }
+
+    return [pscustomobject]@{ Review = $review; Note = $note; Dropped = $dropped }
 }
 
 function ConvertTo-SheetsIdentityTableName {
@@ -468,10 +619,14 @@ function New-SheetsMergePlan {
         $Existing,
         [string]$OutputFolder,
         [int]$MaxRows = $SheetsMaxRowsPerCheck,
+        [string]$Stamp = '',
         [switch]$Complete
     )
 
     $plan = @()
+    # Notes this run could not put back beside a finding, gathered across every tab and written
+    # to the log in one block at the end.
+    $dropped = @()
     $width = $SheetsOverviewColumns.Count
     $overviewSpans = Split-SheetsWritableSpans -Width $width -Reserved $SheetsOverviewReviewerColumns
 
@@ -1216,17 +1371,49 @@ function New-SheetsMergePlan {
         # hand, a failed write halfway through - any of those and the remembered number is
         # short, which leaves exactly the stale rows this exists to remove. The end of the
         # tab is a fact rather than a belief, and costs the same one request.
+        # Through AZ rather than Z: the reviewer columns sit to the right of whatever the
+        # statement returned, and a clear that stops short of them leaves last week's notes
+        # standing beside this week's rows, which is the one failure this whole mechanism
+        # exists to prevent. They are written back below, from the notes read off the board.
         $plan += [pscustomobject]@{
             Kind  = 'Clear'
             Sheet = $title
-            Range = '{0}{1}:Z' -f (ConvertTo-SheetsColumnName -Index 1), $SheetsCheckTabResultRow
+            Range = '{0}{1}:AZ' -f (ConvertTo-SheetsColumnName -Index 1), $SheetsCheckTabResultRow
         }
 
         if ($written.Count -gt 0) {
-            $header = @($written[0].PSObject.Properties.Name)
+            $dataHeader = @($written[0].PSObject.Properties.Name)
+
+            # What the reviewer wrote against these findings last time, put back beside the
+            # findings themselves rather than beside the row numbers they used to occupy. A
+            # correction removes rows and everything under them moves up, so a note left where
+            # it was would end up against somebody else's finding - which reads exactly like a
+            # judgement somebody made.
+            $carried = New-SheetsCarriedReview -Header $dataHeader -Rows $written `
+                -Was $(if ($Existing -and $Existing.ResultHeaderOf -and $Existing.ResultHeaderOf.ContainsKey($title)) {
+                        $Existing.ResultHeaderOf[$title]
+                    } else { @() }) `
+                -Notes $(if ($Existing -and $Existing.ReviewNotesOf -and $Existing.ReviewNotesOf.ContainsKey($title)) {
+                        $Existing.ReviewNotesOf[$title]
+                    } else { @() })
+
+            foreach ($lost in @($carried.Dropped)) {
+                $dropped += [pscustomobject]@{
+                    CheckId = [string]$item.Job.CheckId
+                    Tab     = $title
+                    Key     = $lost.Key
+                    Review  = $lost.Review
+                    Note    = $lost.Note
+                    Why     = $lost.Why
+                }
+            }
+
+            $header = @($dataHeader) + $SheetsRowReviewColumns
             $table = @(, $header)
-            foreach ($row in $written) {
-                $table += , @($header | ForEach-Object { $row.$_ })
+            for ($r = 0; $r -lt $written.Count; $r++) {
+                $row = $written[$r]
+                $line = @($dataHeader | ForEach-Object { $row.$_ })
+                $table += , ($line + @($carried.Review[$r], $carried.Note[$r]))
             }
             $plan += [pscustomobject]@{
                 Kind   = 'Write'
@@ -1350,6 +1537,99 @@ function New-SheetsMergePlan {
         $cells += $sqlBackLinks.Count
     }
 
+    # The log of notes with nowhere left to go.
+    #
+    # This is the tab that answers "why are three hundred rows still here". A check that
+    # returned 1130 findings and now returns 800 says nothing about the 330 that went, and the
+    # reviewer who marked half of them has no way to tell a correction from a scope that moved
+    # under their feet. Each dropped note is written down with the reason it could not be put
+    # back, and the tab accumulates: it is read backwards, from a count that surprises somebody
+    # to the run that changed it.
+    #
+    # Rewritten whole from what was read plus what this run dropped, rather than appended to in
+    # place. Nothing on it is anybody's - every row was generated - and rewriting is what keeps
+    # a failed run from leaving a half-written block behind.
+    $logRows = @()
+    $logSeen = @{}
+    foreach ($was in @($(if ($Existing) { $Existing.ReviewLog } else { @() }))) {
+        if (-not $was) { continue }
+        $line = @($SheetsReviewLogColumns | ForEach-Object { [string]$was.$_ })
+        if ([string]::IsNullOrWhiteSpace(($line -join ''))) { continue }
+        $logSeen[($line[0] + "`u{001F}" + $line[2] + "`u{001F}" + $line[3] + "`u{001F}" + $line[4])] = $true
+        $logRows += , $line
+    }
+    foreach ($lost in $dropped) {
+        $signature = ([string]$lost.CheckId + "`u{001F}" + [string]$lost.Key + "`u{001F}" +
+            [string]$lost.Review + "`u{001F}" + [string]$lost.Note)
+        if ($logSeen.ContainsKey($signature)) { continue }
+        $logSeen[$signature] = $true
+        # The key is joined by a unit separator, which no cell should display. Spelled out with
+        # a visible separator instead, so somebody reading the log can match it against the
+        # finding's own columns by eye.
+        $logRows += , @(
+            [string]$lost.CheckId
+            [string]$lost.Tab
+            (([string]$lost.Key) -replace "`u{001F}", ' | ')
+            [string]$lost.Review
+            [string]$lost.Note
+            [string]$Stamp
+            [string]$lost.Why
+        )
+    }
+
+    if ($logRows.Count -gt 0) {
+        if (-not $usedTitles.ContainsKey($SheetsReviewLogTabName)) {
+            $plan += [pscustomobject]@{
+                Kind  = 'AddSheet'
+                Sheet = $SheetsReviewLogTabName
+                Rows  = [math]::Max($logRows.Count + 100, 1000)
+            }
+            $usedTitles[$SheetsReviewLogTabName] = $true
+        }
+        else {
+            $have = $(if ($capacityOf.ContainsKey($SheetsReviewLogTabName)) {
+                    $capacityOf[$SheetsReviewLogTabName]
+                } else { 1000 })
+            $logId = $(if ($Existing -and $Existing.SheetIdOf -and
+                    $Existing.SheetIdOf.ContainsKey($SheetsReviewLogTabName)) {
+                    [int]$Existing.SheetIdOf[$SheetsReviewLogTabName]
+                } else { $null })
+            if (($logRows.Count + 10) -gt $have -and $null -ne $logId) {
+                $plan += [pscustomobject]@{
+                    Kind = 'Resize'; Sheet = $SheetsReviewLogTabName; SheetId = $logId
+                    Rows = $logRows.Count + 100
+                }
+            }
+        }
+
+        $lastColumn = ConvertTo-SheetsColumnName -Index $SheetsReviewLogColumns.Count
+        $plan += [pscustomobject]@{
+            Kind = 'Clear'; Sheet = $SheetsReviewLogTabName; Range = ('A1:' + $lastColumn)
+        }
+        $plan += [pscustomobject]@{
+            Kind   = 'Write'
+            Sheet  = $SheetsReviewLogTabName
+            Range  = (New-SheetsRange -FromColumn 1 -FromRow 1 `
+                    -ToColumn $SheetsReviewLogColumns.Count -ToRow ($logRows.Count + 1))
+            Values = @(, $SheetsReviewLogColumns) + $logRows
+        }
+        $cells += $SheetsReviewLogColumns.Count * ($logRows.Count + 1)
+
+        $plan += [pscustomobject]@{
+            Kind         = 'Table'
+            Sheet        = $SheetsReviewLogTabName
+            Name         = (ConvertTo-SheetsTableName -Name 'Review_log')
+            FromRow      = 0
+            ToRow        = $logRows.Count + 1
+            FromCol      = 0
+            ToCol        = $SheetsReviewLogColumns.Count
+            HeaderColour = $SheetsDataHeaderColour
+        }
+        $plan += [pscustomobject]@{
+            Kind = 'Freeze'; Sheet = $SheetsReviewLogTabName; Rows = 1
+        }
+    }
+
     # A run rewrites essentially every cell it owns, so what this plan writes is a fair proxy
     # for what the document will hold. Reported rather than acted on: the answers are to drop
     # a check from the document, tighten a scope or split the sport, and none of those is the
@@ -1470,6 +1750,149 @@ function Invoke-SheetsApi {
     }
 }
 
+function Read-SheetReviewNotes {
+    <#
+        Every row-level note the document holds, keyed the way the next run will look for it.
+
+        Two reads at most, and usually one of them touches nothing. A board can carry a hundred
+        tabs and tens of thousands of result rows, so reading the blocks whole to find a handful
+        of notes would cost more than the run that follows it. Instead:
+
+          - the reviewer columns alone are asked for first. Google stops a range at its last
+            non-empty cell, so a tab where nobody has written anything comes back empty and is
+            done with in one row of JSON;
+          - only the tabs that came back with something are asked for their id columns, which
+            are what a note is tied to.
+
+        Called with the header row already in hand, because that is what says where those
+        columns are on each tab. A tab whose header has no reviewer columns is not read at all -
+        it has never been through a run that could have written a note.
+    #>
+    param([string]$SpreadsheetId, $HeaderOf, [int]$ChunkSize = 40)
+
+    $notesOf = @{}
+    if (-not $HeaderOf) { return $notesOf }
+
+    $candidates = @()
+    foreach ($title in @($HeaderOf.Keys)) {
+        $header = @($HeaderOf[$title])
+        $at = [array]::IndexOf($header, $SheetsRowReviewColumns[0])
+        if ($at -ge 0) {
+            $candidates += [pscustomobject]@{
+                Title  = [string]$title
+                Header = $header
+                From   = $at
+                To     = $at + $SheetsRowReviewColumns.Count - 1
+                Legacy = $false
+            }
+            continue
+        }
+
+        # A tab that has never had the reviewer columns, but may have been written on anyway.
+        # Before they existed there was nowhere to put a per-row conclusion, and on Triathlon
+        # 388 of them went into eligible_count - the coverage column, which every run
+        # overwrites. Read once, on the run that gives the tab somewhere better, after which
+        # the column is empty again and this finds nothing.
+        #
+        # A number is not a note: eligible_count holds the coverage count on its own row, and
+        # that row is the runner's.
+        $legacy = [array]::IndexOf($header, 'eligible_count')
+        if ($legacy -lt 0) { continue }
+        $candidates += [pscustomobject]@{
+            Title  = [string]$title
+            Header = $header
+            From   = $legacy
+            To     = $legacy
+            Legacy = $true
+        }
+    }
+    if ($candidates.Count -eq 0) { return $notesOf }
+
+    $written = @()
+    for ($i = 0; $i -lt $candidates.Count; $i += $ChunkSize) {
+        $slice = @($candidates[$i..([math]::Min($i + $ChunkSize - 1, $candidates.Count - 1))])
+        $query = ($slice | ForEach-Object {
+                'ranges=' + [uri]::EscapeDataString(("'{0}'!{1}{2}:{3}" -f
+                        ($_.Title -replace "'", "''"),
+                    (ConvertTo-SheetsColumnName -Index ($_.From + 1)),
+                    ($SheetsCheckTabResultRow + 1),
+                    (ConvertTo-SheetsColumnName -Index ($_.To + 1))))
+            }) -join '&'
+        $answer = Invoke-SheetsApi -Method Get -Path "$SpreadsheetId/values:batchGet`?$query&majorDimension=ROWS"
+        $ranges = @($answer.valueRanges)
+
+        for ($j = 0; $j -lt $slice.Count; $j++) {
+            if ($j -ge $ranges.Count) { break }
+            $rows = @($ranges[$j].values)
+            $marked = @()
+            for ($r = 0; $r -lt $rows.Count; $r++) {
+                $cells = @($rows[$r])
+                $review = $(if ($cells.Count -gt 0) { [string]$cells[0] } else { '' })
+                $note = $(if ($cells.Count -gt 1) { [string]$cells[1] } else { '' })
+                if ([string]::IsNullOrWhiteSpace($review) -and [string]::IsNullOrWhiteSpace($note)) { continue }
+                if ($slice[$j].Legacy) {
+                    $number = 0.0
+                    if ([double]::TryParse($review.Trim(), [ref]$number)) { continue }
+                    $note = ''
+                }
+                $marked += [pscustomobject]@{
+                    Offset = $r
+                    Review = $review
+                    Note   = $note
+                }
+            }
+            if ($marked.Count -gt 0) {
+                $written += [pscustomobject]@{ Tab = $slice[$j]; Marked = $marked }
+            }
+        }
+    }
+    if ($written.Count -eq 0) { return $notesOf }
+
+    # The id columns of the tabs that turned out to hold something. Asked for from column A
+    # through the last of them rather than one range each: they sit at the front of a result and
+    # a single span is one range instead of five.
+    for ($i = 0; $i -lt $written.Count; $i += $ChunkSize) {
+        $slice = @($written[$i..([math]::Min($i + $ChunkSize - 1, $written.Count - 1))])
+        $spans = @()
+        foreach ($one in $slice) {
+            $keyColumns = @(Get-SheetsFindingKeyColumns -Header $one.Tab.Header)
+            $last = 0
+            foreach ($index in $keyColumns) { if ($index -gt $last) { $last = $index } }
+            $spans += $last
+        }
+
+        $query = @()
+        for ($j = 0; $j -lt $slice.Count; $j++) {
+            $query += 'ranges=' + [uri]::EscapeDataString(("'{0}'!A{1}:{2}" -f
+                    ($slice[$j].Tab.Title -replace "'", "''"),
+                ($SheetsCheckTabResultRow + 1),
+                (ConvertTo-SheetsColumnName -Index ($spans[$j] + 1))))
+        }
+        $answer = Invoke-SheetsApi -Method Get -Path ("$SpreadsheetId/values:batchGet`?" +
+            ($query -join '&') + '&majorDimension=ROWS')
+        $ranges = @($answer.valueRanges)
+
+        for ($j = 0; $j -lt $slice.Count; $j++) {
+            if ($j -ge $ranges.Count) { break }
+            $rows = @($ranges[$j].values)
+            $keyColumns = @(Get-SheetsFindingKeyColumns -Header $slice[$j].Tab.Header)
+
+            $kept = @()
+            foreach ($mark in @($slice[$j].Marked)) {
+                if ($mark.Offset -ge $rows.Count) { continue }
+                $kept += [pscustomobject]@{
+                    Key    = (Get-SheetsFindingKey -Row @($rows[$mark.Offset]) -Columns $keyColumns)
+                    Review = $mark.Review
+                    Note   = $mark.Note
+                }
+            }
+            if ($kept.Count -gt 0) { $notesOf[$slice[$j].Tab.Title] = $kept }
+        }
+    }
+
+    return $notesOf
+}
+
 function Read-SheetState {
     <#
         What the document already holds, in the shape New-SheetsMergePlan expects.
@@ -1546,8 +1969,20 @@ function Read-SheetState {
     # the blocks belonging to the others where they were. Column A is all of it.
     $hasSql = ($titles -contains $SheetsSqlTabName)
     if ($hasSql) { $reads += ($SheetsSqlTabName + '!A1:A') }
-    $checkTabs = @($titles | Where-Object { $_ -ne 'Overview' -and $_ -ne $SheetsSqlTabName })
+    $hasReviewLog = ($titles -contains $SheetsReviewLogTabName)
+    if ($hasReviewLog) {
+        $reads += ("'" + ($SheetsReviewLogTabName -replace "'", "''") + "'!A2:" +
+            (ConvertTo-SheetsColumnName -Index $SheetsReviewLogColumns.Count))
+    }
+    $checkTabs = @($titles | Where-Object {
+            $_ -ne 'Overview' -and $_ -ne $SheetsSqlTabName -and $_ -ne $SheetsReviewLogTabName
+        })
     foreach ($title in $checkTabs) { $reads += "'" + ($title -replace "'", "''") + "'!A2" }
+
+    # Row 5 of every check tab: the result's own column names, which say both where the reviewer
+    # columns are and which columns identify a finding. Cheap - one row per tab - and it is what
+    # makes the two reads below ask for a few columns instead of a whole block.
+    foreach ($title in $checkTabs) { $reads += "'" + ($title -replace "'", "''") + "'!5:5" }
 
     $rowOf = @{}
     $tabOf = @{}
@@ -1560,11 +1995,23 @@ function Read-SheetState {
     $emptyTabs = @{}
     $hasHeader = $false
     $sqlBlocks = @()
+    $resultHeaderOf = @{}
+    $reviewNotesOf = @{}
+    $reviewLog = @()
 
     if ($reads.Count -gt 0) {
-        $query = ($reads | ForEach-Object { 'ranges=' + [uri]::EscapeDataString($_) }) -join '&'
-        $values = Invoke-SheetsApi -Method Get -Path "$SpreadsheetId/values:batchGet`?$query&majorDimension=ROWS"
-        $ranges = @($values.valueRanges)
+        # Sent in chunks and stitched back together in order, because every range is a query
+        # parameter and the whole read is one URL. A board of a hundred tabs asks for a hundred
+        # A2 cells and a hundred header rows, and past a few kilobytes a GET stops being served
+        # rather than being answered slowly. The order is what the offsets below depend on, so
+        # the chunks are concatenated exactly as they were asked for.
+        $ranges = @()
+        for ($i = 0; $i -lt $reads.Count; $i += $SheetsReadChunk) {
+            $slice = @($reads[$i..([math]::Min($i + $SheetsReadChunk - 1, $reads.Count - 1))])
+            $query = ($slice | ForEach-Object { 'ranges=' + [uri]::EscapeDataString($_) }) -join '&'
+            $values = Invoke-SheetsApi -Method Get -Path "$SpreadsheetId/values:batchGet`?$query&majorDimension=ROWS"
+            $ranges += @($values.valueRanges)
+        }
 
         $offset = 0
         if ($hasOverview -and $ranges.Count -gt 0) {
@@ -1615,6 +2062,21 @@ function Read-SheetState {
             if ($current) { $sqlBlocks += $current }
         }
 
+        # Whatever has already been logged, so this run appends to it rather than over it. Read
+        # before the tabs because the ranges come back in the order they were asked for.
+        if ($hasReviewLog -and $ranges.Count -gt $offset) {
+            foreach ($line in @(@($ranges[$offset].values))) {
+                $cells = @($line)
+                if ($cells.Count -eq 0) { continue }
+                $entry = [ordered]@{}
+                for ($c = 0; $c -lt $SheetsReviewLogColumns.Count; $c++) {
+                    $entry[$SheetsReviewLogColumns[$c]] = $(if ($c -lt $cells.Count) { [string]$cells[$c] } else { '' })
+                }
+                $reviewLog += [pscustomobject]$entry
+            }
+            $offset++
+        }
+
         # A tab is matched to its check by the Check ID its own A2 carries, never by its
         # title: the title is an abbreviation of the check name, and a name can change without
         # the check becoming a different one.
@@ -1629,7 +2091,19 @@ function Read-SheetState {
             if (-not [string]::IsNullOrWhiteSpace($checkId)) { $tabOf[$checkId] = $checkTabs[$i] }
             else { $emptyTabs[$checkTabs[$i]] = $true }
         }
+
+        # Row 5 of each tab, in the same order, straight after the A2 block.
+        $headerAt = $offset + $checkTabs.Count
+        for ($i = 0; $i -lt $checkTabs.Count; $i++) {
+            $index = $i + $headerAt
+            if ($index -ge $ranges.Count) { break }
+            $rows = @($ranges[$index].values)
+            if ($rows.Count -eq 0) { continue }
+            $resultHeaderOf[$checkTabs[$i]] = @(@($rows[0]) | ForEach-Object { [string]$_ })
+        }
     }
+
+    $reviewNotesOf = Read-SheetReviewNotes -SpreadsheetId $SpreadsheetId -HeaderOf $resultHeaderOf
 
     return [pscustomobject]@{
         Title             = [string]$meta.properties.title
@@ -1645,6 +2119,9 @@ function Read-SheetState {
         SheetIdOf         = $idOf
         SheetIndexOf      = $indexOf
         TableOf           = $tableOf
+        ResultHeaderOf    = $resultHeaderOf
+        ReviewNotesOf     = $reviewNotesOf
+        ReviewLog         = $reviewLog
         SqlBlocks         = $sqlBlocks
         ConditionalFormatsOf = $formatsOf
     }

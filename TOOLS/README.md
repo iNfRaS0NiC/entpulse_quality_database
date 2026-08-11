@@ -1307,6 +1307,66 @@ It is also the one thing a run sends as `USER_ENTERED` rather than `RAW`. Everyt
 data — a name beginning with a hyphen, a value Sheets would read as a date — and has to arrive
 as what the database returned; a formula sent that way arrives as the literal text of one.
 
+### Reviewing one finding at a time
+
+`Comment` and `Check By` are about the check. A tab holding a thousand findings has one of
+each, and somebody working through those findings needs to mark the one in front of them — so
+every result block carries two more columns to the right of whatever the statement returned:
+
+| Column | Holds |
+|---|---|
+| `Review` | what was concluded about this one finding — free text |
+| `Review note` | why, in the reviewer's own words |
+
+They exist because there was nowhere else. On Triathlon the reviewers used `eligible_count`,
+which is the coverage column and is overwritten every run: 388 cells of real review sitting in
+the one place guaranteed to be destroyed. Nothing in the runner authors either column.
+
+Free text rather than a dropdown, deliberately. The words reached for — *fixed*, *no issue*,
+*in progress*, *not found*, *no change* — are a vocabulary nobody has agreed yet, and a closed
+list would reject every cell already written. `Status` went the other way for a reason that does
+not apply here: it is read across sports to answer how much of the catalogue has been reviewed,
+while these are read by the person who wrote them.
+
+**A note is tied to its finding, not to the row it sat on.** Every run rewrites the block, and a
+correction removes rows so everything under them moves up — a note left where it was would end
+up against somebody else's finding, which reads exactly like a judgement somebody made. So the
+run reads the notes off the board first, keys each one, and puts it back beside the finding with
+the same key however far that finding has moved.
+
+The key is the row's **id columns**, led by `check_type`. A result carries its audited object's
+id by the coverage contract, and ids are the part of a row that does not change while the row
+means the same thing; the names, counts and values beside them are payload. Plural forms are not
+id columns — `participant_ids` on `GLOBAL-DQ-030` is a list that grows and shrinks as people are
+corrected, and keying on it would park a note every time one member of the group was fixed. A
+result with no id column at all keys on its whole row, which parks a note whenever anything in it
+changed: conservative, and the right failure for findings with no id to be about.
+
+### `Review log`
+
+What could not be put back. A check that returned 1130 findings and now returns 800 says nothing
+about the 330 that went, and the reviewer who marked half of them cannot tell a correction from a
+scope that moved underneath them. Each dropped note is written down with the reason:
+
+| `Why` | Means |
+|---|---|
+| the finding is no longer in the result | the row is gone — corrected, or out of scope now |
+| the check was re-shaped | the columns the key is built from are not the ones the note was written against |
+
+The second is not a fix and must not read like one. `GLOBAL-DQ-030` went from one row per stray
+participant to one row per statistic on 2026-08-11, and its notes were keyed on a column the new
+result no longer emits — every one of them was parked, none was guessed onto a new row.
+
+The tab accumulates and is read backwards: from a count that surprises somebody, to the run that
+changed it. It is rewritten whole each run from what it already held plus what this run dropped —
+nothing on it is anybody's, every row was generated, and rewriting is what stops a failed run
+leaving half a block behind. A board where nobody has written a note has no such tab.
+
+Reading the notes back costs two requests and usually touches almost nothing. The reviewer
+columns alone are asked for first, and Google stops a range at its last non-empty cell, so a tab
+nobody has written on comes back empty; only the tabs that returned something are then asked for
+their id columns.
+
 ### Pointing a sport at its document
 
 Create the Sheet yourself, share it with whoever reviews, and give the runner its id once —

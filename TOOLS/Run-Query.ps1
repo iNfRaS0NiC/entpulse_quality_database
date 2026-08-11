@@ -3692,8 +3692,15 @@ function Save-RunSheet {
         # has a summary row of its own and reports SKIPPED.
         $complete = ($RunAll -and $MaxChecks -le 0)
 
+        # The same stamp the ledger files a run under, so a row in the review log can be traced
+        # to the run that dropped the note and to the output folder that run left behind.
+        $stamp = $(if ([string]::IsNullOrWhiteSpace($OutputFolder)) {
+                $script:RunStartedUtc.ToLocalTime().ToString('dd.MM.yyyy HH-mm-ss')
+            }
+            else { Split-Path -Leaf $OutputFolder })
+
         $plan = New-SheetsMergePlan -Summary $enriched -Collected $Collected -Existing $state `
-            -OutputFolder $OutputFolder -Complete:$complete
+            -OutputFolder $OutputFolder -Stamp $stamp -Complete:$complete
         if ($plan.Warning) { Write-Host "  $($plan.Warning)" -ForegroundColor Yellow }
 
         $sent = Invoke-SheetsPlan -SpreadsheetId $id -Plan $plan

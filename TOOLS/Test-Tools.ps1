@@ -2293,7 +2293,10 @@ Test-That 'a check tab is cleared to its end, not to a depth this code believes 
 
     $clear = @($plan.Operations | Where-Object { $_.Kind -eq 'Clear' -and $_.Sheet -eq 'SHRANK' })
     Assert-Equal 1 $clear.Count 'one clear for the tab'
-    Assert-Equal 'A5:Z' $clear[0].Range 'open ended, so nothing stale can survive below the new rows'
+    # Through AZ, not Z. The reviewer columns sit to the right of whatever the statement
+    # returned, and a clear stopping short of them would leave last week's notes standing
+    # beside this week's rows - the one failure the whole carry-forward exists to prevent.
+    Assert-Equal 'A5:AZ' $clear[0].Range 'open ended, so nothing stale can survive below the new rows'
 
     $ops = @($plan.Operations)
     $clearAt = [array]::IndexOf($ops, $clear[0])
@@ -2990,6 +2993,186 @@ Test-That 'the board is centred, its owned headings named, and sorted by priorit
     # keeps the order inside a band stable rather than whatever the last sort left.
     Assert-Equal '4 1' (@($sort[0].By) -join ' ') 'by Priority, then CheckID'
     Assert-Equal 1 $sort[0].FromRow 'below the header'
+}
+
+Test-That 'a finding is keyed by its ids, and by everything when it has none' {
+    # The ids are the part of a row that does not change while the row means the same thing.
+    $header = @('check_type', 'statistic_id', 'template_name', 'stray_participants',
+        'participant_ids', 'participant_names')
+    Assert-Equal '0 1' ((Get-SheetsFindingKeyColumns -Header $header) -join ' ') `
+        'check_type and the one singular id column'
+
+    # participant_ids is a list that grows and shrinks as people are corrected, and keying on
+    # it would park a note every time somebody fixed one member of the group.
+    Assert-True (@(Get-SheetsFindingKeyColumns -Header $header) -notcontains 4) `
+        'a plural id column is payload, not identity'
+
+    $plain = @('check_type', 'template_name', 'name_pattern')
+    Assert-Equal '0 1 2' ((Get-SheetsFindingKeyColumns -Header $plain) -join ' ') `
+        'a result with no id at all keys on the whole row'
+
+    $key = Get-SheetsFindingKey -Row @('STRAY', '322012', 'World Cup') -Columns @(0, 1)
+    Assert-Equal 'STRAY' ($key -split "`u{001F}")[0] 'the check type leads'
+    Assert-Equal '322012' ($key -split "`u{001F}")[1] 'then the id'
+    Assert-True ($key -ne (Get-SheetsFindingKey -Row @('OTHER', '322012', 'World Cup') -Columns @(0, 1))) `
+        'two assertions about one object are two findings'
+}
+
+Test-That 'a note follows its finding rather than the row it used to be on' {
+    # The row moved from third to first because the two above it were corrected. A note left at
+    # its old offset would land against somebody else's finding, which reads exactly like a
+    # judgement somebody made.
+    $header = @('check_type', 'statistic_id', 'tournament_name')
+    $rows = @(
+        [pscustomobject]@{ check_type = 'STRAY'; statistic_id = '322012'; tournament_name = '2014' }
+        [pscustomobject]@{ check_type = 'STRAY'; statistic_id = '999999'; tournament_name = '2019' }
+    )
+    $notes = @(
+        [pscustomobject]@{ Key = (Get-SheetsFindingKey -Row @('STRAY', '322012') -Columns @(0, 1))
+            Review = 'no issue'; Note = 'checked with the federation'
+        }
+        [pscustomobject]@{ Key = (Get-SheetsFindingKey -Row @('STRAY', '111111') -Columns @(0, 1))
+            Review = 'fixed'; Note = ''
+        }
+    )
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal 'no issue' $carried.Review[0] 'the surviving finding keeps its review'
+    Assert-Equal 'checked with the federation' $carried.Note[0] 'and its note'
+    Assert-Equal '' $carried.Review[1] 'a finding nobody judged stays empty'
+    Assert-Equal 1 @($carried.Dropped).Count 'the one whose finding is gone is reported'
+    Assert-Equal 'fixed' $carried.Dropped[0].Review 'with what it said'
+    Assert-True ($carried.Dropped[0].Why -like '*no longer in the result*') 'and why it could not go back'
+}
+
+Test-That 'a re-shaped check parks every note instead of matching them by luck' {
+    # GLOBAL-DQ-030 went from one row per stray participant to one row per statistic on
+    # 2026-08-11. Its 310 notes were keyed on a column the new result does not emit, and that
+    # is not a correction - it must not read like one.
+    $was = @('check_type', 'statistic_participants_id', 'statistic_id', 'participant_id')
+    $now = @('check_type', 'statistic_id', 'template_name')
+    $rows = @([pscustomobject]@{ check_type = 'STRAY'; statistic_id = '322012'; template_name = 'World Cup' })
+    $notes = @([pscustomobject]@{ Key = "STRAY`u{001F}1404776`u{001F}322012`u{001F}2009157"
+            Review = 'no issue'; Note = ''
+        })
+    $carried = New-SheetsCarriedReview -Header $now -Rows $rows -Was $was -Notes $notes
+
+    Assert-Equal '' $carried.Review[0] 'nothing is guessed onto the new rows'
+    Assert-Equal 1 @($carried.Dropped).Count 'and the note is reported rather than dropped quietly'
+    Assert-True ($carried.Dropped[0].Why -like '*re-shaped*') 'saying the shape changed, not that it was fixed'
+}
+
+Test-That 'a note written where there was nowhere better is still a note' {
+    # Before the reviewer columns existed there was nowhere to put a per-row conclusion, and on
+    # Triathlon 388 of them went into eligible_count - the coverage column, overwritten every
+    # run. The run that gives the tab somewhere better reads them out of it first.
+    $header = @('check_type', 'statistic_id', 'eligible_count')
+    $carriedIn = @([pscustomobject]@{
+            Key = (Get-SheetsFindingKey -Row @('STRAY', '322012') -Columns @(0, 1))
+            Review = 'no issue'; Note = ''
+        })
+    $rows = @([pscustomobject]@{ check_type = 'STRAY'; statistic_id = '322012'; eligible_count = $null })
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $carriedIn
+
+    Assert-Equal 'no issue' $carried.Review[0] 'it survives into the column built for it'
+    Assert-Equal 0 @($carried.Dropped).Count 'and nothing is logged as lost'
+}
+
+Test-That 'a first run writes the reviewer columns and logs nothing' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'FRESH'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $state = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'FRESH' }
+        Titles = @('Overview', 'FRESH'); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'FRESH' = 9 }; SheetIndexOf = @{ 'Overview' = 0 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $state -OutputFolder 'x' -Collected `
+        @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X'; event_id = '7' }) })
+
+    $block = @($plan.Operations | Where-Object {
+            $_.Kind -eq 'Write' -and $_.Sheet -eq 'FRESH' -and $_.Range -like 'A5:*' })
+    Assert-Equal 1 $block.Count 'the result block is written once'
+    $header = @($block[0].Values[0])
+    Assert-Equal 'check_type event_id Review Review note' ($header -join ' ') `
+        'the reviewer columns are appended to what the statement returned'
+    Assert-Equal 4 @($block[0].Values[1]).Count 'and every row is as wide as the header'
+
+    # A board nobody has written on yet has nothing to log, and an empty log tab on every one of
+    # a hundred documents would be a hundred tabs saying nothing.
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Sheet -eq $SheetsReviewLogTabName }).Count `
+        'and no log tab is created with nothing to put in it'
+
+    $table = @($plan.Operations | Where-Object { $_.Kind -eq 'Table' -and $_.Sheet -eq 'FRESH' })
+    $result = @($table | Where-Object { $_.Name -eq 'Fixtureball_DQ_002' })
+    Assert-Equal 4 $result[0].ToCol 'the result table covers the reviewer columns too'
+}
+
+Test-That 'a note with nowhere to go reaches the log rather than the bin' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'GONE'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $state = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'GONE' }
+        Titles = @('Overview', 'GONE'); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'GONE' = 9 }; SheetIndexOf = @{ 'Overview' = 0 }
+        ResultHeaderOf = @{ 'GONE' = @('check_type', 'event_id', 'Review', 'Review note') }
+        ReviewNotesOf = @{ 'GONE' = @([pscustomobject]@{
+                    Key = (Get-SheetsFindingKey -Row @('X', '4242') -Columns @(0, 1))
+                    Review = 'fixed'; Note = 'corrected in the feed'
+                }) }
+        ReviewLog = @()
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $state -OutputFolder 'x' -Stamp '11.08.2026 09-00-00' `
+        -Collected @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X'; event_id = '7' }) })
+
+    $write = @($plan.Operations | Where-Object {
+            $_.Kind -eq 'Write' -and $_.Sheet -eq $SheetsReviewLogTabName })
+    Assert-Equal 1 $write.Count 'the log is written'
+    Assert-Equal ($SheetsReviewLogColumns -join ' ') (@($write[0].Values[0]) -join ' ') 'with its header'
+    $logged = @($write[0].Values[1])
+    Assert-Equal 'Fixtureball-DQ-002' $logged[0] 'the check it belonged to'
+    Assert-Equal 'X | 4242' $logged[2] 'the key spelled out so it can be matched by eye'
+    Assert-Equal 'fixed' $logged[3] 'what the reviewer had concluded'
+    Assert-Equal '11.08.2026 09-00-00' $logged[5] 'and the run that dropped it'
+
+    Assert-Equal 1 @($plan.Operations | Where-Object {
+            $_.Kind -eq 'AddSheet' -and $_.Sheet -eq $SheetsReviewLogTabName }).Count 'the tab is created'
+}
+
+Test-That 'the log accumulates rather than being replaced by the latest run' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'KEEP'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $older = [pscustomobject]@{
+        'CheckID' = 'Fixtureball-DQ-009'; 'Check tab' = 'OTHER'; 'Finding key' = 'X | 1'
+        'Review' = 'fixed'; 'Review note' = ''; 'Dropped on' = '01.08.2026 09-00-00'
+        'Why' = 'the finding is no longer in the result'
+    }
+    $state = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'KEEP' }
+        Titles = @('Overview', 'KEEP', $SheetsReviewLogTabName); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{ $SheetsReviewLogTabName = 1000 }
+        SheetIdOf = @{ 'Overview' = 5; 'KEEP' = 9; $SheetsReviewLogTabName = 11 }
+        SheetIndexOf = @{ 'Overview' = 0 }
+        ResultHeaderOf = @{ 'KEEP' = @('check_type', 'event_id', 'Review', 'Review note') }
+        ReviewNotesOf = @{ 'KEEP' = @([pscustomobject]@{
+                    Key = (Get-SheetsFindingKey -Row @('X', '4242') -Columns @(0, 1))
+                    Review = 'no issue'; Note = ''
+                }) }
+        ReviewLog = @($older)
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $state -OutputFolder 'x' -Stamp '11.08.2026 10-00-00' `
+        -Collected @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X'; event_id = '7' }) })
+
+    $write = @($plan.Operations | Where-Object {
+            $_.Kind -eq 'Write' -and $_.Sheet -eq $SheetsReviewLogTabName })
+    Assert-Equal 3 @($write[0].Values).Count 'the header, what was there and what this run dropped'
+    Assert-Equal 'Fixtureball-DQ-009' @($write[0].Values[1])[0] 'the older entry is kept'
+    Assert-Equal 'Fixtureball-DQ-002' @($write[0].Values[2])[0] 'and this run appends under it'
+    Assert-Equal 0 @($plan.Operations | Where-Object {
+            $_.Kind -eq 'AddSheet' -and $_.Sheet -eq $SheetsReviewLogTabName }).Count `
+        'a tab that exists is not added again'
 }
 
 Test-That 'a check tab centres everything but the way out, which it widens instead' {
