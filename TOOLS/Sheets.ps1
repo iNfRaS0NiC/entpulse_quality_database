@@ -1533,13 +1533,28 @@ function New-SheetsMergePlan {
             # Rewritten every run for the reason Overview's bands are: a value added to the
             # list has to reach the documents that already exist, and the alternative - adding
             # three more rules a week - fills the tab with duplicates.
+            # Row as well as column, because the tab has two tables and both span every column
+            # index the result uses. The header row of the result block identifies it.
             $reviewColumn = $dataHeader.Count + 1
             $plan += [pscustomobject]@{
                 Kind   = 'Validation'
                 Sheet  = $title
                 Column = $reviewColumn
+                Row    = $SheetsCheckTabResultRow - 1
                 Name   = $SheetsRowReviewColumns[0]
                 Values = @($SheetsRowReviewBands | ForEach-Object { $_.Value })
+            }
+
+            # And take the type off the identity block, where a run made before the row was
+            # part of the match put it. It landed on whatever column sat at the same index -
+            # 'Category', 'Prev findings', 'Trends' - offering a reviewer's vocabulary over a
+            # number. Emitted every run rather than once: the boards that need it cannot be
+            # named from here, and clearing a type that is not set costs one field in a request
+            # that is being sent anyway.
+            $plan += [pscustomobject]@{
+                Kind  = 'ValidationClear'
+                Sheet = $title
+                Row   = 0
             }
 
             # Only rules covering exactly this column are dropped. One somebody drew across the
@@ -2477,10 +2492,19 @@ function Invoke-SheetsPlan {
     # simply vanishes - which is what left one column of an otherwise centred board stubbornly
     # not centred. Rewritten every run for the reason the colour bands are: a vocabulary
     # changed in the source has to reach a document that already exists.
+    # Cleared before it is set, so a column that has to move from one table to the other does
+    # not spend a moment typed in both.
+    foreach ($clear in @($operations | Where-Object { $_.Kind -eq 'ValidationClear' })) {
+        if (-not $gidOf.ContainsKey($clear.Sheet)) { continue }
+        $request = New-SheetsValidationClearRequest -Tables @($knownTables[$clear.Sheet]) -Row $clear.Row
+        if ($request) { $second += $request }
+    }
+
     foreach ($validation in @($operations | Where-Object { $_.Kind -eq 'Validation' })) {
         if (-not $gidOf.ContainsKey($validation.Sheet)) { continue }
+        $row = $(if ($validation.PSObject.Properties.Name -contains 'Row') { $validation.Row } else { $null })
         $second += (New-SheetsValidationRequest -Validation $validation `
-                -Tables @($knownTables[$validation.Sheet]) -SheetId ([int]$gidOf[$validation.Sheet]))
+                -Tables @($knownTables[$validation.Sheet]) -SheetId ([int]$gidOf[$validation.Sheet]) -Row $row)
     }
 
     # In the second batch rather than the structural one: a tab this run creates has no id
@@ -2843,6 +2867,44 @@ function Get-SheetsRuleDeletions {
         })
 }
 
+function New-SheetsValidationClearRequest {
+    # Take the column type off every column of one table, or return nothing if none carries one.
+    #
+    # This exists to undo a defect rather than to express an intention: for one round of runs
+    # the dropdown was matched to a table by column alone, and a check tab's identity block
+    # spans the same columns as its result, so it landed there on whichever tab the API listed
+    # the identity first. A reviewer's three words were offered over Prev findings and over
+    # Category.
+    #
+    # A column entry sent without columnType clears it, and the list is resent whole for the
+    # reason the dropdown's is: a partial list replaces rather than merges, so anything left out
+    # loses the name Sheets holds for it.
+    param($Tables, $Row)
+
+    $board = $null
+    foreach ($candidate in @($Tables)) {
+        if (-not $candidate) { continue }
+        if ($null -ne $Row -and
+            ([int]$candidate.FromRow -gt [int]$Row -or [int]$candidate.ToRow -le [int]$Row)) { continue }
+        $board = $candidate
+        break
+    }
+    if (-not $board) { return $null }
+
+    $typed = @(@($board.Columns) | Where-Object { $_ -and $_.columnType })
+    if ($typed.Count -eq 0) { return $null }
+
+    $columns = @(@($board.Columns) | Where-Object { $_ } | ForEach-Object {
+            @{ columnIndex = [int]$_.columnIndex; columnName = [string]$_.columnName }
+        })
+    return @{
+        updateTable = @{
+            table  = @{ tableId = [string]$board.Id; columnProperties = $columns }
+            fields = 'columnProperties'
+        }
+    }
+}
+
 function New-SheetsValidationRequest {
     <#
         The one request that puts a dropdown on a column, and which of the two forms it takes.
@@ -2861,8 +2923,15 @@ function New-SheetsValidationRequest {
         The table's column list is resent whole. A partial one replaces it, so sending only the
         column being changed would drop the names Sheets holds for all the others - which is
         why Read-SheetState carries every column rather than the one in question.
+
+        The table is chosen by row as well as by column. A check tab carries two - the identity
+        block on rows 1 to 3 and the result below it - and both span the same column indices, so
+        matching on columns alone picked whichever the API happened to list first. That put the
+        Review Status dropdown on 'Category' and on 'Prev findings' in the identity block, on a
+        board where the same code had put it in the right place: the order Google returns tables
+        in is not part of the contract, so the same run produced different results per tab.
     #>
-    param($Validation, $Tables, [int]$SheetId)
+    param($Validation, $Tables, [int]$SheetId, $Row = $null)
 
     $index = [int]$Validation.Column - 1
     $condition = @{
@@ -2873,10 +2942,11 @@ function New-SheetsValidationRequest {
     $board = $null
     foreach ($candidate in @($Tables)) {
         if (-not $candidate) { continue }
-        if ([int]$candidate.FromCol -le $index -and [int]$candidate.ToCol -gt $index) {
-            $board = $candidate
-            break
-        }
+        if ([int]$candidate.FromCol -gt $index -or [int]$candidate.ToCol -le $index) { continue }
+        if ($null -ne $Row -and
+            ([int]$candidate.FromRow -gt [int]$Row -or [int]$candidate.ToRow -le [int]$Row)) { continue }
+        $board = $candidate
+        break
     }
 
     if (-not $board) {

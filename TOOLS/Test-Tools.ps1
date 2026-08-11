@@ -3081,6 +3081,66 @@ Test-That 'a reviewer column is found under the name it had as well as the one i
         'and a tab that has never had one says so'
 }
 
+Test-That 'a dropdown finds its table by row as well as by column' {
+    # A check tab carries two tables and both span every column index the result uses, so
+    # matching on columns alone picked whichever the API listed first. That put Review Status on
+    # 'Category' in the identity block on one tab and in the right place on the next, from the
+    # same run - the order Google returns tables in is not part of the contract.
+    $identity = [pscustomobject]@{
+        Id = 'id-block'; Name = 'DQ_051_Overview'; FromRow = 0; ToRow = 3; FromCol = 0; ToCol = 15
+        Columns = @(@{ columnIndex = 13; columnName = 'Category' })
+    }
+    $result = [pscustomobject]@{
+        Id = 'id-result'; Name = 'Fixtureball_DQ_051'; FromRow = 4; ToRow = 8; FromCol = 0; ToCol = 15
+        Columns = @(@{ columnIndex = 13; columnName = 'Review Status' })
+    }
+    $validation = [pscustomobject]@{
+        Sheet = 'T'; Column = 14; Name = 'Review Status'; Values = @('Fixed', 'In Progress')
+    }
+
+    # The identity block first in the list, which is the order that produced the defect.
+    $request = New-SheetsValidationRequest -Validation $validation -Tables @($identity, $result) `
+        -SheetId 9 -Row 4
+    Assert-Equal 'id-result' $request.updateTable.table.tableId 'the result table, not the block above it'
+    $typed = @(@($request.updateTable.table.columnProperties) | Where-Object { $_.columnType })
+    Assert-Equal 'Review Status' $typed[0].columnName 'and the column it belongs to'
+
+    # Without a row it still has to choose something rather than fail, which is what Overview -
+    # one table on the tab - relies on.
+    $plain = New-SheetsValidationRequest -Validation $validation -Tables @($result) -SheetId 9
+    Assert-Equal 'id-result' $plain.updateTable.table.tableId 'a single-table tab needs no row'
+}
+
+Test-That 'a type put on the wrong table by an earlier run is taken off' {
+    $identity = [pscustomobject]@{
+        Id = 'id-block'; Name = 'DQ_051_Overview'; FromRow = 0; ToRow = 3; FromCol = 0; ToCol = 15
+        Columns = @(
+            @{ columnIndex = 12; columnName = 'Verdict' }
+            @{ columnIndex = 13; columnName = 'Category'; columnType = 'DROPDOWN' })
+    }
+    $result = [pscustomobject]@{
+        Id = 'id-result'; Name = 'Fixtureball_DQ_051'; FromRow = 4; ToRow = 8; FromCol = 0; ToCol = 15
+        Columns = @(@{ columnIndex = 13; columnName = 'Review Status' })
+    }
+
+    $request = New-SheetsValidationClearRequest -Tables @($identity, $result) -Row 0
+    Assert-Equal 'id-block' $request.updateTable.table.tableId 'the identity block is the one cleared'
+    $columns = @($request.updateTable.table.columnProperties)
+    Assert-Equal 2 $columns.Count 'the whole list is resent, because a partial one replaces it'
+    Assert-Equal 0 @($columns | Where-Object { $_.columnType }).Count 'with no type left on any of them'
+    Assert-Equal 'Category' @($columns | Where-Object { $_.columnIndex -eq 13 })[0].columnName `
+        'and the names Sheets holds are kept'
+
+    # Nothing to undo is not a request. A board that never had the defect must not be given a
+    # call per tab for it.
+    $clean = [pscustomobject]@{
+        Id = 'id-clean'; Name = 'DQ_052_Overview'; FromRow = 0; ToRow = 3; FromCol = 0; ToCol = 15
+        Columns = @(@{ columnIndex = 13; columnName = 'Category' })
+    }
+    Assert-Equal $null (New-SheetsValidationClearRequest -Tables @($clean) -Row 0) `
+        'a table with no typed column produces nothing'
+}
+
 Test-That 'a word written before the list existed is renamed, never invented' {
     Assert-Equal 'Fixed' (ConvertTo-SheetsReviewStatus -Value 'fixed') 'lower case is what the whole of the existing 610 was typed in'
     Assert-Equal 'No Issue / Change' (ConvertTo-SheetsReviewStatus -Value 'no issue') 'one check said no issue'
