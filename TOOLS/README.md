@@ -1315,14 +1315,40 @@ every result block carries two more columns to the right of whatever the stateme
 
 | Column | Holds |
 |---|---|
-| `Review Status` | what was concluded about this one finding — free text, kept short |
-| `Review Note` | why, in the reviewer's own words |
+| `Review Status` | what was concluded about this one finding — a closed list |
+| `Review Note` | why, in the reviewer's own words — free text |
 
 The split is by convention rather than in the code: either column being filled marks the row,
 and both travel together. `Review Status` is the one a column is filtered and counted by, which
 is why it holds a word and not a sentence — a paragraph there makes "how many of these 63 are
-closed" unanswerable, and it is the question the column is for. It is also the one that can
-become a dropdown once the words settle, which a sentence would prevent.
+closed" unanswerable, and it is the question the column is for.
+
+It offers three values, drawn from what was written rather than from what a vocabulary ought to
+contain:
+
+| Value | Colour | Means |
+|---|---|---|
+| `Fixed` | green | corrected in the database |
+| `No Issue / Change` | grey | looked at — either not a defect, or nothing to change |
+| `In Progress` | blue | being worked on |
+
+`No Issue / Change` carries both words because both were written and they turned out to mean
+one thing. 610 cells held five spellings of four ideas, and `no issue` appeared only on the
+stray-participant check while `no change` appeared only on the year-gap check — never side by
+side. Two checks' words for the same outcome, not two outcomes. Folding them under one value
+that names both keeps either reviewer's reading legible.
+
+`For IT` was considered and left out: the check-level `Status` already has `IT Fix`, and nobody
+has yet needed to say it about a single row. Adding a fourth value costs one line and the
+migration below makes it harmless, so the list stays as small as the evidence supports.
+
+`$SheetsRowReviewLegacy` renames what was written before the list existed — `fixed` → `Fixed`,
+`no issue` and `no change` → `No Issue / Change`, `in progress` and `in prog` → `In Progress`.
+It is applied wherever a note passes through, so a cell reaches its column already spelled the
+way the dropdown offers rather than being flagged by the run that introduced it. A spelling not
+listed is left exactly as written: `not found` is the one such cell, and guessing which of the
+three the reviewer meant would be inventing their conclusion rather than recording it. Sheets
+flags it, which is the right way for them to be asked.
 
 A former heading is still recognised. A tab is found by its heading, so renaming a column makes
 every existing one invisible to the next run — and invisible here means cleared and rewritten

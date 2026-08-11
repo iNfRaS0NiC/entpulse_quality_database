@@ -3037,11 +3037,11 @@ Test-That 'a note follows its finding rather than the row it used to be on' {
     )
     $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
 
-    Assert-Equal 'no issue' $carried.Review[0] 'the surviving finding keeps its review'
+    Assert-Equal 'No Issue / Change' $carried.Review[0] 'the surviving finding keeps its review'
     Assert-Equal 'checked with the federation' $carried.Note[0] 'and its note'
     Assert-Equal '' $carried.Review[1] 'a finding nobody judged stays empty'
     Assert-Equal 1 @($carried.Dropped).Count 'the one whose finding is gone is reported'
-    Assert-Equal 'fixed' $carried.Dropped[0].Review 'with what it said'
+    Assert-Equal 'Fixed' $carried.Dropped[0].Review 'with what it said'
     Assert-True ($carried.Dropped[0].Why -like '*no longer in the result*') 'and why it could not go back'
 }
 
@@ -3081,6 +3081,72 @@ Test-That 'a reviewer column is found under the name it had as well as the one i
         'and a tab that has never had one says so'
 }
 
+Test-That 'a word written before the list existed is renamed, never invented' {
+    Assert-Equal 'Fixed' (ConvertTo-SheetsReviewStatus -Value 'fixed') 'lower case is what the whole of the existing 610 was typed in'
+    Assert-Equal 'No Issue / Change' (ConvertTo-SheetsReviewStatus -Value 'no issue') 'one check said no issue'
+    Assert-Equal 'No Issue / Change' (ConvertTo-SheetsReviewStatus -Value 'no change') 'another said no change about the same outcome'
+    Assert-Equal 'In Progress' (ConvertTo-SheetsReviewStatus -Value 'In prog') 'an abbreviation is a spelling like any other'
+    Assert-Equal 'Fixed' (ConvertTo-SheetsReviewStatus -Value 'Fixed') 'a current value passes through untouched'
+
+    # Guessing which of the three 'not found' meant would be inventing a conclusion rather than
+    # recording one. It is left as written and the dropdown flags it, which is how the reviewer
+    # gets asked.
+    Assert-Equal 'not found' (ConvertTo-SheetsReviewStatus -Value 'not found') 'an undeclared word is left exactly as written'
+    Assert-Equal '' (ConvertTo-SheetsReviewStatus -Value '') 'and an empty cell stays empty'
+}
+
+Test-That 'a carried note arrives already spelled the way the column offers' {
+    # Renamed on the way in, so a cell is not flagged by the same run that introduced the list.
+    $header = @('check_type', 'statistic_id')
+    $rows = @([pscustomobject]@{ check_type = 'STRAY'; statistic_id = '322012' })
+    $notes = @(
+        [pscustomobject]@{ Key = (Get-SheetsFindingKey -Row @('STRAY', '322012') -Columns @(0, 1))
+            Review = 'no change'; Note = 'the gap is real'
+        }
+        [pscustomobject]@{ Key = (Get-SheetsFindingKey -Row @('STRAY', '999') -Columns @(0, 1))
+            Review = 'fixed'; Note = ''
+        }
+    )
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal 'No Issue / Change' $carried.Review[0] 'the note put back beside its finding'
+    Assert-Equal 'Fixed' $carried.Dropped[0].Review 'and the one written to the log read the same'
+}
+
+Test-That 'Review Status is a closed list, coloured, and drawn only over its own column' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'LIST'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $state = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'LIST' }
+        Titles = @('Overview', 'LIST'); EmptyTabs = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'LIST' = 9 }; SheetIndexOf = @{ 'Overview' = 0 }
+        ConditionalFormatsOf = @{ 'LIST' = @(
+                # Ours: covers exactly the Review Status column, which lands at index 2.
+                [pscustomobject]@{ ranges = @([pscustomobject]@{ startColumnIndex = 2; endColumnIndex = 3 }) }
+                # Somebody's own, drawn across the result. Left where it is.
+                [pscustomobject]@{ ranges = @([pscustomobject]@{ startColumnIndex = 0; endColumnIndex = 4 }) }
+            ) }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $state -OutputFolder 'x' -Collected `
+        @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X'; event_id = '7' }) })
+
+    $validation = @($plan.Operations | Where-Object { $_.Kind -eq 'Validation' -and $_.Sheet -eq 'LIST' })
+    Assert-Equal 1 $validation.Count 'the column carries a dropdown'
+    Assert-Equal 3 $validation[0].Column 'at Review Status, right after the two data columns'
+    Assert-Equal 'Fixed|No Issue / Change|In Progress' (@($validation[0].Values) -join '|') `
+        'offering exactly the declared list'
+
+    $rules = @($plan.Operations | Where-Object { $_.Kind -eq 'FormatRules' -and $_.Sheet -eq 'LIST' })
+    Assert-Equal 1 $rules.Count 'and one set of colour bands'
+    Assert-Equal 3 $rules[0].Column 'over the same column'
+    # From the result header down. The identity block above is a different table, and a band
+    # drawn from row 1 would colour cells belonging to neither.
+    Assert-Equal $SheetsCheckTabResultRow $rules[0].StartRow 'starting at the result block'
+    Assert-Equal '0' (@($rules[0].Drop) -join ',') 'replacing only the rule that covers exactly this column'
+    Assert-Equal $SheetsRowReviewBands.Count @($rules[0].Rules).Count 'one band per value'
+}
+
 Test-That 'a note written where there was nowhere better is still a note' {
     # Before the reviewer columns existed there was nowhere to put a per-row conclusion, and on
     # Triathlon 388 of them went into eligible_count - the coverage column, overwritten every
@@ -3093,7 +3159,7 @@ Test-That 'a note written where there was nowhere better is still a note' {
     $rows = @([pscustomobject]@{ check_type = 'STRAY'; statistic_id = '322012'; eligible_count = $null })
     $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $carriedIn
 
-    Assert-Equal 'no issue' $carried.Review[0] 'it survives into the column built for it'
+    Assert-Equal 'No Issue / Change' $carried.Review[0] 'it survives into the column built for it, in the spelling that column offers'
     Assert-Equal 0 @($carried.Dropped).Count 'and nothing is logged as lost'
 }
 

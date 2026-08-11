@@ -294,12 +294,42 @@ $SheetsCheckTabResultRow = 5
 # they used eligible_count, which is the coverage column and is overwritten every run: 388
 # cells of real review sitting in the one place guaranteed to be destroyed.
 #
-# Free text, not a dropdown. The words they reached for - fixed, no issue, in progress, not
-# found, no change - are a vocabulary nobody has agreed yet, and a closed list would reject
-# every cell already written. Status went the other way for a reason that does not apply here:
-# it is read across sports to answer how much of the catalogue has been reviewed, and these are
-# read by the person who wrote them.
 $SheetsRowReviewColumns = @('Review Status', 'Review Note')
+
+# What a reviewer may conclude about one finding, and the only values Review Status offers.
+#
+# Three, drawn from what was actually written rather than from what a vocabulary ought to
+# contain. 610 cells across one board held five spellings of four ideas, and two of them turned
+# out to be one: no issue appeared only on the stray-participant check and no change only on the
+# year-gap check, never side by side, so they were two checks' words for the same outcome rather
+# than two outcomes. The value carries both words so neither reviewer's reading is overwritten.
+#
+# For IT was considered and left out: the check-level Status already has IT Fix, and nobody has
+# yet needed to say it about a single row. A fourth value costs one line here and the migration
+# makes adding one harmless, so the list stays as small as the evidence supports.
+#
+# Review Note is deliberately not constrained. It holds a sentence.
+$SheetsRowReviewBands = @(
+    [pscustomobject]@{ Value = 'Fixed'; Background = '#E6F4EA'; Colour = '#137333' }
+    [pscustomobject]@{ Value = 'No Issue / Change'; Background = '#F1F3F4'; Colour = '#5F6368' }
+    [pscustomobject]@{ Value = 'In Progress'; Background = '#E8F0FE'; Colour = '#1967D2' }
+)
+
+# What each spelling written before the list existed meant. Applied wherever a note passes
+# through, so a cell reaches its new column already reading as one of the values above rather
+# than being flagged by the dropdown the same run that introduced it.
+#
+# Keyed in lower case and matched that way, because the whole of the existing 610 was typed in
+# lower case. A spelling not listed is left exactly as written - 'not found' is the one such
+# cell, and guessing which of the three the reviewer meant would be inventing their conclusion
+# rather than recording it. Sheets will flag it, which is the right way for them to be asked.
+$SheetsRowReviewLegacy = @{
+    'fixed'       = 'Fixed'
+    'no issue'    = 'No Issue / Change'
+    'no change'   = 'No Issue / Change'
+    'in progress' = 'In Progress'
+    'in prog'     = 'In Progress'
+}
 
 # What the first of them used to be called. A tab is found by its heading, so a rename would
 # otherwise make every existing column invisible to the run that follows it - and invisible
@@ -466,6 +496,25 @@ function Get-SheetsReviewColumnIndex {
     return -1
 }
 
+function ConvertTo-SheetsReviewStatus {
+    # One reviewer's word, in the spelling the column now offers. A value already current is
+    # returned untouched, and one nobody has declared is returned exactly as it was written:
+    # this renames a conclusion, it never forms one.
+    param([string]$Value)
+
+    $text = [string]$Value
+    if ([string]::IsNullOrWhiteSpace($text)) { return $text }
+
+    $trimmed = $text.Trim()
+    foreach ($band in $SheetsRowReviewBands) {
+        if ($trimmed -eq $band.Value) { return $band.Value }
+    }
+
+    $key = $trimmed.ToLowerInvariant()
+    if ($SheetsRowReviewLegacy.ContainsKey($key)) { return $SheetsRowReviewLegacy[$key] }
+    return $text
+}
+
 function New-SheetsCarriedReview {
     <#
         Last run's notes matched to this run's findings, and what could not be matched.
@@ -491,7 +540,16 @@ function New-SheetsCarriedReview {
     # Filtered rather than taken as given. An empty array reaching an untyped parameter arrives
     # as $null, and @($null) is one element rather than none - which read as a single nameless
     # note and had every first run announcing that the check had been re-shaped.
-    $held = @(@($Notes) | Where-Object { $_ })
+    # Renamed on the way in, so both destinations agree: a note put back beside its finding and
+    # one written to the log read the same, and a cell reaches the column already spelled the
+    # way the dropdown offers rather than being flagged by the run that introduced it.
+    $held = @(@($Notes) | Where-Object { $_ } | ForEach-Object {
+            [pscustomobject]@{
+                Key    = $_.Key
+                Review = (ConvertTo-SheetsReviewStatus -Value $_.Review)
+                Note   = $_.Note
+            }
+        })
     if ($held.Count -eq 0) {
         return [pscustomobject]@{ Review = $review; Note = $note; Dropped = @() }
     }
@@ -1466,6 +1524,57 @@ function New-SheetsMergePlan {
                 ToCol        = $header.Count
                 HeaderColour = $SheetsDataHeaderColour
             }
+
+            # Review Status as a closed list, and coloured like the chip it is meant to read
+            # as. The column is the reviewer's, and constraining it is not a way of taking it
+            # back: what a closed list buys is that "how many of these findings are closed" has
+            # an answer, which a column holding five spellings of four ideas does not.
+            #
+            # Rewritten every run for the reason Overview's bands are: a value added to the
+            # list has to reach the documents that already exist, and the alternative - adding
+            # three more rules a week - fills the tab with duplicates.
+            $reviewColumn = $dataHeader.Count + 1
+            $plan += [pscustomobject]@{
+                Kind   = 'Validation'
+                Sheet  = $title
+                Column = $reviewColumn
+                Name   = $SheetsRowReviewColumns[0]
+                Values = @($SheetsRowReviewBands | ForEach-Object { $_.Value })
+            }
+
+            # Only rules covering exactly this column are dropped. One somebody drew across the
+            # result themselves is theirs and stays. From row 5 rather than row 1: the identity
+            # block above is a different table, and a band drawn from the top would colour
+            # cells belonging to neither.
+            $tabRules = @()
+            if ($Existing -and $Existing.ConditionalFormatsOf -and
+                $Existing.ConditionalFormatsOf.ContainsKey($title)) {
+                $tabRules = @($Existing.ConditionalFormatsOf[$title])
+            }
+            $tabDrop = @()
+            for ($index = 0; $index -lt $tabRules.Count; $index++) {
+                $ranges = @($tabRules[$index].ranges)
+                if ($ranges.Count -eq 0) { continue }
+                $mine = @($ranges | Where-Object {
+                        [int]$_.startColumnIndex -eq ($reviewColumn - 1) -and
+                        [int]$_.endColumnIndex -eq $reviewColumn })
+                if ($mine.Count -eq $ranges.Count) { $tabDrop += $index }
+            }
+            $plan += [pscustomobject]@{
+                Kind     = 'FormatRules'
+                Sheet    = $title
+                Column   = $reviewColumn
+                StartRow = $SheetsCheckTabResultRow
+                Drop     = $tabDrop
+                Rules    = @($SheetsRowReviewBands | ForEach-Object {
+                        [pscustomobject]@{
+                            Type       = 'TEXT_EQ'
+                            Values     = @($_.Value)
+                            Colour     = $_.Colour
+                            Background = $_.Background
+                        }
+                    })
+            }
         }
     }
 
@@ -2317,9 +2426,14 @@ function Invoke-SheetsPlan {
                         # No endRowIndex, so the band covers the column however far the board
                         # grows. startRowIndex 1 keeps it off the header.
                         ranges     = @($(
+                                # Row 1 by default, which is the row under Overview's header.
+                                # A check tab's result header is on row 5 and the identity
+                                # block above it is a different table, so a band drawn from
+                                # row 1 there would colour cells belonging to neither.
                                 $band_range = @{
                                     sheetId          = $sheetId
-                                    startRowIndex    = 1
+                                    startRowIndex    = $(if ($rules.PSObject.Properties.Name -contains 'StartRow' -and
+                                            $null -ne $rules.StartRow) { [int]$rules.StartRow } else { 1 })
                                     startColumnIndex = [int]$rules.Column - 1
                                     endColumnIndex   = [int]$rules.Column
                                 }
