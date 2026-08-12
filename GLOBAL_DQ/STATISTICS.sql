@@ -995,48 +995,73 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-033
     -- Name - COMP.RANK_RESULTS_MISSING_PHASE
-    -- What it does: Finds Comp.Rank participants carrying no phase row.
+    -- What it does: Finds Comp.Rank carrying participants with no phase row, naming how many of the field are missing one and who they are.
     'MISSING_PHASE' AS check_type,
-    sp.id AS statistic_participants_id,
-    s.id AS statistic_id,
-    tt.name AS template_name,
-    t.name AS tournament_name,
-    p.name AS participant_name,
-    (
-        SELECT sd.value
-        FROM statistic_data{{SHARD_ID}} sd
-        WHERE sd.statistic_participants{{SHARD_ID}}FK = sp.id
-          AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
-          AND sd.del = 'no'
-        LIMIT 1
-    ) AS rank_value,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.field_size,
+    x.missing_count,
+    -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
+    -- group_concat_max_len without saying so, and missing_count is counted separately and is
+    -- what the row asserts.
+    x.missing_participants,
     NULL AS eligible_count
-FROM statistic s
-JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
-JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
-WHERE s.del = 'no'
-  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND s.object_typeFK = 3
-  AND tt.sportFK = {{SPORT_ID}}
-  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND t.tournament_templateFK = <tournament_template_id>
-  AND NOT EXISTS (
-      SELECT 1
-      FROM object_round orr
-      WHERE orr.objectFK = sp.id
-        AND orr.object_typeFK = 138
-        AND orr.type = 'phase'
-        AND orr.del = 'no'
-  )
+FROM (
+    SELECT
+        y.statistic_id,
+        y.statistic_name,
+        y.template_name,
+        y.tournament_name,
+        COUNT(*) AS field_size,
+        SUM(y.is_missing) AS missing_count,
+        GROUP_CONCAT(CASE WHEN y.is_missing = 1 THEN y.participant_name END
+                     ORDER BY y.participant_name SEPARATOR ', ') AS missing_participants
+    FROM (
+        -- One row per participant of the Comp.Rank, carrying whether a phase row exists for
+        -- them. The statistic is the audited object: an import that wrote no phases at all is
+        -- one repair and not one per competitor, and reported per competitor it read as
+        -- twenty - against a coverage count of every Comp.Rank participant in the sport, which
+        -- made the proportion wrong in both halves. field_size and missing_count keep the two
+        -- shapes apart: equal means the whole Comp.Rank has no phases, lower means the phases
+        -- were written for part of the field only, which is a different repair.
+        SELECT
+            s.id AS statistic_id,
+            s.name AS statistic_name,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            p.name AS participant_name,
+            CASE WHEN NOT EXISTS (
+                    SELECT 1
+                    FROM object_round orr
+                    WHERE orr.objectFK = sp.id
+                      AND orr.object_typeFK = 138
+                      AND orr.type = 'phase'
+                      AND orr.del = 'no'
+                ) THEN 1 ELSE 0 END AS is_missing
+        FROM statistic s
+        JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+        JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+        WHERE s.del = 'no'
+          AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+          AND s.object_typeFK = 3
+          AND tt.sportFK = {{SPORT_ID}}
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          -- AND t.tournament_templateFK = <tournament_template_id>
+    ) y
+    GROUP BY y.statistic_id, y.statistic_name, y.template_name, y.tournament_name
+) x
+WHERE x.missing_count > 0
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT sp.id) AS eligible_count
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
