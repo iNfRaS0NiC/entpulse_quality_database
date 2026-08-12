@@ -18,6 +18,7 @@ mechanisms from `DATABASE.md`.
 | 40 | Artistic-Gymnastics | Listing (individual and team) | `SPORTS/Artistic-Gymnastics.md` | In progress | 2026-08-04 | Artistic Gymnastics |
 | 1 | Soccer | H2H (team) | `SPORTS/Soccer.md` | In progress | 2026-08-05 | Soccer |
 | 42 | Modern-Pentathlon | Listing (individual and team) | `SPORTS/Modern-Pentathlon.md` | In progress | 2026-08-06 | Modern Pentathlon |
+| 3 | Golf | Hybrid (individual and team) | `SPORTS/Golf.md` | In progress | 2026-08-12 | Golf |
 
 <!-- MANUAL PASTE ZONE: SPORT INDEX — insert approved additions immediately before this marker; do not move or delete it. -->
 

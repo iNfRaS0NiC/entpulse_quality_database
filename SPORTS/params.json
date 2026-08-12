@@ -569,5 +569,30 @@
         "reason": "1266 of the sport's 9525 ranked events are reported, and the output mixes three populations a count cannot separate. 52 are a legitimate shape the template cannot see: Semi-Final A and Semi-Final B split one ranked field, so each holds a scattered subset of places that tile 1..N only together, verified as disjoint and complete across the pair. 733 have no group sibling at all and their sequence must be self-contained, so those breaks are real. The remaining 481 have group siblings that neither tile cleanly nor stand alone and cannot be classified without being read. The sport's fencing phases also tie heavily on a discrete score, which multiplies the chances of skipping wrongly, and some rows restate what Modern-Pentathlon-DQ-094 EVENT_RESULTS_RANK_ORDER_CONTRADICTS_POINTS already reports on the same events. Monitor rather than Blocked because the invariant holds for the majority, and rather than Actionable because a reader who treats every row as a repair will correct places the sport stores deliberately. SPORTS/Modern-Pentathlon.md owns the evidence."
       }
     }
+  },
+  "Golf": {
+    "SPORT_ID": 3,
+    "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+    "STATISTIC_TYPE_ID": 11,
+    "STATISTIC_OWNER_TYPE_ID": 3,
+    "SHARD_ID": 11,
+    "DATA_RANK_TYPE_ID": 1270,
+    "DATA_MEDAL_TYPE_ID": 1277,
+    "CONFIG_START_DATE_TYPE_ID": 1463,
+    "CONFIG_END_DATE_TYPE_ID": 1464,
+    "CONFIG_GENDER_TYPE_ID": 1470,
+    "CONFIG_EVENT_ID_TYPE_ID": 1471,
+    "RESULT_RANK_TYPE_ID": 100,
+    "RESULT_COMMENT_TYPE_ID": 104,
+    "RESULT_MEDAL_TYPE_ID": 501,
+    "SCOPE_TYPE_ID": 305,
+    "SCOPE_TYPE_LIST": "305, 462, 463, 464, 465",
+    "ROUND_TYPE_LIST": "1, 2, 3, 4, 9, 19, 22, 23, 38, 39, 40, 41, 42, 43, 89, 90, 91, 92, 173, 176, 178, 184, 185, 186, 188, 225, 262, 263, 264, 304, 305",
+    "NOT_STARTED_DESC_LIST": "1",
+    "_notApplicable": {
+      "LINEUP_TYPE_LIST": "the sport writes no lineup row at all; a foursome is stored as one athlete participant holding both names"
+    }
   }
 }
