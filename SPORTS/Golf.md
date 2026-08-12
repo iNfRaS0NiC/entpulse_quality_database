@@ -351,6 +351,20 @@ false - that a two-player match owes a full medal set. The match-play finals are
 unaudited by the choice: they are ordinary events and every check that does not key on the final
 round reads them, which is most of the catalogue.
 
+**The duplicate key drops the event name and keeps the calendar day, and both halves were
+measured rather than assumed.** Golf names its match-play events after the competitors -
+`Aaron Baddeley-Tiger Woods` - which is the condition `GLOBAL-DQ-062` states for
+`DUPLICATE_KEY_INCLUDES_EVENT_NAME = 0`: the name repeats the participant set in an order the
+data does not fix, so it splits `A-B` from `B-A` that the participant key has already matched.
+Of the 63 groups of match-play events sharing a stage, a calendar day and a participant set, 59
+already carry an identical name, so dropping the name costs nothing; the remaining 4 are exactly
+the groups a name key would hide.
+
+`DUPLICATE_KEY_USES_CALENDAR_DAY` is `1`. Twenty-three of those 63 groups carry different
+timestamps on the same day for the same pairing, and two golfers do not play two separate matches
+in a day - that is a re-import arriving with a shifted start, which a timestamp key never groups
+at all and therefore never reports.
+
 **Round type names are not unique identifiers here, the same way they are not in BMX.** Quarter
 Finals occurs as both `176` and `3`, Semi Finals as `178` and `2`, Final as `173` and `9`,
 Small Final as `186` and `19`, `1/8` as `184` and `4`, Playoff as `304` and `305`, and the

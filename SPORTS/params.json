@@ -603,7 +603,10 @@
       "SCOPE_PERIOD_DATA_TYPE_LIST": "deferred with the hole-by-hole scope layer, which is outside the DQ work by decision on 2026-08-12",
       "SCOPE_PERIOD_SENTINEL_LIST": "deferred with the hole-by-hole scope layer",
       "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "deferred with the hole-by-hole scope layer",
-      "EXTRA_PERIOD_STATUS_DESC_LIST": "deferred with the hole-by-hole scope layer"
+      "EXTRA_PERIOD_STATUS_DESC_LIST": "deferred with the hole-by-hole scope layer",
+      "WINNER_VALUE_LIST": "the winner property is not recorded for any sport in this package; deferred there rather than decided here",
+      "WINNER_HOME_VALUE_LIST": "see WINNER_VALUE_LIST",
+      "WINNER_AWAY_VALUE_LIST": "see WINNER_VALUE_LIST"
     },
     "DATA_COMMENT_TYPE_ID": 1273,
     "DATA_TEAM_TYPE_ID": 1429,
@@ -620,6 +623,16 @@
     "RESULT_COMMENT_NO_RESULT_LIST": "'wd', 'dq', 'rtd', 'dns', 'nr', 'n/r'",
     "RESULT_SCORE_TYPE_ID": 36,
     "RESULT_TIE_VALUE_TYPE_LIST": "36",
-    "NUMERIC_RESULT_TYPE_LIST": "31, 32, 33, 34, 35, 36, 100, 526, 527, 528, 529, 540"
+    "NUMERIC_RESULT_TYPE_LIST": "31, 32, 33, 34, 35, 36, 100, 526, 527, 528, 529, 540",
+    "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', '1/8', '1/16', '1/32', 'small final', 'playoff'",
+    "GROUP_ROUND_NAME_LIST": "'main phase'",
+    "NUMERIC_DATA_TYPE_LIST": "1270, 1271, 1476",
+    "PRECISION_RESULT_TYPE_LIST": "540",
+    "PRECISION_DATA_TYPE_LIST": "1476",
+    "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
+    "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
+    "SERIES_SKIP_YEARS": "2020",
+    "DATA_COMMENT_VALUE_LIST": "'wd', 'mdf', 'dq', 'mc', 'rtd', 'sub', 'nr', 'dns', 'n/r'",
+    "DATA_COMMENT_NO_RESULT_LIST": "'wd', 'dq', 'rtd', 'dns', 'nr', 'n/r'"
   }
 }
