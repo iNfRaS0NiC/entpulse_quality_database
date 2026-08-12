@@ -1931,55 +1931,97 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-090
     -- Name - EVENT_RESULT_MIRRORED_SCORE_TYPES_DISAGREE
-    -- What it does: Finds participants whose two mirrored score types disagree, separating a pair holding different values from one where a side of the pair is absent.
-    CASE
-        WHEN r_primary.id IS NULL THEN 'PRIMARY_SCORE_MISSING'
-        WHEN r_mirror.id IS NULL THEN 'MIRROR_SCORE_MISSING'
-        ELSE 'MIRRORED_VALUES_DIFFER'
-    END AS check_type,
-    ep.id AS event_participants_id,
-    e.id AS event_id,
-    e.name AS event_name,
-    e.startdate AS event_startdate,
-    p.name AS participant_name,
-    tt.name AS template_name,
-    t.name AS tournament_name,
-    e.status_descFK,
-    r_primary.value AS primary_value,
-    r_mirror.value AS mirror_value,
+    -- What it does: Finds events whose participants' two mirrored score types disagree, separating a pair holding different values from one where a side of the pair is absent, and naming how many of the field are affected and who they are.
+    x.check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.status_descFK,
+    x.field_size,
+    x.affected_count,
+    -- A convenience for the reader, not the finding: each entry is the participant with the
+    -- pair as stored, primary/mirror, a dash standing for the absent side. GROUP_CONCAT
+    -- truncates at the server's group_concat_max_len without saying so, and affected_count is
+    -- counted separately and is what the row asserts.
+    x.affected_participants,
     NULL AS eligible_count,
     0 AS sort_order
-FROM event_participants ep
-JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
-JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
--- Both joins are left outer, because one of the pair being absent is the finding rather than
--- a reason to drop the row: an absent result row and a differing value are separate storage
--- states (DB-SEM-002) and they are repaired differently.
-LEFT JOIN result r_primary ON r_primary.event_participantsFK = ep.id AND r_primary.del = 'no'
-                          AND r_primary.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
-LEFT JOIN result r_mirror  ON r_mirror.event_participantsFK = ep.id AND r_mirror.del = 'no'
-                          AND r_mirror.result_typeFK = {{RESULT_MIRROR_SCORE_TYPE_ID}}
-WHERE ep.del = 'no'
-  AND tt.sportFK = {{SPORT_ID}}
-  -- AND t.tournament_templateFK = <tournament_template_id>
-  -- AND e.startdate >= '<from_datetime>'
-  -- AND e.startdate <  '<to_datetime>'
-  AND (r_primary.id IS NOT NULL OR r_mirror.id IS NOT NULL)
-  AND (
-      r_primary.id IS NULL
-      OR r_mirror.id IS NULL
-      OR TRIM(r_primary.value) <> TRIM(r_mirror.value)
-  )
+FROM (
+    SELECT
+        y.check_type,
+        y.event_id,
+        y.event_name,
+        y.event_startdate,
+        y.template_name,
+        y.tournament_name,
+        y.status_descFK,
+        MAX(y.field_size) AS field_size,
+        COUNT(*) AS affected_count,
+        GROUP_CONCAT(y.participant_label ORDER BY y.participant_label SEPARATOR ', ')
+            AS affected_participants
+    FROM (
+        -- One row per participant whose pair disagrees, grouped to the event below. The event
+        -- is the audited object: in a head-to-head sport a score the import never wrote is
+        -- missing on both sides at once, so reported per participant the same defect counted
+        -- twice - measured on Curling, 29 of 30 events reported exactly two rows. The three
+        -- states stay separate check_types because they are repaired differently, so an event
+        -- holding two of them is two findings and not one.
+        SELECT
+            CASE
+                WHEN r_primary.id IS NULL THEN 'PRIMARY_SCORE_MISSING'
+                WHEN r_mirror.id IS NULL THEN 'MIRROR_SCORE_MISSING'
+                ELSE 'MIRRORED_VALUES_DIFFER'
+            END AS check_type,
+            e.id AS event_id,
+            e.name AS event_name,
+            e.startdate AS event_startdate,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            e.status_descFK,
+            (
+                SELECT COUNT(DISTINCT ep2.id)
+                FROM event_participants ep2
+                WHERE ep2.eventFK = e.id AND ep2.del = 'no'
+            ) AS field_size,
+            CONCAT(p.name, ' (', COALESCE(r_primary.value, '-'), '/',
+                   COALESCE(r_mirror.value, '-'), ')') AS participant_label
+        FROM event_participants ep
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        -- Both joins are left outer, because one of the pair being absent is the finding rather
+        -- than a reason to drop the row: an absent result row and a differing value are separate
+        -- storage states (DB-SEM-002) and they are repaired differently.
+        LEFT JOIN result r_primary ON r_primary.event_participantsFK = ep.id AND r_primary.del = 'no'
+                                  AND r_primary.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+        LEFT JOIN result r_mirror  ON r_mirror.event_participantsFK = ep.id AND r_mirror.del = 'no'
+                                  AND r_mirror.result_typeFK = {{RESULT_MIRROR_SCORE_TYPE_ID}}
+        WHERE ep.del = 'no'
+          AND tt.sportFK = {{SPORT_ID}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+          AND (r_primary.id IS NOT NULL OR r_mirror.id IS NOT NULL)
+          AND (
+              r_primary.id IS NULL
+              OR r_mirror.id IS NULL
+              OR TRIM(r_primary.value) <> TRIM(r_mirror.value)
+          )
+    ) y
+    GROUP BY y.check_type, y.event_id, y.event_name, y.event_startdate,
+             y.template_name, y.tournament_name, y.status_descFK
+) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT ep.id) AS eligible_count,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'

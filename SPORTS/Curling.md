@@ -96,6 +96,13 @@ pair is a duplicate by design and any disagreement between them is a defect rath
 distinction. `GLOBAL-DQ-090` asserts that, and either side being absent is the same defect
 caught earlier.
 
+The defect belongs to the match rather than to one side of it, and this sport is where that was
+measured: a score the import never wrote is missing for both teams at once, so 29 of the 30
+affected events were reporting exactly two rows each. The check audits the event since
+2026-08-12, and the count went from 59 to 30 against a coverage that halved with it, 35840 to
+17920. `affected_count` still names how many of the field are involved, which for a Curling
+match is two whenever the whole match is affected and one where a single side lost its value.
+
 `1 Ordinary time` is an anomaly rather than a field the sport uses. It occurs on a handful of
 events only, and almost every one of them carries the `Finished after awarded win` status, so
 it reads as a by-product of how an awarded win is recorded rather than as a result the sport

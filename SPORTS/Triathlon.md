@@ -417,7 +417,10 @@ type='phase'). Two facts distinguish the sport from one where the parallel-varia
   appears as a Phase, so the sport's Comp.Rank is built from the final round alone rather than
   from each participant's last round reached.
 
-A minority of statistic-participant rows carry no phase row at all.
+A minority of statistic-participant rows carried no phase row at all when this was inventoried.
+They have since been repaired: `GLOBAL-DQ-033` returns nothing over all 3440 of the sport's
+Comp.Rank. That is a data state rather than a structural absence — the sport writes the phase,
+so the check stays active for the day a fresh import arrives without one.
 
 A ninth value, `204 Heats`, is carried by two events in November 2023. It is absent from the
 table above because the inventory that built the table did not reach it; it is inside the

@@ -71,6 +71,18 @@ format. A team holding one gender only is a separate state and not a broken bala
 layer leaves it to `GLOBAL-DQ-043`, while the statistic layer has no such sibling and
 `GLOBAL-DQ-066` reports it there.
 
+**Where the gender contradictions of this sport actually sit.** This is the sport that carries
+the bulk of them, and they divide cleanly by object. 890 are lineups: a team recorded as mixed
+that fields one gender only, and each is its own entry to repair, which is what `GLOBAL-DQ-043`
+now holds alone. The other 64 are participant records whose own gender contradicts the stage
+they were entered in — Slovakia recorded as `male` and entered in ten mixed stages, one athlete
+recorded as `male` and entered in six — and those were 154 rows against 64 records until
+`GLOBAL-DQ-123` took them on 2026-08-12. One column on one row, fixed once, cleared ten rows.
+
+Splitting them also uncovered 104 lineup defects that had been masked: a team entry that was both
+gender-contradicted and lineup-contradicted was labelled by the first branch the old statement
+matched, so its lineup defect never appeared under its own name.
+
 <!-- MANUAL PASTE ZONE: 42 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types

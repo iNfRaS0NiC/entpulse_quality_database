@@ -199,6 +199,12 @@ events, so its output is dominated by the calendar rather than by defects, and i
 `Monitor` for that reason. The pair that stopped being written for a **finished** match is what
 the check is for and remains worth reading inside its output.
 
+The check audits the event rather than the competitor since 2026-08-12, and this sport is where
+that mattered most in volume: a score the import never wrote is missing on both sides of a match
+at once, so every finding here was reported twice. The count went from 286 to 143 and the
+coverage halved with it, 14430 to 7215 — both halves of the proportion had been counting sides
+of a match where the defect belongs to the match.
+
 `4` and `6` are the confirmed final-score and mirror-score pair, verified by value pattern:
 both carry a bare integer and nothing else, and `6` is present on every event in scope where
 `4` is present on slightly fewer. The sport stores **no Rank, no Comment and no Duration

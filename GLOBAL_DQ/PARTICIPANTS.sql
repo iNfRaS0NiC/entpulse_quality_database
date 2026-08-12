@@ -371,16 +371,8 @@ ORDER BY sort_order, participant_id;
 SELECT
     -- CheckID - GLOBAL-DQ-043
     -- Name - EVENT_PARTICIPANTS_GENDER_MISMATCH
-    -- What it does: Finds event participants whose gender contradicts their stage or their own lineup: an athlete or a team against a single-gender stage, a mixed team whose lineup misses a gender, or a single-gender team holding the other.
+    -- What it does: Finds event participants whose own lineup contradicts their gender: a mixed team whose lineup misses a gender, or a single-gender team holding the other.
     CASE
-        WHEN x.participant_type = 'athlete' AND x.stage_gender <> 'mixed'
-             AND x.participant_gender IS NOT NULL AND x.participant_gender <> ''
-             AND x.participant_gender <> x.stage_gender
-            THEN 'ATHLETE_GENDER_NOT_STAGE_GENDER'
-        WHEN x.participant_type = 'team'
-             AND x.participant_gender IS NOT NULL AND x.participant_gender <> ''
-             AND x.participant_gender <> x.stage_gender
-            THEN 'TEAM_GENDER_NOT_STAGE_GENDER'
         WHEN x.participant_type = 'team' AND x.participant_gender = 'mixed'
              AND x.lineup_rows > 0 AND (x.lineup_male = 0 OR x.lineup_female = 0)
             THEN 'MIXED_TEAM_LINEUP_MISSING_A_GENDER'
@@ -402,6 +394,11 @@ SELECT
     x.lineup_male,
     x.lineup_female,
     NULL AS eligible_count
+-- A lineup belongs to the entry rather than to the team, so a team fielding an incomplete
+-- lineup in twelve events has twelve lineups to repair and the event participant is the right
+-- object here. The contradiction between a participant's stored gender and the stage it was
+-- entered in is not: that is one column on one participant record, repeated once per entry,
+-- and it moved to GLOBAL-DQ-123 on 2026-08-12.
 FROM (
     SELECT
         ep.id AS event_participants_id,
@@ -434,13 +431,7 @@ FROM (
     GROUP BY ep.id, e.id, e.name, ts.name, ts.gender, p.name, p.type, p.gender
 ) x
 WHERE
-    (x.participant_type = 'athlete' AND x.stage_gender <> 'mixed'
-     AND x.participant_gender IS NOT NULL AND x.participant_gender <> ''
-     AND x.participant_gender <> x.stage_gender)
-    OR (x.participant_type = 'team'
-     AND x.participant_gender IS NOT NULL AND x.participant_gender <> ''
-     AND x.participant_gender <> x.stage_gender)
-    OR (x.participant_type = 'team' AND x.participant_gender = 'mixed'
+    (x.participant_type = 'team' AND x.participant_gender = 'mixed'
      AND x.lineup_rows > 0 AND (x.lineup_male = 0 OR x.lineup_female = 0))
     OR (x.participant_type = 'team' AND x.participant_gender = 'male'
      AND x.lineup_rows > 0 AND x.lineup_female > 0)
@@ -1001,3 +992,87 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-123
+    -- Name - PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED
+    -- What it does: Finds participants whose stored gender contradicts a stage they were entered in, naming how many entries repeat the contradiction and which stage genders they sit under.
+    CASE
+        WHEN x.participant_type = 'athlete' THEN 'ATHLETE_GENDER_NOT_STAGE_GENDER'
+        ELSE 'TEAM_GENDER_NOT_STAGE_GENDER'
+    END AS check_type,
+    x.participant_id,
+    x.participant_name,
+    x.participant_type,
+    x.participant_gender,
+    x.stage_genders,
+    x.entry_count,
+    x.example_event_id,
+    NULL AS eligible_count
+FROM (
+    -- The participant is the audited object, not the entry. Gender is one column on one
+    -- participant row, so a team recorded as male and entered in ten mixed stages is one
+    -- field to repair and was reported as ten - measured on Modern Pentathlon, 154 rows over
+    -- 60 participant records. entry_count carries how far the same contradiction reaches.
+    -- Split from GLOBAL-DQ-043 on 2026-08-12, which keeps the lineup contradictions because
+    -- a lineup belongs to the entry and is genuinely repaired one entry at a time.
+    SELECT
+        p.id AS participant_id,
+        p.name AS participant_name,
+        p.type AS participant_type,
+        LOWER(TRIM(p.gender)) AS participant_gender,
+        GROUP_CONCAT(DISTINCT LOWER(TRIM(ts.gender))
+                     ORDER BY LOWER(TRIM(ts.gender)) SEPARATOR ', ') AS stage_genders,
+        COUNT(DISTINCT ep.id) AS entry_count,
+        MIN(e.id) AS example_event_id
+    FROM event_participants ep
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND p.type IN ('athlete', 'team')
+      AND ts.gender IS NOT NULL
+      AND TRIM(ts.gender) <> ''
+      AND LOWER(TRIM(ts.gender)) <> 'undefined'
+      AND p.gender IS NOT NULL
+      AND TRIM(p.gender) <> ''
+      AND LOWER(TRIM(p.gender)) <> LOWER(TRIM(ts.gender))
+      -- An athlete under a mixed stage is not a contradiction: a mixed stage is contested by
+      -- both genders. A team is, because a team entity carries the gender of the squad it
+      -- fields, and a mixed stage is contested by teams recorded as mixed.
+      AND (p.type <> 'athlete' OR LOWER(TRIM(ts.gender)) <> 'mixed')
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY p.id, p.name, p.type, LOWER(TRIM(p.gender))
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT p.id) AS eligible_count
+FROM event_participants ep
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND p.type IN ('athlete', 'team')
+  AND ts.gender IS NOT NULL
+  AND TRIM(ts.gender) <> ''
+  AND LOWER(TRIM(ts.gender)) <> 'undefined'
+  AND p.gender IS NOT NULL
+  AND TRIM(p.gender) <> ''
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+;

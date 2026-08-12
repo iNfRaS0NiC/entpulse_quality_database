@@ -75,10 +75,16 @@ the same event may legitimately expose different roster sizes, so the difference
 population context rather than proof that one team row is defective. A team event participant
 with no lineup at all remains an actionable absence under `GLOBAL-DQ-058`.
 
-`GLOBAL-DQ-043` is also a `Monitor`. Its athlete and lineup-member gender contradictions
-remain actionable drill-down rows, but its complete output also includes mixed team entities
-whose generic participant gender is not authoritative for a male or female stage. The team
-role must be resolved before those rows can identify a repair.
+`GLOBAL-DQ-043` was a `Monitor` while it also carried the contradiction between a participant's
+own gender and the stage it was entered in — mixed team entities whose generic participant
+gender is not authoritative for a male or female stage sat inside the same output, and the team
+role has to be resolved before those rows identify a repair. Those two check types left for
+`GLOBAL-DQ-123` on 2026-08-12, because gender is one column on one participant record and
+repeating it once per entry counted one repair many times. What stays here is the lineup
+contradiction alone, which is genuinely per entry, so the check is `Actionable`. The semantic
+caution travels with the rows: it now qualifies `GLOBAL-DQ-123`, which this sport returns
+nothing for over all 7644 of its participants — no mixed team entity is entered in a
+single-gender stage today, so the boundary is recorded against the day one is.
 
 `GLOBAL-DQ-112` stays `Actionable`, and what it finds here is worth naming because the finding
 and its repair sit in different layers. Every row this sport has returned is
@@ -319,9 +325,12 @@ every one of them empty.
 **Phase is used, and is not a `statistic_data` field.** It is stored in `object_round` with
 `object_typeFK = 138` and `type = 'phase'`, the mechanism `DATABASE.md` records as the only
 storage for the concept: the round a Comp.Rank participant's rank was taken from. Outside
-IOC-purpose templates, 159088 of the sport's 159096 Comp.Rank participant rows carry one, so
-`GLOBAL-DQ-033` is actionable rather than population-wide — the eight rows without a phase
-are a repair list.
+IOC-purpose templates, 159088 of the sport's 159096 Comp.Rank participant rows carried one when
+this was inventoried, so `GLOBAL-DQ-033` is actionable rather than population-wide. The eight
+rows without a phase have since been repaired and the check returns nothing over all 4230 of the
+sport's Comp.Rank, which is a data state and not a reason to touch the check: it audits the
+statistic rather than the participant since 2026-08-12, so a Comp.Rank that loses its phases
+surfaces as one row and not one per competitor.
 
 Confirmed active phase rounds are `179 Qualifier`, `173 Final`, `9 Final`, `172 Tie-breaker`
 and `152 Qualifier`. `172 Tie-breaker` occurs **only** as a Comp.Rank phase and never as an

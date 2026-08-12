@@ -65,10 +65,6 @@
         "signal": "Monitor",
         "reason": "venue_object is a global mechanism the sport can populate at any time, and BMX simply holds no active link at stage, event or Comp.Rank level yet, so the check covers every event and reports every event. That is a proportion rather than a per-event defect: SPORTS/Curling.md records that venue is newly populated in this database and the backfill is still ahead, and BMX is at nought per cent of it. The signal is Monitor rather than Not applicable because the absence is a row count, which CLAUDE.md forbids classifying away. SPORTS/BMX.md owns the finding."
       },
-      "GLOBAL-DQ-033": {
-        "signal": "Monitor",
-        "reason": "Phase is not universal for this sport: a large share of active BMX Comp.Rank participant rows carry no phase row at all, so the check reports a large share of the population. The proportion is the finding. SPORTS/BMX.md owns the coverage statement."
-      },
       "GLOBAL-DQ-064": {
         "signal": "Not applicable",
         "reason": "Structural: BMX is contested individually. Its competition model fields no teams, so an athlete belongs to none and the 1429 Team field has nothing to hold - populating it would require teams the sport does not race. The registry carries team participants, but none of them enters an event. The 102 findings from 102 eligible rows are the evidence for that model, not the basis for the classification, which is what keeps this Not applicable rather than a row count. SPORTS/BMX.md owns the finding."
@@ -297,10 +293,6 @@
         "signal": "Monitor",
         "reason": "Artistic Gymnastics tournament-stage dates define a containing competition window and need not equal the earliest and latest event start dates. A wider containing interval is population context, not one row-level defect. SPORTS/Artistic-Gymnastics.md owns the reasoning."
       },
-      "GLOBAL-DQ-043": {
-        "signal": "Monitor",
-        "reason": "The check mixes actionable athlete/lineup gender contradictions with mixed-team entities whose generic participant gender is not authoritative for a single-gender stage. The latter semantic boundary makes the complete output a Monitor. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
       "GLOBAL-DQ-044": {
         "signal": "Monitor",
         "reason": "Athlete-statistic gender contradictions are actionable, but mixed-gender team entities can legitimately appear in a male or female Comp.Rank context and require team-role semantics. The complete output is therefore monitored. SPORTS/Artistic-Gymnastics.md owns the reasoning."
@@ -469,7 +461,7 @@
       },
       "GLOBAL-DQ-090": {
         "signal": "Monitor",
-        "reason": "The check reads every event participant holding either of the mirrored score types and does not narrow to events that have been played, so its output is dominated by fixtures still to come - European Championship 2028 semi-finals carrying placeholder participants such as Winner SF 1, with a running score written and no final result yet. A mirrored pair that stopped being written for a finished match is the defect this check exists for and remains worth reading; the unplayed majority is the calendar. SPORTS/Soccer.md owns the reasoning."
+        "reason": "The check reads every event holding either of the mirrored score types and does not narrow to events that have been played, so its output is dominated by fixtures still to come - European Championship 2028 semi-finals carrying placeholder participants such as Winner SF 1, with a running score written and no final result yet. A mirrored pair that stopped being written for a finished match is the defect this check exists for and remains worth reading; the unplayed majority is the calendar. SPORTS/Soccer.md owns the reasoning."
       }
     }
   },
