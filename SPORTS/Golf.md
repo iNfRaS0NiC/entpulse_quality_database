@@ -146,6 +146,21 @@ numbers in one value, and `32` holds `#n`.
 no text and no separator. Its maximum of 9999 is a valid integer and a question about the value
 rather than about its shape.
 
+**The comment vocabulary, and why two of its values are not "no result".** `104 Comment` holds
+10257 rows over nine values and an empty string: `wd` (6824 rows in 2573 events), `mdf` (1711 in
+170), empty (809 in 408), `dq` (761 in 580), `mc` (74 in 1), `rtd` (51 in 25), `sub` (16 in 14),
+`nr` (7 in 5), `dns` (2 in 1) and `n/r` (2 in 1).
+
+`RESULT_COMMENT_NO_RESULT_LIST` is `wd`, `dq`, `rtd`, `dns`, `nr` and `n/r` - the six that end a
+participation without a classification. `mc` and `mdf` are deliberately outside it, and this is
+where golf differs from every other sport in the package. A player who missed the cut has valid
+round-one and round-two scores, and `mdf` means made the cut and did not finish, so both hold
+real results and simply stop earlier than the field. Treating them as "no result" would silence
+1785 participations in which a missing rank is a genuine finding.
+
+`nr` and `n/r` are one value written two ways, 7 rows and 2. Both are listed so that neither
+reads as an unknown comment, which is a vocabulary defect recorded rather than repaired.
+
 <!-- MANUAL PASTE ZONE: 3 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
