@@ -8143,6 +8143,28 @@
                                         "status":  "SKIPPED: not narrowable - no template filter to activate; the audited population has no template relation"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "12.08.2026 10-58-08",
+                     "startedUtc":  "2026-08-12T08:58:08Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-077",
+                                        "runKey":  "Soccer-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "Improved",
+                                        "rows":  176,
+                                        "findings":  175,
+                                        "eligible":  492,
+                                        "seconds":  3.9,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE"

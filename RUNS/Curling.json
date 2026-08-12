@@ -13699,6 +13699,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "12.08.2026 10-57-14",
+                     "startedUtc":  "2026-08-12T08:57:14Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Curling-DQ-022",
+                                        "runKey":  "Curling-DQ-022",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  244,
+                                        "findings":  243,
+                                        "eligible":  976,
+                                        "seconds":  3.7,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1zv6UoQOdEVR-SNJSakLy7xWVo1fh-jsL8Y-7mybcC3g"

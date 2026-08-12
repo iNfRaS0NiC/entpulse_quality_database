@@ -12370,6 +12370,43 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Modern-Pentathlon 12.08.2026 10-57-33",
+                     "startedUtc":  "2026-08-12T08:57:32Z",
+                     "output":  "D:\\SQL\u0027s Output\\Modern-Pentathlon 12.08.2026 10-57-33",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-079",
+                                        "runKey":  "Modern-Pentathlon-DQ-079",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  396,
+                                        "findings":  395,
+                                        "eligible":  1801,
+                                        "seconds":  4.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-084",
+                                        "runKey":  "Modern-Pentathlon-DQ-084",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  50,
+                                        "findings":  49,
+                                        "eligible":  1217,
+                                        "seconds":  1.1,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1kWKqdBc2ZD1AYcMEzGUmZHzgjfEgnLyf8AfbCvkxuKs"

@@ -12797,6 +12797,43 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "BMX 12.08.2026 10-56-55",
+                     "startedUtc":  "2026-08-12T08:56:55Z",
+                     "output":  "D:\\SQL\u0027s Output\\BMX 12.08.2026 10-56-55",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-026",
+                                        "runKey":  "BMX-DQ-026",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  544,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-027",
+                                        "runKey":  "BMX-DQ-027",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  206,
+                                        "findings":  205,
+                                        "eligible":  426,
+                                        "seconds":  3.7,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE"

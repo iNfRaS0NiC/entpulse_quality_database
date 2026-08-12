@@ -17156,6 +17156,43 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 12.08.2026 10-56-19",
+                     "startedUtc":  "2026-08-12T08:56:18Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 12.08.2026 10-56-19",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-045",
+                                        "runKey":  "Artistic-Gymnastics-DQ-045",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  53,
+                                        "findings":  52,
+                                        "eligible":  4260,
+                                        "seconds":  6.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-047",
+                                        "runKey":  "Artistic-Gymnastics-DQ-047",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  17,
+                                        "findings":  16,
+                                        "eligible":  4107,
+                                        "seconds":  1.4,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"
