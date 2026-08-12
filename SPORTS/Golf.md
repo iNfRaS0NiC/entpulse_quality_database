@@ -308,6 +308,20 @@ separate runs of numbered rounds, `38`–`43` named `1`…`6` (2723, 868, 685, 3
 `89`–`92` named `1`…`4` (634, 475, 243, 48), the placement rounds `264 5/6` (465),
 `263 7/8` (413), `262 5/8` (6), `22 5/6` (2), `23 7/8` (1), and `304`/`305 Playoff` (140, 4).
 
+**`225 Main Phase` is this sport's final round, and `9`/`173 Final` are not.** The distinction
+matters because Golf is Hybrid and the two words mean different things in its two disciplines.
+Main Phase is where a stroke-play field is classified as a whole: it covers 3186 of the 3440
+events a Comp.Rank names through its Event id config, and it holds every one of the sport's 18
+medal results, six gold, six silver and six bronze across six events. `173 Final` is a match
+between two players; it is named by a Comp.Rank five times in the sport and awards no medal
+anywhere. `FINAL_ROUND_TYPE_LIST` is therefore `225` alone, which is unlike every other sport
+documented here, and the reason is the model rather than the data being thin.
+
+Including `9` and `173` would not widen the audit, it would make three checks assert something
+false - that a two-player match owes a full medal set. The match-play finals are not left
+unaudited by the choice: they are ordinary events and every check that does not key on the final
+round reads them, which is most of the catalogue.
+
 **Round type names are not unique identifiers here, the same way they are not in BMX.** Quarter
 Finals occurs as both `176` and `3`, Semi Finals as `178` and `2`, Final as `173` and `9`,
 Small Final as `186` and `19`, `1/8` as `184` and `4`, Playoff as `304` and `305`, and the
@@ -376,7 +390,15 @@ empty branch of the hierarchy rather than a missing template, which is the state
    an expectation and not a measurement.
 5. **Which round is "the" score?** The sport stores strokes per round and no single stroke
    total, so any check comparing a score against a rank has to say which figure it means.
-6. **Is `-` in `36 Par` the sport's way of writing "no score", or a defect?** It is the fourth
+6. **Nothing checks whether a match-play result is coherent.** The sport contests 14292 Match
+   Play events and no check reads their outcome. `GLOBAL-DQ-094` is the template for it and
+   cannot instantiate here: it reads the place off a pair of numeric scores, and Golf stores
+   `won` and `0` in `4 finalresult` with a score line in `39 mpscore`. So no check today asks
+   whether both sides of a match are marked `won`, whether neither is, or whether `39`
+   contradicts `4`. Raised when `FINAL_ROUND_TYPE_LIST` was settled at `225` on 2026-08-12 - the
+   gap is not caused by that choice and is not closed by reversing it, because the two medal
+   templates that read match rounds are inapplicable to this sport for their own reasons.
+7. **Is `-` in `36 Par` the sport's way of writing "no score", or a defect?** It is the fourth
    most common shape in the field at 4831 values over 1743 events, which is too many to be
    accidental and too few to be the convention. The answer decides whether a Par check treats it
    as a missing value or as a legitimate one.
