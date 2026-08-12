@@ -3383,8 +3383,10 @@ Test-That 'a check tab centres everything but the way out, which it widens inste
     $back = @($formats | Where-Object { $_.FromRow -eq 2 -and $_.FromCol -eq 0 })
     Assert-Equal 'LEFT' $back[0].Align 'the way back stays left'
     Assert-Equal $SheetsLinkColour $back[0].Colour 'in the brighter blue'
-    $width = @($plan.Operations | Where-Object { $_.Kind -eq 'ColumnWidth' -and $_.Sheet -eq 'WIDE' })
-    Assert-Equal 1 $width.Count 'and its column is widened so it is not clipped'
+    $width = @($plan.Operations | Where-Object {
+            $_.Kind -eq 'ColumnWidth' -and $_.Sheet -eq 'WIDE' -and $_.Width -eq $SheetsCheckTabFirstColumnWidth
+        })
+    Assert-Equal $true ($width.Count -ge 1) 'and its column is widened so it is not clipped'
     Assert-Equal 1 $width[0].From 'column A'
 
     # The result block under the link is centred with the rest of the tab, and follows it down
@@ -3425,6 +3427,62 @@ Test-That 'a check tab centres everything but the way out, which it widens inste
     $result = @($tables | Where-Object { $_.Name -eq 'Fixtureball_DQ_002' })
     Assert-Equal $SheetsDataHeaderColour $result[0].HeaderColour 'the result block wears the data colour'
     Assert-True ($SheetsIdentityHeaderColour -ne $SheetsDataHeaderColour) 'and the two are not the same'
+}
+
+Test-That 'a result column is sized from its own header, and the header row wraps' {
+    # Every column of a check tab is centred, so a name wider than its column is clipped at both
+    # ends and reads as a different word - 'first_appearance' as 'est_appearai'. The width fits a
+    # name of ordinary length and the wrap catches the rest, so neither mechanism has to be right
+    # on its own.
+    $header = @('id', 'first_appearance', 'deprecated_duration_participant_count')
+    $spans = @(Get-SheetsResultColumnWidths -Header $header)
+
+    Assert-Equal 3 $spans.Count 'one span per column where no two agree'
+    Assert-Equal $SheetsResultColumnMinWidth $spans[0].Width 'a short name claims the floor, not less'
+    Assert-Equal (16 * $SheetsResultColumnCharWidth + $SheetsResultColumnPadding) $spans[1].Width `
+        'an ordinary name claims what it needs'
+    Assert-Equal $SheetsResultColumnMaxWidth $spans[2].Width 'and the longest is capped rather than let run'
+
+    # Merged, because the API sets a width over a range and most tables repeat a handful of
+    # numbers side by side. One request for four columns that agree, not four.
+    $same = @(Get-SheetsResultColumnWidths -Header @('aa', 'bb', 'cc', 'dd'))
+    Assert-Equal 1 $same.Count 'neighbours that agree are one span'
+    Assert-Equal 1 $same[0].From 'from the first'
+    Assert-Equal 4 $same[0].To 'to the last'
+
+    # Column A holds the way back to Overview above the results. Its header must not shrink it
+    # back under the link the tab was widened for.
+    $first = @(Get-SheetsResultColumnWidths -Header @('id', 'id') -FirstColumnWidth 175)
+    Assert-Equal 175 $first[0].Width 'column A keeps the width the link needs'
+    Assert-Equal $SheetsResultColumnMinWidth $first[1].Width 'and the column beside it does not'
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-003'; Name = 'HDR'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-003' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $state = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{ 'Fixtureball-DQ-003' = 'HDR' }
+        Titles = @('Overview', 'HDR'); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'HDR' = 9 }; SheetIndexOf = @{ 'Overview' = 0 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $state -OutputFolder 'x' `
+        -Collected @([pscustomobject]@{
+                Job  = $job
+                Rows = @([pscustomobject]@{ check_type = 'X'; distinct_countries = 2 })
+            })
+
+    # Only the row the runner writes the column names into. A wrapped value would make one tall
+    # row of every finding that holds a long string, and a cell's wrap is the reviewer's.
+    $wrap = @($plan.Operations | Where-Object { $_.Kind -eq 'Format' -and $_.Sheet -eq 'HDR' -and $_.Wrap })
+    Assert-Equal 1 $wrap.Count 'the header row wraps'
+    Assert-Equal 'WRAP' $wrap[0].Wrap 'and says so in the API vocabulary'
+    Assert-Equal ($SheetsCheckTabResultRow - 1) $wrap[0].FromRow 'at the result header'
+    Assert-Equal $SheetsCheckTabResultRow $wrap[0].ToRow 'and nowhere below it'
+
+    # The reviewer columns are part of the header and get sized with it.
+    $widths = @($plan.Operations | Where-Object { $_.Kind -eq 'ColumnWidth' -and $_.Sheet -eq 'HDR' })
+    $covered = 0
+    foreach ($span in $widths) { if ($span.To -gt $covered) { $covered = $span.To } }
+    Assert-Equal 4 $covered 'both projected columns and both reviewer columns are sized'
 }
 
 Test-That 'a trend colours each count against the one before it' {

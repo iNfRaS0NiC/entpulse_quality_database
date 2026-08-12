@@ -278,6 +278,25 @@ $SheetsReviewerHeaderColour = '#FFFFFF'
 # link in row 3 and a result value below it, and at the default width the link was clipped by
 # whatever sat in B - a control nobody can read is not a control.
 $SheetsCheckTabFirstColumnWidth = 175
+
+# A result column is sized from its own header, and the header row wraps.
+#
+# The names a statement projects are the long text on a check tab - 'missing_participants',
+# 'distinct_countries', 'deprecated_duration_participant_count' at thirty-seven characters - and
+# every column of the tab is centred. A name too wide for its column is therefore clipped at
+# both ends, which does not read as a truncated name but as a different word: 'first_appearance'
+# showed as 'est_appearai'. Sizing to the header alone is deliberate. Sizing to the values would
+# put a GROUP_CONCAT of forty participant names in one column and push the rest of the table off
+# the screen, and the values were legible before this and stay as they were.
+#
+# Roughly the width of a bold Arial 10 character, plus room for the filter button the table
+# header draws in every cell. The cap is what a name may claim before it wraps instead: without
+# one the longest names alone would take a third of the visible width.
+$SheetsResultColumnCharWidth = 8
+$SheetsResultColumnPadding = 30
+$SheetsResultColumnMinWidth = 90
+$SheetsResultColumnMaxWidth = 200
+
 $SheetsGidToken = '{{GID:%NAME%}}'
 
 # Where a check tab's result block starts. Rows 1 and 2 are the identity, row 3 the link back
@@ -414,6 +433,38 @@ function Split-SheetsColumnRuns {
     }
     if ($null -ne $current) { $runs += $current }
     return $runs
+}
+
+function Get-SheetsResultColumnWidths {
+    # The column spans of a result block, each sized from its own header name and merged with
+    # the neighbour where the two agree. Merged because the API sets a width over a range: a
+    # twelve-column table asking one request per column costs twelve, and most of the widths a
+    # table wants are the same handful of numbers sitting next to each other.
+    param(
+        [string[]]$Header,
+        # Column A also carries the way back to Overview and was widened for that alone. Its
+        # header must not shrink it back under the link.
+        [int]$FirstColumnWidth = 0
+    )
+
+    $widths = @()
+    for ($index = 0; $index -lt @($Header).Count; $index++) {
+        $want = ([string]$Header[$index]).Length * $SheetsResultColumnCharWidth + $SheetsResultColumnPadding
+        if ($want -lt $SheetsResultColumnMinWidth) { $want = $SheetsResultColumnMinWidth }
+        if ($want -gt $SheetsResultColumnMaxWidth) { $want = $SheetsResultColumnMaxWidth }
+        if ($index -eq 0 -and $want -lt $FirstColumnWidth) { $want = $FirstColumnWidth }
+        $widths += [int]$want
+    }
+
+    $spans = @()
+    $start = 0
+    for ($index = 1; $index -le $widths.Count; $index++) {
+        if ($index -eq $widths.Count -or $widths[$index] -ne $widths[$start]) {
+            $spans += [pscustomobject]@{ From = $start + 1; To = $index; Width = $widths[$start] }
+            $start = $index
+        }
+    }
+    return $spans
 }
 
 function ConvertTo-SheetsColour {
@@ -1525,6 +1576,25 @@ function New-SheetsMergePlan {
                 HeaderColour = $SheetsDataHeaderColour
             }
 
+            # The names the statement projected, made readable. Both halves are needed: the
+            # width carries a name of ordinary length, and the wrap carries the rest onto a
+            # second line rather than letting the cap clip them. Only the header row wraps -
+            # a wrapped value would make one tall row of every finding holding a long string.
+            foreach ($span in (Get-SheetsResultColumnWidths -Header $header `
+                        -FirstColumnWidth $SheetsCheckTabFirstColumnWidth)) {
+                $plan += [pscustomobject]@{
+                    Kind = 'ColumnWidth'; Sheet = $title
+                    From = $span.From; To = $span.To; Width = $span.Width
+                }
+            }
+
+            $plan += [pscustomobject]@{
+                Kind    = 'Format'; Sheet = $title
+                FromRow = $SheetsCheckTabResultRow - 1; ToRow = $SheetsCheckTabResultRow
+                FromCol = 0; ToCol = $header.Count
+                Wrap    = 'WRAP'
+            }
+
             # Review Status as a closed list, and coloured like the chip it is meant to read
             # as. The column is the reviewer's, and constraining it is not a way of taking it
             # back: what a closed list buys is that "how many of these findings are closed" has
@@ -2566,6 +2636,12 @@ function Invoke-SheetsPlan {
         if ($format.PSObject.Properties.Name -contains 'Align' -and $format.Align) {
             $cell['horizontalAlignment'] = [string]$format.Align
             $fields += 'userEnteredFormat.horizontalAlignment'
+        }
+        # Named explicitly, never blanket. A cell's wrap is the reviewer's everywhere except the
+        # one row the runner writes the column names into, which is where this is asked for.
+        if ($format.PSObject.Properties.Name -contains 'Wrap' -and $format.Wrap) {
+            $cell['wrapStrategy'] = [string]$format.Wrap
+            $fields += 'userEnteredFormat.wrapStrategy'
         }
         if ($fields.Count -eq 0) { continue }
 
