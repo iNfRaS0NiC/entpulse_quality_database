@@ -301,10 +301,6 @@
         "signal": "Monitor",
         "reason": "Comp.Rank medal sets include legitimate ties, duplicated bronze placements and team-inherited medal rows, so the aggregate invalid-set result is a monitored population. Missing or contradictory medal subtypes remain drill-down targets. SPORTS/Artistic-Gymnastics.md owns the reasoning."
       },
-      "GLOBAL-DQ-037": {
-        "signal": "Monitor",
-        "reason": "Final-event medal sets include legitimate ties and duplicated bronze placements, so the aggregate invalid-set result is a monitored population. Events with no medals or contradictory and missing medal subtypes remain drill-down targets. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
       "GLOBAL-DQ-043": {
         "signal": "Monitor",
         "reason": "The check mixes actionable athlete/lineup gender contradictions with mixed-team entities whose generic participant gender is not authoritative for a single-gender stage. The latter semantic boundary makes the complete output a Monitor. SPORTS/Artistic-Gymnastics.md owns the reasoning."

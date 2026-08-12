@@ -558,15 +558,27 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-037
     -- Name - EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL
-    -- What it does: Finds finished Final-round events whose Medal set is not one gold, one silver and one bronze, separating no medals at all, a duplicate contradicted by the place below it, a duplicate shaped like a tie, a duplicated bronze and a missing type.
+    -- What it does: Finds finished Final-round events whose Medal set does not follow the places its own Rank results hold, separating an unreadable set, no medals at all, a duplicate contradicted by the place below it, a duplicate shaped like a tie, a duplicated bronze, a shared place carrying too few medals and a missing type.
     CASE
+        -- Nothing to compare the medals with. The missing Rank is GLOBAL-DQ-036's finding and
+        -- is not restated here; what this row says is that the medal set was not audited.
+        WHEN x.ranked_count = 0 THEN 'Medal_Set_Unreadable_Without_Rank'
         WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All'
         -- A shared place removes the place below it, so a second gold beside a silver is a
         -- contradiction, while a second gold without one is the shape a tie actually takes.
-        WHEN x.gold_count > 1 AND x.silver_count > 0 THEN 'Duplicate_Gold_With_Silver_Present'
-        WHEN x.silver_count > 1 AND x.bronze_count > 0 THEN 'Duplicate_Silver_With_Bronze_Present'
-        WHEN x.gold_count > 1 OR x.silver_count > 1 THEN 'Duplicate_Medal_Tie_Shape'
-        WHEN x.bronze_count > 1 THEN 'Duplicate_Bronze'
+        -- The expectation is read from the places themselves rather than assumed to be one
+        -- each: a place held by two competitors is owed two medals, and a place nobody holds
+        -- is owed none.
+        WHEN x.gold_count > x.rank1_count AND x.silver_count > 0 THEN 'Duplicate_Gold_With_Silver_Present'
+        WHEN x.silver_count > x.rank2_count AND x.bronze_count > 0 THEN 'Duplicate_Silver_With_Bronze_Present'
+        WHEN x.gold_count > x.rank1_count OR x.silver_count > x.rank2_count THEN 'Duplicate_Medal_Tie_Shape'
+        WHEN x.bronze_count > x.rank3_count THEN 'Duplicate_Bronze'
+        -- The other side of a tie: the place is shared and carries a medal, but not one for
+        -- every competitor standing on it.
+        WHEN (x.rank1_count > 1 AND x.gold_count   BETWEEN 1 AND x.rank1_count - 1)
+          OR (x.rank2_count > 1 AND x.silver_count BETWEEN 1 AND x.rank2_count - 1)
+          OR (x.rank3_count > 1 AND x.bronze_count BETWEEN 1 AND x.rank3_count - 1)
+             THEN 'Medal_Missing_For_Shared_Place'
         ELSE 'Missing_Specific_Medal'
     END AS check_type,
     x.event_id,
@@ -575,14 +587,19 @@ SELECT
     x.tournament_name,
     x.stage_name,
     CONCAT_WS(', ',
-        IF(x.gold_count = 0, 'gold', NULL),
-        IF(x.silver_count = 0, 'silver', NULL),
-        IF(x.bronze_count = 0, 'bronze', NULL)
+        IF(x.rank1_count > 0, CONCAT('1st x', x.rank1_count), NULL),
+        IF(x.rank2_count > 0, CONCAT('2nd x', x.rank2_count), NULL),
+        IF(x.rank3_count > 0, CONCAT('3rd x', x.rank3_count), NULL)
+    ) AS places_held,
+    CONCAT_WS(', ',
+        IF(x.gold_count   < x.rank1_count, CONCAT('gold ',   x.gold_count,   ' of ', x.rank1_count), NULL),
+        IF(x.silver_count < x.rank2_count, CONCAT('silver ', x.silver_count, ' of ', x.rank2_count), NULL),
+        IF(x.bronze_count < x.rank3_count, CONCAT('bronze ', x.bronze_count, ' of ', x.rank3_count), NULL)
     ) AS missing_medals,
     CONCAT_WS(', ',
-        IF(x.gold_count > 1, CONCAT('gold x', x.gold_count), NULL),
-        IF(x.silver_count > 1, CONCAT('silver x', x.silver_count), NULL),
-        IF(x.bronze_count > 1, CONCAT('bronze x', x.bronze_count), NULL)
+        IF(x.gold_count   > x.rank1_count, CONCAT('gold x',   x.gold_count,   ' for ', x.rank1_count), NULL),
+        IF(x.silver_count > x.rank2_count, CONCAT('silver x', x.silver_count, ' for ', x.rank2_count), NULL),
+        IF(x.bronze_count > x.rank3_count, CONCAT('bronze x', x.bronze_count, ' for ', x.rank3_count), NULL)
     ) AS duplicated_medals,
     NULL AS eligible_count
 FROM (
@@ -592,10 +609,17 @@ FROM (
         tt.name AS template_name,
         t.name AS tournament_name,
         ts.name AS stage_name,
-        SUM(CASE WHEN LOWER(TRIM(r.value)) = 'gold' THEN 1 ELSE 0 END) AS gold_count,
-        SUM(CASE WHEN LOWER(TRIM(r.value)) = 'silver' THEN 1 ELSE 0 END) AS silver_count,
-        SUM(CASE WHEN LOWER(TRIM(r.value)) = 'bronze' THEN 1 ELSE 0 END) AS bronze_count,
-        SUM(CASE WHEN r.value IS NOT NULL AND TRIM(r.value) <> '' THEN 1 ELSE 0 END) AS total_medal_count
+        -- Counted per competitor rather than per result row, so a place and a medal are each
+        -- read once however many rows the participant carries. The place is matched on the
+        -- literal figure, which GLOBAL-DQ-036 is what asserts is a plain positive integer.
+        COUNT(DISTINCT CASE WHEN r.result_typeFK = {{RESULT_RANK_TYPE_ID}} AND TRIM(r.value) <> '' THEN ep.id END) AS ranked_count,
+        COUNT(DISTINCT CASE WHEN r.result_typeFK = {{RESULT_RANK_TYPE_ID}} AND TRIM(r.value) = '1' THEN ep.id END) AS rank1_count,
+        COUNT(DISTINCT CASE WHEN r.result_typeFK = {{RESULT_RANK_TYPE_ID}} AND TRIM(r.value) = '2' THEN ep.id END) AS rank2_count,
+        COUNT(DISTINCT CASE WHEN r.result_typeFK = {{RESULT_RANK_TYPE_ID}} AND TRIM(r.value) = '3' THEN ep.id END) AS rank3_count,
+        COUNT(DISTINCT CASE WHEN r.result_typeFK = {{RESULT_MEDAL_TYPE_ID}} AND LOWER(TRIM(r.value)) = 'gold' THEN ep.id END) AS gold_count,
+        COUNT(DISTINCT CASE WHEN r.result_typeFK = {{RESULT_MEDAL_TYPE_ID}} AND LOWER(TRIM(r.value)) = 'silver' THEN ep.id END) AS silver_count,
+        COUNT(DISTINCT CASE WHEN r.result_typeFK = {{RESULT_MEDAL_TYPE_ID}} AND LOWER(TRIM(r.value)) = 'bronze' THEN ep.id END) AS bronze_count,
+        COUNT(DISTINCT CASE WHEN r.result_typeFK = {{RESULT_MEDAL_TYPE_ID}} AND TRIM(r.value) <> '' THEN ep.id END) AS total_medal_count
     FROM event e
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
     JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -604,7 +628,7 @@ FROM (
     LEFT JOIN result r
       ON r.event_participantsFK = ep.id
      AND r.del = 'no'
-     AND r.result_typeFK = {{RESULT_MEDAL_TYPE_ID}}
+     AND r.result_typeFK IN ({{RESULT_MEDAL_TYPE_ID}}, {{RESULT_RANK_TYPE_ID}})
     WHERE e.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
       AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
@@ -614,14 +638,16 @@ FROM (
       -- AND e.startdate <  '<to_datetime>'
     GROUP BY e.id, e.name, tt.name, t.name, ts.name
 ) x
-WHERE x.gold_count = 0 OR x.silver_count = 0 OR x.bronze_count = 0
-   OR x.gold_count > 1 OR x.silver_count > 1 OR x.bronze_count > 1
+WHERE x.ranked_count = 0
+   OR x.gold_count   <> x.rank1_count
+   OR x.silver_count <> x.rank2_count
+   OR x.bronze_count <> x.rank3_count
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'

@@ -160,10 +160,23 @@ comparison is not sufficient to classify one participant row as defective. That 
 describes how a *set* of medals can legitimately be read; it does not make a single
 mismatched row correct. The classification was withdrawn on that ground.
 
-`GLOBAL-DQ-037` is a `Monitor` at event-set level, for a reason of its own rather than the
-one above: legitimate ties and duplicated bronze placements prevent the aggregate
-invalid-set result from being a direct repair list, and no-medal, contradictory and
-missing-medal subtypes remain useful drill-down targets.
+`GLOBAL-DQ-037` is `Actionable`. It was a `Monitor` until 2026-08-12, on the argument that
+legitimate ties and duplicated bronze placements prevented the aggregate invalid-set result
+from being a direct repair list. The template no longer produces them: it reads the expected
+number of medals from the places the event's own Rank results hold, so a third place shared by
+two competitors is owed two bronzes and agrees with itself, while the same place carrying one
+bronze does not. What the sport's output was mostly made of therefore stops being output at
+all — 193 findings became 23, and the 170 that left were the ties the `Monitor` was there to
+excuse.
+
+The 23 that remain are two shapes and both are repairs. Nineteen are finals holding places but
+no medal of any colour, which is what `No_Medals_At_All` has always meant. Four are the new
+`Medal_Missing_For_Shared_Place`: a shared podium place carrying a medal for one of the
+competitors standing on it and not the other. Event 5449483, the 2026 Pan American Horizontal
+Bar Men Final, is the case that exposed the gap — two gymnasts on 14.033, both ranked third,
+one bronze between them, and every check in the catalogue silent. `GLOBAL-DQ-053` could not
+see it either: it audits participants who hold a medal, and the defect is a participant who
+does not.
 
 `GLOBAL-DQ-049` is likewise monitored because legitimate `All-Around`
 and `All-Round` compounds dominate its generic name-format output, while double spaces and
