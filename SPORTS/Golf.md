@@ -175,6 +175,18 @@ real results and simply stop earlier than the field. Treating them as "no result
 `nr` and `n/r` are one value written two ways, 7 rows and 2. Both are listed so that neither
 reads as an unknown comment, which is a vocabulary defect recorded rather than repaired.
 
+**`wd` is not a no-result marker in golf, and that is the sport speaking rather than the data
+being wrong.** A player who withdraws keeps the position the field gave them, so a `wd` sitting
+beside a Rank is the convention and not a contradiction. Confirmed 2026-08-12. `wd` was in
+`RESULT_COMMENT_NO_RESULT_LIST` when the vocabulary was first recorded, and taking it out moved
+`GLOBAL-DQ-117` from 7644 findings to 823 - from four fifths of its eligible population, which
+is a proportion, to a list somebody can work through. It moved `GLOBAL-DQ-122` the other way,
+47 to 87, and that is the same fact read from the other side: if a withdrawal keeps its place,
+the place owes a deciding value like any other.
+
+What remains in the list is `dq`, `rtd`, `dns`, `nr` and `n/r`. A disqualification removes a
+result rather than freezing it, which is why `dq` stays in and `wd` does not.
+
 <!-- MANUAL PASTE ZONE: 3 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types

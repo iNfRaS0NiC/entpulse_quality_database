@@ -620,7 +620,7 @@
     "SERIES_MIN_YEARS": 3,
     "FINAL_ROUND_TYPE_LIST": "225",
     "RESULT_COMMENT_VALUE_LIST": "'wd', 'mdf', 'dq', 'mc', 'rtd', 'sub', 'nr', 'dns', 'n/r'",
-    "RESULT_COMMENT_NO_RESULT_LIST": "'wd', 'dq', 'rtd', 'dns', 'nr', 'n/r'",
+    "RESULT_COMMENT_NO_RESULT_LIST": "'dq', 'rtd', 'dns', 'nr', 'n/r'",
     "RESULT_SCORE_TYPE_ID": 36,
     "RESULT_TIE_VALUE_TYPE_LIST": "36",
     "NUMERIC_RESULT_TYPE_LIST": "31, 32, 33, 34, 35, 36, 100, 526, 527, 528, 529, 540",
@@ -633,6 +633,24 @@
     "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
     "SERIES_SKIP_YEARS": "2020",
     "DATA_COMMENT_VALUE_LIST": "'wd', 'mdf', 'dq', 'mc', 'rtd', 'sub', 'nr', 'dns', 'n/r'",
-    "DATA_COMMENT_NO_RESULT_LIST": "'wd', 'dq', 'rtd', 'dns', 'nr', 'n/r'"
+    "DATA_COMMENT_NO_RESULT_LIST": "'dq', 'rtd', 'dns', 'nr', 'n/r'",
+    "_checkSignal": {
+      "GLOBAL-DQ-041": {
+        "signal": "Not applicable",
+        "reason": "Structural: the template's prerequisite is a sport confirmed to carry a Phase on its Comp.Rank participants, and Golf carries none. All 359344 active Comp.Rank participant rows in the sport hold no object_round phase row, so the check reads a relation the sport never writes. Its eligible count is non-zero because it counts medals, which makes the silence look like clean data; it is not. SPORTS/Golf.md owns the finding."
+      },
+      "GLOBAL-DQ-068": {
+        "signal": "Not applicable",
+        "reason": "Structural: the sport writes no lineup row anywhere. A foursome is stored as one athlete participant holding both names, so there is no lineup whose size could be uneven and eligible_count is 0 by construction rather than by a thin population."
+      },
+      "GLOBAL-DQ-057": {
+        "signal": "Monitor",
+        "reason": "eligible_count is 0 and this is a sentinel, not a misdirected scope: statistic_data11 declares the 1273 Comment field for statistic type 11 and Golf writes no row into it today. The scope is correct and the population is legitimately empty, so the check stands ready for the first Comp.Rank comment the sport writes. SPORTS/Golf.md owns the distinction."
+      },
+      "GLOBAL-DQ-065": {
+        "signal": "Monitor",
+        "reason": "eligible_count is 0 for the same reason as GLOBAL-DQ-057: the 1429 Team data field is declared for statistic type 11 and Golf writes no row into it. The sport does field teams - the Ryder Cup and Presidents Cup sides - so the population is legitimately empty rather than structurally absent."
+      }
+    }
   }
 }

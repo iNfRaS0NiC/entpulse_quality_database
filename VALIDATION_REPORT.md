@@ -43,7 +43,7 @@ output, not a hand-written claim: re-run the script rather than editing it.
 | Statements cut by a literal semicolon | 0 |
 | Duplicate active SQL CheckIDs | 0 |
 | UNION column-count mismatches | 0 |
-| PowerBI registry rows | 599 |
+| PowerBI registry rows | 627 |
 | DQ categories in use | 8 |
 | Sports indexed | 7 |
 
