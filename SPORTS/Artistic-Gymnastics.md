@@ -359,9 +359,17 @@ reasoning as its event-layer twin: those shapes describe how a *set* of medals i
 and none of them makes an individual medal stand for a place it was not awarded for. The
 five rows it reports are repairs.
 
-`GLOBAL-DQ-026` monitors the aggregate Comp.Rank medal-set population because legitimate
-ties, duplicated bronze placements and team-inherited medal rows can all create repeated
-holders. Missing and contradictory medal subtypes remain drill-down targets.
+`GLOBAL-DQ-026` is `Actionable`, and was a `Monitor` until 2026-08-12 for the reason its
+event-layer twin carried: legitimate ties, duplicated bronze placements and team-inherited
+medal rows created repeated holders that the check could not tell from real duplicates. It now
+reads the expected number of medals from the statistic's own `1270 Rank` rows, on the same
+holder the medals are counted over, so a place shared by two is owed two medals and a repeated
+holder above that number is a duplicate again. 208 findings became 52.
+
+The remaining 52 are all repairs: 29 Comp.Rank holding places but no medal of any colour, 21
+holding a medal in excess of the places, and one each of the two shapes the rank comparison
+made visible — a podium truncated below the place its medal belongs to, and a shared place
+carrying a medal for one of its holders only.
 
 `GLOBAL-DQ-044` is a `Monitor`: athlete-statistic gender contradictions are actionable, but
 mixed-gender team entities require team-role semantics before their appearance in a male or

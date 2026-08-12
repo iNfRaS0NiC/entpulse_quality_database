@@ -458,20 +458,34 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-026
     -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID
-    -- What it does: Finds Comp.Rank whose medal set is not one gold, one silver and one bronze: a type missing, held by more participants than the place takes, or held by fewer - counting relay members who share their team's medal as one holder.
+    -- What it does: Finds Comp.Rank whose medal set does not follow the places its own Rank rows hold: a type missing, held by more competitors than the place takes, held by fewer, or standing over a podium that never reaches the place it belongs to - counting relay members who share their team's medal as one holder.
     CASE
+        -- Nothing to compare the medals with. The missing Rank is GLOBAL-DQ-012's finding and
+        -- is not restated here; what this row says is that the medal set was not audited.
+        WHEN x.ranked_holders = 0 THEN 'Medal_Set_Unreadable_Without_Rank'
         WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All'
         -- A shared place removes the place below it, so a second gold beside a silver is a
         -- contradiction, while a second gold without one is the shape a tie actually takes.
-        WHEN x.gold_count > x.medal_holder_norm AND x.silver_count > 0 THEN 'Duplicate_Gold_With_Silver_Present'
-        WHEN x.silver_count > x.medal_holder_norm AND x.bronze_count > 0 THEN 'Duplicate_Silver_With_Bronze_Present'
-        WHEN x.gold_count > x.medal_holder_norm OR x.silver_count > x.medal_holder_norm THEN 'Duplicate_Medal_Tie_Shape'
-        WHEN x.bronze_count > x.medal_holder_norm THEN 'Duplicate_Bronze'
-        -- A medal held by fewer than the norm is a team whose medal row is missing for one
-        -- of its members, which is the opposite defect and needs the opposite repair.
-        WHEN (x.gold_count > 0 AND x.gold_count < x.medal_holder_norm)
-          OR (x.silver_count > 0 AND x.silver_count < x.medal_holder_norm)
-          OR (x.bronze_count > 0 AND x.bronze_count < x.medal_holder_norm) THEN 'Medal_Holder_Shortfall'
+        -- Which of the two it is comes from the places themselves: a place held by two
+        -- competitors is owed two medals of its colour, and one nobody holds is owed none.
+        WHEN x.gold_count > x.rank1_count AND x.silver_count > 0 THEN 'Duplicate_Gold_With_Silver_Present'
+        WHEN x.silver_count > x.rank2_count AND x.bronze_count > 0 THEN 'Duplicate_Silver_With_Bronze_Present'
+        WHEN x.gold_count > x.rank1_count OR x.silver_count > x.rank2_count THEN 'Duplicate_Medal_Tie_Shape'
+        WHEN x.bronze_count > x.rank3_count THEN 'Duplicate_Bronze'
+        -- The other side of a tie: the place is shared and carries a medal, but not one for
+        -- every competitor standing on it.
+        WHEN (x.rank1_count > 1 AND x.gold_count   BETWEEN 1 AND x.rank1_count - 1)
+          OR (x.rank2_count > 1 AND x.silver_count BETWEEN 1 AND x.rank2_count - 1)
+          OR (x.rank3_count > 1 AND x.bronze_count BETWEEN 1 AND x.rank3_count - 1)
+             THEN 'Medal_Missing_For_Shared_Place'
+        -- An empty place is only legitimate when a tie above it consumed it: after k
+        -- competitors starting at first, the next place is k + 1. Without this the two are
+        -- indistinguishable, because a shared podium and a truncated one both leave the place
+        -- below unheld - and a Comp.Rank that stops after its champion would read as clean.
+        WHEN x.rank1_count = 0 THEN 'Podium_Without_First_Place'
+        WHEN (x.rank1_count = 1 AND x.rank2_count = 0)
+          OR (1 + x.rank1_count + x.rank2_count = 3 AND x.rank3_count = 0)
+             THEN 'Podium_Truncated_Below_Medal'
         ELSE 'Missing_Specific_Medal'
     END AS check_type,
     x.statistic_id,
@@ -479,40 +493,24 @@ SELECT
     x.template_name,
     x.tournament_name,
     CONCAT_WS(', ',
-        IF(x.gold_count = 0, 'gold', NULL),
-        IF(x.silver_count = 0, 'silver', NULL),
-        IF(x.bronze_count = 0, 'bronze', NULL)
+        IF(x.rank1_count > 0, CONCAT('1st x', x.rank1_count), NULL),
+        IF(x.rank2_count > 0, CONCAT('2nd x', x.rank2_count), NULL),
+        IF(x.rank3_count > 0, CONCAT('3rd x', x.rank3_count), NULL)
+    ) AS places_held,
+    CONCAT_WS(', ',
+        IF(x.gold_count   < x.rank1_count, CONCAT('gold ',   x.gold_count,   ' of ', x.rank1_count), NULL),
+        IF(x.silver_count < x.rank2_count, CONCAT('silver ', x.silver_count, ' of ', x.rank2_count), NULL),
+        IF(x.bronze_count < x.rank3_count, CONCAT('bronze ', x.bronze_count, ' of ', x.rank3_count), NULL)
     ) AS missing_medals,
     CONCAT_WS(', ',
-        IF(x.gold_count > x.medal_holder_norm, CONCAT('gold x', x.gold_count), NULL),
-        IF(x.silver_count > x.medal_holder_norm, CONCAT('silver x', x.silver_count), NULL),
-        IF(x.bronze_count > x.medal_holder_norm, CONCAT('bronze x', x.bronze_count), NULL)
+        IF(x.gold_count   > x.rank1_count, CONCAT('gold x',   x.gold_count,   ' for ', x.rank1_count), NULL),
+        IF(x.silver_count > x.rank2_count, CONCAT('silver x', x.silver_count, ' for ', x.rank2_count), NULL),
+        IF(x.bronze_count > x.rank3_count, CONCAT('bronze x', x.bronze_count, ' for ', x.rank3_count), NULL)
     ) AS duplicated_medals,
-    CONCAT('gold=', x.gold_count, ' silver=', x.silver_count,
-           ' bronze=', x.bronze_count, ' holders_per_place=', x.medal_holder_norm) AS medal_holder_counts,
+    CONCAT('gold=', x.gold_count, ' silver=', x.silver_count, ' bronze=', x.bronze_count,
+           ' first=', x.rank1_count, ' second=', x.rank2_count, ' third=', x.rank3_count) AS medal_holder_counts,
     NULL AS eligible_count
 FROM (
-    SELECT
-        y.*,
-        -- Second guard, for the relay whose athletes carry no team at all. One place is
-        -- held by one competitor, unless the statistic lists a relay athlete by athlete,
-        -- where every medalled place is held by a whole team of the same size. The norm is
-        -- therefore what the medals present agree on: the count two of them share, or the
-        -- smallest where no two agree, which is one wherever places are held singly. A
-        -- medal above the norm is duplicated, one below it is a team missing a row.
-        -- GLOBAL-DQ-064 does not cover the statistic this exists for: its population is the
-        -- statistic that uses the Team field at all, and this one does not use it.
-        CASE
-            WHEN y.gold_count > 0 AND y.gold_count = y.silver_count THEN y.gold_count
-            WHEN y.gold_count > 0 AND y.gold_count = y.bronze_count THEN y.gold_count
-            WHEN y.silver_count > 0 AND y.silver_count = y.bronze_count THEN y.silver_count
-            ELSE LEAST(
-                IF(y.gold_count = 0, 999999, y.gold_count),
-                IF(y.silver_count = 0, 999999, y.silver_count),
-                IF(y.bronze_count = 0, 999999, y.bronze_count)
-            )
-        END AS medal_holder_norm
-    FROM (
     SELECT
         s.id AS statistic_id,
         s.name AS statistic_name,
@@ -521,14 +519,24 @@ FROM (
         -- A place is held by one competitor, and in a relay that competitor is the team.
         -- Counting medal rows instead would read every member of a winning relay as a
         -- duplicate gold, so each medal is counted over distinct teams where the statistic
-        -- assigns one, and over distinct participants where it does not.
+        -- assigns one, and over distinct participants where it does not. The places are
+        -- counted over the same holder, which is what lets the two be compared at all.
         COUNT(DISTINCT CASE WHEN LOWER(TRIM(sd.value)) = 'gold'
              THEN COALESCE(TRIM(tmd.value), CONCAT('p', sp.id)) END) AS gold_count,
         COUNT(DISTINCT CASE WHEN LOWER(TRIM(sd.value)) = 'silver'
              THEN COALESCE(TRIM(tmd.value), CONCAT('p', sp.id)) END) AS silver_count,
         COUNT(DISTINCT CASE WHEN LOWER(TRIM(sd.value)) = 'bronze'
              THEN COALESCE(TRIM(tmd.value), CONCAT('p', sp.id)) END) AS bronze_count,
-        SUM(CASE WHEN sd.value IS NOT NULL AND TRIM(sd.value) <> '' THEN 1 ELSE 0 END) AS total_medal_count
+        COUNT(DISTINCT CASE WHEN sd.value IS NOT NULL AND TRIM(sd.value) <> ''
+             THEN COALESCE(TRIM(tmd.value), CONCAT('p', sp.id)) END) AS total_medal_count,
+        COUNT(DISTINCT CASE WHEN rkd.value IS NOT NULL AND TRIM(rkd.value) <> ''
+             THEN COALESCE(TRIM(tmd.value), CONCAT('p', sp.id)) END) AS ranked_holders,
+        COUNT(DISTINCT CASE WHEN TRIM(rkd.value) = '1'
+             THEN COALESCE(TRIM(tmd.value), CONCAT('p', sp.id)) END) AS rank1_count,
+        COUNT(DISTINCT CASE WHEN TRIM(rkd.value) = '2'
+             THEN COALESCE(TRIM(tmd.value), CONCAT('p', sp.id)) END) AS rank2_count,
+        COUNT(DISTINCT CASE WHEN TRIM(rkd.value) = '3'
+             THEN COALESCE(TRIM(tmd.value), CONCAT('p', sp.id)) END) AS rank3_count
     FROM statistic s
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -543,6 +551,10 @@ FROM (
      AND tmd.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
      AND tmd.value IS NOT NULL
      AND TRIM(tmd.value) <> ''
+    LEFT JOIN statistic_data{{SHARD_ID}} rkd
+      ON rkd.statistic_participants{{SHARD_ID}}FK = sp.id
+     AND rkd.del = 'no'
+     AND rkd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
     WHERE s.del = 'no'
       AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
       AND s.object_typeFK = 3
@@ -550,17 +562,20 @@ FROM (
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
-    ) y
 ) x
-WHERE x.gold_count <> x.medal_holder_norm
-   OR x.silver_count <> x.medal_holder_norm
-   OR x.bronze_count <> x.medal_holder_norm
+WHERE x.ranked_holders = 0
+   OR x.gold_count   <> x.rank1_count
+   OR x.silver_count <> x.rank2_count
+   OR x.bronze_count <> x.rank3_count
+   OR x.rank1_count = 0
+   OR (x.rank1_count = 1 AND x.rank2_count = 0)
+   OR (1 + x.rank1_count + x.rank2_count = 3 AND x.rank3_count = 0)
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT s.id) AS eligible_count
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'

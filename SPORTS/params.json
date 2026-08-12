@@ -297,10 +297,6 @@
         "signal": "Monitor",
         "reason": "Artistic Gymnastics tournament-stage dates define a containing competition window and need not equal the earliest and latest event start dates. A wider containing interval is population context, not one row-level defect. SPORTS/Artistic-Gymnastics.md owns the reasoning."
       },
-      "GLOBAL-DQ-026": {
-        "signal": "Monitor",
-        "reason": "Comp.Rank medal sets include legitimate ties, duplicated bronze placements and team-inherited medal rows, so the aggregate invalid-set result is a monitored population. Missing or contradictory medal subtypes remain drill-down targets. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
       "GLOBAL-DQ-043": {
         "signal": "Monitor",
         "reason": "The check mixes actionable athlete/lineup gender contradictions with mixed-team entities whose generic participant gender is not authoritative for a single-gender stage. The latter semantic boundary makes the complete output a Monitor. SPORTS/Artistic-Gymnastics.md owns the reasoning."
@@ -414,6 +410,10 @@
       "GLOBAL-DQ-041": {
         "signal": "Not applicable",
         "reason": "The template's own prerequisite is a sport confirmed to carry a Phase, and Soccer is not one: no Comp.Rank participant row in the sport carries an active object_round phase row at all, across every statistic that holds participants. The check reads a relation this sport never writes, so its eligible population is not empty today but permanently absent. This is the prerequisite failing rather than a count being small - the same reading would apply if the sport held ten phase rows or ten thousand. SPORTS/Soccer.md owns the finding."
+      },
+      "GLOBAL-DQ-026": {
+        "signal": "Monitor",
+        "reason": "Soccer writes two kinds of Comp.Rank and only one of them ranks anything. The (athletes) variant records who was in the squad and carries no 1270 Rank row at all, which SPORTS/Soccer.md documents as the structural split rather than a gap, so 65 of the sport's 490 statistics reach Medal_Set_Unreadable_Without_Rank by their normal shape. That is a proportion, not a repair list, and it is the same 65 the check already reported before it read Rank - only under a label that claimed their medals were missing. Two of the 65 do carry a medal without a rank and are a finding of their own, named in SPORTS/Soccer.md. The remaining output is actionable and is read past the roster population. SPORTS/Soccer.md owns the reasoning."
       },
       "GLOBAL-DQ-084": {
         "signal": "Not applicable",

@@ -343,6 +343,18 @@ readable the day it appeared. The event layer is the opposite case and is settle
 a head-to-head sport stores no place on a result, which is why `RESULT_RANK_TYPE_ID` is
 recorded as unavailable in `SPORTS/params.json`.
 
+**Two squad statistics carry a medal without holding a place.** Measured 2026-08-12 over every
+tournament-owned Comp.Rank outside IOC-purpose templates: 65 of the sport's 490 statistics hold
+no Rank on any holder, all 65 are the `(athletes)` variant, and 63 of them carry no medal
+either — the roster shape this section describes. The remaining two award a medal to a squad
+whose placing is stored nowhere in the statistic, `310947` under the European Championship U17
+Male 2015 among them. The medal is not wrong on its face; what is missing is the place it
+stands for, in a statistic that by the split above is not supposed to record one. Whether the
+medal belongs on the team statistic instead, or the squad list is meant to carry a placing
+after all, is for the data owners. `GLOBAL-DQ-026` reports all 65 under
+`Medal_Set_Unreadable_Without_Rank`, which is why the check is a `Monitor` for this sport: the
+63 are the sport's normal shape and only these two are a repair.
+
 ### Checks whose eligible population is empty
 
 The coverage contract requires the sport file to say which of the two kinds each zero is.
