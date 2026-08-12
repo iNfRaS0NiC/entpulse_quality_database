@@ -146,6 +146,15 @@ is therefore `Deprecated` and the invariant belongs to `Modern-Pentathlon-DQ-098
 2026-08-07 against the rewritten template. A new ID rather than the old one repointed: changing
 what an assigned CheckID stands for is the reuse `POWERBI.md` forbids.
 
+`Modern-Pentathlon-DQ-098` is `Actionable`. It carried a `Not applicable` classification until
+2026-08-12, on the argument this section had already withdrawn: that the template read a shared
+rank as suspect unless a Comment explained it, and so reported 30136 correctly scored ties. The
+classification outlived the argument by five days and was doing real damage while it did — a
+check labelled as measuring a layer the sport does not use, returning 2013 rows with no
+expectation recorded against them and nobody asked to read them. What it returns is the sport's
+own invariant: 1824 shared ranks whose points disagree, and 189 with no points stored at all.
+Both are repairs, so a corrected sport returns the `COVERAGE` row alone.
+
 The Rank values divide cleanly. The largest field the sport contests holds 75 participants and
 ordinary ranks stop there; the only values above it are a handful in the 471 to 561 range, each
 occurring once and all on `Team-Relay Mix - After Laser Run` events. Nothing sits between the

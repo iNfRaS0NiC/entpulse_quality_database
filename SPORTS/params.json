@@ -564,10 +564,6 @@
         "signal": "Not applicable",
         "reason": "The template requires a tournament stage that groups a single discipline and forbids instantiation by a sport that legitimately runs several under one stage. This sport is one: a stage such as World Championships holds Fencing, Swimming, Riding, Laser Run and Overall events together, which is what a pentathlon is. Its whole population would be reported. The exclusion rests on how the sport composes a stage, not on how many stages hold several disciplines today."
       },
-      "GLOBAL-DQ-021": {
-        "signal": "Not applicable",
-        "reason": "The template excludes a sport that awards tied ranks by design, and this one does: its segments are scored in points, so two competitors on the same score share a place legitimately and no Comment is written for it. Measured, the rule reports 32178 event participants, of which the points behind 30136 agree - correct records read as defects. GLOBAL-DQ-116 carries the same invariant against the score instead of the Comment and reports 2013, and GLOBAL-DQ-095 guards it on the statistic layer where the overall classification lives. The exclusion rests on how the sport scores a place, not on how many rows tie today."
-      },
       "GLOBAL-DQ-096": {
         "signal": "Not applicable",
         "reason": "The template requires a sport that names its events after the competitors taking part in them, and forbids instantiation by a sport whose event names are codes, distances or round labels. This sport names its events after the discipline and the segment - Fencing, Swimming Final, Semi-Final A - After Fencing - so no participant name appears in any of them and its whole population would be reported. The same conclusion follows independently from DUPLICATE_KEY_INCLUDES_EVENT_NAME being 1 here, which GLOBAL_DQ/README.md records as incompatible with instantiating this template. The exclusion is structural: it rests on what the name is built from, not on how many events match today."
