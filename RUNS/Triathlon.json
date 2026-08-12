@@ -10630,6 +10630,43 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Triathlon 12.08.2026 11-47-13",
+                     "startedUtc":  "2026-08-12T09:47:12Z",
+                     "output":  "D:\\SQL\u0027s Output\\Triathlon 12.08.2026 11-47-13",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-026",
+                                        "runKey":  "Triathlon-DQ-026",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  30,
+                                        "findings":  29,
+                                        "eligible":  3460,
+                                        "seconds":  5.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-037",
+                                        "runKey":  "Triathlon-DQ-037",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  3301,
+                                        "seconds":  3.1,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"

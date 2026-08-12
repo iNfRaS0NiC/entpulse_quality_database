@@ -4667,6 +4667,22 @@ if ($isBatch) {
                         $tagged = Add-CheckColumns -Rows $rows -CheckId $runKey -Name $job.Name
                         $target = Join-Path $OutDir ((Get-SafeFileName -CheckId $runKey) + $extension)
                         Save-Rows -Rows $tagged -Path $target -Fmt $Format
+
+                        # The live document needs the rows whatever file format was asked
+                        # for, and this is the only place they exist. Collecting them under
+                        # the workbook alone left a batch run in any other format updating
+                        # Overview and nothing else: the merge plan walks $collected to
+                        # clear and rewrite each check's own tab, to point Rows at that tab,
+                        # and to put the statement on the SQL tab, so an empty list produced
+                        # fresh numbers standing over last run's findings. Untagged, because
+                        # check_id and check_name belong to a file that left this shell and
+                        # the tab already carries both. Capped at what a tab can hold: a flat
+                        # run streams to disk precisely so a large result is not carried in
+                        # memory, and the plan writes no more than this either.
+                        $collected += [pscustomobject]@{
+                            Job  = $job
+                            Rows = @($rows | Select-Object -First $SheetsMaxRowsPerCheck)
+                        }
                     }
 
                     if ($Chain) { $chainSource += [pscustomobject]@{ Job = $job; Rows = $rows } }

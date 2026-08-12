@@ -2305,6 +2305,46 @@ Test-That 'a check tab is cleared to its end, not to a depth this code believes 
     Assert-True ($clearAt -lt $writeAt) 'and cleared before the new rows land on top'
 }
 
+Test-That 'a check the run produced gets its tab rewritten and its Rows cell linked to it' {
+    # Both come from the same walk of $Collected, which is what made one defect look like
+    # two. A batch run in any format but xlsx collected nothing, so Overview took the new
+    # numbers while the tab under it kept the last run's findings and Rows stayed a plain
+    # number - fresh figures standing over stale rows, with no way in to see it.
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'LINKED'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 90 -Verdict 'Improved'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet  = $true
+        HasOverviewHeader = $true
+        Titles            = @('Overview', 'LINKED')
+        OverviewRowOf     = @{ 'Fixtureball-DQ-002' = 4 }
+        TabOf             = @{ 'Fixtureball-DQ-002' = 'LINKED' }
+        SheetIdOf         = @{ 'Overview' = 0; 'LINKED' = 77 }
+    }
+    $rows = @(1..3 | ForEach-Object { [pscustomobject]@{ check_type = 'X'; id = $_ } })
+    $plan = New-SheetsMergePlan -Summary $summary `
+        -Collected @([pscustomobject]@{ Job = $job; Rows = $rows }) `
+        -Existing $existing -OutputFolder 'x'
+
+    Assert-Equal 1 @($plan.Operations | Where-Object {
+            $_.Kind -eq 'Clear' -and $_.Sheet -eq 'LINKED' }).Count 'the tab is cleared before it is rewritten'
+    Assert-True (@($plan.Operations | Where-Object {
+                $_.Kind -eq 'Write' -and $_.Sheet -eq 'LINKED' -and $_.Range -like 'A5:*' }).Count -gt 0) `
+        'and the findings are written to it'
+
+    # H is the Rows column, and its own single-cell write is the link. The A:H span wrote a
+    # plain number first, which is what a check with no tab keeps.
+    $rowsWrite = @($plan.Operations | Where-Object {
+            $_.Kind -eq 'Write' -and $_.Sheet -eq 'Overview' -and $_.Range -eq 'H4:H4' })
+    Assert-Equal 1 $rowsWrite.Count 'Rows is written as a cell of its own'
+    Assert-True ([string]$rowsWrite[0].Values[0][0] -like '=HYPERLINK("#gid=*') 'and it holds a link, not a bare number'
+
+    # The token names the tab; Invoke-SheetsPlan resolves it against every id the document
+    # has. A name the document does not carry would leave it unresolved, and an unresolved
+    # write is dropped rather than sent.
+    Assert-True ([string]$rowsWrite[0].Values[0][0] -like '*{{GID:LINKED}}*') 'naming the tab it belongs to'
+    Assert-True ($plan.KnownSheetIds.ContainsKey('LINKED')) 'which the plan can resolve to an id'
+}
+
 Test-That 'a write too large for one request is split at its own first row' {
     $rows = @(1..7 | ForEach-Object { , @("r$_", $_) })
     $operation = [pscustomobject]@{ Kind = 'Write'; Sheet = 'BIG'; Range = 'A5:B11'; Values = $rows }
