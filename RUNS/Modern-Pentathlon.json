@@ -12488,6 +12488,58 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Modern-Pentathlon 12.08.2026 14-52-09",
+                     "startedUtc":  "2026-08-12T12:52:09Z",
+                     "output":  "D:\\SQL\u0027s Output\\Modern-Pentathlon 12.08.2026 14-52-09",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-081",
+                                        "runKey":  "Modern-Pentathlon-DQ-081",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MISSING_PHASE",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  16,
+                                        "findings":  15,
+                                        "eligible":  1703,
+                                        "seconds":  7.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-030",
+                                        "runKey":  "Modern-Pentathlon-DQ-030",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  891,
+                                        "findings":  890,
+                                        "eligible":  237155,
+                                        "seconds":  5.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-104",
+                                        "runKey":  "Modern-Pentathlon-DQ-104",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED",
+                                        "category":  "WRONG_GENDER",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  65,
+                                        "findings":  64,
+                                        "eligible":  4509,
+                                        "seconds":  2.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1kWKqdBc2ZD1AYcMEzGUmZHzgjfEgnLyf8AfbCvkxuKs"

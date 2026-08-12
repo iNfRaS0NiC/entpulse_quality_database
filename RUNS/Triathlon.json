@@ -10689,6 +10689,58 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Triathlon 12.08.2026 14-52-48",
+                     "startedUtc":  "2026-08-12T12:52:47Z",
+                     "output":  "D:\\SQL\u0027s Output\\Triathlon 12.08.2026 14-52-48",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-033",
+                                        "runKey":  "Triathlon-DQ-033",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MISSING_PHASE",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3440,
+                                        "seconds":  7.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-043",
+                                        "runKey":  "Triathlon-DQ-043",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  129794,
+                                        "seconds":  2.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-101",
+                                        "runKey":  "Triathlon-DQ-101",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED",
+                                        "category":  "WRONG_GENDER",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  14792,
+                                        "seconds":  1.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"

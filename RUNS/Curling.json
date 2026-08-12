@@ -13721,6 +13721,73 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Curling 12.08.2026 14-51-23",
+                     "startedUtc":  "2026-08-12T12:51:22Z",
+                     "output":  "D:\\SQL\u0027s Output\\Curling 12.08.2026 14-51-23",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Curling-DQ-027",
+                                        "runKey":  "Curling-DQ-027",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MISSING_PHASE",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  563,
+                                        "findings":  562,
+                                        "eligible":  952,
+                                        "seconds":  6.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Curling-DQ-069",
+                                        "runKey":  "Curling-DQ-069",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULT_MIRRORED_SCORE_TYPES_DISAGREE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  31,
+                                        "findings":  30,
+                                        "eligible":  17920,
+                                        "seconds":  1.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Curling-DQ-034",
+                                        "runKey":  "Curling-DQ-034",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  35840,
+                                        "seconds":  0.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Curling-DQ-103",
+                                        "runKey":  "Curling-DQ-103",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED",
+                                        "category":  "WRONG_GENDER",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  342,
+                                        "seconds":  0.6,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1zv6UoQOdEVR-SNJSakLy7xWVo1fh-jsL8Y-7mybcC3g"

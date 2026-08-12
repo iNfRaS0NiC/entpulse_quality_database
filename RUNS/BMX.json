@@ -12893,6 +12893,58 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "BMX 12.08.2026 14-50-55",
+                     "startedUtc":  "2026-08-12T12:50:55Z",
+                     "output":  "D:\\SQL\u0027s Output\\BMX 12.08.2026 14-50-55",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-042",
+                                        "runKey":  "BMX-DQ-042",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MISSING_PHASE",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  22,
+                                        "findings":  21,
+                                        "eligible":  413,
+                                        "seconds":  6.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-024",
+                                        "runKey":  "BMX-DQ-024",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  80611,
+                                        "seconds":  1.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-095",
+                                        "runKey":  "BMX-DQ-095",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED",
+                                        "category":  "WRONG_GENDER",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  2687,
+                                        "seconds":  0.9,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE"

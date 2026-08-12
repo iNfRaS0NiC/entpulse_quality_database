@@ -17252,6 +17252,58 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 12.08.2026 14-50-17",
+                     "startedUtc":  "2026-08-12T12:50:16Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 12.08.2026 14-50-17",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-087",
+                                        "runKey":  "Artistic-Gymnastics-DQ-087",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MISSING_PHASE",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  4230,
+                                        "seconds":  8.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-050",
+                                        "runKey":  "Artistic-Gymnastics-DQ-050",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  175791,
+                                        "seconds":  2.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-105",
+                                        "runKey":  "Artistic-Gymnastics-DQ-105",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED",
+                                        "category":  "WRONG_GENDER",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7644,
+                                        "seconds":  1.6,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"
