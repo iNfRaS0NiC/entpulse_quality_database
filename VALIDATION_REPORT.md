@@ -39,13 +39,13 @@ output, not a hand-written claim: re-run the script rather than editing it.
 | GLOBAL discovery statements | 33 |
 | GLOBAL DQ templates | 123 |
 | Sport DQ statements | 41 |
-| Manual-paste markers found | 108 |
+| Manual-paste markers found | 120 |
 | Statements cut by a literal semicolon | 0 |
 | Duplicate active SQL CheckIDs | 0 |
 | UNION column-count mismatches | 0 |
 | PowerBI registry rows | 599 |
 | DQ categories in use | 8 |
-| Sports indexed | 6 |
+| Sports indexed | 7 |
 
 ## Boundary
 

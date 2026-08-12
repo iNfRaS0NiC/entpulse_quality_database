@@ -16,8 +16,9 @@ correction is required.
 - Verification boundary: one GLOBAL discovery sweep, sport-wide and unnarrowed, plus the
   targeted follow-ups named below. `enet_sport_code` is `g`. Two catalogue statements could
   not be run as written and were narrowed; what each narrowing gave up is recorded against
-  its area. Nothing here is measured against a client scope, because none is agreed yet -
-  see **Client scope is not the sport** below.
+  its area. Every figure in this file is sport-wide, and for Golf that is also the client
+  scope: all 37 templates are in it. What that costs is recorded under **Confirmed
+  sport-specific storage semantics**.
 
 ## Structural coverage
 
@@ -25,7 +26,7 @@ correction is required.
 |---|---|---|
 | Core hierarchy | Confirmed | `GLOBAL-DISCOVERY-001`, `-002` |
 | Event participants | Confirmed | `GLOBAL-DISCOVERY-004`, `-032` |
-| Event results | Confirmed (inventory only) | `GLOBAL-DISCOVERY-007`, narrowed |
+| Event results | Confirmed | `GLOBAL-DISCOVERY-007` narrowed; `-026` for `31`–`34`, `36`, `100` |
 | Incidents | Confirmed absent | `GLOBAL-DISCOVERY-008` |
 | Lineups | Confirmed absent | `GLOBAL-DISCOVERY-005` |
 | Scope layer | Confirmed | `GLOBAL-DISCOVERY-009`, `-010` narrowed |
@@ -104,13 +105,46 @@ per-round fields rather than one total, so a check reading "the event's score" h
 which round it means. `36 Par` is the event-level figure against par and is the closest thing
 the sport has to a single score.
 
-**Two value-shape defects are visible in the inventory itself and are not yet quantified.**
-`36 Par` returns a minimum of `−9` written with the typographic minus sign `U+2212` rather than
-an ASCII hyphen, which every numeric cast and every `REGEXP '^-?[0-9]+$'` treats as text.
-`34 Strokes 4th round` returns a minimum of `Â`, a mojibake byte standing in a field the sport
-otherwise fills with integers; `31`, `32` and `33` return `D` on the same reading. These are
-recorded as observed values, not as counts - `GLOBAL-DISCOVERY-026` has not been run for any
-result type here, and until it is, the size of each is unknown.
+**The value shapes are measured.** `GLOBAL-DISCOVERY-026` was run sport-wide for `36`, `31`,
+`32`, `33`, `34` and `100`, one result type per execution.
+
+`36 Par` holds 546735 values in eleven shapes. Three are the sport working correctly: `#`
+(310110 values in 4559 events), `-#` with an ASCII hyphen (222174 in 4765) and `+#` (9347 in
+124). The rest are not:
+
+| Shape | Values | Events | What it is |
+|---|---:|---:|---|
+| `-` | 4831 | 1743 | a bare hyphen where a number belongs - "no score" written into a numeric field |
+| `<EMPTY>` | 163 | 31 | empty string |
+| `−#` | 39 | 2 | `U+2212`, the typographic minus |
+| `â€™#` | 32 | 3 | the same `U+2212`, double-encoded through UTF-8 |
+| `E` | 21 | 4 | a bare letter |
+| `–#` | 14 | 1 | `U+2013`, an en dash |
+| `N/A` | 3 | 1 | text |
+| `#<tab> #` | 1 | 1 | a tab inside the value |
+
+**The field writes a minus four different ways.** The ASCII hyphen accounts for 222174 of them
+and the other three for 85 values across 6 events, so a cast that accepts only `-` loses those
+85 silently rather than loudly.
+
+`31`–`34 Strokes` are cleaner in proportion but hold two defects of their own:
+
+| Result type | `-#` | `Â<nbsp>` | `D` | `<EMPTY>` |
+|---|---:|---:|---:|---:|
+| 31 (round 1) | 417 | - | 1 | 133 |
+| 32 (round 2) | 398 | - | 3 | 274 |
+| 33 (round 3) | 172 | 437 | 2 | 2648 |
+| 34 (round 4) | 206 | 356 | - | 3146 |
+
+**A negative stroke count is the larger of the two and cannot be a real score**: 1193 values
+across the four rounds record a player taking fewer than nought strokes. The `Â` is
+`U+00C2 U+00A0`, a non-breaking space that has been through a UTF-8 round trip twice, and it
+occupies 793 values in eleven events. `31` and `32` additionally hold `# #` and `# # #`, two
+numbers in one value, and `32` holds `#n`.
+
+`100 Rank` is clean. All 526444 values in 4841 events carry the single shape `#`, with no empty,
+no text and no separator. Its maximum of 9999 is a valid integer and a question about the value
+rather than about its shape.
 
 <!-- MANUAL PASTE ZONE: 3 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -288,18 +322,33 @@ the absence of one; they are different states and are not interchangeable.
 
 ## Confirmed sport-specific storage semantics
 
-**Client scope is not the sport.** Golf is the second sport documented here whose client scope
-is narrower than the database population, and the gap is far wider than Soccer's. The sport's
-volume sits almost entirely in the professional tours - `429 European Tour 1`, `431 PGA Tour 1`,
-`436 LPGA Tour 1`, `430`, `434`, `9692 Challenge Tour 1`, `9418 Champions Tour 1`,
-`9633 Korn Ferry Tour`, `9691 Asian Tour 1`, `9693 Sunshine Tour 1`, `10305 LIV Golf` - and in
-the amateur team championships `11525`, `11526`, `11507`, `11524`. The templates an NOC client
-competes under are the smallest in the sport: `9600` and `9601 Summer Olympics` at three events
-each, `11498 Summer Youth Olympics` at four, `10328 Asian Games` at ten, `10327 Pan American
-Games` and `11532 Southeast Asian Games` at six each, `10537`/`10538 Pacific Games` at one each,
-and `9779 European Championships 1` at fifty-seven. That is under half a per cent of the sport's
-19443 events. No scope is agreed yet, and no count in this file is measured against one - every
-figure here is sport-wide. `SPORTS/Soccer.md` records how a narrowed scope is stated once it is.
+**The client scope is the whole sport, all 37 templates, and that is a cost rule rather than a
+convenience.** Golf is the opposite case to Soccer, whose client takes 28 templates out of the
+sport's full league population. Here nothing is excluded: the professional tours that hold the
+volume - `429 European Tour 1`, `431 PGA Tour 1`, `436 LPGA Tour 1`, `430`, `434`,
+`9692 Challenge Tour 1`, `9418 Champions Tour 1`, `9633 Korn Ferry Tour`, `9691 Asian Tour 1`,
+`9693 Sunshine Tour 1`, `10305 LIV Golf` - are in scope alongside the amateur team championships
+`11525`, `11526`, `11507`, `11524` and the multi-sport Games templates. Every count in this file
+is sport-wide, and sport-wide is what a Golf check is expected to return.
+
+The consequence is that **`-TemplateIds` is not a scope mechanism for this sport.** It is how
+Soccer keeps its statements affordable, and Golf cannot use it, because narrowing to a template
+here would not be a scope decision but a hole in the audit. What is left is the rest of
+`WORKFLOW.md`'s cost rule, and it has to do all the work on the largest sport in the package:
+a half-open `startdate` window, a primary-key range, one round type or one result type per
+execution, `EXISTS` in place of `JOIN` plus `DISTINCT`, and no `COUNT(DISTINCT)` where a plain
+`COUNT(*)` answers the question.
+
+This is measured rather than cautionary. Two of the 24 catalogue statements that ran against
+Golf failed on cost alone - `GLOBAL-DISCOVERY-007` exhausted the server's temporary space and
+`GLOBAL-DISCOVERY-010` timed out twice - and both are ordinary statements that every other sport
+runs without trouble. A Golf DQ statement written to the shape that works on Curling should be
+expected to fail here until it is sized.
+
+**Test data is inside the scope, not beside it.** Because no template is excluded,
+`12649 TEST` and its 899 event participants are part of every sport-wide count a Golf check will
+return, as is the `TEST - ISCO Championship` event. Any Golf finding list will contain them, and
+they are not a defect the check found - they are the population it was pointed at.
 
 **`12649 TEST` is a template named TEST, and it is populated.** Seven tournaments, seven stages,
 seven events and 899 event participants. The event inventory also returns
@@ -314,25 +363,30 @@ empty branch of the hierarchy rather than a missing template, which is the state
 
 ## Open questions
 
-1. **Which templates are in the client's scope?** Nothing in this file is narrowed, and the
-   answer changes every eligible count a DQ check would report. Until it is settled, a Golf
-   check run sport-wide reads the professional tours, which is almost certainly not what is
-   being audited.
-2. **How is a pair participant meant to be read?** A foursome is one `athlete` row holding two
+1. **How is a pair participant meant to be read?** A foursome is one `athlete` row holding two
    names and no lineup. Whether the two players are reachable at all, and through what, is
    unknown; if they are not, the sport cannot answer "who played" for its pairs formats.
-3. **How large are the two value-shape defects in the result layer?** The typographic minus in
-   `36 Par` and the mojibake in `31`–`34` are visible as minimum values. `GLOBAL-DISCOVERY-026`
-   has not been run for any result type and neither is counted.
-4. **What are the five `tournament_stage`-owned statistics?** Shard, fields and purpose are all
+2. **What are the five `tournament_stage`-owned statistics?** Shard, fields and purpose are all
    unchecked, and they are the one statistic population this sweep did not touch.
-5. **Are `penalty_stroke_9` and the four `clock_penalty_*` data types genuinely Golf's?** They
+3. **Are `penalty_stroke_9` and the four `clock_penalty_*` data types genuinely Golf's?** They
    carry values under Golf scopes but read as another sport's vocabulary. A shared generic id
    and a misfiled value look identical from here.
-6. **What do `event_scope_detail` and `lineup_scope_result` hold for Golf?** Neither layer was
+4. **What do `event_scope_detail` and `lineup_scope_result` hold for Golf?** Neither layer was
    measured. The second is expected to be empty because the sport writes no lineups, which is
    an expectation and not a measurement.
-7. **Which round is "the" score?** The sport stores strokes per round and no single stroke
+5. **Which round is "the" score?** The sport stores strokes per round and no single stroke
    total, so any check comparing a score against a rank has to say which figure it means.
+6. **Is `-` in `36 Par` the sport's way of writing "no score", or a defect?** It is the fourth
+   most common shape in the field at 4831 values over 1743 events, which is too many to be
+   accidental and too few to be the convention. The answer decides whether a Par check treats it
+   as a missing value or as a legitimate one.
+7. **Are the 29653897 scope values in scope for auditing?** They are inside the client scope,
+   because the whole sport is, and no DQ check reads them today. Whether the hole-by-hole layer
+   is meant to be audited at all is a decision, not a measurement, and it is the single largest
+   cost question the sport carries.
+
+Settled since this file was opened: the client scope is the whole sport, all 37 templates. The
+consequence is recorded under **Confirmed sport-specific storage semantics** above, because it
+changes how every statement for this sport has to be written rather than only what it returns.
 
 <!-- MANUAL PASTE ZONE: 3 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
