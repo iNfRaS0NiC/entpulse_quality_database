@@ -100,10 +100,24 @@ not yet measured. `result_row_count` is what was returned.
 | strokes_r5 | 35 | integer | Strokes taken in a fifth round | 484 rows |
 | medal | 501 | `bronze` / `silver` / gold | Medal awarded | 18 rows |
 
-**The sport scores a round at a time, not a single figure.** `31`–`35` and `526`–`529` are
-per-round fields rather than one total, so a check reading "the event's score" has to decide
-which round it means. `36 Par` is the event-level figure against par and is the closest thing
-the sport has to a single score.
+**The sport scores a round at a time, and the total is not stored at all.** `31`–`35` and
+`526`–`529` are per-round fields. The editing interface shows two further columns beside them,
+`Total` and `Total Par`, and only the second of the two exists in the database.
+
+`36 Par` is `Total Par`: the score against par for the whole event, and it is measured rather
+than inferred. Over every stroke-play participant holding four numeric rounds and a numeric
+`36`, the value equals the sum of the rounds minus the course par times four - confirmed on
+9023 participants in 2026 with no exception, and on 200572 sport-wide. The course par comes
+from the `tournament_stage` property `Par`, which is why that property is not decoration.
+
+`Total` - the raw stroke count, 258 for a 66-65-63-64 - **has no result type.** The interface
+computes it from the four rounds. Any check wanting a stroke total has to sum the rounds itself,
+and any check comparing "the event's score" against a rank must use `36`, which is signed and
+therefore not comparable to a stroke count.
+
+This also explains the shape counts above. `36` writes an over-par score two ways: 310110 values
+carry a bare `#` and 9347 carry `+#`, and both mean the same thing. The `-#` majority of 222174
+is the under-par side, which needs no sign convention to be unambiguous.
 
 **The value shapes are measured.** `GLOBAL-DISCOVERY-026` was run sport-wide for `36`, `31`,
 `32`, `33`, `34` and `100`, one result type per execution.
