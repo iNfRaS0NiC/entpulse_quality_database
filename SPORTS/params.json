@@ -592,7 +592,28 @@
     "ROUND_TYPE_LIST": "1, 2, 3, 4, 9, 19, 22, 23, 38, 39, 40, 41, 42, 43, 89, 90, 91, 92, 173, 176, 178, 184, 185, 186, 188, 225, 262, 263, 264, 304, 305",
     "NOT_STARTED_DESC_LIST": "1",
     "_notApplicable": {
-      "LINEUP_TYPE_LIST": "the sport writes no lineup row at all; a foursome is stored as one athlete participant holding both names"
-    }
+      "LINEUP_TYPE_LIST": "the sport writes no lineup row at all; a foursome is stored as one athlete participant holding both names",
+      "RESULT_FINAL_SCORE_TYPE_ID": "no mirrored score pair: 4 finalresult and 39 mpscore hold related but distinct figures, not one figure stored twice. Of the event participants holding either, 14960 hold both and disagree - won against WO, 0 against 1 - and only 19 agree",
+      "RESULT_MIRROR_SCORE_TYPE_ID": "the other half of the pair that does not exist; see RESULT_FINAL_SCORE_TYPE_ID",
+      "RESULT_FULL_TIME_TYPE_ID": "the sport records no time or duration result type; its 17 types measure strokes, points, par, rank, money and status",
+      "RESULT_DURATION_TYPE_ID": "the sport records no time or duration result type",
+      "TIMED_DISCIPLINE_LIST": "neither discipline is timed; Stroke Play and Match Play both resolve on strokes",
+      "FULL_TIME_TOLERANCE_SECONDS": "no time is recorded, so no tolerance applies",
+      "BRONZE_ROUND_TYPE_LIST": "bronze is not decided in an event of its own: all 18 medal results sit in round type 225 Main Phase, six gold, six silver and six bronze across the same six events",
+      "SCOPE_PERIOD_DATA_TYPE_LIST": "deferred with the hole-by-hole scope layer, which is outside the DQ work by decision on 2026-08-12",
+      "SCOPE_PERIOD_SENTINEL_LIST": "deferred with the hole-by-hole scope layer",
+      "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "deferred with the hole-by-hole scope layer",
+      "EXTRA_PERIOD_STATUS_DESC_LIST": "deferred with the hole-by-hole scope layer"
+    },
+    "DATA_COMMENT_TYPE_ID": 1273,
+    "DATA_TEAM_TYPE_ID": 1429,
+    "DATA_TIME_TYPE_ID": 1426,
+    "DATA_TIME_DIFFERENCE_TYPE_ID": 1427,
+    "DATA_DEPRECATED_DURATION_TYPE_ID": 1272,
+    "MEDAL_ROUND_TYPE_LIST": "225",
+    "PLACEHOLDER_COUNTRY_LIST": "'International'",
+    "RANK_MAX_PLAUSIBLE": 250,
+    "STALE_NOT_STARTED_DAYS": 2,
+    "SERIES_MIN_YEARS": 3
   }
 }
