@@ -1307,63 +1307,93 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-042
     -- Name - EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK
-    -- What it does: Finds participants in Final-round events who appear in none of the Comp.Rank naming their event.
+    -- What it does: Finds Final-round events whose Comp.Rank omits competitors who took part, naming how many of the field are missing from it and who they are.
     'FINAL_PARTICIPANT_NOT_IN_COMP.RANK' AS check_type,
-    ep.id AS event_participants_id,
-    e.id AS event_id,
-    e.name AS event_name,
-    tt.name AS template_name,
-    t.name AS tournament_name,
-    p.name AS participant_name,
+    x.event_id,
+    x.event_name,
+    x.template_name,
+    x.tournament_name,
+    x.field_size,
+    x.missing_count,
+    -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
+    -- group_concat_max_len without saying so, and missing_count is counted separately and is
+    -- what the row asserts.
+    x.missing_participants,
     NULL AS eligible_count
-FROM event e
-JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
-JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
-WHERE e.del = 'no'
-  AND tt.sportFK = {{SPORT_ID}}
-  AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
-  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND t.tournament_templateFK = <tournament_template_id>
-  AND EXISTS (
-      SELECT 1
-      FROM statistic_config sc2
-      JOIN statistic s2 ON s2.id = sc2.statisticFK
-           AND s2.del = 'no'
-           AND s2.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-           AND s2.object_typeFK = 3
-      WHERE sc2.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
-        AND sc2.del = 'no'
-        AND CAST(sc2.value AS UNSIGNED) = e.id
-        AND EXISTS (
-            SELECT 1
-            FROM statistic_participants{{SHARD_ID}} spx
-            WHERE spx.statisticFK = s2.id AND spx.del = 'no'
-        )
-  )
-  AND NOT EXISTS (
-      SELECT 1
-      FROM statistic_config sc
-      JOIN statistic s ON s.id = sc.statisticFK
-           AND s.del = 'no'
-           AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-           AND s.object_typeFK = 3
-      JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id
-           AND sp.del = 'no'
-           AND sp.participantFK = ep.participantFK
-      WHERE sc.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
-        AND sc.del = 'no'
-        AND CAST(sc.value AS UNSIGNED) = e.id
-  )
+FROM (
+    SELECT
+        y.event_id,
+        y.event_name,
+        y.template_name,
+        y.tournament_name,
+        COUNT(*) AS field_size,
+        SUM(y.is_missing) AS missing_count,
+        GROUP_CONCAT(CASE WHEN y.is_missing = 1 THEN y.participant_name END
+                     ORDER BY y.participant_name SEPARATOR ', ') AS missing_participants
+    FROM (
+        -- One row per competitor in the event, carrying whether the Comp.Rank covering that
+        -- event lists them. The event is the audited object: a statistic that omits six of
+        -- eight finalists is one broken import and not six, and reported per competitor it
+        -- read as six - against a coverage count of every Final participant in the sport,
+        -- which made the proportion wrong in both halves.
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            p.name AS participant_name,
+            CASE WHEN NOT EXISTS (
+                    SELECT 1
+                    FROM statistic_config sc
+                    JOIN statistic s ON s.id = sc.statisticFK
+                         AND s.del = 'no'
+                         AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+                         AND s.object_typeFK = 3
+                    JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id
+                         AND sp.del = 'no'
+                         AND sp.participantFK = ep.participantFK
+                    WHERE sc.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
+                      AND sc.del = 'no'
+                      AND CAST(sc.value AS UNSIGNED) = e.id
+                ) THEN 1 ELSE 0 END AS is_missing
+        FROM event e
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        WHERE e.del = 'no'
+          AND tt.sportFK = {{SPORT_ID}}
+          AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          AND EXISTS (
+              SELECT 1
+              FROM statistic_config sc2
+              JOIN statistic s2 ON s2.id = sc2.statisticFK
+                   AND s2.del = 'no'
+                   AND s2.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+                   AND s2.object_typeFK = 3
+              WHERE sc2.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
+                AND sc2.del = 'no'
+                AND CAST(sc2.value AS UNSIGNED) = e.id
+                AND EXISTS (
+                    SELECT 1
+                    FROM statistic_participants{{SHARD_ID}} spx
+                    WHERE spx.statisticFK = s2.id AND spx.del = 'no'
+                )
+          )
+    ) y
+    GROUP BY y.event_id, y.event_name, y.template_name, y.tournament_name
+) x
+WHERE x.missing_count > 0
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT ep.id) AS eligible_count
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
