@@ -380,10 +380,13 @@ empty branch of the hierarchy rather than a missing template, which is the state
    most common shape in the field at 4831 values over 1743 events, which is too many to be
    accidental and too few to be the convention. The answer decides whether a Par check treats it
    as a missing value or as a legitimate one.
-7. **Are the 29653897 scope values in scope for auditing?** They are inside the client scope,
-   because the whole sport is, and no DQ check reads them today. Whether the hole-by-hole layer
-   is meant to be audited at all is a decision, not a measurement, and it is the single largest
-   cost question the sport carries.
+**The hole-by-hole scope layer is not audited for now.** Decided 2026-08-12. Its 29653897 values
+are inside the client scope, because the whole sport is, and they are deliberately left outside
+the DQ work rather than overlooked. This is a decision about where the effort goes and not a
+statement about the data: the layer is the sport's largest storage and the two catalogue
+failures both came from it, so a check written against it later has to be sized before it is
+written. Nothing here classifies it `Not applicable` - the structure is present and the sport
+fills it.
 
 Settled since this file was opened: the client scope is the whole sport, all 37 templates. The
 consequence is recorded under **Confirmed sport-specific storage semantics** above, because it
