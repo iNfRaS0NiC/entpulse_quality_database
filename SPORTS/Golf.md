@@ -470,8 +470,33 @@ the check was looking for: statistics named `Espirito Santo Trophy - Competition
 under template `11528 Eisenhower Trophy`.
 
 Five of the thirteen hold no medal at all today - `11525`, `11526`, `9779`, `10537`, `10538`.
-The rule as recorded is one-directional, so that is not a finding here; whether a listed template
-owes a medal it has not got is a second check nobody has asked for yet.
+The rule as recorded is one-directional, so that is not a finding for `GLOBAL-DQ-125`. It is a
+finding for the check on the other side of the list, which is where it now lands.
+
+**`Golf-DQ-085` is `GLOBAL-DQ-026` narrowed to those thirteen templates, and `Golf-DQ-044` is
+deprecated.** The global template audits every Comp.Rank a sport holds, and Golf's are tournament
+classifications: it reported 3286 of 3491, almost all of them `No_Medals_At_All` on competitions
+that award none. Narrowing it inside the template would have taken the check from the six other
+sports that run it and declare no medal-template list, so the narrowing lives in
+`POWERBI_QUERIES/Golf.sql` and carries Golf's values written out. The two must be kept the same:
+`GLOBAL-DQ-125` asserts no medal outside the thirteen, `Golf-DQ-085` audits the medal set inside
+them, and they are only coherent while they read the same list.
+
+It reports 192 of 251, and the composition is what makes it readable where 3286 of 3491 was not:
+
+| What it found | Rows |
+|---|---:|
+| `Medal_Set_Unreadable_Without_Rank` - no Rank to compare the medals with | 101 |
+| `No_Medals_At_All` - a medal template awarding none | 87 |
+| `Medal_Missing_For_Shared_Place` | 2 |
+| `Duplicate_Bronze` | 1 |
+| `Podium_Truncated_Below_Medal` | 1 |
+
+The 87 are the reverse direction of the rule, arriving without a check being written for it: 83
+sit under `11526 European Boys' Team Championship` and `11525 European Girls' Team Championship`
+counted together with the two British championships, which is the same five-template gap named
+above seen from the other side. The 101 belong to `Golf-DQ-001` and are not restated here. Four
+rows are medal-set defects in the sense the check was written for.
 
 **Test data is inside the scope, not beside it.** Because no template is excluded,
 `12649 TEST` and its 899 event participants are part of every sport-wide count a Golf check will

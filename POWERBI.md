@@ -65,6 +65,40 @@ Rules:
 - an updated version of the same logical check keeps its CheckID;
 - a materially different check receives a new ID after separate user approval.
 
+### The 200-row gate
+
+**A candidate returning more than 200 finding rows is examined before it is assigned a
+CheckID, never after.** Run it, read what the rows actually say, and establish what share of
+them is the sport behaving normally rather than a defect. A count alone settles nothing: a long
+list of genuine defects is a good check, and a long list that turns out to be the sport's own
+storage habit is a check that was wrong for this sport before it was ever numbered.
+
+**Where the answer is not certain, the check is not written.** It goes back to the user as a
+question. Uncertainty here is about the check and not about the data - "these rows may or may
+not be defects" is ordinary review work and belongs on a board; "this rule may not hold for
+this sport" is a reason to stop and ask.
+
+The cost being avoided is asymmetric. An unwritten check costs a question. An assigned CheckID
+is permanent: it cannot be renumbered, deleted or reused, so withdrawing one leaves a
+`Deprecated` row in `POWERBI_REGISTRY.md` for the life of the package, and every reader after
+that has to work out why. Writing a check and then withdrawing it is therefore not a neutral
+correction, and a habit of it makes the registry harder to read than the database.
+
+Measured on Golf, 2026-08-13, which is why the rule is written down:
+
+| Check | Reported | Of which the sport behaving normally |
+|---|---:|---:|
+| `GLOBAL-DQ-076` | 16452 | 9347 correct scores the pattern could not read |
+| `GLOBAL-DQ-118` | 6655 | 529 events on a round type that is filed correctly |
+| `GLOBAL-DQ-107` | 16334 | all of them - deprecated |
+| `GLOBAL-DQ-004` | 5089 | 4969 - held open rather than assigned |
+| `GLOBAL-DQ-049` | 13430 | 13340 - held open rather than assigned |
+
+The last two are the rule working. The first three are what it exists to prevent.
+
+This is the counterpart of `WORKFLOW.md`'s "Zero findings never retires a check": a small count
+is no reason to withdraw a check, and a large one is no reason to trust it.
+
 ## SQL header and name contract
 
 Every approved query begins with `SELECT` as its first word. `SELECT` is alone on the

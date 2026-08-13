@@ -669,10 +669,6 @@
         "signal": "Not applicable",
         "reason": "The same asymmetry as GLOBAL-DQ-037: it asserts that every medal-round event carries the medal_related property, and Golf's medal rounds are 5020 stroke-play events of which 6 award a medal. Reports 4764 of 4768."
       },
-      "GLOBAL-DQ-026": {
-        "signal": "Monitor",
-        "reason": "The sport's Comp.Rank are tournament classifications and most of them award nothing: 99 of 3491 carry a Medal value at all. The check asserts a complete medal set on each, so it reports 3286 of 3491 and the proportion is the finding rather than the rows. It stays because the 99 that do carry medals are worth reading."
-      },
       "GLOBAL-DQ-007": {
         "signal": "Monitor",
         "reason": "10482 of 20547 people reached through the sport hold no date of birth. Half a registry is a completeness proportion rather than a repair list, and the sport's registry is large and old; the rows are correct and there are simply a great many of them."

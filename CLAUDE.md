@@ -70,6 +70,12 @@ than only in their owner:
   deprecated check keeps its row and its ID; gaps are expected.
 - **No DQ without approval.** A DQ CheckID is assigned only after the user names a sport
   and a category and then approves a concrete check.
+- **The 200-row gate.** A candidate returning more than 200 finding rows is run and read
+  before it is numbered, and what share of those rows is the sport behaving normally is
+  established first. Where that is not certain, the check is not written — ask instead. An
+  unwritten check costs a question; an assigned CheckID is permanent, so withdrawing one
+  leaves a `Deprecated` row forever. `POWERBI.md` owns the rule and records what it is
+  measured on.
 - **Coverage contract.** Every DQ statement returns finding rows with a concrete
   `check_type` and `NULL AS eligible_count`, plus one `UNION ALL` branch with
   `check_type = 'COVERAGE'` and `COUNT(DISTINCT <object_id>) AS eligible_count` over the
