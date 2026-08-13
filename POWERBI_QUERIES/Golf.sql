@@ -471,3 +471,178 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_startdate DESC;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-090
+    -- Name - TOURNAMENT_STAGE_DOES_NOT_COVER_ITS_EVENTS
+    -- What it does: Finds Golf tournament stages whose declared dates fail to contain the events they hold - starting after the first, ending before the last, or running more than a week past the last - counting the events and naming the span they occupy.
+    z.check_type,
+    z.tournament_stage_id,
+    z.stage_name,
+    z.tournament_name,
+    z.template_name,
+    z.stage_start,
+    z.stage_end,
+    z.first_event,
+    z.last_event,
+    z.event_count,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- GLOBAL-DQ-004 narrowed to what the invariant means in Golf, and the reason it could not be
+-- instantiated. That template asks whether a stage is bounded by its own events, and in this
+-- sport it is not: a stroke-play tournament is one event dated on the day it opens, while the
+-- stage carries every day played. So the stage legitimately ends after its only event, and the
+-- global check reported 4969 of 5089 findings that were the sport working correctly.
+--
+-- Measured 2026-08-13, inside the client boundary. Stroke play starts its stage on the first
+-- event's day in 3476 of 3476 stages, and ends it 0 to 6 days later - three days is the
+-- ordinary Thursday-to-Sunday tournament, four the one with a Monday finish. Match play aligns
+-- on both ends in 212 of 251. Nothing observed ends before its last event or starts after its
+-- first, which is why those two verdicts read zero today and are still worth asserting: they
+-- are the shapes that make a stage unable to contain what it holds.
+--
+-- Seven days rather than six, so the measured maximum is inside the window rather than on its
+-- edge. A stage running longer than that is not a golf tournament's span.
+--
+-- A stage starting up to two days before its first event is deliberately not reported. 88 of
+-- the 251 match-play stages do it and they are dated by the tournament's own window rather
+-- than by the matches inside it; SPORTS/Golf.md records the measurement so the exclusion can be
+-- reversed knowing its size.
+--
+-- Stages with no date at all belong to Golf-DQ-046, which audits the missing field itself.
+FROM (
+    SELECT
+        CASE
+            WHEN DATE(ts.enddate) < DATE(MAX(e.startdate)) THEN 'STAGE_ENDS_BEFORE_ITS_LAST_EVENT'
+            WHEN DATE(ts.startdate) > DATE(MIN(e.startdate)) THEN 'STAGE_STARTS_AFTER_ITS_FIRST_EVENT'
+            ELSE 'STAGE_RUNS_PAST_ITS_LAST_EVENT'
+        END AS check_type,
+        ts.id AS tournament_stage_id,
+        ts.name AS stage_name,
+        t.name AS tournament_name,
+        tt.name AS template_name,
+        DATE(ts.startdate) AS stage_start,
+        DATE(ts.enddate) AS stage_end,
+        DATE(MIN(e.startdate)) AS first_event,
+        DATE(MAX(e.startdate)) AS last_event,
+        COUNT(DISTINCT e.id) AS event_count
+    FROM tournament_stage ts
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+    WHERE ts.del = 'no'
+      AND tt.sportFK = 3
+      AND ts.startdate IS NOT NULL
+      AND ts.enddate IS NOT NULL
+      AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY ts.id, ts.name, t.name, tt.name, ts.startdate, ts.enddate
+    HAVING DATE(ts.enddate) < DATE(MAX(e.startdate))
+        OR DATE(ts.startdate) > DATE(MIN(e.startdate))
+        OR DATEDIFF(DATE(ts.enddate), DATE(MAX(e.startdate))) > 7
+) z
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ts.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament_stage ts
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+WHERE ts.del = 'no'
+  AND tt.sportFK = 3
+  AND ts.startdate IS NOT NULL
+  AND ts.enddate IS NOT NULL
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_count DESC, tournament_stage_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-091
+    -- Name - TOURNAMENT_NAME_SEASON_OUTSIDE_ITS_SEASON_WINDOW
+    -- What it does: Finds Golf tournaments named for a single year whose events fall outside the season that year names, which runs from the September before it to the end of it, separating one starting too early from one running past its year.
+    z.check_type,
+    z.tournament_id,
+    z.tournament_name,
+    z.template_name,
+    z.named_year,
+    z.first_event,
+    z.last_event,
+    z.event_count,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- GLOBAL-DQ-080 narrowed to the season Golf actually keeps. That template recognises the
+-- written span form 2025/26 and reads a bare 2002 as the calendar year, so the European Tour
+-- season opening in November 2001 contradicted its own name: 42 of its 45 findings were that,
+-- and the real residue was 3.
+--
+-- Measured 2026-08-13, inside the client boundary. 37 year-named tournaments hold events
+-- outside their year and every one of them opens early rather than finishing late: November
+-- for 19 of them, December 6, October 6 and September 4. So the season a year names begins on
+-- 1 September of the year before, and nothing here reaches back further.
+--
+-- The two that run past their year are Tokyo, whose Games kept the name 2020 and were played
+-- on 29 July and 4 August 2021. That is the world being unusual rather than the data being
+-- wrong, and it is recorded as the expected residual instead of being filtered out: a filter
+-- would also hide the next tournament that genuinely runs into the following year.
+FROM (
+    SELECT
+        CASE
+            WHEN MIN(DATE(e.startdate)) < MAKEDATE(CAST(t.name AS UNSIGNED) - 1, 244)
+                 THEN 'SEASON_STARTS_BEFORE_ITS_WINDOW'
+            ELSE 'SEASON_RUNS_PAST_ITS_YEAR'
+        END AS check_type,
+        t.id AS tournament_id,
+        t.name AS tournament_name,
+        tt.name AS template_name,
+        CAST(t.name AS UNSIGNED) AS named_year,
+        MIN(DATE(e.startdate)) AS first_event,
+        MAX(DATE(e.startdate)) AS last_event,
+        COUNT(DISTINCT e.id) AS event_count
+    FROM tournament t
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+    WHERE t.del = 'no'
+      AND tt.sportFK = 3
+      AND t.name REGEXP '^[0-9]{4}$'
+      AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY t.id, t.name, tt.name
+    HAVING MIN(DATE(e.startdate)) < MAKEDATE(CAST(t.name AS UNSIGNED) - 1, 244)
+        OR MAX(DATE(e.startdate)) > MAKEDATE(CAST(t.name AS UNSIGNED), 366)
+) z
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT t.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament t
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+WHERE t.del = 'no'
+  AND tt.sportFK = 3
+  AND t.name REGEXP '^[0-9]{4}$'
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, named_year, tournament_id;

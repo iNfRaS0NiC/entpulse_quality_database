@@ -666,6 +666,41 @@ difference and `1429` Team both resolve for statistic type 11 and Golf stores no
 population. That is a sentinel rather than a misdirected scope: the field exists, the sport has
 not used it, and the day it does the check is already pointed at it.
 
+**A missing finishing position is explained by `38 Made cut`, not by a Comment.** Confirmed
+2026-08-13. The field holds `yes` or `no` on 351045 participants over 3201 Stroke Play events —
+near-complete coverage of the discipline — and a player who missed the cut carries `no` and no
+Rank, which is the correct record of a weekend he did not play.
+
+This is a sport-specific answer to a question the global layer asks differently. `GLOBAL-DQ-036`
+requires a Comment to account for an absent Rank, because that is where every other documented
+sport puts it; read against Golf it reported 23071 ordinary missed cuts as defects. Honouring
+`Made cut` leaves 841 participants over 107 events, which is the population actually worth
+reading. `Golf-DQ-087` is the statement that does it, and the reason it is a Golf statement
+rather than an instantiated template: no parameter can tell a template to look in a field the
+template does not know about.
+
+**A stage is not bounded by its own events, and the offsets are measured.** Stroke play starts
+its stage on the first event's day in **3476 of 3476** stages, and ends it 0 to 6 days later —
+three days for the ordinary Thursday-to-Sunday tournament, four where a Monday finish is
+recorded. Match play aligns on both ends in 212 of its 251. Nothing in the sport ends a stage
+before its last event or, apart from three stages, starts one after its first.
+
+Two shapes are therefore deliberately not defects here: a stage ending after its only event,
+which is a stroke-play tournament's whole span, and a stage starting up to two days before its
+first match, which 88 of the 251 match-play stages do because the stage is dated by the
+tournament's window rather than by the matches inside it. `Golf-DQ-090` asserts what is left —
+a stage that cannot contain what it holds — and returns 3 of 3727.
+
+**A season named for one year begins in the September before it.** 37 year-named tournaments
+hold events outside their year and every one of them opens early rather than finishing late:
+November for 19, December 6, October 6 and September 4. The European Tour season called `2002`
+opens on 22 November 2001 and closes on 7 November 2002.
+
+The two that run past their year are Tokyo, whose Games kept the name `2020` and were played on
+29 July and 4 August 2021. `Golf-DQ-091` records those as its expected residual rather than
+filtering them out, because a filter would also hide the next tournament that genuinely runs
+into the following year.
+
 <!-- MANUAL PASTE ZONE: 3 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

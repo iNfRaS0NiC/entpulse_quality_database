@@ -832,6 +832,13 @@
     "SERIES_SKIP_YEARS": "2020",
     "DATA_COMMENT_VALUE_LIST": "'wd', 'mdf', 'dq', 'mc', 'rtd', 'sub', 'nr', 'dns', 'n/r'",
     "DATA_COMMENT_NO_RESULT_LIST": "'dq', 'rtd', 'dns', 'nr', 'n/r'",
+    "_expected": {
+      "Golf-DQ-091": {
+        "expect": "Residual",
+        "residual": 2,
+        "reason": "Tokyo kept the name 2020 and was played on 29 July and 4 August 2021, so the men's and women's tournaments both run past the year they are named for and always will. Recorded as a residual rather than filtered out of the statement, because a filter would also hide the next tournament that genuinely runs into the following year."
+      }
+    },
     "_checkSignal": {
       "Golf-DQ-089": {
         "signal": "Monitor",
