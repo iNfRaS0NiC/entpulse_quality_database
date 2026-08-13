@@ -443,6 +443,66 @@ production population, and any sport-wide count in this file includes it.
 empty branch of the hierarchy rather than a missing template, which is the state
 `GLOBAL-DQ-001` exists to report.
 
+**A stroke-play tournament is one event dated on its opening day, and the stage carries the days
+it was actually played.** The four rounds are not four events: `810110 Omega Hong Kong Open` runs
+`2001-11-29` to `2001-12-02` on the stage and holds a single event dated `2001-11-29`. So the
+stage end date is later than the last event start date by the length of the tournament, and it is
+supposed to be.
+
+`GLOBAL-DQ-004` reports 5089 of 5450 stages on that account. 4969 of them are exactly this shape -
+stage start equal to the earliest event, stage end one to four days later - and 4975 hold their
+events on one single date. The template's invariant, that a stage is bounded by its own events,
+is false for a sport whose event is a container for several days of play. The residue is 120
+stages: 89 whose start disagrees while the end matches, 24 running five days or more past their
+last event, and 7 disagreeing at both ends.
+
+**Match play names an event after its two competitors and joins them with a hyphen carrying no
+spaces**, as in `A-Lim Kim-Andrea Lee`. The separator between the two players and the hyphen
+inside one player's own name are the same character, which is why the name cannot be split back
+into its parts and why `DUPLICATE_KEY_INCLUDES_EVENT_NAME` is `0` for this sport.
+
+It also means the sport's own naming convention breaks a text-hygiene rule on every match-play
+event. `GLOBAL-DQ-049` reports 13430 of 14720 distinct event names, and 13340 of those break
+`HYPHEN_WITHOUT_SPACES` and nothing else. Ninety names break something a reviewer would want:
+10 hold a corrupted character, 3 are all uppercase, 3 start lowercase, 2 double a capital and one
+doubles a space, with a further 71 corrupted names that also carry the separator.
+
+**Stroke play names an event after the tournament and names no competitor at all.** `5035212
+Boeing Classic` carries 78 players and none of them in its name. This is the Hybrid model showing
+up in the naming layer the way it already shows up in the result layer: `GLOBAL-DQ-096` asserts
+that an event names the competitors that play it, which is true of the sport's match-play half
+and false of its stroke-play half, and it reports 4875 events for naming no participant.
+
+The 602 rows it reports for naming only some of them are the finding the check exists for -
+`4315561 Benjamin James-Mark Power` is a match against a participant recorded as `Ben James`, so
+the event name and the participant register disagree about the same person's name.
+
+**A tour season is named for one year and played across two.** Tournament `2663`, named `2002`
+under `European Tour 1`, holds 37 stages that begin in 2001 and end in 2002, and the same holds
+for every European Tour season in the file. `GLOBAL-DQ-080` reports 45 tournaments and 42 of them
+are this: a single-year name over a season the stages carry into a second year. The template
+recognises the written span form `2025/26`; the sport does not use it, so a straddling season is
+indistinguishable from a misnamed one by name alone.
+
+**A woman entering a men's field is golf, and it is not distinguishable from a mis-stored gender
+by structure.** `Michelle Wie West`, `Carlota Ciganda`, `Charley Hull`, `Georgia Hall` and
+`Catriona Matthew` are all recorded `female` and all entered in stages recorded `male`, which is
+what happened. It surfaces in two places: `GLOBAL-DQ-123` reports 31 athletes that way, and
+`GLOBAL-DQ-044` reports 17 male Comp.Rank each holding exactly one female among 119 to 191 men -
+`Legends Reno-Tahoe Open`, `John Deere Classic`, `B.C. Open`, `84 Lumber Classic`.
+
+The same finding lists hold rows that read as genuine defects, and they are told apart by what
+carries the gender rather than by the count. A national team entity - `England`, `France`,
+`Spain`, `Scotland` - is stored once with one gender and entered under both, which puts 26 team
+rows in `GLOBAL-DQ-123`; and the European Boys' and Girls' Team Championships hold 3 to 10
+wrong-gender team members each in `GLOBAL-DQ-044`. Neither check can make the distinction itself.
+
+**Two `statistic_data11` fields are declared for the shard and never written.** `1427` Time
+difference and `1429` Team both resolve for statistic type 11 and Golf stores no row in either, so
+`GLOBAL-DQ-028`, `GLOBAL-DQ-064`, `GLOBAL-DQ-065` and `GLOBAL-DQ-066` all audit an empty
+population. That is a sentinel rather than a misdirected scope: the field exists, the sport has
+not used it, and the day it does the check is already pointed at it.
+
 <!-- MANUAL PASTE ZONE: 3 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

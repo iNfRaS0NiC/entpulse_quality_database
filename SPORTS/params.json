@@ -694,6 +694,22 @@
       "GLOBAL-DQ-112": {
         "signal": "Not applicable",
         "reason": "Structural: eligible_count is 0 because the sport writes no lineup row anywhere, so no athlete can be assigned to two of them. Unlike GLOBAL-DQ-057 and GLOBAL-DQ-064 this is not a sentinel - the layer is absent rather than empty, and a foursome is stored as one athlete participant holding both names."
+      },
+      "GLOBAL-DQ-043": {
+        "signal": "Not applicable",
+        "reason": "Structural: the template applies only where a team entry has at least one active lineup row, and the sport writes no lineup row anywhere. It returns 0 of 585086 event participants, and the eligible branch overstates its own population - it counts entries in scope rather than entries holding a lineup, so the 585086 is not a population this check could ever have audited. Same absence as GLOBAL-DQ-058, GLOBAL-DQ-067, GLOBAL-DQ-068 and GLOBAL-DQ-112."
+      },
+      "GLOBAL-DQ-067": {
+        "signal": "Not applicable",
+        "reason": "Structural: eligible_count is 0 because the sport writes no lineup row, so no mixed team can hold an uneven one. The layer is absent rather than empty, which is why this is not a sentinel like GLOBAL-DQ-066."
+      },
+      "GLOBAL-DQ-066": {
+        "signal": "Monitor",
+        "reason": "eligible_count is 0 and this is a sentinel on the same footing as GLOBAL-DQ-064 and GLOBAL-DQ-065: statistic_data11 declares the 1429 Team field for statistic type 11 and Golf writes no row into it, so no statistic can be measured for team gender balance. The field exists and the sport has not used it; the day it does, the check is already pointed at it."
+      },
+      "GLOBAL-DQ-028": {
+        "signal": "Monitor",
+        "reason": "eligible_count is 0 and this is a sentinel: statistic_data11 declares the 1427 Time difference field for statistic type 11 and Golf writes no row into it, which is expected of a sport whose 17 result types measure strokes, points, par, rank, money and status and never time. Same shape as GLOBAL-DQ-057 on the 1273 Comment field."
       }
     }
   }
