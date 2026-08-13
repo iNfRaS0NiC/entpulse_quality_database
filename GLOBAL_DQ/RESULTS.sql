@@ -186,18 +186,38 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-020
     -- Name - EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE
-    -- What it does: Finds event participants in finished events whose Rank exceeds the participant count and is disconnected from the next lower Rank, with no Comment to explain it.
+    -- What it does: Finds finished events holding a Rank that exceeds the participant count and is disconnected from the next lower Rank, with no Comment to explain it, naming how many of the field are affected and what they hold.
     'RANK_OUTLIER_ABOVE_FIELD_SIZE' AS check_type,
-    y.event_participants_id,
-    y.event_id,
-    y.event_name,
-    y.template_name,
-    y.participant_name,
-    y.rank_value,
-    y.participant_count,
-    y.next_lower_rank,
-    NULL AS eligible_count
+    z.event_id,
+    z.event_name,
+    z.template_name,
+    z.participant_count,
+    z.affected_count,
+    -- The ranks themselves, deduplicated. A field imported with every place shifted reads as
+    -- one list here where it read as one row per competitor before the reshape of 2026-08-13,
+    -- and the shift is visible in the list rather than reconstructed from the rows.
+    z.ranks_held,
+    -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
+    -- group_concat_max_len without saying so, and affected_count is counted separately and is
+    -- what the row asserts.
+    z.affected_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
 FROM (
+    -- Grouped to the event, which is the audited object: a rank above the field size is
+    -- normally a whole field imported wrong rather than one competitor, so reported per
+    -- competitor it counted the same import once per name in it.
+    SELECT
+        y.event_id,
+        y.event_name,
+        y.template_name,
+        MAX(y.participant_count) AS participant_count,
+        COUNT(*) AS affected_count,
+        GROUP_CONCAT(DISTINCT y.rank_value ORDER BY y.rank_value SEPARATOR ', ') AS ranks_held,
+        GROUP_CONCAT(DISTINCT CONCAT(y.participant_name, ' (', y.rank_value, ')')
+            ORDER BY CONCAT(y.participant_name, ' (', y.rank_value, ')') SEPARATOR ', ')
+            AS affected_participants
+    FROM (
     SELECT
         x.event_participants_id,
         x.event_id,
@@ -259,16 +279,19 @@ FROM (
           )
     ) x
     WHERE x.rank_value > x.participant_count
-) y
-WHERE y.next_lower_rank IS NULL
-   OR y.rank_value > y.next_lower_rank + 1
+    ) y
+    WHERE y.next_lower_rank IS NULL
+       OR y.rank_value > y.next_lower_rank + 1
+    GROUP BY y.event_id, y.event_name, y.template_name
+) z
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT ep.id) AS eligible_count
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -285,7 +308,8 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
-;
+
+ORDER BY sort_order, affected_count DESC, event_id;
 
 
 -- ================================================================================
