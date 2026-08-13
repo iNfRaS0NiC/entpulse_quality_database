@@ -2423,49 +2423,104 @@ WHERE sm.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-077
     -- Name - COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC
-    -- What it does: Finds non-numeric values in the sport's numeric Comp.Rank fields, separating one of the sport's own status codes, a no-data sentinel such as nan, a number written with thousands separators, and any other text.
-    CASE
-        WHEN LOWER(TRIM(sd.value)) IN ({{DATA_COMMENT_VALUE_LIST}}) THEN 'STATUS_CODE_IN_NUMERIC_FIELD'
-        WHEN LOWER(TRIM(sd.value)) IN ('nan', 'null', 'n/a', 'na', '-', '--', '?', 'none') THEN 'SENTINEL_IN_NUMERIC_FIELD'
-        -- As in GLOBAL-DQ-076: a grouped number is a number written for a reader, and the
-        -- repair is to drop the separators rather than to find the value again.
-        WHEN TRIM(sd.value) REGEXP '^-?[0-9]{1,3}(,[0-9]{3})+([.][0-9]+)?$' THEN 'GROUPED_NUMBER_IN_NUMERIC_FIELD'
-        ELSE 'TEXT_IN_NUMERIC_FIELD'
-    END AS check_type,
-    sp.id AS statistic_participants_id,
-    s.id AS statistic_id,
-    s.name AS statistic_name,
-    tt.name AS template_name,
-    t.name AS tournament_name,
-    p.name AS participant_name,
-    sd.statistic_data_typeFK,
-    sd.value AS stored_value,
-    NULL AS eligible_count
-FROM statistic_data{{SHARD_ID}} sd
-JOIN statistic_participants{{SHARD_ID}} sp ON sp.id = sd.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
-JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
-JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
-WHERE sd.del = 'no'
-  AND sd.statistic_data_typeFK IN ({{NUMERIC_DATA_TYPE_LIST}})
-  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND s.object_typeFK = 3
-  AND tt.sportFK = {{SPORT_ID}}
-  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  -- AND t.tournament_templateFK = <tournament_template_id>
-  AND sd.value IS NOT NULL
-  AND TRIM(sd.value) <> ''
-  -- The mirror of GLOBAL-DQ-057, and inventoried separately from the event layer because
-  -- a field is declared numeric per statistic type, not across the two layers.
-  AND TRIM(sd.value) NOT REGEXP '^-?[0-9]+([.,][0-9]+)?$'
+    -- What it does: Finds Comp.Rank holding non-numeric values in the sport's numeric fields, separating one of the sport's own status codes, a no-data sentinel such as nan, a number written with thousands separators, and any other text, and naming how many values are affected and what they hold.
+    x.check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    -- The data type is named rather than numbered, as in GLOBAL-DQ-076. A reader repairing the
+    -- field has to know which field it is, and the id alone sends them back to the catalogue.
+    x.data_type_names,
+    x.affected_count,
+    x.affected_participant_count,
+    -- What the field actually holds, deduplicated. A statistic whose whole field stores the
+    -- same sentinel is one thing to fix, and the distinct list says so in one cell where a
+    -- hundred rows said it a hundred times.
+    x.distinct_values,
+    -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
+    -- group_concat_max_len without saying so, and affected_count is counted separately and is
+    -- what the row asserts.
+    x.affected_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        y.check_type,
+        y.statistic_id,
+        y.statistic_name,
+        y.template_name,
+        y.tournament_name,
+        GROUP_CONCAT(DISTINCT y.data_type_name ORDER BY y.data_type_name SEPARATOR ', ')
+            AS data_type_names,
+        COUNT(*) AS affected_count,
+        COUNT(DISTINCT y.statistic_participants_id) AS affected_participant_count,
+        GROUP_CONCAT(DISTINCT y.stored_value ORDER BY y.stored_value SEPARATOR ', ')
+            AS distinct_values,
+        GROUP_CONCAT(DISTINCT y.participant_name ORDER BY y.participant_name SEPARATOR ', ')
+            AS affected_participants
+    FROM (
+        -- One row per offending value, grouped to the statistic below, on the same grain and
+        -- for the same reason as GLOBAL-DQ-076: a field written the wrong way across a whole
+        -- classification is one storage habit, and reported per participant it counted the
+        -- same defect once per name in the field.
+        SELECT
+            CASE
+                WHEN LOWER(TRIM(sd.value)) IN ({{DATA_COMMENT_VALUE_LIST}}) THEN 'STATUS_CODE_IN_NUMERIC_FIELD'
+                WHEN LOWER(TRIM(sd.value)) IN ('nan', 'null', 'n/a', 'na', '-', '--', '?', 'none') THEN 'SENTINEL_IN_NUMERIC_FIELD'
+                -- As in GLOBAL-DQ-076: a grouped number is a number written for a reader, and
+                -- the repair is to drop the separators rather than to find the value again.
+                WHEN TRIM(sd.value) REGEXP '^[-+]?[0-9]{1,3}(,[0-9]{3})+([.][0-9]+)?$' THEN 'GROUPED_NUMBER_IN_NUMERIC_FIELD'
+                ELSE 'TEXT_IN_NUMERIC_FIELD'
+            END AS check_type,
+            s.id AS statistic_id,
+            s.name AS statistic_name,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            sdt.name AS data_type_name,
+            sp.id AS statistic_participants_id,
+            p.name AS participant_name,
+            sd.value AS stored_value
+        FROM statistic_data{{SHARD_ID}} sd
+        JOIN statistic_participants{{SHARD_ID}} sp ON sp.id = sd.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
+        JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+        JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+        LEFT JOIN statistic_data_type sdt ON sdt.id = sd.statistic_data_typeFK
+        WHERE sd.del = 'no'
+          AND sd.statistic_data_typeFK IN ({{NUMERIC_DATA_TYPE_LIST}})
+          AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+          AND s.object_typeFK = 3
+          AND tt.sportFK = {{SPORT_ID}}
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          AND sd.value IS NOT NULL
+          AND TRIM(sd.value) <> ''
+          -- The mirror of GLOBAL-DQ-057, and inventoried separately from the event layer
+          -- because a field is declared numeric per statistic type, not across the two layers.
+          --
+          -- The sign is part of the number, as in GLOBAL-DQ-076. A Comp.Rank field carrying a
+          -- score against a reference holds the positive direction as readily as the negative
+          -- one - measured on Golf, 9019 of that field's 340991 values are written +N, and a
+          -- pattern accepting only the minus reported every one of them as text.
+          AND TRIM(sd.value) NOT REGEXP '^[-+]?[0-9]+([.,][0-9]+)?$'
+    ) y
+    GROUP BY
+        y.check_type,
+        y.statistic_id,
+        y.statistic_name,
+        y.template_name,
+        y.tournament_name
+) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT sp.id) AS eligible_count
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
 FROM statistic_data{{SHARD_ID}} sd
 JOIN statistic_participants{{SHARD_ID}} sp ON sp.id = sd.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
 JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
@@ -2480,7 +2535,8 @@ WHERE sd.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND sd.value IS NOT NULL
   AND TRIM(sd.value) <> ''
-;
+
+ORDER BY sort_order, affected_count DESC, statistic_id;
 
 
 -- ================================================================================
