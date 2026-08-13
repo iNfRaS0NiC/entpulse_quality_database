@@ -1497,6 +1497,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "13.08.2026 14-51-41",
+                     "startedUtc":  "2026-08-13T12:51:41Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-036",
+                                        "runKey":  "Golf-DQ-036",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_NO_PARTICIPATION_ANYWHERE",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  743,
+                                        "findings":  742,
+                                        "eligible":  20638,
+                                        "seconds":  1,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"

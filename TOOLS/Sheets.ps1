@@ -1726,10 +1726,20 @@ function New-SheetsMergePlan {
             # number. Emitted every run rather than once: the boards that need it cannot be
             # named from here, and clearing a type that is not set costs one field in a request
             # that is being sent anyway.
+            #
+            # ToRow as well, and it clears the cells rather than a column type: the same
+            # dropdown also reached the identity block the other way, as a plain rule drawn up
+            # the column by the run that first created the tab. Taking a type off a table does
+            # not touch a rule on a cell, so a board carrying the older defect keeps it until
+            # the rows themselves are cleared. Everything above the result header, every column
+            # of it: no column of the identity block is a reviewer's, so nothing there is
+            # supposed to offer a choice.
             $plan += [pscustomobject]@{
-                Kind  = 'ValidationClear'
-                Sheet = $title
-                Row   = 0
+                Kind    = 'ValidationClear'
+                Sheet   = $title
+                Row     = 0
+                FromRow = 0
+                ToRow   = $SheetsCheckTabResultRow - 1
             }
 
             # Only rules covering exactly this column are dropped. One somebody drew across the
@@ -2683,6 +2693,20 @@ function Invoke-SheetsPlan {
         if (-not $gidOf.ContainsKey($clear.Sheet)) { continue }
         $request = New-SheetsValidationClearRequest -Tables @($knownTables[$clear.Sheet]) -Row $clear.Row
         if ($request) { $second += $request }
+
+        # The cell rule the table clear above cannot see. Sent whether or not one is there, for
+        # the reason the type clear is: the tabs that carry it cannot be named from here.
+        if ($clear.PSObject.Properties.Name -contains 'ToRow' -and $null -ne $clear.ToRow) {
+            $second += @{
+                setDataValidation = @{
+                    range = @{
+                        sheetId       = [int]$gidOf[$clear.Sheet]
+                        startRowIndex = [int]$clear.FromRow
+                        endRowIndex   = [int]$clear.ToRow
+                    }
+                }
+            }
+        }
     }
 
     foreach ($validation in @($operations | Where-Object { $_.Kind -eq 'Validation' })) {
@@ -3141,11 +3165,18 @@ function New-SheetsValidationRequest {
     }
 
     if (-not $board) {
+        # From the row under the header the planner named, not from row 2. A check tab's tables
+        # are declared after this batch is sent, so the first run that creates a tab finds none
+        # and lands here - and a range starting at row 2 runs up the column through the identity
+        # block above the result. On a check whose result is seven columns wide that is column H
+        # in both, so Findings and the cell under it were offered a reviewer's three words. The
+        # table-typed branch cannot do this; only the fallback ever reaches those rows.
+        # Unbounded below still, so the dropdown is there for rows a later run appends.
         return @{
             setDataValidation = @{
                 range = @{
                     sheetId          = $SheetId
-                    startRowIndex    = 1
+                    startRowIndex    = $(if ($null -ne $Row) { [int]$Row + 1 } else { 1 })
                     startColumnIndex = $index
                     endColumnIndex   = [int]$Validation.Column
                 }

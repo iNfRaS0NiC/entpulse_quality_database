@@ -3243,6 +3243,24 @@ Test-That 'a dropdown finds its table by row as well as by column' {
     Assert-Equal 'id-result' $plain.updateTable.table.tableId 'a single-table tab needs no row'
 }
 
+Test-That 'a tab with no table yet takes the dropdown below its result header, not up the column' {
+    # The tables are declared after this batch is sent, so the run that creates a check tab
+    # finds none and falls back to a plain rule. Drawn from row 2 it ran up through the identity
+    # block, and on a seven-column result that block's Findings sits at the same index: a count
+    # of 742 with a reviewer's three words on it.
+    $validation = [pscustomobject]@{
+        Sheet = 'T'; Column = 8; Name = 'Review Status'; Values = @('Fixed', 'In Progress')
+    }
+
+    $sent = New-SheetsValidationRequest -Validation $validation -Tables @() -SheetId 9 -Row 4
+    Assert-Equal 5 $sent.setDataValidation.range.startRowIndex 'the first row under the result header'
+    Assert-Equal $null $sent.setDataValidation.range.endRowIndex 'and open below it, for rows a later run appends'
+    Assert-Equal 7 $sent.setDataValidation.range.startColumnIndex 'over the column the planner named'
+
+    $noRow = New-SheetsValidationRequest -Validation $validation -Tables @() -SheetId 9
+    Assert-Equal 1 $noRow.setDataValidation.range.startRowIndex 'Overview, with no header row to be told about, is unchanged'
+}
+
 Test-That 'a type put on the wrong table by an earlier run is taken off' {
     $identity = [pscustomobject]@{
         Id = 'id-block'; Name = 'DQ_051_Overview'; FromRow = 0; ToRow = 3; FromCol = 0; ToCol = 15
@@ -3271,6 +3289,30 @@ Test-That 'a type put on the wrong table by an earlier run is taken off' {
     }
     Assert-Equal $null (New-SheetsValidationClearRequest -Tables @($clean) -Row 0) `
         'a table with no typed column produces nothing'
+}
+
+Test-That 'the identity block of a check tab is cleared of rules as well as of column types' {
+    # Taking a type off a table does not touch a rule sitting on a cell, and the dropdown
+    # reached the block both ways: as a type on whichever table the API listed first, and as a
+    # plain rule drawn up the column by the run that created the tab. A board carrying the
+    # second kept it through every run that fixed the first.
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'CLEARED'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview')
+        EmptyTabs = @{}; RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected `
+        @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
+
+    $clear = @($plan.Operations | Where-Object { $_.Kind -eq 'ValidationClear' })
+    Assert-Equal 1 $clear.Count 'one clear for the tab'
+    Assert-Equal 0 ([int]$clear[0].Row) 'the identity block is still the table it names'
+    Assert-Equal 0 ([int]$clear[0].FromRow) 'and the cells run from the top of the tab'
+    Assert-Equal 4 ([int]$clear[0].ToRow) 'up to the result header, which keeps its own'
+    Assert-True ($clear[0].PSObject.Properties.Name -notcontains 'FromCol') `
+        'every column of it: no column of the identity block is a reviewer''s'
 }
 
 Test-That 'a word written before the list existed is renamed, never invented' {
