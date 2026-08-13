@@ -646,3 +646,142 @@ WHERE t.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, named_year, tournament_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-092
+    -- Name - EVENT_RESULTS_MATCH_PLAY_OUTCOME_INCOHERENT
+    -- What it does: Finds finished two-sided Match Play events whose outcome does not hold together - no winner recorded though the match was scored, both sides winning, a winner with no loser, a draw on one side only, a word Final Result does not use, or a Match Play Score contradicting the result it sits beside.
+    z.check_type,
+    z.event_id,
+    z.event_name,
+    z.event_startdate,
+    z.template_name,
+    z.final_results_held,
+    z.scores_held,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The first check to read a Match Play outcome at all. Golf contests 12984 finished Match Play
+-- events inside the client boundary and until this nothing asked whether their results were
+-- coherent; GLOBAL-DQ-094 is the template for it and cannot instantiate here, because it reads
+-- the placing off a pair of numeric scores and this sport stores words in 4 Final Result -
+-- won, lost and draw - with golf's own notation in 39 Match Play Score: 1up, 2&1, A/S.
+--
+-- Two-sided matches only, and that is a limitation rather than a filter. 2132 finished Match
+-- Play events carry four participant rows because a foursome is two players a side, and
+-- nothing in the database says which two belong together - no lineup, no team field. Until
+-- SPORTS/Golf.md's first open question is answered those events cannot be judged: one row per
+-- side is exactly what this check counts, and a four-row event has no side it can count.
+--
+-- Measured 2026-08-13. 1293 of the findings are one shape: a match scored in 39 with no winner
+-- named in 4, and they arrive about 63 to a template-season - the size of a 64-player bracket -
+-- so what is missing is the verdict on whole draws rather than scattered rows. 6 more hold no
+-- result of any type. The rest are small and sharp: 60 scores reading X&Y where X is not the
+-- larger, 13 draws carrying a deciding score, 2 events where Final Result holds a number, and
+-- 2 all-square scores on a match the result says was won.
+FROM (
+    SELECT
+        CASE
+            WHEN x.unknown_words > 0 THEN 'FINAL_RESULT_NOT_A_KNOWN_WORD'
+            WHEN x.won > 1 THEN 'BOTH_SIDES_WON'
+            WHEN x.won = 1 AND x.lost <> 1 THEN 'WINNER_WITHOUT_A_LOSER'
+            WHEN x.draws = 1 THEN 'DRAW_ON_ONE_SIDE_ONLY'
+            WHEN x.draws = 2 AND x.won > 0 THEN 'DRAW_AND_WINNER_TOGETHER'
+            WHEN x.won = 0 AND x.draws = 0 AND x.any_results = 0 THEN 'NO_RESULT_OF_ANY_TYPE'
+            WHEN x.won = 0 AND x.draws = 0 THEN 'FINAL_RESULT_MISSING_BUT_MATCH_SCORED'
+            WHEN x.all_square > 0 AND x.draws = 0 THEN 'SCORE_ALL_SQUARE_BUT_MATCH_DECIDED'
+            WHEN x.draws = 2 AND x.decided_scores > 0 THEN 'DRAW_WITH_A_DECIDING_SCORE'
+            WHEN x.malformed_holes > 0 THEN 'SCORE_HOLES_BEFORE_REMAINING'
+            ELSE 'OUTCOME_SHAPE_UNCLASSIFIED'
+        END AS check_type,
+        x.event_id,
+        x.event_name,
+        x.event_startdate,
+        x.template_name,
+        CONCAT('won ', x.won, ', lost ', x.lost, ', draw ', x.draws) AS final_results_held,
+        x.score_values AS scores_held
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            e.startdate AS event_startdate,
+            tt.name AS template_name,
+            COUNT(DISTINCT ep.id) AS sides,
+            SUM(CASE WHEN LOWER(TRIM(fr.value)) = 'won' THEN 1 ELSE 0 END) AS won,
+            SUM(CASE WHEN LOWER(TRIM(fr.value)) = 'lost' THEN 1 ELSE 0 END) AS lost,
+            SUM(CASE WHEN LOWER(TRIM(fr.value)) = 'draw' THEN 1 ELSE 0 END) AS draws,
+            SUM(CASE WHEN fr.value IS NOT NULL AND TRIM(fr.value) <> ''
+                      AND LOWER(TRIM(fr.value)) NOT IN ('won', 'lost', 'draw') THEN 1 ELSE 0 END) AS unknown_words,
+            SUM(CASE WHEN UPPER(TRIM(ms.value)) = 'A/S' THEN 1 ELSE 0 END) AS all_square,
+            SUM(CASE WHEN ms.value IS NOT NULL AND TRIM(ms.value) <> ''
+                      AND UPPER(TRIM(ms.value)) <> 'A/S' THEN 1 ELSE 0 END) AS decided_scores,
+            SUM(CASE WHEN TRIM(ms.value) REGEXP '^[0-9]+&[0-9]+$'
+                      AND CAST(SUBSTRING_INDEX(TRIM(ms.value), '&', 1) AS UNSIGNED)
+                          <= CAST(SUBSTRING_INDEX(TRIM(ms.value), '&', -1) AS UNSIGNED)
+                     THEN 1 ELSE 0 END) AS malformed_holes,
+            GROUP_CONCAT(DISTINCT NULLIF(TRIM(ms.value), '') ORDER BY TRIM(ms.value) SEPARATOR ' | ') AS score_values,
+            (SELECT COUNT(*)
+             FROM result ra
+             JOIN event_participants epa ON epa.id = ra.event_participantsFK AND epa.del = 'no'
+             WHERE epa.eventFK = e.id
+               AND ra.del = 'no'
+               AND ra.value IS NOT NULL
+               AND TRIM(ra.value) <> '') AS any_results
+        FROM event e
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+             AND od.disciplineFK = 630
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        LEFT JOIN result fr ON fr.event_participantsFK = ep.id AND fr.result_typeFK = 4 AND fr.del = 'no'
+        LEFT JOIN result ms ON ms.event_participantsFK = ep.id AND ms.result_typeFK = 39 AND ms.del = 'no'
+        WHERE e.del = 'no'
+          AND tt.sportFK = 3
+          AND e.status_type = 'finished'
+          AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+        GROUP BY e.id, e.name, e.startdate, tt.name
+        HAVING COUNT(DISTINCT ep.id) = 2
+    ) x
+    -- A halved match is the sport working: draw on both sides, no winner, no loser. It is
+    -- excluded here rather than classified, because a check that reports 565 correct halves
+    -- teaches its reader to skip the column they were meant to read.
+    WHERE x.unknown_words > 0
+       OR NOT ((x.won = 1 AND x.lost = 1 AND x.draws = 0)
+            OR (x.won = 0 AND x.lost = 0 AND x.draws = 2))
+       OR (x.all_square > 0 AND x.draws = 0)
+       OR (x.draws = 2 AND x.decided_scores > 0)
+       OR x.malformed_holes > 0
+) z
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT y.event_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT e.id AS event_id
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+         AND od.disciplineFK = 630
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    WHERE e.del = 'no'
+      AND tt.sportFK = 3
+      AND e.status_type = 'finished'
+      AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id
+    HAVING COUNT(DISTINCT ep.id) = 2
+) y
+
+ORDER BY sort_order, event_startdate DESC, event_id;

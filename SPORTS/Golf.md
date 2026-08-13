@@ -691,6 +691,28 @@ first match, which 88 of the 251 match-play stages do because the stage is dated
 tournament's window rather than by the matches inside it. `Golf-DQ-090` asserts what is left —
 a stage that cannot contain what it holds — and returns 3 of 3727.
 
+**A Match Play outcome is two words and a notation, and until 2026-08-13 nothing read it.**
+`4 Final Result` holds `won` on 11075 rows, `lost` on 11077 and `draw` on 1130 - two per halved
+match, which is the sport working - and `0` on 4 rows, which is not a word it uses.
+`39 Match Play Score` holds golf's own notation: `1up` on 2771, `2&1` on 1763, `3&2` on 1511,
+`A/S` on 1472, alongside the point values a team match awards (`3`, `1.5`, `0.5`) and `WO` and
+`WD` for a walkover and a withdrawal.
+
+That is why `GLOBAL-DQ-094` cannot be instantiated here: it reads the placing off a pair of
+numeric scores, and neither of these fields is one. `Golf-DQ-092` asks the question in the
+sport's own vocabulary and reports 1376 of 10848 two-sided matches. **1293 of them are a match
+scored in `39` with no winner named in `4`**, arriving about 63 to a template-season — the size
+of a 64-player bracket, so what is missing is the verdict on whole draws rather than scattered
+rows. The rest are sharp and few: 60 scores reading `X&Y` where `X` is not the larger, which is
+impossible; 13 halved matches carrying a deciding score; 2 events where `4` holds a number; and
+2 all-square scores on a match the result says was won.
+
+**A bare `-` in `36 Par` is a defect, not the sport's way of writing "no score".** Settled
+2026-08-13. It is the fourth most common shape in the field at 4831 values over 1743 events, and
+`Golf-DQ-019` already reports it: 916 of that check's 931 event rows carry one among their
+values. No new check follows from the answer — what follows is that those rows are to be
+corrected rather than explained.
+
 **A season named for one year begins in the September before it.** 37 year-named tournaments
 hold events outside their year and every one of them opens early rather than finishing late:
 November for 19, December 6, October 6 and September 4. The European Tour season called `2002`
@@ -718,18 +740,12 @@ into the following year.
    an expectation and not a measurement.
 5. **Which round is "the" score?** The sport stores strokes per round and no single stroke
    total, so any check comparing a score against a rank has to say which figure it means.
-6. **Nothing checks whether a match-play result is coherent.** The sport contests 14292 Match
-   Play events and no check reads their outcome. `GLOBAL-DQ-094` is the template for it and
-   cannot instantiate here: it reads the place off a pair of numeric scores, and Golf stores
-   `won` and `0` in `4 finalresult` with a score line in `39 mpscore`. So no check today asks
-   whether both sides of a match are marked `won`, whether neither is, or whether `39`
-   contradicts `4`. Raised when `FINAL_ROUND_TYPE_LIST` was settled at `225` on 2026-08-12 - the
-   gap is not caused by that choice and is not closed by reversing it, because the two medal
-   templates that read match rounds are inapplicable to this sport for their own reasons.
-7. **Is `-` in `36 Par` the sport's way of writing "no score", or a defect?** It is the fourth
-   most common shape in the field at 4831 values over 1743 events, which is too many to be
-   accidental and too few to be the convention. The answer decides whether a Par check treats it
-   as a missing value or as a legitimate one.
+6. **How is a foursome's side to be read?** 2132 finished Match Play events carry four
+   participant rows, because a foursome is two players a side, and nothing in the database says
+   which two belong together - no lineup, no team field, and the pairing lives only in the event
+   name. `Golf-DQ-092` audits the two-sided matches and leaves these unjudged for that reason.
+   This is question 1 met from the results end rather than a separate question.
+
 **The hole-by-hole scope layer is not audited for now.** Decided 2026-08-12. Its 29653897 values
 are counted sport-wide; most of them sit inside the client's boundary, and they are deliberately
 left outside the DQ work rather than overlooked. This is a decision about where the effort goes and not a

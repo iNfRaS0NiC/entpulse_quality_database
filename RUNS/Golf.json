@@ -2904,6 +2904,28 @@
                                         "residual":  2
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "13.08.2026 22-46-34",
+                     "startedUtc":  "2026-08-13T20:46:34Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-092",
+                                        "runKey":  "Golf-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MATCH_PLAY_OUTCOME_INCOHERENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  1377,
+                                        "findings":  1376,
+                                        "eligible":  10848,
+                                        "seconds":  2.6,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"
