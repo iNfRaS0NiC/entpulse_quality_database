@@ -1828,16 +1828,18 @@ function Get-StatementRows {
 # never guessed.
 $DiscoverableParameters = @('SPORT_ID', 'STATISTIC_TYPE_ID', 'STATISTIC_OWNER_TYPE_ID', 'SHARD_ID')
 
-# The three keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
+# The named keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
 # _notApplicable holds the parameters the sport is documented as unable to supply, mapped to
 # the reason. _checkSignal holds what a check's output is worth for this sport, for the ones
 # that are not simply actionable. _expected holds what a re-run should return once the data
-# has been corrected. Test-Package.ps1 declares the same three names; the pair of files is
-# the contract for all three blocks.
+# has been corrected. _names holds, for every parameter carrying database ids, what those ids
+# are called - written for a reader rather than for the runner. Test-Package.ps1 declares the
+# same names; the pair of files is the contract for all four blocks.
 $NotApplicableKey = '_notApplicable'
 $CheckSignalKey = '_checkSignal'
 $ExpectedKey = '_expected'
-$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey)
+$NamesKey = '_names'
+$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesKey)
 
 # What a recorded signal may say. Actionable is the default and is never recorded: writing it
 # down for every check would make the block a second copy of the registry. Deprecated is
@@ -1951,6 +1953,12 @@ function Get-SportFileParameters {
 
     foreach ($property in $entry.Value.PSObject.Properties) {
         if ($ReservedParamKeys -contains $property.Name) { continue }
+        # Any leading underscore, not only the four named above. A parameter name is a token a
+        # statement declares and none of them starts with one, so the prefix is the convention
+        # for "this block is about the sport rather than for the SQL". Naming the blocks one by
+        # one leaves the next one to leak: _names was added on 2026-08-13 and printed as a
+        # parameter, its whole object dumped into the resolution list, until this line existed.
+        if ($property.Name.StartsWith('_')) { continue }
         $resolved[$property.Name] = $property.Value
         # [string] on a number is invariant in PowerShell, which is what reaches the SQL, but
         # -f formats in the current culture. Under bg-BG that showed 0,01 for a value the

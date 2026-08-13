@@ -37,12 +37,16 @@ $ErrorActionPreference = 'Stop'
 # The character still has to be produced, because a deprecated registry row uses it.
 $EmDash = [string][char]0x2014
 
-# The three keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
-# Run-Query.ps1 declares the same names; both files are the contract for those blocks.
+# The named keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
+# Run-Query.ps1 declares the same names; both files are the contract for those blocks. It also
+# skips any key with a leading underscore, so a block added to the JSON before it is named here
+# is ignored rather than read as a parameter; this list stays because the four are the ones the
+# two scripts actually read.
 $NotApplicableKey = '_notApplicable'
 $CheckSignalKey = '_checkSignal'
 $ExpectedKey = '_expected'
-$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey)
+$NamesKey = '_names'
+$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesKey)
 
 # Actionable is the default and is never recorded. Deprecated is absent on purpose:
 # POWERBI_REGISTRY.md's Status column owns it, and a value with two owners drifts.
