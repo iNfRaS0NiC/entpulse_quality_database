@@ -16,9 +16,10 @@ correction is required.
 - Verification boundary: one GLOBAL discovery sweep, sport-wide and unnarrowed, plus the
   targeted follow-ups named below. `enet_sport_code` is `g`. Two catalogue statements could
   not be run as written and were narrowed; what each narrowing gave up is recorded against
-  its area. Every figure in this file is sport-wide, and for Golf that is also the client
-  scope: all 37 templates are in it. What that costs is recorded under **Confirmed
-  sport-specific storage semantics**.
+  its area. **Every figure in this file is sport-wide, and the client scope is narrower than
+  the sport** — see **Scope** below. A count here is what Golf holds, not what a check now
+  returns, and the two differ by roughly a seventh of the events and a third of the event
+  participants.
 
 ## Structural coverage
 
@@ -403,20 +404,57 @@ the absence of one; they are different states and are not interchangeable.
 
 <!-- MANUAL PASTE ZONE: 3 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
+## Scope
+
+**UK Sport does not take twenty of the sport's tournament templates, and every Golf check
+excludes them.** Recorded 2026-08-13, replacing the opposite conclusion this file carried until
+that day — that the client took the sport whole. The ids live in `SPORTS/params.json` under
+`OUT_OF_SCOPE_TEMPLATE_ID_LIST` and are written into the statements themselves rather than
+applied at run time, because the statement is what PowerBI executes; `POWERBI.md` owns that
+contract.
+
+| Out of scope | Templates |
+|---|---|
+| Professional tours below the top flight | `9692 Challenge Tour 1`, `9418 Champions Tour 1`, `9633 Korn Ferry Tour`, `9691 Asian Tour 1`, `9693 Sunshine Tour 1`, `9201 PGA Tour of Australasia 1` |
+| Breakaway tour | `10305 LIV Golf` |
+| Team match-play cups | `432 Ryder Cup 1`, `438` and `435 Solheim Cup 1`, `9142 Solheim Cup`, `10341 Presidents Cup`, `9645 Walker Cup 1` |
+| Amateur world team championships | `11528 Eisenhower Trophy`, `11529 Espirito Santo Trophy` |
+| Short-form and test data | `9831 GolfSixes`, `10333 GolfSixes alt test`, `10334 GolfSixes test kris`, `9932 Mixed`, `12649 TEST` |
+
+Four of them — `435`, `9142`, `10333`, `10334` — are already `del = 'yes'` and carry nothing.
+They are listed anyway, so the boundary states a decision rather than the current state of a
+flag.
+
+**Deferred, not unsupported.** These competitions will be looked at; they are not being looked at
+now. The data is there, the sport fills it, and every check would run against it unchanged — the
+exclusion is a list of ids, so the day the boundary moves the list moves and nothing else does.
+`README.md` owns why the client is a boundary of its own.
+
+What it costs, measured on 2026-08-13:
+
+| Layer | In scope | Out | Out |
+|---|---|---|---|
+| Events | 16,544 | 2,899 | 14.9% |
+| Event participants | 393,722 | 191,441 | **32.7%** |
+| Comp.Rank statistics | 3,440 | 51 | 1.5% |
+| Comp.Rank participants | 355,654 | 3,690 | 1.0% |
+
+The second row is the one to remember: a seventh of the events but a third of the participants,
+because a tour field is 144 players and a cup is 24. A participant-level check loses a third of
+its population and a Comp.Rank check loses almost nothing.
+
+**One check the boundary does not reach.** `Golf-DQ-036` (`GLOBAL-DQ-009`) audits people the
+sport registry knows and no participation path reaches. The registry has no template relation —
+that is precisely what it audits — so there is nothing to exclude, and its 742 findings over
+20,638 registered people stay sport-wide. A person who competed only under an excluded template
+is not among them: they have participation, and this check reports having none.
+
 ## Confirmed sport-specific storage semantics
 
-**The client scope is the whole sport, all 37 templates, and that is a cost rule rather than a
-convenience.** Golf is the opposite case to Soccer, whose client takes 28 templates out of the
-sport's full league population. Here nothing is excluded: the professional tours that hold the
-volume - `429 European Tour 1`, `431 PGA Tour 1`, `436 LPGA Tour 1`, `430`, `434`,
-`9692 Challenge Tour 1`, `9418 Champions Tour 1`, `9633 Korn Ferry Tour`, `9691 Asian Tour 1`,
-`9693 Sunshine Tour 1`, `10305 LIV Golf` - are in scope alongside the amateur team championships
-`11525`, `11526`, `11507`, `11524` and the multi-sport Games templates. Every count in this file
-is sport-wide, and sport-wide is what a Golf check is expected to return.
-
-The consequence is that **`-TemplateIds` is not a scope mechanism for this sport.** It is how
-Soccer keeps its statements affordable, and Golf cannot use it, because narrowing to a template
-here would not be a scope decision but a hole in the audit. What is left is the rest of
+**`-TemplateIds` is not the scope mechanism for this sport.** It is how Soccer keeps its
+statements affordable; Golf's boundary is in the statements and its remaining 21 live templates
+are read whole, so narrowing further here would not be a scope decision but a hole in the audit.
+What is left for cost is the rest of
 `WORKFLOW.md`'s cost rule, and it has to do all the work on the largest sport in the package:
 a half-open `startdate` window, a primary-key range, one round type or one result type per
 execution, `EXISTS` in place of `JOIN` plus `DISTINCT`, and no `COUNT(DISTINCT)` where a plain
@@ -440,8 +478,10 @@ both return clean on it. Read as "these rounds award medals" it fails, and `GLOB
 `GLOBAL-DQ-038` report 4751 and 4764 of 4768 - the whole population. Both are `Not applicable`
 here for that reason, and the asymmetry is the sport's, not the templates'.
 
-This is a consequence of the client scope being the whole sport. A sport narrowed to its Games
-templates would have a medal round that means what the parameter assumes.
+This is a consequence of the client scope reaching well past the Games. The twenty templates it
+excludes are cups and secondary tours, not the stroke-play tours that hold `225 Main Phase`, so
+the asymmetry survives the boundary unchanged: a sport narrowed to its Games templates alone
+would have a medal round that means what the parameter assumes, and this one still does not.
 
 **The template can say it, and on 2026-08-13 it was written down.** The sentence above holds
 about round types and was too broad about parameters: what no *round-type* list can express, a
@@ -598,6 +638,12 @@ carry none at all, including every amateur team championship and **every Games t
 `9600`/`9601 Summer Olympics` 0 of 3, `11498 Summer Youth Olympics` 0 of 4, `10328 Asian Games`
 0 of 10, `10327 Pan American Games` 0 of 6, `11532 Southeast Asian Games` 0 of 6.
 
+Measured sport-wide, on 2026-08-13, before the client boundary was recorded. Two of the four
+best-covered templates named above — `9645 Walker Cup 1` and `10305 LIV Golf` — are outside it,
+so a re-measurement inside the boundary would find the container rarer still. Anyone reversing
+the deprecation should re-measure rather than read these numbers as the population the check
+would now see.
+
 So the structure exists and is used, and the check is not `Not applicable` under this project's
 rule - it would have reported 16334 of 19053 finished events forever, and a scope container
 arriving tomorrow is exactly what it was written to notice. It is deprecated instead, which
@@ -642,15 +688,17 @@ not used it, and the day it does the check is already pointed at it.
    accidental and too few to be the convention. The answer decides whether a Par check treats it
    as a missing value or as a legitimate one.
 **The hole-by-hole scope layer is not audited for now.** Decided 2026-08-12. Its 29653897 values
-are inside the client scope, because the whole sport is, and they are deliberately left outside
-the DQ work rather than overlooked. This is a decision about where the effort goes and not a
+are counted sport-wide; most of them sit inside the client's boundary, and they are deliberately
+left outside the DQ work rather than overlooked. This is a decision about where the effort goes and not a
 statement about the data: the layer is the sport's largest storage and the two catalogue
 failures both came from it, so a check written against it later has to be sized before it is
 written. Nothing here classifies it `Not applicable` - the structure is present and the sport
 fills it.
 
-Settled since this file was opened: the client scope is the whole sport, all 37 templates. The
-consequence is recorded under **Confirmed sport-specific storage semantics** above, because it
-changes how every statement for this sport has to be written rather than only what it returns.
+Settled since this file was opened, then reversed: the client scope was recorded as the whole
+sport until 2026-08-13, when UK Sport named twenty templates it does not take. **Scope** above
+owns the list and what it costs. The reversal is left visible rather than tidied away, because
+several conclusions in this file were reached while the wider boundary was believed, and a
+reader meeting one of them deserves to know which assumption it was written under.
 
 <!-- MANUAL PASTE ZONE: 3 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
