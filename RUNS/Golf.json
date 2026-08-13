@@ -1320,6 +1320,43 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Golf 13.08.2026 11-00-17",
+                     "startedUtc":  "2026-08-13T09:00:17Z",
+                     "output":  "D:\\SQL\u0027s Output\\Golf 13.08.2026 11-00-17",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-084",
+                                        "runKey":  "Golf-DQ-084",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_MEDAL_AWARDED_OUTSIDE_MEDAL_TEMPLATE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  44,
+                                        "findings":  43,
+                                        "eligible":  3240,
+                                        "seconds":  5.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-085",
+                                        "runKey":  "Golf-DQ-085",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID_IN_MEDAL_TEMPLATE",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  193,
+                                        "findings":  192,
+                                        "eligible":  251,
+                                        "seconds":  14.9,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"

@@ -595,6 +595,14 @@ SELECT
     -- Name - COMP.RANK_RESULTS_MEDAL_INVALID_VALUE
     -- What it does: Finds Comp.Rank Medal values that are not gold, silver or bronze.
     'Medal_Invalid_Value' AS check_type,
+    -- The audited object leads the row, and it is the participant rather than the statistic
+    -- the participant sits in: a medal is held by one competitor and repaired on that one row,
+    -- which is also how the event-layer twin GLOBAL-DQ-018 is keyed. The statistic stays
+    -- beside it as context. Before 2026-08-13 the statistic led and the participant id was
+    -- absent, so a statistic holding two invalid medals would have appeared twice under one
+    -- id - the shape corrected in GLOBAL-DQ-077 on the same day. It has never happened in any
+    -- documented sport, all seven returning clean, and is closed here rather than waited for.
+    sp.id AS statistic_participants_id,
     s.id AS statistic_id,
     s.name AS statistic_name,
     tt.name AS template_name,
@@ -623,7 +631,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT sp.id) AS eligible_count
 FROM statistic_data{{SHARD_ID}} sd
 JOIN statistic_participants{{SHARD_ID}} sp ON sp.id = sd.statistic_participants{{SHARD_ID}}FK AND sp.del = 'no'
