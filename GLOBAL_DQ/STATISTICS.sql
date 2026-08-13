@@ -3613,3 +3613,86 @@ WHERE s.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-125
+    -- Name - COMP.RANK_MEDAL_AWARDED_OUTSIDE_MEDAL_TEMPLATE
+    -- What it does: Finds Comp.Rank awarding a medal under a tournament template that does not award medals in this sport, naming how many competitors hold one and which medals were given.
+    'MEDAL_OUTSIDE_MEDAL_TEMPLATE' AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_id,
+    x.template_name,
+    x.tournament_name,
+    x.medal_holder_count,
+    x.distinct_medals,
+    -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
+    -- group_concat_max_len without saying so, and medal_holder_count is counted separately and
+    -- is what the row asserts.
+    x.medal_holders,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The companion of GLOBAL-DQ-026, and the other half of the same question. That check asks
+-- whether a medal set follows the places its own Rank rows hold; it cannot ask whether the
+-- competition was one that awards medals at all, because nothing in a statistic says so.
+--
+-- In a sport whose medal events are identified by their template rather than by their round
+-- type, that is the only place the answer lives. MEDAL_TEMPLATE_ID_LIST names the templates
+-- whose competitions award a medal, and every Comp.Rank outside them is asserted to award
+-- none. A sport that has not confirmed such a list simply does not instantiate this check, and
+-- GLOBAL-DQ-026 is unaffected either way.
+--
+-- The list states which competitions award medals and is not read off the data: a template
+-- that awards medals and happens to hold none today still belongs in it, and a template
+-- holding medals it should not is exactly what this check reports.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.id AS template_id,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(DISTINCT sp.id) AS medal_holder_count,
+        GROUP_CONCAT(DISTINCT sd.value ORDER BY sd.value SEPARATOR ', ') AS distinct_medals,
+        GROUP_CONCAT(DISTINCT CONCAT(p.name, ' (', sd.value, ')') ORDER BY p.name SEPARATOR ', ')
+            AS medal_holders
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    JOIN statistic_data{{SHARD_ID}} sd ON sd.statistic_participants{{SHARD_ID}}FK = sp.id AND sd.del = 'no'
+     AND sd.statistic_data_typeFK = {{DATA_MEDAL_TYPE_ID}}
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND tt.id NOT IN ({{MEDAL_TEMPLATE_ID_LIST}})
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      AND sd.value IS NOT NULL
+      AND TRIM(sd.value) <> ''
+    GROUP BY s.id, s.name, tt.id, tt.name, t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND tt.id NOT IN ({{MEDAL_TEMPLATE_ID_LIST}})
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, medal_holder_count DESC, statistic_id;

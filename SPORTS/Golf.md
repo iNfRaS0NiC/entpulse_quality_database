@@ -443,6 +443,36 @@ here for that reason, and the asymmetry is the sport's, not the templates'.
 This is a consequence of the client scope being the whole sport. A sport narrowed to its Games
 templates would have a medal round that means what the parameter assumes.
 
+**The template can say it, and on 2026-08-13 it was written down.** The sentence above holds
+about round types and was too broad about parameters: what no *round-type* list can express, a
+template list can. Thirteen templates award medals in this sport and were confirmed by decision,
+not measured - `9600` and `9601 Summer Olympics`, `11498 Summer Youth Olympics`,
+`9779 European Championships 1`, `10327 Pan American Games`, `10328 Asian Games`,
+`10537`/`10538 Pacific Games`, `11532 Southeast Asian Games`, `11507 British Boys Amateur
+Championship`, `11524 British Girls Amateur Championship`, `11525 European Girls' Team
+Championship`, `11526 European Boys' Team Championship`. Every other template awards none.
+
+`MEDAL_TEMPLATE_ID_LIST` records them and `GLOBAL-DQ-125` asserts the negative half of the rule:
+a Comp.Rank outside those templates holds no medal. It reports 43 statistics over 3240, holding
+130 medals between them, from three templates:
+
+| Template | Comp.Rank holding medals |
+|---|---:|
+| `430 European Tour and PGA Tour 1` | 21 |
+| `11528 Eisenhower Trophy` | 11 |
+| `11529 Espirito Santo Trophy` | 11 |
+
+`430` is a professional tour and the finding is the plain one. The two trophies are the World
+Amateur Team Championships and sit beside four amateur championships that *are* on the list, so
+whether they were meant to be excluded is a question for the reviewer rather than a defect this
+file should assert either way. One further oddity is visible in the same rows and is not what
+the check was looking for: statistics named `Espirito Santo Trophy - Competition Rank` are filed
+under template `11528 Eisenhower Trophy`.
+
+Five of the thirteen hold no medal at all today - `11525`, `11526`, `9779`, `10537`, `10538`.
+The rule as recorded is one-directional, so that is not a finding here; whether a listed template
+owes a medal it has not got is a second check nobody has asked for yet.
+
 **Test data is inside the scope, not beside it.** Because no template is excluded,
 `12649 TEST` and its 899 event participants are part of every sport-wide count a Golf check will
 return, as is the `TEST - ISCO Championship` event. Any Golf finding list will contain them, and
