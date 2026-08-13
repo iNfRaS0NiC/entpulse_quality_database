@@ -871,11 +871,11 @@
       },
       "GLOBAL-DQ-071": {
         "signal": "Monitor",
-        "reason": "295 of the 306 events reported are NO_PARTICIPANTS_NOT_FINISHED_EVENT, and they are the sport's calendar running ahead of its entry lists: Grant Thornton Invitational and Hero World Challenge are dated December 2026 and Andalucia Open de Espana November 2026, all announced and none yet fielded. A tour publishes its schedule long before anyone enters, so an unplayed event holding no participant is the normal state rather than a gap. The 11 NO_PARTICIPANTS_FINISHED_EVENT rows are the ones worth reading and stay visible under the same check. Decided 2026-08-13."
+        "reason": "159 of the 170 events reported are NO_PARTICIPANTS_NOT_FINISHED_EVENT, and they are the sport's calendar running ahead of its entry lists: Hero World Challenge is dated December 2026 and Andalucia Open de Espana November 2026, announced and not yet fielded. A tour publishes its schedule long before anyone enters, so an unplayed event holding no participant is the normal state rather than a gap. The 11 NO_PARTICIPANTS_FINISHED_EVENT rows are the ones worth reading and stay visible under the same check - all eleven are match-play events from 2004 to 2010, WGC Accenture Match Play and HSBC World Match Play among them, and not one of them left with the client boundary. Decided 2026-08-13, re-measured the same day inside the boundary: the unplayed half fell from 295 to 159 and the readable half did not move."
       },
       "GLOBAL-DQ-074": {
         "signal": "Monitor",
-        "reason": "Golf records its course in the tournament_stage Venue property, on 5176 stages, and uses the global venue_object relation for part of its events only - 10435 of 19443 carry one and 9008 do not. The check reads the relation, so what it reports is how far that mechanism has been populated rather than a per-event defect. SPORTS/BMX.md records the same reading for a sport at nought per cent. Confirmed as Monitor on 2026-08-13."
+        "reason": "Golf records its course in the tournament_stage Venue property, on 5176 stages sport-wide, and uses the global venue_object relation for part of its events only - inside the client boundary 7560 of 16544 carry one and 8984 do not. The check reads the relation, so what it reports is how far that mechanism has been populated rather than a per-event defect. SPORTS/BMX.md records the same reading for a sport at nought per cent. Confirmed as Monitor on 2026-08-13."
       },
       "GLOBAL-DQ-064": {
         "signal": "Monitor",
