@@ -289,6 +289,20 @@ occurs: Stroke Play male athlete 3646 events over 21 templates from 2001, Match 
 athlete 7474 over 11 from 2004, Match Play team male 676 and female 611 from 2004, Stroke Play
 mixed athlete 28 from 2018, Match Play mixed athlete 56 in 2018 alone.
 
+**The discipline is stored twice for a small minority of events, and the two copies agree.** The
+`object_discipline` relation reaches 19434 events; the `discipline` event property is written on
+332. `GLOBAL-DQ-109` audits the 329 of those whose value resolves to an active discipline through
+both paths and reports no disagreement, so the property is a partial duplicate of the relation
+rather than a competing or stale record of it. The relation remains the path a Golf statement
+should read, because it is the one that covers the sport.
+
+The claim also holds upward and sideways. `GLOBAL-DQ-100` finds no Comp.Rank claiming a
+discipline that no event under its own tournament contested, over 3444 statistics, and
+`GLOBAL-DQ-110` finds none contradicting the events it names through the `1471` Event id config,
+over 3194. Together with the stage measurement - no stage mixes disciplines, 5441 of 5441 - the
+discipline layer is the one part of this sport that is internally consistent everywhere it was
+measured.
+
 <!-- MANUAL PASTE ZONE: 3 GENERIC RELATIONS AND DISCIPLINES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Statistics
