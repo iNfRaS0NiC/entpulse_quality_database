@@ -13788,6 +13788,43 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Curling 13.08.2026 11-26-26",
+                     "startedUtc":  "2026-08-13T09:26:25Z",
+                     "output":  "D:\\SQL\u0027s Output\\Curling 13.08.2026 11-26-26",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Curling-DQ-023",
+                                        "runKey":  "Curling-DQ-023",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_INVALID_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  6642,
+                                        "seconds":  6.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Curling-DQ-058",
+                                        "runKey":  "Curling-DQ-058",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  17920,
+                                        "seconds":  2.4,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1zv6UoQOdEVR-SNJSakLy7xWVo1fh-jsL8Y-7mybcC3g"

@@ -17304,6 +17304,58 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 13.08.2026 11-25-22",
+                     "startedUtc":  "2026-08-13T09:25:21Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 13.08.2026 11-25-22",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-034",
+                                        "runKey":  "Artistic-Gymnastics-DQ-034",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_INVALID_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  15093,
+                                        "seconds":  7.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-082",
+                                        "runKey":  "Artistic-Gymnastics-DQ-082",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  4229,
+                                        "seconds":  8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-086",
+                                        "runKey":  "Artistic-Gymnastics-DQ-086",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7382,
+                                        "seconds":  4.4,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"

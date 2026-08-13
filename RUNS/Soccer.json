@@ -8217,6 +8217,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "13.08.2026 11-28-02",
+                     "startedUtc":  "2026-08-13T09:28:02Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-003",
+                                        "runKey":  "Soccer-DQ-003",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_INVALID_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  975,
+                                        "seconds":  5.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE"
