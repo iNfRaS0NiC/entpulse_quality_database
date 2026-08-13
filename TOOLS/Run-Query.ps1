@@ -1845,7 +1845,7 @@ $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesK
 # down for every check would make the block a second copy of the registry. Deprecated is
 # deliberately absent - POWERBI_REGISTRY.md's Status column owns that, and a value with two
 # owners drifts.
-$CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable')
+$CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable', 'Out of client scope')
 
 # What a re-run should return after the reported findings have been corrected. This is a
 # different question from the signal, and the difference is the whole reason the block
@@ -1862,9 +1862,10 @@ $CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable')
 # refuses to let an empty population decide applicability.
 $CheckExpectValues = @('Zero', 'Non-zero', 'Residual')
 
-# The default each signal implies, so only the exception is written down. Blocked and Not
-# applicable are absent rather than empty: a check that must not run yet, or that reads a
-# layer the sport does not have, has no count anybody should be expecting.
+# The default each signal implies, so only the exception is written down. Blocked, Not
+# applicable and Out of client scope are absent rather than empty: a check that must not run
+# yet, that reads a layer the sport does not have, or whose whole population sits outside the
+# client's boundary has no count anybody should be expecting.
 $ExpectedBySignal = @{
     'Actionable'    = 'Zero'
     'Monitor'       = 'Non-zero'
@@ -4899,9 +4900,15 @@ if ($isBatch) {
     # defect as overwriting a comment somebody wrote. Modern-Pentathlon GLOBAL-DQ-028 is the
     # case: it audits a Time Difference field the sport has never written, which is settled and
     # cannot change without the sport changing how it scores.
+    #
+    # Out of client scope is answered too, and it is a different answer: the population is there
+    # and somebody fills it, but not inside the boundary this client bought. Golf's knockout
+    # checks are the case - the sport contests match play almost only under templates the client
+    # does not take - and the zero lifts on the day that boundary moves, not on an import.
+    $classifiedZero = @('Not applicable', 'Out of client scope')
     $audited = @($collected | Where-Object {
             0 -eq (Get-CoverageCount -Rows $_.Rows) -and
-            [string]$_.Job.Signal -ne 'Not applicable'
+            $classifiedZero -notcontains [string]$_.Job.Signal
         })
     foreach ($item in $audited) {
         Add-RunDecision -Kind 'Audited nothing' -Subject (Get-JobRunKey -Job $item.Job) -Chose 'deferred' `

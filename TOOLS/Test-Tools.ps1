@@ -1732,6 +1732,22 @@ Test-That 'an expectation is derived from the signal when the sport records none
     Assert-Equal '' $hydrated[2].Expected 'a blocked check has no count anybody should expect'
 }
 
+Test-That 'a check outside the client boundary is a recordable signal expecting no count' {
+    # The third member of the family that expects nothing, and the one that lifts on a decision
+    # rather than on a repair or an import. Golf's knockout checks are the case: the sport
+    # contests match play almost only under templates the client does not take, so the check
+    # audits a real population belonging to somebody else.
+    Assert-True ($CheckSignalValues -contains 'Out of client scope') 'the runner accepts it'
+    Assert-Equal '' (Get-ExpectedForSignal -Signal 'Out of client scope') `
+        'and nobody should be expecting a count from it'
+
+    # Distinct from Not applicable, which the vocabulary keeps for a structure the sport does
+    # not have at all. Both suppress the run's eligible_count = 0 question; neither turns that
+    # zero into clean data.
+    Assert-Equal '' (Get-ExpectedForSignal -Signal 'Not applicable') 'the sibling is unchanged'
+    Assert-Equal 'Non-zero' (Get-ExpectedForSignal -Signal 'Monitor') 'and a running check still is'
+}
+
 Test-That 'a recorded expectation overrides the one the signal implies' {
     $jobs = @([pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Signal = 'Actionable' })
     $hydrated = @(Set-JobCheckExpectation -Jobs $jobs -SportName 'Fixtureball')

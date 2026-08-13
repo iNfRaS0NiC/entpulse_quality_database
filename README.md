@@ -15,6 +15,33 @@ Reusable structural discovery SQL is stored once in `GLOBAL_QUERIES/`. A GLOBAL 
 may be executed for many sports by replacing its documented parameters; it is never
 copied into a separate SQL file for every sport.
 
+## Who the checks are for
+
+Everything in this repository is built for one client: **UK Sport, a National Olympic
+Committee.** Other clients will follow, and a second client is expected to take a different
+set of competitions out of the same database.
+
+That makes the client a boundary in its own right, separate from the sport. The database
+carries a sport whole; a client buys part of it. The two are recorded in different places and
+must not be collapsed:
+
+| What | Where it is recorded |
+|---|---|
+| What the sport stores, and how | `DATABASE.md` and `SPORTS/<SportSlug>.md` |
+| Which of it the current client takes | the **Scope** section of `SPORTS/<SportSlug>.md` |
+| The template ids a check must therefore exclude | `SPORTS/params.json` |
+| A check with nothing left to audit inside that boundary | `Out of client scope` in `SPORTS/params.json` `_checkSignal`; `TOOLS/README.md` owns the vocabulary |
+
+A competition outside the boundary is **deferred, not absent and not unsupported**. The data
+exists, the sport fills it, and the checks would run against it unchanged — which is why the
+exclusion is a list of ids rather than a deleted check, and why `Out of client scope` is a
+signal rather than a `Deprecated` row. When the boundary moves, the list moves with it and
+nothing else has to be rewritten.
+
+Structure is documented for the sport as a whole regardless of the boundary. A structural fact
+does not stop being true because the client is not buying that competition this year, and
+rediscovering it for the next client would cost what it cost the first time.
+
 ## Source-of-truth map
 
 | Location | Canonical responsibility |

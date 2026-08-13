@@ -455,7 +455,7 @@ must not be confused with it: there, a parameter is missing and the statement ca
 Here every parameter **is** recorded, the statement runs, and what is in doubt is whether its
 findings are defects.
 
-Three values are recordable. `Actionable` is the default and is never written down — a fourth
+Four values are recordable. `Actionable` is the default and is never written down — a fifth
 value on every check would make the block a second copy of the registry. `Deprecated` is
 deliberately not a signal: `POWERBI_REGISTRY.md`'s `Status` column owns it, and a value with
 two owners drifts.
@@ -464,12 +464,29 @@ two owners drifts.
 |---|---|---|
 | `Monitor` | Real, but population-wide. The proportion is the finding; a single row is not a defect | Must have an `Approved` row — it describes a check that runs |
 | `Not applicable` | The sport has nothing for the check to read, so it reports the whole population | No row requirement, either way |
+| `Out of client scope` | The sport stores what the check reads, but only outside the client's boundary, so the check audits nothing this client is buying | No row requirement, either way |
 | `Blocked` | Would report the sport's normal shape as a defect until something else is fixed first | Must **not** have an `Approved` row — it says "not yet" |
 
 `Blocked` and `Not applicable` are easy to confuse and the difference matters: a block lifts
 when the underlying data is fixed, and the check is then approved. `Not applicable` does not
 lift, because the structure it reads is one the sport does not have. Recording a permanent
 absence as `Blocked` promises a review that will never come.
+
+`Out of client scope` is the third of that family and is the one that says *not here, not now*.
+The structure exists and the sport fills it — so it is not `Not applicable` — and nothing needs
+correcting before the check could run — so it is not `Blocked`. What is true is that every row
+it would audit sits in a `tournament_template` the client does not take, and the sport file's
+scope section names which. Golf is the confirmed case: its match play is contested almost
+entirely under the templates outside `SPORTS/Golf.md`'s client boundary, so a knockout check
+there audits a real population belonging to somebody else.
+
+It lifts on a decision rather than on a repair or an import: the day the client's boundary moves,
+the same check runs unchanged. That is why it is written down instead of the check being
+deprecated — a deprecated CheckID never comes back, and this one is meant to.
+
+Like `Not applicable`, it suppresses the run's `eligible_count = 0` question, and for the same
+reason: a zero there is still not clean data, and the entry records which of the answers it is
+rather than pretending the question was never asked.
 
 **A signal is read off the structure, never off the current population.** A sport that stores
 no such column, no such layer and no such relation is `Not applicable`. A sport that stores
@@ -542,7 +559,7 @@ The default comes from the signal, so most checks need no entry at all:
 | `Actionable` | `Zero` |
 | `Monitor` | `Non-zero` |
 | `Informational` | `Non-zero` |
-| `Blocked`, `Not applicable` | nothing — no count anybody should be expecting |
+| `Blocked`, `Not applicable`, `Out of client scope` | nothing — no count anybody should be expecting |
 
 ```json
 "BMX": {

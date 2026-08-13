@@ -50,7 +50,7 @@ $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesK
 
 # Actionable is the default and is never recorded. Deprecated is absent on purpose:
 # POWERBI_REGISTRY.md's Status column owns it, and a value with two owners drifts.
-$CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable')
+$CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable', 'Out of client scope')
 
 # What a re-run should return once the findings have been corrected, and the default each
 # signal implies. Only the exception is recorded, so an entry restating its own default is a
@@ -1069,7 +1069,10 @@ if (Test-Path -LiteralPath $paramsPath) {
                     # it. Monitor describes what a running check's findings mean, so it needs
                     # one. Not applicable says the sport has nothing for the check to read,
                     # which is true whether or not anyone approved it - and the cases where
-                    # someone did are exactly the ones worth being able to write down.
+                    # someone did are exactly the ones worth being able to write down. Out of
+                    # client scope carries no requirement for the same reason from the other
+                    # side: the check is usually approved and running, and what it audits is a
+                    # population this client does not take.
                     if ($signal -eq 'Blocked' -and $isApproved) {
                         $sportFindings += "SPORTS/params.json: '$sport' declares $key blocked but POWERBI_REGISTRY.md approves it"
                     }
