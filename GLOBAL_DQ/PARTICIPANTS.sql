@@ -47,6 +47,7 @@ FROM (
         JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
         WHERE ep.del = 'no'
           AND tt.sportFK = {{SPORT_ID}}
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
           -- AND t.tournament_templateFK = <tournament_template_id>
 
         UNION ALL
@@ -60,6 +61,7 @@ FROM (
         JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
         WHERE l.del = 'no'
           AND tt.sportFK = {{SPORT_ID}}
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
           -- AND t.tournament_templateFK = <tournament_template_id>
 
         UNION ALL
@@ -73,6 +75,7 @@ FROM (
         WHERE sp.del = 'no'
           AND s.object_typeFK = 3
           AND tt.sportFK = {{SPORT_ID}}
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
           -- AND t.tournament_templateFK = <tournament_template_id>
 
         -- REGISTRY BRANCH BEGIN
@@ -117,6 +120,7 @@ FROM (
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
     WHERE ep.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       -- AND t.tournament_templateFK = <tournament_template_id>
 
     UNION ALL
@@ -130,6 +134,7 @@ FROM (
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
     WHERE l.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       -- AND t.tournament_templateFK = <tournament_template_id>
 
     UNION ALL
@@ -143,6 +148,7 @@ FROM (
     WHERE sp.del = 'no'
       AND s.object_typeFK = 3
       AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       -- AND t.tournament_templateFK = <tournament_template_id>
 
     -- REGISTRY BRANCH BEGIN
@@ -220,6 +226,7 @@ WHERE p.del = 'no'
       WHERE ep.participantFK = p.id
         AND ep.del = 'no'
         AND tt.sportFK = {{SPORT_ID}}
+        AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
         -- AND t.tournament_templateFK = <tournament_template_id>
   )
   AND (
@@ -277,6 +284,7 @@ WHERE p.del = 'no'
       WHERE ep.participantFK = p.id
         AND ep.del = 'no'
         AND tt.sportFK = {{SPORT_ID}}
+        AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
         -- AND t.tournament_templateFK = <tournament_template_id>
   );
 
@@ -425,6 +433,7 @@ FROM (
       AND ts.gender IS NOT NULL
       AND TRIM(ts.gender) <> ''
       AND LOWER(TRIM(ts.gender)) <> 'undefined'
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -455,6 +464,7 @@ WHERE ep.del = 'no'
   AND ts.gender IS NOT NULL
   AND TRIM(ts.gender) <> ''
   AND LOWER(TRIM(ts.gender)) <> 'undefined'
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -497,6 +507,7 @@ FROM (
     WHERE ep.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
       AND p.type = 'team'
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -519,6 +530,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE ep.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND p.type = 'team'
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -565,6 +577,7 @@ FROM (
     JOIN participant lp ON lp.id = l.participantFK AND lp.del = 'no'
     WHERE ep.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -596,6 +609,7 @@ FROM (
     JOIN participant lp ON lp.id = l.participantFK AND lp.del = 'no'
     WHERE ep.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -653,6 +667,7 @@ FROM (
         JOIN lineup l ON l.event_participantsFK = ep.id AND l.del = 'no'
         WHERE ep.del = 'no'
           AND tt.sportFK = {{SPORT_ID}}
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
@@ -687,6 +702,7 @@ FROM (
         JOIN lineup l ON l.event_participantsFK = ep.id AND l.del = 'no'
         WHERE ep.del = 'no'
           AND tt.sportFK = {{SPORT_ID}}
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
@@ -729,6 +745,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -752,6 +769,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -798,6 +816,7 @@ JOIN (
 ) x ON x.event_id = e.id
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -816,6 +835,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -860,6 +880,7 @@ FROM (
          AND tt.sportFK = {{SPORT_ID}}
     LEFT JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
     WHERE ep.del = 'no'
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -881,6 +902,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
      AND tt.sportFK = {{SPORT_ID}}
 WHERE ep.del = 'no'
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -955,6 +977,7 @@ FROM (
             JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
                  AND tt2.sportFK = {{SPORT_ID}}
             WHERE l.del = 'no'
+              AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
               -- AND t2.tournament_templateFK = <tournament_template_id>
               -- AND e2.startdate >= '<from_datetime>'
               -- AND e2.startdate <  '<to_datetime>'
@@ -981,6 +1004,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
      AND tt.sportFK = {{SPORT_ID}}
 WHERE e.del = 'no'
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -1046,6 +1070,7 @@ FROM (
       -- both genders. A team is, because a team entity carries the gender of the squad it
       -- fields, and a mixed stage is contested by teams recorded as mixed.
       AND (p.type <> 'athlete' OR LOWER(TRIM(ts.gender)) <> 'mixed')
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -1072,6 +1097,7 @@ WHERE ep.del = 'no'
   AND LOWER(TRIM(ts.gender)) <> 'undefined'
   AND p.gender IS NOT NULL
   AND TRIM(p.gender) <> ''
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'

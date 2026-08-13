@@ -48,6 +48,16 @@ $ExpectedKey = '_expected'
 $NamesKey = '_names'
 $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesKey)
 
+# The client's boundary, expressed as the templates it does not take. README.md owns why the
+# client is a boundary of its own; this is the value every statement that can carry one reads.
+$ClientScopeKey = 'OUT_OF_SCOPE_TEMPLATE_ID_LIST'
+
+# The commented run-time filter, in the two alias forms POWERBI.md allows. Declared here as the
+# validator's own copy rather than imported: Run-Query.ps1 activates it and this only counts it,
+# and a tool that fails a package must not need the tool it is checking to be loadable.
+$TemplateFilterMarkerPattern =
+'(?m)^[ \t]*--[ \t]*AND[ \t]+\w+\.(id|tournament_templateFK)[ \t]*=[ \t]*<tournament_template_id>[ \t]*$'
+
 # Actionable is the default and is never recorded. Deprecated is absent on purpose:
 # POWERBI_REGISTRY.md's Status column owns it, and a value with two owners drifts.
 $CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable', 'Out of client scope')
@@ -634,6 +644,92 @@ foreach ($s in ($dqStatements + $globalDq)) {
 Add-Result -Group 'DQ' -Name 'Shardable statements can be merged' -Findings $shardFindings
 
 # --------------------------------------------------------------------------------------
+# The client boundary is carried by the statement, not by the run
+# --------------------------------------------------------------------------------------
+
+# A commented template filter is a place the scope *can* be narrowed at run time; the client's
+# boundary is a place it *is* narrowed, always, and it has to survive being pasted into PowerBI
+# out of this file. So wherever a statement declares it can reach the tournament template, it
+# excludes the templates this client does not take - once per marker, in every branch that has
+# one, findings and coverage alike, or eligible_count is counted over a population the findings
+# never saw.
+#
+# Written against the marker rather than against a list of CheckIDs: a template added later is
+# held to the same rule without anybody remembering to add it to a list.
+$scopeFindings = @()
+
+# What each sport's boundary is, so a sport taken whole is not made to write "exclude nothing"
+# into forty statements. Read here rather than from the sport block further down because this
+# rule is about the SQL and runs with it.
+$boundaryOf = @{}
+$boundarySource = Join-Path $RepoRoot 'SPORTS/params.json'
+if (Test-Path -LiteralPath $boundarySource) {
+    $parsed = Get-Content -LiteralPath $boundarySource -Raw -Encoding UTF8 | ConvertFrom-Json
+    foreach ($sportProperty in $parsed.PSObject.Properties) {
+        if ($sportProperty.Name.StartsWith('_')) { continue }
+        $boundaryOf[$sportProperty.Name] = [string]$sportProperty.Value.$ClientScopeKey
+    }
+}
+
+foreach ($s in $statements) {
+    if ($s.CheckId -notmatch '-DQ-') { continue }
+
+    $markers = @([regex]::Matches($s.Sql, $TemplateFilterMarkerPattern))
+    if ($markers.Count -eq 0) { continue }
+
+    $where = "$($s.CheckId) ($($s.File):$($s.Line))"
+    $excluded = @([regex]::Matches($s.Sql,
+            '(?m)^\s*AND\s+\w+\.(?:id|tournament_templateFK)\s+NOT\s+IN\s*\(([^)]*)\)'))
+
+    # A GLOBAL template reads the boundary through the token, because seven sports share the
+    # text and each has a different one. A sport statement carries its sport's ids written out,
+    # because POWERBI.md says a sport check takes no parameters - so a token there would never
+    # be substituted and the statement would go to the client with {{...}} in it.
+    if ($s.CheckId -like 'GLOBAL-DQ-*') {
+        if ($excluded.Count -lt $markers.Count) {
+            $scopeFindings += ("${where}: {0} template filter(s) but {1} client-boundary line(s); " -f
+                $markers.Count, $excluded.Count) +
+            'every branch that can reach the template excludes {{OUT_OF_SCOPE_TEMPLATE_ID_LIST}}'
+        }
+        elseif ($s.Sql -notmatch '\{\{OUT_OF_SCOPE_TEMPLATE_ID_LIST\}\}') {
+            $scopeFindings += "${where}: excludes a template list literally; a GLOBAL template reads {{OUT_OF_SCOPE_TEMPLATE_ID_LIST}}, which each sport fills"
+        }
+        continue
+    }
+
+    if ($s.Sql -match '\{\{') {
+        $scopeFindings += "${where}: a sport statement carries a {{...}} token, which nothing substitutes outside the runner"
+        continue
+    }
+
+    # A sport the client takes whole writes nothing: "exclude nothing" in forty statements is
+    # noise that stops being read, and the day such a sport gains a boundary the value is what
+    # changes and this rule is what notices.
+    $slug = ($s.CheckId -split '-DQ-')[0]
+    $boundary = [string]$boundaryOf[$slug]
+    if ([string]::IsNullOrWhiteSpace($boundary) -or $boundary -eq '0') { continue }
+
+    if ($excluded.Count -lt $markers.Count) {
+        $scopeFindings += ("${where}: {0} template filter(s) but {1} client-boundary line(s); " -f
+            $markers.Count, $excluded.Count) +
+        "$slug does not take every template, so every branch that can reach one excludes the rest"
+        continue
+    }
+
+    # And the ids must be the sport's, not a copy that has drifted from it. A statement quietly
+    # auditing a template the sport file says is out of scope is the defect this whole rule
+    # exists to prevent, and it looks identical to a correct one until the ids are compared.
+    $wanted = @($boundary -split ',' | ForEach-Object { $_.Trim() } | Sort-Object)
+    foreach ($listed in $excluded) {
+        $held = @($listed.Groups[1].Value -split ',' | ForEach-Object { $_.Trim() } | Sort-Object)
+        if (($held -join ',') -ne ($wanted -join ',')) {
+            $scopeFindings += "${where}: excludes ($($listed.Groups[1].Value)) but SPORTS/params.json $ClientScopeKey for $slug is ($boundary)"
+        }
+    }
+}
+Add-Result -Group 'DQ' -Name 'Client boundary is in the statement' -Findings $scopeFindings
+
+# --------------------------------------------------------------------------------------
 # GLOBAL parameterization
 # --------------------------------------------------------------------------------------
 
@@ -1016,6 +1112,19 @@ if (Test-Path -LiteralPath $paramsPath) {
                         $sportFindings += "SPORTS/params.json: '$sport' $($pair.NoResult) contains '$item' but $($pair.Values) does not; the same check would report it invalid and honour it as a no-result marker"
                     }
                 }
+            }
+
+            # The client boundary, which every sport declares because every statement that can
+            # carry one reads it. A sport that leaves it out does not run sport-wide: the token
+            # goes unresolved and the runner skips the statement, so 80-odd checks would vanish
+            # from that sport's board reported as needing a value nobody knew to supply. '0'
+            # is the neutral value - no template has id 0 - and says the sport is taken whole.
+            $boundary = [string]$property.Value.$ClientScopeKey
+            if ([string]::IsNullOrWhiteSpace($boundary)) {
+                $sportFindings += "SPORTS/params.json: '$sport' declares no $ClientScopeKey; use '0' for a sport the client takes whole, since a missing token skips every statement that reads it"
+            }
+            elseif ($boundary -notmatch '^\s*\d+(\s*,\s*\d+)*\s*$') {
+                $sportFindings += "SPORTS/params.json: '$sport' $ClientScopeKey is not a comma-separated id list: '$boundary'"
             }
 
             # A classification is only worth writing down if it is held to something, so each

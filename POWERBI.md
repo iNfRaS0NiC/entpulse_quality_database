@@ -247,6 +247,39 @@ These rules are mandatory for every DQ or discovery query whose audited object i
   filter, so it must appear identically in every `UNION ALL` branch and be applied before
   `eligible_count` is computed.
 
+## The client boundary
+
+Two different things narrow a statement and they must not be confused. The commented filters
+below are places the scope **can** be narrowed for a single run, by the person running it. The
+client boundary is a place it **is** narrowed, on every execution, including the one that
+happens inside PowerBI with nobody watching.
+
+So the boundary is written into the statement rather than applied by the runner. Immediately
+above each commented template filter, in the same alias and column that filter uses:
+
+```sql
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  -- AND t.tournament_templateFK = <tournament_template_id>
+```
+
+Rules:
+
+- **every branch that can reach the template carries it**, findings and coverage alike, or
+  `eligible_count` is counted over a population the findings never saw;
+- **a GLOBAL template reads the token**, because seven sports share one text;
+- **a sport statement writes the ids out**, because a sport check takes no parameters and a
+  `{{...}}` left in one would reach the client unsubstituted;
+- **a statement with no template relation carries neither**, and audits the sport whole. Say so
+  in the sport file rather than leaving the reader to notice.
+
+`TOOLS/Test-Package.ps1` fails a statement that filters a template without excluding the
+boundary, and a sport statement whose written-out ids have drifted from `SPORTS/params.json`.
+
+A competition outside the boundary is deferred, not unsupported: the check would run against it
+unchanged. Where the exclusion leaves a check with nothing to audit, the sport records
+`Out of client scope` rather than deprecating the CheckID — `TOOLS/README.md` owns that word,
+`README.md` owns why the client is a boundary at all.
+
 ## Mandatory scope-limiting contract
 
 Every approved query must include at least one safe commented filter suitable for
