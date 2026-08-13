@@ -2223,6 +2223,16 @@ Test-That 'a withdrawn check is retired by any run, not only by a complete one' 
         Assert-True ($write.Range -notmatch '^[IJK]') "a run must never write $($write.Range)"
     }
 
+    # The Rows cell: a plain zero that always lands, then the link on top. A formula sent RAW
+    # arrives as text, and the USER_ENTERED side drops a write whose tab token did not resolve -
+    # so a single write carrying only the link would leave the stale count standing.
+    $rowsCells = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'H8:H8' })
+    Assert-Equal 2 $rowsCells.Count 'the number and the link are two writes'
+    Assert-Equal 0 $rowsCells[0].Values[0][0] 'the plain zero goes first'
+    Assert-True ($rowsCells[0].PSObject.Properties.Name -notcontains 'Raw') 'and goes in RAW, so it always lands'
+    Assert-Equal $false $rowsCells[1].Raw 'the link needs USER_ENTERED or it arrives as text'
+    Assert-True ([string]$rowsCells[1].Values[0][0] -like '=HYPERLINK(*') 'and it is a link'
+
     # The tab keeps its identity and its comments, loses its findings, and says why.
     $cleared = @($plan.Operations | Where-Object { $_.Sheet -eq 'OLD_MEDAL_CHECK' -and $_.Kind -eq 'Clear' })
     Assert-Equal 1 $cleared.Count 'the findings are cleared from the tab'

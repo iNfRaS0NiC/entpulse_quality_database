@@ -1201,16 +1201,31 @@ function New-SheetsMergePlan {
 
         $row = $rowOf[$runKey]
         $rowsColumn = [array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1
-        $rowsValue = 0
-        if ($tabOf.ContainsKey($runKey)) {
-            # Still a link, because the tab is where the note explaining the withdrawal is.
-            $rowsValue = New-SheetsGidLink -Sheet $tabOf[$runKey] -Text 0
-        }
+        $rowsRange = (New-SheetsRange -FromColumn $rowsColumn -FromRow $row -ToColumn $rowsColumn -ToRow $row)
+
+        # The plain number first and the link on top of it, in that order and as two writes,
+        # which is how the rest of this planner does it and for a reason worth repeating here.
+        # A link is a formula and a formula sent RAW arrives as the literal text of one, so it
+        # needs the USER_ENTERED side; and that side drops any write whose tab token did not
+        # resolve, on the grounds that a broken link is worse than a missing one. One write
+        # carrying only the link would therefore leave the stale count standing on exactly the
+        # row this exists to clear. Written as one on 2026-08-13, which put {{GID:...}} in the
+        # cell as text.
         $plan += [pscustomobject]@{
             Kind   = 'Write'
             Sheet  = 'Overview'
-            Range  = (New-SheetsRange -FromColumn $rowsColumn -FromRow $row -ToColumn $rowsColumn -ToRow $row)
-            Values = @(, @($rowsValue))
+            Range  = $rowsRange
+            Values = @(, @(0))
+        }
+        if ($tabOf.ContainsKey($runKey)) {
+            # Still a link, because the tab is where the note explaining the withdrawal is.
+            $plan += [pscustomobject]@{
+                Kind   = 'Write'
+                Raw    = $false
+                Sheet  = 'Overview'
+                Range  = $rowsRange
+                Values = @(, @((New-SheetsGidLink -Sheet $tabOf[$runKey] -Text 0)))
+            }
         }
 
         # Signal through Trends in one span: eleven columns that all belong to the run, none of
