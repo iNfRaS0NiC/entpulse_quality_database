@@ -511,6 +511,26 @@ carries the gender rather than by the count. A national team entity - `England`,
 rows in `GLOBAL-DQ-123`; and the European Boys' and Girls' Team Championships hold 3 to 10
 wrong-gender team members each in `GLOBAL-DQ-044`. Neither check can make the distinction itself.
 
+**A round named Final is not a knockout round in this sport, and `173 Final` carrying
+`knockout = no` is correct.** Recorded by decision on 2026-08-13, against the shape of the data
+rather than from it, and the measurement is here so the decision is legible.
+
+Golf files 529 events on `173 Final`, all of them Match Play, and 28 on `9 Final`, also all
+Match Play. Two round types, one name, opposite flags, and the sport uses both. Read from the
+data alone the larger population would have looked like the defect; the reading is the other way
+round, so `'final'` moved from `ELIMINATION_ROUND_NAME_LIST` to `GROUP_ROUND_NAME_LIST` and the
+expectation for the name is now `no`.
+
+The consequence is deliberate and is the point of stating it: `GLOBAL-DQ-118` stops reporting the
+529 events on `173` and starts reporting the 28 on `9`, which is a repair list a person can
+finish. `GLOBAL-DQ-097` follows it, as the two are written to always agree on which round types
+are wrong.
+
+Nothing else in the pair moved. `176 Quarter Finals`, `178 Semi Finals`, `188 1/32`, `185 1/16`,
+`184 1/8`, `186 Small Final` and `304 Playoff` all carry `knockout = no` and all remain findings,
+6126 events between them: those names are elimination rounds in this sport as in any other, and
+the sport's own knockout-flagged twins - `3`, `2`, `4`, `19`, `305` - are what they should sit on.
+
 **The scope container is stored by fourteen templates and not by twenty-two, and the client
 reads neither.** `Golf-DQ-058`, running `GLOBAL-DQ-107`, was deprecated on 2026-08-13 by
 decision, not by measurement, and the measurement is recorded here so the decision can be
