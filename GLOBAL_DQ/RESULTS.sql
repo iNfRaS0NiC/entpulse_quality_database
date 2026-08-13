@@ -3702,3 +3702,121 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, missing_unexcused DESC, event_startdate DESC;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-124
+    -- Name - EVENT_RESULTS_INTEGER_FIELD_FRACTIONAL
+    -- What it does: Finds events whose whole-number result fields hold a value carrying a fractional part, separating a decimal point from a decimal comma, and naming how many values are affected and what they hold.
+    x.check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.result_type_names,
+    x.affected_count,
+    x.affected_participant_count,
+    x.distinct_values,
+    -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
+    -- group_concat_max_len without saying so, and affected_count is counted separately and is
+    -- what the row asserts.
+    x.affected_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        y.check_type,
+        y.event_id,
+        y.event_name,
+        y.event_startdate,
+        y.template_name,
+        y.tournament_name,
+        GROUP_CONCAT(DISTINCT y.result_type_name ORDER BY y.result_type_name SEPARATOR ', ')
+            AS result_type_names,
+        COUNT(*) AS affected_count,
+        COUNT(DISTINCT y.event_participants_id) AS affected_participant_count,
+        GROUP_CONCAT(DISTINCT y.stored_value ORDER BY y.stored_value SEPARATOR ', ')
+            AS distinct_values,
+        GROUP_CONCAT(DISTINCT y.participant_name ORDER BY y.participant_name SEPARATOR ', ')
+            AS affected_participants
+    FROM (
+        -- One row per fractional value, grouped to the event below, on the same grain as
+        -- GLOBAL-DQ-076 and for the same reason: a field written the wrong way is one storage
+        -- habit and not one defect per competitor.
+        --
+        -- The two separators are separate check_types because they are repaired differently.
+        -- A decimal point is a value that should never have carried a fraction. A comma is
+        -- ambiguous by itself - it reads as a decimal comma in one locale and a thousands
+        -- separator in another - so a reader has to see which it is before deciding, and
+        -- 4,07 in a field counting strokes is a different mistake from 4,070.
+        SELECT
+            CASE
+                WHEN TRIM(r.value) REGEXP '^[-+]?[0-9]+[.][0-9]+$' THEN 'DECIMAL_POINT_IN_INTEGER_FIELD'
+                ELSE 'DECIMAL_COMMA_IN_INTEGER_FIELD'
+            END AS check_type,
+            e.id AS event_id,
+            e.name AS event_name,
+            e.startdate AS event_startdate,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            rt.name AS result_type_name,
+            ep.id AS event_participants_id,
+            p.name AS participant_name,
+            r.value AS stored_value
+        FROM event_participants ep
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+         AND r.result_typeFK IN ({{INTEGER_RESULT_TYPE_LIST}})
+        LEFT JOIN result_type rt ON rt.id = r.result_typeFK
+        WHERE ep.del = 'no'
+          AND tt.sportFK = {{SPORT_ID}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+          AND r.value IS NOT NULL
+          AND TRIM(r.value) <> ''
+          -- Disjoint from GLOBAL-DQ-076 by construction. That check reports a value that is
+          -- not a number at all; this one reports a value that is a number the field cannot
+          -- hold, so a value reported here is never reported there and the two never restate
+          -- each other. An empty field is not a finding either - a round that was not played
+          -- stores nothing, and whether it should is GLOBAL-DQ-069.
+          AND TRIM(r.value) REGEXP '^[-+]?[0-9]+[.,][0-9]+$'
+    ) y
+    GROUP BY
+        y.check_type,
+        y.event_id,
+        y.event_name,
+        y.event_startdate,
+        y.template_name,
+        y.tournament_name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+ AND r.result_typeFK IN ({{INTEGER_RESULT_TYPE_LIST}})
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND r.value IS NOT NULL
+  AND TRIM(r.value) <> ''
+
+ORDER BY sort_order, affected_count DESC, event_id;
