@@ -511,6 +511,26 @@ carries the gender rather than by the count. A national team entity - `England`,
 rows in `GLOBAL-DQ-123`; and the European Boys' and Girls' Team Championships hold 3 to 10
 wrong-gender team members each in `GLOBAL-DQ-044`. Neither check can make the distinction itself.
 
+**The scope container is stored by fourteen templates and not by twenty-two, and the client
+reads neither.** `Golf-DQ-058`, running `GLOBAL-DQ-107`, was deprecated on 2026-08-13 by
+decision, not by measurement, and the measurement is recorded here so the decision can be
+reversed knowing what it gave up.
+
+Of the 36 templates holding finished events, 14 carry an `event_scope` container of type `305`
+on at least some of them - `430 European Tour and PGA Tour 1` on 811 of 1829, `436 LPGA Tour 1`
+on 663 of 1710, `9645 Walker Cup 1` on 130 of 135, `10305 LIV Golf` on 111 of 172. Twenty-two
+carry none at all, including every amateur team championship and **every Games template**:
+`9600`/`9601 Summer Olympics` 0 of 3, `11498 Summer Youth Olympics` 0 of 4, `10328 Asian Games`
+0 of 10, `10327 Pan American Games` 0 of 6, `11532 Southeast Asian Games` 0 of 6.
+
+So the structure exists and is used, and the check is not `Not applicable` under this project's
+rule - it would have reported 16334 of 19053 finished events forever, and a scope container
+arriving tomorrow is exactly what it was written to notice. It is deprecated instead, which
+keeps the CheckID reserved and the row in the registry, because the client does not read scope
+results and a permanent 86 per cent finding is noise on a board somebody has to work through.
+The hole-by-hole scope layer is outside the DQ work by the decision of 2026-08-12, and this is
+the same decision reaching the one check that could see it.
+
 **Two `statistic_data11` fields are declared for the shard and never written.** `1427` Time
 difference and `1429` Team both resolve for statistic type 11 and Golf stores no row in either, so
 `GLOBAL-DQ-028`, `GLOBAL-DQ-064`, `GLOBAL-DQ-065` and `GLOBAL-DQ-066` all audit an empty

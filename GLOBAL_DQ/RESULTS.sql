@@ -1483,50 +1483,112 @@ ORDER BY sort_order, blank_result_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-076
     -- Name - EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC
-    -- What it does: Finds non-numeric values in the sport's numeric result fields, separating one of the sport's own status codes, a no-data sentinel such as nan, a number written with thousands separators, and any other text.
-    CASE
-        WHEN LOWER(TRIM(r.value)) IN ({{RESULT_COMMENT_VALUE_LIST}}) THEN 'STATUS_CODE_IN_NUMERIC_FIELD'
-        WHEN LOWER(TRIM(r.value)) IN ('nan', 'null', 'n/a', 'na', '-', '--', '?', 'none') THEN 'SENTINEL_IN_NUMERIC_FIELD'
-        -- A grouped number is a number that was written for a reader rather than stored for
-        -- one, and it needs a different repair from text: the digits are right and only the
-        -- separators have to go.
-        WHEN TRIM(r.value) REGEXP '^-?[0-9]{1,3}(,[0-9]{3})+([.][0-9]+)?$' THEN 'GROUPED_NUMBER_IN_NUMERIC_FIELD'
-        ELSE 'TEXT_IN_NUMERIC_FIELD'
-    END AS check_type,
-    ep.id AS event_participants_id,
-    e.id AS event_id,
-    e.name AS event_name,
-    p.name AS participant_name,
-    r.result_typeFK,
-    r.value AS stored_value,
-    tt.name AS tournament_template_name,
-    NULL AS eligible_count
-FROM event_participants ep
-JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
-JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
-JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
- AND r.result_typeFK IN ({{NUMERIC_RESULT_TYPE_LIST}})
-WHERE ep.del = 'no'
-  AND tt.sportFK = {{SPORT_ID}}
-  -- AND t.tournament_templateFK = <tournament_template_id>
-  -- AND e.startdate >= '<from_datetime>'
-  -- AND e.startdate <  '<to_datetime>'
-  AND r.value IS NOT NULL
-  AND TRIM(r.value) <> ''
-  -- The mirror of GLOBAL-DQ-052, which asks whether the status vocabulary holds a value it
-  -- should not. This asks the opposite: whether a status leaked into a field that carries
-  -- a measured quantity, where no reader of that field will look for one.
-  AND TRIM(r.value) NOT REGEXP '^-?[0-9]+([.,][0-9]+)?$'
+    -- What it does: Finds events holding non-numeric values in the sport's numeric result fields, separating one of the sport's own status codes, a no-data sentinel such as nan, a number written with thousands separators, and any other text, and naming how many values are affected and what they hold.
+    x.check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    -- The result type is named rather than numbered. A reader repairing the field has to know
+    -- which field it is, and the id alone sends them back to the catalogue for every row.
+    x.result_type_names,
+    x.affected_count,
+    x.affected_participant_count,
+    -- What the field actually holds, deduplicated. An event whose whole stroke-play field
+    -- stores the same sentinel is one thing to fix, and the distinct list says so in one cell
+    -- where a hundred rows said it a hundred times.
+    x.distinct_values,
+    -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
+    -- group_concat_max_len without saying so, and affected_count is counted separately and is
+    -- what the row asserts.
+    x.affected_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        y.check_type,
+        y.event_id,
+        y.event_name,
+        y.event_startdate,
+        y.template_name,
+        y.tournament_name,
+        GROUP_CONCAT(DISTINCT y.result_type_name ORDER BY y.result_type_name SEPARATOR ', ')
+            AS result_type_names,
+        COUNT(*) AS affected_count,
+        COUNT(DISTINCT y.event_participants_id) AS affected_participant_count,
+        GROUP_CONCAT(DISTINCT y.stored_value ORDER BY y.stored_value SEPARATOR ', ')
+            AS distinct_values,
+        GROUP_CONCAT(DISTINCT y.participant_name ORDER BY y.participant_name SEPARATOR ', ')
+            AS affected_participants
+    FROM (
+        -- One row per offending result value, grouped to the event below. The event is the
+        -- audited object because a field-wide storage habit is one thing to repair: a
+        -- stroke-play event storing the same sentinel for every competitor reported once per
+        -- competitor, which on Golf turned 1895 events into 16452 rows. The four states stay
+        -- separate check_types because they are repaired differently, so an event holding two
+        -- of them is two findings and not one.
+        SELECT
+            CASE
+                WHEN LOWER(TRIM(r.value)) IN ({{RESULT_COMMENT_VALUE_LIST}}) THEN 'STATUS_CODE_IN_NUMERIC_FIELD'
+                WHEN LOWER(TRIM(r.value)) IN ('nan', 'null', 'n/a', 'na', '-', '--', '?', 'none') THEN 'SENTINEL_IN_NUMERIC_FIELD'
+                -- A grouped number is a number that was written for a reader rather than
+                -- stored for one, and it needs a different repair from text: the digits are
+                -- right and only the separators have to go.
+                WHEN TRIM(r.value) REGEXP '^[-+]?[0-9]{1,3}(,[0-9]{3})+([.][0-9]+)?$' THEN 'GROUPED_NUMBER_IN_NUMERIC_FIELD'
+                ELSE 'TEXT_IN_NUMERIC_FIELD'
+            END AS check_type,
+            e.id AS event_id,
+            e.name AS event_name,
+            e.startdate AS event_startdate,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            rt.name AS result_type_name,
+            ep.id AS event_participants_id,
+            p.name AS participant_name,
+            r.value AS stored_value
+        FROM event_participants ep
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+         AND r.result_typeFK IN ({{NUMERIC_RESULT_TYPE_LIST}})
+        LEFT JOIN result_type rt ON rt.id = r.result_typeFK
+        WHERE ep.del = 'no'
+          AND tt.sportFK = {{SPORT_ID}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+          AND r.value IS NOT NULL
+          AND TRIM(r.value) <> ''
+          -- The mirror of GLOBAL-DQ-052, which asks whether the status vocabulary holds a
+          -- value it should not. This asks the opposite: whether a status leaked into a field
+          -- that carries a measured quantity, where no reader of that field will look for one.
+          --
+          -- The sign is part of the number. A score written against a reference rather than
+          -- from zero is stored signed in both directions - golf's Total Par holds +2 as
+          -- readily as -2 - and a pattern accepting only the minus reported every positive one
+          -- as text: 9347 of Golf's 16452 findings were correct data the rule could not read.
+          AND TRIM(r.value) NOT REGEXP '^[-+]?[0-9]+([.,][0-9]+)?$'
+    ) y
+    GROUP BY
+        y.check_type,
+        y.event_id,
+        y.event_name,
+        y.event_startdate,
+        y.template_name,
+        y.tournament_name
+) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT ep.id) AS eligible_count
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -1541,7 +1603,8 @@ WHERE ep.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
   AND r.value IS NOT NULL
   AND TRIM(r.value) <> ''
-;
+
+ORDER BY sort_order, affected_count DESC, event_id;
 
 
 -- ================================================================================

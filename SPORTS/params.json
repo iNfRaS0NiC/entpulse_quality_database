@@ -671,10 +671,6 @@
         "signal": "Monitor",
         "reason": "The sport's Comp.Rank are tournament classifications and most of them award nothing: 99 of 3491 carry a Medal value at all. The check asserts a complete medal set on each, so it reports 3286 of 3491 and the proportion is the finding rather than the rows. It stays because the 99 that do carry medals are worth reading."
       },
-      "GLOBAL-DQ-107": {
-        "signal": "Monitor",
-        "reason": "Reports 16334 of 19053 finished events. The gap is real and is in both disciplines - 2817 stroke-play and 11496 match-play finished events hold no event_scope container - but it belongs to the hole-by-hole scope layer, which is outside the DQ work by decision on 2026-08-12. Read as a coverage proportion until that decision is revisited."
-      },
       "GLOBAL-DQ-007": {
         "signal": "Monitor",
         "reason": "10482 of 20547 people reached through the sport hold no date of birth. Half a registry is a completeness proportion rather than a repair list, and the sport's registry is large and old; the rows are correct and there are simply a great many of them."
