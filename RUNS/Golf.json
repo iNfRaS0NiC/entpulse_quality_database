@@ -1423,6 +1423,58 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Golf 13.08.2026 12-45-17",
+                     "startedUtc":  "2026-08-13T10:45:17Z",
+                     "output":  "D:\\SQL\u0027s Output\\Golf 13.08.2026 12-45-17",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-004",
+                                        "runKey":  "Golf-DQ-004",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  398,
+                                        "findings":  397,
+                                        "eligible":  4444,
+                                        "seconds":  95,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-053",
+                                        "runKey":  "Golf-DQ-053",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NO_PARTICIPANTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  307,
+                                        "findings":  306,
+                                        "eligible":  19443,
+                                        "seconds":  1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-054",
+                                        "runKey":  "Golf-DQ-054",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MISSING_VENUE",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  9009,
+                                        "findings":  9008,
+                                        "eligible":  19443,
+                                        "seconds":  8.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"

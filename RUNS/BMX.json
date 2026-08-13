@@ -12982,6 +12982,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "13.08.2026 12-48-23",
+                     "startedUtc":  "2026-08-13T10:48:23Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-039",
+                                        "runKey":  "BMX-DQ-039",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  9346,
+                                        "seconds":  3.4,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE"

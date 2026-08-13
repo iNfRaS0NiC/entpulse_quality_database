@@ -12592,6 +12592,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "13.08.2026 12-48-53",
+                     "startedUtc":  "2026-08-13T10:48:53Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-043",
+                                        "runKey":  "Modern-Pentathlon-DQ-043",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  273,
+                                        "findings":  272,
+                                        "eligible":  9517,
+                                        "seconds":  14.8,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1kWKqdBc2ZD1AYcMEzGUmZHzgjfEgnLyf8AfbCvkxuKs"
