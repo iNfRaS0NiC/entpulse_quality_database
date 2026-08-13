@@ -2197,6 +2197,64 @@ Test-That 'a check the document has never held is appended, seeded status and al
     Assert-Equal 'No issue' $appended[0].Values[0][8] 'the seeded status goes in on a new row'
 }
 
+Test-That 'a withdrawn check is retired by any run, not only by a complete one' {
+    # Deprecation is a row in the registry rather than an inference from what the run
+    # produced, so unlike "Not in this run" it does not wait for -Complete. The run below
+    # names one check and the board holds two.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7; 'Fixtureball-DQ-044' = 8 }
+        TabOf = @{ 'Fixtureball-DQ-044' = 'OLD_MEDAL_CHECK' }
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
+        -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
+
+    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'L8:V8' })
+    Assert-Equal 1 $span.Count 'the run-owned columns are written in one span'
+    Assert-Equal 'Deprecated' $span[0].Values[0][0] 'Signal says so'
+    Assert-Equal 'Deprecated' $span[0].Values[0][8] 'and so does Verdict'
+    Assert-Equal '' $span[0].Values[0][3] 'Findings is cleared rather than left reading as current'
+
+    # The reviewer's own columns are I, J and K on this row and nothing may reach them.
+    $onRow8 = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' -and $_.Range -like '*8:*8' })
+    foreach ($write in $onRow8) {
+        Assert-True ($write.Range -notmatch '^[IJK]') "a run must never write $($write.Range)"
+    }
+
+    # The tab keeps its identity and its comments, loses its findings, and says why.
+    $cleared = @($plan.Operations | Where-Object { $_.Sheet -eq 'OLD_MEDAL_CHECK' -and $_.Kind -eq 'Clear' })
+    Assert-Equal 1 $cleared.Count 'the findings are cleared from the tab'
+    Assert-True ($cleared[0].Range -like ('A' + $SheetsCheckTabResultRow + ':*')) 'from the result row down, so rows 1 to 4 survive'
+    $note = @($plan.Operations | Where-Object { $_.Sheet -eq 'OLD_MEDAL_CHECK' -and $_.Range -eq 'C3' })
+    Assert-Equal 1 $note.Count 'and the reason is written where a tab says things about itself'
+    Assert-True ([string]$note[0].Values[0][0] -like '*POWERBI_REGISTRY.md*') 'naming where the withdrawal is recorded'
+
+    # A retired row must not also be told it was not in this run: two markers, one of them
+    # overwriting the other, and which one wins would depend on plan order.
+    $verdictOnly = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'T8:T8' })
+    Assert-Equal 0 $verdictOnly.Count 'no Not-in-this-run cell on a row already marked withdrawn'
+}
+
+Test-That 'a withdrawn check that ran anyway keeps the numbers it just produced' {
+    # The registry and the selection disagreeing is a state worth surviving: this run measured
+    # the check, and replacing a measurement with an assertion would be the worse answer.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-044' -Findings 5 -Eligible 60 -Verdict 'Improved'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-044' = 8 }
+        TabOf = @{}
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
+        -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
+
+    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'L8:V8' })
+    Assert-Equal 1 $span.Count 'one write, the run own'
+    Assert-Equal 5 $span[0].Values[0][3] 'holding what the run measured rather than a cleared cell'
+}
+
 Test-That 'the Overview header is rewritten every run, so a new column gets a name' {
     # It used to be written once, which held exactly as long as the board never gained a
     # column. Trends was added, the header of a document created before it stayed twenty-one

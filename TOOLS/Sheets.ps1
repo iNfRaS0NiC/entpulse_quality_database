@@ -304,6 +304,18 @@ $SheetsGidToken = '{{GID:%NAME%}}'
 # block for sorting and filtering.
 $SheetsCheckTabResultRow = 5
 
+# What a withdrawn check reads as on the board. The word is the registry's own Status value, so
+# a reviewer meeting it here and in POWERBI_REGISTRY.md meets the same word for the same fact.
+#
+# It goes in Signal and Verdict rather than in Status, because Status is the reviewer's column
+# and holds what a person concluded. Those two are the run's own, and a run may say a check did
+# not run - that is the only thing it is asserting here.
+$SheetsRetiredMarker = 'Deprecated'
+$SheetsRetiredReason = 'Withdrawn in POWERBI_REGISTRY.md. The check no longer runs for this ' +
+'sport, so the counts that stood here belonged to the last run before it was withdrawn and ' +
+'have been cleared rather than left to read as current. The CheckID is permanent and the row ' +
+'and tab stay for good; the reviewer columns are untouched.'
+
 # The two columns a reviewer owns inside a result block, appended to the right of whatever the
 # statement returned.
 #
@@ -752,6 +764,7 @@ function New-SheetsMergePlan {
         [string]$OutputFolder,
         [int]$MaxRows = $SheetsMaxRowsPerCheck,
         [string]$Stamp = '',
+        [string[]]$Retired = @(),
         [switch]$Complete
     )
 
@@ -1150,9 +1163,15 @@ function New-SheetsMergePlan {
     # did not fail to produce the other ninety checks; it was never asked for them, and
     # marking them would repaint the whole board every time somebody re-ran one thing. The
     # rows it leaves alone keep the last full run's numbers, which is what they are.
+    $retiredSet = @{}
+    foreach ($id in @($Retired)) {
+        if (-not [string]::IsNullOrWhiteSpace($id)) { $retiredSet[[string]$id] = $true }
+    }
+
     foreach ($runKey in @($rowOf.Keys)) {
         if (-not $Complete) { break }
         if ($seen.ContainsKey($runKey)) { continue }
+        if ($retiredSet.ContainsKey($runKey)) { continue }
         $verdictColumn = [array]::IndexOf($SheetsOverviewColumns, 'Verdict') + 1
         $plan += [pscustomobject]@{
             Kind   = 'Write'
@@ -1162,6 +1181,77 @@ function New-SheetsMergePlan {
             Values = @(, @('Not in this run'))
         }
         $cells += 1
+    }
+
+    # A check the registry has withdrawn. Deprecation is a fact this run can read rather than
+    # an inference it has to earn, so unlike "Not in this run" it is written by every run and
+    # not only by a complete one: a CheckID is permanent and its row stays for good, but the
+    # numbers beside it stop being true the moment the check stops running, and a board that
+    # keeps showing them is worse than one showing nothing. Golf-DQ-044 stood at 3286 findings
+    # for half a day after it was replaced, and was read as current.
+    #
+    # The reviewer's three columns are not touched. What somebody concluded while the check was
+    # running is still what they concluded, and a run that erased it would be destroying the one
+    # thing in the document it cannot rebuild. The tab is not deleted for the same reason.
+    foreach ($runKey in @($rowOf.Keys)) {
+        if (-not $retiredSet.ContainsKey($runKey)) { continue }
+        # It ran anyway - the registry and the selection disagree - so this run's own numbers
+        # are real and stand. Marking the row would replace a measurement with an assertion.
+        if ($seen.ContainsKey($runKey)) { continue }
+
+        $row = $rowOf[$runKey]
+        $rowsColumn = [array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1
+        $rowsValue = 0
+        if ($tabOf.ContainsKey($runKey)) {
+            # Still a link, because the tab is where the note explaining the withdrawal is.
+            $rowsValue = New-SheetsGidLink -Sheet $tabOf[$runKey] -Text 0
+        }
+        $plan += [pscustomobject]@{
+            Kind   = 'Write'
+            Sheet  = 'Overview'
+            Range  = (New-SheetsRange -FromColumn $rowsColumn -FromRow $row -ToColumn $rowsColumn -ToRow $row)
+            Values = @(, @($rowsValue))
+        }
+
+        # Signal through Trends in one span: eleven columns that all belong to the run, none of
+        # them the reviewer's, and contiguous so it is one write rather than nine.
+        $from = [array]::IndexOf($SheetsOverviewColumns, 'Signal') + 1
+        $to = [array]::IndexOf($SheetsOverviewColumns, 'Trends') + 1
+        $values = @()
+        foreach ($column in $SheetsOverviewColumns[($from - 1)..($to - 1)]) {
+            $values += switch ($column) {
+                'Signal' { $SheetsRetiredMarker }
+                'Signal reason' { $SheetsRetiredReason }
+                'Verdict' { $SheetsRetiredMarker }
+                default { '' }
+            }
+        }
+        $plan += [pscustomobject]@{
+            Kind   = 'Write'
+            Sheet  = 'Overview'
+            Range  = (New-SheetsRange -FromColumn $from -FromRow $row -ToColumn $to -ToRow $row)
+            Values = @(, $values)
+        }
+        $cells += 1 + $values.Count
+
+        # The tab keeps its identity block and its comments and loses its findings, which is
+        # the same shape a check returning nothing leaves behind. C3 already carries whatever
+        # this tab has to say about itself, so the reason goes there.
+        if ($tabOf.ContainsKey($runKey)) {
+            $title = $tabOf[$runKey]
+            $plan += [pscustomobject]@{
+                Kind  = 'Clear'
+                Sheet = $title
+                Range = '{0}{1}:AZ' -f (ConvertTo-SheetsColumnName -Index 1), $SheetsCheckTabResultRow
+            }
+            $plan += [pscustomobject]@{
+                Kind   = 'Write'
+                Sheet  = $title
+                Range  = 'C3'
+                Values = @(, @($SheetsRetiredReason))
+            }
+            $cells += 1
+        }
     }
 
     # Overview is a table like every result block, and for the same reasons: the styled header

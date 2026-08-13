@@ -3707,8 +3707,18 @@ function Save-RunSheet {
             }
             else { Split-Path -Leaf $OutputFolder })
 
+        # Every run reads the registry for the sport's withdrawn checks, whether or not it was
+        # asked for them. Deprecation is not an inference from what the run produced - it is a
+        # row in POWERBI_REGISTRY.md - so it does not wait for a complete run the way "Not in
+        # this run" has to. Read here rather than taken from the selection, because a run
+        # naming two CheckIDs has a selection covering two checks and the board carries all of
+        # them.
+        $retired = @(Get-RegistryRow -SportName $Sport |
+            Where-Object { $_.Status -eq 'Deprecated' } |
+            ForEach-Object { [string]$_.CheckId })
+
         $plan = New-SheetsMergePlan -Summary $enriched -Collected $Collected -Existing $state `
-            -OutputFolder $OutputFolder -Stamp $stamp -Complete:$complete
+            -OutputFolder $OutputFolder -Stamp $stamp -Retired $retired -Complete:$complete
         if ($plan.Warning) { Write-Host "  $($plan.Warning)" -ForegroundColor Yellow }
 
         $sent = Invoke-SheetsPlan -SpreadsheetId $id -Plan $plan
