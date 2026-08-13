@@ -125,7 +125,9 @@ is the under-par side, which needs no sign convention to be unambiguous.
 
 `36 Par` holds 546735 values in eleven shapes. Three are the sport working correctly: `#`
 (310110 values in 4559 events), `-#` with an ASCII hyphen (222174 in 4765) and `+#` (9347 in
-124). The rest are not:
+124). All three are whole numbers, and confirmed 2026-08-13, that is the whole of what the field
+may hold: a score against par is a count of strokes, so `36` joined `INTEGER_RESULT_TYPE_LIST`
+alongside the five round totals. Signed, but never fractional. The rest are not:
 
 | Shape | Values | Events | What it is |
 |---|---:|---:|---|
@@ -322,6 +324,12 @@ statistics), `1270 Rank` (336054 over 3239), `1277 Medal` (315 over 99) and `127
 (58 over 29). `Par` is therefore not a minor field here - it is used almost as widely as Rank,
 and any statistic-layer check that assumes Points is the sport's quantity will read the wrong
 column.
+
+Confirmed 2026-08-13: `PRECISION_DATA_TYPE_LIST` is `1476 Par` and stays there. **Golf has no
+Points**, whatever the 58 values under `1271` are, so pointing a precision check at that field
+would aim it at a column the sport does not keep. That `1476` holds no decimal today is not a
+reason to move it: the check guards against a decimal arriving in a field that stores whole
+strokes against par, and a check with nothing to report is the check working.
 
 Config is complete and uniform: `1463 Start date`, `1464 End date` and `1470 Gender` on 3445
 statistics each, `1471 Event id` on 3444. The one statistic missing an Event id is a gap of

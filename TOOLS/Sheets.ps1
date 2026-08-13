@@ -203,6 +203,20 @@ $SheetsRowsBands = @(
 # through: unseen, judged harmless, judged worth watching, being looked at, dealt with,
 # handed on. Colour carries the same reading at a glance, and is why each carries a
 # background rather than only a text colour - a chip is what the reviewer sees, not a word.
+#
+# The last of them is not a stage of review but the end of one, and grey because a chip saying
+# "nothing to do here" should not compete with the six that ask for something. It is also the
+# one value in this column the runner writes rather than a person, and it writes it only when
+# POWERBI_REGISTRY.md says Deprecated. Without it the retirement left a row saying Deprecated in
+# Signal and Verdict while Status still read Not reviewed - a row asking to be reviewed and
+# answering that there is nothing to review, which a filter on Not reviewed kept serving up.
+#
+# Being in the dropdown as well is a compromise rather than a preference: the validation is one
+# closed list for the whole column and cannot offer a value for writing while withholding it
+# from typing. A person setting it by hand does not withdraw the check - the registry does, and
+# the next run puts the cell back to what the registry says.
+$SheetsRetiredStatus = 'Deprecated'
+
 $SheetsStatusBands = @(
     [pscustomobject]@{ Value = 'Not reviewed'; Background = '#FCE8E6'; Colour = '#C5221F' }
     [pscustomobject]@{ Value = 'Clean'; Background = '#E6F4EA'; Colour = '#137333' }
@@ -210,6 +224,7 @@ $SheetsStatusBands = @(
     [pscustomobject]@{ Value = 'Reviewing'; Background = '#E8F0FE'; Colour = '#1967D2' }
     [pscustomobject]@{ Value = 'Completed'; Background = '#CEEAD6'; Colour = '#0B6B3A' }
     [pscustomobject]@{ Value = 'IT Fix'; Background = '#FEF7E0'; Colour = '#B06000' }
+    [pscustomobject]@{ Value = $SheetsRetiredStatus; Background = '#F1F3F4'; Colour = '#5F6368' }
 )
 
 # What each superseded spelling meant, so that adopting the vocabulary above does not throw
@@ -1248,6 +1263,24 @@ function New-SheetsMergePlan {
             Values = @(, $values)
         }
         $cells += 1 + $values.Count
+
+        # And the reviewer's own Status, which is the one cell in that column the runner writes
+        # unprompted. Left alone, the row said Deprecated in Signal and Verdict while Status
+        # still read Not reviewed: a row asking to be reviewed and answering that there is
+        # nothing to review, and one that a filter on Not reviewed kept serving up. The registry
+        # withdrew the check, so the registry's word is what belongs there.
+        #
+        # Written every run rather than once, like everything else here: the tabs that need it
+        # cannot be named from this side, and a person who typed something over it since the
+        # last run typed it about a check that no longer runs.
+        $statusColumn = [array]::IndexOf($SheetsOverviewColumns, 'Status') + 1
+        $plan += [pscustomobject]@{
+            Kind   = 'Write'
+            Sheet  = 'Overview'
+            Range  = (New-SheetsRange -FromColumn $statusColumn -FromRow $row -ToColumn $statusColumn -ToRow $row)
+            Values = @(, @($SheetsRetiredStatus))
+        }
+        $cells += 1
 
         # The tab keeps its identity block and its comments and loses its findings, which is
         # the same shape a check returning nothing leaves behind. C3 already carries whatever

@@ -1493,7 +1493,7 @@ Test-That 'workbook carries the Check By column and the outcome statuses' {
     Assert-True ($xml -match 'r="F1"[^>]*><is><t[^>]*>Category<') 'Category should follow Priority'
     # One vocabulary for the workbook and the live board, taken from $SheetsStatusBands so
     # the two cannot drift; the column held nine spellings of five ideas when they could.
-    Assert-True ($xml -match '"Not reviewed,Clean,Monitor Only,Reviewing,Completed,IT Fix"') 'the dropdown should offer the outcome statuses'
+    Assert-True ($xml -match '"Not reviewed,Clean,Monitor Only,Reviewing,Completed,IT Fix,Deprecated"') 'the dropdown should offer the outcome statuses'
     Assert-True ($xml -match '>Clean<') 'a check returning only its COVERAGE row should open as Clean'
     Assert-True ($detailXml -match 'r="H1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit after Comment on a check tab'
     # An empty manual field writes no cell at all, so the reviewer types into a blank.
@@ -2257,10 +2257,19 @@ Test-That 'a withdrawn check is retired by any run, not only by a complete one' 
     Assert-Equal 'Deprecated' $span[0].Values[0][8] 'and so does Verdict'
     Assert-Equal '' $span[0].Values[0][3] 'Findings is cleared rather than left reading as current'
 
-    # The reviewer's own columns are I, J and K on this row and nothing may reach them.
+    # Status is I, and this is the one thing a run puts there: a row reading Deprecated in
+    # Signal and Verdict while Status still said Not reviewed was asking to be reviewed and
+    # answering that there was nothing to review, and a filter on Not reviewed kept serving it.
+    $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I8:I8' })
+    Assert-Equal 1 $status.Count 'the withdrawal reaches the reviewer-facing Status too'
+    Assert-Equal 'Deprecated' $status[0].Values[0][0] 'in the registry''s own word'
+    Assert-True ($SheetsStatusBands.Value -contains 'Deprecated') 'which the closed list has to offer'
+
+    # J and K stay the reviewer's: Check By and Comment are what somebody concluded, and a
+    # withdrawn check keeps its history for the same reason its CheckID is never reused.
     $onRow8 = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' -and $_.Range -like '*8:*8' })
     foreach ($write in $onRow8) {
-        Assert-True ($write.Range -notmatch '^[IJK]') "a run must never write $($write.Range)"
+        Assert-True ($write.Range -notmatch '^[JK]') "a run must never write $($write.Range)"
     }
 
     # The Rows cell: a plain zero that always lands, then the link on top. A formula sent RAW
@@ -3103,7 +3112,7 @@ Test-That 'the Rows colour bands are rewritten every run, over that column only'
     # counting from zero would have the second one delete a rule the first had already shifted.
     Assert-Equal 1 $statusRule.Count 'and Status at I gets its own'
     Assert-Equal '3' (@($statusRule[0].Drop) -join ' ') 'replacing only the rules that cover Status'
-    Assert-Equal 6 @($statusRule[0].Rules).Count 'one band per status the vocabulary allows'
+    Assert-Equal 7 @($statusRule[0].Rules).Count 'one band per status the vocabulary allows'
     Assert-Equal 'TEXT_EQ' $statusRule[0].Rules[0].Type 'matched on the word, not on a number'
     Assert-True ([bool]$statusRule[0].Rules[0].Background) 'and filled, because what it wants to look like is a chip'
 
@@ -3837,7 +3846,7 @@ Test-That 'Status is a closed vocabulary, and a superseded spelling is renamed t
     $validation = @($plan.Operations | Where-Object { $_.Kind -eq 'Validation' })
     Assert-Equal 1 $validation.Count 'the Status column carries a dropdown'
     Assert-Equal 9 $validation[0].Column 'at I'
-    Assert-Equal 'Not reviewed Clean Monitor Only Reviewing Completed IT Fix' (@($validation[0].Values) -join ' ') `
+    Assert-Equal 'Not reviewed Clean Monitor Only Reviewing Completed IT Fix Deprecated' (@($validation[0].Values) -join ' ') `
         'offering exactly the declared outcomes'
 
     # I7 and nothing else. This is the one place the runner writes into a reviewer's column,
