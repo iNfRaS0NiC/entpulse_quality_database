@@ -467,6 +467,30 @@ Test-That 'an exact CheckID selects exactly one statement' {
     Assert-Equal 'SPORT_AUTHORED' $hits[0].Name 'selected Name'
 }
 
+Test-That 'a sport-authored statement run by ID is still filed under its registry category' {
+    # It is in the catalogue under exactly the ID the user typed, so Select-Checks hits on the
+    # first lookup and never reaches the registry - unlike a check instantiating a template,
+    # which misses and picks its category up on the way through. Golf-DQ-085 reached a live
+    # board with an empty Priority and Category beside Golf-DQ-084, which had both.
+    $hydrated = @(Set-JobCheckCategory -Jobs @(Select-Checks -Patterns @('Fixtureball-DQ-002')))
+    Assert-Equal 1 $hydrated.Count 'one job back, not a nested array'
+    Assert-Equal 'MISSING_VALUES' ([string]$hydrated[0].Category) 'the category off its registry row'
+    Assert-Equal '3 Missing value' (Get-CheckPriority -Category ([string]$hydrated[0].Category)) `
+        'and the band the board sorts on'
+}
+
+Test-That 'a category the selection already carried is not re-read' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Category = 'WRONG_RESULTS' }
+    $hydrated = @(Set-JobCheckCategory -Jobs @($job))
+    Assert-Equal 'WRONG_RESULTS' ([string]$hydrated[0].Category) 'the registry row must not overwrite it'
+}
+
+Test-That 'a statement with no registry row stays uncategorised rather than guessing' {
+    $hydrated = @(Set-JobCheckCategory -Jobs @(Select-Checks -Patterns @('GLOBAL-DQ-001')))
+    Assert-Equal '' ([string]$hydrated[0].Category) 'a direct template run is nobody''s category'
+    Assert-Equal '' (Get-CheckPriority -Category ([string]$hydrated[0].Category)) 'and no band'
+}
+
 Complete-Group
 
 # --------------------------------------------------------------------------------------

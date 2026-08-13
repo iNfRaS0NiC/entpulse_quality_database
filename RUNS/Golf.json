@@ -1475,6 +1475,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "13.08.2026 14-38-01",
+                     "startedUtc":  "2026-08-13T12:38:01Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-085",
+                                        "runKey":  "Golf-DQ-085",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID_IN_MEDAL_TEMPLATE",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  193,
+                                        "findings":  192,
+                                        "eligible":  251,
+                                        "seconds":  15,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"

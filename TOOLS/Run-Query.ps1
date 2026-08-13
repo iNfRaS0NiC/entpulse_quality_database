@@ -2168,6 +2168,44 @@ function Get-CheckPriority {
     return '9 Unclassified'
 }
 
+function Set-JobCheckCategory {
+    # The category a check is filed under belongs to its registry row, and a run must carry it
+    # however the job was selected. -RunAll builds its jobs from those rows and already has it;
+    # a run naming CheckIDs does not, and one selection path in particular loses it silently.
+    #
+    # A check instantiating a template is not in the statement catalogue under its own ID -
+    # the catalogue holds GLOBAL-DQ-020, not Golf-DQ-004 - so Select-Checks misses, falls
+    # through to the registry and picks the category up on the way. A sport that authored its
+    # own statement is in the catalogue under exactly the ID the user typed, the first lookup
+    # hits, and the registry is never consulted: Golf-DQ-085 reached the board with an empty
+    # Priority and Category while Golf-DQ-084 beside it was filed correctly. The blank was
+    # indistinguishable from a check nobody had categorised.
+    #
+    # Only fills what is empty, so a registry-built job keeps the row it was built from, and
+    # a direct GLOBAL-DQ or discovery run - which has no registry row and no category anybody
+    # authored - still reports blank rather than a guess.
+    param($Jobs)
+
+    $needsCategory = @(@($Jobs) | Where-Object {
+            $_.CheckId -and (
+                $_.PSObject.Properties.Name -notcontains 'Category' -or
+                [string]::IsNullOrWhiteSpace([string]$_.Category)) })
+    if ($needsCategory.Count -eq 0) { return @($Jobs) }
+
+    $byId = @{}
+    foreach ($row in @(Get-RegistryRow)) {
+        if (-not $byId.ContainsKey([string]$row.CheckId)) { $byId[[string]$row.CheckId] = $row }
+    }
+
+    foreach ($job in $needsCategory) {
+        $row = $(if ($byId.ContainsKey([string]$job.CheckId)) { $byId[[string]$job.CheckId] } else { $null })
+        if (-not $row) { continue }
+        $job | Add-Member -NotePropertyName Category -NotePropertyValue ([string]$row.Category) -Force
+    }
+
+    return @($Jobs)
+}
+
 function Set-JobCheckSignal {
     # Apply the sport's interpretation to every execution path, not only -RunAll. Direct
     # GLOBAL-DQ patterns still run against one documented sport and must not lose a known
@@ -4371,6 +4409,10 @@ if ($WithPatterns) {
         }
     }
 }
+
+# The category too, and for the same reason - it decides the Priority band the board sorts on,
+# so a job that lost it sorts under "no priority" rather than where the reader expects it.
+$jobs = @(Set-JobCheckCategory -Jobs $jobs)
 
 # A sport classification belongs to the run regardless of how its jobs were selected.
 # -RunAll already carries it from the registry selection; this also hydrates direct IDs,
