@@ -12,7 +12,7 @@ correction is required.
 ## Identity and evidence
 
 - First discovery date: 2026-08-12
-- Latest evidence date: 2026-08-12
+- Latest evidence date: 2026-08-13
 - Verification boundary: one GLOBAL discovery sweep, sport-wide and unnarrowed, plus the
   targeted follow-ups named below. `enet_sport_code` is `g`. Two catalogue statements could
   not be run as written and were narrowed; what each narrowing gave up is recorded against
