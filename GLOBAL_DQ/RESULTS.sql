@@ -324,19 +324,18 @@ ORDER BY sort_order, affected_count DESC, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-021
     -- Name - EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT
-    -- What it does: Finds event participants in finished events sharing a Rank with another where neither row carries a Comment and the values the sport ranks on do not account for the tie, separating a tie whose values disagree from one with no value stored at all.
-    CASE
-        WHEN tie.rows_with_any_value = 0 THEN 'RANK_DUPLICATE_WITHOUT_VALUE'
-        ELSE 'RANK_DUPLICATE_VALUES_DISAGREE'
-    END AS check_type,
-    ep.id AS event_participants_id,
-    e.id AS event_id,
-    e.name AS event_name,
-    tt.name AS template_name,
-    p.name AS participant_name,
-    CAST(r.value AS UNSIGNED) AS rank_value,
-    tie.tied_count AS unexplained_duplicate_count,
-    NULL AS eligible_count
+    -- What it does: Finds finished events holding a Rank shared by participants where neither row carries a Comment and the values the sport ranks on do not account for the tie, naming the ranks doubled and who holds them, and separating an event whose tied values disagree from one with no value stored at all.
+    z.check_type,
+    z.event_id,
+    z.event_name,
+    z.template_name,
+    z.affected_count,
+    z.tie_count,
+    z.without_value_count,
+    z.ranks_held,
+    z.affected_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
 -- A tie the sport actually contested is not a defect, and the database can say which is which.
 -- Where every participant sharing a rank also carries the same value on one of the fields the
 -- sport ranks by, the duplicate is the result: two gymnasts on the same score share a place, two
@@ -360,6 +359,38 @@ SELECT
 -- is finished and its ranking is as assertable as any other; restricting to the one detail
 -- silently dropped those events. This absorbs GLOBAL-DQ-116, which asked the same question of
 -- a single score over exactly this population and is superseded here.
+-- One row per event, not one per tied participant. A rank shared by twelve people is one
+-- event entered wrongly and not twelve findings, and the row grain hid that: 1524 rows stood
+-- for 126 events, one of them holding 135 of them. What the reader needs is which ranks are
+-- doubled and who holds them, and both travel as named columns.
+-- The verdict is the event's. Where no tied row anywhere in it carries a declared value the
+-- event is WITHOUT_VALUE; any value present at all makes it VALUES_DISAGREE, and
+-- without_value_count keeps the first kind visible on an event holding both. Measured on Golf:
+-- no event mixes them - 111 disagree, 15 hold nothing - so the fold loses nothing there.
+FROM (
+SELECT
+    CASE
+        WHEN SUM(CASE WHEN y.rows_with_any_value = 0 THEN 1 ELSE 0 END) = COUNT(*)
+             THEN 'RANK_DUPLICATE_WITHOUT_VALUE'
+        ELSE 'RANK_DUPLICATE_VALUES_DISAGREE'
+    END AS check_type,
+    y.event_id,
+    y.event_name,
+    y.template_name,
+    COUNT(*) AS affected_count,
+    COUNT(DISTINCT y.rank_value) AS tie_count,
+    SUM(CASE WHEN y.rows_with_any_value = 0 THEN 1 ELSE 0 END) AS without_value_count,
+    GROUP_CONCAT(DISTINCT y.rank_value ORDER BY y.rank_value SEPARATOR ', ') AS ranks_held,
+    GROUP_CONCAT(DISTINCT CONCAT(y.participant_name, ' (', y.rank_value, ')')
+                 ORDER BY CONCAT(y.participant_name, ' (', y.rank_value, ')') SEPARATOR ' | ') AS affected_participants
+FROM (
+SELECT
+    e.id AS event_id,
+    e.name AS event_name,
+    tt.name AS template_name,
+    p.name AS participant_name,
+    CAST(r.value AS UNSIGNED) AS rank_value,
+    tie.rows_with_any_value AS rows_with_any_value
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -472,13 +503,17 @@ WHERE ep.del = 'no'
         AND rc.value IS NOT NULL
         AND TRIM(rc.value) <> ''
   )
+) y
+GROUP BY y.event_id, y.event_name, y.template_name
+) z
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT ep.id) AS eligible_count
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -495,7 +530,8 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
-;
+
+ORDER BY sort_order, affected_count DESC, event_id;
 
 
 -- ================================================================================

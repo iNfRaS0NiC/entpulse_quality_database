@@ -10785,6 +10785,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "13.08.2026 18-20-49",
+                     "startedUtc":  "2026-08-13T16:20:49Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-021",
+                                        "runKey":  "Triathlon-DQ-021",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3603,
+                                        "seconds":  7.4,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"
