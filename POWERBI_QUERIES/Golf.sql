@@ -144,3 +144,330 @@ WHERE s.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-087
+    -- Name - EVENT_RESULTS_RANK_INVALID_OR_MISSING_STROKE_PLAY
+    -- What it does: Finds finished Stroke Play events holding a Rank that is not a plain positive integer up to the sport's maximum, or missing from a player who neither carries a Comment nor is recorded as having missed the cut, counting each verdict and naming who holds it.
+    z.check_type,
+    z.event_id,
+    z.event_name,
+    z.affected_count,
+    z.rank_not_integer_count,
+    z.rank_over_max_count,
+    z.rank_missing_count,
+    z.no_result_count,
+    z.ranks_held,
+    z.affected_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Golf explains a missing rank with result type 38 Made cut, not with a Comment. A player who
+-- misses the cut has no finishing position and never had one, and the sport says so in a field
+-- of its own: 351143 of them carry yes or no over 3201 Stroke Play events. The global template
+-- knows only the Comment, so it read 23071 ordinary weekends off as findings; honouring Made
+-- cut = no leaves 841. This is why the check is written here rather than instantiated.
+-- One row per event. The residue concentrates - 841 rows stand for 107 events and one holds 87
+-- of them - so the event is the object and the counts travel as named columns. Where an event
+-- holds more than one verdict the row carries the invalid stored value, because a rank of 999
+-- is read as a result while an absence is visibly an absence; every count stays on the row.
+FROM (
+    SELECT
+        CASE
+            WHEN SUM(CASE WHEN y.verdict = 'RANK_NOT_INTEGER' THEN 1 ELSE 0 END) > 0 THEN 'RANK_NOT_INTEGER'
+            WHEN SUM(CASE WHEN y.verdict = 'RANK_OVER_MAX' THEN 1 ELSE 0 END) > 0 THEN 'RANK_OVER_MAX'
+            WHEN SUM(CASE WHEN y.verdict = 'RANK_AND_COMMENT_MISSING_OTHER_RESULT_PRESENT' THEN 1 ELSE 0 END) > 0
+                 THEN 'RANK_AND_COMMENT_MISSING_OTHER_RESULT_PRESENT'
+            ELSE 'NO_RESULT_OF_ANY_TYPE'
+        END AS check_type,
+        y.event_id,
+        y.event_name,
+        COUNT(*) AS affected_count,
+        SUM(CASE WHEN y.verdict = 'RANK_NOT_INTEGER' THEN 1 ELSE 0 END) AS rank_not_integer_count,
+        SUM(CASE WHEN y.verdict = 'RANK_OVER_MAX' THEN 1 ELSE 0 END) AS rank_over_max_count,
+        SUM(CASE WHEN y.verdict = 'RANK_AND_COMMENT_MISSING_OTHER_RESULT_PRESENT' THEN 1 ELSE 0 END) AS rank_missing_count,
+        SUM(CASE WHEN y.verdict = 'NO_RESULT_OF_ANY_TYPE' THEN 1 ELSE 0 END) AS no_result_count,
+        GROUP_CONCAT(DISTINCT y.rank_value ORDER BY y.rank_value SEPARATOR ', ') AS ranks_held,
+        GROUP_CONCAT(DISTINCT y.participant_name ORDER BY y.participant_name SEPARATOR ' | ') AS affected_participants
+    FROM (
+SELECT
+    CASE
+        WHEN r_rank_value IS NOT NULL AND r_rank_value NOT REGEXP '^[1-9][0-9]*$' THEN 'RANK_NOT_INTEGER'
+        WHEN r_rank_value IS NOT NULL AND r_rank_value REGEXP '^[1-9][0-9]*$' AND CAST(r_rank_value AS UNSIGNED) > 250 THEN 'RANK_OVER_MAX'
+        WHEN r_rank_value IS NULL AND r_comment_value IS NULL AND x.has_any_result = 0 THEN 'NO_RESULT_OF_ANY_TYPE'
+        WHEN r_rank_value IS NULL AND r_comment_value IS NULL THEN 'RANK_AND_COMMENT_MISSING_OTHER_RESULT_PRESENT'
+    END AS verdict,
+    x.event_id,
+    x.event_name,
+    x.participant_name,
+    x.r_rank_value AS rank_value
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        p.name AS participant_name,
+        (
+            SELECT r1.value
+            FROM result r1
+            WHERE r1.event_participantsFK = ep.id
+              AND r1.result_typeFK = 100
+              AND r1.del = 'no'
+              AND r1.value IS NOT NULL
+              AND TRIM(r1.value) <> ''
+            LIMIT 1
+        ) AS r_rank_value,
+        (
+            SELECT r2.value
+            FROM result r2
+            WHERE r2.event_participantsFK = ep.id
+              AND r2.result_typeFK = 104
+              AND r2.del = 'no'
+              AND r2.value IS NOT NULL
+              AND TRIM(r2.value) <> ''
+            LIMIT 1
+        ) AS r_comment_value,
+        EXISTS (
+            SELECT 1
+            FROM result r3
+            WHERE r3.event_participantsFK = ep.id
+              AND r3.del = 'no'
+              AND r3.value IS NOT NULL
+              AND TRIM(r3.value) <> ''
+        ) AS has_any_result,
+        (
+            SELECT r4.value
+            FROM result r4
+            WHERE r4.event_participantsFK = ep.id
+              AND r4.result_typeFK = 38
+              AND r4.del = 'no'
+              AND r4.value IS NOT NULL
+              AND TRIM(r4.value) <> ''
+            LIMIT 1
+        ) AS r_made_cut
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+         AND od.disciplineFK = 629
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = 3
+      AND e.status_type = 'finished'
+      AND e.status_descFK = 6
+      AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+) x
+WHERE
+    (x.r_rank_value IS NOT NULL AND x.r_rank_value NOT REGEXP '^[1-9][0-9]*$')
+    OR (x.r_rank_value IS NOT NULL AND x.r_rank_value REGEXP '^[1-9][0-9]*$' AND CAST(x.r_rank_value AS UNSIGNED) > 250)
+    OR (x.r_rank_value IS NULL
+        AND x.r_comment_value IS NULL
+        AND (x.r_made_cut IS NULL OR LOWER(TRIM(x.r_made_cut)) <> 'no'))
+    ) y
+    GROUP BY y.event_id, y.event_name
+) z
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+     AND od.disciplineFK = 629
+WHERE ep.del = 'no'
+  AND tt.sportFK = 3
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, affected_count DESC, event_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-088
+    -- Name - EVENT_NAME_FORMAT_INVALID_STROKE_PLAY
+    -- What it does: Finds Stroke Play event names breaking a text-hygiene rule - spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder or a numeric-only name - one row per name, naming every rule it breaks.
+    'Name_Format_Invalid' AS check_type,
+    MIN(x.object_name) AS event_name,
+    x.violation_types,
+    COUNT(DISTINCT x.object_id) AS affected_object_count,
+    MIN(x.object_id) AS sample_object_id,
+    MIN(x.template_name) AS sample_template_name,
+    MIN(x.stage_name) AS sample_stage_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        e.id AS object_id,
+        e.name AS object_name,
+        -- The grouping key is binary: under the column's case-insensitive collation two
+        -- spellings that differ only in case would collapse into one group, which is the
+        -- distinction GLOBAL-DQ-050 exists to report.
+        (CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) AS name_bin,
+        tt.name AS template_name,
+        ts.name AS stage_name,
+        CONCAT_WS(', ',
+            IF(CHAR_LENGTH(e.name) <> CHAR_LENGTH(TRIM(e.name)), 'LEADING_OR_TRAILING_SPACE', NULL),
+            IF(e.name LIKE '%  %', 'DOUBLE_SPACE', NULL),
+            IF(e.name REGEXP '[[:cntrl:]]', 'CONTROL_CHARACTER', NULL),
+            -- The five rules below name a definite corruption. NON_ASCII_CHARACTER
+            -- that follows cannot: it fires on a legitimate diacritic just as readily,
+            -- so a corrupted name is reported under its own verdict as well.
+            -- Semicolon as \\x{3B}, never literal: the Pool cuts the statement at the first one.
+            IF(e.name LIKE '%&#%' OR LOWER(e.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp)\\x{3B}', 'HTML_ENTITY', NULL),
+            IF(HEX(e.name) LIKE '%EFBFBD%', 'REPLACEMENT_CHARACTER', NULL),
+            IF(HEX(e.name) LIKE '%C2A0%', 'NON_BREAKING_SPACE', NULL),
+            IF(HEX(e.name) LIKE '%E2808B%', 'ZERO_WIDTH_SPACE', NULL),
+            IF(HEX(e.name) LIKE '%C383%' OR HEX(e.name) LIKE '%C382%', 'MOJIBAKE_DOUBLE_ENCODED', NULL),
+            IF(LENGTH(e.name) <> CHAR_LENGTH(e.name), 'NON_ASCII_CHARACTER', NULL),
+            IF(e.name REGEXP '[^ ]-|-[^ ]', 'HYPHEN_WITHOUT_SPACES', NULL),
+            IF((CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z][12][0-9][0-9][0-9]|[12][0-9][0-9][0-9][A-Za-z]', 'YEAR_GLUED_TO_WORD', NULL),
+            IF((CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Z][A-Z][a-z]', 'DOUBLE_CAPITAL', NULL),
+            IF((CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z]'
+               AND (CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) NOT REGEXP '[a-z]', 'ALL_UPPERCASE', NULL),
+            IF((CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '^[a-z]', 'STARTS_LOWERCASE', NULL),
+            IF(LOWER(TRIM(e.name)) IN ('test','testing','temp','tmp','xxx','asd','qwe','tbd','tba','n/a','undefined','event','new event'), 'PLACEHOLDER_NAME', NULL),
+            IF(TRIM(e.name) REGEXP '^[0-9]+$', 'NUMERIC_ONLY_NAME', NULL)
+        ) AS violation_types
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+         AND od.disciplineFK = 629
+    WHERE e.del = 'no'
+      AND tt.sportFK = 3
+      AND e.name IS NOT NULL
+      AND TRIM(e.name) <> ''
+      AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+) x
+WHERE x.violation_types <> ''
+GROUP BY x.name_bin, x.violation_types
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT (CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin)) AS eligible_count,
+    1 AS sort_order
+    FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+     AND od.disciplineFK = 629
+WHERE e.del = 'no'
+  AND tt.sportFK = 3
+  AND e.name IS NOT NULL
+  AND TRIM(e.name) <> ''
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, violation_types, event_name;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-089
+    -- Name - EVENT_NAME_DOES_NOT_NAME_ITS_PARTICIPANTS_MATCH_PLAY
+    -- What it does: Finds Match Play events whose name is built from their competitors but does not name one of them, separating naming none of them from naming only some.
+    CASE
+        WHEN x.named_participant_count = 0 THEN 'NAMES_NO_PARTICIPANT'
+        ELSE 'NAMES_SOME_PARTICIPANTS_NOT_ALL'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.stage_name,
+    x.participant_count,
+    x.named_participant_count,
+    x.unnamed_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- Containment rather than reconstruction. A sport whose event name is the pairing joins its
+-- sides with a separator that varies - a hyphen, a slash inside a side made of two countries
+-- - and rebuilding the name from the participants would need that convention as a parameter
+-- and would break on the first competition that spells it differently. Asking only whether
+-- each participant's name appears somewhere in the event name needs no convention at all,
+-- and is exactly strict enough to catch the case worth catching: a side stored under one
+-- name and printed under another. A participant with an empty name is left out rather than
+-- reported, because there is nothing to look for; that gap is GLOBAL-DQ-008.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.name AS stage_name,
+        COUNT(*) AS participant_count,
+        SUM(CASE WHEN LOCATE(LOWER(TRIM(p.name)), LOWER(e.name)) > 0 THEN 1 ELSE 0 END) AS named_participant_count,
+        GROUP_CONCAT(CASE WHEN LOCATE(LOWER(TRIM(p.name)), LOWER(e.name)) = 0
+                          THEN p.name END ORDER BY p.name SEPARATOR ', ') AS unnamed_participants
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+         AND od.disciplineFK = 630
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    WHERE e.del = 'no'
+      AND tt.sportFK = 3
+      AND e.name IS NOT NULL
+      AND TRIM(e.name) <> ''
+      AND p.name IS NOT NULL
+      AND TRIM(p.name) <> ''
+      AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ts.name
+) x
+WHERE x.named_participant_count < x.participant_count
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+     AND od.disciplineFK = 630
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 3
+  AND e.name IS NOT NULL
+  AND TRIM(e.name) <> ''
+  AND p.name IS NOT NULL
+  AND TRIM(p.name) <> ''
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;

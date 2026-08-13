@@ -833,6 +833,10 @@
     "DATA_COMMENT_VALUE_LIST": "'wd', 'mdf', 'dq', 'mc', 'rtd', 'sub', 'nr', 'dns', 'n/r'",
     "DATA_COMMENT_NO_RESULT_LIST": "'dq', 'rtd', 'dns', 'nr', 'n/r'",
     "_checkSignal": {
+      "Golf-DQ-089": {
+        "signal": "Monitor",
+        "reason": "542 of 13059 Match Play events name a competitor the participant record no longer calls by that name, and a large share of them are the data ageing correctly rather than a defect: the event name is the day's snapshot and the record is current, so Mina Harigae is now Mina Kreiter, Lauren Hartlage is Lauren Tenuta and Michelle Wie is Michelle Wie West. Marrying does not rename a 2010 match. Real misspellings sit in the same output and are what a reviewer is looking for - Laura Gonzales against Gonzalez, So Yeon Ryu against So-Yeon Ryu, Maria J. Uribe against Maria Uribe - so the check runs and a human separates the two. Decided 2026-08-13; nothing in the database records a name history, which is why the two cannot be told apart in SQL."
+      },
       "GLOBAL-DQ-041": {
         "signal": "Not applicable",
         "reason": "Structural: the template's prerequisite is a sport confirmed to carry a Phase on its Comp.Rank participants, and Golf carries none. All 359344 active Comp.Rank participant rows in the sport hold no object_round phase row, so the check reads a relation the sport never writes. Its eligible count is non-zero because it counts medals, which makes the silence look like clean data; it is not. SPORTS/Golf.md owns the finding."
