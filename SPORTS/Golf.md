@@ -414,6 +414,21 @@ Golf failed on cost alone - `GLOBAL-DISCOVERY-007` exhausted the server's tempor
 runs without trouble. A Golf DQ statement written to the shape that works on Curling should be
 expected to fail here until it is sized.
 
+**A medal event is identified by its template, not by its round type, and no parameter can say
+so.** Every one of the sport's 18 medal results sits in round type `225 Main Phase`, which is
+also the round every stroke-play tournament on every professional tour uses. Only
+`9600`/`9601 Summer Olympics` awards a medal, in 6 events; the other 5014 events carrying that
+round type award none.
+
+`MEDAL_ROUND_TYPE_LIST = 225` is therefore correct in one direction and false in the other. Read
+as "a medal may only appear on these rounds" it holds, and `GLOBAL-DQ-039` and `GLOBAL-DQ-073`
+both return clean on it. Read as "these rounds award medals" it fails, and `GLOBAL-DQ-037` and
+`GLOBAL-DQ-038` report 4751 and 4764 of 4768 - the whole population. Both are `Not applicable`
+here for that reason, and the asymmetry is the sport's, not the templates'.
+
+This is a consequence of the client scope being the whole sport. A sport narrowed to its Games
+templates would have a medal round that means what the parameter assumes.
+
 **Test data is inside the scope, not beside it.** Because no template is excluded,
 `12649 TEST` and its 899 event participants are part of every sport-wide count a Golf check will
 return, as is the `TEST - ISCO Championship` event. Any Golf finding list will contain them, and

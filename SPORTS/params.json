@@ -650,6 +650,50 @@
       "GLOBAL-DQ-065": {
         "signal": "Monitor",
         "reason": "eligible_count is 0 for the same reason as GLOBAL-DQ-057: the 1429 Team data field is declared for statistic type 11 and Golf writes no row into it. The sport does field teams - the Ryder Cup and Presidents Cup sides - so the population is legitimately empty rather than structurally absent."
+      },
+      "GLOBAL-DQ-033": {
+        "signal": "Not applicable",
+        "reason": "Structural: the template's prerequisite is a sport confirmed to carry a Phase on ranked Comp.Rank participants, and Golf carries none - all 359344 active participant rows hold no object_round phase row. The check reports 3355 of 3355 statistics, which is the absence itself rather than a finding. SPORTS/Golf.md owns it."
+      },
+      "GLOBAL-DQ-058": {
+        "signal": "Not applicable",
+        "reason": "Structural: the sport writes no lineup row anywhere, so every one of its 1287 team event participants is reported and the check returns 1287 of 1287. A foursome is stored as one athlete participant holding both names; there is no lineup layer to be missing from."
+      },
+      "GLOBAL-DQ-037": {
+        "signal": "Not applicable",
+        "reason": "Golf identifies a medal event by template, not by round type, and no parameter can express that while the whole sport is in scope. MEDAL_ROUND_TYPE_LIST is 225 because every one of the sport's 18 medals sits there, but only Summer Olympics awards them - 6 events of the 5020 that round type carries. Asserting that every Main Phase event owes a medal set reports 4751 of 4768. The same list read the other way is correct, which is why GLOBAL-DQ-039 and GLOBAL-DQ-073 stay and return clean."
+      },
+      "GLOBAL-DQ-038": {
+        "signal": "Not applicable",
+        "reason": "The same asymmetry as GLOBAL-DQ-037: it asserts that every medal-round event carries the medal_related property, and Golf's medal rounds are 5020 stroke-play events of which 6 award a medal. Reports 4764 of 4768."
+      },
+      "GLOBAL-DQ-026": {
+        "signal": "Monitor",
+        "reason": "The sport's Comp.Rank are tournament classifications and most of them award nothing: 99 of 3491 carry a Medal value at all. The check asserts a complete medal set on each, so it reports 3286 of 3491 and the proportion is the finding rather than the rows. It stays because the 99 that do carry medals are worth reading."
+      },
+      "GLOBAL-DQ-107": {
+        "signal": "Monitor",
+        "reason": "Reports 16334 of 19053 finished events. The gap is real and is in both disciplines - 2817 stroke-play and 11496 match-play finished events hold no event_scope container - but it belongs to the hole-by-hole scope layer, which is outside the DQ work by decision on 2026-08-12. Read as a coverage proportion until that decision is revisited."
+      },
+      "GLOBAL-DQ-007": {
+        "signal": "Monitor",
+        "reason": "10482 of 20547 people reached through the sport hold no date of birth. Half a registry is a completeness proportion rather than a repair list, and the sport's registry is large and old; the rows are correct and there are simply a great many of them."
+      },
+      "GLOBAL-DQ-074": {
+        "signal": "Monitor",
+        "reason": "Golf records its course in the tournament_stage Venue property, on 5176 stages, and uses the global venue_object relation for part of its events only - 10435 of 19443 carry one and 9008 do not. The check reads the relation, so what it reports is how far that mechanism has been populated rather than a per-event defect. SPORTS/BMX.md records the same reading for a sport at nought per cent."
+      },
+      "GLOBAL-DQ-064": {
+        "signal": "Monitor",
+        "reason": "eligible_count is 0 and this is a sentinel: the template's eligible population is the statistic that uses the 1429 Team field at all, and Golf writes no row into it. The scope is correct and the population is legitimately empty."
+      },
+      "GLOBAL-DQ-083": {
+        "signal": "Not applicable",
+        "reason": "Structural, and the template says the condition itself: it applies to a sport whose competition model is H2H per DB-SEM-015, where an event is a contest between exactly two entries. Golf is Hybrid. Its 5142 Stroke Play events hold the whole field at once - up to 250 entries - so the check reports 7535 of 19136 events for competing the way the sport competes. Match play alone would satisfy the prerequisite; the sport does not."
+      },
+      "GLOBAL-DQ-112": {
+        "signal": "Not applicable",
+        "reason": "Structural: eligible_count is 0 because the sport writes no lineup row anywhere, so no athlete can be assigned to two of them. Unlike GLOBAL-DQ-057 and GLOBAL-DQ-064 this is not a sentinel - the layer is absent rather than empty, and a foursome is stored as one athlete participant holding both names."
       }
     }
   }
