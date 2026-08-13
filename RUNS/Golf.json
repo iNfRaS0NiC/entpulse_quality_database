@@ -1238,6 +1238,88 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Golf 13.08.2026 10-08-09",
+                     "startedUtc":  "2026-08-13T08:08:07Z",
+                     "output":  "D:\\SQL\u0027s Output\\Golf 13.08.2026 10-08-09",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-019",
+                                        "runKey":  "Golf-DQ-019",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  1783,
+                                        "findings":  1782,
+                                        "eligible":  4847,
+                                        "seconds":  35.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-020",
+                                        "runKey":  "Golf-DQ-020",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  845,
+                                        "findings":  844,
+                                        "eligible":  3177,
+                                        "seconds":  12,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-059",
+                                        "runKey":  "Golf-DQ-059",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  15,
+                                        "seconds":  1.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-066",
+                                        "runKey":  "Golf-DQ-066",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  6155,
+                                        "findings":  6154,
+                                        "eligible":  11875,
+                                        "seconds":  5.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-083",
+                                        "runKey":  "Golf-DQ-083",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_INTEGER_FIELD_FRACTIONAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  4838,
+                                        "seconds":  35.9,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"
