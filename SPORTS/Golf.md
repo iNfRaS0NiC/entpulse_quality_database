@@ -207,6 +207,25 @@ the place owes a deciding value like any other.
 What remains in the list is `dq`, `rtd`, `dns`, `nr` and `n/r`. A disqualification removes a
 result rather than freezing it, which is why `dq` stays in and `wd` does not.
 
+**One tournament is played for points, and its points are stored as strokes.** Barracuda
+Championship, and the same tournament under its earlier name Reno-Tahoe Open, is played under
+Modified Stableford: the card is scored in points and the higher total wins, which is the
+opposite direction to every other event in the sport. The database does not store it that way.
+Measured 2026-08-14 over the editions this project has read - Reno-Tahoe Open 2012 and 2013,
+Barracuda Championship 2014 through 2018 - each holds around 410 values in the stroke fields
+`31`-`34` and **no** `526`-`529` point value at all. Barracuda 2025 is the first edition to carry
+the point types, and it carries both: 444 point values beside 442 stroke values.
+
+The International 2006 was a separate tournament played under the same format and shows the same
+shape. Two further events - EDS Byron Nelson Championship 2008 and ANZ Championship 2004 - are
+ordinary stroke play where part of the field carries a raw total in `36 Par` anyway, so the shape
+is not exclusive to the format.
+
+This matters beyond the tournament. A points total in a stroke field defeats the par arithmetic
+above, and it defeats the direction of any check that assumes lower is better. `Golf-DQ-100`
+reports the eleven events by what the storage shows rather than by the tournament they belong to,
+under `TOTAL_PAR_HOLDS_THE_ROUND_TOTAL_NOT_THE_SCORE`.
+
 <!-- MANUAL PASTE ZONE: 3 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
@@ -328,6 +347,20 @@ Three of these carry values that do not match their own name and are recorded as
 rather than counted: `place_of_birth` samples as `1991-04-11`, a date in a place field;
 `position` samples as `Defensive Line (DL)`, an American-football position on a golf
 participant; `tee_time_round_4` samples as `---`.
+
+**`Par` is the one property with a measured value distribution, because a check reads it.**
+Sport-wide on 2026-08-14 it holds `72` on 2769 stages, `71` on 1123, `70` on 576, `73` on 143 and
+`69` on 4. Those five are course pars and account for 4615 of the 4644 stages that carry the
+property.
+
+The other 29 are not. `22` and `24` on ten stages each, `27` on two, and `142`, `45`, `54` and
+`65` on one apiece, with three stages holding an empty string. `142` is the only one whose origin
+is settled: at PGA Grand Slam of Golf the field's own cards imply 71, so 142 is the par of two
+rounds written into a field that holds the par of one. The rest are recorded as observed.
+
+The property is not decoration. `36 Par` is measured against it - the arithmetic recorded under
+"Event result types" cannot be checked on a stage that does not carry it, and 592 events holding
+43282 participations are in exactly that position.
 
 <!-- MANUAL PASTE ZONE: 3 PROPERTIES — insert approved additions immediately before this marker; do not move or delete it. -->
 
