@@ -2926,6 +2926,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "14.08.2026 05-15-48",
+                     "startedUtc":  "2026-08-14T03:15:48Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-093",
+                                        "runKey":  "Golf-DQ-093",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  14,
+                                        "findings":  13,
+                                        "eligible":  3304,
+                                        "seconds":  8.7,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"

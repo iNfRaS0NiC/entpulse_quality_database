@@ -785,3 +785,102 @@ FROM (
 ) y
 
 ORDER BY sort_order, event_startdate DESC, event_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-093
+    -- Name - COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT
+    -- What it does: Finds Comp.Rank statistics holding participants who took no part in any event under their own tournament, counting the strays and naming them.
+    'PARTICIPANT_NOT_IN_TOURNAMENT' AS check_type,
+    cr.statistic_id,
+    cr.template_name,
+    cr.tournament_name,
+    COUNT(DISTINCT cr.participant_id) AS stray_participants,
+    COUNT(DISTINCT cr.statistic_participants_id) AS stray_participant_rows,
+    GROUP_CONCAT(DISTINCT cr.participant_id ORDER BY cr.participant_id SEPARATOR ' | ') AS participant_ids,
+    GROUP_CONCAT(DISTINCT cr.participant_name ORDER BY cr.participant_name SEPARATOR ' | ') AS participant_names,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- GLOBAL-DQ-030 rewritten for Golf because it could not be run here at all. That template asks
+-- the question one Comp.Rank row at a time - for each of the sport's 355654 statistic
+-- participants, does this person appear anywhere under this tournament - and each of those
+-- questions walks the tournament's stages, events and entries. It timed out at 180 seconds for
+-- days, and cutting it into 32 id windows only made it finishable: 843 seconds to return the
+-- same 13 findings.
+--
+-- The rewrite asks it once. Every (tournament, participant) pair the sport actually played is
+-- built as one set, and the Comp.Rank rows are left-joined against it; a row with no match is
+-- the finding. Measured 2026-08-14: 6.1 seconds, and the findings are identical.
+--
+-- The lineup half of the global template is gone rather than kept and left idle. That template
+-- also excuses a participant who is a lineup member under the tournament, and SPORTS/Golf.md
+-- records that this sport writes no lineup row anywhere - so the branch could only ever cost
+-- time. If Golf ever stores one, this check reports its members as strays and the branch comes
+-- back; that is the price of the speed and it is written down here rather than discovered.
+--
+-- One row per statistic, not per stray participant. Whoever repairs this works a statistic at a
+-- time; the counts beside the lists are authoritative, because the server caps GROUP_CONCAT at
+-- 1024 characters and truncates it silently.
+--
+-- It carries no id window, unlike the template it replaces. A window exists to make a statement
+-- the transport cannot carry whole arrive in pieces, and this one arrives whole in nine
+-- seconds. The template needed 32 windows to finish at all.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        t.id AS tournament_id,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        sp.id AS statistic_participants_id,
+        sp.participantFK AS participant_id,
+        p.name AS participant_name
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = 11
+      AND s.object_typeFK = 3
+      AND tt.sportFK = 3
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+) cr
+LEFT JOIN (
+    SELECT DISTINCT ts2.tournamentFK AS tournament_id, ep2.participantFK AS participant_id
+    FROM tournament_stage ts2
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    JOIN event e2 ON e2.tournament_stageFK = ts2.id AND e2.del = 'no'
+    JOIN event_participants ep2 ON ep2.eventFK = e2.id AND ep2.del = 'no'
+    WHERE ts2.del = 'no'
+      AND tt2.sportFK = 3
+      AND t2.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+      -- AND t2.tournament_templateFK = <tournament_template_id>
+) played
+  ON played.tournament_id = cr.tournament_id
+ AND played.participant_id = cr.participant_id
+WHERE played.participant_id IS NULL
+GROUP BY cr.statistic_id, cr.template_name, cr.tournament_name
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, stray_participants DESC, statistic_id;
