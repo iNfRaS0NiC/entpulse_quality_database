@@ -983,9 +983,13 @@
                 "signal": "Not applicable",
                 "reason": "Structural: the template reads a period breakdown stored as several data fields under one scope type, which is how curling stores its ends. Ice Hockey stores each period as its own scope type - 322, 323, 324 - and far more widely as its own result type, 51 to 53 reaching 8501 to 9803 events against 898 in the scope layer. SCOPE_PERIOD_DATA_TYPE_LIST would hold the single field 162 goals and the check would audit 898 events while missing the 8500 the sport actually keeps. Ice-Hockey-DQ-059 asks the same arithmetic of the result layer and reaches 8492."
             },
-            "GLOBAL-DQ-107": {
+            "GLOBAL-DQ-065": {
                 "signal": "Not applicable",
-                "reason": "Not structural absence and not a defect: the sport writes an active event_scope layer, so the prerequisite is met, but the layer holds a boxscore rather than a scoreline and only 1196 of 9803 events have one. The check reported 8410 events on 2026-08-14, which is the layer's reach restated as a work list. Golf deprecated the same template for the same shape. A match without a boxscore is a match nobody typed one for, and the score itself is in the result layer, where Ice-Hockey-DQ-057 audits it."
+                "reason": "The template asserts that the teams inside one Comp.Rank hold the same number of athletes, and an ice hockey squad legitimately does not: measured 2026-08-14 the World Championship statistics carry 24 to 27 players per country, so 226 of them are reported and none is a defect. 98 differ by a single player. A squad size is a decision the federation makes, not a field somebody failed to fill."
+            },
+            "GLOBAL-DQ-068": {
+                "signal": "Not applicable",
+                "reason": "The same reading at event level: the template asserts that two teams dress the same number of players, and ice hockey teams do not. Measured 2026-08-14 it reported 554 events, 376 of them differing by exactly one player and 127 by two. A dressed roster varies by injury, by suspension and by how many goaltenders a team carries, so the difference is the sport rather than the data."
             }
         }
     }
