@@ -983,6 +983,10 @@
                 "signal": "Not applicable",
                 "reason": "Structural: the template reads a period breakdown stored as several data fields under one scope type, which is how curling stores its ends. Ice Hockey stores each period as its own scope type - 322, 323, 324 - and far more widely as its own result type, 51 to 53 reaching 8501 to 9803 events against 898 in the scope layer. SCOPE_PERIOD_DATA_TYPE_LIST would hold the single field 162 goals and the check would audit 898 events while missing the 8500 the sport actually keeps. Ice-Hockey-DQ-059 asks the same arithmetic of the result layer and reaches 8492."
             },
+            "GLOBAL-DQ-009": {
+                "signal": "Not applicable",
+                "reason": "The template asserts three participation paths and this sport has a fourth: refereeFK is a ref:participant property on 270 events, so 160 of the 224 officials it reported on 2026-08-14 do referee a match and are not unattached. Its athlete population is a separate problem - 15201 registered athletes appear nowhere in the database, in this sport or any other, and 15187 carry both a date of birth and a country, so they are a question about where the profiles came from rather than a list anybody works through; only 552 sit in a duplicate-name group, so merging will not clear them. Ice-Hockey-DQ-088 reads all four paths, audits the non-athlete registry and reports 329 of 2098."
+            },
             "GLOBAL-DQ-065": {
                 "signal": "Not applicable",
                 "reason": "The template asserts that the teams inside one Comp.Rank hold the same number of athletes, and an ice hockey squad legitimately does not: measured 2026-08-14 the World Championship statistics carry 24 to 27 players per country, so 226 of them are reported and none is a defect. 98 differ by a single player. A squad size is a decision the federation makes, not a field somebody failed to fill."

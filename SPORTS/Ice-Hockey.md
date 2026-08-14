@@ -101,6 +101,20 @@ The sport registry (`object_participants`) is sport-wide and much larger than th
 35956 active male athletes and 3406 female, 1352 male teams and 215 female, 282 male coaches
 and 5 female, 113 male officials and 32 female.
 
+**15201 registered athletes are entered nowhere in the database at all**, and this is a question
+rather than a work list. Measured 2026-08-14: not one of them appears as an event participant in
+ice hockey or in any other sport, none is in a lineup, none is in a Comp.Rank, and 15187 of them
+carry both a date of birth and a country. Complete profiles that were never attached to a match
+are not an empty field somebody can fill from the row, and merging will not clear them either -
+only 552 sit in a duplicate-name group. `GLOBAL-DQ-009` reports them and is not instantiated;
+`Ice-Hockey-DQ-088` audits the rest of the registry.
+
+**The sport has a fourth path from an event to a person, and it changes who counts as unused.**
+`refereeFK` is a `ref:participant` property on 270 events. `GLOBAL-DQ-009` asserts three paths -
+event, lineup, Comp.Rank - so it reported 224 officials as attached to nothing, of whom **160
+referee an event**. Any check asking whether a person is used in this sport has to read the
+property as well, which is why `Ice-Hockey-DQ-088` does and reports 64 officials rather than 224.
+
 **The registry role and the participant type disagree on 150 rows**, which is a defect shape
 rather than a vocabulary: 66 rows register a `coach` under the role `athlete`, 4 more under
 role `athlete` with `del` set, 1 registers an `athlete` under the role `coach`, 1 registers an
