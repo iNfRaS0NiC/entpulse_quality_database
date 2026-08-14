@@ -327,3 +327,177 @@ FROM (
 ) d
 
 ORDER BY sort_order, event_startdate, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-081
+    -- Name - EVENT_LINEUP_WRITTEN_FOR_ONE_TEAM_AND_NOT_THE_OTHER
+    -- What it does: Flags events where one team has a lineup and the other does not.
+    'LINEUP_WRITTEN_FOR_ONE_TEAM_AND_NOT_THE_OTHER' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.tournament_template_name,
+    x.team_count,
+    x.teams_with_lineup,
+    x.teams_missing_lineup_names,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds events in which at least one entered team has an active
+-- lineup and at least one does not, so the two sides of the same match disagree about whether
+-- anybody played in it.
+-- This is the part of GLOBAL-DQ-058 this sport can act on. That template reports every event
+-- where any team lacks a lineup, and ice hockey's lineup layer reaches about a sixth of the
+-- boundary: run on 2026-08-14 it returned 8192 events, of which 8187 have no lineup on either
+-- side. Those 8187 are the reach of the layer restated, and no correction empties them.
+-- The 5 that remain are a different thing entirely. An event where one team is filled in and
+-- the other is not was imported and interrupted, and the missing half is nameable - the row
+-- carries which team it is. A run that reports both shapes together buries the five in the
+-- eight thousand, which is why the sport asks only the narrower question.
+-- Deciding what to do about the 8187 is not a check. SPORTS/Ice-Hockey.md records the reach of
+-- the layer, and GLOBAL-DQ-058 is signalled in SPORTS/params.json rather than instantiated.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS tournament_template_name,
+        COUNT(DISTINCT ep.id) AS team_count,
+        COUNT(DISTINCT CASE WHEN l.id IS NOT NULL THEN ep.id END) AS teams_with_lineup,
+        GROUP_CONCAT(DISTINCT CASE WHEN l.id IS NULL THEN p.name END
+                     ORDER BY 1 SEPARATOR ' / ') AS teams_missing_lineup_names
+    FROM event_participants ep
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 5
+    LEFT JOIN lineup l ON l.event_participantsFK = ep.id AND l.del = 'no'
+    WHERE ep.del = 'no'
+      AND p.type = 'team'
+      AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, tt.name
+) x
+WHERE x.teams_with_lineup > 0
+  AND x.teams_with_lineup < x.team_count
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+WHERE ep.del = 'no'
+  AND p.type = 'team'
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-082
+    -- Name - EVENT_NAME_FORMAT_INVALID_APART_FROM_THE_HYPHEN_CONVENTION
+    -- What it does: Flags event names breaking a text-hygiene rule, accepting the sport's unspaced hyphen between the two team names.
+    'Name_Format_Invalid' AS check_type,
+    MIN(x.object_name) AS event_name,
+    x.violation_types,
+    COUNT(DISTINCT x.object_id) AS affected_object_count,
+    MIN(x.object_id) AS sample_object_id,
+    MIN(x.template_name) AS sample_template_name,
+    MIN(x.stage_name) AS sample_stage_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds event names breaking a text-hygiene rule - spacing,
+-- control or corrupted characters, capitalisation, a placeholder or a numeric-only name - one
+-- row per name, naming every rule it breaks. Every rule GLOBAL-DQ-049 carries is kept except
+-- HYPHEN_WITHOUT_SPACES.
+-- That one rule is the whole difference, and it is why the template is not instantiated here.
+-- Ice hockey names an event by joining its two teams with an unspaced hyphen - Australia-Finland
+-- - so the rule fires on the sport's own convention: run on 2026-08-14 the template reported
+-- 1767 names of 1767, which is every distinct event name in the boundary. Dropping the rule
+-- leaves 11 names, all of them ALL_UPPERCASE, and restores the other thirteen rules as guards
+-- that currently report nothing.
+-- What those 11 are, read on 2026-08-14: ten are bracket placeholders - A1-B3, A1/B4-B2/A3 -
+-- which name a knockout event by the group positions that will fill it and were never replaced
+-- by the teams that did. One, USA-ROC, is a legitimate abbreviation and is the check's known
+-- residual; the rule cannot tell an acronym from shouting, and one row is a cheaper price than
+-- a rule that stops looking.
+-- Not a weaker check. A rule that fires on every row in the population tests nothing, and it
+-- hides the twelve rules that would have fired on something real. GLOBAL-DQ-050 still owns the
+-- case-inconsistency question and is instantiated unchanged.
+FROM (
+    SELECT
+        e.id AS object_id,
+        e.name AS object_name,
+        (CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) AS name_bin,
+        tt.name AS template_name,
+        ts.name AS stage_name,
+        CONCAT_WS(', ',
+            IF(CHAR_LENGTH(e.name) <> CHAR_LENGTH(TRIM(e.name)), 'LEADING_OR_TRAILING_SPACE', NULL),
+            IF(e.name LIKE '%  %', 'DOUBLE_SPACE', NULL),
+            IF(e.name REGEXP '[[:cntrl:]]', 'CONTROL_CHARACTER', NULL),
+            -- Semicolon as \\x{3B}, never literal: the Pool cuts the statement at the first one.
+            IF(e.name LIKE '%&#%' OR LOWER(e.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp)\\x{3B}', 'HTML_ENTITY', NULL),
+            IF(HEX(e.name) LIKE '%EFBFBD%', 'REPLACEMENT_CHARACTER', NULL),
+            IF(HEX(e.name) LIKE '%C2A0%', 'NON_BREAKING_SPACE', NULL),
+            IF(HEX(e.name) LIKE '%E2808B%', 'ZERO_WIDTH_SPACE', NULL),
+            IF(HEX(e.name) LIKE '%C383%' OR HEX(e.name) LIKE '%C382%', 'MOJIBAKE_DOUBLE_ENCODED', NULL),
+            IF(LENGTH(e.name) <> CHAR_LENGTH(e.name), 'NON_ASCII_CHARACTER', NULL),
+            IF((CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z][12][0-9][0-9][0-9]|[12][0-9][0-9][0-9][A-Za-z]', 'YEAR_GLUED_TO_WORD', NULL),
+            IF((CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Z][A-Z][a-z]', 'DOUBLE_CAPITAL', NULL),
+            IF((CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z]'
+               AND (CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) NOT REGEXP '[a-z]', 'ALL_UPPERCASE', NULL),
+            IF((CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '^[a-z]', 'STARTS_LOWERCASE', NULL),
+            IF(LOWER(TRIM(e.name)) IN ('test','testing','temp','tmp','xxx','asd','qwe','tbd','tba','n/a','undefined','event','new event'), 'PLACEHOLDER_NAME', NULL),
+            IF(TRIM(e.name) REGEXP '^[0-9]+$', 'NUMERIC_ONLY_NAME', NULL)
+        ) AS violation_types
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 5
+    WHERE e.del = 'no'
+      AND e.name IS NOT NULL
+      AND TRIM(e.name) <> ''
+      AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+) x
+WHERE x.violation_types <> ''
+GROUP BY x.name_bin, x.violation_types
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+WHERE e.del = 'no'
+  AND e.name IS NOT NULL
+  AND TRIM(e.name) <> ''
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, event_name;

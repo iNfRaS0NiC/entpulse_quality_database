@@ -967,6 +967,14 @@
                 "signal": "Not applicable",
                 "reason": "Structural: the template's prerequisite is a head-to-head sport whose format admits no draw, and Ice Hockey's does. A group match ends level and stays level - the sport awards points for it - so the rule cannot be asserted at sport level. Run wide on 2026-08-14 it reported 297 events, 290 of them in the numbered group rounds 38 to 46. The 7 that are not sit in rounds that must produce a winner: the 1998 World Championship final Sweden-Finland at 0-0, the 1999 and 1998 semi-finals, the 2001 U-20 final at 5-5, and three placement matches from 1933 and 1995. Soccer records the same signal for the same reason and carries the narrower rule as Soccer-DQ-022. The equivalent for this sport is Ice-Hockey-DQ-058, which asks the same question of the rounds that must produce a winner and reports those 7. SPORTS/Ice-Hockey.md owns the reasoning."
             },
+            "GLOBAL-DQ-049": {
+                "signal": "Not applicable",
+                "reason": "Structural, and only in one rule of the fifteen: HYPHEN_WITHOUT_SPACES fires on the way this sport names every event, joining its two teams with an unspaced hyphen. Run on 2026-08-14 the template reported 1767 names of 1767 - the whole population - of which 1756 broke that rule and nothing else. A rule matching every row tests nothing and hides the fourteen that would have found something. Ice-Hockey-DQ-082 keeps the other fourteen and reports 11, ten of them bracket placeholders never replaced by the teams that filled them."
+            },
+            "GLOBAL-DQ-058": {
+                "signal": "Not applicable",
+                "reason": "Not structural absence: the sport writes an active lineup layer, 42620 starter rows, but it reaches about a sixth of the boundary. Run on 2026-08-14 the template reported 8192 events of 9803, of which 8187 have no lineup on either side - the reach of the layer restated, which no correction empties. The 5 that remain are an event imported and interrupted, and Ice-Hockey-DQ-081 reports those alone. What to do about the 8187 is a question for the data owners rather than a check."
+            },
             "GLOBAL-DQ-037": {
                 "signal": "Not applicable",
                 "reason": "Structural: the template reads 100 Rank on the Final's participants to decide which medal each of them should hold, and this sport carries one Rank value in the whole boundary. All 288 of its rows come back Medal_Set_Unreadable_Without_Rank, which is the missing Rank restated rather than a medal finding. It also asserts the whole medal set inside one Final, which a head-to-head sport cannot carry - Soccer records the same and for the same reason. GLOBAL-DQ-093 is the variant that fits: it reads the round type instead of the Rank, and knows 138 bronze decides bronze outside the Final. Approved as Ice-Hockey-DQ-078."
