@@ -3526,8 +3526,10 @@ SELECT
     'Comp_Rank_Unexpected_Owner_Type' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
-    s.object_typeFK AS owner_type_found,
+    COALESCE(ot.name, CONCAT('object_typeFK ', s.object_typeFK)) AS owner_type_found,
     s.objectFK AS owner_object_id,
+    COALESCE(t3.name, ts4.name) AS owner_object_name,
+    COALESCE(t3.name, t4.name) AS tournament_name,
     tt.name AS template_name,
     NULL AS eligible_count,
     0 AS sort_order
@@ -3537,7 +3539,15 @@ SELECT
 -- whole point: a statistic on the wrong level cannot be found by a statement that joins
 -- through the level it is supposed to be on. Every other Comp.Rank check in this file
 -- anchors on object_typeFK = 3 and therefore cannot see this at all.
+-- The finding is meant to be corrected by hand, so it names what it found rather than
+-- numbering it: the level through object_type, the owner it hangs off, and the tournament
+-- that owner belongs to. Where the owner is a stage the last two differ and both are
+-- needed - the stage says which row to move, the tournament says where it should have
+-- hung. The owner id stays as the handle to find the row by. object_type is reached
+-- through a LEFT JOIN because a level absent from the reference table is the one finding
+-- least worth dropping; the number is shown when the name is missing.
 FROM statistic s
+LEFT JOIN object_type ot ON ot.id = s.object_typeFK
 LEFT JOIN tournament t3 ON s.object_typeFK = 3 AND t3.id = s.objectFK AND t3.del = 'no'
 LEFT JOIN tournament_stage ts4 ON s.object_typeFK = 4 AND ts4.id = s.objectFK AND ts4.del = 'no'
 LEFT JOIN tournament t4 ON t4.id = ts4.tournamentFK AND t4.del = 'no'
@@ -3555,7 +3565,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT s.id) AS eligible_count,
     1 AS sort_order
 FROM statistic s

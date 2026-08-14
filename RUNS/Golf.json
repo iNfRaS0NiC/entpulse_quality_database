@@ -4879,6 +4879,50 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "14.08.2026 11-14-33",
+                     "startedUtc":  "2026-08-14T09:14:33Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-063",
+                                        "runKey":  "Golf-DQ-063",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_UNEXPECTED_OWNER_TYPE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  3445,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "14.08.2026 11-16-25",
+                     "startedUtc":  "2026-08-14T09:16:25Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-063",
+                                        "runKey":  "Golf-DQ-063",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_UNEXPECTED_OWNER_TYPE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  3445,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"
