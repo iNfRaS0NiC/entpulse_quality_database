@@ -4249,6 +4249,78 @@ Test-That 'two swapped registry rows are reported as out of order' {
     Assert-True ($run.Text -match 'is out of order') "the order finding should be reported; output was:`n$($run.Text)"
 }
 
+function Set-FixtureBoundaryKey {
+    # Renames a sport's client-boundary key in a throwaway copy. The two keys hold the same
+    # kind of value and differ only in which side of the boundary they name, so renaming one
+    # is the whole of what a sport changing its mind would do - and it is enough to put the
+    # sport's own SQL, which still writes the other side, in contradiction with it.
+    param([string]$Root, [string]$Sport, [string]$From, [string]$To)
+
+    $path = Join-Path $Root 'SPORTS\params.json'
+    $text = [IO.File]::ReadAllText($path)
+    $anchor = '  "{0}": {{' -f $Sport
+    $index = $text.IndexOf($anchor)
+    if ($index -lt 0) { throw "the $Sport entry was not found in the fixture copy" }
+
+    # Only this sport's copy of the key: every sport declares one, and renaming all seven
+    # would test something nobody would ever do.
+    $tail = $text.Substring($index)
+    $next = $tail.IndexOf("`n  `"", 1)
+    if ($next -lt 0) { $next = $tail.Length }
+    $block = $tail.Substring(0, $next).Replace("`"$From`"", "`"$To`"")
+    $text = $text.Substring(0, $index) + $block + $tail.Substring($next)
+    [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+}
+
+Test-That 'a sport declaring both forms of the client boundary is reported' {
+    # They are two ways of writing one thing. Kept side by side they would disagree the first
+    # time somebody edited either, and nothing downstream could say which was meant.
+    $root = Copy-RepositoryFixture -Name 'boundary-declared-twice'
+    $path = Join-Path $root 'SPORTS\params.json'
+    $text = [IO.File]::ReadAllText($path)
+    $anchor = '  "Golf": {'
+    $text = $text.Insert($text.IndexOf($anchor) + $anchor.Length, "`n    `"IN_SCOPE_TEMPLATE_ID_LIST`": `"33, 546`",")
+    [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match 'declares both') "both-forms finding; output was:`n$($run.Text)"
+}
+
+Test-That 'a sport that names what the client takes must not write the complement in its own SQL' {
+    # The point of naming the inclusion is the default it carries: a template the sport gains
+    # next season is outside it. Writing the complement into the statements puts the other
+    # default back in the one place nobody would look, so the two forms are not interchangeable
+    # and the validator says so rather than accepting either.
+    $root = Copy-RepositoryFixture -Name 'boundary-inverted'
+    Set-FixtureBoundaryKey -Root $root -Sport 'Golf' `
+        -From 'OUT_OF_SCOPE_TEMPLATE_ID_LIST' -To 'IN_SCOPE_TEMPLATE_ID_LIST'
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match 'IN_SCOPE_TEMPLATE_ID_LIST, so every branch') `
+        "the statements should be reported as not keeping to the inclusion; output was:`n$($run.Text)"
+}
+
+Test-That 'the client boundary is derived only when the sport asked for it' {
+    # No inclusion declared, nothing to compute, and above all no database call: a sport that
+    # names the exclusion has its value already and the run must not reach the network to
+    # confirm what it was handed.
+    Assert-Equal $null (Resolve-ClientBoundary -Values @{ SPORT_ID = 3; OUT_OF_SCOPE_TEMPLATE_ID_LIST = '432' }) `
+        'a sport declaring the exclusion derives nothing'
+
+    $both = @{ SPORT_ID = 5; IN_SCOPE_TEMPLATE_ID_LIST = '31, 32'; OUT_OF_SCOPE_TEMPLATE_ID_LIST = '24' }
+    Assert-Throws { Resolve-ClientBoundary -Values $both } 'declares both' 'both forms at once'
+
+    # SPORT_ID scopes the complement. Without it the query would ask which templates of no
+    # sport are not in the list, and the answer would be every template in the database.
+    Assert-Throws { Resolve-ClientBoundary -Values @{ IN_SCOPE_TEMPLATE_ID_LIST = '31, 32' } } `
+        'needs SPORT_ID' 'no sport to compute the complement against'
+
+    Assert-Throws { Resolve-ClientBoundary -Values @{ SPORT_ID = 5; IN_SCOPE_TEMPLATE_ID_LIST = 'all of them' } } `
+        'not a comma-separated id list' 'a value that names no ids'
+}
+
 function Set-FixtureExpectation {
     # Writes an _expected block into a throwaway copy's SPORTS/params.json. The block is the
     # thing under test, so it is injected as text rather than round-tripped through

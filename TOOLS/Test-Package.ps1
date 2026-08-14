@@ -52,6 +52,18 @@ $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesK
 # client is a boundary of its own; this is the value every statement that can carry one reads.
 $ClientScopeKey = 'OUT_OF_SCOPE_TEMPLATE_ID_LIST'
 
+# The other form the same boundary may take. A sport declares whichever list is the short one:
+# naming the templates the client does take, when it takes few, or the ones it does not, when it
+# takes most. Run-Query.ps1 holds the same pair and computes whichever was not declared, so the
+# two files are one contract - this one checks what the sport file says and what its statements
+# then have to carry.
+#
+# The two are not interchangeable in a statement. An exclusion leaves a template added later
+# inside the boundary; an inclusion leaves it outside. That is the whole reason a sport gets to
+# choose, so a sport declaring the inclusion writes an inclusion into its own SQL, and writing
+# the complement there instead would put the wrong default back where nobody would look for it.
+$InScopeKey = 'IN_SCOPE_TEMPLATE_ID_LIST'
+
 # The commented run-time filter, in the two alias forms POWERBI.md allows. Declared here as the
 # validator's own copy rather than imported: Run-Query.ps1 activates it and this only counts it,
 # and a tool that fails a package must not need the tool it is checking to be loadable.
@@ -662,12 +674,14 @@ $scopeFindings = @()
 # into forty statements. Read here rather than from the sport block further down because this
 # rule is about the SQL and runs with it.
 $boundaryOf = @{}
+$inScopeOf = @{}
 $boundarySource = Join-Path $RepoRoot 'SPORTS/params.json'
 if (Test-Path -LiteralPath $boundarySource) {
     $parsed = Get-Content -LiteralPath $boundarySource -Raw -Encoding UTF8 | ConvertFrom-Json
     foreach ($sportProperty in $parsed.PSObject.Properties) {
         if ($sportProperty.Name.StartsWith('_')) { continue }
         $boundaryOf[$sportProperty.Name] = [string]$sportProperty.Value.$ClientScopeKey
+        $inScopeOf[$sportProperty.Name] = [string]$sportProperty.Value.$InScopeKey
     }
 }
 
@@ -702,10 +716,34 @@ foreach ($s in $statements) {
         continue
     }
 
+    $slug = ($s.CheckId -split '-DQ-')[0]
+
+    # A sport that declared what the client takes writes that, not its complement. The list is
+    # the short one by definition - that is why the sport declared it that way round - and it is
+    # also the one with the safe default: a template the sport gains next season is outside an
+    # inclusion and inside an exclusion, and only one of those is what the client asked for.
+    $inScope = [string]$inScopeOf[$slug]
+    if (-not [string]::IsNullOrWhiteSpace($inScope)) {
+        $included = @([regex]::Matches($s.Sql,
+                '(?m)^\s*AND\s+\w+\.(?:id|tournament_templateFK)\s+IN\s*\(([^)]*)\)'))
+        if ($included.Count -lt $markers.Count) {
+            $scopeFindings += ("${where}: {0} template filter(s) but {1} client-boundary line(s); " -f
+                $markers.Count, $included.Count) +
+            "$slug declares $InScopeKey, so every branch that can reach a template keeps to it"
+        }
+        $wantedIn = @($inScope -split ',' | ForEach-Object { $_.Trim() } | Sort-Object)
+        foreach ($listed in $included) {
+            $held = @($listed.Groups[1].Value -split ',' | ForEach-Object { $_.Trim() } | Sort-Object)
+            if (($held -join ',') -ne ($wantedIn -join ',')) {
+                $scopeFindings += "${where}: keeps to ($($listed.Groups[1].Value)) but SPORTS/params.json $InScopeKey for $slug is ($inScope)"
+            }
+        }
+        continue
+    }
+
     # A sport the client takes whole writes nothing: "exclude nothing" in forty statements is
     # noise that stops being read, and the day such a sport gains a boundary the value is what
     # changes and this rule is what notices.
-    $slug = ($s.CheckId -split '-DQ-')[0]
     $boundary = [string]$boundaryOf[$slug]
     if ([string]::IsNullOrWhiteSpace($boundary) -or $boundary -eq '0') { continue }
 
@@ -1119,12 +1157,31 @@ if (Test-Path -LiteralPath $paramsPath) {
             # goes unresolved and the runner skips the statement, so 80-odd checks would vanish
             # from that sport's board reported as needing a value nobody knew to supply. '0'
             # is the neutral value - no template has id 0 - and says the sport is taken whole.
+            #
+            # Either form satisfies it. A sport naming what the client does take leaves the
+            # complement to the runner, which computes it against the templates the sport has
+            # today - so the value nobody maintains is the one that would have gone stale.
+            # Declaring both is refused rather than resolved: they say the same thing twice and
+            # would disagree the first time one of them was edited.
             $boundary = [string]$property.Value.$ClientScopeKey
-            if ([string]::IsNullOrWhiteSpace($boundary)) {
-                $sportFindings += "SPORTS/params.json: '$sport' declares no $ClientScopeKey; use '0' for a sport the client takes whole, since a missing token skips every statement that reads it"
+            $inScope = [string]$property.Value.$InScopeKey
+            $hasBoundary = -not [string]::IsNullOrWhiteSpace($boundary)
+            $hasInScope = -not [string]::IsNullOrWhiteSpace($inScope)
+
+            if ($hasBoundary -and $hasInScope) {
+                $sportFindings += "SPORTS/params.json: '$sport' declares both $ClientScopeKey and $InScopeKey; they are two ways of writing one boundary, so declare the shorter list only"
             }
-            elseif ($boundary -notmatch '^\s*\d+(\s*,\s*\d+)*\s*$') {
+            elseif (-not $hasBoundary -and -not $hasInScope) {
+                $sportFindings += "SPORTS/params.json: '$sport' declares no $ClientScopeKey and no $InScopeKey; use '0' for a sport the client takes whole, since a missing token skips every statement that reads it"
+            }
+            elseif ($hasBoundary -and $boundary -notmatch '^\s*\d+(\s*,\s*\d+)*\s*$') {
                 $sportFindings += "SPORTS/params.json: '$sport' $ClientScopeKey is not a comma-separated id list: '$boundary'"
+            }
+            elseif ($hasInScope -and $inScope -notmatch '^\s*\d+(\s*,\s*\d+)*\s*$') {
+                $sportFindings += "SPORTS/params.json: '$sport' $InScopeKey is not a comma-separated id list: '$inScope'"
+            }
+            elseif ($hasInScope -and $inScope.Trim() -eq '0') {
+                $sportFindings += "SPORTS/params.json: '$sport' $InScopeKey is '0', which names no template and would leave the client nothing; a sport taken whole declares $ClientScopeKey as '0' instead"
             }
 
             # A classification is only worth writing down if it is held to something, so each

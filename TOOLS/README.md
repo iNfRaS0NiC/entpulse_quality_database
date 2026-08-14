@@ -190,6 +190,43 @@ missing tokens. A parameter passed to a statement that declares none is simply u
 Parameter meanings are declared in `GLOBAL_QUERIES/README.md`; the runner substitutes them
 textually and validates nothing about their values.
 
+### The client boundary, and which way round a sport declares it
+
+`{{OUT_OF_SCOPE_TEMPLATE_ID_LIST}}` is what every statement reads: the templates the client
+does not take. A sport may put that list in `SPORTS/params.json` directly, or may declare
+`IN_SCOPE_TEMPLATE_ID_LIST` instead — the templates the client **does** take — and let the
+runner compute the complement before anything is sent.
+
+Which way round is not a preference. It decides what happens to a template the sport gains
+next season, and the two answers are opposite: an exclusion list leaves it inside the client's
+boundary, an inclusion list leaves it outside. So the rule is to declare whichever list is the
+short one, because that is also the one whose default is right.
+
+Golf's client takes 16 templates of 36. Naming the 20 it does not take is the shorter list, and
+a golf template added later is probably one the client does want, so the exclusion is both
+readable and correctly defaulted. Ice Hockey's client takes 25 of 112 — every national-team
+competition, no club league at all. Naming the other 87 would be a list nobody can read, the
+sport gains templates most seasons, and each one would arrive inside the boundary without
+anybody deciding it. One new league the size of the KHL is 17,669 events against the 9,803 the
+client asked for, and nothing would fail.
+
+Declaring both is refused rather than resolved by precedence: they say one thing twice and
+would disagree the first time either was edited. The run reports what it derived:
+
+```
+Resolving parameters for 'Ice-Hockey' (database sport 'Ice Hockey')...
+  OUT_OF_SCOPE_TEMPLATE_ID_LIST  25 of 112 template(s) in scope; 87 excluded  (derived from IN_SCOPE_TEMPLATE_ID_LIST)
+```
+
+An id that no active template of the sport carries stops the run. The complement is computed
+by exclusion, so an id belonging to nothing removes nothing, and a typo would widen the client's
+boundary rather than narrow it — silently, which is the one way this must not fail.
+
+A sport declaring the inclusion writes an inclusion into its own `POWERBI_QUERIES/<Sport>.sql`
+statements too, since a sport check carries no tokens. `TOOLS/Test-Package.ps1` checks that the
+ids there match `SPORTS/params.json`, and that the statements did not write the complement
+instead — which would put the wrong default back where nobody would look for it.
+
 ### Narrowing a run to certain templates
 
 `-TemplateIds` restricts a run to named tournament templates:

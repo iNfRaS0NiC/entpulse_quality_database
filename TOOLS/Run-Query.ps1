@@ -1828,6 +1828,12 @@ function Get-StatementRows {
 # never guessed.
 $DiscoverableParameters = @('SPORT_ID', 'STATISTIC_TYPE_ID', 'STATISTIC_OWNER_TYPE_ID', 'SHARD_ID')
 
+# The client boundary, and the form a sport may declare it in instead. Named here rather than
+# written out at each use because Test-Package.ps1 holds the same pair and the two files are one
+# contract: what the sport file may say, and what every statement ends up reading.
+$ClientScopeParameter = 'OUT_OF_SCOPE_TEMPLATE_ID_LIST'
+$InScopeParameter = 'IN_SCOPE_TEMPLATE_ID_LIST'
+
 # The named keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
 # _notApplicable holds the parameters the sport is documented as unable to supply, mapped to
 # the reason. _checkSignal holds what a check's output is worth for this sport, for the ones
@@ -2326,6 +2332,86 @@ function Get-SportNotApplicable {
         $resolved[$property.Name] = [string]$property.Value
     }
     return $resolved
+}
+
+function Confirm-RunnerSession {
+    # A session, once, whoever asks first. Parameter discovery and the client boundary both
+    # need one before the run proper does, and each used to open its own - which under
+    # -Relogin meant deleting the saved state a second time, after the first had already
+    # replaced it with a live login.
+    if ($null -ne $script:Session) { return }
+    if ($Relogin -and (Test-Path $StatePath)) { Remove-Item -LiteralPath $StatePath -Force }
+    if (-not $Relogin) { $script:Session = Restore-SessionState }
+    if ($null -eq $script:Session) { $script:Session = New-AuthenticatedSession }
+}
+
+function Resolve-ClientBoundary {
+    <#
+        The client's boundary as every statement needs it, derived from the form a person can
+        keep by hand.
+
+        Two sports want opposite defaults and the reason is arithmetic rather than taste. Golf's
+        client takes 16 of 36 templates, so naming the 20 it does not take is the short list,
+        and a template added later is one the client probably does take - the exclusion list has
+        the right default and stays readable. Ice Hockey's client takes 25 of 112: every
+        national-team competition and no club league at all. Naming what it does not take is 87
+        ids, the sport gains templates most seasons, and under an exclusion list every new one
+        arrives inside the boundary without anybody deciding it. One league the size of the KHL
+        is 17669 events against the 9803 the client asked for, and nothing would fail.
+
+        So a sport declares whichever list is the short one and the runner computes the other.
+        IN_SCOPE_TEMPLATE_ID_LIST names what the client takes, and the complement is worked out
+        against the sport's templates as they are now rather than as they were when somebody
+        last counted. OUT_OF_SCOPE_TEMPLATE_ID_LIST names what it does not and is used as
+        written. Declaring both is a contradiction and is refused rather than settled by
+        precedence, because the two would disagree the day one of them was edited.
+
+        An id that is not the sport's own is a typo and stops the run. It would otherwise widen
+        the boundary silently: the complement is computed by exclusion, so an id belonging to no
+        template of this sport removes nothing and the client quietly gains whatever the reader
+        meant to name.
+    #>
+    param([hashtable]$Values)
+
+    if (-not $Values.ContainsKey($InScopeParameter)) { return $null }
+
+    if ($Values.ContainsKey($ClientScopeParameter)) {
+        throw ("SPORTS/params.json declares both $InScopeParameter and $ClientScopeParameter. " +
+            'They are two ways of saying the same boundary and would disagree the first time one was edited; declare the shorter list only.')
+    }
+
+    $wanted = @([string]$Values[$InScopeParameter] -split ',' |
+        ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d+$' })
+    if ($wanted.Count -eq 0) {
+        throw "SPORTS/params.json $InScopeParameter is not a comma-separated id list: '$($Values[$InScopeParameter])'"
+    }
+    if (-not $Values.ContainsKey('SPORT_ID')) {
+        throw "$InScopeParameter needs SPORT_ID to compute its complement, and the sport has none resolved."
+    }
+
+    Confirm-RunnerSession
+    $sportId = [int]$Values['SPORT_ID']
+    $rows = Get-ResultRows -Content (Invoke-SqlWithRetry -Statement (
+            "SELECT id AS template_id, CASE WHEN id IN ({0}) THEN 'in' ELSE 'out' END AS side " +
+            "FROM tournament_template WHERE del = 'no' AND sportFK = {1} ORDER BY id;"
+        ) -f ($wanted -join ', '), $sportId).Content
+
+    $held = @($rows | Where-Object { $_.side -eq 'in' } | ForEach-Object { [string]$_.template_id })
+    $stray = @($wanted | Where-Object { $held -notcontains $_ })
+    if ($stray.Count -gt 0) {
+        throw ("$InScopeParameter names $($stray.Count) template(s) that are not active under sport ${sportId}: " +
+            ($stray -join ', ') + '. An id the sport does not have removes nothing from the complement, so the boundary would silently be wider than written.')
+    }
+
+    # '0' rather than an empty string when the client takes every template there is: no template
+    # has that id, so NOT IN (0) excludes nothing, and an empty list would be a syntax error in
+    # all 264 places that read it.
+    $complement = @($rows | Where-Object { $_.side -eq 'out' } | ForEach-Object { [string]$_.template_id })
+    $value = $(if ($complement.Count -gt 0) { $complement -join ', ' } else { '0' })
+
+    Write-Host ("  {0,-30} {1} of {2} template(s) in scope; {3} excluded  (derived from {4})" -f `
+            $ClientScopeParameter, $held.Count, $rows.Count, $complement.Count, $InScopeParameter) -ForegroundColor DarkGray
+    return $value
 }
 
 function Resolve-SportParameters {
@@ -4453,11 +4539,7 @@ if ($sportIdentity) {
     $stillMissing = @($stillMissing | Select-Object -Unique | Where-Object { $DiscoverableParameters -contains $_ })
 
     if ($stillMissing.Count -gt 0) {
-        if ($Relogin -and (Test-Path $StatePath)) { Remove-Item -LiteralPath $StatePath -Force }
-        $script:Session = $null
-        if (-not $Relogin) { $script:Session = Restore-SessionState }
-        if ($null -eq $script:Session) { $script:Session = New-AuthenticatedSession }
-
+        Confirm-RunnerSession
         foreach ($entry in (Resolve-SportParameters -DatabaseSportNameValue $ResolvedDatabaseSportName).GetEnumerator()) {
             if (-not $paramTable.ContainsKey($entry.Key)) { $paramTable[$entry.Key] = $entry.Value }
         }
@@ -4465,6 +4547,12 @@ if ($sportIdentity) {
     else {
         Write-Host '  nothing left to discover; no discovery query sent.' -ForegroundColor DarkGray
     }
+
+    # After discovery, because the complement is computed per sport and SPORT_ID may only have
+    # arrived a moment ago. A sport declaring the boundary the usual way reaches none of this:
+    # Resolve-ClientBoundary returns nothing and the value it already has stands.
+    $derived = Resolve-ClientBoundary -Values $paramTable
+    if ($null -ne $derived) { $paramTable[$ClientScopeParameter] = $derived }
     Write-Host ''
 }
 
@@ -4624,12 +4712,9 @@ if ($isBatch -and $OutFile -and -not $isWorkbook) {
 
 # ----- session -------------------------------------------------------------------------
 
-# -Sport has to reach the database to discover anything, so the session may already exist.
-if (-not $script:Session) {
-    if ($Relogin -and (Test-Path $StatePath)) { Remove-Item -LiteralPath $StatePath -Force }
-    if (-not $Relogin) { $script:Session = Restore-SessionState }
-    if ($null -eq $script:Session) { $script:Session = New-AuthenticatedSession }
-}
+# -Sport has to reach the database to discover its parameters and to work out the client
+# boundary, so the session may already exist. Confirm-RunnerSession is a no-op when it does.
+Confirm-RunnerSession
 
 # ----- batch run -----------------------------------------------------------------------
 

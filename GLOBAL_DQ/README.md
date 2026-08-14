@@ -50,7 +50,8 @@ user-supplied text.
 | Parameter | Meaning |
 |---|---|
 | `{{SPORT_ID}}` | Confirmed numeric `sport.id` |
-| `{{OUT_OF_SCOPE_TEMPLATE_ID_LIST}}` | The `tournament_template` ids the current client does not take, which every statement that can reach a template excludes. `0` — no template has that id — is the neutral value and says the client takes the sport whole. Declared by every sport, because a missing token skips the whole statement, and a sport that left it out would lose eighty checks off its board rather than run them unbounded. `README.md` owns why the client is a boundary of its own; the sport file's Scope section owns which competitions it names |
+| `{{OUT_OF_SCOPE_TEMPLATE_ID_LIST}}` | The `tournament_template` ids the current client does not take, which every statement that can reach a template excludes. `0` — no template has that id — is the neutral value and says the client takes the sport whole. Every statement reads this token, and a sport that supplies it by neither route below would lose eighty checks off its board rather than run them unbounded. `README.md` owns why the client is a boundary of its own; the sport file's Scope section owns which competitions it names |
+| `IN_SCOPE_TEMPLATE_ID_LIST` | Not a token: the other way a sport may declare the same boundary, naming what the client **does** take. `TOOLS/Run-Query.ps1` computes the complement at run time against the sport's templates as they are then, and fills `{{OUT_OF_SCOPE_TEMPLATE_ID_LIST}}` with it. Declare exactly one of the two — both is refused, since they would disagree the first time either was edited |
 | `{{EVENT_PARTICIPANT_TYPE_LIST}}` | Participant types the sport uses in `event_participants` |
 | `{{REGISTRY_PARTICIPANT_TYPE_LIST}}` | Participant types present in the sport's `object_participants` registry |
 | `{{STATISTIC_TYPE_ID}}` | Confirmed `statistic.statistic_typeFK` |
