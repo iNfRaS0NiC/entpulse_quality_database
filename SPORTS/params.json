@@ -919,6 +919,18 @@
       "Golf-DQ-095": {
         "signal": "Monitor",
         "reason": "368 of the 369 rank outliers this and Golf-DQ-094 report together sit before 2015, one is from 2016 and none is later, so the volume is a legacy import rather than a live defect. The invariant still guards what arrives tomorrow, which is why the check is written rather than dropped."
+      },
+      "Golf-DQ-036": {
+        "signal": "Monitor",
+        "reason": "742 of the sport's 20638 registered people hold no event entry, no lineup place and no Comp.Rank row anywhere - 619 with an active registration and 123 without. They are historic golfers whose tournaments are not in the database rather than broken references: the repair is either importing decades of events or removing the registration, and neither is a decision a reviewer makes row by row. Measured 2026-08-14. Note that participation is read without the client boundary, which is deliberate: a further 5140 registered people play only under the twenty excluded templates, and they do participate - just not in this client's scope."
+      },
+      "Golf-DQ-022": {
+        "signal": "Monitor",
+        "reason": "566 of 3125 Comp.Rank hold a place twice, 342 of them more than one such place. A shared place is how golf finishes: two players on the same score are both T5, and the score beside them is the explanation. The template asks for that explanation in the 1273 Comment data field, and Golf writes no row into that field anywhere - GLOBAL-DQ-057 records the same absence as a sentinel - so every legitimate tie in the sport is reported and no amount of correction would empty this list. Read as a count of shared places rather than a repair list. Decided 2026-08-14."
+      },
+      "Golf-DQ-024": {
+        "signal": "Monitor",
+        "reason": "484 event participants carry a Comment saying they have no result while still holding one: 422 DQ, 51 RTD, 7 NR, 2 DNS, 2 N/R, of which 459 hold a Rank and 25 a score. The place a competitor occupied when the disqualification or retirement was recorded is kept beside it rather than removed, which is a storage habit of the sport rather than a contradiction to repair row by row. Decided 2026-08-14; the check stays because the same shape would report a genuine contradiction identically."
       }
     }
   }
