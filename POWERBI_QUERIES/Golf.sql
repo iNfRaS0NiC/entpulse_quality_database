@@ -1504,3 +1504,198 @@ WHERE lsr.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-100
+    -- Name - EVENT_RESULTS_TOTAL_PAR_CONTRADICTS_THE_STAGE_PAR
+    -- What it does: Flags events whose competitors' cards agree on a course par the stage does not record.
+    CASE
+        WHEN d.implied_par BETWEEN 69 AND 73 THEN 'STAGE_PAR_CONTRADICTED_BY_ITS_FIELD'
+        WHEN d.implied_par = 0 THEN 'TOTAL_PAR_HOLDS_THE_ROUND_TOTAL_NOT_THE_SCORE'
+        ELSE 'FIELD_IMPLIES_A_PAR_THAT_IS_NOT_A_COURSE_PAR'
+    END AS check_type,
+    d.event_id,
+    d.event_name,
+    d.stage_id AS tournament_stage_id,
+    d.stage_name AS tournament_stage_name,
+    d.tournament_name,
+    d.template_name,
+    d.stage_par AS the_stage_says,
+    d.implied_par AS the_field_says,
+    d.competitors_behind_it,
+    d.competitors_measured,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a stroke-play event where the course par most of its own
+-- competitors' cards imply is not the par recorded on its stage, separating a field that agrees
+-- on a real course par, from one whose Total Par is the round total itself, from one that agrees
+-- on a number no course has.
+--
+-- The arithmetic is the sport's own and it is exact. 36 Total Par is the strokes taken minus the
+-- course par once per round played, confirmed on 200572 participations with no exception -
+-- SPORTS/Golf.md owns that fact - so a card that disagrees is wrong on one side or the other.
+-- Measured inside the client boundary 2026-08-14: 294095 of 315703 testable participations
+-- satisfy it exactly.
+--
+-- What makes this an event-level finding rather than a per-card one is that the disagreement is
+-- shared. Where 154 competitors all imply 71 and the stage says 70 - The RSM Classic, in eight
+-- separate editions - a hundred and fifty-four cards are not wrong the same way. One number is.
+-- So the statement reads the par the field agrees on and reports where that is not the recorded
+-- one, without claiming which of the two is the value to correct.
+--
+-- A card only votes when its difference divides by the rounds it played, because a wrong par
+-- shifts every round by the same amount. A card whose difference does not divide is a wrong
+-- score rather than a wrong par: it carries no vote here, and the events where such cards are
+-- the whole story are left to a check of their own rather than folded into this one.
+--
+-- The mode rather than unanimity, and the difference is not academic. Requiring every card to
+-- agree finds 68 events; the most common implied par finds 112. The 44 it adds are fields where
+-- a handful of bad cards sat beside a hundred good ones, and under unanimity one wrong score
+-- would have protected a wrong par.
+--
+-- 69 to 73 is measured rather than assumed. The sport's own Par property holds 72 on 2769
+-- stages, 71 on 1123, 70 on 576, 73 on 143 and 69 on 4, and everything else it holds - 22, 24,
+-- 27, 45, 54, 65, 142 and three empty strings - is not a course par. A field agreeing on a
+-- number outside that band is saying something else again, most legibly at PGA Grand Slam of
+-- Golf, where the stage records 142 and the field says 71: the par of two rounds written into a
+-- field that holds the par of one.
+--
+-- An implied par of nought is the third shape and it is not a par at all. It says Total Par
+-- equals the round values added up, so the field holds a raw total where a score against par
+-- belongs - a subtraction that never happened. Eleven events carry it, and eight of them are one
+-- tournament: Barracuda Championship, under that name and its earlier one Reno-Tahoe Open, is
+-- the tour's Modified Stableford event, played for points rather than strokes. Measured
+-- 2026-08-14, the database stores those points in the stroke fields 31-34 and writes no 526-529
+-- point value at all for any edition from 2012 to 2018; 2025 is the first to carry the point
+-- types, and carries both. The International 2006 was a separate tournament played under the
+-- same format. So for these the rounds are not stroke counts, the arithmetic this check asserts
+-- does not apply to them, and what wants correcting is the result type rather than the par.
+--
+-- The remaining two - EDS Byron Nelson Championship 2008 and ANZ Championship 2004 - are
+-- ordinary stroke play where part of the field carries a raw total anyway, which is why the
+-- shape is reported by what it is rather than by the tournament it usually belongs to.
+--
+-- Stages carrying no Par at all are not audited and are not eligible. 43282 participations sit
+-- under 592 such events, and what they need is the value entered rather than corrected.
+FROM (
+    SELECT
+        b.event_id,
+        b.event_name,
+        b.stage_id,
+        b.stage_name,
+        b.tournament_name,
+        b.template_name,
+        b.stage_par,
+        b.implied_par,
+        COUNT(*) AS competitors_behind_it,
+        MAX(b.testable) AS competitors_measured,
+        ROW_NUMBER() OVER (PARTITION BY b.event_id ORDER BY COUNT(*) DESC, b.implied_par) AS rn
+    FROM (
+        SELECT
+            a.event_id,
+            a.event_name,
+            a.stage_id,
+            a.stage_name,
+            a.tournament_name,
+            a.template_name,
+            CAST(pp.par_value AS SIGNED) AS stage_par,
+            CASE WHEN MOD(a.par_total - (a.sum_rounds - CAST(pp.par_value AS SIGNED) * a.n_rounds), a.n_rounds) = 0
+                 THEN CAST(CAST(pp.par_value AS SIGNED)
+                           - (a.par_total - (a.sum_rounds - CAST(pp.par_value AS SIGNED) * a.n_rounds)) / a.n_rounds
+                           AS SIGNED)
+            END AS implied_par,
+            COUNT(*) OVER (PARTITION BY a.event_id) AS testable
+        FROM (
+            SELECT
+                ep.id AS ep_id,
+                e.id AS event_id,
+                e.name AS event_name,
+                ts.id AS stage_id,
+                ts.name AS stage_name,
+                t.name AS tournament_name,
+                tt.name AS template_name,
+                SUM(CASE WHEN r.result_typeFK IN (31, 32, 33, 34, 35)
+                          AND TRIM(r.value) REGEXP '^[0-9]+$'
+                         THEN CAST(TRIM(r.value) AS SIGNED) ELSE 0 END) AS sum_rounds,
+                SUM(CASE WHEN r.result_typeFK IN (31, 32, 33, 34, 35)
+                          AND TRIM(r.value) REGEXP '^[0-9]+$'
+                         THEN 1 ELSE 0 END) AS n_rounds,
+                MAX(CASE WHEN r.result_typeFK = 36
+                          AND TRIM(r.value) REGEXP '^[+-]?[0-9]+$'
+                         THEN CAST(REPLACE(TRIM(r.value), '+', '') AS SIGNED) END) AS par_total
+            FROM event_participants ep
+            JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+                 AND e.status_type = 'finished'
+            JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+            JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+            JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                 AND tt.sportFK = 3
+            JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+                 AND od.del = 'no' AND od.disciplineFK = 629
+            JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                 AND r.result_typeFK IN (31, 32, 33, 34, 35, 36)
+            WHERE ep.del = 'no'
+              AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+              -- AND t.tournament_templateFK = <tournament_template_id>
+              -- AND e.startdate >= '<from_datetime>'
+              -- AND e.startdate <  '<to_datetime>'
+            GROUP BY ep.id, e.id, e.name, ts.id, ts.name, t.name, tt.name
+        ) a
+        JOIN (
+            SELECT objectFK AS stage_id, MAX(value) AS par_value
+            FROM property
+            WHERE object = 'tournament_stage' AND name = 'Par' AND del = 'no'
+            GROUP BY objectFK
+        ) pp ON pp.stage_id = a.stage_id AND pp.par_value REGEXP '^[0-9]+$'
+        WHERE a.n_rounds > 0
+          AND a.par_total IS NOT NULL
+    ) b
+    WHERE b.implied_par IS NOT NULL
+    GROUP BY b.event_id, b.event_name, b.stage_id, b.stage_name, b.tournament_name,
+             b.template_name, b.stage_par, b.implied_par
+) d
+WHERE d.rn = 1
+  AND d.implied_par <> d.stage_par
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+-- The same population reached without aggregating it. An event is eligible when its stage
+-- records a numeric Par and at least one of its competitors holds both a numeric round and a
+-- numeric Total Par - which is what n_rounds > 0 and par_total IS NOT NULL say above, one
+-- competitor at a time. Asking whether such a competitor exists lets the event stop at the
+-- first one instead of grouping all 362000 participations a second time. The branch runs in
+-- 0.7 seconds alone and takes the whole statement from 45.9 to 30.6, for the identical 2698.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 3
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+     AND od.del = 'no' AND od.disciplineFK = 629
+JOIN property pp ON pp.object = 'tournament_stage' AND pp.objectFK = ts.id
+     AND pp.name = 'Par' AND pp.del = 'no' AND pp.value REGEXP '^[0-9]+$'
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result rr ON rr.event_participantsFK = ep.id AND rr.del = 'no'
+           AND rr.result_typeFK IN (31, 32, 33, 34, 35)
+           AND TRIM(rr.value) REGEXP '^[0-9]+$'
+      JOIN result rp ON rp.event_participantsFK = ep.id AND rp.del = 'no'
+           AND rp.result_typeFK = 36
+           AND TRIM(rp.value) REGEXP '^[+-]?[0-9]+$'
+      WHERE ep.eventFK = e.id AND ep.del = 'no'
+  )
+
+ORDER BY sort_order, competitors_behind_it DESC, event_id;

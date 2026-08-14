@@ -4923,6 +4923,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "14.08.2026 11-48-16",
+                     "startedUtc":  "2026-08-14T09:48:16Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-100",
+                                        "runKey":  "Golf-DQ-100",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_TOTAL_PAR_CONTRADICTS_THE_STAGE_PAR",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  113,
+                                        "findings":  112,
+                                        "eligible":  2698,
+                                        "seconds":  29.5,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"
