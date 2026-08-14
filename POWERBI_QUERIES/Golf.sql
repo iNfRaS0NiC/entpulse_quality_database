@@ -884,3 +884,199 @@ WHERE s.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, stray_participants DESC, statistic_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-094
+    -- Name - COMP.RANK_RESULTS_RANK_ABOVE_PLAUSIBLE_MAXIMUM
+    -- What it does: Finds Comp.Rank statistics holding a Rank above the largest place golf can award, counting the affected competitors and naming them with the value each carries.
+    'RANK_ABOVE_PLAUSIBLE_MAXIMUM' AS check_type,
+    s.id AS statistic_id,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    COUNT(DISTINCT sp.id) AS participant_count,
+    COUNT(DISTINCT CASE WHEN CAST(sd.value AS UNSIGNED) > 250 THEN sp.id END) AS affected_count,
+    MAX(CASE WHEN CAST(sd.value AS UNSIGNED) > 250 THEN CAST(sd.value AS UNSIGNED) END) AS highest_rank,
+    GROUP_CONCAT(CASE WHEN CAST(sd.value AS UNSIGNED) > 250
+                      THEN CONCAT(p.name, ' #', sd.value) END
+                 ORDER BY CAST(sd.value AS UNSIGNED) SEPARATOR ' | ') AS affected_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- 250 is RANK_MAX_PLAUSIBLE for golf, the largest field the sport puts on a course, and the
+-- data leaves no doubt where the line falls: Comp.Rank ranks run to 164 and then jump to 999
+-- and 9999. Those two are markers written into the rank itself rather than places anybody
+-- finished in, and a marker in a numeric field is read as a number by everything downstream.
+--
+-- GLOBAL-DQ-036 asks the same question of the event result layer and does not reach here:
+-- `result` and `statistic_data11` are separate layers and a value corrected in one stays
+-- wrong in the other. This is the Comp.Rank half.
+--
+-- Held apart from Golf-DQ-095, which reports a rank merely larger than the field the statistic
+-- holds. That is an incomplete import; this is a value that was never a place. The two are
+-- repaired differently, so a statistic carrying both appears in both with its own row.
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+LEFT JOIN statistic_data11 sd ON sd.statistic_participants11FK = sp.id
+     AND sd.statistic_data_typeFK = 1270
+     AND sd.del = 'no'
+     AND sd.value REGEXP '^[1-9][0-9]*$'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+GROUP BY s.id, tt.name, t.name
+HAVING COUNT(DISTINCT CASE WHEN CAST(sd.value AS UNSIGNED) > 250 THEN sp.id END) > 0
+
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN statistic_data11 sd ON sd.statistic_participants11FK = sp.id
+     AND sd.statistic_data_typeFK = 1270
+     AND sd.del = 'no'
+     AND sd.value REGEXP '^[1-9][0-9]*$'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, affected_count DESC, statistic_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-095
+    -- Name - COMP.RANK_RESULTS_RANK_ABOVE_FIELD_SIZE
+    -- What it does: Finds Comp.Rank statistics ranking competitors beyond the number of competitors they hold, where the rank is also cut off from the next lower one and carries no Comment.
+    'RANK_ABOVE_FIELD_SIZE' AS check_type,
+    o.statistic_id,
+    o.template_name,
+    o.tournament_name,
+    o.participant_count,
+    COUNT(DISTINCT o.statistic_participants_id) AS affected_count,
+    MAX(o.rank_value) AS highest_affected_rank,
+    GROUP_CONCAT(CONCAT(o.participant_name, ' #', o.rank_value)
+                 ORDER BY o.rank_value SEPARATOR ' | ') AS affected_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- A statistic holding 81 competitors and ranking one of them 151 is not ranking a field of
+-- 151: it is holding part of one. The rank is evidence of how many there were, and the
+-- statistic is the record of who they were, so the two disagreeing means the import stopped
+-- early. Golf leaves 163 of these with a top rank more than three times the field it holds.
+--
+-- Two conditions keep a normal ranking out of this. The rank must also be cut off from the
+-- next lower one, because a field where several competitors tie takes the places below them
+-- out of use and pushes the last rank past the count legitimately - a tie for 1st in a field
+-- of 3 ends at rank 3 with no rank 2, and nothing is wrong. And a rank the sport has explained
+-- through the Comment data field is left alone, on the same reasoning as the event result
+-- layer: a value with a stated reason is a record, not a defect.
+--
+-- Ranks above 250 are excluded here and reported by Golf-DQ-094 instead. They are markers
+-- rather than places and would otherwise dominate this list while needing a different repair;
+-- excluding them from the field-size comparison as well as from the findings keeps the gap
+-- test reading real places only.
+--
+-- One row per statistic, because that is what somebody opens to repair it. The counts beside
+-- the list are what the row asserts: the server truncates GROUP_CONCAT at 1024 characters
+-- without saying so.
+FROM (
+    SELECT
+        sp.id AS statistic_participants_id,
+        f.statistic_id,
+        f.template_name,
+        f.tournament_name,
+        f.participant_count,
+        p.name AS participant_name,
+        CAST(sd.value AS UNSIGNED) AS rank_value,
+        MAX(CAST(sd.value AS UNSIGNED)) OVER (
+            PARTITION BY f.statistic_id
+            ORDER BY CAST(sd.value AS UNSIGNED)
+            RANGE BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+        ) AS next_lower_rank
+    FROM (
+        SELECT
+            s.id AS statistic_id,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            COUNT(DISTINCT spf.id) AS participant_count
+        FROM statistic s
+        JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN statistic_participants11 spf ON spf.statisticFK = s.id AND spf.del = 'no'
+        LEFT JOIN statistic_data11 sdf ON sdf.statistic_participants11FK = spf.id
+             AND sdf.statistic_data_typeFK = 1270
+             AND sdf.del = 'no'
+             AND sdf.value REGEXP '^[1-9][0-9]*$'
+             AND CAST(sdf.value AS UNSIGNED) <= 250
+        WHERE s.del = 'no'
+          AND s.statistic_typeFK = 11
+          AND s.object_typeFK = 3
+          AND tt.sportFK = 3
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+          -- AND t.tournament_templateFK = <tournament_template_id>
+        GROUP BY s.id, tt.name, t.name
+        HAVING MAX(CAST(sdf.value AS UNSIGNED)) > COUNT(DISTINCT spf.id)
+    ) f
+    JOIN statistic_participants11 sp ON sp.statisticFK = f.statistic_id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    JOIN statistic_data11 sd ON sd.statistic_participants11FK = sp.id
+         AND sd.statistic_data_typeFK = 1270
+         AND sd.del = 'no'
+         AND sd.value REGEXP '^[1-9][0-9]*$'
+         AND CAST(sd.value AS UNSIGNED) <= 250
+) o
+WHERE o.rank_value > o.participant_count
+  AND (o.next_lower_rank IS NULL OR o.rank_value > o.next_lower_rank + 1)
+  AND NOT EXISTS (
+      SELECT 1
+      FROM statistic_data11 sdc
+      WHERE sdc.statistic_participants11FK = o.statistic_participants_id
+        AND sdc.statistic_data_typeFK = 1273
+        AND sdc.del = 'no'
+        AND sdc.value IS NOT NULL
+        AND TRIM(sdc.value) <> ''
+  )
+GROUP BY o.statistic_id, o.template_name, o.tournament_name, o.participant_count
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN statistic_data11 sd ON sd.statistic_participants11FK = sp.id
+     AND sd.statistic_data_typeFK = 1270
+     AND sd.del = 'no'
+     AND sd.value REGEXP '^[1-9][0-9]*$'
+     AND CAST(sd.value AS UNSIGNED) <= 250
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, affected_count DESC, statistic_id;

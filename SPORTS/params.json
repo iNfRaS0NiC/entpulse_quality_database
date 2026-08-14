@@ -915,6 +915,10 @@
       "GLOBAL-DQ-028": {
         "signal": "Monitor",
         "reason": "eligible_count is 0 and this is a sentinel: statistic_data11 declares the 1427 Time difference field for statistic type 11 and Golf writes no row into it, which is expected of a sport whose 17 result types measure strokes, points, par, rank, money and status and never time. Same shape as GLOBAL-DQ-057 on the 1273 Comment field."
+      },
+      "Golf-DQ-095": {
+        "signal": "Monitor",
+        "reason": "368 of the 369 rank outliers this and Golf-DQ-094 report together sit before 2015, one is from 2016 and none is later, so the volume is a legacy import rather than a live defect. The invariant still guards what arrives tomorrow, which is why the check is written rather than dropped."
       }
     }
   }

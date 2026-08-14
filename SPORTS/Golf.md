@@ -343,6 +343,30 @@ relation exists separately through `object_discipline` on the statistic.
 minority pair `GLOBAL-DISCOVERY-015` reported beside the main one and the run did not use them.
 Their shard, fields and purpose are not checked.
 
+**The `1270 Rank` field carries two defects that look like one.** Measured 2026-08-14 over the
+3125 Comp.Rank statistics that hold a rank at all.
+
+Eighty-nine of them store a rank above any place golf awards. The values run to 164 and then
+jump straight to `999` and `9999`, with nothing in between, so these are markers written into
+the numeric field rather than places anybody finished in - a field of 157 where 74 competitors
+all hold `999`. `Golf-DQ-094` reports them against `RANK_MAX_PLAUSIBLE`, which is 250 for this
+sport, and does not excuse a marker that carries a Comment: a value that was never a place is
+wrong whether or not somebody explained it. `GLOBAL-DQ-036` asks the same question of the event
+result layer and cannot see this one; `result` and `statistic_data11` are separate layers.
+
+Two hundred and eighty-three store ranks larger than the field they hold, markers excluded - a
+statistic holding 81 competitors and ranking one of them 151, and in 163 cases a top rank more
+than three times the count. The rank is evidence of how many competitors there were and the
+statistic is the record of who they were, so the two disagreeing means the import stopped early.
+`Golf-DQ-095` reports it, and leaves alone a rank that is merely adjacent to the count, because
+ties legitimately push the last place past it: a tie for 1st in a field of 3 ends at rank 3 with
+no rank 2.
+
+**Both are historical.** Of the 369 statistics the two checks report between them, 368 are from
+2004 to 2014 and one is from 2016; none is later. That is why `Golf-DQ-095` is recorded as
+`Monitor` in `SPORTS/params.json` rather than actionable - the volume is a legacy import, and the
+invariant is kept for what arrives tomorrow rather than for what is on the list today.
+
 <!-- MANUAL PASTE ZONE: 3 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values
