@@ -1699,3 +1699,200 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, competitors_behind_it DESC, event_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-101
+    -- Name - EVENT_RESULTS_CARD_TOTAL_PAR_CONTRADICTS_ITS_OWN_ROUNDS
+    -- What it does: Flags a competitor whose score against par does not follow from their own rounds, in an event where nearly every other card does.
+    'CARD_TOTAL_PAR_CONTRADICTS_ITS_OWN_ROUNDS' AS check_type,
+    w.event_id,
+    w.event_name,
+    w.season,
+    w.participant_name,
+    w.field_par AS the_field_par,
+    w.n_rounds AS rounds_played,
+    w.sum_rounds AS strokes_recorded,
+    w.par_total AS total_par_recorded,
+    w.sum_rounds - w.field_par * w.n_rounds AS total_par_expected,
+    w.cards_wrong_here,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a competitor whose Total Par is not their strokes minus the
+-- course par once per round played, in an event where at most three cards disagree - so the par
+-- is not in question and the card is.
+--
+-- The other half of Golf-DQ-100, and it has to be a separate statement because it audits a
+-- different object. That one reads the par a whole field agrees on and reports the event whose
+-- stage records something else; this one takes that same agreed par as settled and reports the
+-- individual card that does not reach it. Its finding is one competitor, and the row carries what
+-- the Total Par should have been so the correction is legible without opening anything.
+--
+-- Why at most three, and why that is not a threshold dressed up as a rule. Two formats break this
+-- arithmetic while breaking no data, and neither is visible in the database. A tournament played
+-- on more than one course gives each competitor a different par per round against a stage that
+-- records one - Pebble Beach Pro-Am, Joburg Open, Dunhill Links, British Boys Amateur. Tour
+-- Championship has started its field at a staggered score under FedExCup Starting Strokes since
+-- 2019, so a Total Par contains strokes nobody played. Both reach the whole field: 155 of 156,
+-- 209 of 210, 25 of 30 in each of six consecutive years. A wrong card reaches one competitor.
+-- Counting how many cards in the event disagree is therefore what tells a format apart from a
+-- mistake, and three is where the sport's own populations leave a gap rather than where a
+-- convenient line falls. SPORTS/Golf.md records both formats.
+--
+-- Measured 2026-08-14 inside the client boundary. Of 2680 events whose stage records a numeric
+-- Par, 2081 have no disagreeing card at all and 415 have one, two or three - 639 cards, which is
+-- this check. The remaining 184 events are the formats above and a residue that has not been read
+-- yet; they are deliberately outside this statement rather than silently absent from it, and none
+-- of them is audited here.
+--
+-- The par the field agrees on is the same construction Golf-DQ-100 uses, and it is built here
+-- with window functions rather than a second pass: each distinct implied par is counted within
+-- its event, and the first one under a descending vote is taken. A card whose difference does not
+-- divide by the rounds it played implies no par, casts no vote - COUNT over the column rather
+-- than over the row is what makes that true - and is a finding rather than an authority.
+FROM (
+    SELECT
+        f.event_id,
+        f.event_name,
+        f.season,
+        f.participant_name,
+        f.n_rounds,
+        f.sum_rounds,
+        f.par_total,
+        f.implied_par,
+        f.field_par,
+        SUM(CASE WHEN f.implied_par IS NULL OR f.implied_par <> f.field_par THEN 1 ELSE 0 END)
+            OVER (PARTITION BY f.event_id) AS cards_wrong_here
+    FROM (
+        SELECT
+            v.event_id,
+            v.event_name,
+            v.season,
+            v.participant_name,
+            v.n_rounds,
+            v.sum_rounds,
+            v.par_total,
+            v.implied_par,
+            FIRST_VALUE(v.implied_par) OVER (
+                PARTITION BY v.event_id
+                ORDER BY v.votes DESC, v.implied_par
+                ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS field_par
+        FROM (
+            SELECT
+                b.event_id,
+                b.event_name,
+                b.season,
+                b.participant_name,
+                b.n_rounds,
+                b.sum_rounds,
+                b.par_total,
+                b.implied_par,
+                COUNT(b.implied_par) OVER (PARTITION BY b.event_id, b.implied_par) AS votes
+            FROM (
+                SELECT
+                    a.event_id,
+                    a.event_name,
+                    a.season,
+                    a.participant_name,
+                    a.n_rounds,
+                    a.sum_rounds,
+                    a.par_total,
+                    CASE WHEN MOD(a.par_total - (a.sum_rounds - CAST(pp.par_value AS SIGNED) * a.n_rounds), a.n_rounds) = 0
+                         THEN CAST(CAST(pp.par_value AS SIGNED)
+                                   - (a.par_total - (a.sum_rounds - CAST(pp.par_value AS SIGNED) * a.n_rounds)) / a.n_rounds
+                                   AS SIGNED)
+                    END AS implied_par
+                FROM (
+                    SELECT
+                        ep.id AS ep_id,
+                        e.id AS event_id,
+                        e.name AS event_name,
+                        t.name AS season,
+                        p.name AS participant_name,
+                        ts.id AS stage_id,
+                        SUM(CASE WHEN r.result_typeFK IN (31, 32, 33, 34, 35)
+                                  AND TRIM(r.value) REGEXP '^[0-9]+$'
+                                 THEN CAST(TRIM(r.value) AS SIGNED) ELSE 0 END) AS sum_rounds,
+                        SUM(CASE WHEN r.result_typeFK IN (31, 32, 33, 34, 35)
+                                  AND TRIM(r.value) REGEXP '^[0-9]+$'
+                                 THEN 1 ELSE 0 END) AS n_rounds,
+                        MAX(CASE WHEN r.result_typeFK = 36
+                                  AND TRIM(r.value) REGEXP '^[+-]?[0-9]+$'
+                                 THEN CAST(REPLACE(TRIM(r.value), '+', '') AS SIGNED) END) AS par_total
+                    FROM event_participants ep
+                    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+                         AND e.status_type = 'finished'
+                    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+                    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+                    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                         AND tt.sportFK = 3
+                    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+                         AND od.del = 'no' AND od.disciplineFK = 629
+                    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+                    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                         AND r.result_typeFK IN (31, 32, 33, 34, 35, 36)
+                    WHERE ep.del = 'no'
+                      AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+                      -- AND t.tournament_templateFK = <tournament_template_id>
+                      -- AND e.startdate >= '<from_datetime>'
+                      -- AND e.startdate <  '<to_datetime>'
+                    GROUP BY ep.id, e.id, e.name, t.name, p.name, ts.id
+                ) a
+                JOIN (
+                    SELECT objectFK AS stage_id, MAX(value) AS par_value
+                    FROM property
+                    WHERE object = 'tournament_stage' AND name = 'Par' AND del = 'no'
+                    GROUP BY objectFK
+                ) pp ON pp.stage_id = a.stage_id AND pp.par_value REGEXP '^[0-9]+$'
+                WHERE a.n_rounds > 0
+                  AND a.par_total IS NOT NULL
+            ) b
+        ) v
+    ) f
+) w
+WHERE (w.implied_par IS NULL OR w.implied_par <> w.field_par)
+  AND w.cards_wrong_here BETWEEN 1 AND 3
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+-- Every card the arithmetic can be asked about: a competitor holding at least one numeric round
+-- and a numeric Total Par, under a stage that records a numeric Par. The two result joins say
+-- exactly what n_rounds > 0 and par_total IS NOT NULL say above, one competitor at a time, and
+-- reaching them by existence rather than by aggregation keeps the branch off the group-by.
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+     AND e.status_type = 'finished'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 3
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+     AND od.del = 'no' AND od.disciplineFK = 629
+JOIN property pp ON pp.object = 'tournament_stage' AND pp.objectFK = ts.id
+     AND pp.name = 'Par' AND pp.del = 'no' AND pp.value REGEXP '^[0-9]+$'
+WHERE ep.del = 'no'
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM result rr
+      WHERE rr.event_participantsFK = ep.id AND rr.del = 'no'
+        AND rr.result_typeFK IN (31, 32, 33, 34, 35)
+        AND TRIM(rr.value) REGEXP '^[0-9]+$'
+  )
+  AND EXISTS (
+      SELECT 1
+      FROM result rp
+      WHERE rp.event_participantsFK = ep.id AND rp.del = 'no'
+        AND rp.result_typeFK = 36
+        AND TRIM(rp.value) REGEXP '^[+-]?[0-9]+$'
+  )
+
+ORDER BY sort_order, event_id, participant_name;

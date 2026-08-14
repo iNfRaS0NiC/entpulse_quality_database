@@ -4945,6 +4945,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "14.08.2026 12-01-39",
+                     "startedUtc":  "2026-08-14T10:01:39Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-101",
+                                        "runKey":  "Golf-DQ-101",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_CARD_TOTAL_PAR_CONTRADICTS_ITS_OWN_ROUNDS",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  640,
+                                        "findings":  639,
+                                        "eligible":  315172,
+                                        "seconds":  32.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"

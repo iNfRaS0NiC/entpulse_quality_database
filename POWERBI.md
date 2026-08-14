@@ -96,6 +96,22 @@ Measured on Golf, 2026-08-13, which is why the rule is written down:
 
 The last two are the rule working. The first three are what it exists to prevent.
 
+One more from 2026-08-14, and it is the clearest case the sport has produced:
+
+| Check | Reported | Of which the sport behaving normally |
+|---|---:|---:|
+| `Golf-DQ-101` candidate | 9549 | 8424 - three formats the database cannot see |
+
+The candidate flagged every competitor whose score against par did not follow from their own
+rounds. Reading the rows found three formats rather than three defects: a tournament played on
+more than one course, where each competitor's par is a sum the single stored `Par` cannot
+express; Modified Stableford, played for points; and FedExCup Starting Strokes, where the field
+begins at a staggered score. Each reaches its whole field - 155 of 156, 209 of 210, 25 of 30 in
+six consecutive years - which is what tells a format from a mistake, since a wrong card reaches
+one competitor. The check was written on that discriminator and reports 639. A further 486 cards
+were left out as undecided rather than counted either way, which is recorded here so the gap is
+visible rather than implied.
+
 This is the counterpart of `WORKFLOW.md`'s "Zero findings never retires a check": a small count
 is no reason to withdraw a check, and a large one is no reason to trust it.
 

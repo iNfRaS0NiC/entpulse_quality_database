@@ -207,6 +207,29 @@ the place owes a deciding value like any other.
 What remains in the list is `dq`, `rtd`, `dns`, `nr` and `n/r`. A disqualification removes a
 result rather than freezing it, which is why `dq` stays in and `wd` does not.
 
+**Two formats break the par arithmetic without breaking any data, and the database cannot see
+either of them.** Both were found on 2026-08-14 by reading what disagreed with the equation
+above, and in both the disagreement is the sport rather than the storage.
+
+*A tournament played on more than one course.* The stage carries a single `Par`, and a rotation
+gives each competitor a different par per round: AT&T Pebble Beach Pro-Am runs Pebble Beach,
+Spyglass Hill and Monterey Peninsula, so a card's par for the event is their sum and not four
+times any one of them. The difference then fails to divide by the rounds played and every card
+in the field looks wrong. Measured: 155 of 156 at Pebble Beach Pro-Am 2017, 209 of 210 at Joburg
+Open across five editions, 50 of 99 at Dunhill Links Championships 2003, and 244 to 251 of about
+250 at British Boys Amateur Championship across four. Nothing in `tournament_stage` records the
+second course; `Par` and `Venue` are single-valued.
+
+*A tournament that starts before it starts.* Tour Championship carries the same shape in exactly
+25 of 30 cards, in each of 2019, 2020, 2021, 2022, 2023 and 2024 - the six editions run under
+FedExCup Starting Strokes, where the field begins at a staggered score rather than level. Those
+strokes are in the Total Par and were never played, so no sum of rounds can reach it. Six
+consecutive years of the same shape is a format, not six years of the same mistake.
+
+Both matter to any check written from the rules of the game. The discriminator that keeps them
+out is not a threshold: a fact about the course or the format reaches the whole field, and a
+wrong card reaches one competitor. `Golf-DQ-101` is scoped on exactly that.
+
 **One tournament is played for points, and its points are stored as strokes.** Barracuda
 Championship, and the same tournament under its earlier name Reno-Tahoe Open, is played under
 Modified Stableford: the card is scored in points and the higher total wins, which is the
