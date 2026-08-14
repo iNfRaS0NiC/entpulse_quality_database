@@ -830,6 +830,7 @@ WHERE s.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND s.id BETWEEN <from_statistic_id> AND <to_statistic_id>
   AND NOT EXISTS (
       SELECT 1
       FROM tournament_stage ts2
@@ -869,6 +870,7 @@ WHERE s.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND s.id BETWEEN <from_statistic_id> AND <to_statistic_id>
 ;
 
 
@@ -918,6 +920,7 @@ FROM (
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND s.id BETWEEN <from_statistic_id> AND <to_statistic_id>
     GROUP BY s.id, tt.name, t.name
     HAVING MAX(CAST(sdf.value AS UNSIGNED)) > COUNT(DISTINCT spf.id)
 ) f
@@ -961,6 +964,7 @@ WHERE s.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND s.id BETWEEN <from_statistic_id> AND <to_statistic_id>
 ;
 
 
@@ -1437,6 +1441,7 @@ FROM (
           AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
           -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.id BETWEEN <from_event_id> AND <to_event_id>
           AND EXISTS (
               SELECT 1
               FROM statistic_config sc2
@@ -1475,6 +1480,7 @@ WHERE e.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.id BETWEEN <from_event_id> AND <to_event_id>
   AND EXISTS (
       SELECT 1
       FROM statistic_config sc2

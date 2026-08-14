@@ -1379,6 +1379,19 @@ $MaxShardDepth = 8
 # seven failed scans to reach eight windows, where cutting straight to eight spends none.
 $InitialShardCount = 8
 
+# And how many the first cut makes when the failure was time rather than size. A timeout is
+# expensive in a way a full result is not: the request waits out the whole gateway limit before
+# reporting, so every window that is still too slow costs three minutes to discover. Cutting
+# finer at once trades work that is cheap for waiting that is not.
+#
+# Thirty-two rather than sixteen because the cost does not fall linearly with the window.
+# Measured on Golf GLOBAL-DQ-030, 2026-08-14: the whole statistic range times out at 180
+# seconds, an eighth of it still times out, and a thirty-second of the same range - taken in
+# the densest part, where 3491 of the sport's statistics sit between ids 141613 and 337305 -
+# returns in 2.1. Eight windows took 1167 seconds in total, nearly all of it spent waiting for
+# limits to be reached.
+$TimeoutShardCount = 32
+
 function Enable-ShardFilter {
     # Activates every id window in the statement. Returns $null for a statement that declares
     # none, which is how a caller learns it cannot be cut rather than guessing a column.
@@ -1400,14 +1413,43 @@ function Enable-ShardFilter {
 }
 
 function Test-ResultTooLarge {
-    # The transport giving up on the size of a result, which is the one failure sharding
-    # answers. A statement that is merely slow fails differently and must not be cut, because
-    # cutting it would multiply the time rather than divide the rows.
+    # The transport giving up on the size of a result, which is the first failure sharding
+    # answers: the rows are gathered and then cannot be carried, so fewer rows per request is
+    # the whole fix.
     param([string]$Message)
 
     return ([string]$Message -match 'Allowed memory size' -or
         [string]$Message -match 'memory[ _]?(size )?exhausted' -or
         [string]$Message -match 'Out of memory')
+}
+
+function Test-RequestTimedOut {
+    # The gateway giving up on how long a request took. Held apart from the size failure above
+    # because the two are answered by cutting for different reasons and one of them used to be
+    # refused outright.
+    #
+    # The refusal was reasoned - cutting a slow statement multiplies the time rather than
+    # dividing the rows - and it is right whenever the window cannot prune the work. It is wrong
+    # where the window is a primary key, because then the optimiser drives from it and each
+    # window really does read an eighth. Measured on Golf 2026-08-14: GLOBAL-DQ-030 times out at
+    # 180 seconds over the whole statistic range and returns one eighth of it in 3.4.
+    #
+    # What makes this safe rather than a gamble is that the limit is per request. A window that
+    # still times out halves itself, and a range that cannot be made to fit runs out of depth
+    # and throws, which is the same answer as before this existed - just reached after trying.
+    param([string]$Message)
+
+    return ([string]$Message -match '504' -or
+        [string]$Message -match 'Gateway Time-?out' -or
+        [string]$Message -match 'Maximum execution time' -or
+        [string]$Message -match 'timed? ?out')
+}
+
+function Test-ShouldShard {
+    # Either failure, which is what the caller acts on.
+    param([string]$Message)
+
+    return ((Test-ResultTooLarge -Message $Message) -or (Test-RequestTimedOut -Message $Message))
 }
 
 function Merge-ShardedRows {
@@ -1777,7 +1819,7 @@ function Invoke-ShardedSql {
         return Get-ResultRows -Content (Invoke-SqlWithRetry -Statement $shard.Sql).Content
     }
     catch {
-        if (-not (Test-ResultTooLarge -Message $_.Exception.Message)) { throw }
+        if (-not (Test-ShouldShard -Message $_.Exception.Message)) { throw }
         if ($Depth -ge $MaxShardDepth -or $From -ge $To) { throw }
 
         $mid = [long][math]::Floor(($From + $To) / 2)
@@ -1797,7 +1839,7 @@ function Get-StatementRows {
         return Get-ResultRows -Content (Invoke-SqlWithRetry -Statement $Statement).Content
     }
     catch {
-        if (-not (Test-ResultTooLarge -Message $_.Exception.Message)) { throw }
+        if (-not (Test-ShouldShard -Message $_.Exception.Message)) { throw }
 
         $shard = Enable-ShardFilter -Text $Statement -From 0 -To 0
         if (-not $shard) { throw }
@@ -1805,13 +1847,16 @@ function Get-StatementRows {
         $bounds = Get-ShardBounds -Object $shard.Object
         if (-not $bounds) { throw }
 
-        Write-Host ("  {0}: result too large for one request, cutting {1} ids {2}-{3} into {4} windows" -f `
-                $CheckId, $shard.Object, $bounds.Lo, $bounds.Hi, $InitialShardCount) -ForegroundColor Yellow
+        $slow = Test-RequestTimedOut -Message $_.Exception.Message
+        $why = $(if ($slow) { 'too slow for one request' } else { 'result too large for one request' })
+        $windows = $(if ($slow) { $TimeoutShardCount } else { $InitialShardCount })
+        Write-Host ("  {0}: {1}, cutting {2} ids {3}-{4} into {5} windows" -f `
+                $CheckId, $why, $shard.Object, $bounds.Lo, $bounds.Hi, $windows) -ForegroundColor Yellow
 
         # The whole range has just failed, so it is not tried again. Each window that still
         # cannot be carried halves itself from here.
         $span = $bounds.Hi - $bounds.Lo + 1
-        $step = [long][math]::Ceiling($span / $InitialShardCount)
+        $step = [long][math]::Ceiling($span / $windows)
         $parts = @()
 
         for ($lo = $bounds.Lo; $lo -le $bounds.Hi; $lo += $step) {

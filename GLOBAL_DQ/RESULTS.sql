@@ -2727,6 +2727,7 @@ FROM (
     WHERE sr.del = 'no'
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.id BETWEEN <from_event_id> AND <to_event_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
       AND (ep.id IS NULL OR ep.eventFK <> es.eventFK)
@@ -2751,6 +2752,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE sr.del = 'no'
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.id BETWEEN <from_event_id> AND <to_event_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 

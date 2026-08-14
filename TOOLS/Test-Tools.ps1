@@ -1566,12 +1566,23 @@ WHERE p.del = 'no'
     Assert-True ($null -eq (Enable-ShardFilter -Text 'SELECT 1;' -From 1 -To 2)) 'no marker means no shard'
 }
 
-Test-That 'only a result too large is answered by cutting it up' {
-    Assert-True (Test-ResultTooLarge -Message 'Allowed memory size of 134217728 bytes exhausted') 'the failure sharding exists for'
+Test-That 'a result too large and a request too slow are both answered by cutting it up' {
+    Assert-True (Test-ResultTooLarge -Message 'Allowed memory size of 134217728 bytes exhausted') 'the failure sharding began with'
     Assert-True (Test-ResultTooLarge -Message 'Out of memory') 'and its other wording'
-    # Cutting a slow statement multiplies the time instead of dividing the rows.
     Assert-True (-not (Test-ResultTooLarge -Message 'Maximum execution time of 300 seconds exceeded')) 'a slow statement is not a large one'
-    Assert-True (-not (Test-ResultTooLarge -Message 'Unknown column p.nope in field list')) 'nor is a broken one'
+
+    # The two stay apart because they are different failures, and the caller acts on either.
+    # Cutting a slow statement was refused for a real reason - it multiplies the time rather
+    # than dividing the rows - which holds wherever the window cannot prune the work and fails
+    # where the window is a primary key. Measured on Golf: GLOBAL-DQ-030 times out at 180
+    # seconds over the whole statistic range and returns an eighth of it in 3.4.
+    Assert-True (Test-RequestTimedOut -Message '504 Gateway Time-out') 'the gateway giving up'
+    Assert-True (Test-RequestTimedOut -Message 'Maximum execution time of 300 seconds exceeded') 'and the server doing the same'
+    Assert-True (-not (Test-RequestTimedOut -Message 'Allowed memory size exhausted')) 'a large result is not a slow one'
+
+    Assert-True (Test-ShouldShard -Message 'Out of memory') 'the caller cuts on size'
+    Assert-True (Test-ShouldShard -Message '504 Gateway Time-out') 'and on time'
+    Assert-True (-not (Test-ShouldShard -Message 'Unknown column p.nope in field list')) 'and on neither for a broken statement'
 }
 
 Test-That 'merging shards concatenates findings and sums coverage' {
