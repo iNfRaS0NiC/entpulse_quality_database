@@ -415,6 +415,20 @@ are a work list, not a storage habit.
 in the whole boundary. `GLOBAL-DQ-093` asks the same question from the round type and is
 instantiated in its place.
 
+**No Comp.Rank participant in this sport carries a phase.** `GLOBAL-DQ-033` reports 746 of 746
+statistics, and the `object_round` rows it reads do not exist anywhere in the sport. `Golf` and
+`Soccer` both record the identical measurement as a structural absence and do not run the check.
+Ice hockey does: decided 2026-08-14 that the phase is a field nobody has filled rather than one
+the sport has no place for, so `Ice-Hockey-DQ-084` keeps it on the board until it is. The two
+readings are not distinguishable from the data, which is why the decision is recorded here and
+not derived.
+
+**A Comp.Rank that awards a place awards a medal, the group phase included.** `GLOBAL-DQ-026`
+reports 309, of which 224 are group standings - `Competition Stats Group A` and `Group B` of the
+World Championship divisions - holding a first, second and third place and no medal at all. The
+reading that a group is not a medal event was refused on the same day: `Ice-Hockey-DQ-083` runs
+whole.
+
 Nothing else beyond what the sections above record. This file is one day old and every other
 paragraph in it is a first reading.
 

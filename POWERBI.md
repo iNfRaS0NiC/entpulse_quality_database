@@ -179,22 +179,34 @@ template was asking unasked, which is the one outcome the template layer exists 
 `GLOBAL-DQ-096` is a different shape again - 592 of its 593 rows are the single renaming of Czech
 Republic to Czechia, so the count measures one correction rather than 593.
 
-Three more crossed the threshold on the same sport and were assigned anyway, by decision of
+Seven more crossed the threshold on the same sport and were assigned anyway, by decision of
 2026-08-14, which is the gate working in the other direction:
 
 | Check | Reported | Of which the sport behaving normally |
 |---|---:|---:|
+| `GLOBAL-DQ-074` | 9571 | none - an event should name where it was played |
 | `GLOBAL-DQ-094` | 737 | none - a medal round decides a medal, and the score already names it |
-| `GLOBAL-DQ-093` | 463 | none - same |
-| `GLOBAL-DQ-038` | 475 | none - same |
+| `GLOBAL-DQ-033` | 746 | none - the phase should be written and is not, anywhere |
+| `GLOBAL-DQ-093` | 463 | none - same as -094 |
+| `GLOBAL-DQ-038` | 475 | none - same as -094 |
+| `GLOBAL-DQ-026` | 309 | none - a ranking that awards a place awards a medal, group phase included |
+| `GLOBAL-DQ-090` | 219 | none - a match nobody has played should hold no score |
 
-The three read the event medal layer, which ice hockey has all but left empty: 463 of the 483
-events in a medal round hold no `501 Medal` at all, while the Comp.Rank medal field holds 10395
-values. The reading that would have kept them off the board - the sport keeps its medals in the
-statistic, so the event layer is unused rather than wrong - was put to the user and refused: a
-medal belongs on the event that awarded it, so its absence is a gap. The counts are large
-because the gap is, and `GLOBAL-DQ-094` names the medal each participation should hold rather
-than only reporting that one is missing.
+Every one of the seven reports a field the sport leaves empty across most or all of a layer, and
+in each case the reading that would have kept it off the board - the layer is unused, so its
+emptiness is a habit rather than a gap - was put to the user and refused. The medals are the
+clearest: 463 of the 483 events in a medal round hold no `501 Medal` at all while the Comp.Rank
+medal field holds 10395 values, and the answer was that a medal belongs on the event that
+awarded it. `GLOBAL-DQ-033` is the strongest form of the same answer, since it reports 746 of
+746 - every Comp.Rank in the sport, with no phase written anywhere - which `SPORTS/Golf.md` and
+`SPORTS/Soccer.md` both classify as a structural absence for their own sports. **The same shape
+can be a structural absence in one sport and an unfilled field in another, and only the person
+who owns the data can say which.** That is the rule the gate protects: the count never decides
+it, and neither does the precedent.
+
+The counts are large because the gaps are. Where the template can name the correction rather
+than only the absence it is worth more - `GLOBAL-DQ-094` says which medal each participation
+should hold, because the score already says who won.
 
 `GLOBAL-DQ-075` is the gate catching the reader instead of the data. `SPORTS/params.json`
 recorded 11 of the sport's 26 confirmed round types, so the check reported the other 15 as
