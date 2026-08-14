@@ -1,13 +1,16 @@
 SELECT
     -- CheckID - GLOBAL-DQ-007
     -- Name - PARTICIPANT_MISSING_DATE_OF_BIRTH
-    -- What it does: Finds people carrying no date_of_birth, reached either through the sport registry or through any of the three participation paths: an event participant row, a lineup place or a Comp.Rank row.
+    -- What it does: Flags athletes with no date of birth.
     'Missing_DOB' AS check_type,
     x.participant_id,
     x.participant_name,
     x.participant_type,
     (
         SELECT c.name
+-- What it does, stated in full: Finds people carrying no date_of_birth, reached either
+-- through the sport registry or through any of the three participation paths: an event
+-- participant row, a lineup place or a Comp.Rank row.
         FROM country c
         WHERE c.id = x.countryFK
           AND c.del = 'no'
@@ -171,13 +174,15 @@ ORDER BY sort_order, total_participations DESC, participant_id;
 SELECT
     -- CheckID - GLOBAL-DQ-008
     -- Name - PARTICIPANT_MISSING_PROFILE_FIELDS
-    -- What it does: Finds participants taking part in at least one event that are missing a name or a country, or - for people only - a first or last name.
+    -- What it does: Flags active event participants missing a name or country, or people missing a first name or last name.
     'Missing_Profile_Field' AS check_type,
     p.id AS participant_id,
     p.name AS participant_name,
     p.type AS participant_type,
     (
         SELECT c.name
+-- What it does, stated in full: Finds participants taking part in at least one event that
+-- are missing a name or a country, or - for people only - a first or last name.
         FROM country c
         WHERE c.id = p.countryFK
           AND c.del = 'no'
@@ -293,7 +298,7 @@ WHERE p.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-009
     -- Name - PARTICIPANT_NO_PARTICIPATION_ANYWHERE
-    -- What it does: Finds registered participants that take no part in the sport by any of the three paths open to them: an event participant row, a lineup place or a Comp.Rank row.
+    -- What it does: Flags registered participants who never appear as an event participant, lineup member, or Comp.Rank participant.
     'No_Participation_Anywhere' AS check_type,
     p.id AS participant_id,
     p.name AS participant_name,
@@ -301,6 +306,9 @@ SELECT
     op.active AS registry_active_flag,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds registered participants that take no part in the sport
+-- by any of the three paths open to them: an event participant row, a lineup place or a
+-- Comp.Rank row.
 -- Registration is a claim that the participant belongs to the sport; the three paths are
 -- the only ways that claim is ever cashed. Asserting the event path alone reports every
 -- athlete of a sport that enters teams and carries its people in lineups or in the
@@ -379,7 +387,7 @@ ORDER BY sort_order, participant_id;
 SELECT
     -- CheckID - GLOBAL-DQ-043
     -- Name - EVENT_PARTICIPANTS_GENDER_MISMATCH
-    -- What it does: Finds event participants whose own lineup contradicts their gender: a mixed team whose lineup misses a gender, or a single-gender team holding the other.
+    -- What it does: Flags participant lineups that conflict with the participant gender, including mixed teams missing one gender.
     CASE
         WHEN x.participant_type = 'team' AND x.participant_gender = 'mixed'
              AND x.lineup_rows > 0 AND (x.lineup_male = 0 OR x.lineup_female = 0)
@@ -402,6 +410,9 @@ SELECT
     x.lineup_male,
     x.lineup_female,
     NULL AS eligible_count
+-- What it does, stated in full: Finds event participants whose own lineup contradicts their
+-- gender: a mixed team whose lineup misses a gender, or a single-gender team holding the
+-- other.
 -- A lineup belongs to the entry rather than to the team, so a team fielding an incomplete
 -- lineup in twelve events has twelve lineups to repair and the event participant is the right
 -- object here. The contradiction between a participant's stored gender and the stage it was
@@ -475,7 +486,7 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-058
     -- Name - EVENT_TEAM_PARTICIPANT_WITHOUT_LINEUP
-    -- What it does: Finds events whose team participants reach no lineup, separating an event where no team does from one where only some do.
+    -- What it does: Flags team events where all or some teams have no lineup.
     CASE
         WHEN x.teams_with_lineup = 0 THEN 'EVENT_NO_TEAM_HAS_LINEUP'
         ELSE 'EVENT_SOME_TEAMS_MISSING_LINEUP'
@@ -488,6 +499,8 @@ SELECT
     x.team_count - x.teams_with_lineup AS teams_without_lineup,
     x.teams_missing_lineup_names,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events whose team participants reach no lineup,
+-- separating an event where no team does from one where only some do.
 FROM (
     SELECT
         e.id AS event_id,
@@ -541,7 +554,7 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-067
     -- Name - EVENT_MIXED_TEAM_LINEUP_GENDER_BALANCE_UNEVEN
-    -- What it does: Finds mixed-gender teams whose lineup holds male and female members in unequal numbers.
+    -- What it does: Flags mixed teams with unequal numbers of male and female lineup members.
     'MIXED_TEAM_LINEUP_GENDER_COUNT_UNEVEN' AS check_type,
     x.event_participants_id,
     x.event_id,
@@ -554,6 +567,8 @@ SELECT
     x.lineup_unusable_gender,
     ABS(x.lineup_male - x.lineup_female) AS gender_gap,
     NULL AS eligible_count
+-- What it does, stated in full: Finds mixed-gender teams whose lineup holds male and female
+-- members in unequal numbers.
 FROM (
     SELECT
         ep.id AS event_participants_id,
@@ -624,7 +639,7 @@ WHERE y.lineup_male > 0
 SELECT
     -- CheckID - GLOBAL-DQ-068
     -- Name - EVENT_TEAM_LINEUP_SIZE_UNEVEN
-    -- What it does: Finds events whose teams do not all field the same number of lineup members, separating a shortfall of one member from a larger one.
+    -- What it does: Flags team events where the teams have different lineup sizes.
     CASE
         WHEN x.max_size - x.min_size = 1 THEN 'EVENT_TEAM_LINEUP_SIZE_SHORT_BY_ONE'
         ELSE 'EVENT_TEAM_LINEUP_SIZE_SHORT_BY_MORE'
@@ -639,6 +654,8 @@ SELECT
     x.team_breakdown,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events whose teams do not all field the same number of
+-- lineup members, separating a shortfall of one member from a larger one.
 FROM (
     SELECT
         b.event_id,
@@ -719,7 +736,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-071
     -- Name - EVENT_NO_PARTICIPANTS
-    -- What it does: Finds events holding no participant at all, separating a finished event from an unfinished one, with the soft-deleted participant rows it still carries.
+    -- What it does: Flags events with no active participants and shows whether the event is finished and whether deleted participant rows exist.
     CASE
         WHEN e.status_type = 'finished' AND e.status_descFK = 6 THEN 'NO_PARTICIPANTS_FINISHED_EVENT'
         ELSE 'NO_PARTICIPANTS_NOT_FINISHED_EVENT'
@@ -732,6 +749,9 @@ SELECT
     ts.name AS stage_name,
     e.status_type,
     e.status_descFK,
+-- What it does, stated in full: Finds events holding no participant at all, separating a
+-- finished event from an unfinished one, with the soft-deleted participant rows it still
+-- carries.
     -- An event whose entries were all soft-deleted is a different history from one that
     -- never had any, and the two are repaired differently, so the count is carried rather
     -- than left to a second query.
@@ -781,7 +801,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-083
     -- Name - EVENT_PARTICIPANT_COUNT_NOT_TWO
-    -- What it does: Finds head-to-head events holding participants but not exactly two, separating fewer than the pair from more.
+    -- What it does: Flags head-to-head events that do not have exactly two participants.
     CASE
         WHEN x.participant_count < 2 THEN 'FEWER_THAN_TWO_PARTICIPANTS'
         ELSE 'MORE_THAN_TWO_PARTICIPANTS'
@@ -796,6 +816,8 @@ SELECT
     x.participant_count,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds head-to-head events holding participants but not
+-- exactly two, separating fewer than the pair from more.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -847,7 +869,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-104
     -- Name - EVENT_PARTICIPANT_REFERENCE_OR_TYPE_INVALID
-    -- What it does: Finds events holding a participant row that resolves to nothing, or to a participant of a type the sport does not field, separating the two.
+    -- What it does: Flags event-participant rows that point to no participant or to a participant type not used by the sport.
     CASE
         WHEN x.reference_missing_count > 0 THEN 'EVENT_PARTICIPANT_REFERENCE_MISSING'
         ELSE 'EVENT_PARTICIPANT_TYPE_OUTSIDE_SPORT_SET'
@@ -859,6 +881,8 @@ SELECT
     x.offending_types,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events holding a participant row that resolves to
+-- nothing, or to a participant of a type the sport does not field, separating the two.
 -- EVENT_PARTICIPANT_TYPE_LIST is declared for every documented sport, but until now it was
 -- only ever a scope filter - GLOBAL-DQ-007 and -008 use it to decide which participants to
 -- look at. Filtering on a value never tests it: a participant of the wrong kind leaves the
@@ -914,7 +938,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-112
     -- Name - EVENT_LINEUP_ATHLETE_ASSIGNED_MORE_THAN_ONCE
-    -- What it does: Finds events where one athlete occupies two places at once, repeated inside a single team's lineup or held by two teams, naming every affected athlete and the teams holding them.
+    -- What it does: Flags athletes listed twice in team lineups, either within one team or across two teams in the same event.
     CASE
         WHEN x.max_teams_holding > 1 THEN 'LINEUP_ATHLETE_IN_TWO_TEAMS'
         ELSE 'LINEUP_ATHLETE_REPEATED_IN_ONE_TEAM'
@@ -926,6 +950,9 @@ SELECT
     x.affected_athlete_detail,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events where one athlete occupies two places at once,
+-- repeated inside a single team's lineup or held by two teams, naming every affected athlete
+-- and the teams holding them.
 -- The two shapes are one question asked of the same row set, so they share a CheckID and
 -- separate by check_type. They are not equally serious and the distinction is the point: a
 -- repeated row inside one lineup is redundant storage, while an athlete held by two teams in
@@ -1022,7 +1049,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-123
     -- Name - PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED
-    -- What it does: Finds participants whose stored gender contradicts a stage they were entered in, naming how many entries repeat the contradiction and which stage genders they sit under.
+    -- What it does: Flags participants whose stored gender conflicts with the gender of a stage they entered.
     CASE
         WHEN x.participant_type = 'athlete' THEN 'ATHLETE_GENDER_NOT_STAGE_GENDER'
         ELSE 'TEAM_GENDER_NOT_STAGE_GENDER'
@@ -1035,6 +1062,9 @@ SELECT
     x.entry_count,
     x.example_event_id,
     NULL AS eligible_count
+-- What it does, stated in full: Finds participants whose stored gender contradicts a stage
+-- they were entered in, naming how many entries repeat the contradiction and which stage
+-- genders they sit under.
 FROM (
     -- The participant is the audited object, not the entry. Gender is one column on one
     -- participant row, so a team recorded as male and entered in ten mixed stages is one

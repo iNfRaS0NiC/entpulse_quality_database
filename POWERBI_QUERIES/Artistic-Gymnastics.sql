@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-029
     -- Name - TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES
-    -- What it does: Finds tournaments whose name disagrees with the calendar years their stages occupy, separating the five shapes, excluding the two postponed Summer Olympics 2020 editions.
+    -- What it does: Flags five common cases where a tournament name year does not match the years covered by its stages. Excludes the postponed 2020 Summer Olympics editions.
     CASE
         WHEN x.stage_span > 2 THEN 'STAGES_SPAN_MORE_THAN_TWO_YEARS'
         WHEN x.stage_span = 2 AND x.name_has_span = 0 THEN 'SINGLE_YEAR_NAME_ON_SEASON'
@@ -18,6 +18,9 @@ SELECT
     x.stages,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds tournaments whose name disagrees with the calendar
+-- years their stages occupy, separating the five shapes, excluding the two postponed Summer
+-- Olympics 2020 editions.
 FROM (
     SELECT
         t.id AS tournament_id,
@@ -80,7 +83,7 @@ ORDER BY sort_order, first_stage_year;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-089
     -- Name - EVENT_DISCIPLINE_CONTRADICTS_EVENT_NAME
-    -- What it does: Finds events whose stored discipline names one apparatus while the event name unambiguously names a different one.
+    -- What it does: Flags gymnastics events where the stored apparatus differs from the apparatus clearly stated in the event name.
     'Event_Discipline_Contradicts_Name' AS check_type,
     x.event_id,
     x.event_name,
@@ -91,6 +94,8 @@ SELECT
     x.tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events whose stored discipline names one apparatus
+-- while the event name unambiguously names a different one.
 -- Only names carrying exactly one apparatus word enter the audit. A name reading
 -- "Women Floor Balance Beam Final" holds two, and the longest match wins, which is why the
 -- CASE tests the two-word forms before the one-word ones: "parallel bars" and "uneven bars"
@@ -171,7 +176,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-090
     -- Name - EVENT_RESULT_SET_DUPLICATED_ACROSS_DISCIPLINES
-    -- What it does: Finds finished events whose whole set of participants and Points is identical to an event of a different discipline in the same tournament, so one apparatus field was written over another.
+    -- What it does: Flags finished events with the same participants and Points as another discipline in the same tournament.
     'Event_Result_Set_Duplicated_Across_Disciplines' AS check_type,
     f.event_id,
     f.event_name,
@@ -185,6 +190,9 @@ SELECT
     f.tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds finished events whose whole set of participants and
+-- Points is identical to an event of a different discipline in the same tournament, so one
+-- apparatus field was written over another.
 -- The fingerprint is an order-independent sum of CRC32 over participant and Points value,
 -- not a GROUP_CONCAT: a concatenated key is silently truncated at group_concat_max_len and
 -- two long fields would then collide on their prefix, which turns the check into noise.
@@ -283,7 +291,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-091
     -- Name - COMP.RANK_TEAM_MEMBERS_DISAGREE_ON_TEAM_RESULT
-    -- What it does: Finds Comp.Rank where the athletes the Team field assigns to one team within a phase do not all carry the same Points or the same Rank.
+    -- What it does: Flags athletes assigned to the same Comp.Rank team and phase who do not share the same Points and Rank.
     CASE
         WHEN x.distinct_points > 1 AND x.distinct_ranks > 1 THEN 'TEAM_MEMBERS_DISAGREE_ON_POINTS_AND_RANK'
         WHEN x.distinct_points > 1 THEN 'TEAM_MEMBERS_DISAGREE_ON_POINTS'
@@ -300,6 +308,8 @@ SELECT
     x.ranks_seen,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank where the athletes the Team field assigns to
+-- one team within a phase do not all carry the same Points or the same Rank.
 -- A team and the athletes it fields are one placing, so every member of one team must hold
 -- the same team Points and the same team Rank. The grouping carries the phase, because the
 -- same team legitimately holds a different placing in the Qualifier than in the Final and
@@ -375,7 +385,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-092
     -- Name - EVENT_DISCIPLINE_INCOMPATIBLE_WITH_GENDER
-    -- What it does: Finds events contested on an apparatus the stage gender does not compete: a male stage on Uneven Bars or Balance Beam, or a female stage on Pommel Horse, Rings, Parallel Bars or Horizontal Bar.
+    -- What it does: Flags gymnastics events assigned to an apparatus that is not contested by the stage gender.
     CASE
         WHEN ts.gender = 'male' THEN 'MALE_STAGE_ON_WOMENS_APPARATUS'
         ELSE 'FEMALE_STAGE_ON_MENS_APPARATUS'
@@ -390,6 +400,9 @@ SELECT
     t.name AS tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events contested on an apparatus the stage gender does
+-- not compete: a male stage on Uneven Bars or Balance Beam, or a female stage on Pommel
+-- Horse, Rings, Parallel Bars or Horizontal Bar.
 -- The apparatus programmes are fixed by the sport rather than by this database: men contest
 -- Floor Exercise, Pommel Horse, Rings, Vault, Parallel Bars and Horizontal Bar; women
 -- contest Vault, Uneven Bars, Balance Beam and Floor Exercise. Floor Exercise and Vault are
@@ -443,7 +456,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-093
     -- Name - EVENT_RESULTS_NO_RESULT_COMMENT_CARRIES_RANK
-    -- What it does: Finds participants whose Comment records no classified result while a Rank or a Medal is stored beside it, separating the two.
+    -- What it does: Flags participants marked as unclassified in Comment while still holding a Rank or Medal.
     CASE
         WHEN med.value IS NOT NULL AND TRIM(med.value) <> '' THEN 'NO_RESULT_COMMENT_WITH_MEDAL'
         ELSE 'NO_RESULT_COMMENT_WITH_RANK'
@@ -460,6 +473,8 @@ SELECT
     t.name AS tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds participants whose Comment records no classified
+-- result while a Rank or a Medal is stored beside it, separating the two.
 -- The vocabulary is the four literals that mean the gymnast produced nothing to classify.
 -- NR and NC are deliberately not among them and are not a defect here: NR carries a Points
 -- value and a Rank on every one of its rows, and NC carries Points on most of them while
@@ -516,7 +531,7 @@ ORDER BY sort_order, event_participants_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-094
     -- Name - EVENT_RESULTS_NUMERIC_LEAKED_TO_COMMENT
-    -- What it does: Finds participants whose Comment holds a gymnastics score rather than a status code, separating a comma decimal from a dot decimal.
+    -- What it does: Flags gymnastics participants whose Comment contains a score instead of a status code.
     CASE
         WHEN TRIM(cmt.value) REGEXP '^[0-9]+,[0-9]{1,3}$' THEN 'SCORE_WITH_COMMA_DECIMAL_IN_COMMENT'
         ELSE 'SCORE_WITH_DOT_DECIMAL_IN_COMMENT'
@@ -532,6 +547,8 @@ SELECT
     t.name AS tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds participants whose Comment holds a gymnastics score
+-- rather than a status code, separating a comma decimal from a dot decimal.
 -- The Comment field holds a closed status vocabulary for this sport, so a value shaped like
 -- a score is a score written into the wrong column. Both decimal shapes are audited because
 -- the sport's own scores use a dot while the leaked ones observed so far use a comma, and a
@@ -592,7 +609,7 @@ ORDER BY sort_order, event_participants_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-095
     -- Name - EVENT_VAULT_COMMENT_OUTSIDE_VAULT
-    -- What it does: Finds participants whose Comment records a score taken from the first vault while the event is contested on an apparatus other than Vault.
+    -- What it does: Flags non-Vault events where a participant's Comment contains a first-vault score.
     'Vault_Comment_Outside_Vault' AS check_type,
     ep.id AS event_participants_id,
     e.id AS event_id,
@@ -605,6 +622,8 @@ SELECT
     t.name AS tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds participants whose Comment records a score taken from
+-- the first vault while the event is contested on an apparatus other than Vault.
 -- Vault is the only apparatus on which a gymnast performs two exercises, and the marker
 -- records which of the two the stored score came from. Every other apparatus is a single
 -- exercise with nothing for the marker to distinguish, so its presence there is either the
@@ -661,7 +680,7 @@ ORDER BY sort_order, event_participants_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-096
     -- Name - EVENT_RESULT_SCALE_CONTRADICTS_DISCIPLINE
-    -- What it does: Finds finished All-Around events whose Points sit in the range a single apparatus produces rather than the multi-apparatus total the competition is, separating Individual from Team.
+    -- What it does: Flags finished All-Around events whose Points look like a single-apparatus score instead of an All-Around total.
     CASE
         WHEN x.discipline_id = 96 THEN 'INDIVIDUAL_ALL_AROUND_ON_SINGLE_APPARATUS_SCALE'
         ELSE 'TEAM_ALL_AROUND_ON_SINGLE_APPARATUS_SCALE'
@@ -678,6 +697,9 @@ SELECT
     x.tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds finished All-Around events whose Points sit in the
+-- range a single apparatus produces rather than the multi-apparatus total the competition
+-- is, separating Individual from Team.
 -- An All-Around score is a sum over apparatus - six for men, four for women - so it cannot
 -- sit where a single exercise sits. A single apparatus score has not exceeded 20 under any
 -- scoring code the sport has used, the perfect 10 before 2006 and the open-ended D plus E
@@ -754,7 +776,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-099
     -- Name - EVENT_RESULTS_RANK_ORDER_CONTRADICTS_SCORE
-    -- What it does: Finds a competitor placed behind another of the same qualification status while scoring more than them, one row per misplaced competitor with the competitor they were put behind.
+    -- What it does: Flags competitors placed behind someone with the same qualification status despite having more Points.
     'RANK_ORDER_CONTRADICTS_SCORE' AS check_type,
     w.event_id,
     w.event_name,
@@ -773,6 +795,9 @@ SELECT
     CASE WHEN w.comment_group = '' THEN '(no comment)' ELSE w.comment_group END AS qualification_status,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds a competitor placed behind another of the same
+-- qualification status while scoring more than them, one row per misplaced competitor with
+-- the competitor they were put behind.
 -- Gymnastics places competitors by the score they were given, so within one field the ranking
 -- and the score are two records of one ordering. Artistic-Gymnastics-DQ-097 reads the case where
 -- one rank carries two different scores; this reads the other direction, where two ranks carry

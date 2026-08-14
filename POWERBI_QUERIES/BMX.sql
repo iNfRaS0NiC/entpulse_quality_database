@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - BMX-DQ-030
     -- Name - EVENT_DURATION_FORMAT_MISMATCH_TO_RANK
-    -- What it does: Finds events where a participant's duration breaks the leader/gap convention: rank 1 a plain full time, every other rank a plus-prefixed gap with no colon.
+    -- What it does: Flags Duration values that break this rule: rank 1 has the full time, and lower ranks have a plus-prefixed gap with no colon.
     'Duration_Format_Mismatch_Events' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -32,6 +32,9 @@ SELECT
         SEPARATOR ' | '
     ) AS mismatch_details,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events where a participant's duration breaks the
+-- leader/gap convention: rank 1 a plain full time, every other rank a plus-prefixed gap with
+-- no colon.
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'

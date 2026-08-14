@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - GLOBAL-DQ-017
     -- Name - EVENT_RESULTS_MISSING_FOR_FINISHED
-    -- What it does: Finds finished events (status_descFK=6) where no participant holds a result.
+    -- What it does: Flags finished events where no participant has any result.
     'Missing_Results_For_Finished' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -11,6 +11,8 @@ SELECT
     e.status_type,
     e.status_descFK,
     NULL AS eligible_count
+-- What it does, stated in full: Finds finished events (status_descFK=6) where no participant
+-- holds a result.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -59,7 +61,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-018
     -- Name - EVENT_RESULTS_MEDAL_INVALID_VALUE
-    -- What it does: Finds event-participant Medal values that are not gold, silver or bronze.
+    -- What it does: Flags event Medal values other than gold, silver, or bronze.
     'Medal_Invalid_Value' AS check_type,
     ep.id AS event_participants_id,
     e.id AS event_id,
@@ -67,6 +69,8 @@ SELECT
     p.name AS participant_name,
     r.value AS medal_value,
     NULL AS eligible_count
+-- What it does, stated in full: Finds event-participant Medal values that are not gold,
+-- silver or bronze.
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -111,7 +115,7 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-019
     -- Name - EVENT_DURATION_FORMAT_MISMATCH_TO_RANK
-    -- What it does: Finds events where a participant's duration breaks the leader/gap convention: rank 1 must be a plain absolute time, every other rank a plus-prefixed gap.
+    -- What it does: Flags Duration values that break this rule: rank 1 has an absolute time, and lower ranks have a plus-prefixed gap.
     'Duration_Format_Mismatch_Events' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -142,6 +146,9 @@ SELECT
         SEPARATOR ' | '
     ) AS mismatch_details,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events where a participant's duration breaks the
+-- leader/gap convention: rank 1 must be a plain absolute time, every other rank a plus-
+-- prefixed gap.
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -192,13 +199,16 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-020
     -- Name - EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE
-    -- What it does: Finds finished events holding a Rank that exceeds the participant count and is disconnected from the next lower Rank, with no Comment to explain it, naming how many of the field are affected and what they hold.
+    -- What it does: Flags unexplained Ranks above the participant count when there is also a gap from the previous Rank.
     'RANK_OUTLIER_ABOVE_FIELD_SIZE' AS check_type,
     z.event_id,
     z.event_name,
     z.template_name,
     z.participant_count,
     z.affected_count,
+-- What it does, stated in full: Finds finished events holding a Rank that exceeds the
+-- participant count and is disconnected from the next lower Rank, with no Comment to explain
+-- it, naming how many of the field are affected and what they hold.
     -- The ranks themselves, deduplicated. A field imported with every place shifted reads as
     -- one list here where it read as one row per competitor before the reshape of 2026-08-13,
     -- and the shift is visible in the list rather than reconstructed from the rows.
@@ -324,7 +334,7 @@ ORDER BY sort_order, affected_count DESC, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-021
     -- Name - EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT
-    -- What it does: Finds finished events holding a Rank shared by participants where neither row carries a Comment and the values the sport ranks on do not account for the tie, naming the ranks doubled and who holds them, and separating an event whose tied values disagree from one with no value stored at all.
+    -- What it does: Flags unexplained shared Ranks when the ranking values do not support a tie or are missing.
     z.check_type,
     z.event_id,
     z.event_name,
@@ -336,6 +346,10 @@ SELECT
     z.affected_participants,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds finished events holding a Rank shared by participants
+-- where neither row carries a Comment and the values the sport ranks on do not account for
+-- the tie, naming the ranks doubled and who holds them, and separating an event whose tied
+-- values disagree from one with no value stored at all.
 -- A tie the sport actually contested is not a defect, and the database can say which is which.
 -- Where every participant sharing a rank also carries the same value on one of the fields the
 -- sport ranks by, the duplicate is the result: two gymnasts on the same score share a place, two
@@ -538,7 +552,7 @@ ORDER BY sort_order, affected_count DESC, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-036
     -- Name - EVENT_RESULTS_RANK_INVALID_OR_MISSING
-    -- What it does: Finds event participants in finished events whose Rank is not a plain positive integer up to the sport's maximum, or is missing with no Comment either, separating a participant holding no result at all from one holding another.
+    -- What it does: Flags finished-event participants whose Rank is missing without a Comment, not a positive integer, or above the sport's maximum.
     CASE
         WHEN r_rank_value IS NOT NULL AND r_rank_value NOT REGEXP '^[1-9][0-9]*$' THEN 'RANK_NOT_INTEGER'
         WHEN r_rank_value IS NOT NULL AND r_rank_value REGEXP '^[1-9][0-9]*$' AND CAST(r_rank_value AS UNSIGNED) > {{RANK_MAX_PLAUSIBLE}} THEN 'RANK_OVER_MAX'
@@ -552,6 +566,9 @@ SELECT
     x.r_rank_value AS rank_value,
     x.r_comment_value AS comment_value,
     NULL AS eligible_count
+-- What it does, stated in full: Finds event participants in finished events whose Rank is
+-- not a plain positive integer up to the sport's maximum, or is missing with no Comment
+-- either, separating a participant holding no result at all from one holding another.
 FROM (
     SELECT
         ep.id AS event_participants_id,
@@ -632,8 +649,12 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-037
     -- Name - EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL
-    -- What it does: Finds finished Final-round events whose Medal set does not follow the places its own Rank results hold, separating an unreadable set, no medals at all, a duplicate contradicted by the place below it, a duplicate shaped like a tie, a duplicated bronze, a shared place carrying too few medals and a missing type.
+    -- What it does: Flags finished Finals where Medal values do not match Rank results, including missing, duplicated, unreadable, or incomplete medals.
     CASE
+-- What it does, stated in full: Finds finished Final-round events whose Medal set does not
+-- follow the places its own Rank results hold, separating an unreadable set, no medals at
+-- all, a duplicate contradicted by the place below it, a duplicate shaped like a tie, a
+-- duplicated bronze, a shared place carrying too few medals and a missing type.
         -- Nothing to compare the medals with. The missing Rank is GLOBAL-DQ-036's finding and
         -- is not restated here; what this row says is that the medal set was not audited.
         WHEN x.ranked_count = 0 THEN 'Medal_Set_Unreadable_Without_Rank'
@@ -743,7 +764,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-039
     -- Name - EVENT_RESULTS_UNEXPECTED_MEDAL_FOR_NON_MEDAL_ROUND
-    -- What it does: Finds finished events off a medal round type that carry a Medal result.
+    -- What it does: Flags finished events outside a medal round that contain a Medal result.
     'Unexpected_Medal_For_Non_Medal_Round' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -753,6 +774,8 @@ SELECT
     e.round_typeFK AS round_type_id,
     rt.name AS round_type_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds finished events off a medal round type that carry a
+-- Medal result.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -803,7 +826,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-045
     -- Name - EVENT_DURATION_FULL_TIME_MISMATCH_TO_RANK
-    -- What it does: Finds finished events in the sport's timed disciplines where a participant's full time is missing despite a Rank, present without one, badly formatted, or zero.
+    -- What it does: Flags finished timed events where Full time is missing with a Rank, present without a Rank, invalid, or zero.
     'Duration_Full_Time_Mismatch_Events' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -811,6 +834,9 @@ SELECT
     GROUP_CONCAT(DISTINCT x.violation_type ORDER BY x.violation_type SEPARATOR ', ') AS violation_types,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds finished events in the sport's timed disciplines where
+-- a participant's full time is missing despite a Rank, present without one, badly formatted,
+-- or zero.
 FROM (
     SELECT
         ep.id AS event_participants_id,
@@ -894,7 +920,7 @@ ORDER BY sort_order, mismatching_participants_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-047
     -- Name - EVENT_RESULTS_UNEXPECTED_FOR_NOT_STARTED
-    -- What it does: Finds events in a not-started status that carry a result.
+    -- What it does: Flags not-started events that already contain results.
     'Unexpected_Results_For_Not_Started' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -904,6 +930,7 @@ SELECT
     e.status_type,
     e.status_descFK,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events in a not-started status that carry a result.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -953,7 +980,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-052
     -- Name - EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED
-    -- What it does: Finds Comment values outside the sport's status codes, or marking a participant as unclassified while a Rank, a time or a Medal is stored for that same participant.
+    -- What it does: Flags invalid Comment values, or an unclassified Comment stored together with a Rank, time, or Medal.
     CASE
         WHEN LOWER(TRIM(x.comment_value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}}) AND x.medal_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_MEDAL'
         WHEN LOWER(TRIM(x.comment_value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}}) AND x.rank_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_RANK'
@@ -970,6 +997,9 @@ SELECT
     x.medal_value,
     x.tournament_template_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comment values outside the sport's status codes, or
+-- marking a participant as unclassified while a Rank, a time or a Medal is stored for that
+-- same participant.
 FROM (
     SELECT
         ep.id AS event_participants_id,
@@ -1040,7 +1070,7 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-053
     -- Name - EVENT_RESULTS_MEDAL_RANK_MISMATCH
-    -- What it does: Finds event participants whose Medal does not match the place it stands for, or that carry no Rank at all.
+    -- What it does: Flags event participants whose Medal does not match their Rank, or who have a Medal without a Rank.
     CASE
         WHEN x.rank_value IS NULL THEN 'MEDAL_WITHOUT_RANK'
         ELSE 'MEDAL_RANK_MISMATCH'
@@ -1053,6 +1083,8 @@ SELECT
     x.rank_value,
     x.expected_rank,
     NULL AS eligible_count
+-- What it does, stated in full: Finds event participants whose Medal does not match the
+-- place it stands for, or that carry no Rank at all.
 FROM (
     SELECT
         ep.id AS event_participants_id,
@@ -1115,7 +1147,7 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-054
     -- Name - EVENT_RESULTS_RANK_FULL_TIME_NOT_MONOTONIC
-    -- What it does: Finds events in the sport's timed disciplines holding a pair whose Rank order contradicts their full-time order, so a better-ranked competitor is recorded as slower.
+    -- What it does: Flags timed-event participant pairs where the better-ranked competitor has a slower Full time.
     'RANK_FULL_TIME_NOT_MONOTONIC' AS check_type,
     a.event_id,
     a.event_name,
@@ -1125,6 +1157,9 @@ SELECT
                                  ' slower than #', b.rank_num, ' ', b.time_value)
                  ORDER BY 1 SEPARATOR ' | ') AS contradiction_detail,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events in the sport's timed disciplines holding a pair
+-- whose Rank order contradicts their full-time order, so a better-ranked competitor is
+-- recorded as slower.
 FROM (
     SELECT e.id AS event_id, e.name AS event_name, tt.name AS tournament_template_name,
            p.name AS participant_name,
@@ -1240,7 +1275,7 @@ FROM (
 SELECT
     -- CheckID - GLOBAL-DQ-055
     -- Name - EVENT_PARTICIPANTS_DUPLICATE_IN_EVENT
-    -- What it does: Finds events where one participant holds more than one participant row, so the same competitor is entered twice.
+    -- What it does: Flags events where the same competitor has more than one participant row.
     'PARTICIPANT_DUPLICATE_IN_EVENT' AS check_type,
     d.event_id,
     d.event_name,
@@ -1249,6 +1284,8 @@ SELECT
     SUM(d.entry_count) AS duplicated_entry_count,
     GROUP_CONCAT(DISTINCT d.participant_name ORDER BY d.participant_name SEPARATOR ', ') AS duplicated_participants,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events where one participant holds more than one
+-- participant row, so the same competitor is entered twice.
 FROM (
     SELECT
         e.id AS event_id,
@@ -1298,7 +1335,7 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-056
     -- Name - EVENT_DURATION_FULL_TIME_ARITHMETIC_MISMATCH
-    -- What it does: Finds events in the sport's timed disciplines where a participant's full time does not equal the leader's full time plus their own gap, beyond the sport's tolerance.
+    -- What it does: Flags timed results where Full time does not equal the leader's Full time plus the participant's gap, within the sport's tolerance.
     'DURATION_FULL_TIME_ARITHMETIC_MISMATCH' AS check_type,
     x.event_id,
     x.event_name,
@@ -1310,6 +1347,9 @@ SELECT
                                  's but full time ', x.time_value)
                  ORDER BY 1 SEPARATOR ' | ') AS mismatch_detail,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events in the sport's timed disciplines where a
+-- participant's full time does not equal the leader's full time plus their own gap, beyond
+-- the sport's tolerance.
 FROM (
     SELECT e.id AS event_id, e.name AS event_name, tt.name AS tournament_template_name,
            ep.id AS event_participants_id, p.name AS participant_name,
@@ -1432,7 +1472,7 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-059
     -- Name - EVENT_RESULTS_DUPLICATE_ROWS
-    -- What it does: Finds events holding more than one result row for the same participant and result type, separating a duplicate repeating the value from one storing a conflicting one.
+    -- What it does: Flags duplicate result rows for the same participant and result type, and shows whether the values match or conflict.
     'Result_Duplicate_Rows' AS check_type,
     d.event_id,
     d.event_name,
@@ -1443,6 +1483,9 @@ SELECT
     SUM(d.row_count) AS duplicated_row_count,
     MIN(CONCAT('ep=', d.event_participants_id, ' type=', d.result_typeFK, ' values=', d.value_list)) AS sample_group,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events holding more than one result row for the same
+-- participant and result type, separating a duplicate repeating the value from one storing a
+-- conflicting one.
 FROM (
     SELECT
         e.id AS event_id,
@@ -1495,7 +1538,7 @@ WHERE r.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-069
     -- Name - EVENT_RESULTS_VALUE_BLANK
-    -- What it does: Finds result values that are neither empty nor readable, made only of ordinary spacing or only of invisible characters, separating the two.
+    -- What it does: Flags result values that contain only spaces or only invisible characters.
     CASE
         WHEN x.invisible_count > 0 THEN 'BLANK_INVISIBLE_CHARACTER'
         ELSE 'BLANK_WHITESPACE_ONLY'
@@ -1509,6 +1552,8 @@ SELECT
     x.tournament_template_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds result values that are neither empty nor readable,
+-- made only of ordinary spacing or only of invisible characters, separating the two.
 FROM (
     SELECT
         ep.id AS event_participants_id,
@@ -1579,13 +1624,17 @@ ORDER BY sort_order, blank_result_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-076
     -- Name - EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC
-    -- What it does: Finds events holding non-numeric values in the sport's numeric result fields, separating one of the sport's own status codes, a no-data sentinel such as nan, a number written with thousands separators, and any other text, and naming how many values are affected and what they hold.
+    -- What it does: Flags text stored in numeric result fields, including status codes, nan values, thousands separators, and other non-numeric text.
     x.check_type,
     x.event_id,
     x.event_name,
     x.event_startdate,
     x.template_name,
     x.tournament_name,
+-- What it does, stated in full: Finds events holding non-numeric values in the sport's
+-- numeric result fields, separating one of the sport's own status codes, a no-data sentinel
+-- such as nan, a number written with thousands separators, and any other text, and naming
+-- how many values are affected and what they hold.
     -- The result type is named rather than numbered. A reader repairing the field has to know
     -- which field it is, and the id alone sends them back to the catalogue for every row.
     x.result_type_names,
@@ -1709,7 +1758,7 @@ ORDER BY sort_order, affected_count DESC, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-084
     -- Name - EVENT_RESULT_SCORE_TIED
-    -- What it does: Finds head-to-head events whose two participants hold an identical deciding score, so no winner can be read, separating a tie on a zero score from one on a played score.
+    -- What it does: Flags head-to-head events where both participants have the same deciding score, including 0-0 and played ties.
     CASE
         WHEN CAST(TRIM(x.min_value) AS SIGNED) = 0 THEN 'TIED_SCORE_BOTH_ZERO'
         ELSE 'TIED_SCORE_PLAYED'
@@ -1724,6 +1773,9 @@ SELECT
     x.min_value AS shared_value,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds head-to-head events whose two participants hold an
+-- identical deciding score, so no winner can be read, separating a tie on a zero score from
+-- one on a played score.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -1789,7 +1841,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-085
     -- Name - EVENT_SCOPE_PERIOD_SUM_MISMATCH_TOTAL
-    -- What it does: Finds participants whose period-by-period scope values do not add up to their deciding score, separating a total above the sum of its periods from one below it.
+    -- What it does: Flags participants whose period values do not add up to their deciding score.
     CASE
         WHEN CAST(TRIM(r.value) AS SIGNED) > x.period_sum THEN 'TOTAL_ABOVE_PERIOD_SUM'
         ELSE 'TOTAL_BELOW_PERIOD_SUM'
@@ -1806,6 +1858,9 @@ SELECT
     x.period_count,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds participants whose period-by-period scope values do
+-- not add up to their deciding score, separating a total above the sum of its periods from
+-- one below it.
 FROM result r
 JOIN event_participants ep ON ep.id = r.event_participantsFK AND ep.del = 'no'
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
@@ -1896,7 +1951,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-086
     -- Name - EVENT_SCOPE_PERIOD_VALUE_UNRECOGNISED
-    -- What it does: Finds scope period values that are neither a non-negative number nor one of the sport's sentinels, separating empty active rows, negative numbers and unrecognised tokens.
+    -- What it does: Flags period values that are blank, negative, or not an approved number or sentinel.
     CASE
         WHEN bad.empty_count = bad.unrecognised_count THEN 'EMPTY_PERIOD_VALUE'
         WHEN bad.negative_count = bad.unrecognised_count THEN 'NEGATIVE_PERIOD_VALUE'
@@ -1913,6 +1968,9 @@ SELECT
     bad.unrecognised_count,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds scope period values that are neither a non-negative
+-- number nor one of the sport's sentinels, separating empty active rows, negative numbers
+-- and unrecognised tokens.
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -2099,7 +2157,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-090
     -- Name - EVENT_RESULT_MIRRORED_SCORE_TYPES_DISAGREE
-    -- What it does: Finds events whose participants' two mirrored score types disagree, separating a pair holding different values from one where a side of the pair is absent, and naming how many of the field are affected and who they are.
+    -- What it does: Flags participants whose two mirrored score fields differ or where one of the two fields is missing.
     x.check_type,
     x.event_id,
     x.event_name,
@@ -2109,6 +2167,9 @@ SELECT
     x.status_descFK,
     x.field_size,
     x.affected_count,
+-- What it does, stated in full: Finds events whose participants' two mirrored score types
+-- disagree, separating a pair holding different values from one where a side of the pair is
+-- absent, and naming how many of the field are affected and who they are.
     -- A convenience for the reader, not the finding: each entry is the participant with the
     -- pair as stored, primary/mirror, a dash standing for the absent side. GROUP_CONCAT
     -- truncates at the server's group_concat_max_len without saying so, and affected_count is
@@ -2213,7 +2274,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-091
     -- Name - EVENT_SCOPE_PERIOD_NOT_STORED_FOR_BOTH_SIDES
-    -- What it does: Finds events where a period is stored for some participants but not all, or twice for one, so the two sides disagree about which periods exist.
+    -- What it does: Flags events where a period is missing for some participants or stored more than once for one participant.
     CASE
         WHEN x.short_period_count > 0 THEN 'PERIOD_MISSING_FOR_SOME_PARTICIPANTS'
         ELSE 'PERIOD_STORED_MORE_THAN_ONCE'
@@ -2231,6 +2292,8 @@ SELECT
     x.duplicated_periods,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events where a period is stored for some participants
+-- but not all, or twice for one, so the two sides disagree about which periods exist.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -2315,7 +2378,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-092
     -- Name - EVENT_SCOPE_PERIOD_SENTINEL_NOT_TRAILING
-    -- What it does: Finds events whose unplayed-period sentinel is contradicted by its neighbours: a scored period after a participant's own first sentinel, or one side marking a period unplayed while the other scores it.
+    -- What it does: Flags period sentinels that conflict with later scores or with the other participant's value for the same period.
     CASE
         WHEN tr.trailing_defect_sides > 0 THEN 'SENTINEL_FOLLOWED_BY_SCORE'
         ELSE 'SENTINEL_NOT_MATCHED_BY_OPPONENT'
@@ -2331,6 +2394,9 @@ SELECT
     um.unmatched_periods,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events whose unplayed-period sentinel is contradicted
+-- by its neighbours: a scored period after a participant's own first sentinel, or one side
+-- marking a period unplayed while the other scores it.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -2439,7 +2505,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-093
     -- Name - EVENT_RESULTS_MEDAL_SET_INVALID_FOR_MEDAL_ROUND
-    -- What it does: Finds finished medal-round events whose Medal set is not what the round decides - gold and silver on a Final, bronze on a bronze match - separating no medal at all, a medal the round does not decide, a repeated type and a missing one.
+    -- What it does: Flags finished medal rounds with missing, extra, or duplicate medals for the result decided by that round.
     CASE
         WHEN x.is_final = 1 AND x.total_medal_count = 0 THEN 'FINAL_NO_MEDALS_AT_ALL'
         WHEN x.is_final = 1 AND x.bronze_count > 0 THEN 'FINAL_UNEXPECTED_BRONZE'
@@ -2463,6 +2529,9 @@ SELECT
     x.participant_count,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds finished medal-round events whose Medal set is not
+-- what the round decides - gold and silver on a Final, bronze on a bronze match - separating
+-- no medal at all, a medal the round does not decide, a repeated type and a missing one.
 -- The medal set is asserted per round rather than per event or per stage, because a
 -- head-to-head sport decides its medals in more than one match: the Final settles gold and
 -- silver between its two participants and a bronze match settles bronze. No single event can
@@ -2535,7 +2604,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-094
     -- Name - EVENT_RESULTS_MEDAL_CONTRADICTS_SCORE
-    -- What it does: Finds participants on a medal round whose Medal does not match the place their own score gives them, separating a missing medal, one stored where the round awards none, and one naming the wrong place.
+    -- What it does: Flags medal-round participants whose Medal does not match the place produced by their score.
     CASE
         WHEN m.stored_medal = '' THEN 'MEDAL_MISSING_FOR_PLACE'
         WHEN m.expected_medal = '' THEN 'MEDAL_UNEXPECTED_FOR_PLACE'
@@ -2555,6 +2624,9 @@ SELECT
     m.stored_medal,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds participants on a medal round whose Medal does not
+-- match the place their own score gives them, separating a missing medal, one stored where
+-- the round awards none, and one naming the wrong place.
 -- The winner is read from the pair of scores, never from a stored rank or a Winner property:
 -- a head-to-head sport that stores neither still decides its medals, and the score is what
 -- decides them. A tie is excluded rather than judged, because no place can be read from it -
@@ -2684,7 +2756,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-102
     -- Name - EVENT_SCOPE_RESULT_OWNER_EVENT_MISMATCH
-    -- What it does: Finds scope results naming an event participant from a different event, or one that is not active, so the value is attached to a competitor who did not play it.
+    -- What it does: Flags scope results linked to a participant from another event or to an inactive participant.
     CASE
         WHEN x.participant_row_missing_count > 0 THEN 'SCOPE_RESULT_PARTICIPANT_ROW_MISSING'
         ELSE 'SCOPE_RESULT_OWNER_EVENT_MISMATCH'
@@ -2696,6 +2768,9 @@ SELECT
     x.sample_row,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds scope results naming an event participant from a
+-- different event, or one that is not active, so the value is attached to a competitor who
+-- did not play it.
 -- A relational invariant rather than a reading of the sport's semantics: a scope result
 -- reaches an event twice over, once through the container it hangs off and once through the
 -- participant it names, and the two have to arrive at the same event. Nothing a sport does
@@ -2763,7 +2838,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-107
     -- Name - EVENT_SCOPE_CONTAINER_MISSING_FOR_FINISHED
-    -- What it does: Finds finished events holding no scope container, so a match that was played records no period-by-period breakdown.
+    -- What it does: Flags finished events with no scope container, meaning no period-by-period breakdown is stored.
     'Event_Scope_Container_Missing' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -2772,6 +2847,8 @@ SELECT
     tt.name AS template_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds finished events holding no scope container, so a match
+-- that was played records no period-by-period breakdown.
 -- Only the missing container is reported. More than one container for an event would be the
 -- other half of a cardinality rule, but it does not occur in any confirmed sport, and a
 -- statement asserting a condition with no observed population is a rule nobody can test.
@@ -2820,7 +2897,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-108
     -- Name - EVENT_RESULTS_SCORE_NEGATIVE_OR_FRACTIONAL
-    -- What it does: Finds deciding or mirrored score values that are negative or carry a fractional part, so a count of scoring units is stored as something no count can be.
+    -- What it does: Flags deciding or mirrored scores that are negative or contain decimals.
     CASE
         WHEN x.negative_count > 0 THEN 'SCORE_NEGATIVE'
         ELSE 'SCORE_FRACTIONAL'
@@ -2831,6 +2908,9 @@ SELECT
     x.offending_values,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds deciding or mirrored score values that are negative or
+-- carry a fractional part, so a count of scoring units is stored as something no count can
+-- be.
 -- Tighter than GLOBAL-DQ-076, which asks only whether the value is numeric at all and
 -- therefore accepts -3 and 4.5. A score is a count of scoring units, so the domain is the
 -- non-negative integers and nothing else; the two ways of leaving it are separated because a
@@ -2890,7 +2970,7 @@ ORDER BY sort_order, event_id, event_participants_id;
 SELECT
     -- CheckID - GLOBAL-DQ-111
     -- Name - EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC
-    -- What it does: Finds events in the sport's timed disciplines where a finisher placed behind another records a faster time, or whose effective time cannot be read at all - the Full time where stored, the Duration otherwise - ignoring participants a Comment marks as not finishing.
+    -- What it does: Flags timed events where a lower-ranked finisher is faster, or the effective time cannot be read. Participants marked as non-finishers are ignored.
     CASE
         WHEN x.unreadable_count > 0 AND x.non_monotonic_pair_count > 0
             THEN 'EFFECTIVE_TIME_UNPARSEABLE_AND_NOT_MONOTONIC'
@@ -2904,6 +2984,10 @@ SELECT
     COALESCE(x.sample_unreadable, x.sample_non_monotonic) AS sample_offence,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events in the sport's timed disciplines where a
+-- finisher placed behind another records a faster time, or whose effective time cannot be
+-- read at all - the Full time where stored, the Duration otherwise - ignoring participants a
+-- Comment marks as not finishing.
 -- The Duration column follows the leader/gap convention: the leader carries an absolute time
 -- and everyone behind carries a gap to it, marked by a leading plus. SPORTS/BMX.md owns that
 -- statement for BMX. The Full time is preferred where one is stored only because it is
@@ -3162,7 +3246,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-114
     -- Name - EVENT_RESULTS_MIRROR_SCORE_WITHOUT_DECIDING_SCORE
-    -- What it does: Finds finished events holding a running or mirrored score while no participant holds the deciding score, so the event was scored but never resolved.
+    -- What it does: Flags finished events that contain a running or mirrored score but no deciding score.
     'Event_Mirror_Score_Without_Deciding_Score' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -3171,6 +3255,8 @@ SELECT
     YEAR(e.startdate) AS event_year,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds finished events holding a running or mirrored score
+-- while no participant holds the deciding score, so the event was scored but never resolved.
 -- Not what GLOBAL-DQ-017 asks. That one reports a finished event with no result at all,
 -- so an event holding a running score leaves its population and is never seen again. The
 -- partially written event is the harder case precisely because it looks populated: a
@@ -3442,7 +3528,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-117
     -- Name - EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED_BY_SCORE
-    -- What it does: Finds Comment values outside the sport's status codes, or marking a participant as unclassified while a Rank, a Medal or a score is stored for that same participant.
+    -- What it does: Flags invalid Comment values, or an unclassified Comment stored together with a Rank, Medal, or score.
     CASE
         WHEN LOWER(TRIM(x.comment_value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}}) AND x.medal_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_MEDAL'
         WHEN LOWER(TRIM(x.comment_value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}}) AND x.rank_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_RANK'
@@ -3460,6 +3546,9 @@ SELECT
     x.tournament_template_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comment values outside the sport's status codes, or
+-- marking a participant as unclassified while a Rank, a Medal or a score is stored for that
+-- same participant.
 FROM (
     SELECT
         ep.id AS event_participants_id,
@@ -3529,7 +3618,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-119
     -- Name - EVENT_RESULTS_RANK_SEQUENCE_BROKEN
-    -- What it does: Finds events whose Rank sequence is not a standard competition ranking - a place nobody holds, a tie that does not consume the places it stands for, or a sequence that does not start at one - naming each break where the sequence actually breaks rather than every place it shifts afterwards, together with a coverage count of all eligible events holding at least one usable Rank.
+    -- What it does: Flags non-standard Rank sequences: not starting at 1, missing places, or ties that do not skip the correct number of places.
     CASE
         WHEN x.start_breaks > 0 THEN 'RANK_SEQUENCE_DOES_NOT_START_AT_ONE'
         WHEN x.gaps > 0 THEN 'RANK_SEQUENCE_GAP'
@@ -3543,6 +3632,11 @@ SELECT
     x.break_detail,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events whose Rank sequence is not a standard
+-- competition ranking - a place nobody holds, a tie that does not consume the places it
+-- stands for, or a sequence that does not start at one - naming each break where the
+-- sequence actually breaks rather than every place it shifts afterwards, together with a
+-- coverage count of all eligible events holding at least one usable Rank.
 -- The assertion is the sequence as a whole, which is what separates this from the two
 -- Rank statements that already exist: GLOBAL-DQ-020 reads a single place against the field
 -- size and therefore cannot see a missing place in the middle of a full field, and
@@ -3655,8 +3749,11 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-120
     -- Name - EVENT_RESULTS_NUMERIC_PRECISION_INCONSISTENT
-    -- What it does: Finds events whose participants' values in one numeric result field are not all written to the same number of decimal places, separating a value stored with no decimal point at all from a fraction shorter than its neighbours.
+    -- What it does: Flags numeric result fields where participants use different numbers of decimal places.
     CASE
+-- What it does, stated in full: Finds events whose participants' values in one numeric
+-- result field are not all written to the same number of decimal places, separating a value
+-- stored with no decimal point at all from a fraction shorter than its neighbours.
         -- A value with no point at all is a different repair from a short fraction: the
         -- separator has to be added as well as the digits, and it is the shape a feed
         -- produces when it drops a trailing zero group rather than one digit.
@@ -3748,8 +3845,12 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-122
     -- Name - EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE
-    -- What it does: Finds finished events whose ranked participants hold no value in any result field their placing is read from, separating an event holding none at all from one holding them for part of the field, and excusing a participant whose Comment records that they did not finish.
+    -- What it does: Flags finished events where ranked participants have no value in the fields used for ranking. Explained non-finishers are ignored.
     CASE
+-- What it does, stated in full: Finds finished events whose ranked participants hold no
+-- value in any result field their placing is read from, separating an event holding none at
+-- all from one holding them for part of the field, and excusing a participant whose Comment
+-- records that they did not finish.
         -- An event holding none at all and an event holding some are two different repairs.
         -- The first lost a whole result set and its ranking rests on nothing stored; the
         -- second has the set and is short of rows in it, which is what a feed produces when
@@ -3849,7 +3950,7 @@ ORDER BY sort_order, missing_unexcused DESC, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-124
     -- Name - EVENT_RESULTS_INTEGER_FIELD_FRACTIONAL
-    -- What it does: Finds events whose whole-number result fields hold a value carrying a fractional part, separating a decimal point from a decimal comma, and naming how many values are affected and what they hold.
+    -- What it does: Flags whole-number result fields that contain decimals, using either a dot or a comma.
     x.check_type,
     x.event_id,
     x.event_name,
@@ -3860,6 +3961,9 @@ SELECT
     x.affected_count,
     x.affected_participant_count,
     x.distinct_values,
+-- What it does, stated in full: Finds events whose whole-number result fields hold a value
+-- carrying a fractional part, separating a decimal point from a decimal comma, and naming
+-- how many values are affected and what they hold.
     -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
     -- group_concat_max_len without saying so, and affected_count is counted separately and is
     -- what the row asserts.

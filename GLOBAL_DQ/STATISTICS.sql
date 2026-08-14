@@ -1,13 +1,15 @@
 SELECT
     -- CheckID - GLOBAL-DQ-010
     -- Name - COMP.RANK_NO_PARTICIPANTS
-    -- What it does: Finds Comp.Rank holding no participant rows in the sport's shard.
+    -- What it does: Flags Comp.Rank records with no participant rows in the sport's shard.
     'No_Participants' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
     tt.name AS template_name,
     t.name AS tournament_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank holding no participant rows in the sport's
+-- shard.
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -48,7 +50,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-011
     -- Name - COMP.RANK_SETTINGS_MISSING_START_OR_END_DATE
-    -- What it does: Finds Comp.Rank with a missing or empty Start date or End date.
+    -- What it does: Flags Comp.Rank records with a missing or empty Start date or End date.
     'Missing_Start_Or_End_Date' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -73,6 +75,8 @@ SELECT
         ), 'end_date', NULL)
     ) AS missing_fields,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank with a missing or empty Start date or End
+-- date.
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -125,7 +129,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-012
     -- Name - COMP.RANK_RESULTS_RANK_INVALID_OR_MISSING
-    -- What it does: Finds Comp.Rank holding a participant whose Rank is not a positive integer, or is missing with no Comment to explain it.
+    -- What it does: Flags Comp.Rank participants whose Rank is missing without a Comment or is not a positive integer.
     'Rank_Invalid_Or_Missing' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -133,6 +137,8 @@ SELECT
     t.name AS tournament_name,
     COUNT(DISTINCT sp.id) AS violating_record_count,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank holding a participant whose Rank is not a
+-- positive integer, or is missing with no Comment to explain it.
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -197,13 +203,14 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-022
     -- Name - COMP.RANK_SETTINGS_MISSING_AGE_CLASS
-    -- What it does: Finds Comp.Rank with no age-class relation.
+    -- What it does: Flags Comp.Rank records with no age-class relation.
     'Missing_Age_Class' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
     tt.name AS template_name,
     t.name AS tournament_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank with no age-class relation.
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -246,13 +253,15 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-023
     -- Name - COMP.RANK_SETTINGS_MISSING_DISCIPLINE
-    -- What it does: Finds Comp.Rank with no discipline relation, or one naming a discipline that does not resolve.
+    -- What it does: Flags Comp.Rank records with no discipline relation or with a discipline that does not resolve.
     'Missing_Discipline' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
     tt.name AS template_name,
     t.name AS tournament_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank with no discipline relation, or one naming a
+-- discipline that does not resolve.
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -305,7 +314,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-024
     -- Name - COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_STAGE
-    -- What it does: Finds Comp.Rank whose configured date interval is inverted, or is not contained within the stage dates of its own tournament, separating an inverted interval, one crossing both bounds, a start before the earliest stage and an end after the latest.
+    -- What it does: Flags Comp.Rank date ranges that are reversed or fall outside the tournament's stage dates.
     CASE
         WHEN DATE(x.config_start_date) > DATE(x.config_end_date)
             THEN 'Config_Date_Range_Inverted'
@@ -325,6 +334,10 @@ SELECT
     x.earliest_stage_startdate,
     x.latest_stage_enddate,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank whose configured date interval is inverted,
+-- or is not contained within the stage dates of its own tournament, separating an inverted
+-- interval, one crossing both bounds, a start before the earliest stage and an end after the
+-- latest.
 FROM (
     SELECT
         s.id AS statistic_id,
@@ -382,7 +395,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-025
     -- Name - COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_EVENTS
-    -- What it does: Finds Comp.Rank whose configured date interval is inverted, or does not contain every event it names through the Event id config, separating the four boundary failures.
+    -- What it does: Flags Comp.Rank date ranges that are reversed or do not contain every event listed in the Event id setting.
     CASE
         WHEN DATE(x.config_start_date) > DATE(x.config_end_date)
             THEN 'Config_Date_Range_Inverted'
@@ -402,6 +415,9 @@ SELECT
     x.earliest_linked_event_startdate,
     x.latest_linked_event_startdate,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank whose configured date interval is inverted,
+-- or does not contain every event it names through the Event id config, separating the four
+-- boundary failures.
 FROM (
     SELECT
         s.id AS statistic_id,
@@ -482,8 +498,12 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-026
     -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID
-    -- What it does: Finds Comp.Rank whose medal set does not follow the places its own Rank rows hold: a type missing, held by more competitors than the place takes, held by fewer, or standing over a podium that never reaches the place it belongs to - counting relay members who share their team's medal as one holder.
+    -- What it does: Flags Comp.Rank medals that do not match the Rank places, including missing, over-awarded, or under-awarded medals. Relay members count as one team medal.
     CASE
+-- What it does, stated in full: Finds Comp.Rank whose medal set does not follow the places
+-- its own Rank rows hold: a type missing, held by more competitors than the place takes,
+-- held by fewer, or standing over a podium that never reaches the place it belongs to -
+-- counting relay members who share their team's medal as one holder.
         -- Nothing to compare the medals with. The missing Rank is GLOBAL-DQ-012's finding and
         -- is not restated here; what this row says is that the medal set was not audited.
         WHEN x.ranked_holders = 0 THEN 'Medal_Set_Unreadable_Without_Rank'
@@ -619,8 +639,10 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-027
     -- Name - COMP.RANK_RESULTS_MEDAL_INVALID_VALUE
-    -- What it does: Finds Comp.Rank Medal values that are not gold, silver or bronze.
+    -- What it does: Flags Comp.Rank Medal values other than gold, silver, or bronze.
     'Medal_Invalid_Value' AS check_type,
+-- What it does, stated in full: Finds Comp.Rank Medal values that are not gold, silver or
+-- bronze.
     -- The audited object leads the row, and it is the participant rather than the statistic
     -- the participant sits in: a medal is held by one competitor and repaired on that one row,
     -- which is also how the event-layer twin GLOBAL-DQ-018 is keyed. The statistic stays
@@ -682,7 +704,7 @@ WHERE sd.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-028
     -- Name - COMP.RANK_RESULTS_TIME_DIFFERENCE_FORMAT_MISMATCH_TO_RANK
-    -- What it does: Finds Comp.Rank holding a participant whose Time Difference breaks the leader/gap convention: rank 1 a plain absolute time, every other rank a plus-prefixed gap.
+    -- What it does: Flags Comp.Rank Time Difference values that break this rule: rank 1 has an absolute time and lower ranks have a plus-prefixed gap.
     'Time_Difference_Format_Mismatch' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -703,6 +725,9 @@ SELECT
         ORDER BY CAST(TRIM(rk.value) AS UNSIGNED) SEPARATOR ' | '
     ) AS mismatch_details,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank holding a participant whose Time Difference
+-- breaks the leader/gap convention: rank 1 a plain absolute time, every other rank a plus-
+-- prefixed gap.
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -753,7 +778,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-029
     -- Name - COMP.RANK_RESULTS_DEPRECATED_DURATION_USED
-    -- What it does: Finds Comp.Rank still storing a value in the deprecated Duration field, with which of the current Time and Time Difference fields are populated beside it.
+    -- What it does: Flags Comp.Rank records still using the old Duration field and shows whether Time or Time Difference is also populated.
     'Deprecated_Duration_Used' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -765,6 +790,9 @@ SELECT
         IF(MAX(CASE WHEN sd.statistic_data_typeFK = {{DATA_TIME_DIFFERENCE_TYPE_ID}} THEN 1 ELSE 0 END) = 1, 'Time_Difference', NULL)
     ) AS other_time_fields_used,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank still storing a value in the deprecated
+-- Duration field, with which of the current Time and Time Difference fields are populated
+-- beside it.
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -808,7 +836,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-030
     -- Name - COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT
-    -- What it does: Finds Comp.Rank statistics holding participants who are neither an event participant nor a lineup member anywhere under their own tournament.
+    -- What it does: Flags Comp.Rank statistics for participants who are never event participants or lineup members in the same tournament.
     'PARTICIPANT_NOT_IN_TOURNAMENT' AS check_type,
     s.id AS statistic_id,
     tt.name AS template_name,
@@ -818,6 +846,8 @@ SELECT
     GROUP_CONCAT(DISTINCT p.id ORDER BY p.id SEPARATOR ' | ') AS participant_ids,
     GROUP_CONCAT(DISTINCT p.name ORDER BY p.name SEPARATOR ' | ') AS participant_names,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank statistics holding participants who are
+-- neither an event participant nor a lineup member anywhere under their own tournament.
 -- One row per Comp.Rank statistic, not per stray participant. The two read very differently:
 -- on Triathlon the same 1130 stray rows are 63 statistics, and the row-level shape repeated a
 -- tournament's name up to 54 times for what is one table with one thing wrong with it. Whoever
@@ -888,7 +918,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-031
     -- Name - COMP.RANK_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE
-    -- What it does: Finds Comp.Rank participants whose Rank exceeds the number ranked and is disconnected from the next lower Rank, with no Comment to explain it.
+    -- What it does: Flags Comp.Rank participants with an unexplained Rank above the number of ranked participants and a gap from the previous Rank.
     'RANK_OUTLIER_ABOVE_FIELD_SIZE' AS check_type,
     sp.id AS statistic_participants_id,
     f.statistic_id,
@@ -899,6 +929,8 @@ SELECT
     f.participant_count,
     (
         SELECT MAX(CAST(sd2.value AS UNSIGNED))
+-- What it does, stated in full: Finds Comp.Rank participants whose Rank exceeds the number
+-- ranked and is disconnected from the next lower Rank, with no Comment to explain it.
         FROM statistic_participants{{SHARD_ID}} sp2
         JOIN statistic_data{{SHARD_ID}} sd2 ON sd2.statistic_participants{{SHARD_ID}}FK = sp2.id
              AND sd2.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
@@ -982,7 +1014,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-032
     -- Name - COMP.RANK_RESULTS_NO_RANK_DATA_FOR_PARTICIPANTS
-    -- What it does: Finds Comp.Rank holding participants but no Rank value for any of them, separating one holding no data at all from one holding other data.
+    -- What it does: Flags Comp.Rank records with participants but no Rank value for anyone.
     CASE
         WHEN y.data_rows = 0 THEN 'PARTICIPANTS_BUT_NO_DATA_AT_ALL'
         ELSE 'DATA_BUT_NO_RANK_AT_ALL'
@@ -993,6 +1025,8 @@ SELECT
     y.tournament_name,
     y.participant_count,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank holding participants but no Rank value for
+-- any of them, separating one holding no data at all from one holding other data.
 FROM (
     SELECT
         s.id AS statistic_id,
@@ -1045,7 +1079,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-033
     -- Name - COMP.RANK_RESULTS_MISSING_PHASE
-    -- What it does: Finds Comp.Rank carrying participants with no phase row, naming how many of the field are missing one and who they are.
+    -- What it does: Flags Comp.Rank participants with no phase row.
     'MISSING_PHASE' AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -1053,6 +1087,8 @@ SELECT
     x.tournament_name,
     x.field_size,
     x.missing_count,
+-- What it does, stated in full: Finds Comp.Rank carrying participants with no phase row,
+-- naming how many of the field are missing one and who they are.
     -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
     -- group_concat_max_len without saying so, and missing_count is counted separately and is
     -- what the row asserts.
@@ -1131,7 +1167,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-035
     -- Name - COMP.RANK_SETTINGS_MISSING_CORE_FIELDS
-    -- What it does: Finds Comp.Rank missing a name, a Gender config, a country or a city relation, or carrying a country that resolves only to a placeholder.
+    -- What it does: Flags Comp.Rank records missing a name, Gender setting, country, or city, or using a placeholder country.
     'Missing_Statistic_Field' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -1153,6 +1189,8 @@ SELECT
               AND orl.rel_object_typeFK = 33
               AND orl.del = 'no'
         ), 'country', NULL),
+-- What it does, stated in full: Finds Comp.Rank missing a name, a Gender config, a country
+-- or a city relation, or carrying a country that resolves only to a placeholder.
         -- A country that resolves to a placeholder row reads as populated to every
         -- IS NULL test, so it is named separately rather than counted as clean.
         IF(EXISTS (
@@ -1240,7 +1278,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-040
     -- Name - EVENT_FINAL_WITHOUT_COMP.RANK
-    -- What it does: Finds Final-round events that no Comp.Rank under their own tournament names through its Event id config, separating a tournament holding none at all from one whose Comp.Rank declares no event scope.
+    -- What it does: Flags Final events not linked by any Comp.Rank Event id in their tournament, including tournaments with no Comp.Rank or no event scope.
     CASE
         WHEN x.tournament_statistics = 0 THEN 'TOURNAMENT_HAS_NO_COMP_RANK'
         WHEN x.statistics_with_event_config = 0 THEN 'COMP.RANK_EVENT_SCOPE_UNDETERMINABLE'
@@ -1252,6 +1290,9 @@ SELECT
     x.tournament_name,
     x.stage_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Final-round events that no Comp.Rank under their own
+-- tournament names through its Event id config, separating a tournament holding none at all
+-- from one whose Comp.Rank declares no event scope.
 FROM (
     SELECT
         e.id AS event_id,
@@ -1328,7 +1369,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-041
     -- Name - COMP.RANK_RESULTS_MEDAL_ON_NON_MEDAL_ROUND_PHASE
-    -- What it does: Finds Comp.Rank participants carrying a Medal while their phase names a round the sport awards no medals on.
+    -- What it does: Flags Comp.Rank participants with a Medal in a phase that does not award medals.
     'MEDAL_ON_NON_MEDAL_ROUND_PHASE' AS check_type,
     sp.id AS statistic_participants_id,
     s.id AS statistic_id,
@@ -1339,6 +1380,8 @@ SELECT
     orr.round_typeFK AS phase_round_type_id,
     rt.name AS phase_round_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank participants carrying a Medal while their
+-- phase names a round the sport awards no medals on.
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -1392,7 +1435,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-042
     -- Name - EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK
-    -- What it does: Finds Final-round events whose Comp.Rank omits competitors who took part, naming how many of the field are missing from it and who they are.
+    -- What it does: Flags Final events where Comp.Rank is missing one or more competitors who took part.
     'FINAL_PARTICIPANT_NOT_IN_COMP.RANK' AS check_type,
     x.event_id,
     x.event_name,
@@ -1400,6 +1443,8 @@ SELECT
     x.tournament_name,
     x.field_size,
     x.missing_count,
+-- What it does, stated in full: Finds Final-round events whose Comp.Rank omits competitors
+-- who took part, naming how many of the field are missing from it and who they are.
     -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
     -- group_concat_max_len without saying so, and missing_count is counted separately and is
     -- what the row asserts.
@@ -1538,7 +1583,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-044
     -- Name - COMP.RANK_RESULTS_GENDER_MISMATCH
-    -- What it does: Finds Comp.Rank whose Gender config does not match the gender of its own participants.
+    -- What it does: Flags Comp.Rank Gender settings that do not match the participants' gender.
     'Gender_Mismatch' AS check_type,
     elig.statistic_id,
     elig.statistic_name,
@@ -1571,6 +1616,8 @@ SELECT
         ELSE 'OK'
     END AS violation_type,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank whose Gender config does not match the
+-- gender of its own participants.
 FROM (
     -- The eligible statistics are resolved in their own materialised step, and the GROUP BY
     -- is what makes it materialise rather than be merged into the query above. Without it,
@@ -1645,7 +1692,7 @@ JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-046
     -- Name - COMP.RANK_RESULTS_TIME_FULL_TIME_MISMATCH_TO_RANK
-    -- What it does: Finds Comp.Rank in the sport's timed disciplines whose time storage contradicts a Rank: a Time or Time Difference missing where the rank calls for one, either present with no rank, or a Time badly formatted or zero.
+    -- What it does: Flags timed Comp.Rank records where Rank, Time, and Time Difference do not agree, or where Time is invalid or zero.
     'Time_Full_Time_Mismatch_Statistics' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -1662,6 +1709,9 @@ SELECT
     ) AS violation_types,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank in the sport's timed disciplines whose time
+-- storage contradicts a Rank: a Time or Time Difference missing where the rank calls for
+-- one, either present with no rank, or a Time badly formatted or zero.
 FROM (
     SELECT
         sp.id AS statistic_participants_id,
@@ -1745,7 +1795,7 @@ ORDER BY sort_order, violating_record_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-051
     -- Name - COMP.RANK_NAME_FORMAT_INVALID
-    -- What it does: Finds Comp.Rank names breaking a text-hygiene rule - spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder or a numeric-only name - one row per name, naming every rule it breaks.
+    -- What it does: Flags Comp.Rank names with spacing, character, hyphenation, capitalisation, placeholder, or numeric-name problems.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS statistic_name,
     x.violation_types,
@@ -1755,6 +1805,9 @@ SELECT
     MIN(x.tournament_name) AS sample_tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank names breaking a text-hygiene rule -
+-- spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder or a
+-- numeric-only name - one row per name, naming every rule it breaks.
 FROM (
     SELECT
         s.id AS object_id,
@@ -1833,7 +1886,7 @@ ORDER BY sort_order, violation_types, statistic_name;
 SELECT
     -- CheckID - GLOBAL-DQ-057
     -- Name - COMP.RANK_RESULTS_COMMENT_INVALID_OR_CONTRADICTED
-    -- What it does: Finds Comp.Rank Comment values outside the sport's status codes, or marking a participant as unclassified while a Rank, a Time or a Medal is stored for that same participant.
+    -- What it does: Flags invalid Comp.Rank Comment values, or an unclassified Comment stored together with a Rank, Time, or Medal.
     CASE
         WHEN LOWER(TRIM(x.comment_value)) IN ({{DATA_COMMENT_NO_RESULT_LIST}}) AND x.medal_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_MEDAL'
         WHEN LOWER(TRIM(x.comment_value)) IN ({{DATA_COMMENT_NO_RESULT_LIST}}) AND x.rank_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_RANK'
@@ -1850,6 +1903,9 @@ SELECT
     x.time_value,
     x.medal_value,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank Comment values outside the sport's status
+-- codes, or marking a participant as unclassified while a Rank, a Time or a Medal is stored
+-- for that same participant.
 FROM (
     SELECT
         s.id AS statistic_id,
@@ -1921,7 +1977,7 @@ WHERE sd.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-060
     -- Name - COMP.RANK_RESULTS_DUPLICATE_ROWS
-    -- What it does: Finds Comp.Rank holding more than one data row for the same participant and field, separating a duplicate repeating the value from one storing a conflicting one.
+    -- What it does: Flags duplicate Comp.Rank data rows for the same participant and field, and shows whether the values match or conflict.
     'Comp_Rank_Duplicate_Rows' AS check_type,
     d.statistic_id,
     d.statistic_name,
@@ -1933,6 +1989,9 @@ SELECT
     SUM(d.row_count) AS duplicated_row_count,
     MIN(CONCAT('sp=', d.statistic_participants_id, ' type=', d.statistic_data_typeFK, ' values=', d.value_list)) AS sample_group,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank holding more than one data row for the same
+-- participant and field, separating a duplicate repeating the value from one storing a
+-- conflicting one.
 FROM (
     SELECT
         st.id AS statistic_id,
@@ -1990,7 +2049,7 @@ WHERE sd.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-064
     -- Name - COMP.RANK_ATHLETE_TEAM_MISSING_OR_INVALID
-    -- What it does: Finds athletes inside a Comp.Rank that uses the Team field whose own Team value is absent, does not resolve to a team, or is stored twice - repeating a value or contradicting itself.
+    -- What it does: Flags athletes in a team-based Comp.Rank whose Team value is missing, invalid, duplicated, or conflicting.
     CASE
         WHEN x.team_value IS NULL   THEN 'TEAM_VALUE_MISSING'
         WHEN tp.id IS NULL          THEN 'TEAM_VALUE_UNRESOLVED'
@@ -2007,6 +2066,9 @@ SELECT
     x.team_value,
     x.team_row_count,
     NULL AS eligible_count
+-- What it does, stated in full: Finds athletes inside a Comp.Rank that uses the Team field
+-- whose own Team value is absent, does not resolve to a team, or is stored twice - repeating
+-- a value or contradicting itself.
 FROM (
     SELECT
         sp.id AS statistic_participants_id,
@@ -2161,7 +2223,7 @@ FROM (
 SELECT
     -- CheckID - GLOBAL-DQ-065
     -- Name - COMP.RANK_TEAM_ATHLETE_COUNT_UNEVEN
-    -- What it does: Finds Comp.Rank whose teams do not all field the same number of athletes, separating a shortfall of one athlete from a larger one.
+    -- What it does: Flags Comp.Rank teams that have different roster sizes.
     CASE
         WHEN a.max_athletes_per_team - a.min_athletes_per_team = 1 THEN 'TEAM_SIZE_UNEVEN_BY_ONE'
         ELSE 'TEAM_SIZE_UNEVEN_BY_MORE'
@@ -2177,6 +2239,8 @@ SELECT
     a.max_athletes_per_team - a.min_athletes_per_team AS size_gap,
     a.team_size_breakdown,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank whose teams do not all field the same number
+-- of athletes, separating a shortfall of one athlete from a larger one.
 FROM (
     SELECT
         g.statistic_id,
@@ -2254,7 +2318,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-066
     -- Name - COMP.RANK_TEAM_GENDER_BALANCE_UNEVEN
-    -- What it does: Finds mixed Comp.Rank holding a team whose athletes are not an equal number of male and female, separating a team fielding one gender only from one fielding both unevenly.
+    -- What it does: Flags mixed Comp.Rank teams with only one gender or unequal numbers of male and female athletes.
     CASE
         WHEN a.teams_missing_a_gender > 0 THEN 'STATISTIC_TEAM_MISSING_A_GENDER'
         ELSE 'STATISTIC_TEAM_GENDER_COUNT_UNEVEN'
@@ -2270,6 +2334,9 @@ SELECT
     a.athletes_with_unusable_gender,
     a.uneven_team_breakdown,
     NULL AS eligible_count
+-- What it does, stated in full: Finds mixed Comp.Rank holding a team whose athletes are not
+-- an equal number of male and female, separating a team fielding one gender only from one
+-- fielding both unevenly.
 FROM (
     SELECT
         g.statistic_id,
@@ -2360,7 +2427,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-070
     -- Name - COMP.RANK_RESULTS_VALUE_BLANK
-    -- What it does: Finds Comp.Rank data values that are neither empty nor readable, made only of ordinary spacing or only of invisible characters, separating the two.
+    -- What it does: Flags Comp.Rank values that contain only spaces or only invisible characters.
     CASE
         WHEN x.invisible_count > 0 THEN 'BLANK_INVISIBLE_CHARACTER'
         ELSE 'BLANK_WHITESPACE_ONLY'
@@ -2375,6 +2442,9 @@ SELECT
     x.blank_data_count,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank data values that are neither empty nor
+-- readable, made only of ordinary spacing or only of invisible characters, separating the
+-- two.
 FROM (
     SELECT
         sp.id AS statistic_participants_id,
@@ -2445,7 +2515,7 @@ ORDER BY sort_order, blank_data_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-072
     -- Name - COMP.RANK_RESULTS_MEDAL_RANK_MISMATCH
-    -- What it does: Finds Comp.Rank participants whose Medal does not match the place it stands for, or that carry no Rank at all.
+    -- What it does: Flags Comp.Rank participants whose Medal does not match their Rank, or who have a Medal without a Rank.
     CASE
         WHEN x.rank_value IS NULL THEN 'MEDAL_WITHOUT_RANK'
         ELSE 'MEDAL_RANK_MISMATCH'
@@ -2460,6 +2530,8 @@ SELECT
     x.rank_value,
     x.expected_rank,
     NULL AS eligible_count
+-- What it does, stated in full: Finds Comp.Rank participants whose Medal does not match the
+-- place it stands for, or that carry no Rank at all.
 FROM (
     SELECT
         sp.id AS statistic_participants_id,
@@ -2529,12 +2601,16 @@ WHERE sm.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-077
     -- Name - COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC
-    -- What it does: Finds Comp.Rank holding non-numeric values in the sport's numeric fields, separating one of the sport's own status codes, a no-data sentinel such as nan, a number written with thousands separators, and any other text, and naming how many values are affected and what they hold.
+    -- What it does: Flags text stored in numeric Comp.Rank fields, including status codes, nan values, thousands separators, and other non-numeric text.
     x.check_type,
     x.statistic_id,
     x.statistic_name,
     x.template_name,
     x.tournament_name,
+-- What it does, stated in full: Finds Comp.Rank holding non-numeric values in the sport's
+-- numeric fields, separating one of the sport's own status codes, a no-data sentinel such as
+-- nan, a number written with thousands separators, and any other text, and naming how many
+-- values are affected and what they hold.
     -- The data type is named rather than numbered, as in GLOBAL-DQ-076. A reader repairing the
     -- field has to know which field it is, and the id alone sends them back to the catalogue.
     x.data_type_names,
@@ -2651,7 +2727,7 @@ ORDER BY sort_order, affected_count DESC, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-095
     -- Name - COMP.RANK_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT
-    -- What it does: Finds a Comp.Rank place held by more participants than its teams field athletes, with no Comment to explain it, while the place that sharing consumes is still awarded - so the place is occupied twice over rather than being a joint place the ranking stops at.
+    -- What it does: Flags a shared Comp.Rank place with more holders than the team size when the next place is still awarded and no Comment explains it.
     CASE
         WHEN x.duplicated_rank_count = 1 THEN 'ONE_RANK_HELD_TWICE'
         ELSE 'SEVERAL_RANKS_HELD_TWICE'
@@ -2665,6 +2741,10 @@ SELECT
     x.duplicated_ranks,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds a Comp.Rank place held by more participants than its
+-- teams field athletes, with no Comment to explain it, while the place that sharing consumes
+-- is still awarded - so the place is occupied twice over rather than being a joint place the
+-- ranking stops at.
 -- The statistic-layer twin of GLOBAL-DQ-021, which reads the event layer and cannot see a
 -- Comp.Rank. The layer forces two differences, and both are what keep it usable.
 -- An event enters a team as one participant while a Comp.Rank lists it athlete by athlete,
@@ -2822,7 +2902,7 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - GLOBAL-DQ-098
     -- Name - COMP.RANK_TEAM_FIELD_UNUSED_IN_TEAM_STATISTIC
-    -- What it does: Finds Comp.Rank where every athlete shares a place with the same number of others and none carries a Team value, so teams of that size are scored without recording which team each athlete belongs to.
+    -- What it does: Flags rankings that look team-based because places are shared equally, but no athlete has a Team value.
     'TEAM_FIELD_UNUSED_FOR_WHOLE_FIELD' AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -2834,6 +2914,9 @@ SELECT
     x.shared_places,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank where every athlete shares a place with the
+-- same number of others and none carries a Team value, so teams of that size are scored
+-- without recording which team each athlete belongs to.
 -- Several athletes on one place is what a team competition looks like from the athlete side,
 -- and the Team data field is what says which team each of them was on. A statistic showing
 -- the first without the second has lost that link entirely, and the loss is invisible to
@@ -2954,7 +3037,7 @@ ORDER BY sort_order, shared_place_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-099
     -- Name - COMP.RANK_VALUE_BELONGS_TO_ANOTHER_FIELD
-    -- What it does: Finds a Comp.Rank value that is exactly what another field owns: a medal word stored outside the Medal field, or a plain place number stored inside it.
+    -- What it does: Flags Comp.Rank values stored in the wrong field, such as a medal word outside Medal or a place number inside Medal.
     CASE
         WHEN sd.statistic_data_typeFK = {{DATA_MEDAL_TYPE_ID}} THEN 'RANK_NUMBER_IN_MEDAL_FIELD'
         ELSE 'MEDAL_WORD_OUTSIDE_MEDAL_FIELD'
@@ -2970,6 +3053,9 @@ SELECT
     sd.value AS stored_value,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds a Comp.Rank value that is exactly what another field
+-- owns: a medal word stored outside the Medal field, or a plain place number stored inside
+-- it.
 -- Every value check in this catalogue asks whether a value fits the field holding it -
 -- GLOBAL-DQ-012 for Rank, -027 for Medal, -057 for Comment, -077 for a numeric field. None
 -- of them asks whose value it is, so a medal word in a rank field is reported as "not a
@@ -3033,7 +3119,7 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - GLOBAL-DQ-100
     -- Name - COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT
-    -- What it does: Finds Comp.Rank claiming a discipline that no event under its own tournament was contested in.
+    -- What it does: Flags Comp.Rank disciplines not contested by any event in the same tournament.
     'DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT' AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -3043,6 +3129,8 @@ SELECT
     x.contested_disciplines,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank claiming a discipline that no event under
+-- its own tournament was contested in.
 -- Asked against the tournament's own events rather than against the statistic's name, which
 -- is what makes it global: a name-to-discipline map has to be written per sport and is the
 -- kind of parameter GLOBAL_DQ/README.md warns turns one template into a configuration
@@ -3139,7 +3227,7 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - GLOBAL-DQ-101
     -- Name - COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT
-    -- What it does: Finds Comp.Rank whose Event id config does not resolve to events under its own tournament, separating a malformed value, one naming no event, one naming an event another tournament owns, and a list not all of whose ids land under the tournament.
+    -- What it does: Flags Comp.Rank Event id settings that are malformed, name no event, point to another tournament's event, or hold a list whose ids do not all belong to the tournament.
     CASE
         WHEN x.not_numeric_count > 0 THEN 'EVENT_ID_NOT_NUMERIC'
         WHEN x.no_active_event_count > 0 THEN 'EVENT_ID_NO_ACTIVE_EVENT'
@@ -3154,6 +3242,10 @@ SELECT
     x.sample_values,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank whose Event id config does not resolve to
+-- events under its own tournament, separating a malformed value, one naming no event, one
+-- naming an event another tournament owns, and a list not all of whose ids land under the
+-- tournament.
 -- The Event id is the only path from a Comp.Rank statistic to the event it summarises, and
 -- every check that walks it joins through it. A join drops the row it cannot match, so an id
 -- naming nothing and an id naming another tournament's event are both invisible to those
@@ -3261,7 +3353,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-103
     -- Name - COMP.RANK_PARTICIPANT_DUPLICATE_IN_STATISTIC
-    -- What it does: Finds Comp.Rank holding the same participant twice, so one competitor occupies a place in the ranking two times over.
+    -- What it does: Flags Comp.Rank records where the same participant appears more than once.
     'Comp_Rank_Participant_Duplicate' AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -3272,6 +3364,8 @@ SELECT
     x.sample_group,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank holding the same participant twice, so one
+-- competitor occupies a place in the ranking two times over.
 -- Not the question GLOBAL-DQ-060 asks. That one groups by statistic_participants id and data
 -- type, so it sees several data rows hanging off one participant row. This sees one
 -- participant holding two participant rows in the same ranking, which that grouping cannot
@@ -3336,7 +3430,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-105
     -- Name - COMP.RANK_SETTINGS_SCALAR_DUPLICATE_ROWS
-    -- What it does: Finds Comp.Rank holding more than one config row for a setting that takes one value - start date, end date or gender - separating a repeat of the same value from two that contradict each other.
+    -- What it does: Flags duplicate Comp.Rank settings for start date, end date, or gender, whether the duplicate values match or conflict.
     CASE
         WHEN x.conflicting_groups > 0 THEN 'SETTINGS_CONFLICTING_VALUES'
         ELSE 'SETTINGS_DUPLICATE_IDENTICAL'
@@ -3349,6 +3443,9 @@ SELECT
     x.sample_group,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank holding more than one config row for a
+-- setting that takes one value - start date, end date or gender - separating a repeat of the
+-- same value from two that contradict each other.
 -- The Event id config is deliberately outside the scope of this check. It is the one
 -- setting a statistic may legitimately hold several times, naming each event the ranking
 -- covers, so including it would report the normal shape of every multi-event statistic.
@@ -3425,7 +3522,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-106
     -- Name - COMP.RANK_UNEXPECTED_OWNER_TYPE
-    -- What it does: Finds Comp.Rank hanging off an owner level other than the one the sport is confirmed to use.
+    -- What it does: Flags Comp.Rank records attached to an owner level not approved for the sport.
     'Comp_Rank_Unexpected_Owner_Type' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -3434,6 +3531,8 @@ SELECT
     tt.name AS template_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank hanging off an owner level other than the
+-- one the sport is confirmed to use.
 -- Reached through both owner paths rather than through the tournament alone, which is the
 -- whole point: a statistic on the wrong level cannot be found by a statement that joins
 -- through the level it is supposed to be on. Every other Comp.Rank check in this file
@@ -3479,7 +3578,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-110
     -- Name - COMP.RANK_DISCIPLINE_CONTRADICTS_LINKED_EVENT
-    -- What it does: Finds Comp.Rank whose claimed discipline was contested by none of the events it names through the Event id config, so the two paths disagree about the same competition.
+    -- What it does: Flags Comp.Rank disciplines not contested by any event listed in the Event id setting.
     'Comp_Rank_Discipline_Contradicts_Linked_Event' AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -3489,6 +3588,9 @@ SELECT
     x.linked_event_disciplines,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank whose claimed discipline was contested by
+-- none of the events it names through the Event id config, so the two paths disagree about
+-- the same competition.
 -- Narrower than GLOBAL-DQ-100 and asking a different question. That one measures the claim
 -- against everything the whole tournament contested, which is the loosest possible test and
 -- the only one available when no Event id is recorded. Where the ids are recorded the
@@ -3576,7 +3678,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-113
     -- Name - COMP.RANK_PARTICIPANT_TYPE_MIXED
-    -- What it does: Finds Comp.Rank holding participants of more than one kind, so one place sequence ranks teams against individuals.
+    -- What it does: Flags Comp.Rank records that mix participant types, such as teams and athletes in one ranking.
     'Comp_Rank_Participant_Type_Mixed' AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -3586,6 +3688,8 @@ SELECT
     x.distinct_types,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank holding participants of more than one kind,
+-- so one place sequence ranks teams against individuals.
 -- A ranking answers one question about one kind of competitor, so two kinds under one place
 -- sequence means either the ranking is two rankings or somebody is counted in both. Asked
 -- without naming which kinds are legitimate, which is what keeps it global: the sport's own
@@ -3642,7 +3746,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-115
     -- Name - COMP.RANK_PARTICIPANT_REFERENCE_INVALID
-    -- What it does: Finds Comp.Rank participants whose reference resolves to no participant row, or to a soft-deleted one, separating the two, with the data rows still attached to them.
+    -- What it does: Flags Comp.Rank participants whose reference is missing or points to a deleted participant.
     CASE
         WHEN p.id IS NULL THEN 'PARTICIPANT_REFERENCE_MISSING'
         ELSE                   'PARTICIPANT_REFERENCE_SOFT_DELETED'
@@ -3658,6 +3762,9 @@ SELECT
     p.del AS participant_del,
     (
         SELECT COUNT(DISTINCT sd.id)
+-- What it does, stated in full: Finds Comp.Rank participants whose reference resolves to no
+-- participant row, or to a soft-deleted one, separating the two, with the data rows still
+-- attached to them.
         FROM statistic_data{{SHARD_ID}} sd
         WHERE sd.statistic_participants{{SHARD_ID}}FK = sp.id
           AND sd.del = 'no'
@@ -3708,8 +3815,11 @@ ORDER BY sort_order, statistic_participants_id;
 SELECT
     -- CheckID - GLOBAL-DQ-121
     -- Name - COMP.RANK_RESULTS_NUMERIC_PRECISION_INCONSISTENT
-    -- What it does: Finds Comp.Rank whose participants' values in one numeric data field are not all written to the same number of decimal places, separating a value stored with no decimal point at all from a fraction shorter than its neighbours.
+    -- What it does: Flags numeric Comp.Rank fields where participants use different numbers of decimal places.
     CASE
+-- What it does, stated in full: Finds Comp.Rank whose participants' values in one numeric
+-- data field are not all written to the same number of decimal places, separating a value
+-- stored with no decimal point at all from a fraction shorter than its neighbours.
         -- A value with no point at all is a different repair from a short fraction: the
         -- separator has to be added as well as the digits, and it is the shape a feed
         -- produces when it drops a trailing zero group rather than one digit.
@@ -3799,7 +3909,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-125
     -- Name - COMP.RANK_MEDAL_AWARDED_OUTSIDE_MEDAL_TEMPLATE
-    -- What it does: Finds Comp.Rank awarding a medal under a tournament template that does not award medals in this sport, naming how many competitors hold one and which medals were given.
+    -- What it does: Flags Comp.Rank medals awarded under a tournament template that does not award medals in that sport.
     'MEDAL_OUTSIDE_MEDAL_TEMPLATE' AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -3808,6 +3918,9 @@ SELECT
     x.tournament_name,
     x.medal_holder_count,
     x.distinct_medals,
+-- What it does, stated in full: Finds Comp.Rank awarding a medal under a tournament template
+-- that does not award medals in this sport, naming how many competitors hold one and which
+-- medals were given.
     -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
     -- group_concat_max_len without saying so, and medal_holder_count is counted separately and
     -- is what the row asserts.

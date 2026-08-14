@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Triathlon-DQ-068
     -- Name - EVENT_SETTINGS_DISCIPLINE_NAME_MISMATCH
-    -- What it does: Finds events whose name names a discipline the event's own relations do not carry, resolving Super Sprint before Sprint and both relay formats before either. An Aquathlon-named event is excluded rather than reported, being outside the sport's DQ scope.
+    -- What it does: Flags events where the discipline named in the event name is missing from its relations. Uses special matching for sprint and relay formats and ignores Aquathlon.
     'EVENT_DISCIPLINE_NOT_MATCHING_NAME' AS check_type,
     x.event_id,
     x.event_name,
@@ -14,6 +14,10 @@ SELECT
         WHEN 804 THEN 'Long Distance / Ironman'
     END AS expected_discipline_name,
     (SELECT GROUP_CONCAT(DISTINCT d2.name ORDER BY d2.name SEPARATOR ', ')
+-- What it does, stated in full: Finds events whose name names a discipline the event's own
+-- relations do not carry, resolving Super Sprint before Sprint and both relay formats before
+-- either. An Aquathlon-named event is excluded rather than reported, being outside the
+-- sport's DQ scope.
        FROM object_discipline od2
        JOIN discipline d2 ON d2.id = od2.disciplineFK AND d2.del = 'no'
       WHERE od2.object_typeFK = 5 AND od2.objectFK = x.event_id AND od2.del = 'no') AS actual_discipline_names,
@@ -114,7 +118,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - Triathlon-DQ-069
     -- Name - EVENT_RESULTS_FULL_TIME_OUT_OF_DISCIPLINE_BAND
-    -- What it does: Finds participants whose full time is implausible for the discipline raced: below its floor, above its ceiling, or more than twice the fastest full time in the same event. The bands are judgement values rather than official cut-offs, so a finding is a review candidate.
+    -- What it does: Flags Full times that look too short, too long, or more than twice the event's fastest time. These are review cases, not official rule failures.
     CASE
         WHEN x.secs < x.floor_secs   THEN 'FULL_TIME_BELOW_DISCIPLINE_FLOOR'
         WHEN x.secs > x.ceiling_secs THEN 'FULL_TIME_ABOVE_DISCIPLINE_CEILING'
@@ -139,6 +143,10 @@ SELECT
     x.template_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds participants whose full time is implausible for the
+-- discipline raced: below its floor, above its ceiling, or more than twice the fastest full
+-- time in the same event. The bands are judgement values rather than official cut-offs, so a
+-- finding is a review candidate.
 FROM (
     SELECT
         b.event_participants_id,
@@ -289,7 +297,7 @@ ORDER BY sort_order, event_id, full_time_seconds DESC;
 SELECT
     -- CheckID - Triathlon-DQ-070
     -- Name - EVENT_RESULTS_DURATION_SHAPE_UNCONFIRMED
-    -- What it does: Finds Duration or Full-time values outside the sport's confirmed shapes - an optionally plus-prefixed h:mm:ss.f, m:ss.f or ss.f for the gap and the same forms without a plus for the absolute - where only the leading field is unbounded, so an impossible time such as 1:99:99.9 is not read as confirmed.
+    -- What it does: Flags Duration or Full-time values that do not match the approved time formats or contain impossible minute or second values.
     CASE
         WHEN x.plus_prefixed_full_time_count > 0 THEN 'FULL_TIME_PLUS_PREFIXED'
         ELSE 'DURATION_SHAPE_NOT_CONFIRMED'
@@ -303,6 +311,10 @@ SELECT
     x.tournament_template_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Duration or Full-time values outside the sport's
+-- confirmed shapes - an optionally plus-prefixed h:mm:ss.f, m:ss.f or ss.f for the gap and
+-- the same forms without a plus for the absolute - where only the leading field is
+-- unbounded, so an impossible time such as 1:99:99.9 is not read as confirmed.
 FROM (
     SELECT
         ep.id AS event_participants_id,
@@ -383,7 +395,7 @@ ORDER BY sort_order, event_id, event_participants_id;
 SELECT
     -- CheckID - Triathlon-DQ-094
     -- Name - EVENT_MIXED_RELAY_LINEUP_SIZE_NOT_FOUR
-    -- What it does: Finds Mixed Relay teams whose Starter lineup names a number of distinct athletes other than four, the format being two men and two women each racing a leg.
+    -- What it does: Flags Mixed Relay starter lineups that do not contain exactly four athletes: two men and two women.
     'Mixed_Relay_Lineup_Size_Not_Four' AS check_type,
     x.event_participants_id,
     x.event_id,
@@ -392,6 +404,9 @@ SELECT
     x.lineup_size,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Mixed Relay teams whose Starter lineup names a number
+-- of distinct athletes other than four, the format being two men and two women each racing a
+-- leg.
 -- Narrowed to discipline 800 alone rather than to relays in general. SPORTS/Triathlon.md
 -- records that lineup size is not fixed by discipline for this sport and that Team Relay
 -- fields both three- and four-member teams, so a rule written across relays would report the

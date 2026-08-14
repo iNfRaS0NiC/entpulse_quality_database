@@ -1,8 +1,12 @@
 SELECT
     -- CheckID - Golf-DQ-085
     -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID_IN_MEDAL_TEMPLATE
-    -- What it does: Finds Comp.Rank under a Golf template that awards medals whose medal set does not follow the places its own Rank rows hold: a type missing, held by more competitors than the place takes, held by fewer, or standing over a podium that never reaches the place it belongs to.
+    -- What it does: Flags Golf Comp.Rank medals that do not match the Rank places, including missing, over-awarded, or under-awarded medals.
     CASE
+-- What it does, stated in full: Finds Comp.Rank under a Golf template that awards medals
+-- whose medal set does not follow the places its own Rank rows hold: a type missing, held by
+-- more competitors than the place takes, held by fewer, or standing over a podium that never
+-- reaches the place it belongs to.
         -- Nothing to compare the medals with. The missing Rank is Golf-DQ-001's finding and
         -- is not restated here; what this row says is that the medal set was not audited.
         WHEN x.ranked_holders = 0 THEN 'Medal_Set_Unreadable_Without_Rank'
@@ -149,7 +153,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - Golf-DQ-087
     -- Name - EVENT_RESULTS_RANK_INVALID_OR_MISSING_STROKE_PLAY
-    -- What it does: Finds finished Stroke Play events holding a Rank that is not a plain positive integer up to the sport's maximum, or missing from a player who neither carries a Comment nor is recorded as having missed the cut, counting each verdict and naming who holds it.
+    -- What it does: Flags Stroke Play players whose Rank is missing without an explanation, invalid, or above the sport's maximum.
     z.check_type,
     z.event_id,
     z.event_name,
@@ -162,6 +166,10 @@ SELECT
     z.affected_participants,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds finished Stroke Play events holding a Rank that is not
+-- a plain positive integer up to the sport's maximum, or missing from a player who neither
+-- carries a Comment nor is recorded as having missed the cut, counting each verdict and
+-- naming who holds it.
 -- Golf explains a missing rank with result type 38 Made cut, not with a Comment. A player who
 -- misses the cut has no finishing position and never had one, and the sport says so in a field
 -- of its own: 351143 of them carry yes or no over 3201 Stroke Play events. The global template
@@ -301,7 +309,7 @@ ORDER BY sort_order, affected_count DESC, event_id;
 SELECT
     -- CheckID - Golf-DQ-088
     -- Name - EVENT_NAME_FORMAT_INVALID_STROKE_PLAY
-    -- What it does: Finds Stroke Play event names breaking a text-hygiene rule - spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder or a numeric-only name - one row per name, naming every rule it breaks.
+    -- What it does: Flags Stroke Play event names with spacing, character, hyphenation, capitalisation, placeholder, or numeric-name problems.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS event_name,
     x.violation_types,
@@ -311,6 +319,9 @@ SELECT
     MIN(x.stage_name) AS sample_stage_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Stroke Play event names breaking a text-hygiene rule -
+-- spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder or a
+-- numeric-only name - one row per name, naming every rule it breaks.
 FROM (
     SELECT
         e.id AS object_id,
@@ -386,7 +397,7 @@ ORDER BY sort_order, violation_types, event_name;
 SELECT
     -- CheckID - Golf-DQ-089
     -- Name - EVENT_NAME_DOES_NOT_NAME_ITS_PARTICIPANTS_MATCH_PLAY
-    -- What it does: Finds Match Play events whose name is built from their competitors but does not name one of them, separating naming none of them from naming only some.
+    -- What it does: Flags Match Play event names that include none or only some of the competitors.
     CASE
         WHEN x.named_participant_count = 0 THEN 'NAMES_NO_PARTICIPANT'
         ELSE 'NAMES_SOME_PARTICIPANTS_NOT_ALL'
@@ -402,6 +413,9 @@ SELECT
     x.unnamed_participants,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Match Play events whose name is built from their
+-- competitors but does not name one of them, separating naming none of them from naming only
+-- some.
 -- Containment rather than reconstruction. A sport whose event name is the pairing joins its
 -- sides with a separator that varies - a hyphen, a slash inside a side made of two countries
 -- - and rebuilding the name from the participants would need that convention as a parameter
@@ -476,7 +490,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Golf-DQ-090
     -- Name - TOURNAMENT_STAGE_DOES_NOT_COVER_ITS_EVENTS
-    -- What it does: Finds Golf tournament stages whose declared dates fail to contain the events they hold - starting after the first, ending before the last, or running more than a week past the last - counting the events and naming the span they occupy.
+    -- What it does: Flags Golf stages whose dates do not cover their events, or extend more than seven days after the last event.
     z.check_type,
     z.tournament_stage_id,
     z.stage_name,
@@ -489,6 +503,10 @@ SELECT
     z.event_count,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Golf tournament stages whose declared dates fail to
+-- contain the events they hold - starting after the first, ending before the last, or
+-- running more than a week past the last - counting the events and naming the span they
+-- occupy.
 -- GLOBAL-DQ-004 narrowed to what the invariant means in Golf, and the reason it could not be
 -- instantiated. That template asks whether a stage is bounded by its own events, and in this
 -- sport it is not: a stroke-play tournament is one event dated on the day it opens, while the
@@ -571,7 +589,7 @@ ORDER BY sort_order, event_count DESC, tournament_stage_id;
 SELECT
     -- CheckID - Golf-DQ-091
     -- Name - TOURNAMENT_NAME_SEASON_OUTSIDE_ITS_SEASON_WINDOW
-    -- What it does: Finds Golf tournaments named for a single year whose events fall outside the season that year names, which runs from the September before it to the end of it, separating one starting too early from one running past its year.
+    -- What it does: Flags Golf events outside the season shown in the tournament name. That season runs from the previous September through the named year.
     z.check_type,
     z.tournament_id,
     z.tournament_name,
@@ -582,6 +600,9 @@ SELECT
     z.event_count,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Golf tournaments named for a single year whose events
+-- fall outside the season that year names, which runs from the September before it to the
+-- end of it, separating one starting too early from one running past its year.
 -- GLOBAL-DQ-080 narrowed to the season Golf actually keeps. That template recognises the
 -- written span form 2025/26 and reads a bare 2002 as the calendar year, so the European Tour
 -- season opening in November 2001 contradicted its own name: 42 of its 45 findings were that,
@@ -651,7 +672,7 @@ ORDER BY sort_order, named_year, tournament_id;
 SELECT
     -- CheckID - Golf-DQ-092
     -- Name - EVENT_RESULTS_MATCH_PLAY_OUTCOME_INCOHERENT
-    -- What it does: Finds finished two-sided Match Play events whose outcome does not hold together - no winner recorded though the match was scored, both sides winning, a winner with no loser, a draw on one side only, a word Final Result does not use, or a Match Play Score contradicting the result it sits beside.
+    -- What it does: Flags finished Match Play events with an inconsistent outcome, winner/loser/draw setup, Final Result, or Match Play Score.
     z.check_type,
     z.event_id,
     z.event_name,
@@ -661,6 +682,10 @@ SELECT
     z.scores_held,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds finished two-sided Match Play events whose outcome
+-- does not hold together - no winner recorded though the match was scored, both sides
+-- winning, a winner with no loser, a draw on one side only, a word Final Result does not
+-- use, or a Match Play Score contradicting the result it sits beside.
 -- The first check to read a Match Play outcome at all. Golf contests 12984 finished Match Play
 -- events inside the client boundary and until this nothing asked whether their results were
 -- coherent; GLOBAL-DQ-094 is the template for it and cannot instantiate here, because it reads
@@ -790,7 +815,7 @@ ORDER BY sort_order, event_startdate DESC, event_id;
 SELECT
     -- CheckID - Golf-DQ-093
     -- Name - COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT
-    -- What it does: Finds Comp.Rank statistics holding participants who took no part in any event under their own tournament, counting the strays and naming them.
+    -- What it does: Flags Comp.Rank statistics for participants who did not take part in any event in the same tournament.
     'PARTICIPANT_NOT_IN_TOURNAMENT' AS check_type,
     cr.statistic_id,
     cr.template_name,
@@ -801,6 +826,8 @@ SELECT
     GROUP_CONCAT(DISTINCT cr.participant_name ORDER BY cr.participant_name SEPARATOR ' | ') AS participant_names,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank statistics holding participants who took no
+-- part in any event under their own tournament, counting the strays and naming them.
 -- GLOBAL-DQ-030 rewritten for Golf because it could not be run here at all. That template asks
 -- the question one Comp.Rank row at a time - for each of the sport's 355654 statistic
 -- participants, does this person appear anywhere under this tournament - and each of those

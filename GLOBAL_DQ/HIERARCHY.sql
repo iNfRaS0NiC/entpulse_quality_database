@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - GLOBAL-DQ-001
     -- Name - TEMPLATE_NO_TOURNAMENTS_OR_STAGES
-    -- What it does: Finds tournament templates with no tournaments, or with tournaments but no stages under any of them.
+    -- What it does: Flags tournament templates with no tournaments, or whose tournaments contain no stages.
     'Missing_Tournaments_Or_Stages' AS check_type,
     tt.id AS tournament_template_id,
     tt.name AS tournament_template_name,
@@ -13,6 +13,8 @@ SELECT
         ELSE 'No_Stages'
     END AS missing_reason,
     NULL AS eligible_count
+-- What it does, stated in full: Finds tournament templates with no tournaments, or with
+-- tournaments but no stages under any of them.
 FROM tournament_template tt
 WHERE tt.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
@@ -51,11 +53,12 @@ WHERE tt.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-002
     -- Name - TOURNAMENT_STAGE_MISSING_AGE_CLASS
-    -- What it does: Finds tournament stages with no age-class relation.
+    -- What it does: Flags tournament stages that have no age-class relation.
     'Missing_Age_Class' AS check_type,
     ts.id AS tournament_stage_id,
     ts.name AS tournament_stage_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds tournament stages with no age-class relation.
 FROM tournament_stage ts
 JOIN tournament t
   ON t.id = ts.tournamentFK
@@ -101,11 +104,12 @@ WHERE ts.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-003
     -- Name - TOURNAMENT_STAGE_NO_EVENTS
-    -- What it does: Finds tournament stages holding no events.
+    -- What it does: Flags tournament stages that have no events.
     'No_Events' AS check_type,
     ts.id AS tournament_stage_id,
     ts.name AS tournament_stage_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds tournament stages holding no events.
 FROM tournament_stage ts
 JOIN tournament t
   ON t.id = ts.tournamentFK
@@ -149,7 +153,7 @@ WHERE ts.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-004
     -- Name - TOURNAMENT_STAGE_DATE_RANGE_MISMATCH
-    -- What it does: Finds tournament stages whose start or end date does not match the earliest and latest event date inside them.
+    -- What it does: Flags stages whose dates do not match the first and last event dates inside the stage.
     'Date_Range_Mismatch' AS check_type,
     ts.id AS tournament_stage_id,
     ts.name AS tournament_stage_name,
@@ -158,6 +162,8 @@ SELECT
     MIN(e.startdate) AS earliest_event_startdate,
     MAX(e.startdate) AS latest_event_startdate,
     NULL AS eligible_count
+-- What it does, stated in full: Finds tournament stages whose start or end date does not
+-- match the earliest and latest event date inside them.
 FROM tournament_stage ts
 JOIN tournament t
   ON t.id = ts.tournamentFK
@@ -214,7 +220,7 @@ WHERE ts.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-005
     -- Name - TOURNAMENT_STAGE_MISSING_START_OR_END_DATE
-    -- What it does: Finds tournament stages with a NULL start or end date.
+    -- What it does: Flags tournament stages with a missing start date or end date.
     'Missing_Start_Or_End_Date' AS check_type,
     ts.id AS tournament_stage_id,
     ts.name AS tournament_stage_name,
@@ -223,6 +229,7 @@ SELECT
         IF(ts.enddate IS NULL, 'enddate', NULL)
     ) AS missing_fields,
     NULL AS eligible_count
+-- What it does, stated in full: Finds tournament stages with a NULL start or end date.
 FROM tournament_stage ts
 JOIN tournament t
   ON t.id = ts.tournamentFK
@@ -262,7 +269,7 @@ WHERE ts.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-006
     -- Name - EVENT_MISSING_ROUND_TYPE
-    -- What it does: Finds events with no round type, or one that resolves to no round_type row.
+    -- What it does: Flags events with no round type or with a round type that no longer exists.
     'Missing_Round_Type' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -271,6 +278,8 @@ SELECT
     ts.name AS stage_name,
     e.round_typeFK,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events with no round type, or one that resolves to no
+-- round_type row.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -313,7 +322,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-013
     -- Name - TEMPLATE_MISSING_SET_SUBSET_GENDER_NAME
-    -- What it does: Finds tournament templates missing a name, a gender, a subset relation or a resolvable tournament set.
+    -- What it does: Flags tournament templates missing a name, gender, subset relation, or valid tournament set.
     'Missing_Template_Field' AS check_type,
     tt.id AS tournament_template_id,
     tt.name AS tournament_template_name,
@@ -328,6 +337,8 @@ SELECT
         ),
         IF(NOT EXISTS (
             SELECT 1
+-- What it does, stated in full: Finds tournament templates missing a name, a gender, a
+-- subset relation or a resolvable tournament set.
             FROM object_relation orl
             JOIN tournament_sub_set sub
               ON sub.id = orl.rel_objectFK
@@ -428,7 +439,7 @@ WHERE tt.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-014
     -- Name - TEMPLATE_STAGE_GENDER_MISMATCH
-    -- What it does: Finds tournament stages whose gender differs from their template's, ignoring mixed and empty on either side.
+    -- What it does: Flags stages whose gender differs from the template gender. Mixed and blank values are ignored.
     'Gender_Mismatch' AS check_type,
     tt.id AS tournament_template_id,
     tt.name AS template_name,
@@ -437,6 +448,8 @@ SELECT
     ts.name AS stage_name,
     ts.gender AS stage_gender,
     NULL AS eligible_count
+-- What it does, stated in full: Finds tournament stages whose gender differs from their
+-- template's, ignoring mixed and empty on either side.
 FROM tournament_stage ts
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -469,7 +482,7 @@ WHERE ts.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-015
     -- Name - EVENT_SETTINGS_MISSING_DISCIPLINE
-    -- What it does: Finds events with no discipline relation.
+    -- What it does: Flags events with no discipline relation.
     'Missing_Discipline' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -477,6 +490,7 @@ SELECT
     t.name AS tournament_name,
     ts.name AS stage_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events with no discipline relation.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -518,7 +532,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-016
     -- Name - EVENT_SETTINGS_MISSING_GENDER
-    -- What it does: Finds events whose parent stage carries no usable gender.
+    -- What it does: Flags events whose parent stage has no valid gender.
     'Missing_Gender' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -527,6 +541,7 @@ SELECT
     ts.name AS stage_name,
     ts.gender,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events whose parent stage carries no usable gender.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -566,7 +581,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-034
     -- Name - TOURNAMENT_STAGE_MISSING_CORE_FIELDS
-    -- What it does: Finds tournament stages missing a name, gender, country or city, carrying a placeholder country, or holding the host country wrongly - absent where the country is International, or present where the country already names a nation.
+    -- What it does: Flags stages with missing basic data, a placeholder country, or an incorrect host-country setup for International or national stages.
     'Missing_Stage_Field' AS check_type,
     ts.id AS tournament_stage_id,
     ts.name AS tournament_stage_name,
@@ -581,6 +596,9 @@ SELECT
         ),
         IF(NOT EXISTS (
             SELECT 1
+-- What it does, stated in full: Finds tournament stages missing a name, gender, country or
+-- city, carrying a placeholder country, or holding the host country wrongly - absent where
+-- the country is International, or present where the country already names a nation.
             FROM country c
             WHERE c.id = ts.countryFK
               AND c.del = 'no'
@@ -797,7 +815,7 @@ WHERE ts.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-038
     -- Name - EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_MEDAL_ROUND
-    -- What it does: Finds finished events on a medal round type carrying no medal_related property set to yes.
+    -- What it does: Flags finished medal-round events where medal_related is not set to Yes.
     'Missing_Medal_Related_Property' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -805,6 +823,8 @@ SELECT
     t.name AS tournament_name,
     ts.name AS stage_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds finished events on a medal round type carrying no
+-- medal_related property set to yes.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -852,7 +872,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-048
     -- Name - TOURNAMENT_STAGE_NAME_FORMAT_INVALID
-    -- What it does: Finds tournament-stage names breaking a text-hygiene rule - spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder or a numeric-only name - one row per name, naming every rule it breaks.
+    -- What it does: Flags stage names with spacing, character, hyphenation, capitalisation, placeholder, or numeric-name problems.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS stage_name,
     x.violation_types,
@@ -862,6 +882,9 @@ SELECT
     MIN(x.tournament_name) AS sample_tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds tournament-stage names breaking a text-hygiene rule -
+-- spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder or a
+-- numeric-only name - one row per name, naming every rule it breaks.
 FROM (
     SELECT
         ts.id AS object_id,
@@ -934,7 +957,7 @@ ORDER BY sort_order, violation_types, stage_name;
 SELECT
     -- CheckID - GLOBAL-DQ-049
     -- Name - EVENT_NAME_FORMAT_INVALID
-    -- What it does: Finds event names breaking a text-hygiene rule - spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder or a numeric-only name - one row per name, naming every rule it breaks.
+    -- What it does: Flags event names with spacing, character, hyphenation, capitalisation, placeholder, or numeric-name problems.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS event_name,
     x.violation_types,
@@ -944,6 +967,9 @@ SELECT
     MIN(x.stage_name) AS sample_stage_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds event names breaking a text-hygiene rule - spacing,
+-- control or corrupted characters, hyphenation, capitalisation, a placeholder or a numeric-
+-- only name - one row per name, naming every rule it breaks.
 FROM (
     SELECT
         e.id AS object_id,
@@ -1016,7 +1042,7 @@ ORDER BY sort_order, violation_types, event_name;
 SELECT
     -- CheckID - GLOBAL-DQ-050
     -- Name - TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT
-    -- What it does: Finds tournament-stage name spellings that lose to a more common spelling of the same name, identical but for case and spacing, with the dominant spelling beside it.
+    -- What it does: Flags less common spellings of the same stage name when only case or spacing differs, and shows the preferred spelling.
     CASE
         WHEN v.occurrence_count = v.dominant_count THEN 'NAME_CASE_NO_DOMINANT_SPELLING'
         ELSE 'NAME_CASE_MINORITY_SPELLING'
@@ -1030,6 +1056,9 @@ SELECT
     v.sample_template_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds tournament-stage name spellings that lose to a more
+-- common spelling of the same name, identical but for case and spacing, with the dominant
+-- spelling beside it.
 FROM (
     SELECT
         a.stage_name,
@@ -1095,7 +1124,7 @@ ORDER BY sort_order, dominant_spelling, stage_name;
 SELECT
     -- CheckID - GLOBAL-DQ-061
     -- Name - EVENT_STATUS_TIME_CONFLICT
-    -- What it does: Finds events whose status contradicts their own date: finished but dated in the future, or not started and older than the sport's staleness window.
+    -- What it does: Flags events whose status conflicts with the date: finished in the future, or still not started after the sport's allowed delay.
     'Status_Time_Conflict' AS check_type,
     CASE
         WHEN e.status_type = 'finished' THEN 'FINISHED_WITH_FUTURE_STARTDATE'
@@ -1110,6 +1139,9 @@ SELECT
     CAST(e.startdate AS CHAR) AS startdate,
     DATEDIFF(NOW(), e.startdate) AS days_past_start,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events whose status contradicts their own date:
+-- finished but dated in the future, or not started and older than the sport's staleness
+-- window.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -1157,7 +1189,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-062
     -- Name - EVENT_DUPLICATE_BY_METADATA
-    -- What it does: Finds events sharing a stage, discipline, calendar day and participant set, separating an exact timestamp match from a same-day one, and empty shells from a repeated competition.
+    -- What it does: Flags possible duplicate events with the same stage, discipline, date, and participants, including exact-time and same-day matches.
     CASE
         WHEN COUNT(DISTINCT d.startdate) = 1 THEN 'DUPLICATE_SAME_TIMESTAMP'
         ELSE 'DUPLICATE_SAME_DAY_DIFFERENT_TIME'
@@ -1174,6 +1206,9 @@ SELECT
     GROUP_CONCAT(d.event_id ORDER BY d.event_id) AS event_ids,
     SUBSTRING(GROUP_CONCAT(DISTINCT d.round_typeFK ORDER BY d.round_typeFK), 1, 50) AS round_types_seen,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events sharing a stage, discipline, calendar day and
+-- participant set, separating an exact timestamp match from a same-day one, and empty shells
+-- from a repeated competition.
 FROM (
     SELECT
         e.id AS event_id,
@@ -1258,13 +1293,15 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-063
     -- Name - TOURNAMENT_NO_STAGES
-    -- What it does: Finds tournaments holding no stages, including those whose template holds other populated tournaments and so never reaches GLOBAL-DQ-001.
+    -- What it does: Flags tournaments that have no stages, even when other tournaments under the same template do have stages.
     'No_Stages' AS check_type,
     t.id AS tournament_id,
     t.name AS tournament_name,
     tt.id AS tournament_template_id,
     tt.name AS tournament_template_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds tournaments holding no stages, including those whose
+-- template holds other populated tournaments and so never reaches GLOBAL-DQ-001.
 FROM tournament t
 JOIN tournament_template tt
   ON tt.id = t.tournament_templateFK
@@ -1303,7 +1340,7 @@ WHERE t.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-073
     -- Name - EVENT_SETTINGS_UNEXPECTED_MEDAL_RELATED_FOR_NON_MEDAL_ROUND
-    -- What it does: Finds finished events off a medal round type carrying a medal_related property set to yes.
+    -- What it does: Flags finished non-medal-round events where medal_related is incorrectly set to Yes.
     'Unexpected_Medal_Related_Property' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -1312,6 +1349,8 @@ SELECT
     t.name AS tournament_name,
     ts.name AS stage_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds finished events off a medal round type carrying a
+-- medal_related property set to yes.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -1359,7 +1398,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-074
     -- Name - EVENT_MISSING_VENUE
-    -- What it does: Finds events resolving to no venue, separating no venue link at all from a link naming a venue that does not resolve.
+    -- What it does: Flags events with no venue link or with a venue link that does not resolve.
     CASE
         WHEN x.broken_links > 0 THEN 'VENUE_LINK_UNRESOLVABLE'
         ELSE 'NO_VENUE_ON_EVENT_OR_STAGE'
@@ -1371,6 +1410,8 @@ SELECT
     x.tournament_name,
     x.stage_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events resolving to no venue, separating no venue link
+-- at all from a link naming a venue that does not resolve.
 FROM (
     SELECT
         e.id AS event_id,
@@ -1429,7 +1470,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-075
     -- Name - EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET
-    -- What it does: Finds events whose round type is outside the set the sport is confirmed to contest.
+    -- What it does: Flags events using a round type that is not approved for the sport.
     'Round_Type_Not_Expected' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -1439,6 +1480,8 @@ SELECT
     t.name AS tournament_name,
     ts.name AS stage_name,
     NULL AS eligible_count
+-- What it does, stated in full: Finds events whose round type is outside the set the sport
+-- is confirmed to contest.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -1479,7 +1522,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-078
     -- Name - TOURNAMENT_NAME_FORMAT_INVALID
-    -- What it does: Finds tournament names breaking a text-hygiene rule - spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder, or a numeric-only name that is not a bare season year - one row per name, naming every rule it breaks.
+    -- What it does: Flags tournament names with spacing, character, hyphenation, capitalisation, placeholder, or invalid numeric-name problems.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS tournament_name,
     x.violation_types,
@@ -1488,6 +1531,10 @@ SELECT
     MIN(x.template_name) AS sample_template_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds tournament names breaking a text-hygiene rule -
+-- spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder, or a
+-- numeric-only name that is not a bare season year - one row per name, naming every rule it
+-- breaks.
 FROM (
     SELECT
         t.id AS object_id,
@@ -1553,7 +1600,7 @@ ORDER BY sort_order, violation_types, tournament_name;
 SELECT
     -- CheckID - GLOBAL-DQ-079
     -- Name - TEMPLATE_NAME_FORMAT_INVALID
-    -- What it does: Finds tournament template names breaking a text-hygiene rule - spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder or a numeric-only name - one row per name, naming every rule it breaks.
+    -- What it does: Flags template names with spacing, character, hyphenation, capitalisation, placeholder, or numeric-name problems.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS template_name,
     x.violation_types,
@@ -1561,6 +1608,9 @@ SELECT
     MIN(x.object_id) AS sample_object_id,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds tournament template names breaking a text-hygiene rule
+-- - spacing, control or corrupted characters, hyphenation, capitalisation, a placeholder or
+-- a numeric-only name - one row per name, naming every rule it breaks.
 FROM (
     SELECT
         tt.id AS object_id,
@@ -1619,7 +1669,7 @@ ORDER BY sort_order, violation_types, template_name;
 SELECT
     -- CheckID - GLOBAL-DQ-080
     -- Name - TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES
-    -- What it does: Finds tournaments whose name disagrees with the calendar years their stages occupy, separating a season span against a single year, a single year against a span, years the stages never reach, and stages crossing more than two years.
+    -- What it does: Flags season-year mismatches: a span versus one year, one year versus a span, named years with no stage, or stages covering more than two years.
     CASE
         WHEN x.stage_span > 2 THEN 'STAGES_SPAN_MORE_THAN_TWO_YEARS'
         WHEN x.stage_span = 2 AND x.name_has_span = 0 THEN 'SINGLE_YEAR_NAME_ON_SEASON'
@@ -1636,6 +1686,9 @@ SELECT
     x.stages,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds tournaments whose name disagrees with the calendar
+-- years their stages occupy, separating a season span against a single year, a single year
+-- against a span, years the stages never reach, and stages crossing more than two years.
 FROM (
     SELECT
         t.id AS tournament_id,
@@ -1704,7 +1757,7 @@ ORDER BY sort_order, first_stage_year;
 SELECT
     -- CheckID - GLOBAL-DQ-081
     -- Name - TEMPLATE_TOURNAMENT_YEAR_GAP
-    -- What it does: Finds tournament templates whose editions break the template's own rhythm, so a four-yearly series is measured against four years, and a gap is not counted for a year the sport is recorded as not having run.
+    -- What it does: Flags tournament editions that do not follow the template's usual schedule, while ignoring years when the sport did not run.
     'Template_Edition_Gap' AS check_type,
     r.template_id,
     r.template_name,
@@ -1717,6 +1770,9 @@ SELECT
     GROUP_CONCAT(CONCAT(g.y, ' -> ', g.y_next) ORDER BY g.y SEPARATOR ' | ') AS break_detail,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds tournament templates whose editions break the
+-- template's own rhythm, so a four-yearly series is measured against four years, and a gap
+-- is not counted for a year the sport is recorded as not having run.
 FROM (
         SELECT
             g0.template_id,
@@ -1911,7 +1967,7 @@ ORDER BY sort_order, editions_skipped DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-082
     -- Name - TOURNAMENT_STAGE_EVENT_DISCIPLINE_INCONSISTENT
-    -- What it does: Finds tournament stages whose own events do not agree on a discipline.
+    -- What it does: Flags tournament stages whose events use different disciplines.
     'Stage_Event_Discipline_Inconsistent' AS check_type,
     x.stage_id,
     x.stage_name,
@@ -1921,6 +1977,8 @@ SELECT
     x.discipline_list,
     x.event_count,
     NULL AS eligible_count
+-- What it does, stated in full: Finds tournament stages whose own events do not agree on a
+-- discipline.
 FROM (
     SELECT
         ts.id AS stage_id,
@@ -2038,7 +2096,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-089
     -- Name - EVENT_EXTRA_PERIOD_STATUS_MISMATCH
-    -- What it does: Finds events whose extra period and detailed status disagree: a period scored while the status does not say the event went to one, or the status saying it did with no period scored.
+    -- What it does: Flags events where the extra-period score and detailed status do not agree.
     CASE
         WHEN extra.event_id IS NOT NULL THEN 'EXTRA_PERIOD_PLAYED_STATUS_NOT_MARKED'
         ELSE 'STATUS_MARKED_WITHOUT_EXTRA_PERIOD'
@@ -2054,6 +2112,9 @@ SELECT
     e.status_descFK,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events whose extra period and detailed status
+-- disagree: a period scored while the status does not say the event went to one, or the
+-- status saying it did with no period scored.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -2121,7 +2182,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-096
     -- Name - EVENT_NAME_DOES_NOT_NAME_ITS_PARTICIPANTS
-    -- What it does: Finds events whose name is built from their competitors but does not name one of them, separating naming none of them from naming only some.
+    -- What it does: Flags participant-based event names that include none or only some of the competitors.
     CASE
         WHEN x.named_participant_count = 0 THEN 'NAMES_NO_PARTICIPANT'
         ELSE 'NAMES_SOME_PARTICIPANTS_NOT_ALL'
@@ -2137,6 +2198,8 @@ SELECT
     x.unnamed_participants,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events whose name is built from their competitors but
+-- does not name one of them, separating naming none of them from naming only some.
 -- Containment rather than reconstruction. A sport whose event name is the pairing joins its
 -- sides with a separator that varies - a hyphen, a slash inside a side made of two countries
 -- - and rebuilding the name from the participants would need that convention as a parameter
@@ -2208,7 +2271,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-097
     -- Name - EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND
-    -- What it does: Finds round types whose knockout flag contradicts the round: an elimination round marked not knockout, or a round nobody leaves marked as one.
+    -- What it does: Flags round types with an incorrect knockout setting: elimination rounds marked No, or non-elimination rounds marked Yes.
     CASE
         WHEN LOWER(TRIM(rt.name)) IN ({{ELIMINATION_ROUND_NAME_LIST}}) THEN 'ELIMINATION_ROUND_NOT_MARKED_KNOCKOUT'
         ELSE 'NON_ELIMINATION_ROUND_MARKED_KNOCKOUT'
@@ -2222,6 +2285,8 @@ SELECT
     END AS knockout_expected,
     (
         SELECT GROUP_CONCAT(DISTINCT rt2.id ORDER BY rt2.id)
+-- What it does, stated in full: Finds round types whose knockout flag contradicts the round:
+-- an elimination round marked not knockout, or a round nobody leaves marked as one.
         FROM round_type rt2
         WHERE rt2.del = 'no'
           AND LOWER(TRIM(rt2.name)) = LOWER(TRIM(rt.name))
@@ -2297,7 +2362,7 @@ ORDER BY sort_order, event_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-109
     -- Name - EVENT_SETTINGS_DISCIPLINE_STORAGE_MISMATCH
-    -- What it does: Finds events whose discipline differs between the two storage paths, the discipline event property and the object_discipline relation.
+    -- What it does: Flags events where the discipline property and object_discipline relation do not match.
     'Event_Discipline_Storage_Mismatch' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -2306,6 +2371,8 @@ SELECT
                    DISTINCT LOWER(TRIM(pd.name))
                    ORDER BY LOWER(TRIM(pd.name)) SEPARATOR ', '
                )
+-- What it does, stated in full: Finds events whose discipline differs between the two
+-- storage paths, the discipline event property and the object_discipline relation.
         FROM property pr
         JOIN discipline pd
           ON pd.del = 'no'
@@ -2416,7 +2483,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-118
     -- Name - EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND_DETAIL
-    -- What it does: Lists the events contested under a round type whose knockout flag contradicts the round, so the round types GLOBAL-DQ-097 names arrive as a repair list.
+    -- What it does: Lists events using a round type with an incorrect knockout setting, so they can be repaired.
     CASE
         WHEN LOWER(TRIM(rt.name)) IN ({{ELIMINATION_ROUND_NAME_LIST}}) THEN 'ELIMINATION_ROUND_NOT_MARKED_KNOCKOUT'
         ELSE 'NON_ELIMINATION_ROUND_MARKED_KNOCKOUT'
@@ -2436,6 +2503,9 @@ SELECT
     END AS knockout_expected,
     (
         SELECT GROUP_CONCAT(DISTINCT rt2.id ORDER BY rt2.id)
+-- What it does, stated in full: Lists the events contested under a round type whose knockout
+-- flag contradicts the round, so the round types GLOBAL-DQ-097 names arrive as a repair
+-- list.
         FROM round_type rt2
         WHERE rt2.del = 'no'
           AND LOWER(TRIM(rt2.name)) = LOWER(TRIM(rt.name))

@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Modern-Pentathlon-DQ-092
     -- Name - EVENT_SETTINGS_DISCIPLINE_CONTRADICTS_EVENT_NAME
-    -- What it does: Finds template events whose name says one discipline while the object_discipline relation says another, one row per template and event name rather than per event.
+    -- What it does: Flags template events where the discipline in the event name differs from the object_discipline relation.
     'DISCIPLINE_CONTRADICTS_EVENT_NAME' AS check_type,
     x.template_name,
     x.event_name,
@@ -13,6 +13,9 @@ SELECT
     SUBSTRING(GROUP_CONCAT(DISTINCT x.stage_gender ORDER BY x.stage_gender SEPARATOR ', '), 1, 60) AS genders,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds template events whose name says one discipline while
+-- the object_discipline relation says another, one row per template and event name rather
+-- than per event.
 -- Reported per template and event name rather than per event, because that is the shape the
 -- defect actually has here: the same template mislabels the same event every edition, so a
 -- Swimming Final carrying the Shooting discipline is one mapping to repair and not twenty-four
@@ -103,7 +106,7 @@ ORDER BY sort_order, event_count DESC;
 SELECT
     -- CheckID - Modern-Pentathlon-DQ-093
     -- Name - EVENT_RESULTS_OVERALL_NOT_SUM_OF_SEGMENTS
-    -- What it does: Finds competitors whose Overall score does not equal the sum of their own segment scores in the same phase, separating a segment carrying the whole total from a sum that runs over or under it.
+    -- What it does: Flags competitors whose Overall score does not equal the sum of their segment scores in the same phase.
     CASE
         WHEN pa.max_segment = pa.overall_points THEN 'A_SEGMENT_EQUALS_THE_OVERALL'
         WHEN pa.segment_sum > pa.overall_points THEN 'SUM_EXCEEDS_OVERALL'
@@ -121,6 +124,9 @@ SELECT
     pa.segment_sum - pa.overall_points AS difference,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds competitors whose Overall score does not equal the sum
+-- of their own segment scores in the same phase, separating a segment carrying the whole
+-- total from a sum that runs over or under it.
 -- A pentathlon Overall score is the sum of the scores of the disciplines that make it up, and
 -- this sport stores each of them as its own event. The two are therefore two records of one
 -- arithmetic, and nothing else in the package reads one against the other.
@@ -272,7 +278,7 @@ ORDER BY sort_order, difference DESC;
 SELECT
     -- CheckID - Modern-Pentathlon-DQ-094
     -- Name - EVENT_RESULTS_RANK_ORDER_CONTRADICTS_POINTS
-    -- What it does: Finds events where a competitor placed ahead of another scored fewer points than them, one row per event with the size of the contradiction and its worst example.
+    -- What it does: Flags events where a better-ranked competitor has fewer Points than a lower-ranked competitor.
     CASE
         WHEN g.contradicting_participants * 2 >= g.field_size THEN 'RANKING_CONTRADICTS_POINTS_THROUGHOUT'
         ELSE 'RANKING_CONTRADICTS_POINTS_IN_PLACES'
@@ -289,6 +295,9 @@ SELECT
     g.worst_example,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events where a competitor placed ahead of another
+-- scored fewer points than them, one row per event with the size of the contradiction and
+-- its worst example.
 -- Pentathlon places competitors by the points they scored, so within one event the ranking and
 -- the score are two records of one ordering and each is a check on the other. Nothing else in
 -- the package reads them against each other.
@@ -412,7 +421,7 @@ ORDER BY sort_order, contradicting_participants DESC;
 SELECT
     -- CheckID - Modern-Pentathlon-DQ-095
     -- Name - EVENT_NAME_MIXED_CONTRADICTS_STAGE_GENDER
-    -- What it does: Finds events whose name says the format is mixed while the stage holding them is recorded as a single gender or carries no gender at all.
+    -- What it does: Flags events named as mixed when their stage has one gender or no gender.
     CASE
         WHEN ts.gender IS NULL OR TRIM(ts.gender) = '' THEN 'MIXED_NAME_ON_STAGE_WITHOUT_GENDER'
         ELSE 'MIXED_NAME_CONTRADICTED_BY_STAGE_GENDER'
@@ -425,6 +434,8 @@ SELECT
     YEAR(e.startdate) AS event_year,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events whose name says the format is mixed while the
+-- stage holding them is recorded as a single gender or carries no gender at all.
 -- The event name and the stage gender are two records of one fact wherever the name names the
 -- format. This sport says it exactly one way - the relay events carry Mix in their name - and
 -- nothing else in the package reads a name against a gender. GLOBAL-DQ-014 compares the stage
@@ -472,7 +483,7 @@ ORDER BY sort_order, event_year, event_id;
 SELECT
     -- CheckID - Modern-Pentathlon-DQ-096
     -- Name - EVENT_RESULTS_ZERO_SCORE_WITHOUT_STATUS
-    -- What it does: Finds events holding competitors scored zero with no comment to say why, separating a whole field scored zero from a few competitors and from one.
+    -- What it does: Flags competitors with a zero score and no Comment explaining it, whether it affects one, several, or all competitors.
     CASE
         WHEN g.zero_scored_participants * 2 >= g.field_size THEN 'ZERO_SCORE_ACROSS_THE_FIELD'
         WHEN g.zero_scored_participants > 1                 THEN 'ZERO_SCORE_FOR_SEVERAL'
@@ -488,6 +499,8 @@ SELECT
     g.examples,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events holding competitors scored zero with no comment
+-- to say why, separating a whole field scored zero from a few competitors and from one.
 -- Zero is how a missing score is written in this sport, and nothing separates it from a score
 -- that really was zero except the comment beside it. A competitor scored zero and carrying any
 -- comment at all is therefore left alone here: the state is recorded, whatever it says.
@@ -563,7 +576,7 @@ ORDER BY sort_order, zero_scored_participants DESC;
 SELECT
     -- CheckID - Modern-Pentathlon-DQ-097
     -- Name - EVENT_RESULTS_SEGMENT_SCORE_MISSING_WITHOUT_STATUS
-    -- What it does: Finds competitors holding no score in one or more discipline events of their own phase with no comment anywhere in that phase to say why, separating most of the phase missing from part of it.
+    -- What it does: Flags competitors missing a score in one or more discipline events of their phase when no Comment explains it.
     CASE
         WHEN (gs.group_segments - pa.segments_scored) * 2 > gs.group_segments THEN 'MOST_SEGMENTS_MISSING_WITHOUT_STATUS'
         ELSE 'SEGMENT_MISSING_WITHOUT_STATUS'
@@ -579,6 +592,9 @@ SELECT
     gs.group_segments - pa.segments_scored AS segments_missing,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds competitors holding no score in one or more discipline
+-- events of their own phase with no comment anywhere in that phase to say why, separating
+-- most of the phase missing from part of it.
 -- A competitor entered in a phase is entered in its disciplines, so a discipline holding no score
 -- for them is either a withdrawal or a gap. The database can tell the two apart, because a
 -- withdrawal is written as a comment - DNS, DNF, DSQ - and this reads exactly that: the score is

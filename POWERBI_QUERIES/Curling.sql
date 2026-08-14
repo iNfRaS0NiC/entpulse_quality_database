@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Curling-DQ-070
     -- Name - EVENT_SCOPE_END_SCORED_BY_BOTH_TEAMS
-    -- What it does: Finds events holding an end in which both teams scored, which the sport's rule makes impossible - only the side taking the end scores and the other is left on zero.
+    -- What it does: Flags ends where both teams scored, which is not allowed.
     'END_SCORED_BY_BOTH_TEAMS' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -13,6 +13,9 @@ SELECT
     x.offending_ends,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events holding an end in which both teams scored,
+-- which the sport's rule makes impossible - only the side taking the end scores and the
+-- other is left on zero.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -86,7 +89,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-073
     -- Name - EVENT_SCOPE_EXTRA_END_WITHOUT_TIED_REGULATION_SCORE
-    -- What it does: Finds events whose extra end is recorded as played while the two teams did not reach it level, since only a tie after the regular ends produces one.
+    -- What it does: Flags extra ends played when the teams were not tied after the regular ends.
     'EXTRA_END_WITHOUT_TIED_REGULATION_SCORE' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -100,6 +103,8 @@ SELECT
     x.side_scores,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events whose extra end is recorded as played while the
+-- two teams did not reach it level, since only a tie after the regular ends produces one.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -212,7 +217,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-074
     -- Name - EVENT_SCOPE_ENDS_BELOW_MINIMUM
-    -- What it does: Finds events holding fewer than six scored regular ends, below the shortest game either length can legitimately produce, separating one whose status records an awarded win from one that finished normally.
+    -- What it does: Flags games with fewer than six scored regular ends and shows whether the event was awarded or finished normally.
     CASE
         WHEN e.status_descFK = 190 THEN 'FEW_ENDS_AWARDED_WIN'
         ELSE 'FEW_ENDS_PLAIN_FINISHED'
@@ -228,6 +233,9 @@ SELECT
     x.stored_end_count,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events holding fewer than six scored regular ends,
+-- below the shortest game either length can legitimately produce, separating one whose
+-- status records an awarded win from one that finished normally.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -294,7 +302,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-077
     -- Name - EVENT_SETTINGS_DISCIPLINE_CONTRADICTS_COMPETITION_NAME
-    -- What it does: Finds events whose competition names Mixed Doubles while the event carries no such discipline, or the reverse. The name is read from template, tournament and stage together, because the format is named by the competition rather than by the event.
+    -- What it does: Flags a mismatch between Mixed Doubles in the competition name and the event discipline.
     CASE
         WHEN x.name_says_mixed_doubles = 1 THEN 'NAME_SAYS_MIXED_DOUBLES_DISCIPLINE_DOES_NOT'
         ELSE 'DISCIPLINE_MIXED_DOUBLES_NAME_DOES_NOT'
@@ -309,6 +317,10 @@ SELECT
     x.actual_discipline_names,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events whose competition names Mixed Doubles while the
+-- event carries no such discipline, or the reverse. The name is read from template,
+-- tournament and stage together, because the format is named by the competition rather than
+-- by the event.
 -- Only the Mixed Doubles name is asserted, and only in one direction each way, because the
 -- sport's other formats are not named uniquely enough to judge: a competition named "Mixed"
 -- alone is the four-player mixed team event and is legitimately 4aSide, so a rule keyed on
@@ -381,7 +393,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-078
     -- Name - COMP.RANK_TEAM_ROSTER_SIZE_CONTRADICTS_DISCIPLINE
-    -- What it does: Finds Comp.Rank holding a team whose roster size contradicts the discipline it carries: a Mixed Doubles team that is not a pair, a 4aSide ranking whose teams are mostly pairs, or a 4aSide team short of four where the rest are not.
+    -- What it does: Flags Comp.Rank team sizes that conflict with the discipline, including Mixed Doubles pairs and 4aSide teams.
     CASE
         WHEN x.doubles_team_not_two > 0 THEN 'MIXED_DOUBLES_TEAM_NOT_TWO'
         WHEN x.four_a_side_sized_like_doubles * 2 > x.team_count THEN 'FOUR_A_SIDE_STATISTIC_IS_DOUBLES_SHAPED'
@@ -400,6 +412,9 @@ SELECT
     x.offending_teams,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank holding a team whose roster size contradicts
+-- the discipline it carries: a Mixed Doubles team that is not a pair, a 4aSide ranking whose
+-- teams are mostly pairs, or a 4aSide team short of four where the rest are not.
 -- The independent witness of a wrong discipline. GLOBAL-DQ-065 measures whether the teams
 -- inside one statistic field the same number of athletes, which passes when every team is
 -- the wrong size in the same way; this measures each team against the size its own
@@ -501,7 +516,7 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - Curling-DQ-082
     -- Name - EVENT_SCOPE_CONTAINER_SHAPE_CONTRADICTS_DISCIPLINE
-    -- What it does: Finds events whose end-by-end container is shaped like no length the sport schedules: an end_9 without the end_10 a ten-end game also carries, or ten ends on a Mixed Doubles game played over eight.
+    -- What it does: Flags curling events with an invalid number or structure of ends, including ten ends in Mixed Doubles.
     CASE
         WHEN x.container_shape = '9-end' THEN 'CONTAINER_SHAPE_NOT_A_SCHEDULED_LENGTH'
         ELSE 'MIXED_DOUBLES_WITH_TEN_END_CONTAINER'
@@ -517,6 +532,9 @@ SELECT
     x.highest_end_stored,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events whose end-by-end container is shaped like no
+-- length the sport schedules: an end_9 without the end_10 a ten-end game also carries, or
+-- ten ends on a Mixed Doubles game played over eight.
 -- The shape is read from which end columns exist, not from how many were scored: a conceded
 -- game leaves fewer scored ends without changing what the container was built for, so only
 -- the columns say which length was scheduled. Two shapes are legitimate, eight and ten, and
@@ -595,7 +613,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-083
     -- Name - COMP.RANK_TEAM_ATHLETE_RANK_DISAGREE
-    -- What it does: Finds Comp.Rank whose team and athlete halves disagree: an athlete ranked differently from the team the Team field assigns them to, or one half of the pair missing altogether.
+    -- What it does: Flags Comp.Rank records where team and athlete results disagree, or one side of the team-athlete pair is missing.
     CASE
         WHEN x.kind = 'team' AND x.partner_id IS NULL THEN 'TEAM_STATISTIC_WITHOUT_ATHLETE_PARTNER'
         WHEN x.kind = 'athlete' AND x.partner_id IS NULL THEN 'ATHLETE_STATISTIC_WITHOUT_TEAM_PARTNER'
@@ -611,6 +629,9 @@ SELECT
     x.rank_sample,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank whose team and athlete halves disagree: an
+-- athlete ranked differently from the team the Team field assigns them to, or one half of
+-- the pair missing altogether.
 -- The two halves are joined by name, because nothing else joins them: statistic_config
 -- records no Event id for this sport, so a Comp.Rank cannot be resolved to what it came
 -- from, and the athlete half carries its team only through the Team data field. The naming
@@ -734,7 +755,7 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - Curling-DQ-084
     -- Name - EVENT_DUPLICATE_BY_RESULT_ACROSS_DATES
-    -- What it does: Finds events inside one stage recording the identical result - the same two teams holding the same scores - on different calendar days, so one game appears twice under dates that keep it out of the metadata duplicate check.
+    -- What it does: Flags events in the same stage with identical teams and scores but different dates.
     'DUPLICATE_BY_RESULT_ACROSS_DATES' AS check_type,
     d.template_name,
     d.tournament_name,
@@ -747,6 +768,9 @@ SELECT
     GROUP_CONCAT(d.event_id ORDER BY d.event_id) AS event_ids,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds events inside one stage recording the identical result
+-- - the same two teams holding the same scores - on different calendar days, so one game
+-- appears twice under dates that keep it out of the metadata duplicate check.
 -- The key is the result itself, tied to the side that holds it: a participant id joined to
 -- its own score, ordered by participant so the pairing reads the same whichever side was
 -- entered first. That is what makes the check safe where a plain participant key is not - a
@@ -828,7 +852,7 @@ ORDER BY sort_order, duplicate_event_count DESC;
 SELECT
     -- CheckID - Curling-DQ-095
     -- Name - COMP.RANK_PARTICIPANT_TYPE_CONTRADICTS_STATISTIC_KIND
-    -- What it does: Finds Comp.Rank holding a participant whose type contradicts what its own name declares: an (athletes) ranking holding anything but athletes, or its unsuffixed partner anything but teams.
+    -- What it does: Flags Comp.Rank participant types that conflict with the ranking name: athlete rankings must contain athletes and team rankings must contain teams.
     CASE
         WHEN x.statistic_kind = 'athletes' THEN 'ATHLETES_STATISTIC_HOLDS_NON_ATHLETE'
         ELSE 'TEAM_STATISTIC_HOLDS_NON_TEAM'
@@ -841,6 +865,9 @@ SELECT
     x.offending_types,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank holding a participant whose type contradicts
+-- what its own name declares: an (athletes) ranking holding anything but athletes, or its
+-- unsuffixed partner anything but teams.
 -- Sport-authored rather than a GLOBAL template because the rule is carried by a name suffix.
 -- Turning "(athletes)" into a parameter would make every sport that has no such convention
 -- declare an empty one, which GLOBAL_DQ/README.md names as the point where a template stops
@@ -906,7 +933,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - Curling-DQ-096
     -- Name - EVENT_SETTINGS_MIXED_DOUBLES_GENDER_INVALID
-    -- What it does: Finds Mixed Doubles events whose tournament stage declares a gender other than mixed, so a format played by a man and a woman together sits under a single-gender stage.
+    -- What it does: Flags Mixed Doubles events whose stage gender is not Mixed.
     'Mixed_Doubles_Stage_Gender_Invalid' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -915,6 +942,9 @@ SELECT
     tt.name AS template_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds Mixed Doubles events whose tournament stage declares a
+-- gender other than mixed, so a format played by a man and a woman together sits under a
+-- single-gender stage.
 -- Sport-authored because discipline 752 is a Curling identifier and the rule is about what
 -- that one discipline means. A stage carrying no gender at all is reported here rather than
 -- excused: Mixed Doubles is the one format whose gender is not a matter of record-keeping

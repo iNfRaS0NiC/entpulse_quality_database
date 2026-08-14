@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Soccer-DQ-022
     -- Name - EVENT_RESULTS_SCORE_TIED_ON_KNOCKOUT_SINGLE_MATCH
-    -- What it does: Finds finished knockout events whose two participants hold an identical deciding score, so a round that must produce a winner produced none, excluding a leg of a tie decided on aggregate.
+    -- What it does: Flags finished knockout events with a tied deciding score, except legs decided by an aggregate score.
     'TIED_SCORE_ON_KNOCKOUT_SINGLE_MATCH' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -13,6 +13,9 @@ SELECT
     x.tied_score,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds finished knockout events whose two participants hold
+-- an identical deciding score, so a round that must produce a winner produced none,
+-- excluding a leg of a tie decided on aggregate.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -115,7 +118,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Soccer-DQ-081
     -- Name - EVENT_STATUS_CONTRADICTS_SCORE_STAGES
-    -- What it does: Finds finished matches whose detailed status disagrees with the score stages stored for them - a shootout or extra time the status does not name, or a status naming one that carries no score.
+    -- What it does: Flags finished matches where the status and stored extra-time or shootout scores do not agree.
     CASE
         WHEN x.shootout_stored = 1 AND x.status_desc_id <> 13
             THEN 'Shootout_Without_Penalties_Status'
@@ -137,6 +140,9 @@ SELECT
     x.shootout_stored,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds finished matches whose detailed status disagrees with
+-- the score stages stored for them - a shootout or extra time the status does not name, or a
+-- status naming one that carries no score.
 -- The status and the stored stages are two independent records of how the match was decided,
 -- so one contradicting the other means a reader cannot tell which to believe. Soccer stores
 -- extra time and the shootout as result types of their own rather than as scope periods, which
@@ -211,7 +217,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Soccer-DQ-082
     -- Name - EVENT_RESULTS_FINAL_SCORE_NOT_SUM_OF_STAGES
-    -- What it does: Finds participants whose Final Result does not equal their ordinary time plus extra time plus penalty shootout, separating a total above the sum of its stages from one below it.
+    -- What it does: Flags participants whose Final Result is not equal to ordinary time plus extra time plus the penalty shootout.
     CASE
         WHEN x.final_score > x.stage_sum THEN 'Final_Above_Sum_Of_Stages'
         ELSE 'Final_Below_Sum_Of_Stages'
@@ -229,6 +235,9 @@ SELECT
     x.tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds participants whose Final Result does not equal their
+-- ordinary time plus extra time plus penalty shootout, separating a total above the sum of
+-- its stages from one below it.
 -- The score types are cumulative into 4 Final Result, which is the sum of ordinary time,
 -- extra time and the shootout. That is this sport's own storage semantics and no global
 -- template knows it, so nothing else in the package would notice the relation breaking. It is
@@ -316,7 +325,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Soccer-DQ-083
     -- Name - EVENT_RESULTS_TIE_OUTCOME_CONTRADICTS_AGGREGATE
-    -- What it does: Finds two-legged ties whose stored outcome is not one side won and the other lost, or names a winner holding the lower aggregate score.
+    -- What it does: Flags two-leg ties without one winner and one loser, or where the recorded winner has the lower aggregate score.
     CASE
         WHEN x.home_outcome IS NULL OR x.away_outcome IS NULL
             THEN 'Outcome_Stored_For_One_Side_Only'
@@ -339,6 +348,8 @@ SELECT
     x.tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds two-legged ties whose stored outcome is not one side
+-- won and the other lost, or names a winner holding the lower aggregate score.
 -- 549 Final Outcome is a field of the two-legged tie rather than of the match under it: every
 -- event carrying one carries 550 Overall Score, the BestOf property and a 351 aggregate scope
 -- container beside it. So it must be read against the aggregate and never against the leg's own
@@ -428,7 +439,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Soccer-DQ-084
     -- Name - EVENT_RESULTS_HALFTIME_ABOVE_ORDINARY_TIME
-    -- What it does: Finds participants whose half-time score is higher than their own ordinary-time score, so a snapshot taken during the match exceeds the total it was taken from.
+    -- What it does: Flags participants whose half-time score is higher than their ordinary-time score.
     'Halftime_Above_Ordinary_Time' AS check_type,
     x.event_id,
     x.event_name,
@@ -440,6 +451,9 @@ SELECT
     x.tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds participants whose half-time score is higher than
+-- their own ordinary-time score, so a snapshot taken during the match exceeds the total it
+-- was taken from.
 -- 5 Halftime is a snapshot taken during ordinary time, not a stage that adds to anything, which
 -- is exactly why it is absent from the sum Soccer-DQ-082 asserts. A snapshot cannot exceed the
 -- total it was taken from, and nothing else in the package compares the two: every other score
@@ -514,7 +528,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Soccer-DQ-085
     -- Name - EVENT_RESULTS_SCORE_TYPE_STORED_FOR_SOME_PARTICIPANTS_ONLY
-    -- What it does: Finds matches where a score type is stored for some participants but not all, naming each type and how many of them hold it.
+    -- What it does: Flags matches where a score type exists for only some participants.
     'Score_Type_Stored_For_Some_Participants_Only' AS check_type,
     x.event_id,
     x.event_name,
@@ -526,6 +540,8 @@ SELECT
     x.tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds matches where a score type is stored for some
+-- participants but not all, naming each type and how many of them hold it.
 -- Both sides of a match contest the same stages, so a stage scored for one of them and not the
 -- other means the two sides disagree about what was played. GLOBAL-DQ-091 asserts this through
 -- the scope layer, where other sports keep their periods; Soccer's scope layer holds the
@@ -618,7 +634,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Soccer-DQ-086
     -- Name - EVENT_PARTICIPANTS_SIDE_NUMBER_INVALID
-    -- What it does: Finds matches whose participants are not numbered as the two sides of a pairing - a number outside one and two, or both competitors holding the same one.
+    -- What it does: Flags matches where participant numbers are not 1 and 2, or both participants have the same number.
     CASE
         WHEN x.number_outside_the_pair > 0
             THEN 'Side_Number_Outside_One_And_Two'
@@ -634,6 +650,9 @@ SELECT
     x.tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds matches whose participants are not numbered as the two
+-- sides of a pairing - a number outside one and two, or both competitors holding the same
+-- one.
 -- event_participants.number is where the home and away sides are distinguished, and nothing
 -- else in the package reads it. GLOBAL-DQ-088 would have asserted it, but that check reads a
 -- Winner event property Soccer does not write, so its parameters are recorded Not applicable
@@ -698,7 +717,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Soccer-DQ-087
     -- Name - COMP.RANK_RESULTS_TEAM_RANK_MISSING_OR_INVALID
-    -- What it does: Finds teams in a Comp.Rank holding no Rank row, an empty Rank or one that is not a positive integer.
+    -- What it does: Flags Comp.Rank teams with a missing, empty, or non-positive-integer Rank.
     CASE
         WHEN x.rank_rows = 0 THEN 'Team_Holds_No_Rank_Row'
         WHEN x.rank_value IS NULL OR x.rank_value = '' THEN 'Team_Rank_Value_Empty'
@@ -713,6 +732,8 @@ SELECT
     x.tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds teams in a Comp.Rank holding no Rank row, an empty
+-- Rank or one that is not a positive integer.
 -- A statistic ranking teams holds the placing, so a team in one without a readable place is a
 -- ranking with a hole in it. GLOBAL-DQ-012 asserts exactly this and cannot be instantiated
 -- here: it reports a missing Rank only where no Comment explains it, and this sport's Comp.Rank
@@ -783,7 +804,7 @@ ORDER BY sort_order, statistic_id, participant_name;
 SELECT
     -- CheckID - Soccer-DQ-088
     -- Name - EVENT_RESULTS_SCORE_VALUE_SHAPE_INVALID
-    -- What it does: Finds score values that are not a count of goals - text, a negative number or one carrying a fractional part.
+    -- What it does: Flags score values that are text, negative, or contain decimals instead of whole goal counts.
     CASE
         WHEN TRIM(r.value) NOT REGEXP '^-?[0-9]+([.,][0-9]+)?$' THEN 'Score_Value_Not_Numeric'
         WHEN TRIM(r.value) LIKE '-%' THEN 'Score_Value_Negative'
@@ -801,6 +822,8 @@ SELECT
     t.name AS tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds score values that are not a count of goals - text, a
+-- negative number or one carrying a fractional part.
 -- Every score type here is a count of goals, so the only shape it can take is a plain
 -- non-negative integer. GLOBAL-DQ-076 asserts this and cannot be instantiated: it reads the
 -- sport's status vocabulary to name a leaked status code, and this sport records no Comment
@@ -862,7 +885,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Soccer-DQ-089
     -- Name - EVENT_SCOPE_TIE_REFERENCE_INVALID
-    -- What it does: Finds two-legged ties whose reference to the other leg is not an event id, names its own event, or names an event that does not exist or belongs to another tournament.
+    -- What it does: Flags two-leg ties whose other-leg reference is invalid, points to itself, does not exist, or belongs to another tournament.
     CASE
         WHEN x.not_an_id = 1 THEN 'Tie_Reference_Is_Not_An_Event_Id'
         WHEN x.self_reference = 1 THEN 'Tie_Reference_Names_Its_Own_Event'
@@ -878,6 +901,9 @@ SELECT
     x.tournament_name,
     NULL AS eligible_count,
     0 AS sort_order
+-- What it does, stated in full: Finds two-legged ties whose reference to the other leg is
+-- not an event id, names its own event, or names an event that does not exist or belongs to
+-- another tournament.
 -- A tie played over two legs is assembled under a 351 aggregate_score container, and the other
 -- leg is named by an event_scope_detail called ref_eventFK - a name and value pair rather than a
 -- column, so nothing in the database enforces that the value is an event at all. No check reads
