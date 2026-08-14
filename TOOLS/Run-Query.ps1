@@ -2391,10 +2391,14 @@ function Resolve-ClientBoundary {
 
     Confirm-RunnerSession
     $sportId = [int]$Values['SPORT_ID']
-    $rows = Get-ResultRows -Content (Invoke-SqlWithRetry -Statement (
-            "SELECT id AS template_id, CASE WHEN id IN ({0}) THEN 'in' ELSE 'out' END AS side " +
-            "FROM tournament_template WHERE del = 'no' AND sportFK = {1} ORDER BY id;"
-        ) -f ($wanted -join ', '), $sportId).Content
+
+    # Built into a variable rather than formatted inside the call. -f binds to the whole
+    # pipeline element, so writing it inline applied the format to the result of the query
+    # instead of to the statement, and the server was sent {0} and {1} verbatim.
+    $statement = "SELECT id AS template_id, CASE WHEN id IN ({0}) THEN 'in' ELSE 'out' END AS side " +
+    "FROM tournament_template WHERE del = 'no' AND sportFK = {1} ORDER BY id;"
+    $statement = $statement -f ($wanted -join ', '), $sportId
+    $rows = Get-ResultRows -Content (Invoke-SqlWithRetry -Statement $statement).Content
 
     $held = @($rows | Where-Object { $_.side -eq 'in' } | ForEach-Object { [string]$_.template_id })
     $stray = @($wanted | Where-Object { $held -notcontains $_ })

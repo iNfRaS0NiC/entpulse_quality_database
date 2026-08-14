@@ -1,937 +1,965 @@
 {
-  "BMX": {
-    "SPORT_ID": 58,
-    "PRECISION_RESULT_TYPE_LIST": "101, 102, 557",
-    "PRECISION_DATA_TYPE_LIST": "1272",
-    "EVENT_PARTICIPANT_TYPE_LIST": "'athlete'",
-    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
-    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
-    "STATISTIC_TYPE_ID": 11,
-    "STATISTIC_OWNER_TYPE_ID": 3,
-    "SHARD_ID": 11,
-    "DATA_RANK_TYPE_ID": 1270,
-    "DATA_COMMENT_TYPE_ID": 1273,
-    "DATA_MEDAL_TYPE_ID": 1277,
-    "DATA_TIME_TYPE_ID": 1426,
-    "DATA_TIME_DIFFERENCE_TYPE_ID": 1427,
-    "DATA_DEPRECATED_DURATION_TYPE_ID": 1272,
-    "DATA_TEAM_TYPE_ID": 1429,
-    "CONFIG_START_DATE_TYPE_ID": 1463,
-    "CONFIG_END_DATE_TYPE_ID": 1464,
-    "CONFIG_GENDER_TYPE_ID": 1470,
-    "CONFIG_EVENT_ID_TYPE_ID": 1471,
-    "FINAL_ROUND_TYPE_LIST": "9, 173",
-    "MEDAL_ROUND_TYPE_LIST": "9, 173",
-    "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
-    "TIMED_DISCIPLINE_LIST": "429, 776",
-    "RANK_MAX_PLAUSIBLE": 200,
-    "RESULT_RANK_TYPE_ID": 100,
-    "RESULT_TIE_VALUE_TYPE_LIST": "101",
-    "RESULT_DURATION_TYPE_ID": 101,
-    "RESULT_COMMENT_TYPE_ID": 104,
-    "RESULT_COMMENT_VALUE_LIST": "'q', 'dnf', 'dns', 'dsq', 'rel', 'disq.', 'disqualified'",
-    "RESULT_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'dsq', 'disq.', 'disqualified'",
-    "DATA_COMMENT_VALUE_LIST": "'dnf', 'dns', 'dsq', 'rel', 'no time', 'disq.', 'disqualified'",
-    "DATA_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'dsq', 'disq.', 'disqualified'",
-    "FULL_TIME_TOLERANCE_SECONDS": 0.01,
-    "RESULT_MEDAL_TYPE_ID": 501,
-    "RESULT_FULL_TIME_TYPE_ID": 557,
-    "STALE_NOT_STARTED_DAYS": 2,
-    "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
-    "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', '1/8', '1/16', '1/32', 'heats', 'qualifier', 'repechage', 'playoff', 'tie-breaker', 'small final'",
-    "GROUP_ROUND_NAME_LIST": "'preliminary', 'seeding'",
-    "ROUND_TYPE_LIST": "3, 9, 38, 171, 173, 176, 178, 179, 180, 184, 185, 188, 189, 204, 320",
-    "NUMERIC_RESULT_TYPE_LIST": "102",
-    "SERIES_MIN_YEARS": 3,
-    "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
-    "DUPLICATE_KEY_USES_CALENDAR_DAY": 0,
-    "SERIES_SKIP_YEARS": "2020",
-    "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
-    "_names": {
-      "SPORT_ID": "58 BMX",
-      "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
-      "PRECISION_RESULT_TYPE_LIST": "101 Duration, 102 Points, 557 Full-time duration",
-      "PRECISION_DATA_TYPE_LIST": "1272 Duration",
-      "DATA_RANK_TYPE_ID": "1270 Rank",
-      "DATA_COMMENT_TYPE_ID": "1273 Comment",
-      "DATA_MEDAL_TYPE_ID": "1277 Medal",
-      "DATA_TIME_TYPE_ID": "1426 Time",
-      "DATA_TIME_DIFFERENCE_TYPE_ID": "1427 Time Difference",
-      "DATA_DEPRECATED_DURATION_TYPE_ID": "1272 Duration",
-      "DATA_TEAM_TYPE_ID": "1429 Team",
-      "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
-      "CONFIG_END_DATE_TYPE_ID": "1464 End date",
-      "CONFIG_GENDER_TYPE_ID": "1470 Gender",
-      "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id",
-      "FINAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
-      "MEDAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
-      "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed",
-      "TIMED_DISCIPLINE_LIST": "429 Racing, 776 Time Trial",
-      "RESULT_RANK_TYPE_ID": "100 Rank",
-      "RESULT_TIE_VALUE_TYPE_LIST": "101 Duration",
-      "RESULT_DURATION_TYPE_ID": "101 Duration",
-      "RESULT_COMMENT_TYPE_ID": "104 Comment",
-      "RESULT_MEDAL_TYPE_ID": "501 Medal",
-      "RESULT_FULL_TIME_TYPE_ID": "557 Full-time duration",
-      "ROUND_TYPE_LIST": "3 Quarter Finals (knockout: yes), 9 Final (knockout: yes), 38 1 (knockout: no), 171 Preliminary (knockout: no), 173 Final (knockout: no), 176 Quarter Finals (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 180 Repechage (knockout: no), 184 1/8 (knockout: no), 185 1/16 (knockout: no), 188 1/32 (knockout: no), 189 Seeding (knockout: no), 204 Heats (knockout: no), 320 Heats (knockout: yes)",
-      "NUMERIC_RESULT_TYPE_LIST": "102 Points"
+    "BMX": {
+        "SPORT_ID": 58,
+        "PRECISION_RESULT_TYPE_LIST": "101, 102, 557",
+        "PRECISION_DATA_TYPE_LIST": "1272",
+        "EVENT_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "STATISTIC_TYPE_ID": 11,
+        "STATISTIC_OWNER_TYPE_ID": 3,
+        "SHARD_ID": 11,
+        "DATA_RANK_TYPE_ID": 1270,
+        "DATA_COMMENT_TYPE_ID": 1273,
+        "DATA_MEDAL_TYPE_ID": 1277,
+        "DATA_TIME_TYPE_ID": 1426,
+        "DATA_TIME_DIFFERENCE_TYPE_ID": 1427,
+        "DATA_DEPRECATED_DURATION_TYPE_ID": 1272,
+        "DATA_TEAM_TYPE_ID": 1429,
+        "CONFIG_START_DATE_TYPE_ID": 1463,
+        "CONFIG_END_DATE_TYPE_ID": 1464,
+        "CONFIG_GENDER_TYPE_ID": 1470,
+        "CONFIG_EVENT_ID_TYPE_ID": 1471,
+        "FINAL_ROUND_TYPE_LIST": "9, 173",
+        "MEDAL_ROUND_TYPE_LIST": "9, 173",
+        "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
+        "TIMED_DISCIPLINE_LIST": "429, 776",
+        "RANK_MAX_PLAUSIBLE": 200,
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_TIE_VALUE_TYPE_LIST": "101",
+        "RESULT_DURATION_TYPE_ID": 101,
+        "RESULT_COMMENT_TYPE_ID": 104,
+        "RESULT_COMMENT_VALUE_LIST": "'q', 'dnf', 'dns', 'dsq', 'rel', 'disq.', 'disqualified'",
+        "RESULT_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'dsq', 'disq.', 'disqualified'",
+        "DATA_COMMENT_VALUE_LIST": "'dnf', 'dns', 'dsq', 'rel', 'no time', 'disq.', 'disqualified'",
+        "DATA_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'dsq', 'disq.', 'disqualified'",
+        "FULL_TIME_TOLERANCE_SECONDS": 0.01,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "RESULT_FULL_TIME_TYPE_ID": 557,
+        "STALE_NOT_STARTED_DAYS": 2,
+        "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+        "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', '1/8', '1/16', '1/32', 'heats', 'qualifier', 'repechage', 'playoff', 'tie-breaker', 'small final'",
+        "GROUP_ROUND_NAME_LIST": "'preliminary', 'seeding'",
+        "ROUND_TYPE_LIST": "3, 9, 38, 171, 173, 176, 178, 179, 180, 184, 185, 188, 189, 204, 320",
+        "NUMERIC_RESULT_TYPE_LIST": "102",
+        "SERIES_MIN_YEARS": 3,
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 0,
+        "SERIES_SKIP_YEARS": "2020",
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "_names": {
+            "SPORT_ID": "58 BMX",
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
+            "PRECISION_RESULT_TYPE_LIST": "101 Duration, 102 Points, 557 Full-time duration",
+            "PRECISION_DATA_TYPE_LIST": "1272 Duration",
+            "DATA_RANK_TYPE_ID": "1270 Rank",
+            "DATA_COMMENT_TYPE_ID": "1273 Comment",
+            "DATA_MEDAL_TYPE_ID": "1277 Medal",
+            "DATA_TIME_TYPE_ID": "1426 Time",
+            "DATA_TIME_DIFFERENCE_TYPE_ID": "1427 Time Difference",
+            "DATA_DEPRECATED_DURATION_TYPE_ID": "1272 Duration",
+            "DATA_TEAM_TYPE_ID": "1429 Team",
+            "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
+            "CONFIG_END_DATE_TYPE_ID": "1464 End date",
+            "CONFIG_GENDER_TYPE_ID": "1470 Gender",
+            "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id",
+            "FINAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
+            "MEDAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
+            "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed",
+            "TIMED_DISCIPLINE_LIST": "429 Racing, 776 Time Trial",
+            "RESULT_RANK_TYPE_ID": "100 Rank",
+            "RESULT_TIE_VALUE_TYPE_LIST": "101 Duration",
+            "RESULT_DURATION_TYPE_ID": "101 Duration",
+            "RESULT_COMMENT_TYPE_ID": "104 Comment",
+            "RESULT_MEDAL_TYPE_ID": "501 Medal",
+            "RESULT_FULL_TIME_TYPE_ID": "557 Full-time duration",
+            "ROUND_TYPE_LIST": "3 Quarter Finals (knockout: yes), 9 Final (knockout: yes), 38 1 (knockout: no), 171 Preliminary (knockout: no), 173 Final (knockout: no), 176 Quarter Finals (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 180 Repechage (knockout: no), 184 1/8 (knockout: no), 185 1/16 (knockout: no), 188 1/32 (knockout: no), 189 Seeding (knockout: no), 204 Heats (knockout: no), 320 Heats (knockout: yes)",
+            "NUMERIC_RESULT_TYPE_LIST": "102 Points"
+        },
+        "_notApplicable": {
+            "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
+            "RESULT_FINAL_SCORE_TYPE_ID": "the sport is not head to head; an event is a field ranked against itself rather than a pair holding one deciding score",
+            "RESULT_MIRROR_SCORE_TYPE_ID": "the sport is not head to head; no result type mirrors a deciding score",
+            "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event, so no separate round decides bronze",
+            "WINNER_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+            "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+            "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+            "SCOPE_TYPE_ID": "the sport's only scope types are checkpoint splits (101 checkpoint1, 102 checkpoint2, 103 checkpoint3) on 22 containers; none holds a period-by-period score summing to a total",
+            "SCOPE_PERIOD_DATA_TYPE_LIST": "the scope layer holds checkpoint splits rather than competition periods, so there is no period set to list",
+            "SCOPE_PERIOD_SENTINEL_LIST": "the scope layer holds checkpoint splits rather than competition periods, so it has no vocabulary for a period that was not played",
+            "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "the sport plays no extra period and stores no column for one",
+            "EXTRA_PERIOD_STATUS_DESC_LIST": "the sport plays no extra period, so no detailed status marks one"
+        },
+        "_checkSignal": {
+            "GLOBAL-DQ-074": {
+                "signal": "Monitor",
+                "reason": "venue_object is a global mechanism the sport can populate at any time, and BMX simply holds no active link at stage, event or Comp.Rank level yet, so the check covers every event and reports every event. That is a proportion rather than a per-event defect: SPORTS/Curling.md records that venue is newly populated in this database and the backfill is still ahead, and BMX is at nought per cent of it. The signal is Monitor rather than Not applicable because the absence is a row count, which CLAUDE.md forbids classifying away. SPORTS/BMX.md owns the finding."
+            },
+            "GLOBAL-DQ-064": {
+                "signal": "Not applicable",
+                "reason": "Structural: BMX is contested individually. Its competition model fields no teams, so an athlete belongs to none and the 1429 Team field has nothing to hold - populating it would require teams the sport does not race. The registry carries team participants, but none of them enters an event. The 102 findings from 102 eligible rows are the evidence for that model, not the basis for the classification, which is what keeps this Not applicable rather than a row count. SPORTS/BMX.md owns the finding."
+            },
+            "GLOBAL-DQ-098": {
+                "signal": "Not applicable",
+                "reason": "Structural: the check asserts the 1429 Team field where a statistic ranks teams, and BMX ranks no teams at any level - it is contested individually and its Comp.Rank statistics rank athletes. The eligible population is therefore permanently empty rather than empty today, which is the difference POWERBI.md draws between a misdirected scope and a sentinel: this is neither, it is a structure the sport does not have. BMX-DQ-078 keeps its row and its ID."
+            },
+            "GLOBAL-DQ-009": {
+                "signal": "Informational",
+                "reason": "The rows are athletes the sport registry knows who have not raced anywhere inside our coverage, which is a state of the registry rather than a defect in it: nobody can correct a row here, because the athlete is not wrong and the missing races are not ours to add. Recorded by decision of 2026-08-05. The signal is Informational rather than Monitor because Monitor still asks a human to sort real findings from legitimate ones, and here there are none of the first kind. It is per-sport, not a property of the template: the same output for a sport that registers only its own competitors would be registry litter worth clearing."
+            }
+        }
     },
-    "_notApplicable": {
-      "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
-      "RESULT_FINAL_SCORE_TYPE_ID": "the sport is not head to head; an event is a field ranked against itself rather than a pair holding one deciding score",
-      "RESULT_MIRROR_SCORE_TYPE_ID": "the sport is not head to head; no result type mirrors a deciding score",
-      "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event, so no separate round decides bronze",
-      "WINNER_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
-      "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
-      "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
-      "SCOPE_TYPE_ID": "the sport's only scope types are checkpoint splits (101 checkpoint1, 102 checkpoint2, 103 checkpoint3) on 22 containers; none holds a period-by-period score summing to a total",
-      "SCOPE_PERIOD_DATA_TYPE_LIST": "the scope layer holds checkpoint splits rather than competition periods, so there is no period set to list",
-      "SCOPE_PERIOD_SENTINEL_LIST": "the scope layer holds checkpoint splits rather than competition periods, so it has no vocabulary for a period that was not played",
-      "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "the sport plays no extra period and stores no column for one",
-      "EXTRA_PERIOD_STATUS_DESC_LIST": "the sport plays no extra period, so no detailed status marks one"
+    "Triathlon": {
+        "SPORT_ID": 50,
+        "PRECISION_RESULT_TYPE_LIST": "101, 557",
+        "PRECISION_DATA_TYPE_LIST": "1426",
+        "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "STATISTIC_TYPE_ID": 11,
+        "STATISTIC_OWNER_TYPE_ID": 3,
+        "SHARD_ID": 11,
+        "DATA_RANK_TYPE_ID": 1270,
+        "DATA_COMMENT_TYPE_ID": 1273,
+        "DATA_MEDAL_TYPE_ID": 1277,
+        "DATA_TIME_TYPE_ID": 1426,
+        "DATA_TIME_DIFFERENCE_TYPE_ID": 1427,
+        "DATA_DEPRECATED_DURATION_TYPE_ID": 1272,
+        "DATA_TEAM_TYPE_ID": 1429,
+        "CONFIG_START_DATE_TYPE_ID": 1463,
+        "CONFIG_END_DATE_TYPE_ID": 1464,
+        "CONFIG_GENDER_TYPE_ID": 1470,
+        "CONFIG_EVENT_ID_TYPE_ID": 1471,
+        "FINAL_ROUND_TYPE_LIST": "9, 173",
+        "MEDAL_ROUND_TYPE_LIST": "9, 173",
+        "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
+        "TIMED_DISCIPLINE_LIST": "144, 799, 800, 801, 803, 804, 806",
+        "RANK_MAX_PLAUSIBLE": 200,
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_TIE_VALUE_TYPE_LIST": "557, 101",
+        "RESULT_DURATION_TYPE_ID": 101,
+        "RESULT_COMMENT_TYPE_ID": 104,
+        "RESULT_COMMENT_VALUE_LIST": "'dnf', 'lap', 'dns', 'dsq', 'nc', 'q', 'disq.'",
+        "RESULT_COMMENT_NO_RESULT_LIST": "'dnf', 'lap', 'dns', 'dsq', 'disq.', 'nc'",
+        "DATA_COMMENT_VALUE_LIST": "'dnf', 'lap', 'dns', 'dsq', 'nc', 'q', 'disq.'",
+        "DATA_COMMENT_NO_RESULT_LIST": "'dnf', 'lap', 'dns', 'dsq', 'disq.', 'nc'",
+        "FULL_TIME_TOLERANCE_SECONDS": 1,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "RESULT_FULL_TIME_TYPE_ID": 557,
+        "STALE_NOT_STARTED_DAYS": 2,
+        "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+        "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', '1/8', '1/16', '1/32', 'heats', 'qualifier', 'repechage', 'playoff', 'tie-breaker', 'small final'",
+        "GROUP_ROUND_NAME_LIST": "'preliminary', 'seeding'",
+        "ROUND_TYPE_LIST": "9, 173, 178, 179, 180, 204, 267, 283, 284",
+        "SERIES_MIN_YEARS": 3,
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 0,
+        "SERIES_SKIP_YEARS": "2020",
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "_names": {
+            "SPORT_ID": "50 Triathlon",
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
+            "PRECISION_RESULT_TYPE_LIST": "101 Duration, 557 Full-time duration",
+            "PRECISION_DATA_TYPE_LIST": "1426 Time",
+            "DATA_RANK_TYPE_ID": "1270 Rank",
+            "DATA_COMMENT_TYPE_ID": "1273 Comment",
+            "DATA_MEDAL_TYPE_ID": "1277 Medal",
+            "DATA_TIME_TYPE_ID": "1426 Time",
+            "DATA_TIME_DIFFERENCE_TYPE_ID": "1427 Time Difference",
+            "DATA_DEPRECATED_DURATION_TYPE_ID": "1272 Duration",
+            "DATA_TEAM_TYPE_ID": "1429 Team",
+            "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
+            "CONFIG_END_DATE_TYPE_ID": "1464 End date",
+            "CONFIG_GENDER_TYPE_ID": "1470 Gender",
+            "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id",
+            "FINAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
+            "MEDAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
+            "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed",
+            "TIMED_DISCIPLINE_LIST": "144 Standard Distance, 799 Sprint Distance, 800 Mixed Relay, 801 Super Sprint Distance, 803 Team Relay, 804 Long Distance / Ironman, 806 Aquathlon",
+            "RESULT_RANK_TYPE_ID": "100 Rank",
+            "RESULT_TIE_VALUE_TYPE_LIST": "557 Full-time duration, 101 Duration",
+            "RESULT_DURATION_TYPE_ID": "101 Duration",
+            "RESULT_COMMENT_TYPE_ID": "104 Comment",
+            "RESULT_MEDAL_TYPE_ID": "501 Medal",
+            "RESULT_FULL_TIME_TYPE_ID": "557 Full-time duration",
+            "ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 180 Repechage (knockout: no), 204 Heats (knockout: no), 267 Final Phase (knockout: no), 283 Final C (knockout: no), 284 Final B (knockout: no)"
+        },
+        "_notApplicable": {
+            "NUMERIC_RESULT_TYPE_LIST": "no result type carries a measured quantity; every confirmed type is a place, a time, a status vocabulary or a medal code",
+            "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
+            "RESULT_FINAL_SCORE_TYPE_ID": "the sport is not head to head; an event is a field ranked against itself rather than a pair holding one deciding score",
+            "RESULT_MIRROR_SCORE_TYPE_ID": "the sport is not head to head; no result type mirrors a deciding score",
+            "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event, so no separate round decides bronze",
+            "WINNER_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+            "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+            "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+            "SCOPE_TYPE_ID": "the sport writes no active event_scope row at all, so it has no scope layer to read",
+            "SCOPE_PERIOD_DATA_TYPE_LIST": "the sport writes no active event_scope row at all",
+            "SCOPE_PERIOD_SENTINEL_LIST": "the sport writes no active event_scope row at all",
+            "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "the sport plays no extra period and stores no column for one",
+            "EXTRA_PERIOD_STATUS_DESC_LIST": "the sport plays no extra period, so no detailed status marks one"
+        },
+        "_checkSignal": {
+            "GLOBAL-DQ-095": {
+                "signal": "Blocked",
+                "reason": "every parameter it declares is recorded, so nothing else stops it: while the 1429 Team field is unused the check can only assume one participant per place and reports every relay member beyond the first, which is the format rather than a defect. Re-run Triathlon-DQ-085 to test whether the block still applies. SPORTS/Triathlon.md owns the reasoning."
+            },
+            "GLOBAL-DQ-007": {
+                "signal": "Monitor",
+                "reason": "date_of_birth is populated for a small fraction of the registered athletes and its absence is the normal state for this sport, so the check reports almost the entire population. The proportion is the finding; a single row is not a defect. SPORTS/Triathlon.md owns the coverage statement."
+            },
+            "GLOBAL-DQ-034": {
+                "signal": "Monitor",
+                "reason": "the host-country relation and the city link are unpopulated wherever the direct country column is filled, which is the normal storage for this sport, so those two of the core fields report broadly rather than per defect. The other core fields in the same check still read as defects. SPORTS/Triathlon.md owns the storage finding."
+            }
+        }
     },
-    "_checkSignal": {
-      "GLOBAL-DQ-074": {
-        "signal": "Monitor",
-        "reason": "venue_object is a global mechanism the sport can populate at any time, and BMX simply holds no active link at stage, event or Comp.Rank level yet, so the check covers every event and reports every event. That is a proportion rather than a per-event defect: SPORTS/Curling.md records that venue is newly populated in this database and the backfill is still ahead, and BMX is at nought per cent of it. The signal is Monitor rather than Not applicable because the absence is a row count, which CLAUDE.md forbids classifying away. SPORTS/BMX.md owns the finding."
-      },
-      "GLOBAL-DQ-064": {
-        "signal": "Not applicable",
-        "reason": "Structural: BMX is contested individually. Its competition model fields no teams, so an athlete belongs to none and the 1429 Team field has nothing to hold - populating it would require teams the sport does not race. The registry carries team participants, but none of them enters an event. The 102 findings from 102 eligible rows are the evidence for that model, not the basis for the classification, which is what keeps this Not applicable rather than a row count. SPORTS/BMX.md owns the finding."
-      },
-      "GLOBAL-DQ-098": {
-        "signal": "Not applicable",
-        "reason": "Structural: the check asserts the 1429 Team field where a statistic ranks teams, and BMX ranks no teams at any level - it is contested individually and its Comp.Rank statistics rank athletes. The eligible population is therefore permanently empty rather than empty today, which is the difference POWERBI.md draws between a misdirected scope and a sentinel: this is neither, it is a structure the sport does not have. BMX-DQ-078 keeps its row and its ID."
-      },
-      "GLOBAL-DQ-009": {
-        "signal": "Informational",
-        "reason": "The rows are athletes the sport registry knows who have not raced anywhere inside our coverage, which is a state of the registry rather than a defect in it: nobody can correct a row here, because the athlete is not wrong and the missing races are not ours to add. Recorded by decision of 2026-08-05. The signal is Informational rather than Monitor because Monitor still asks a human to sort real findings from legitimate ones, and here there are none of the first kind. It is per-sport, not a property of the template: the same output for a sport that registers only its own competitors would be registry litter worth clearing."
-      }
+    "Curling": {
+        "SPORT_ID": 10,
+        "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "STATISTIC_TYPE_ID": 11,
+        "STATISTIC_OWNER_TYPE_ID": 3,
+        "SHARD_ID": 11,
+        "DATA_RANK_TYPE_ID": 1270,
+        "DATA_COMMENT_TYPE_ID": 1273,
+        "DATA_MEDAL_TYPE_ID": 1277,
+        "DATA_TEAM_TYPE_ID": 1429,
+        "DATA_COMMENT_VALUE_LIST": "'dnf'",
+        "DATA_COMMENT_NO_RESULT_LIST": "'dnf'",
+        "CONFIG_START_DATE_TYPE_ID": 1463,
+        "CONFIG_END_DATE_TYPE_ID": 1464,
+        "CONFIG_GENDER_TYPE_ID": 1470,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "RESULT_COMMENT_VALUE_LIST": "''",
+        "NUMERIC_RESULT_TYPE_LIST": "4, 6",
+        "PLACEHOLDER_COUNTRY_LIST": "''",
+        "SERIES_MIN_YEARS": 3,
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
+        "SERIES_SKIP_YEARS": "0",
+        "RESULT_FINAL_SCORE_TYPE_ID": 4,
+        "RESULT_MIRROR_SCORE_TYPE_ID": 6,
+        "SCOPE_TYPE_ID": 305,
+        "SCOPE_TYPE_LIST": "305",
+        "SCOPE_PERIOD_DATA_TYPE_LIST": "282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292",
+        "SCOPE_PERIOD_SENTINEL_LIST": "'x'",
+        "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": 292,
+        "EXTRA_PERIOD_STATUS_DESC_LIST": "113",
+        "FINAL_ROUND_TYPE_LIST": "9, 173",
+        "MEDAL_ROUND_TYPE_LIST": "9, 138, 173, 181",
+        "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
+        "STALE_NOT_STARTED_DAYS": 2,
+        "BRONZE_ROUND_TYPE_LIST": "138, 181",
+        "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', 'bronze', '1/8', '1/16', 'heats', 'qualifier', 'repechage', 'playoff', 'tie-breaker', 'small final'",
+        "GROUP_ROUND_NAME_LIST": "'preliminary', 'seeding'",
+        "ROUND_TYPE_LIST": "2, 3, 4, 5, 9, 19, 22, 23, 24, 25, 26, 38, 39, 40, 41, 134, 136, 138, 152, 171, 172, 173, 176, 178, 179, 181, 184, 185, 227, 253, 262, 303, 304, 305",
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "_names": {
+            "SPORT_ID": "10 Curling",
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
+            "DATA_RANK_TYPE_ID": "1270 Rank",
+            "DATA_COMMENT_TYPE_ID": "1273 Comment",
+            "DATA_MEDAL_TYPE_ID": "1277 Medal",
+            "DATA_TEAM_TYPE_ID": "1429 Team",
+            "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
+            "CONFIG_END_DATE_TYPE_ID": "1464 End date",
+            "CONFIG_GENDER_TYPE_ID": "1470 Gender",
+            "RESULT_MEDAL_TYPE_ID": "501 Medal",
+            "NUMERIC_RESULT_TYPE_LIST": "4 Final Result, 6 Running score",
+            "RESULT_FINAL_SCORE_TYPE_ID": "4 Final Result",
+            "RESULT_MIRROR_SCORE_TYPE_ID": "6 Running score",
+            "SCOPE_TYPE_ID": "305 final_result",
+            "SCOPE_TYPE_LIST": "305 final_result",
+            "SCOPE_PERIOD_DATA_TYPE_LIST": "282 end_1, 283 end_2, 284 end_3, 285 end_4, 286 end_5, 287 end_6, 288 end_7, 289 end_8, 290 end_9, 291 end_10, 292 end_extra",
+            "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "292 end_extra",
+            "EXTRA_PERIOD_STATUS_DESC_LIST": "113 Finished AEI",
+            "FINAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
+            "MEDAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 138 bronze (knockout: yes), 173 Final (knockout: no), 181 bronze (knockout: no)",
+            "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed",
+            "BRONZE_ROUND_TYPE_LIST": "138 bronze (knockout: yes), 181 bronze (knockout: no)",
+            "ROUND_TYPE_LIST": "2 Semi Finals (knockout: yes), 3 Quarter Finals (knockout: yes), 4 1/8 (knockout: yes), 5 1/16 (knockout: yes), 9 Final (knockout: yes), 19 Small Final (knockout: yes), 22 5/6 (knockout: yes), 23 7/8 (knockout: yes), 24 9/10 (knockout: yes), 25 11/12 (knockout: yes), 26 5/8 (knockout: yes), 38 1 (knockout: no), 39 2 (knockout: no), 40 3 (knockout: no), 41 4 (knockout: no), 134 9/16 (knockout: yes), 136 9/12 (knockout: yes), 138 bronze (knockout: yes), 152 Qualifier (knockout: yes), 171 Preliminary (knockout: no), 172 Tie-breaker (knockout: yes), 173 Final (knockout: no), 176 Quarter Finals (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 181 bronze (knockout: no), 184 1/8 (knockout: no), 185 1/16 (knockout: no), 227 Relegation Phase (knockout: no), 253 Preliminary (knockout: yes), 262 5/8 (knockout: no), 303 9/12 (knockout: no), 304 Playoff (knockout: no), 305 Playoff (knockout: yes)"
+        },
+        "_notApplicable": {
+            "RESULT_RANK_TYPE_ID": "no Rank result type; the score in Final Result and Running score carries the classification",
+            "RESULT_DURATION_TYPE_ID": "the sport stores no time on a result",
+            "RESULT_FULL_TIME_TYPE_ID": "the sport stores no time on a result",
+            "FULL_TIME_TOLERANCE_SECONDS": "the sport stores no time on a result",
+            "RESULT_COMMENT_TYPE_ID": "no Comment result type; the sport uses no status vocabulary on a result",
+            "RESULT_COMMENT_NO_RESULT_LIST": "no Comment result type; the sport uses no status vocabulary on a result",
+            "DATA_TIME_TYPE_ID": "Comp.Rank stores no time field",
+            "DATA_TIME_DIFFERENCE_TYPE_ID": "Comp.Rank stores no time field",
+            "DATA_DEPRECATED_DURATION_TYPE_ID": "Comp.Rank stores no time field",
+            "TIMED_DISCIPLINE_LIST": "neither Mixed Doubles nor 4aSide is a timed discipline",
+            "CONFIG_EVENT_ID_TYPE_ID": "statistic_config records no Event id, so a Comp.Rank statistic cannot be resolved to its event through that path",
+            "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
+            "WINNER_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
+            "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
+            "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
+            "RESULT_TIE_VALUE_TYPE_LIST": "the sport is head to head; the pairing settles the place, so no result field holds a quantity a place is read from"
+        },
+        "_checkSignal": {
+            "GLOBAL-DQ-058": {
+                "signal": "Monitor",
+                "reason": "Lineups are used but are not this sport's membership mechanism: only a small minority of team event participants carry a Starter lineup, and athlete-to-team membership is carried by the Comp.Rank (athletes) statistic instead. The check therefore measures the minority mechanism and reports the rest of the sport, which makes its output a proportion rather than a defect per event - the wording SPORTS/Curling.md already used before this block contradicted it."
+            },
+            "GLOBAL-DQ-074": {
+                "signal": "Monitor",
+                "reason": "The check measures how far the venue backfill has reached. 16764 of 17920 active events resolve to no venue, while 739 carry their own venue_object link and 417 inherit one from their stage, so the mechanism is in use and filling. The proportion is the finding and no single event is a defect. SPORTS/Curling.md records the backfill and keeps the check instantiated for exactly that reason. An earlier revision recorded this as Not applicable on the strength of the unfilled majority, which both contradicted that section and misstated the sport - events do resolve to venues here."
+            },
+            "GLOBAL-DQ-107": {
+                "signal": "Monitor",
+                "reason": "218 findings of which 197 are the Winter Olympics 2006 and 2010, two tournaments whose results are present in full while the scope layer was never imported for them - one gap, not 197 defects. What is left is 21 events, and 15 of those also hold no final score, so they are incompletely written rather than merely missing their ends. Read the year and template breakdown before the count."
+            },
+            "GLOBAL-DQ-049": {
+                "signal": "Monitor",
+                "reason": "an event name is the pairing that plays it, so every event name contains a hyphen with no surrounding spaces and the check reports the sport's whole distinct-name vocabulary under HYPHEN_WITHOUT_SPACES. The rule is not wrong, it is describing the naming convention; the rows worth reading are the ones breaking a second rule as well. SPORTS/Curling.md names this check directly."
+            }
+        }
+    },
+    "Artistic-Gymnastics": {
+        "SPORT_ID": 40,
+        "PRECISION_RESULT_TYPE_LIST": "102",
+        "PRECISION_DATA_TYPE_LIST": "1271",
+        "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "STATISTIC_TYPE_ID": 11,
+        "STATISTIC_OWNER_TYPE_ID": 3,
+        "SHARD_ID": 11,
+        "DATA_RANK_TYPE_ID": 1270,
+        "DATA_COMMENT_TYPE_ID": 1273,
+        "DATA_MEDAL_TYPE_ID": 1277,
+        "DATA_TEAM_TYPE_ID": 1429,
+        "CONFIG_START_DATE_TYPE_ID": 1463,
+        "CONFIG_END_DATE_TYPE_ID": 1464,
+        "CONFIG_GENDER_TYPE_ID": 1470,
+        "CONFIG_EVENT_ID_TYPE_ID": 1471,
+        "FINAL_ROUND_TYPE_LIST": "9, 173",
+        "MEDAL_ROUND_TYPE_LIST": "9, 173",
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_TIE_VALUE_TYPE_LIST": "102",
+        "RESULT_COMMENT_TYPE_ID": 104,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "SCOPE_TYPE_LIST": "101, 102",
+        "ROUND_TYPE_LIST": "9, 152, 173, 179",
+        "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+        "RANK_MAX_PLAUSIBLE": 250,
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
+        "NUMERIC_DATA_TYPE_LIST": "1271",
+        "DATA_COMMENT_VALUE_LIST": "'q', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'r', 'r1', 'r2', 'r3', 'r4', 'dns', 'dnf', 'dnq', 'dqb', 'nr', 'nc', 'disq.', 'withdrawn'",
+        "SERIES_MIN_YEARS": 3,
+        "SERIES_SKIP_YEARS": "2020",
+        "ELIMINATION_ROUND_NAME_LIST": "'tie-breaker'",
+        "GROUP_ROUND_NAME_LIST": "'final', 'qualifier'",
+        "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
+        "STALE_NOT_STARTED_DAYS": 2,
+        "NUMERIC_RESULT_TYPE_LIST": "102",
+        "RESULT_SCORE_TYPE_ID": 102,
+        "RESULT_COMMENT_VALUE_LIST": "'q', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'r', 'r1', 'r2', 'r3', 'r4', 'dns', 'dnf', 'nr', 'nc', 'disq.', 'withdrawn'",
+        "RESULT_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disq.', 'withdrawn'",
+        "DATA_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disq.', 'withdrawn'",
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "_names": {
+            "SPORT_ID": "40 Artistic Gymnastics",
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
+            "PRECISION_RESULT_TYPE_LIST": "102 Points",
+            "PRECISION_DATA_TYPE_LIST": "1271 Points",
+            "DATA_RANK_TYPE_ID": "1270 Rank",
+            "DATA_COMMENT_TYPE_ID": "1273 Comment",
+            "DATA_MEDAL_TYPE_ID": "1277 Medal",
+            "DATA_TEAM_TYPE_ID": "1429 Team",
+            "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
+            "CONFIG_END_DATE_TYPE_ID": "1464 End date",
+            "CONFIG_GENDER_TYPE_ID": "1470 Gender",
+            "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id",
+            "FINAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
+            "MEDAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
+            "RESULT_RANK_TYPE_ID": "100 Rank",
+            "RESULT_TIE_VALUE_TYPE_LIST": "102 Points",
+            "RESULT_COMMENT_TYPE_ID": "104 Comment",
+            "RESULT_MEDAL_TYPE_ID": "501 Medal",
+            "SCOPE_TYPE_LIST": "101 checkpoint1, 102 checkpoint2",
+            "ROUND_TYPE_LIST": "9 Final (knockout: yes), 152 Qualifier (knockout: yes), 173 Final (knockout: no), 179 Qualifier (knockout: no)",
+            "NUMERIC_DATA_TYPE_LIST": "1271 Points",
+            "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed",
+            "NUMERIC_RESULT_TYPE_LIST": "102 Points",
+            "RESULT_SCORE_TYPE_ID": "102 Points"
+        },
+        "_notApplicable": {
+            "RESULT_FULL_TIME_TYPE_ID": "the sport is judged rather than timed: a routine is scored by a panel and no result type records elapsed time, so there is no absolute finishing time to assert",
+            "RESULT_DURATION_TYPE_ID": "the sport is judged rather than timed: no result type records elapsed time or a gap to the leader",
+            "DATA_TIME_TYPE_ID": "Comp.Rank stores no time field; the sport ranks on judged scores rather than on the clock",
+            "DATA_TIME_DIFFERENCE_TYPE_ID": "Comp.Rank stores no time field, so it records no gap to the leader either",
+            "DATA_DEPRECATED_DURATION_TYPE_ID": "Comp.Rank stores no time field, so it has no superseded duration field to report",
+            "TIMED_DISCIPLINE_LIST": "none of the eleven apparatus is decided on the clock; every one is scored by a judging panel"
+        },
+        "_checkSignal": {
+            "GLOBAL-DQ-034": {
+                "signal": "Monitor",
+                "reason": "The check asserts five stage fields at once, and Artistic Gymnastics populates host country through the sparse object_relation 4 to 33 path rather than on every stage, so 822 of 824 stages are reported for that field alone. The direct tournament_stage.countryFK is present throughout; the proportion carrying the separate host-country relation is the reading. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            },
+            "GLOBAL-DQ-004": {
+                "signal": "Monitor",
+                "reason": "Artistic Gymnastics tournament-stage dates define a containing competition window and need not equal the earliest and latest event start dates. A wider containing interval is population context, not one row-level defect. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            },
+            "GLOBAL-DQ-044": {
+                "signal": "Monitor",
+                "reason": "Athlete-statistic gender contradictions are actionable, but mixed-gender team entities can legitimately appear in a male or female Comp.Rank context and require team-role semantics. The complete output is therefore monitored. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            },
+            "GLOBAL-DQ-048": {
+                "signal": "Monitor",
+                "reason": "The generic stage-name format rule also matches legitimate compound names and diacritics such as All-Around, Tel-Aviv and São Paulo. Those language-aware cases make the aggregate output a Monitor. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            },
+            "GLOBAL-DQ-049": {
+                "signal": "Monitor",
+                "reason": "The generic event-name format rule is dominated by legitimate All-Around and All-Round compounds. Double spaces and Cyrillic lookalikes remain actionable drill-down subtypes. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            },
+            "GLOBAL-DQ-051": {
+                "signal": "Monitor",
+                "reason": "The generic Comp.Rank name rule also matches legitimate hyphenated and diacritic-bearing names. Double spaces and Cyrillic lookalikes remain actionable drill-down subtypes. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            },
+            "GLOBAL-DQ-065": {
+                "signal": "Monitor",
+                "reason": "Artistic Gymnastics teams within one competition legitimately field different numbers of gymnasts, so an uneven Comp.Rank athlete count is population context rather than one row-level defect. It is the statistic-layer twin of GLOBAL-DQ-068 and is monitored for the same reason. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            },
+            "GLOBAL-DQ-068": {
+                "signal": "Monitor",
+                "reason": "Populated team lineups within one Artistic Gymnastics event can legitimately have different roster sizes, so the difference is population context. GLOBAL-DQ-058 remains the actionable check for a team with no lineup. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            },
+            "GLOBAL-DQ-079": {
+                "signal": "Monitor",
+                "reason": "The template-name format rule flags the legitimate compound World Cup All-Around, so its current Artistic Gymnastics output is semantic naming context rather than a direct repair list. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            },
+            "GLOBAL-DQ-082": {
+                "signal": "Not applicable",
+                "reason": "Structural: an Artistic Gymnastics tournament stage carries gender, not discipline. The sport runs male, female and mixed stages, and any stage may hold events of any apparatus, so the check asserts a grouping this sport does not store at that level. This is a property of how the sport organises competition, not of the current data. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            },
+            "GLOBAL-DQ-102": {
+                "signal": "Not applicable",
+                "reason": "The checkpoint scope layer is outside Artistic Gymnastics DQ scope by explicit decision of 2026-08-04. The layer is Vault-only, so a scope-owner assertion reads a structure the sport does not maintain across its disciplines. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            },
+            "GLOBAL-DQ-107": {
+                "signal": "Not applicable",
+                "reason": "Structural: checkpoint1 and checkpoint2 are the two vaults a gymnast performs, so the scope layer belongs to the Vault apparatus rather than to the event level the check asserts. Nine of the sport's eleven disciplines contest a single exercise and have no second attempt for a container to hold, which is a property of the sport rather than of the current data. The layer is also outside DQ scope by explicit decision of 2026-08-04. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            }
+        }
+    },
+    "Soccer": {
+        "SPORT_ID": 1,
+        "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "STATISTIC_TYPE_ID": 11,
+        "STATISTIC_OWNER_TYPE_ID": 3,
+        "SHARD_ID": 11,
+        "DATA_RANK_TYPE_ID": 1270,
+        "DATA_MEDAL_TYPE_ID": 1277,
+        "DATA_TEAM_TYPE_ID": 1429,
+        "CONFIG_START_DATE_TYPE_ID": 1463,
+        "CONFIG_END_DATE_TYPE_ID": 1464,
+        "CONFIG_GENDER_TYPE_ID": 1470,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "RESULT_FINAL_SCORE_TYPE_ID": 4,
+        "RESULT_MIRROR_SCORE_TYPE_ID": 6,
+        "NUMERIC_RESULT_TYPE_LIST": "1, 2, 3, 4, 5, 6, 550",
+        "SCOPE_TYPE_ID": 351,
+        "SCOPE_TYPE_LIST": "351",
+        "FINAL_ROUND_TYPE_LIST": "9",
+        "BRONZE_ROUND_TYPE_LIST": "138",
+        "MEDAL_ROUND_TYPE_LIST": "9, 138",
+        "ROUND_TYPE_LIST": "2, 3, 4, 5, 9, 22, 23, 24, 25, 26, 38, 39, 40, 41, 42, 43, 89, 138, 305",
+        "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', 'bronze', '1/8', '1/16', 'playoff'",
+        "GROUP_ROUND_NAME_LIST": "'1', '2', '3', '4', '5', '6'",
+        "PLACEHOLDER_COUNTRY_LIST": "'International'",
+        "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
+        "RANK_MAX_PLAUSIBLE": 48,
+        "STALE_NOT_STARTED_DAYS": 2,
+        "SERIES_MIN_YEARS": 3,
+        "SERIES_SKIP_YEARS": "2003",
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "_names": {
+            "SPORT_ID": "1 Soccer",
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
+            "DATA_RANK_TYPE_ID": "1270 Rank",
+            "DATA_MEDAL_TYPE_ID": "1277 Medal",
+            "DATA_TEAM_TYPE_ID": "1429 Team",
+            "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
+            "CONFIG_END_DATE_TYPE_ID": "1464 End date",
+            "CONFIG_GENDER_TYPE_ID": "1470 Gender",
+            "RESULT_MEDAL_TYPE_ID": "501 Medal",
+            "RESULT_FINAL_SCORE_TYPE_ID": "4 Final Result",
+            "RESULT_MIRROR_SCORE_TYPE_ID": "6 Running score",
+            "NUMERIC_RESULT_TYPE_LIST": "1 Ordinary time, 2 Extra time, 3 Penalty Shootout, 4 Final Result, 5 Halftime, 6 Running score, 550 Overall Score",
+            "SCOPE_TYPE_ID": "351 aggregate_score",
+            "SCOPE_TYPE_LIST": "351 aggregate_score",
+            "FINAL_ROUND_TYPE_LIST": "9 Final (knockout: yes)",
+            "BRONZE_ROUND_TYPE_LIST": "138 bronze (knockout: yes)",
+            "MEDAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 138 bronze (knockout: yes)",
+            "ROUND_TYPE_LIST": "2 Semi Finals (knockout: yes), 3 Quarter Finals (knockout: yes), 4 1/8 (knockout: yes), 5 1/16 (knockout: yes), 9 Final (knockout: yes), 22 5/6 (knockout: yes), 23 7/8 (knockout: yes), 24 9/10 (knockout: yes), 25 11/12 (knockout: yes), 26 5/8 (knockout: yes), 38 1 (knockout: no), 39 2 (knockout: no), 40 3 (knockout: no), 41 4 (knockout: no), 42 5 (knockout: no), 43 6 (knockout: no), 89 1 (knockout: yes), 138 bronze (knockout: yes), 305 Playoff (knockout: yes)",
+            "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed"
+        },
+        "_notApplicable": {
+            "RESULT_RANK_TYPE_ID": "no Rank result type; the sport is head to head and the pairing is the classification, so no place is stored on a result",
+            "RESULT_COMMENT_TYPE_ID": "no Comment result type; the sport records no status vocabulary on a result",
+            "RESULT_COMMENT_VALUE_LIST": "no Comment result type; the sport records no status vocabulary on a result",
+            "RESULT_COMMENT_NO_RESULT_LIST": "no Comment result type; the sport records no status vocabulary on a result",
+            "RESULT_DURATION_TYPE_ID": "a match is a fixed length rather than a measured one, so no result type records elapsed time or a gap to the leader",
+            "RESULT_FULL_TIME_TYPE_ID": "a match is a fixed length rather than a measured one, so there is no absolute finishing time to assert",
+            "FULL_TIME_TOLERANCE_SECONDS": "the sport stores no time on a result",
+            "TIMED_DISCIPLINE_LIST": "11aSide is not decided on the clock; the score decides it",
+            "DATA_COMMENT_TYPE_ID": "Comp.Rank stores no Comment field; its data layer holds only Rank, Medal and Team",
+            "DATA_COMMENT_VALUE_LIST": "Comp.Rank stores no Comment field, so it has no status vocabulary to list",
+            "DATA_COMMENT_NO_RESULT_LIST": "Comp.Rank stores no Comment field, so it has no status vocabulary to list",
+            "DATA_TIME_TYPE_ID": "Comp.Rank stores no time field",
+            "DATA_TIME_DIFFERENCE_TYPE_ID": "Comp.Rank stores no time field, so it records no gap to the leader either",
+            "DATA_DEPRECATED_DURATION_TYPE_ID": "Comp.Rank stores no time field, so it has no superseded duration field to report",
+            "NUMERIC_DATA_TYPE_LIST": "Comp.Rank carries no measured quantity; Rank is a place and Medal a code, and no Points field occurs",
+            "CONFIG_EVENT_ID_TYPE_ID": "statistic_config records only Start date, End date and Gender, so a Comp.Rank statistic cannot be resolved to its event through that path",
+            "SCOPE_PERIOD_DATA_TYPE_LIST": "the scope layer holds the aggregate of a two-legged tie rather than competition periods, so there is no period set to list",
+            "SCOPE_PERIOD_SENTINEL_LIST": "the scope layer holds no periods, so it has no vocabulary for a period that was not played",
+            "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "extra time is a result type of its own rather than a scope period, so the scope layer stores no column for one",
+            "WINNER_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event. Result type 549 Final Outcome carries won and lost per event participant, and the event property layer - measured across every property name the scope uses - contains no Winner property for GLOBAL-DQ-087 to read. The vocabulary exists, it simply does not live where that check looks",
+            "WINNER_HOME_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write",
+            "WINNER_AWAY_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write",
+            "RESULT_TIE_VALUE_TYPE_LIST": "the sport is head to head; the pairing settles the place, so no result field holds a quantity a place is read from"
+        },
+        "_checkSignal": {
+            "GLOBAL-DQ-009": {
+                "signal": "Informational",
+                "reason": "135282 of 364192 registered athletes and 6140 of 29954 registered teams reach none of the three participation paths, and the rows are ordinary named people with a gender and a country, concentrated in the newest participant IDs - players the registry has taken on who have not yet appeared in a match this database covers. Nobody can correct such a row: the athlete is not wrong and the matches are not ours to add. Recorded by decision of 2026-08-05. REGISTRY_PARTICIPANT_TYPE_LIST is narrowed to athlete and team for the same decision: the registry also files coach and official, and the check reads only the event, lineup and Comp.Rank paths, so 3900 of the 3901 registered officials report for want of the ref:participant path this client does not use. Coaches are reachable - 1413 of 12844 report - and are left out only because the two audited types were the ones asked for. The narrowed list is this check's scope, not the registry's content, which SPORTS/Soccer.md records in full."
+            },
+            "GLOBAL-DQ-041": {
+                "signal": "Not applicable",
+                "reason": "The template's own prerequisite is a sport confirmed to carry a Phase, and Soccer is not one: no Comp.Rank participant row in the sport carries an active object_round phase row at all, across every statistic that holds participants. The check reads a relation this sport never writes, so its eligible population is not empty today but permanently absent. This is the prerequisite failing rather than a count being small - the same reading would apply if the sport held ten phase rows or ten thousand. SPORTS/Soccer.md owns the finding."
+            },
+            "GLOBAL-DQ-026": {
+                "signal": "Monitor",
+                "reason": "Soccer writes two kinds of Comp.Rank and only one of them ranks anything. The (athletes) variant records who was in the squad and carries no 1270 Rank row at all, which SPORTS/Soccer.md documents as the structural split rather than a gap, so 65 of the sport's 490 statistics reach Medal_Set_Unreadable_Without_Rank by their normal shape. That is a proportion, not a repair list, and it is the same 65 the check already reported before it read Rank - only under a label that claimed their medals were missing. Two of the 65 do carry a medal without a rank and are a finding of their own, named in SPORTS/Soccer.md. The remaining output is actionable and is read past the roster population. SPORTS/Soccer.md owns the reasoning."
+            },
+            "GLOBAL-DQ-084": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template's prerequisite is a head-to-head sport whose format admits no draw, and Soccer's does. A group match may legitimately end level, and so may one leg of a tie decided on aggregate, so the rule cannot be asserted at sport level - run wide it matched every drawn match and exhausted the server. The narrower rule that does hold, restricted to knockout rounds and excluding aggregate legs, is Soccer-DQ-022. SPORTS/Soccer.md owns the reasoning."
+            },
+            "GLOBAL-DQ-030": {
+                "signal": "Monitor",
+                "reason": "Most of the output is the lineup import rather than the data: roughly four fifths of the reported rows sit in tournaments carrying no active lineup at all, where the check has no mechanism through which to find the ranked participant and would report them however complete the entry was. The rows worth reading are the remainder, in tournaments that do carry lineups and where the participant is therefore genuinely unrepresented - athletes mostly, with a few coaches. Read the lineup state of the tournament before the count. SPORTS/Soccer.md owns the finding."
+            },
+            "GLOBAL-DQ-033": {
+                "signal": "Not applicable",
+                "reason": "The template's prerequisite is a sport confirmed to carry a Phase on ranked participants, and Soccer carries none: no Comp.Rank participant row in the sport holds an active object_round phase row. The check therefore reads a relation the sport never writes. This is the prerequisite failing, not a count being small - the same reading would apply at any population size. SPORTS/Soccer.md owns the finding."
+            },
+            "GLOBAL-DQ-037": {
+                "signal": "Not applicable",
+                "reason": "Structural, and the template says so itself: a head-to-head sport must not instantiate it, because its Final holds two participants, bronze is not awardable inside that one event, and every Final would be reported as missing it. Soccer decides bronze in its own match, so the per-round expectation belongs to GLOBAL-DQ-093 - instantiated as Soccer-DQ-017 - and the completeness of the medal set to the Comp.Rank layer. SPORTS/Soccer.md owns the reasoning."
+            },
+            "GLOBAL-DQ-107": {
+                "signal": "Not applicable",
+                "reason": "Structural: Soccer writes an event_scope container for a tie decided over two legs, not for an event. The check asserts that every finished event holds one, which is a shape this sport does not maintain - the single matches that make up almost all of it have nothing for a container to hold. The scope layer is used, and GLOBAL-DISCOVERY-009 and -010 record how; it simply does not sit at the level this check reads. SPORTS/Soccer.md owns the reasoning."
+            },
+            "GLOBAL-DQ-034": {
+                "signal": "Monitor",
+                "reason": "The check asserts five stage fields at once and Soccer populates host country through the sparse object_relation 4 to 33 path while leaving city empty, so nearly every stage is reported for those two fields alone. The direct tournament_stage.countryFK is present throughout, commonly holding the placeholder International. The proportion is the reading. SPORTS/Soccer.md owns the storage finding."
+            },
+            "GLOBAL-DQ-035": {
+                "signal": "Monitor",
+                "reason": "The statistic-layer twin of GLOBAL-DQ-034 and monitored for the same reason: the same core fields are asserted together and the same sparse relation carries one of them, so the check reports nearly the whole Comp.Rank population. SPORTS/Soccer.md owns the storage finding."
+            },
+            "GLOBAL-DQ-049": {
+                "signal": "Monitor",
+                "reason": "An event name in this sport is the pairing that plays it, written Home-Away with no spaces around the hyphen, and the convention holds without exception across every distinct name pattern in scope. The generic name-format rule therefore describes the naming convention rather than finding a defect in it, exactly as it does for Curling. SPORTS/Soccer.md owns the convention."
+            },
+            "GLOBAL-DQ-058": {
+                "signal": "Monitor",
+                "reason": "Lineups are this sport's membership mechanism and are richly typed, but they are not imported for every match - the older the event, the likelier it carries none. The check therefore measures how far lineup coverage reaches rather than naming a defect per event. A team with no lineup in a recent match remains worth reading inside the output. SPORTS/Soccer.md owns the reasoning."
+            },
+            "GLOBAL-DQ-074": {
+                "signal": "Monitor",
+                "reason": "venue_object is the global mechanism a sport can populate at any time, and Soccer is partway through the same backfill SPORTS/Curling.md records: most events resolve to no venue while the mechanism is plainly in use. The proportion is the finding and no single event is a defect. SPORTS/Soccer.md owns the finding."
+            },
+            "GLOBAL-DQ-096": {
+                "signal": "Monitor",
+                "reason": "The check asserts that an event name is made of its participants, which is exactly what DUPLICATE_KEY_INCLUDES_EVENT_NAME = 0 records for this sport, so the two are the same statement read from opposite ends. Its output is dominated by fixtures whose participants are not yet known and stand as placeholders such as Winner SF 1, where the name cannot name them yet. SPORTS/Soccer.md owns the reasoning."
+            },
+            "GLOBAL-DQ-068": {
+                "signal": "Monitor",
+                "reason": "The two sides of a Soccer match name their substitutes independently, so a lineup one or two members shorter than its opponent's is the competition's own arrangement rather than an incomplete entry. The check measures each event against itself and therefore reports a large share of the scope, which makes its output a proportion rather than a defect per event. SPORTS/Soccer.md owns the reasoning."
+            },
+            "GLOBAL-DQ-065": {
+                "signal": "Monitor",
+                "reason": "Squads entered in one competition do not field an identical number of athletes through the Comp.Rank Team field, so the check reports most of the statistics eligible for it. The proportion is the finding; a single uneven statistic is not a defect. It is the statistic-layer twin of GLOBAL-DQ-068 and is monitored for the same reason. SPORTS/Soccer.md owns the reasoning."
+            },
+            "GLOBAL-DQ-090": {
+                "signal": "Monitor",
+                "reason": "The check reads every event holding either of the mirrored score types and does not narrow to events that have been played, so its output is dominated by fixtures still to come - European Championship 2028 semi-finals carrying placeholder participants such as Winner SF 1, with a running score written and no final result yet. A mirrored pair that stopped being written for a finished match is the defect this check exists for and remains worth reading; the unplayed majority is the calendar. SPORTS/Soccer.md owns the reasoning."
+            }
+        }
+    },
+    "Modern-Pentathlon": {
+        "SPORT_ID": 42,
+        "PRECISION_RESULT_TYPE_LIST": "102",
+        "PRECISION_DATA_TYPE_LIST": "1271",
+        "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "STATISTIC_TYPE_ID": 11,
+        "STATISTIC_OWNER_TYPE_ID": 3,
+        "SHARD_ID": 11,
+        "DATA_RANK_TYPE_ID": 1270,
+        "DATA_COMMENT_TYPE_ID": 1273,
+        "DATA_MEDAL_TYPE_ID": 1277,
+        "DATA_TIME_TYPE_ID": 1426,
+        "DATA_TIME_DIFFERENCE_TYPE_ID": 1427,
+        "DATA_DEPRECATED_DURATION_TYPE_ID": 1272,
+        "DATA_TEAM_TYPE_ID": 1429,
+        "CONFIG_START_DATE_TYPE_ID": 1463,
+        "CONFIG_END_DATE_TYPE_ID": 1464,
+        "CONFIG_GENDER_TYPE_ID": 1470,
+        "CONFIG_EVENT_ID_TYPE_ID": 1471,
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_TIE_VALUE_TYPE_LIST": "102",
+        "RESULT_COMMENT_TYPE_ID": 104,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "RESULT_SCORE_TYPE_ID": 102,
+        "ROUND_TYPE_LIST": "2, 38, 39, 40, 41, 42, 77, 89, 92, 152, 173, 178, 179, 251, 260",
+        "FINAL_ROUND_TYPE_LIST": "173",
+        "MEDAL_ROUND_TYPE_LIST": "173",
+        "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown'",
+        "RANK_MAX_PLAUSIBLE": 100,
+        "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
+        "STALE_NOT_STARTED_DAYS": 2,
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
+        "SERIES_MIN_YEARS": 3,
+        "SERIES_SKIP_YEARS": "2020",
+        "ELIMINATION_ROUND_NAME_LIST": "'semi finals', 'qualifier'",
+        "GROUP_ROUND_NAME_LIST": "'final', '1', '2', '3', '4', '5'",
+        "NUMERIC_RESULT_TYPE_LIST": "100, 102",
+        "NUMERIC_DATA_TYPE_LIST": "1270, 1271",
+        "RESULT_COMMENT_VALUE_LIST": "'eliminated', 'el', 'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'q', 'q/or', 'or', 'wr', 'n/a'",
+        "RESULT_COMMENT_NO_RESULT_LIST": "'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'n/a'",
+        "DATA_COMMENT_VALUE_LIST": "'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'disqualified', 'el', 'or', 'wr'",
+        "DATA_COMMENT_NO_RESULT_LIST": "'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'disqualified'",
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "_names": {
+            "SPORT_ID": "42 Modern Pentathlon",
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
+            "PRECISION_RESULT_TYPE_LIST": "102 Points",
+            "PRECISION_DATA_TYPE_LIST": "1271 Points",
+            "DATA_RANK_TYPE_ID": "1270 Rank",
+            "DATA_COMMENT_TYPE_ID": "1273 Comment",
+            "DATA_MEDAL_TYPE_ID": "1277 Medal",
+            "DATA_TIME_TYPE_ID": "1426 Time",
+            "DATA_TIME_DIFFERENCE_TYPE_ID": "1427 Time Difference",
+            "DATA_DEPRECATED_DURATION_TYPE_ID": "1272 Duration",
+            "DATA_TEAM_TYPE_ID": "1429 Team",
+            "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
+            "CONFIG_END_DATE_TYPE_ID": "1464 End date",
+            "CONFIG_GENDER_TYPE_ID": "1470 Gender",
+            "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id",
+            "RESULT_RANK_TYPE_ID": "100 Rank",
+            "RESULT_TIE_VALUE_TYPE_LIST": "102 Points",
+            "RESULT_COMMENT_TYPE_ID": "104 Comment",
+            "RESULT_MEDAL_TYPE_ID": "501 Medal",
+            "RESULT_SCORE_TYPE_ID": "102 Points",
+            "ROUND_TYPE_LIST": "2 Semi Finals (knockout: yes), 38 1 (knockout: no), 39 2 (knockout: no), 40 3 (knockout: no), 41 4 (knockout: no), 42 5 (knockout: no), 77 40 (knockout: no), 89 1 (knockout: yes), 92 4 (knockout: yes), 152 Qualifier (knockout: yes), 173 Final (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 251 After Disciplines (knockout: no), 260 Bonus Round (knockout: no)",
+            "FINAL_ROUND_TYPE_LIST": "173 Final (knockout: no)",
+            "MEDAL_ROUND_TYPE_LIST": "173 Final (knockout: no)",
+            "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed",
+            "NUMERIC_RESULT_TYPE_LIST": "100 Rank, 102 Points",
+            "NUMERIC_DATA_TYPE_LIST": "1270 Rank, 1271 Points"
+        },
+        "_notApplicable": {
+            "SCOPE_TYPE_ID": "the sport has never written an event_scope row, active or removed; a probe of the same relation path without the deleted filter found none either, so there is no scope layer to read",
+            "SCOPE_TYPE_LIST": "the sport has never written an event_scope row, so it has no scope container types to list",
+            "SCOPE_PERIOD_DATA_TYPE_LIST": "the sport has never written an event_scope row, so there is no period set to list; its segments are separate events carrying a discipline rather than periods inside one event",
+            "SCOPE_PERIOD_SENTINEL_LIST": "the sport has never written an event_scope row, so it has no vocabulary for a period that was not played",
+            "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "the sport has never written an event_scope row, so the scope layer stores no column for an extra period",
+            "EXTRA_PERIOD_STATUS_DESC_LIST": "the sport contests no head-to-head fixture that could go to an extra period, and stores no scope column for one",
+            "RESULT_FINAL_SCORE_TYPE_ID": "the sport is not head to head; an event is a field ranked against itself rather than a pair holding one deciding score, and its result types are Rank, Points, Comment and Medal only",
+            "RESULT_MIRROR_SCORE_TYPE_ID": "the sport is not head to head; no result type mirrors a deciding score",
+            "WINNER_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+            "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+            "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
+            "RESULT_FULL_TIME_TYPE_ID": "no result type records elapsed time; a segment's time is stored on the Comp.Rank statistic rather than on the event result, so there is no absolute finishing time to assert on a result",
+            "RESULT_DURATION_TYPE_ID": "no result type records elapsed time or a gap to the leader; the result layer carries Rank, Points, Comment and Medal only",
+            "FULL_TIME_TOLERANCE_SECONDS": "the sport stores no time on a result, so there is no arithmetic between times to hold to a tolerance",
+            "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event (round type 173), so no separate round decides bronze"
+        },
+        "_checkSignal": {
+            "GLOBAL-DQ-028": {
+                "signal": "Not applicable",
+                "reason": "Structural: 1427 Time Difference does not exist in this sport. Not one row under any template, IOC or otherwise, so there is no leader/gap convention for the check to find broken - it reads a field the sport has never written. The absence is the sport's scoring model rather than a gap: modern pentathlon ranks on points, its event results carry Rank, Points, Comment and Medal and no duration or full time across 234 806 rows and 9 525 events, and its own deciding value is recorded as RESULT_TIE_VALUE_TYPE_LIST 102. Note what is nearby and does not change this: 1426 Time does exist, 753 rows over 44 statistics, but only under IOC templates, which every statistic check excludes in every branch by contract - so it is outside the eligible population of this check and of every other. Both parameters stay recorded because GLOBAL-DQ-029 and GLOBAL-DQ-057 read them meaningfully and would be skipped without them. Measured 2026-08-11; SPORTS/Modern-Pentathlon.md owns the evidence."
+            },
+            "GLOBAL-DQ-046": {
+                "signal": "Blocked",
+                "reason": "The two populations it needs never meet: every Comp.Rank carrying a Time value carries no object_discipline row, and every Comp.Rank carrying a discipline holds no Time. The check scopes on the sport's timed disciplines and reports a Time missing despite a Rank, so whatever discipline list it were given it would report every discipline-tagged statistic in the sport as defective - its normal shape. Blocked rather than not applicable because both structures are present and used; they are simply not attached to each other. It becomes meaningful the day one of the two is joined to the other, without the check changing. SPORTS/Modern-Pentathlon.md owns the evidence."
+            },
+            "GLOBAL-DQ-034": {
+                "signal": "Monitor",
+                "reason": "776 of the sport's 790 active stages are reported, and one field accounts for every one of them: the city relation, missing in 776 of 776 findings while name, gender, country and the host-country rule hold throughout. The check asserts five things at once, so the count reads as five failures and is one. The proportion is the finding. It belongs beside GLOBAL-DQ-035 and GLOBAL-DQ-074, which report the same underlying fact on the statistic and venue layers: this sport does not attach places."
+            },
+            "GLOBAL-DQ-035": {
+                "signal": "Monitor",
+                "reason": "1784 of the sport's 1801 Comp.Rank statistics are reported, and as on the stage layer a single field accounts for all of them: the city relation, missing in 1784 of 1784 findings while name, Gender config and country are present throughout. At 99 percent the absence is the sport's normal state rather than a defect per statistic, so the proportion is the finding. See GLOBAL-DQ-034 for the same reading on stages and GLOBAL-DQ-074 for the venue layer."
+            },
+            "GLOBAL-DQ-074": {
+                "signal": "Monitor",
+                "reason": "The sport attaches no venue anywhere: not one active venue_object row reaches an event or a tournament stage of this sport, on either of the two levels the check reads. It therefore reports every event, and the proportion - all of them - is the finding rather than any single row. It is Monitor and not Not applicable because venue_object is the global mechanism and the schema permits it here; what is absent is stored rows, not the structure, on the same reasoning SPORTS/Modern-Pentathlon.md already applies to the incident and scope layers. The check reports nothing the day venues start being recorded."
+            },
+            "GLOBAL-DQ-007": {
+                "signal": "Monitor",
+                "reason": "Date of birth is populated for a minority: 1756 of 4212 athletes entered in the sport's events carry the property, so the check reports a majority of the population it reads. The proportion is the finding and a single row is not a defect. Unlike the sports where the field is nearly untouched, the process that writes it plainly runs here and covers about two fifths, which is what makes the gap worth watching rather than dismissing."
+            },
+            "GLOBAL-DQ-082": {
+                "signal": "Not applicable",
+                "reason": "The template requires a tournament stage that groups a single discipline and forbids instantiation by a sport that legitimately runs several under one stage. This sport is one: a stage such as World Championships holds Fencing, Swimming, Riding, Laser Run and Overall events together, which is what a pentathlon is. Its whole population would be reported. The exclusion rests on how the sport composes a stage, not on how many stages hold several disciplines today."
+            },
+            "GLOBAL-DQ-096": {
+                "signal": "Not applicable",
+                "reason": "The template requires a sport that names its events after the competitors taking part in them, and forbids instantiation by a sport whose event names are codes, distances or round labels. This sport names its events after the discipline and the segment - Fencing, Swimming Final, Semi-Final A - After Fencing - so no participant name appears in any of them and its whole population would be reported. The same conclusion follows independently from DUPLICATE_KEY_INCLUDES_EVENT_NAME being 1 here, which GLOBAL_DQ/README.md records as incompatible with instantiating this template. The exclusion is structural: it rests on what the name is built from, not on how many events match today."
+            },
+            "GLOBAL-DQ-083": {
+                "signal": "Not applicable",
+                "reason": "The template requires a competition model of H2H, where an event is a contest between exactly two entries. This sport is Listing: an event is a field ranked against itself, and SPORTS.md records the model as measured from the sport's data rather than assigned. Every event in the sport would be reported. The exclusion is structural and independent of how many participants any event holds today, so it does not rest on a row count."
+            },
+            "GLOBAL-DQ-119": {
+                "signal": "Monitor",
+                "reason": "1266 of the sport's 9525 ranked events are reported, and the output mixes three populations a count cannot separate. 52 are a legitimate shape the template cannot see: Semi-Final A and Semi-Final B split one ranked field, so each holds a scattered subset of places that tile 1..N only together, verified as disjoint and complete across the pair. 733 have no group sibling at all and their sequence must be self-contained, so those breaks are real. The remaining 481 have group siblings that neither tile cleanly nor stand alone and cannot be classified without being read. The sport's fencing phases also tie heavily on a discrete score, which multiplies the chances of skipping wrongly, and some rows restate what Modern-Pentathlon-DQ-094 EVENT_RESULTS_RANK_ORDER_CONTRADICTS_POINTS already reports on the same events. Monitor rather than Blocked because the invariant holds for the majority, and rather than Actionable because a reader who treats every row as a repair will correct places the sport stores deliberately. SPORTS/Modern-Pentathlon.md owns the evidence."
+            }
+        }
+    },
+    "Golf": {
+        "SPORT_ID": 3,
+        "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "STATISTIC_TYPE_ID": 11,
+        "STATISTIC_OWNER_TYPE_ID": 3,
+        "SHARD_ID": 11,
+        "DATA_RANK_TYPE_ID": 1270,
+        "DATA_MEDAL_TYPE_ID": 1277,
+        "CONFIG_START_DATE_TYPE_ID": 1463,
+        "CONFIG_END_DATE_TYPE_ID": 1464,
+        "CONFIG_GENDER_TYPE_ID": 1470,
+        "CONFIG_EVENT_ID_TYPE_ID": 1471,
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_COMMENT_TYPE_ID": 104,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "SCOPE_TYPE_ID": 305,
+        "SCOPE_TYPE_LIST": "305, 462, 463, 464, 465",
+        "ROUND_TYPE_LIST": "1, 2, 3, 4, 9, 19, 22, 23, 38, 39, 40, 41, 42, 43, 89, 90, 91, 92, 173, 176, 178, 184, 185, 186, 188, 225, 262, 263, 264, 304, 305",
+        "NOT_STARTED_DESC_LIST": "1",
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649",
+        "_names": {
+            "SPORT_ID": "3 Golf",
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "432 Ryder Cup 1, 435 Solheim Cup 1 (male, deleted), 438 Solheim Cup 1, 9142 Solheim Cup (deleted), 9201 PGA Tour of Australasia 1, 9418 Champions Tour 1, 9633 Korn Ferry Tour, 9645 Walker Cup 1, 9691 Asian Tour 1, 9692 Challenge Tour 1, 9693 Sunshine Tour 1, 9831 GolfSixes, 9932 Mixed, 10305 LIV Golf, 10333 GolfSixes alt test (deleted), 10334 GolfSixes test kris (deleted), 10341 Presidents Cup, 11528 Eisenhower Trophy, 11529 Espirito Santo Trophy, 12649 TEST",
+            "DATA_RANK_TYPE_ID": "1270 Rank",
+            "DATA_MEDAL_TYPE_ID": "1277 Medal",
+            "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
+            "CONFIG_END_DATE_TYPE_ID": "1464 End date",
+            "CONFIG_GENDER_TYPE_ID": "1470 Gender",
+            "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id",
+            "RESULT_RANK_TYPE_ID": "100 Rank",
+            "RESULT_COMMENT_TYPE_ID": "104 Comment",
+            "RESULT_MEDAL_TYPE_ID": "501 Medal",
+            "SCOPE_TYPE_ID": "305 final_result",
+            "SCOPE_TYPE_LIST": "305 final_result, 462 round1, 463 round2, 464 round3, 465 round4",
+            "ROUND_TYPE_LIST": "1 no round (knockout: no), 2 Semi Finals (knockout: yes), 3 Quarter Finals (knockout: yes), 4 1/8 (knockout: yes), 9 Final (knockout: yes), 19 Small Final (knockout: yes), 22 5/6 (knockout: yes), 23 7/8 (knockout: yes), 38 1 (knockout: no), 39 2 (knockout: no), 40 3 (knockout: no), 41 4 (knockout: no), 42 5 (knockout: no), 43 6 (knockout: no), 89 1 (knockout: yes), 90 2 (knockout: yes), 91 3 (knockout: yes), 92 4 (knockout: yes), 173 Final (knockout: no), 176 Quarter Finals (knockout: no), 178 Semi Finals (knockout: no), 184 1/8 (knockout: no), 185 1/16 (knockout: no), 186 Small Final (knockout: no), 188 1/32 (knockout: no), 225 Main Phase (knockout: no), 262 5/8 (knockout: no), 263 7/8 (knockout: no), 264 5/6 (knockout: no), 304 Playoff (knockout: no), 305 Playoff (knockout: yes)",
+            "NOT_STARTED_DESC_LIST": "1 Not started",
+            "DATA_COMMENT_TYPE_ID": "1273 Comment",
+            "DATA_TEAM_TYPE_ID": "1429 Team",
+            "DATA_TIME_TYPE_ID": "1426 Time",
+            "DATA_TIME_DIFFERENCE_TYPE_ID": "1427 Time Difference",
+            "DATA_DEPRECATED_DURATION_TYPE_ID": "1272 Duration",
+            "MEDAL_ROUND_TYPE_LIST": "225 Main Phase (knockout: no)",
+            "FINAL_ROUND_TYPE_LIST": "225 Main Phase (knockout: no)",
+            "RESULT_SCORE_TYPE_ID": "36 Par",
+            "RESULT_TIE_VALUE_TYPE_LIST": "36 Par",
+            "NUMERIC_RESULT_TYPE_LIST": "31 Strokes 1st round, 32 Strokes 2nd round, 33 Strokes 3rd round, 34 Strokes 4th round, 35 Strokes 5th round, 36 Par, 100 Rank, 526 Strokes points 1st round, 527 Strokes points 2nd round, 528 Strokes points 3rd round, 529 Strokes points 4th round, 540 Prize Money",
+            "INTEGER_RESULT_TYPE_LIST": "31 Strokes 1st round, 32 Strokes 2nd round, 33 Strokes 3rd round, 34 Strokes 4th round, 35 Strokes 5th round, 36 Par (a signed whole number of strokes: +2, 0, -2)",
+            "MEDAL_TEMPLATE_ID_LIST": "9600 Summer Olympics, 9601 Summer Olympics, 9779 European Championships 1, 10327 Pan American Games, 10328 Asian Games, 10537 Pacific Games, 10538 Pacific Games, 11498 Summer Youth Olympics, 11507 British Boys Amateur Championship, 11524 British Girls Amateur Championship, 11525 European Girls' Team Championship, 11526 European Boys' Team Championship, 11532 Southeast Asian Games",
+            "NUMERIC_DATA_TYPE_LIST": "1270 Rank, 1271 Points, 1476 Par",
+            "PRECISION_RESULT_TYPE_LIST": "540 Prize Money",
+            "PRECISION_DATA_TYPE_LIST": "1476 Par"
+        },
+        "_notApplicable": {
+            "LINEUP_TYPE_LIST": "the sport writes no lineup row at all; a foursome is stored as one athlete participant holding both names",
+            "RESULT_FINAL_SCORE_TYPE_ID": "no mirrored score pair: 4 finalresult and 39 mpscore hold related but distinct figures, not one figure stored twice. Of the event participants holding either, 14960 hold both and disagree - won against WO, 0 against 1 - and only 19 agree",
+            "RESULT_MIRROR_SCORE_TYPE_ID": "the other half of the pair that does not exist; see RESULT_FINAL_SCORE_TYPE_ID",
+            "RESULT_FULL_TIME_TYPE_ID": "the sport records no time or duration result type; its 17 types measure strokes, points, par, rank, money and status",
+            "RESULT_DURATION_TYPE_ID": "the sport records no time or duration result type",
+            "TIMED_DISCIPLINE_LIST": "neither discipline is timed; Stroke Play and Match Play both resolve on strokes",
+            "FULL_TIME_TOLERANCE_SECONDS": "no time is recorded, so no tolerance applies",
+            "BRONZE_ROUND_TYPE_LIST": "bronze is not decided in an event of its own: all 18 medal results sit in round type 225 Main Phase, six gold, six silver and six bronze across the same six events",
+            "SCOPE_PERIOD_DATA_TYPE_LIST": "deferred with the hole-by-hole scope layer, which is outside the DQ work by decision on 2026-08-12",
+            "SCOPE_PERIOD_SENTINEL_LIST": "deferred with the hole-by-hole scope layer",
+            "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "deferred with the hole-by-hole scope layer",
+            "EXTRA_PERIOD_STATUS_DESC_LIST": "deferred with the hole-by-hole scope layer",
+            "WINNER_VALUE_LIST": "the winner property is not recorded for any sport in this package; deferred there rather than decided here",
+            "WINNER_HOME_VALUE_LIST": "see WINNER_VALUE_LIST",
+            "WINNER_AWAY_VALUE_LIST": "see WINNER_VALUE_LIST"
+        },
+        "DATA_COMMENT_TYPE_ID": 1273,
+        "DATA_TEAM_TYPE_ID": 1429,
+        "DATA_TIME_TYPE_ID": 1426,
+        "DATA_TIME_DIFFERENCE_TYPE_ID": 1427,
+        "DATA_DEPRECATED_DURATION_TYPE_ID": 1272,
+        "MEDAL_ROUND_TYPE_LIST": "225",
+        "PLACEHOLDER_COUNTRY_LIST": "'International'",
+        "RANK_MAX_PLAUSIBLE": 250,
+        "STALE_NOT_STARTED_DAYS": 2,
+        "SERIES_MIN_YEARS": 3,
+        "FINAL_ROUND_TYPE_LIST": "225",
+        "RESULT_COMMENT_VALUE_LIST": "'wd', 'mdf', 'dq', 'mc', 'rtd', 'sub', 'nr', 'dns', 'n/r'",
+        "RESULT_COMMENT_NO_RESULT_LIST": "'dq', 'rtd', 'dns', 'nr', 'n/r'",
+        "RESULT_SCORE_TYPE_ID": 36,
+        "RESULT_TIE_VALUE_TYPE_LIST": "36",
+        "NUMERIC_RESULT_TYPE_LIST": "31, 32, 33, 34, 35, 36, 100, 526, 527, 528, 529, 540",
+        "INTEGER_RESULT_TYPE_LIST": "31, 32, 33, 34, 35, 36",
+        "MEDAL_TEMPLATE_ID_LIST": "9600, 9601, 9779, 10327, 10328, 10537, 10538, 11498, 11507, 11524, 11525, 11526, 11532",
+        "ELIMINATION_ROUND_NAME_LIST": "'semi finals', 'quarter finals', '1/8', '1/16', '1/32', 'small final', 'playoff'",
+        "GROUP_ROUND_NAME_LIST": "'main phase', 'final'",
+        "NUMERIC_DATA_TYPE_LIST": "1270, 1271, 1476",
+        "PRECISION_RESULT_TYPE_LIST": "540",
+        "PRECISION_DATA_TYPE_LIST": "1476",
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
+        "SERIES_SKIP_YEARS": "2020",
+        "DATA_COMMENT_VALUE_LIST": "'wd', 'mdf', 'dq', 'mc', 'rtd', 'sub', 'nr', 'dns', 'n/r'",
+        "DATA_COMMENT_NO_RESULT_LIST": "'dq', 'rtd', 'dns', 'nr', 'n/r'",
+        "_expected": {
+            "Golf-DQ-091": {
+                "expect": "Residual",
+                "residual": 2,
+                "reason": "Tokyo kept the name 2020 and was played on 29 July and 4 August 2021, so the men's and women's tournaments both run past the year they are named for and always will. Recorded as a residual rather than filtered out of the statement, because a filter would also hide the next tournament that genuinely runs into the following year."
+            }
+        },
+        "_checkSignal": {
+            "Golf-DQ-089": {
+                "signal": "Monitor",
+                "reason": "542 of 13059 Match Play events name a competitor the participant record no longer calls by that name, and a large share of them are the data ageing correctly rather than a defect: the event name is the day's snapshot and the record is current, so Mina Harigae is now Mina Kreiter, Lauren Hartlage is Lauren Tenuta and Michelle Wie is Michelle Wie West. Marrying does not rename a 2010 match. Real misspellings sit in the same output and are what a reviewer is looking for - Laura Gonzales against Gonzalez, So Yeon Ryu against So-Yeon Ryu, Maria J. Uribe against Maria Uribe - so the check runs and a human separates the two. Decided 2026-08-13; nothing in the database records a name history, which is why the two cannot be told apart in SQL."
+            },
+            "GLOBAL-DQ-041": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template's prerequisite is a sport confirmed to carry a Phase on its Comp.Rank participants, and Golf carries none. All 359344 active Comp.Rank participant rows in the sport hold no object_round phase row, so the check reads a relation the sport never writes. Its eligible count is non-zero because it counts medals, which makes the silence look like clean data; it is not. SPORTS/Golf.md owns the finding."
+            },
+            "GLOBAL-DQ-068": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport writes no lineup row anywhere. A foursome is stored as one athlete participant holding both names, so there is no lineup whose size could be uneven and eligible_count is 0 by construction rather than by a thin population."
+            },
+            "GLOBAL-DQ-057": {
+                "signal": "Monitor",
+                "reason": "eligible_count is 0 and this is a sentinel, not a misdirected scope: statistic_data11 declares the 1273 Comment field for statistic type 11 and Golf writes no row into it today. The scope is correct and the population is legitimately empty, so the check stands ready for the first Comp.Rank comment the sport writes. SPORTS/Golf.md owns the distinction."
+            },
+            "GLOBAL-DQ-065": {
+                "signal": "Monitor",
+                "reason": "eligible_count is 0 for the same reason as GLOBAL-DQ-057: the 1429 Team data field is declared for statistic type 11 and Golf writes no row into it. The sport does field teams - the Ryder Cup and Presidents Cup sides - so the population is legitimately empty rather than structurally absent."
+            },
+            "GLOBAL-DQ-033": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template's prerequisite is a sport confirmed to carry a Phase on ranked Comp.Rank participants, and Golf carries none - all 359344 active participant rows hold no object_round phase row. The check reports 3355 of 3355 statistics, which is the absence itself rather than a finding. SPORTS/Golf.md owns it."
+            },
+            "GLOBAL-DQ-058": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport writes no lineup row anywhere, so every one of its 1287 team event participants is reported and the check returns 1287 of 1287. A foursome is stored as one athlete participant holding both names; there is no lineup layer to be missing from."
+            },
+            "GLOBAL-DQ-037": {
+                "signal": "Not applicable",
+                "reason": "Golf identifies a medal event by template, not by round type, and no parameter can express that while the whole sport is in scope. MEDAL_ROUND_TYPE_LIST is 225 because every one of the sport's 18 medals sits there, but only Summer Olympics awards them - 6 events of the 5020 that round type carries. Asserting that every Main Phase event owes a medal set reports 4751 of 4768. The same list read the other way is correct, which is why GLOBAL-DQ-039 and GLOBAL-DQ-073 stay and return clean."
+            },
+            "GLOBAL-DQ-038": {
+                "signal": "Not applicable",
+                "reason": "The same asymmetry as GLOBAL-DQ-037: it asserts that every medal-round event carries the medal_related property, and Golf's medal rounds are 5020 stroke-play events of which 6 award a medal. Reports 4764 of 4768."
+            },
+            "GLOBAL-DQ-007": {
+                "signal": "Monitor",
+                "reason": "10482 of 20547 people reached through the sport hold no date of birth. Half a registry is a completeness proportion rather than a repair list, and the sport's registry is large and old; the rows are correct and there are simply a great many of them."
+            },
+            "GLOBAL-DQ-071": {
+                "signal": "Monitor",
+                "reason": "159 of the 170 events reported are NO_PARTICIPANTS_NOT_FINISHED_EVENT, and they are the sport's calendar running ahead of its entry lists: Hero World Challenge is dated December 2026 and Andalucia Open de Espana November 2026, announced and not yet fielded. A tour publishes its schedule long before anyone enters, so an unplayed event holding no participant is the normal state rather than a gap. The 11 NO_PARTICIPANTS_FINISHED_EVENT rows are the ones worth reading and stay visible under the same check - all eleven are match-play events from 2004 to 2010, WGC Accenture Match Play and HSBC World Match Play among them, and not one of them left with the client boundary. Decided 2026-08-13, re-measured the same day inside the boundary: the unplayed half fell from 295 to 159 and the readable half did not move."
+            },
+            "GLOBAL-DQ-074": {
+                "signal": "Monitor",
+                "reason": "Golf records its course in the tournament_stage Venue property, on 5176 stages sport-wide, and uses the global venue_object relation for part of its events only - inside the client boundary 7560 of 16544 carry one and 8984 do not. The check reads the relation, so what it reports is how far that mechanism has been populated rather than a per-event defect. SPORTS/BMX.md records the same reading for a sport at nought per cent. Confirmed as Monitor on 2026-08-13."
+            },
+            "GLOBAL-DQ-064": {
+                "signal": "Monitor",
+                "reason": "eligible_count is 0 and this is a sentinel: the template's eligible population is the statistic that uses the 1429 Team field at all, and Golf writes no row into it. The scope is correct and the population is legitimately empty."
+            },
+            "GLOBAL-DQ-083": {
+                "signal": "Not applicable",
+                "reason": "Structural, and the template says the condition itself: it applies to a sport whose competition model is H2H per DB-SEM-015, where an event is a contest between exactly two entries. Golf is Hybrid. Its 5142 Stroke Play events hold the whole field at once - up to 250 entries - so the check reports 7535 of 19136 events for competing the way the sport competes. Match play alone would satisfy the prerequisite; the sport does not."
+            },
+            "GLOBAL-DQ-112": {
+                "signal": "Not applicable",
+                "reason": "Structural: eligible_count is 0 because the sport writes no lineup row anywhere, so no athlete can be assigned to two of them. Unlike GLOBAL-DQ-057 and GLOBAL-DQ-064 this is not a sentinel - the layer is absent rather than empty, and a foursome is stored as one athlete participant holding both names."
+            },
+            "GLOBAL-DQ-043": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template applies only where a team entry has at least one active lineup row, and the sport writes no lineup row anywhere. It returns 0 of 585086 event participants, and the eligible branch overstates its own population - it counts entries in scope rather than entries holding a lineup, so the 585086 is not a population this check could ever have audited. Same absence as GLOBAL-DQ-058, GLOBAL-DQ-067, GLOBAL-DQ-068 and GLOBAL-DQ-112."
+            },
+            "GLOBAL-DQ-067": {
+                "signal": "Not applicable",
+                "reason": "Structural: eligible_count is 0 because the sport writes no lineup row, so no mixed team can hold an uneven one. The layer is absent rather than empty, which is why this is not a sentinel like GLOBAL-DQ-066."
+            },
+            "GLOBAL-DQ-066": {
+                "signal": "Monitor",
+                "reason": "eligible_count is 0 and this is a sentinel on the same footing as GLOBAL-DQ-064 and GLOBAL-DQ-065: statistic_data11 declares the 1429 Team field for statistic type 11 and Golf writes no row into it, so no statistic can be measured for team gender balance. The field exists and the sport has not used it; the day it does, the check is already pointed at it."
+            },
+            "GLOBAL-DQ-028": {
+                "signal": "Monitor",
+                "reason": "eligible_count is 0 and this is a sentinel: statistic_data11 declares the 1427 Time difference field for statistic type 11 and Golf writes no row into it, which is expected of a sport whose 17 result types measure strokes, points, par, rank, money and status and never time. Same shape as GLOBAL-DQ-057 on the 1273 Comment field."
+            },
+            "Golf-DQ-095": {
+                "signal": "Monitor",
+                "reason": "368 of the 369 rank outliers this and Golf-DQ-094 report together sit before 2015, one is from 2016 and none is later, so the volume is a legacy import rather than a live defect. The invariant still guards what arrives tomorrow, which is why the check is written rather than dropped."
+            },
+            "Golf-DQ-036": {
+                "signal": "Monitor",
+                "reason": "742 of the sport's 20638 registered people hold no event entry, no lineup place and no Comp.Rank row anywhere - 619 with an active registration and 123 without. They are historic golfers whose tournaments are not in the database rather than broken references: the repair is either importing decades of events or removing the registration, and neither is a decision a reviewer makes row by row. Measured 2026-08-14. Note that participation is read without the client boundary, which is deliberate: a further 5140 registered people play only under the twenty excluded templates, and they do participate - just not in this client's scope."
+            },
+            "Golf-DQ-022": {
+                "signal": "Monitor",
+                "reason": "566 of 3125 Comp.Rank hold a place twice, 342 of them more than one such place. A shared place is how golf finishes: two players on the same score are both T5, and the score beside them is the explanation. The template asks for that explanation in the 1273 Comment data field, and Golf writes no row into that field anywhere - GLOBAL-DQ-057 records the same absence as a sentinel - so every legitimate tie in the sport is reported and no amount of correction would empty this list. Read as a count of shared places rather than a repair list. Decided 2026-08-14."
+            },
+            "Golf-DQ-024": {
+                "signal": "Monitor",
+                "reason": "484 event participants carry a Comment saying they have no result while still holding one: 422 DQ, 51 RTD, 7 NR, 2 DNS, 2 N/R, of which 459 hold a Rank and 25 a score. The place a competitor occupied when the disqualification or retirement was recorded is kept beside it rather than removed, which is a storage habit of the sport rather than a contradiction to repair row by row. Decided 2026-08-14; the check stays because the same shape would report a genuine contradiction identically."
+            }
+        }
+    },
+    "Ice-Hockey": {
+        "SPORT_ID": 5,
+        "IN_SCOPE_TEMPLATE_ID_LIST": "31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285",
+        "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach', 'official'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "STATISTIC_TYPE_ID": 11,
+        "STATISTIC_OWNER_TYPE_ID": 3,
+        "SHARD_ID": 11,
+        "DATA_RANK_TYPE_ID": 1270,
+        "DATA_COMMENT_TYPE_ID": 1273,
+        "DATA_MEDAL_TYPE_ID": 1277,
+        "DATA_TEAM_TYPE_ID": 1429,
+        "CONFIG_START_DATE_TYPE_ID": 1463,
+        "CONFIG_END_DATE_TYPE_ID": 1464,
+        "CONFIG_GENDER_TYPE_ID": 1470,
+        "CONFIG_EVENT_ID_TYPE_ID": 1471,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_FINAL_SCORE_TYPE_ID": 4,
+        "RESULT_MIRROR_SCORE_TYPE_ID": 6,
+        "SCOPE_TYPE_ID": 305,
+        "SCOPE_TYPE_LIST": "305, 310, 322, 323, 324, 351, 595",
+        "ROUND_TYPE_LIST": "2, 3, 9, 38, 39, 40, 41, 42, 43, 44, 138",
+        "FINAL_ROUND_TYPE_LIST": "9",
+        "MEDAL_ROUND_TYPE_LIST": "9, 138",
+        "NOT_STARTED_DESC_LIST": "1"
     }
-  },
-  "Triathlon": {
-    "SPORT_ID": 50,
-    "PRECISION_RESULT_TYPE_LIST": "101, 557",
-    "PRECISION_DATA_TYPE_LIST": "1426",
-    "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
-    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
-    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
-    "STATISTIC_TYPE_ID": 11,
-    "STATISTIC_OWNER_TYPE_ID": 3,
-    "SHARD_ID": 11,
-    "DATA_RANK_TYPE_ID": 1270,
-    "DATA_COMMENT_TYPE_ID": 1273,
-    "DATA_MEDAL_TYPE_ID": 1277,
-    "DATA_TIME_TYPE_ID": 1426,
-    "DATA_TIME_DIFFERENCE_TYPE_ID": 1427,
-    "DATA_DEPRECATED_DURATION_TYPE_ID": 1272,
-    "DATA_TEAM_TYPE_ID": 1429,
-    "CONFIG_START_DATE_TYPE_ID": 1463,
-    "CONFIG_END_DATE_TYPE_ID": 1464,
-    "CONFIG_GENDER_TYPE_ID": 1470,
-    "CONFIG_EVENT_ID_TYPE_ID": 1471,
-    "FINAL_ROUND_TYPE_LIST": "9, 173",
-    "MEDAL_ROUND_TYPE_LIST": "9, 173",
-    "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
-    "TIMED_DISCIPLINE_LIST": "144, 799, 800, 801, 803, 804, 806",
-    "RANK_MAX_PLAUSIBLE": 200,
-    "RESULT_RANK_TYPE_ID": 100,
-    "RESULT_TIE_VALUE_TYPE_LIST": "557, 101",
-    "RESULT_DURATION_TYPE_ID": 101,
-    "RESULT_COMMENT_TYPE_ID": 104,
-    "RESULT_COMMENT_VALUE_LIST": "'dnf', 'lap', 'dns', 'dsq', 'nc', 'q', 'disq.'",
-    "RESULT_COMMENT_NO_RESULT_LIST": "'dnf', 'lap', 'dns', 'dsq', 'disq.', 'nc'",
-    "DATA_COMMENT_VALUE_LIST": "'dnf', 'lap', 'dns', 'dsq', 'nc', 'q', 'disq.'",
-    "DATA_COMMENT_NO_RESULT_LIST": "'dnf', 'lap', 'dns', 'dsq', 'disq.', 'nc'",
-    "FULL_TIME_TOLERANCE_SECONDS": 1,
-    "RESULT_MEDAL_TYPE_ID": 501,
-    "RESULT_FULL_TIME_TYPE_ID": 557,
-    "STALE_NOT_STARTED_DAYS": 2,
-    "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
-    "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', '1/8', '1/16', '1/32', 'heats', 'qualifier', 'repechage', 'playoff', 'tie-breaker', 'small final'",
-    "GROUP_ROUND_NAME_LIST": "'preliminary', 'seeding'",
-    "ROUND_TYPE_LIST": "9, 173, 178, 179, 180, 204, 267, 283, 284",
-    "SERIES_MIN_YEARS": 3,
-    "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
-    "DUPLICATE_KEY_USES_CALENDAR_DAY": 0,
-    "SERIES_SKIP_YEARS": "2020",
-    "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
-    "_names": {
-      "SPORT_ID": "50 Triathlon",
-      "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
-      "PRECISION_RESULT_TYPE_LIST": "101 Duration, 557 Full-time duration",
-      "PRECISION_DATA_TYPE_LIST": "1426 Time",
-      "DATA_RANK_TYPE_ID": "1270 Rank",
-      "DATA_COMMENT_TYPE_ID": "1273 Comment",
-      "DATA_MEDAL_TYPE_ID": "1277 Medal",
-      "DATA_TIME_TYPE_ID": "1426 Time",
-      "DATA_TIME_DIFFERENCE_TYPE_ID": "1427 Time Difference",
-      "DATA_DEPRECATED_DURATION_TYPE_ID": "1272 Duration",
-      "DATA_TEAM_TYPE_ID": "1429 Team",
-      "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
-      "CONFIG_END_DATE_TYPE_ID": "1464 End date",
-      "CONFIG_GENDER_TYPE_ID": "1470 Gender",
-      "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id",
-      "FINAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
-      "MEDAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
-      "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed",
-      "TIMED_DISCIPLINE_LIST": "144 Standard Distance, 799 Sprint Distance, 800 Mixed Relay, 801 Super Sprint Distance, 803 Team Relay, 804 Long Distance / Ironman, 806 Aquathlon",
-      "RESULT_RANK_TYPE_ID": "100 Rank",
-      "RESULT_TIE_VALUE_TYPE_LIST": "557 Full-time duration, 101 Duration",
-      "RESULT_DURATION_TYPE_ID": "101 Duration",
-      "RESULT_COMMENT_TYPE_ID": "104 Comment",
-      "RESULT_MEDAL_TYPE_ID": "501 Medal",
-      "RESULT_FULL_TIME_TYPE_ID": "557 Full-time duration",
-      "ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 180 Repechage (knockout: no), 204 Heats (knockout: no), 267 Final Phase (knockout: no), 283 Final C (knockout: no), 284 Final B (knockout: no)"
-    },
-    "_notApplicable": {
-      "NUMERIC_RESULT_TYPE_LIST": "no result type carries a measured quantity; every confirmed type is a place, a time, a status vocabulary or a medal code",
-      "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
-      "RESULT_FINAL_SCORE_TYPE_ID": "the sport is not head to head; an event is a field ranked against itself rather than a pair holding one deciding score",
-      "RESULT_MIRROR_SCORE_TYPE_ID": "the sport is not head to head; no result type mirrors a deciding score",
-      "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event, so no separate round decides bronze",
-      "WINNER_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
-      "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
-      "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
-      "SCOPE_TYPE_ID": "the sport writes no active event_scope row at all, so it has no scope layer to read",
-      "SCOPE_PERIOD_DATA_TYPE_LIST": "the sport writes no active event_scope row at all",
-      "SCOPE_PERIOD_SENTINEL_LIST": "the sport writes no active event_scope row at all",
-      "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "the sport plays no extra period and stores no column for one",
-      "EXTRA_PERIOD_STATUS_DESC_LIST": "the sport plays no extra period, so no detailed status marks one"
-    },
-    "_checkSignal": {
-      "GLOBAL-DQ-095": {
-        "signal": "Blocked",
-        "reason": "every parameter it declares is recorded, so nothing else stops it: while the 1429 Team field is unused the check can only assume one participant per place and reports every relay member beyond the first, which is the format rather than a defect. Re-run Triathlon-DQ-085 to test whether the block still applies. SPORTS/Triathlon.md owns the reasoning."
-      },
-      "GLOBAL-DQ-007": {
-        "signal": "Monitor",
-        "reason": "date_of_birth is populated for a small fraction of the registered athletes and its absence is the normal state for this sport, so the check reports almost the entire population. The proportion is the finding; a single row is not a defect. SPORTS/Triathlon.md owns the coverage statement."
-      },
-      "GLOBAL-DQ-034": {
-        "signal": "Monitor",
-        "reason": "the host-country relation and the city link are unpopulated wherever the direct country column is filled, which is the normal storage for this sport, so those two of the core fields report broadly rather than per defect. The other core fields in the same check still read as defects. SPORTS/Triathlon.md owns the storage finding."
-      }
-    }
-  },
-  "Curling": {
-    "SPORT_ID": 10,
-    "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
-    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach'",
-    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
-    "STATISTIC_TYPE_ID": 11,
-    "STATISTIC_OWNER_TYPE_ID": 3,
-    "SHARD_ID": 11,
-    "DATA_RANK_TYPE_ID": 1270,
-    "DATA_COMMENT_TYPE_ID": 1273,
-    "DATA_MEDAL_TYPE_ID": 1277,
-    "DATA_TEAM_TYPE_ID": 1429,
-    "DATA_COMMENT_VALUE_LIST": "'dnf'",
-    "DATA_COMMENT_NO_RESULT_LIST": "'dnf'",
-    "CONFIG_START_DATE_TYPE_ID": 1463,
-    "CONFIG_END_DATE_TYPE_ID": 1464,
-    "CONFIG_GENDER_TYPE_ID": 1470,
-    "RESULT_MEDAL_TYPE_ID": 501,
-    "RESULT_COMMENT_VALUE_LIST": "''",
-    "NUMERIC_RESULT_TYPE_LIST": "4, 6",
-    "PLACEHOLDER_COUNTRY_LIST": "''",
-    "SERIES_MIN_YEARS": 3,
-    "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
-    "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
-    "SERIES_SKIP_YEARS": "0",
-    "RESULT_FINAL_SCORE_TYPE_ID": 4,
-    "RESULT_MIRROR_SCORE_TYPE_ID": 6,
-    "SCOPE_TYPE_ID": 305,
-    "SCOPE_TYPE_LIST": "305",
-    "SCOPE_PERIOD_DATA_TYPE_LIST": "282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292",
-    "SCOPE_PERIOD_SENTINEL_LIST": "'x'",
-    "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": 292,
-    "EXTRA_PERIOD_STATUS_DESC_LIST": "113",
-    "FINAL_ROUND_TYPE_LIST": "9, 173",
-    "MEDAL_ROUND_TYPE_LIST": "9, 138, 173, 181",
-    "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
-    "STALE_NOT_STARTED_DAYS": 2,
-    "BRONZE_ROUND_TYPE_LIST": "138, 181",
-    "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', 'bronze', '1/8', '1/16', 'heats', 'qualifier', 'repechage', 'playoff', 'tie-breaker', 'small final'",
-    "GROUP_ROUND_NAME_LIST": "'preliminary', 'seeding'",
-    "ROUND_TYPE_LIST": "2, 3, 4, 5, 9, 19, 22, 23, 24, 25, 26, 38, 39, 40, 41, 134, 136, 138, 152, 171, 172, 173, 176, 178, 179, 181, 184, 185, 227, 253, 262, 303, 304, 305",
-    "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
-    "_names": {
-      "SPORT_ID": "10 Curling",
-      "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
-      "DATA_RANK_TYPE_ID": "1270 Rank",
-      "DATA_COMMENT_TYPE_ID": "1273 Comment",
-      "DATA_MEDAL_TYPE_ID": "1277 Medal",
-      "DATA_TEAM_TYPE_ID": "1429 Team",
-      "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
-      "CONFIG_END_DATE_TYPE_ID": "1464 End date",
-      "CONFIG_GENDER_TYPE_ID": "1470 Gender",
-      "RESULT_MEDAL_TYPE_ID": "501 Medal",
-      "NUMERIC_RESULT_TYPE_LIST": "4 Final Result, 6 Running score",
-      "RESULT_FINAL_SCORE_TYPE_ID": "4 Final Result",
-      "RESULT_MIRROR_SCORE_TYPE_ID": "6 Running score",
-      "SCOPE_TYPE_ID": "305 final_result",
-      "SCOPE_TYPE_LIST": "305 final_result",
-      "SCOPE_PERIOD_DATA_TYPE_LIST": "282 end_1, 283 end_2, 284 end_3, 285 end_4, 286 end_5, 287 end_6, 288 end_7, 289 end_8, 290 end_9, 291 end_10, 292 end_extra",
-      "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "292 end_extra",
-      "EXTRA_PERIOD_STATUS_DESC_LIST": "113 Finished AEI",
-      "FINAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
-      "MEDAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 138 bronze (knockout: yes), 173 Final (knockout: no), 181 bronze (knockout: no)",
-      "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed",
-      "BRONZE_ROUND_TYPE_LIST": "138 bronze (knockout: yes), 181 bronze (knockout: no)",
-      "ROUND_TYPE_LIST": "2 Semi Finals (knockout: yes), 3 Quarter Finals (knockout: yes), 4 1/8 (knockout: yes), 5 1/16 (knockout: yes), 9 Final (knockout: yes), 19 Small Final (knockout: yes), 22 5/6 (knockout: yes), 23 7/8 (knockout: yes), 24 9/10 (knockout: yes), 25 11/12 (knockout: yes), 26 5/8 (knockout: yes), 38 1 (knockout: no), 39 2 (knockout: no), 40 3 (knockout: no), 41 4 (knockout: no), 134 9/16 (knockout: yes), 136 9/12 (knockout: yes), 138 bronze (knockout: yes), 152 Qualifier (knockout: yes), 171 Preliminary (knockout: no), 172 Tie-breaker (knockout: yes), 173 Final (knockout: no), 176 Quarter Finals (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 181 bronze (knockout: no), 184 1/8 (knockout: no), 185 1/16 (knockout: no), 227 Relegation Phase (knockout: no), 253 Preliminary (knockout: yes), 262 5/8 (knockout: no), 303 9/12 (knockout: no), 304 Playoff (knockout: no), 305 Playoff (knockout: yes)"
-    },
-    "_notApplicable": {
-      "RESULT_RANK_TYPE_ID": "no Rank result type; the score in Final Result and Running score carries the classification",
-      "RESULT_DURATION_TYPE_ID": "the sport stores no time on a result",
-      "RESULT_FULL_TIME_TYPE_ID": "the sport stores no time on a result",
-      "FULL_TIME_TOLERANCE_SECONDS": "the sport stores no time on a result",
-      "RESULT_COMMENT_TYPE_ID": "no Comment result type; the sport uses no status vocabulary on a result",
-      "RESULT_COMMENT_NO_RESULT_LIST": "no Comment result type; the sport uses no status vocabulary on a result",
-      "DATA_TIME_TYPE_ID": "Comp.Rank stores no time field",
-      "DATA_TIME_DIFFERENCE_TYPE_ID": "Comp.Rank stores no time field",
-      "DATA_DEPRECATED_DURATION_TYPE_ID": "Comp.Rank stores no time field",
-      "TIMED_DISCIPLINE_LIST": "neither Mixed Doubles nor 4aSide is a timed discipline",
-      "CONFIG_EVENT_ID_TYPE_ID": "statistic_config records no Event id, so a Comp.Rank statistic cannot be resolved to its event through that path",
-      "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
-      "WINNER_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
-      "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
-      "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property on any event, so it has no side vocabulary to confirm; the winner is derivable from the two Final Result values but is not stored",
-      "RESULT_TIE_VALUE_TYPE_LIST": "the sport is head to head; the pairing settles the place, so no result field holds a quantity a place is read from"
-    },
-    "_checkSignal": {
-      "GLOBAL-DQ-058": {
-        "signal": "Monitor",
-        "reason": "Lineups are used but are not this sport's membership mechanism: only a small minority of team event participants carry a Starter lineup, and athlete-to-team membership is carried by the Comp.Rank (athletes) statistic instead. The check therefore measures the minority mechanism and reports the rest of the sport, which makes its output a proportion rather than a defect per event - the wording SPORTS/Curling.md already used before this block contradicted it."
-      },
-      "GLOBAL-DQ-074": {
-        "signal": "Monitor",
-        "reason": "The check measures how far the venue backfill has reached. 16764 of 17920 active events resolve to no venue, while 739 carry their own venue_object link and 417 inherit one from their stage, so the mechanism is in use and filling. The proportion is the finding and no single event is a defect. SPORTS/Curling.md records the backfill and keeps the check instantiated for exactly that reason. An earlier revision recorded this as Not applicable on the strength of the unfilled majority, which both contradicted that section and misstated the sport - events do resolve to venues here."
-      },
-      "GLOBAL-DQ-107": {
-        "signal": "Monitor",
-        "reason": "218 findings of which 197 are the Winter Olympics 2006 and 2010, two tournaments whose results are present in full while the scope layer was never imported for them - one gap, not 197 defects. What is left is 21 events, and 15 of those also hold no final score, so they are incompletely written rather than merely missing their ends. Read the year and template breakdown before the count."
-      },
-      "GLOBAL-DQ-049": {
-        "signal": "Monitor",
-        "reason": "an event name is the pairing that plays it, so every event name contains a hyphen with no surrounding spaces and the check reports the sport's whole distinct-name vocabulary under HYPHEN_WITHOUT_SPACES. The rule is not wrong, it is describing the naming convention; the rows worth reading are the ones breaking a second rule as well. SPORTS/Curling.md names this check directly."
-      }
-    }
-  },
-  "Artistic-Gymnastics": {
-    "SPORT_ID": 40,
-    "PRECISION_RESULT_TYPE_LIST": "102",
-    "PRECISION_DATA_TYPE_LIST": "1271",
-    "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
-    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
-    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
-    "STATISTIC_TYPE_ID": 11,
-    "STATISTIC_OWNER_TYPE_ID": 3,
-    "SHARD_ID": 11,
-    "DATA_RANK_TYPE_ID": 1270,
-    "DATA_COMMENT_TYPE_ID": 1273,
-    "DATA_MEDAL_TYPE_ID": 1277,
-    "DATA_TEAM_TYPE_ID": 1429,
-    "CONFIG_START_DATE_TYPE_ID": 1463,
-    "CONFIG_END_DATE_TYPE_ID": 1464,
-    "CONFIG_GENDER_TYPE_ID": 1470,
-    "CONFIG_EVENT_ID_TYPE_ID": 1471,
-    "FINAL_ROUND_TYPE_LIST": "9, 173",
-    "MEDAL_ROUND_TYPE_LIST": "9, 173",
-    "RESULT_RANK_TYPE_ID": 100,
-    "RESULT_TIE_VALUE_TYPE_LIST": "102",
-    "RESULT_COMMENT_TYPE_ID": 104,
-    "RESULT_MEDAL_TYPE_ID": 501,
-    "SCOPE_TYPE_LIST": "101, 102",
-    "ROUND_TYPE_LIST": "9, 152, 173, 179",
-    "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
-    "RANK_MAX_PLAUSIBLE": 250,
-    "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
-    "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
-    "NUMERIC_DATA_TYPE_LIST": "1271",
-    "DATA_COMMENT_VALUE_LIST": "'q', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'r', 'r1', 'r2', 'r3', 'r4', 'dns', 'dnf', 'dnq', 'dqb', 'nr', 'nc', 'disq.', 'withdrawn'",
-    "SERIES_MIN_YEARS": 3,
-    "SERIES_SKIP_YEARS": "2020",
-    "ELIMINATION_ROUND_NAME_LIST": "'tie-breaker'",
-    "GROUP_ROUND_NAME_LIST": "'final', 'qualifier'",
-    "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
-    "STALE_NOT_STARTED_DAYS": 2,
-    "NUMERIC_RESULT_TYPE_LIST": "102",
-    "RESULT_SCORE_TYPE_ID": 102,
-    "RESULT_COMMENT_VALUE_LIST": "'q', 'q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8', 'r', 'r1', 'r2', 'r3', 'r4', 'dns', 'dnf', 'nr', 'nc', 'disq.', 'withdrawn'",
-    "RESULT_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disq.', 'withdrawn'",
-    "DATA_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disq.', 'withdrawn'",
-    "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
-    "_names": {
-      "SPORT_ID": "40 Artistic Gymnastics",
-      "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
-      "PRECISION_RESULT_TYPE_LIST": "102 Points",
-      "PRECISION_DATA_TYPE_LIST": "1271 Points",
-      "DATA_RANK_TYPE_ID": "1270 Rank",
-      "DATA_COMMENT_TYPE_ID": "1273 Comment",
-      "DATA_MEDAL_TYPE_ID": "1277 Medal",
-      "DATA_TEAM_TYPE_ID": "1429 Team",
-      "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
-      "CONFIG_END_DATE_TYPE_ID": "1464 End date",
-      "CONFIG_GENDER_TYPE_ID": "1470 Gender",
-      "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id",
-      "FINAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
-      "MEDAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no)",
-      "RESULT_RANK_TYPE_ID": "100 Rank",
-      "RESULT_TIE_VALUE_TYPE_LIST": "102 Points",
-      "RESULT_COMMENT_TYPE_ID": "104 Comment",
-      "RESULT_MEDAL_TYPE_ID": "501 Medal",
-      "SCOPE_TYPE_LIST": "101 checkpoint1, 102 checkpoint2",
-      "ROUND_TYPE_LIST": "9 Final (knockout: yes), 152 Qualifier (knockout: yes), 173 Final (knockout: no), 179 Qualifier (knockout: no)",
-      "NUMERIC_DATA_TYPE_LIST": "1271 Points",
-      "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed",
-      "NUMERIC_RESULT_TYPE_LIST": "102 Points",
-      "RESULT_SCORE_TYPE_ID": "102 Points"
-    },
-    "_notApplicable": {
-      "RESULT_FULL_TIME_TYPE_ID": "the sport is judged rather than timed: a routine is scored by a panel and no result type records elapsed time, so there is no absolute finishing time to assert",
-      "RESULT_DURATION_TYPE_ID": "the sport is judged rather than timed: no result type records elapsed time or a gap to the leader",
-      "DATA_TIME_TYPE_ID": "Comp.Rank stores no time field; the sport ranks on judged scores rather than on the clock",
-      "DATA_TIME_DIFFERENCE_TYPE_ID": "Comp.Rank stores no time field, so it records no gap to the leader either",
-      "DATA_DEPRECATED_DURATION_TYPE_ID": "Comp.Rank stores no time field, so it has no superseded duration field to report",
-      "TIMED_DISCIPLINE_LIST": "none of the eleven apparatus is decided on the clock; every one is scored by a judging panel"
-    },
-    "_checkSignal": {
-      "GLOBAL-DQ-034": {
-        "signal": "Monitor",
-        "reason": "The check asserts five stage fields at once, and Artistic Gymnastics populates host country through the sparse object_relation 4 to 33 path rather than on every stage, so 822 of 824 stages are reported for that field alone. The direct tournament_stage.countryFK is present throughout; the proportion carrying the separate host-country relation is the reading. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
-      "GLOBAL-DQ-004": {
-        "signal": "Monitor",
-        "reason": "Artistic Gymnastics tournament-stage dates define a containing competition window and need not equal the earliest and latest event start dates. A wider containing interval is population context, not one row-level defect. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
-      "GLOBAL-DQ-044": {
-        "signal": "Monitor",
-        "reason": "Athlete-statistic gender contradictions are actionable, but mixed-gender team entities can legitimately appear in a male or female Comp.Rank context and require team-role semantics. The complete output is therefore monitored. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
-      "GLOBAL-DQ-048": {
-        "signal": "Monitor",
-        "reason": "The generic stage-name format rule also matches legitimate compound names and diacritics such as All-Around, Tel-Aviv and São Paulo. Those language-aware cases make the aggregate output a Monitor. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
-      "GLOBAL-DQ-049": {
-        "signal": "Monitor",
-        "reason": "The generic event-name format rule is dominated by legitimate All-Around and All-Round compounds. Double spaces and Cyrillic lookalikes remain actionable drill-down subtypes. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
-      "GLOBAL-DQ-051": {
-        "signal": "Monitor",
-        "reason": "The generic Comp.Rank name rule also matches legitimate hyphenated and diacritic-bearing names. Double spaces and Cyrillic lookalikes remain actionable drill-down subtypes. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
-      "GLOBAL-DQ-065": {
-        "signal": "Monitor",
-        "reason": "Artistic Gymnastics teams within one competition legitimately field different numbers of gymnasts, so an uneven Comp.Rank athlete count is population context rather than one row-level defect. It is the statistic-layer twin of GLOBAL-DQ-068 and is monitored for the same reason. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
-      "GLOBAL-DQ-068": {
-        "signal": "Monitor",
-        "reason": "Populated team lineups within one Artistic Gymnastics event can legitimately have different roster sizes, so the difference is population context. GLOBAL-DQ-058 remains the actionable check for a team with no lineup. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
-      "GLOBAL-DQ-079": {
-        "signal": "Monitor",
-        "reason": "The template-name format rule flags the legitimate compound World Cup All-Around, so its current Artistic Gymnastics output is semantic naming context rather than a direct repair list. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
-      "GLOBAL-DQ-082": {
-        "signal": "Not applicable",
-        "reason": "Structural: an Artistic Gymnastics tournament stage carries gender, not discipline. The sport runs male, female and mixed stages, and any stage may hold events of any apparatus, so the check asserts a grouping this sport does not store at that level. This is a property of how the sport organises competition, not of the current data. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
-      "GLOBAL-DQ-102": {
-        "signal": "Not applicable",
-        "reason": "The checkpoint scope layer is outside Artistic Gymnastics DQ scope by explicit decision of 2026-08-04. The layer is Vault-only, so a scope-owner assertion reads a structure the sport does not maintain across its disciplines. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      },
-      "GLOBAL-DQ-107": {
-        "signal": "Not applicable",
-        "reason": "Structural: checkpoint1 and checkpoint2 are the two vaults a gymnast performs, so the scope layer belongs to the Vault apparatus rather than to the event level the check asserts. Nine of the sport's eleven disciplines contest a single exercise and have no second attempt for a container to hold, which is a property of the sport rather than of the current data. The layer is also outside DQ scope by explicit decision of 2026-08-04. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-      }
-    }
-  },
-  "Soccer": {
-    "SPORT_ID": 1,
-    "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
-    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
-    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
-    "STATISTIC_TYPE_ID": 11,
-    "STATISTIC_OWNER_TYPE_ID": 3,
-    "SHARD_ID": 11,
-    "DATA_RANK_TYPE_ID": 1270,
-    "DATA_MEDAL_TYPE_ID": 1277,
-    "DATA_TEAM_TYPE_ID": 1429,
-    "CONFIG_START_DATE_TYPE_ID": 1463,
-    "CONFIG_END_DATE_TYPE_ID": 1464,
-    "CONFIG_GENDER_TYPE_ID": 1470,
-    "RESULT_MEDAL_TYPE_ID": 501,
-    "RESULT_FINAL_SCORE_TYPE_ID": 4,
-    "RESULT_MIRROR_SCORE_TYPE_ID": 6,
-    "NUMERIC_RESULT_TYPE_LIST": "1, 2, 3, 4, 5, 6, 550",
-    "SCOPE_TYPE_ID": 351,
-    "SCOPE_TYPE_LIST": "351",
-    "FINAL_ROUND_TYPE_LIST": "9",
-    "BRONZE_ROUND_TYPE_LIST": "138",
-    "MEDAL_ROUND_TYPE_LIST": "9, 138",
-    "ROUND_TYPE_LIST": "2, 3, 4, 5, 9, 22, 23, 24, 25, 26, 38, 39, 40, 41, 42, 43, 89, 138, 305",
-    "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', 'bronze', '1/8', '1/16', 'playoff'",
-    "GROUP_ROUND_NAME_LIST": "'1', '2', '3', '4', '5', '6'",
-    "PLACEHOLDER_COUNTRY_LIST": "'International'",
-    "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
-    "RANK_MAX_PLAUSIBLE": 48,
-    "STALE_NOT_STARTED_DAYS": 2,
-    "SERIES_MIN_YEARS": 3,
-    "SERIES_SKIP_YEARS": "2003",
-    "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
-    "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
-    "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
-    "_names": {
-      "SPORT_ID": "1 Soccer",
-      "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
-      "DATA_RANK_TYPE_ID": "1270 Rank",
-      "DATA_MEDAL_TYPE_ID": "1277 Medal",
-      "DATA_TEAM_TYPE_ID": "1429 Team",
-      "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
-      "CONFIG_END_DATE_TYPE_ID": "1464 End date",
-      "CONFIG_GENDER_TYPE_ID": "1470 Gender",
-      "RESULT_MEDAL_TYPE_ID": "501 Medal",
-      "RESULT_FINAL_SCORE_TYPE_ID": "4 Final Result",
-      "RESULT_MIRROR_SCORE_TYPE_ID": "6 Running score",
-      "NUMERIC_RESULT_TYPE_LIST": "1 Ordinary time, 2 Extra time, 3 Penalty Shootout, 4 Final Result, 5 Halftime, 6 Running score, 550 Overall Score",
-      "SCOPE_TYPE_ID": "351 aggregate_score",
-      "SCOPE_TYPE_LIST": "351 aggregate_score",
-      "FINAL_ROUND_TYPE_LIST": "9 Final (knockout: yes)",
-      "BRONZE_ROUND_TYPE_LIST": "138 bronze (knockout: yes)",
-      "MEDAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 138 bronze (knockout: yes)",
-      "ROUND_TYPE_LIST": "2 Semi Finals (knockout: yes), 3 Quarter Finals (knockout: yes), 4 1/8 (knockout: yes), 5 1/16 (knockout: yes), 9 Final (knockout: yes), 22 5/6 (knockout: yes), 23 7/8 (knockout: yes), 24 9/10 (knockout: yes), 25 11/12 (knockout: yes), 26 5/8 (knockout: yes), 38 1 (knockout: no), 39 2 (knockout: no), 40 3 (knockout: no), 41 4 (knockout: no), 42 5 (knockout: no), 43 6 (knockout: no), 89 1 (knockout: yes), 138 bronze (knockout: yes), 305 Playoff (knockout: yes)",
-      "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed"
-    },
-    "_notApplicable": {
-      "RESULT_RANK_TYPE_ID": "no Rank result type; the sport is head to head and the pairing is the classification, so no place is stored on a result",
-      "RESULT_COMMENT_TYPE_ID": "no Comment result type; the sport records no status vocabulary on a result",
-      "RESULT_COMMENT_VALUE_LIST": "no Comment result type; the sport records no status vocabulary on a result",
-      "RESULT_COMMENT_NO_RESULT_LIST": "no Comment result type; the sport records no status vocabulary on a result",
-      "RESULT_DURATION_TYPE_ID": "a match is a fixed length rather than a measured one, so no result type records elapsed time or a gap to the leader",
-      "RESULT_FULL_TIME_TYPE_ID": "a match is a fixed length rather than a measured one, so there is no absolute finishing time to assert",
-      "FULL_TIME_TOLERANCE_SECONDS": "the sport stores no time on a result",
-      "TIMED_DISCIPLINE_LIST": "11aSide is not decided on the clock; the score decides it",
-      "DATA_COMMENT_TYPE_ID": "Comp.Rank stores no Comment field; its data layer holds only Rank, Medal and Team",
-      "DATA_COMMENT_VALUE_LIST": "Comp.Rank stores no Comment field, so it has no status vocabulary to list",
-      "DATA_COMMENT_NO_RESULT_LIST": "Comp.Rank stores no Comment field, so it has no status vocabulary to list",
-      "DATA_TIME_TYPE_ID": "Comp.Rank stores no time field",
-      "DATA_TIME_DIFFERENCE_TYPE_ID": "Comp.Rank stores no time field, so it records no gap to the leader either",
-      "DATA_DEPRECATED_DURATION_TYPE_ID": "Comp.Rank stores no time field, so it has no superseded duration field to report",
-      "NUMERIC_DATA_TYPE_LIST": "Comp.Rank carries no measured quantity; Rank is a place and Medal a code, and no Points field occurs",
-      "CONFIG_EVENT_ID_TYPE_ID": "statistic_config records only Start date, End date and Gender, so a Comp.Rank statistic cannot be resolved to its event through that path",
-      "SCOPE_PERIOD_DATA_TYPE_LIST": "the scope layer holds the aggregate of a two-legged tie rather than competition periods, so there is no period set to list",
-      "SCOPE_PERIOD_SENTINEL_LIST": "the scope layer holds no periods, so it has no vocabulary for a period that was not played",
-      "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "extra time is a result type of its own rather than a scope period, so the scope layer stores no column for one",
-      "WINNER_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event. Result type 549 Final Outcome carries won and lost per event participant, and the event property layer - measured across every property name the scope uses - contains no Winner property for GLOBAL-DQ-087 to read. The vocabulary exists, it simply does not live where that check looks",
-      "WINNER_HOME_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write",
-      "WINNER_AWAY_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write",
-      "RESULT_TIE_VALUE_TYPE_LIST": "the sport is head to head; the pairing settles the place, so no result field holds a quantity a place is read from"
-    },
-    "_checkSignal": {
-      "GLOBAL-DQ-009": {
-        "signal": "Informational",
-        "reason": "135282 of 364192 registered athletes and 6140 of 29954 registered teams reach none of the three participation paths, and the rows are ordinary named people with a gender and a country, concentrated in the newest participant IDs - players the registry has taken on who have not yet appeared in a match this database covers. Nobody can correct such a row: the athlete is not wrong and the matches are not ours to add. Recorded by decision of 2026-08-05. REGISTRY_PARTICIPANT_TYPE_LIST is narrowed to athlete and team for the same decision: the registry also files coach and official, and the check reads only the event, lineup and Comp.Rank paths, so 3900 of the 3901 registered officials report for want of the ref:participant path this client does not use. Coaches are reachable - 1413 of 12844 report - and are left out only because the two audited types were the ones asked for. The narrowed list is this check's scope, not the registry's content, which SPORTS/Soccer.md records in full."
-      },
-      "GLOBAL-DQ-041": {
-        "signal": "Not applicable",
-        "reason": "The template's own prerequisite is a sport confirmed to carry a Phase, and Soccer is not one: no Comp.Rank participant row in the sport carries an active object_round phase row at all, across every statistic that holds participants. The check reads a relation this sport never writes, so its eligible population is not empty today but permanently absent. This is the prerequisite failing rather than a count being small - the same reading would apply if the sport held ten phase rows or ten thousand. SPORTS/Soccer.md owns the finding."
-      },
-      "GLOBAL-DQ-026": {
-        "signal": "Monitor",
-        "reason": "Soccer writes two kinds of Comp.Rank and only one of them ranks anything. The (athletes) variant records who was in the squad and carries no 1270 Rank row at all, which SPORTS/Soccer.md documents as the structural split rather than a gap, so 65 of the sport's 490 statistics reach Medal_Set_Unreadable_Without_Rank by their normal shape. That is a proportion, not a repair list, and it is the same 65 the check already reported before it read Rank - only under a label that claimed their medals were missing. Two of the 65 do carry a medal without a rank and are a finding of their own, named in SPORTS/Soccer.md. The remaining output is actionable and is read past the roster population. SPORTS/Soccer.md owns the reasoning."
-      },
-      "GLOBAL-DQ-084": {
-        "signal": "Not applicable",
-        "reason": "Structural: the template's prerequisite is a head-to-head sport whose format admits no draw, and Soccer's does. A group match may legitimately end level, and so may one leg of a tie decided on aggregate, so the rule cannot be asserted at sport level - run wide it matched every drawn match and exhausted the server. The narrower rule that does hold, restricted to knockout rounds and excluding aggregate legs, is Soccer-DQ-022. SPORTS/Soccer.md owns the reasoning."
-      },
-      "GLOBAL-DQ-030": {
-        "signal": "Monitor",
-        "reason": "Most of the output is the lineup import rather than the data: roughly four fifths of the reported rows sit in tournaments carrying no active lineup at all, where the check has no mechanism through which to find the ranked participant and would report them however complete the entry was. The rows worth reading are the remainder, in tournaments that do carry lineups and where the participant is therefore genuinely unrepresented - athletes mostly, with a few coaches. Read the lineup state of the tournament before the count. SPORTS/Soccer.md owns the finding."
-      },
-      "GLOBAL-DQ-033": {
-        "signal": "Not applicable",
-        "reason": "The template's prerequisite is a sport confirmed to carry a Phase on ranked participants, and Soccer carries none: no Comp.Rank participant row in the sport holds an active object_round phase row. The check therefore reads a relation the sport never writes. This is the prerequisite failing, not a count being small - the same reading would apply at any population size. SPORTS/Soccer.md owns the finding."
-      },
-      "GLOBAL-DQ-037": {
-        "signal": "Not applicable",
-        "reason": "Structural, and the template says so itself: a head-to-head sport must not instantiate it, because its Final holds two participants, bronze is not awardable inside that one event, and every Final would be reported as missing it. Soccer decides bronze in its own match, so the per-round expectation belongs to GLOBAL-DQ-093 - instantiated as Soccer-DQ-017 - and the completeness of the medal set to the Comp.Rank layer. SPORTS/Soccer.md owns the reasoning."
-      },
-      "GLOBAL-DQ-107": {
-        "signal": "Not applicable",
-        "reason": "Structural: Soccer writes an event_scope container for a tie decided over two legs, not for an event. The check asserts that every finished event holds one, which is a shape this sport does not maintain - the single matches that make up almost all of it have nothing for a container to hold. The scope layer is used, and GLOBAL-DISCOVERY-009 and -010 record how; it simply does not sit at the level this check reads. SPORTS/Soccer.md owns the reasoning."
-      },
-      "GLOBAL-DQ-034": {
-        "signal": "Monitor",
-        "reason": "The check asserts five stage fields at once and Soccer populates host country through the sparse object_relation 4 to 33 path while leaving city empty, so nearly every stage is reported for those two fields alone. The direct tournament_stage.countryFK is present throughout, commonly holding the placeholder International. The proportion is the reading. SPORTS/Soccer.md owns the storage finding."
-      },
-      "GLOBAL-DQ-035": {
-        "signal": "Monitor",
-        "reason": "The statistic-layer twin of GLOBAL-DQ-034 and monitored for the same reason: the same core fields are asserted together and the same sparse relation carries one of them, so the check reports nearly the whole Comp.Rank population. SPORTS/Soccer.md owns the storage finding."
-      },
-      "GLOBAL-DQ-049": {
-        "signal": "Monitor",
-        "reason": "An event name in this sport is the pairing that plays it, written Home-Away with no spaces around the hyphen, and the convention holds without exception across every distinct name pattern in scope. The generic name-format rule therefore describes the naming convention rather than finding a defect in it, exactly as it does for Curling. SPORTS/Soccer.md owns the convention."
-      },
-      "GLOBAL-DQ-058": {
-        "signal": "Monitor",
-        "reason": "Lineups are this sport's membership mechanism and are richly typed, but they are not imported for every match - the older the event, the likelier it carries none. The check therefore measures how far lineup coverage reaches rather than naming a defect per event. A team with no lineup in a recent match remains worth reading inside the output. SPORTS/Soccer.md owns the reasoning."
-      },
-      "GLOBAL-DQ-074": {
-        "signal": "Monitor",
-        "reason": "venue_object is the global mechanism a sport can populate at any time, and Soccer is partway through the same backfill SPORTS/Curling.md records: most events resolve to no venue while the mechanism is plainly in use. The proportion is the finding and no single event is a defect. SPORTS/Soccer.md owns the finding."
-      },
-      "GLOBAL-DQ-096": {
-        "signal": "Monitor",
-        "reason": "The check asserts that an event name is made of its participants, which is exactly what DUPLICATE_KEY_INCLUDES_EVENT_NAME = 0 records for this sport, so the two are the same statement read from opposite ends. Its output is dominated by fixtures whose participants are not yet known and stand as placeholders such as Winner SF 1, where the name cannot name them yet. SPORTS/Soccer.md owns the reasoning."
-      },
-      "GLOBAL-DQ-068": {
-        "signal": "Monitor",
-        "reason": "The two sides of a Soccer match name their substitutes independently, so a lineup one or two members shorter than its opponent's is the competition's own arrangement rather than an incomplete entry. The check measures each event against itself and therefore reports a large share of the scope, which makes its output a proportion rather than a defect per event. SPORTS/Soccer.md owns the reasoning."
-      },
-      "GLOBAL-DQ-065": {
-        "signal": "Monitor",
-        "reason": "Squads entered in one competition do not field an identical number of athletes through the Comp.Rank Team field, so the check reports most of the statistics eligible for it. The proportion is the finding; a single uneven statistic is not a defect. It is the statistic-layer twin of GLOBAL-DQ-068 and is monitored for the same reason. SPORTS/Soccer.md owns the reasoning."
-      },
-      "GLOBAL-DQ-090": {
-        "signal": "Monitor",
-        "reason": "The check reads every event holding either of the mirrored score types and does not narrow to events that have been played, so its output is dominated by fixtures still to come - European Championship 2028 semi-finals carrying placeholder participants such as Winner SF 1, with a running score written and no final result yet. A mirrored pair that stopped being written for a finished match is the defect this check exists for and remains worth reading; the unplayed majority is the calendar. SPORTS/Soccer.md owns the reasoning."
-      }
-    }
-  },
-  "Modern-Pentathlon": {
-    "SPORT_ID": 42,
-    "PRECISION_RESULT_TYPE_LIST": "102",
-    "PRECISION_DATA_TYPE_LIST": "1271",
-    "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
-    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
-    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
-    "STATISTIC_TYPE_ID": 11,
-    "STATISTIC_OWNER_TYPE_ID": 3,
-    "SHARD_ID": 11,
-    "DATA_RANK_TYPE_ID": 1270,
-    "DATA_COMMENT_TYPE_ID": 1273,
-    "DATA_MEDAL_TYPE_ID": 1277,
-    "DATA_TIME_TYPE_ID": 1426,
-    "DATA_TIME_DIFFERENCE_TYPE_ID": 1427,
-    "DATA_DEPRECATED_DURATION_TYPE_ID": 1272,
-    "DATA_TEAM_TYPE_ID": 1429,
-    "CONFIG_START_DATE_TYPE_ID": 1463,
-    "CONFIG_END_DATE_TYPE_ID": 1464,
-    "CONFIG_GENDER_TYPE_ID": 1470,
-    "CONFIG_EVENT_ID_TYPE_ID": 1471,
-    "RESULT_RANK_TYPE_ID": 100,
-    "RESULT_TIE_VALUE_TYPE_LIST": "102",
-    "RESULT_COMMENT_TYPE_ID": 104,
-    "RESULT_MEDAL_TYPE_ID": 501,
-    "RESULT_SCORE_TYPE_ID": 102,
-    "ROUND_TYPE_LIST": "2, 38, 39, 40, 41, 42, 77, 89, 92, 152, 173, 178, 179, 251, 260",
-    "FINAL_ROUND_TYPE_LIST": "173",
-    "MEDAL_ROUND_TYPE_LIST": "173",
-    "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown'",
-    "RANK_MAX_PLAUSIBLE": 100,
-    "NOT_STARTED_DESC_LIST": "1, 5, 27, 34, 35, 39, 43, 44, 46, 50, 51, 55, 61, 63, 64, 67, 91, 94, 108, 110, 117, 121, 129, 133, 144, 146",
-    "STALE_NOT_STARTED_DAYS": 2,
-    "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
-    "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
-    "SERIES_MIN_YEARS": 3,
-    "SERIES_SKIP_YEARS": "2020",
-    "ELIMINATION_ROUND_NAME_LIST": "'semi finals', 'qualifier'",
-    "GROUP_ROUND_NAME_LIST": "'final', '1', '2', '3', '4', '5'",
-    "NUMERIC_RESULT_TYPE_LIST": "100, 102",
-    "NUMERIC_DATA_TYPE_LIST": "1270, 1271",
-    "RESULT_COMMENT_VALUE_LIST": "'eliminated', 'el', 'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'q', 'q/or', 'or', 'wr', 'n/a'",
-    "RESULT_COMMENT_NO_RESULT_LIST": "'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'n/a'",
-    "DATA_COMMENT_VALUE_LIST": "'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'disqualified', 'el', 'or', 'wr'",
-    "DATA_COMMENT_NO_RESULT_LIST": "'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'disqualified'",
-    "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
-    "_names": {
-      "SPORT_ID": "42 Modern Pentathlon",
-      "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
-      "PRECISION_RESULT_TYPE_LIST": "102 Points",
-      "PRECISION_DATA_TYPE_LIST": "1271 Points",
-      "DATA_RANK_TYPE_ID": "1270 Rank",
-      "DATA_COMMENT_TYPE_ID": "1273 Comment",
-      "DATA_MEDAL_TYPE_ID": "1277 Medal",
-      "DATA_TIME_TYPE_ID": "1426 Time",
-      "DATA_TIME_DIFFERENCE_TYPE_ID": "1427 Time Difference",
-      "DATA_DEPRECATED_DURATION_TYPE_ID": "1272 Duration",
-      "DATA_TEAM_TYPE_ID": "1429 Team",
-      "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
-      "CONFIG_END_DATE_TYPE_ID": "1464 End date",
-      "CONFIG_GENDER_TYPE_ID": "1470 Gender",
-      "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id",
-      "RESULT_RANK_TYPE_ID": "100 Rank",
-      "RESULT_TIE_VALUE_TYPE_LIST": "102 Points",
-      "RESULT_COMMENT_TYPE_ID": "104 Comment",
-      "RESULT_MEDAL_TYPE_ID": "501 Medal",
-      "RESULT_SCORE_TYPE_ID": "102 Points",
-      "ROUND_TYPE_LIST": "2 Semi Finals (knockout: yes), 38 1 (knockout: no), 39 2 (knockout: no), 40 3 (knockout: no), 41 4 (knockout: no), 42 5 (knockout: no), 77 40 (knockout: no), 89 1 (knockout: yes), 92 4 (knockout: yes), 152 Qualifier (knockout: yes), 173 Final (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 251 After Disciplines (knockout: no), 260 Bonus Round (knockout: no)",
-      "FINAL_ROUND_TYPE_LIST": "173 Final (knockout: no)",
-      "MEDAL_ROUND_TYPE_LIST": "173 Final (knockout: no)",
-      "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed",
-      "NUMERIC_RESULT_TYPE_LIST": "100 Rank, 102 Points",
-      "NUMERIC_DATA_TYPE_LIST": "1270 Rank, 1271 Points"
-    },
-    "_notApplicable": {
-      "SCOPE_TYPE_ID": "the sport has never written an event_scope row, active or removed; a probe of the same relation path without the deleted filter found none either, so there is no scope layer to read",
-      "SCOPE_TYPE_LIST": "the sport has never written an event_scope row, so it has no scope container types to list",
-      "SCOPE_PERIOD_DATA_TYPE_LIST": "the sport has never written an event_scope row, so there is no period set to list; its segments are separate events carrying a discipline rather than periods inside one event",
-      "SCOPE_PERIOD_SENTINEL_LIST": "the sport has never written an event_scope row, so it has no vocabulary for a period that was not played",
-      "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "the sport has never written an event_scope row, so the scope layer stores no column for an extra period",
-      "EXTRA_PERIOD_STATUS_DESC_LIST": "the sport contests no head-to-head fixture that could go to an extra period, and stores no scope column for one",
-      "RESULT_FINAL_SCORE_TYPE_ID": "the sport is not head to head; an event is a field ranked against itself rather than a pair holding one deciding score, and its result types are Rank, Points, Comment and Medal only",
-      "RESULT_MIRROR_SCORE_TYPE_ID": "the sport is not head to head; no result type mirrors a deciding score",
-      "WINNER_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
-      "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
-      "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
-      "RESULT_FULL_TIME_TYPE_ID": "no result type records elapsed time; a segment's time is stored on the Comp.Rank statistic rather than on the event result, so there is no absolute finishing time to assert on a result",
-      "RESULT_DURATION_TYPE_ID": "no result type records elapsed time or a gap to the leader; the result layer carries Rank, Points, Comment and Medal only",
-      "FULL_TIME_TOLERANCE_SECONDS": "the sport stores no time on a result, so there is no arithmetic between times to hold to a tolerance",
-      "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event (round type 173), so no separate round decides bronze"
-    },
-    "_checkSignal": {
-      "GLOBAL-DQ-028": {
-        "signal": "Not applicable",
-        "reason": "Structural: 1427 Time Difference does not exist in this sport. Not one row under any template, IOC or otherwise, so there is no leader/gap convention for the check to find broken - it reads a field the sport has never written. The absence is the sport's scoring model rather than a gap: modern pentathlon ranks on points, its event results carry Rank, Points, Comment and Medal and no duration or full time across 234 806 rows and 9 525 events, and its own deciding value is recorded as RESULT_TIE_VALUE_TYPE_LIST 102. Note what is nearby and does not change this: 1426 Time does exist, 753 rows over 44 statistics, but only under IOC templates, which every statistic check excludes in every branch by contract - so it is outside the eligible population of this check and of every other. Both parameters stay recorded because GLOBAL-DQ-029 and GLOBAL-DQ-057 read them meaningfully and would be skipped without them. Measured 2026-08-11; SPORTS/Modern-Pentathlon.md owns the evidence."
-      },
-      "GLOBAL-DQ-046": {
-        "signal": "Blocked",
-        "reason": "The two populations it needs never meet: every Comp.Rank carrying a Time value carries no object_discipline row, and every Comp.Rank carrying a discipline holds no Time. The check scopes on the sport's timed disciplines and reports a Time missing despite a Rank, so whatever discipline list it were given it would report every discipline-tagged statistic in the sport as defective - its normal shape. Blocked rather than not applicable because both structures are present and used; they are simply not attached to each other. It becomes meaningful the day one of the two is joined to the other, without the check changing. SPORTS/Modern-Pentathlon.md owns the evidence."
-      },
-      "GLOBAL-DQ-034": {
-        "signal": "Monitor",
-        "reason": "776 of the sport's 790 active stages are reported, and one field accounts for every one of them: the city relation, missing in 776 of 776 findings while name, gender, country and the host-country rule hold throughout. The check asserts five things at once, so the count reads as five failures and is one. The proportion is the finding. It belongs beside GLOBAL-DQ-035 and GLOBAL-DQ-074, which report the same underlying fact on the statistic and venue layers: this sport does not attach places."
-      },
-      "GLOBAL-DQ-035": {
-        "signal": "Monitor",
-        "reason": "1784 of the sport's 1801 Comp.Rank statistics are reported, and as on the stage layer a single field accounts for all of them: the city relation, missing in 1784 of 1784 findings while name, Gender config and country are present throughout. At 99 percent the absence is the sport's normal state rather than a defect per statistic, so the proportion is the finding. See GLOBAL-DQ-034 for the same reading on stages and GLOBAL-DQ-074 for the venue layer."
-      },
-      "GLOBAL-DQ-074": {
-        "signal": "Monitor",
-        "reason": "The sport attaches no venue anywhere: not one active venue_object row reaches an event or a tournament stage of this sport, on either of the two levels the check reads. It therefore reports every event, and the proportion - all of them - is the finding rather than any single row. It is Monitor and not Not applicable because venue_object is the global mechanism and the schema permits it here; what is absent is stored rows, not the structure, on the same reasoning SPORTS/Modern-Pentathlon.md already applies to the incident and scope layers. The check reports nothing the day venues start being recorded."
-      },
-      "GLOBAL-DQ-007": {
-        "signal": "Monitor",
-        "reason": "Date of birth is populated for a minority: 1756 of 4212 athletes entered in the sport's events carry the property, so the check reports a majority of the population it reads. The proportion is the finding and a single row is not a defect. Unlike the sports where the field is nearly untouched, the process that writes it plainly runs here and covers about two fifths, which is what makes the gap worth watching rather than dismissing."
-      },
-      "GLOBAL-DQ-082": {
-        "signal": "Not applicable",
-        "reason": "The template requires a tournament stage that groups a single discipline and forbids instantiation by a sport that legitimately runs several under one stage. This sport is one: a stage such as World Championships holds Fencing, Swimming, Riding, Laser Run and Overall events together, which is what a pentathlon is. Its whole population would be reported. The exclusion rests on how the sport composes a stage, not on how many stages hold several disciplines today."
-      },
-      "GLOBAL-DQ-096": {
-        "signal": "Not applicable",
-        "reason": "The template requires a sport that names its events after the competitors taking part in them, and forbids instantiation by a sport whose event names are codes, distances or round labels. This sport names its events after the discipline and the segment - Fencing, Swimming Final, Semi-Final A - After Fencing - so no participant name appears in any of them and its whole population would be reported. The same conclusion follows independently from DUPLICATE_KEY_INCLUDES_EVENT_NAME being 1 here, which GLOBAL_DQ/README.md records as incompatible with instantiating this template. The exclusion is structural: it rests on what the name is built from, not on how many events match today."
-      },
-      "GLOBAL-DQ-083": {
-        "signal": "Not applicable",
-        "reason": "The template requires a competition model of H2H, where an event is a contest between exactly two entries. This sport is Listing: an event is a field ranked against itself, and SPORTS.md records the model as measured from the sport's data rather than assigned. Every event in the sport would be reported. The exclusion is structural and independent of how many participants any event holds today, so it does not rest on a row count."
-      },
-      "GLOBAL-DQ-119": {
-        "signal": "Monitor",
-        "reason": "1266 of the sport's 9525 ranked events are reported, and the output mixes three populations a count cannot separate. 52 are a legitimate shape the template cannot see: Semi-Final A and Semi-Final B split one ranked field, so each holds a scattered subset of places that tile 1..N only together, verified as disjoint and complete across the pair. 733 have no group sibling at all and their sequence must be self-contained, so those breaks are real. The remaining 481 have group siblings that neither tile cleanly nor stand alone and cannot be classified without being read. The sport's fencing phases also tie heavily on a discrete score, which multiplies the chances of skipping wrongly, and some rows restate what Modern-Pentathlon-DQ-094 EVENT_RESULTS_RANK_ORDER_CONTRADICTS_POINTS already reports on the same events. Monitor rather than Blocked because the invariant holds for the majority, and rather than Actionable because a reader who treats every row as a repair will correct places the sport stores deliberately. SPORTS/Modern-Pentathlon.md owns the evidence."
-      }
-    }
-  },
-  "Golf": {
-    "SPORT_ID": 3,
-    "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
-    "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
-    "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
-    "STATISTIC_TYPE_ID": 11,
-    "STATISTIC_OWNER_TYPE_ID": 3,
-    "SHARD_ID": 11,
-    "DATA_RANK_TYPE_ID": 1270,
-    "DATA_MEDAL_TYPE_ID": 1277,
-    "CONFIG_START_DATE_TYPE_ID": 1463,
-    "CONFIG_END_DATE_TYPE_ID": 1464,
-    "CONFIG_GENDER_TYPE_ID": 1470,
-    "CONFIG_EVENT_ID_TYPE_ID": 1471,
-    "RESULT_RANK_TYPE_ID": 100,
-    "RESULT_COMMENT_TYPE_ID": 104,
-    "RESULT_MEDAL_TYPE_ID": 501,
-    "SCOPE_TYPE_ID": 305,
-    "SCOPE_TYPE_LIST": "305, 462, 463, 464, 465",
-    "ROUND_TYPE_LIST": "1, 2, 3, 4, 9, 19, 22, 23, 38, 39, 40, 41, 42, 43, 89, 90, 91, 92, 173, 176, 178, 184, 185, 186, 188, 225, 262, 263, 264, 304, 305",
-    "NOT_STARTED_DESC_LIST": "1",
-    "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649",
-    "_names": {
-      "SPORT_ID": "3 Golf",
-      "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "432 Ryder Cup 1, 435 Solheim Cup 1 (male, deleted), 438 Solheim Cup 1, 9142 Solheim Cup (deleted), 9201 PGA Tour of Australasia 1, 9418 Champions Tour 1, 9633 Korn Ferry Tour, 9645 Walker Cup 1, 9691 Asian Tour 1, 9692 Challenge Tour 1, 9693 Sunshine Tour 1, 9831 GolfSixes, 9932 Mixed, 10305 LIV Golf, 10333 GolfSixes alt test (deleted), 10334 GolfSixes test kris (deleted), 10341 Presidents Cup, 11528 Eisenhower Trophy, 11529 Espirito Santo Trophy, 12649 TEST",
-      "DATA_RANK_TYPE_ID": "1270 Rank",
-      "DATA_MEDAL_TYPE_ID": "1277 Medal",
-      "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
-      "CONFIG_END_DATE_TYPE_ID": "1464 End date",
-      "CONFIG_GENDER_TYPE_ID": "1470 Gender",
-      "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id",
-      "RESULT_RANK_TYPE_ID": "100 Rank",
-      "RESULT_COMMENT_TYPE_ID": "104 Comment",
-      "RESULT_MEDAL_TYPE_ID": "501 Medal",
-      "SCOPE_TYPE_ID": "305 final_result",
-      "SCOPE_TYPE_LIST": "305 final_result, 462 round1, 463 round2, 464 round3, 465 round4",
-      "ROUND_TYPE_LIST": "1 no round (knockout: no), 2 Semi Finals (knockout: yes), 3 Quarter Finals (knockout: yes), 4 1/8 (knockout: yes), 9 Final (knockout: yes), 19 Small Final (knockout: yes), 22 5/6 (knockout: yes), 23 7/8 (knockout: yes), 38 1 (knockout: no), 39 2 (knockout: no), 40 3 (knockout: no), 41 4 (knockout: no), 42 5 (knockout: no), 43 6 (knockout: no), 89 1 (knockout: yes), 90 2 (knockout: yes), 91 3 (knockout: yes), 92 4 (knockout: yes), 173 Final (knockout: no), 176 Quarter Finals (knockout: no), 178 Semi Finals (knockout: no), 184 1/8 (knockout: no), 185 1/16 (knockout: no), 186 Small Final (knockout: no), 188 1/32 (knockout: no), 225 Main Phase (knockout: no), 262 5/8 (knockout: no), 263 7/8 (knockout: no), 264 5/6 (knockout: no), 304 Playoff (knockout: no), 305 Playoff (knockout: yes)",
-      "NOT_STARTED_DESC_LIST": "1 Not started",
-      "DATA_COMMENT_TYPE_ID": "1273 Comment",
-      "DATA_TEAM_TYPE_ID": "1429 Team",
-      "DATA_TIME_TYPE_ID": "1426 Time",
-      "DATA_TIME_DIFFERENCE_TYPE_ID": "1427 Time Difference",
-      "DATA_DEPRECATED_DURATION_TYPE_ID": "1272 Duration",
-      "MEDAL_ROUND_TYPE_LIST": "225 Main Phase (knockout: no)",
-      "FINAL_ROUND_TYPE_LIST": "225 Main Phase (knockout: no)",
-      "RESULT_SCORE_TYPE_ID": "36 Par",
-      "RESULT_TIE_VALUE_TYPE_LIST": "36 Par",
-      "NUMERIC_RESULT_TYPE_LIST": "31 Strokes 1st round, 32 Strokes 2nd round, 33 Strokes 3rd round, 34 Strokes 4th round, 35 Strokes 5th round, 36 Par, 100 Rank, 526 Strokes points 1st round, 527 Strokes points 2nd round, 528 Strokes points 3rd round, 529 Strokes points 4th round, 540 Prize Money",
-      "INTEGER_RESULT_TYPE_LIST": "31 Strokes 1st round, 32 Strokes 2nd round, 33 Strokes 3rd round, 34 Strokes 4th round, 35 Strokes 5th round, 36 Par (a signed whole number of strokes: +2, 0, -2)",
-      "MEDAL_TEMPLATE_ID_LIST": "9600 Summer Olympics, 9601 Summer Olympics, 9779 European Championships 1, 10327 Pan American Games, 10328 Asian Games, 10537 Pacific Games, 10538 Pacific Games, 11498 Summer Youth Olympics, 11507 British Boys Amateur Championship, 11524 British Girls Amateur Championship, 11525 European Girls' Team Championship, 11526 European Boys' Team Championship, 11532 Southeast Asian Games",
-      "NUMERIC_DATA_TYPE_LIST": "1270 Rank, 1271 Points, 1476 Par",
-      "PRECISION_RESULT_TYPE_LIST": "540 Prize Money",
-      "PRECISION_DATA_TYPE_LIST": "1476 Par"
-    },
-    "_notApplicable": {
-      "LINEUP_TYPE_LIST": "the sport writes no lineup row at all; a foursome is stored as one athlete participant holding both names",
-      "RESULT_FINAL_SCORE_TYPE_ID": "no mirrored score pair: 4 finalresult and 39 mpscore hold related but distinct figures, not one figure stored twice. Of the event participants holding either, 14960 hold both and disagree - won against WO, 0 against 1 - and only 19 agree",
-      "RESULT_MIRROR_SCORE_TYPE_ID": "the other half of the pair that does not exist; see RESULT_FINAL_SCORE_TYPE_ID",
-      "RESULT_FULL_TIME_TYPE_ID": "the sport records no time or duration result type; its 17 types measure strokes, points, par, rank, money and status",
-      "RESULT_DURATION_TYPE_ID": "the sport records no time or duration result type",
-      "TIMED_DISCIPLINE_LIST": "neither discipline is timed; Stroke Play and Match Play both resolve on strokes",
-      "FULL_TIME_TOLERANCE_SECONDS": "no time is recorded, so no tolerance applies",
-      "BRONZE_ROUND_TYPE_LIST": "bronze is not decided in an event of its own: all 18 medal results sit in round type 225 Main Phase, six gold, six silver and six bronze across the same six events",
-      "SCOPE_PERIOD_DATA_TYPE_LIST": "deferred with the hole-by-hole scope layer, which is outside the DQ work by decision on 2026-08-12",
-      "SCOPE_PERIOD_SENTINEL_LIST": "deferred with the hole-by-hole scope layer",
-      "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "deferred with the hole-by-hole scope layer",
-      "EXTRA_PERIOD_STATUS_DESC_LIST": "deferred with the hole-by-hole scope layer",
-      "WINNER_VALUE_LIST": "the winner property is not recorded for any sport in this package; deferred there rather than decided here",
-      "WINNER_HOME_VALUE_LIST": "see WINNER_VALUE_LIST",
-      "WINNER_AWAY_VALUE_LIST": "see WINNER_VALUE_LIST"
-    },
-    "DATA_COMMENT_TYPE_ID": 1273,
-    "DATA_TEAM_TYPE_ID": 1429,
-    "DATA_TIME_TYPE_ID": 1426,
-    "DATA_TIME_DIFFERENCE_TYPE_ID": 1427,
-    "DATA_DEPRECATED_DURATION_TYPE_ID": 1272,
-    "MEDAL_ROUND_TYPE_LIST": "225",
-    "PLACEHOLDER_COUNTRY_LIST": "'International'",
-    "RANK_MAX_PLAUSIBLE": 250,
-    "STALE_NOT_STARTED_DAYS": 2,
-    "SERIES_MIN_YEARS": 3,
-    "FINAL_ROUND_TYPE_LIST": "225",
-    "RESULT_COMMENT_VALUE_LIST": "'wd', 'mdf', 'dq', 'mc', 'rtd', 'sub', 'nr', 'dns', 'n/r'",
-    "RESULT_COMMENT_NO_RESULT_LIST": "'dq', 'rtd', 'dns', 'nr', 'n/r'",
-    "RESULT_SCORE_TYPE_ID": 36,
-    "RESULT_TIE_VALUE_TYPE_LIST": "36",
-    "NUMERIC_RESULT_TYPE_LIST": "31, 32, 33, 34, 35, 36, 100, 526, 527, 528, 529, 540",
-    "INTEGER_RESULT_TYPE_LIST": "31, 32, 33, 34, 35, 36",
-    "MEDAL_TEMPLATE_ID_LIST": "9600, 9601, 9779, 10327, 10328, 10537, 10538, 11498, 11507, 11524, 11525, 11526, 11532",
-    "ELIMINATION_ROUND_NAME_LIST": "'semi finals', 'quarter finals', '1/8', '1/16', '1/32', 'small final', 'playoff'",
-    "GROUP_ROUND_NAME_LIST": "'main phase', 'final'",
-    "NUMERIC_DATA_TYPE_LIST": "1270, 1271, 1476",
-    "PRECISION_RESULT_TYPE_LIST": "540",
-    "PRECISION_DATA_TYPE_LIST": "1476",
-    "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
-    "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
-    "SERIES_SKIP_YEARS": "2020",
-    "DATA_COMMENT_VALUE_LIST": "'wd', 'mdf', 'dq', 'mc', 'rtd', 'sub', 'nr', 'dns', 'n/r'",
-    "DATA_COMMENT_NO_RESULT_LIST": "'dq', 'rtd', 'dns', 'nr', 'n/r'",
-    "_expected": {
-      "Golf-DQ-091": {
-        "expect": "Residual",
-        "residual": 2,
-        "reason": "Tokyo kept the name 2020 and was played on 29 July and 4 August 2021, so the men's and women's tournaments both run past the year they are named for and always will. Recorded as a residual rather than filtered out of the statement, because a filter would also hide the next tournament that genuinely runs into the following year."
-      }
-    },
-    "_checkSignal": {
-      "Golf-DQ-089": {
-        "signal": "Monitor",
-        "reason": "542 of 13059 Match Play events name a competitor the participant record no longer calls by that name, and a large share of them are the data ageing correctly rather than a defect: the event name is the day's snapshot and the record is current, so Mina Harigae is now Mina Kreiter, Lauren Hartlage is Lauren Tenuta and Michelle Wie is Michelle Wie West. Marrying does not rename a 2010 match. Real misspellings sit in the same output and are what a reviewer is looking for - Laura Gonzales against Gonzalez, So Yeon Ryu against So-Yeon Ryu, Maria J. Uribe against Maria Uribe - so the check runs and a human separates the two. Decided 2026-08-13; nothing in the database records a name history, which is why the two cannot be told apart in SQL."
-      },
-      "GLOBAL-DQ-041": {
-        "signal": "Not applicable",
-        "reason": "Structural: the template's prerequisite is a sport confirmed to carry a Phase on its Comp.Rank participants, and Golf carries none. All 359344 active Comp.Rank participant rows in the sport hold no object_round phase row, so the check reads a relation the sport never writes. Its eligible count is non-zero because it counts medals, which makes the silence look like clean data; it is not. SPORTS/Golf.md owns the finding."
-      },
-      "GLOBAL-DQ-068": {
-        "signal": "Not applicable",
-        "reason": "Structural: the sport writes no lineup row anywhere. A foursome is stored as one athlete participant holding both names, so there is no lineup whose size could be uneven and eligible_count is 0 by construction rather than by a thin population."
-      },
-      "GLOBAL-DQ-057": {
-        "signal": "Monitor",
-        "reason": "eligible_count is 0 and this is a sentinel, not a misdirected scope: statistic_data11 declares the 1273 Comment field for statistic type 11 and Golf writes no row into it today. The scope is correct and the population is legitimately empty, so the check stands ready for the first Comp.Rank comment the sport writes. SPORTS/Golf.md owns the distinction."
-      },
-      "GLOBAL-DQ-065": {
-        "signal": "Monitor",
-        "reason": "eligible_count is 0 for the same reason as GLOBAL-DQ-057: the 1429 Team data field is declared for statistic type 11 and Golf writes no row into it. The sport does field teams - the Ryder Cup and Presidents Cup sides - so the population is legitimately empty rather than structurally absent."
-      },
-      "GLOBAL-DQ-033": {
-        "signal": "Not applicable",
-        "reason": "Structural: the template's prerequisite is a sport confirmed to carry a Phase on ranked Comp.Rank participants, and Golf carries none - all 359344 active participant rows hold no object_round phase row. The check reports 3355 of 3355 statistics, which is the absence itself rather than a finding. SPORTS/Golf.md owns it."
-      },
-      "GLOBAL-DQ-058": {
-        "signal": "Not applicable",
-        "reason": "Structural: the sport writes no lineup row anywhere, so every one of its 1287 team event participants is reported and the check returns 1287 of 1287. A foursome is stored as one athlete participant holding both names; there is no lineup layer to be missing from."
-      },
-      "GLOBAL-DQ-037": {
-        "signal": "Not applicable",
-        "reason": "Golf identifies a medal event by template, not by round type, and no parameter can express that while the whole sport is in scope. MEDAL_ROUND_TYPE_LIST is 225 because every one of the sport's 18 medals sits there, but only Summer Olympics awards them - 6 events of the 5020 that round type carries. Asserting that every Main Phase event owes a medal set reports 4751 of 4768. The same list read the other way is correct, which is why GLOBAL-DQ-039 and GLOBAL-DQ-073 stay and return clean."
-      },
-      "GLOBAL-DQ-038": {
-        "signal": "Not applicable",
-        "reason": "The same asymmetry as GLOBAL-DQ-037: it asserts that every medal-round event carries the medal_related property, and Golf's medal rounds are 5020 stroke-play events of which 6 award a medal. Reports 4764 of 4768."
-      },
-      "GLOBAL-DQ-007": {
-        "signal": "Monitor",
-        "reason": "10482 of 20547 people reached through the sport hold no date of birth. Half a registry is a completeness proportion rather than a repair list, and the sport's registry is large and old; the rows are correct and there are simply a great many of them."
-      },
-      "GLOBAL-DQ-071": {
-        "signal": "Monitor",
-        "reason": "159 of the 170 events reported are NO_PARTICIPANTS_NOT_FINISHED_EVENT, and they are the sport's calendar running ahead of its entry lists: Hero World Challenge is dated December 2026 and Andalucia Open de Espana November 2026, announced and not yet fielded. A tour publishes its schedule long before anyone enters, so an unplayed event holding no participant is the normal state rather than a gap. The 11 NO_PARTICIPANTS_FINISHED_EVENT rows are the ones worth reading and stay visible under the same check - all eleven are match-play events from 2004 to 2010, WGC Accenture Match Play and HSBC World Match Play among them, and not one of them left with the client boundary. Decided 2026-08-13, re-measured the same day inside the boundary: the unplayed half fell from 295 to 159 and the readable half did not move."
-      },
-      "GLOBAL-DQ-074": {
-        "signal": "Monitor",
-        "reason": "Golf records its course in the tournament_stage Venue property, on 5176 stages sport-wide, and uses the global venue_object relation for part of its events only - inside the client boundary 7560 of 16544 carry one and 8984 do not. The check reads the relation, so what it reports is how far that mechanism has been populated rather than a per-event defect. SPORTS/BMX.md records the same reading for a sport at nought per cent. Confirmed as Monitor on 2026-08-13."
-      },
-      "GLOBAL-DQ-064": {
-        "signal": "Monitor",
-        "reason": "eligible_count is 0 and this is a sentinel: the template's eligible population is the statistic that uses the 1429 Team field at all, and Golf writes no row into it. The scope is correct and the population is legitimately empty."
-      },
-      "GLOBAL-DQ-083": {
-        "signal": "Not applicable",
-        "reason": "Structural, and the template says the condition itself: it applies to a sport whose competition model is H2H per DB-SEM-015, where an event is a contest between exactly two entries. Golf is Hybrid. Its 5142 Stroke Play events hold the whole field at once - up to 250 entries - so the check reports 7535 of 19136 events for competing the way the sport competes. Match play alone would satisfy the prerequisite; the sport does not."
-      },
-      "GLOBAL-DQ-112": {
-        "signal": "Not applicable",
-        "reason": "Structural: eligible_count is 0 because the sport writes no lineup row anywhere, so no athlete can be assigned to two of them. Unlike GLOBAL-DQ-057 and GLOBAL-DQ-064 this is not a sentinel - the layer is absent rather than empty, and a foursome is stored as one athlete participant holding both names."
-      },
-      "GLOBAL-DQ-043": {
-        "signal": "Not applicable",
-        "reason": "Structural: the template applies only where a team entry has at least one active lineup row, and the sport writes no lineup row anywhere. It returns 0 of 585086 event participants, and the eligible branch overstates its own population - it counts entries in scope rather than entries holding a lineup, so the 585086 is not a population this check could ever have audited. Same absence as GLOBAL-DQ-058, GLOBAL-DQ-067, GLOBAL-DQ-068 and GLOBAL-DQ-112."
-      },
-      "GLOBAL-DQ-067": {
-        "signal": "Not applicable",
-        "reason": "Structural: eligible_count is 0 because the sport writes no lineup row, so no mixed team can hold an uneven one. The layer is absent rather than empty, which is why this is not a sentinel like GLOBAL-DQ-066."
-      },
-      "GLOBAL-DQ-066": {
-        "signal": "Monitor",
-        "reason": "eligible_count is 0 and this is a sentinel on the same footing as GLOBAL-DQ-064 and GLOBAL-DQ-065: statistic_data11 declares the 1429 Team field for statistic type 11 and Golf writes no row into it, so no statistic can be measured for team gender balance. The field exists and the sport has not used it; the day it does, the check is already pointed at it."
-      },
-      "GLOBAL-DQ-028": {
-        "signal": "Monitor",
-        "reason": "eligible_count is 0 and this is a sentinel: statistic_data11 declares the 1427 Time difference field for statistic type 11 and Golf writes no row into it, which is expected of a sport whose 17 result types measure strokes, points, par, rank, money and status and never time. Same shape as GLOBAL-DQ-057 on the 1273 Comment field."
-      },
-      "Golf-DQ-095": {
-        "signal": "Monitor",
-        "reason": "368 of the 369 rank outliers this and Golf-DQ-094 report together sit before 2015, one is from 2016 and none is later, so the volume is a legacy import rather than a live defect. The invariant still guards what arrives tomorrow, which is why the check is written rather than dropped."
-      },
-      "Golf-DQ-036": {
-        "signal": "Monitor",
-        "reason": "742 of the sport's 20638 registered people hold no event entry, no lineup place and no Comp.Rank row anywhere - 619 with an active registration and 123 without. They are historic golfers whose tournaments are not in the database rather than broken references: the repair is either importing decades of events or removing the registration, and neither is a decision a reviewer makes row by row. Measured 2026-08-14. Note that participation is read without the client boundary, which is deliberate: a further 5140 registered people play only under the twenty excluded templates, and they do participate - just not in this client's scope."
-      },
-      "Golf-DQ-022": {
-        "signal": "Monitor",
-        "reason": "566 of 3125 Comp.Rank hold a place twice, 342 of them more than one such place. A shared place is how golf finishes: two players on the same score are both T5, and the score beside them is the explanation. The template asks for that explanation in the 1273 Comment data field, and Golf writes no row into that field anywhere - GLOBAL-DQ-057 records the same absence as a sentinel - so every legitimate tie in the sport is reported and no amount of correction would empty this list. Read as a count of shared places rather than a repair list. Decided 2026-08-14."
-      },
-      "Golf-DQ-024": {
-        "signal": "Monitor",
-        "reason": "484 event participants carry a Comment saying they have no result while still holding one: 422 DQ, 51 RTD, 7 NR, 2 DNS, 2 N/R, of which 459 hold a Rank and 25 a score. The place a competitor occupied when the disqualification or retirement was recorded is kept beside it rather than removed, which is a storage habit of the sport rather than a contradiction to repair row by row. Decided 2026-08-14; the check stays because the same shape would report a genuine contradiction identically."
-      }
-    }
-  }
 }
