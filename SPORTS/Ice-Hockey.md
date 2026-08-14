@@ -243,7 +243,32 @@ is the larger of the two**: `152 assists` alone holds 31952 values over 1047 con
 
 The boxscore is what makes the 12 per cent reach of the scope layer bearable rather than a
 defect: a match without it is a match nobody typed a boxscore for, not a match with a missing
-score. `GLOBAL-DQ-107` reports all 8410 of them and is deliberately not instantiated.
+score. It is still an absence somebody has to answer for, so `GLOBAL-DQ-107` is instantiated as
+`Ice-Hockey-DQ-087` and reports 8410 of them.
+
+**The period is the container here, not a field inside one, and four templates read the
+opposite.** Most sports store a period-by-period score as several `scope_data_type` columns
+inside one scope; ice hockey gives each period its own `scope_type` - `322`, `323`, `324` - and
+puts a single `162 goals` field in each. `GLOBAL-DQ-086`, `-091` and `-092` all group on the
+data type and find nothing to group, and `GLOBAL-DQ-089` looks for an extra-period column that
+does not exist: the extra period is `310 overtime`, its own container on 133 events, and it
+carries no `162 goals` field either, so the overtime score is readable only from result type
+`2 Extra time`. All four are recorded `Not applicable` in `SPORTS/params.json` on that ground.
+
+The question `GLOBAL-DQ-091` asks survives the inversion, and **`Ice-Hockey-DQ-089`** asks it on
+the sport's own axis: whether a period is stored for some sides of an event and not all, or
+twice for one. Measured 2026-08-14 it returns 0 findings over 882 eligible events - both teams
+carry every period they played, and none is written twice. It is kept because the invariant is
+real and the layer is being filled, not because it found something.
+
+Two of the template parameters are empty by measurement rather than unrecorded.
+`SCOPE_PERIOD_SENTINEL_LIST` is empty: the period values are the plain numbers `0` to `9`, with
+no symbol for a period that was not played, so `GLOBAL-DQ-086` has no vocabulary to assert and
+`GLOBAL-DQ-092` has no sentinel whose position could be wrong.
+
+**One negative value exists in the whole scope layer.** Event `4332332` holds
+`167 faceoff_total_wins = -1` under `310 overtime`, and it is the only value in any scope field
+of the boundary that begins with a minus. Nothing reads it yet.
 
 <!-- MANUAL PASTE ZONE: 5 SCOPES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -457,6 +482,11 @@ paragraph in it is a first reading.
 2. **Do the period result types and the period scope types describe the same games?**
    `51`–`53` reach 8501 to 9803 events, `322`–`324` reach 898. Whether the 898 are a subset and
    whether the two agree where both exist is unmeasured, and a period check has to know.
+   Narrowed 2026-08-14: the scope side is now measured whole - 882 events carry `162 goals`
+   under all three period containers, values `0` to `9`, no blanks and no sentinel - so what
+   remains open is only whether those 882 agree with the result types on the same events.
+   `Ice-Hockey-DQ-089` does not depend on the answer, because it compares the two sides of one
+   event with each other and never with the result layer.
 3. **Does the `Round` property agree with `event.round_typeFK`?** Both are on every event in
    the boundary and neither has been read against the other.
 4. ~~**What are the 202 events holding a period score and no Final Result?**~~ Answered

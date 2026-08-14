@@ -589,3 +589,104 @@ WHERE op.object = 'sport'
   -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
 
 ORDER BY sort_order, participant_type, participant_name;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-089
+    -- Name - EVENT_SCOPE_PERIOD_NOT_STORED_FOR_BOTH_SIDES
+    -- What it does: Flags events where a period is missing for some participants or stored more than once for one participant.
+    CASE
+        WHEN x.short_period_count > 0 THEN 'PERIOD_MISSING_FOR_SOME_PARTICIPANTS'
+        ELSE 'PERIOD_STORED_MORE_THAN_ONCE'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    x.event_participant_count,
+    x.short_period_count,
+    x.short_periods,
+    x.duplicated_period_count,
+    x.duplicated_periods,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds events where one period of the boxscore is stored for
+-- some sides and not all, or twice for one side, so the two teams disagree about which
+-- periods exist.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+-- The sport variant of GLOBAL-DQ-091, and it exists because the template cannot be
+-- instantiated here at all. That template reads a period as a scope_data_type inside one
+-- scope container, which is how most sports store a period-by-period score. Ice hockey
+-- inverts it: the period is the container - 322 period1, 323 period2, 324 period3 - and
+-- carries a single 162 goals field. The question is identical and the axis is not, so the
+-- grouping is on es.scope_typeFK where the template groups on sr.scope_data_typeFK.
+-- SPORTS/Ice-Hockey.md records the inversion and POWERBI.md the Not applicable it produced.
+JOIN (
+    SELECT
+        p.event_id,
+        p.event_participant_count,
+        SUM(CASE WHEN p.sides_with_row < p.event_participant_count THEN 1 ELSE 0 END) AS short_period_count,
+        GROUP_CONCAT(CASE WHEN p.sides_with_row < p.event_participant_count THEN p.period_name END
+                     ORDER BY p.period_id SEPARATOR ', ') AS short_periods,
+        SUM(CASE WHEN p.row_count > p.sides_with_row THEN 1 ELSE 0 END) AS duplicated_period_count,
+        GROUP_CONCAT(CASE WHEN p.row_count > p.sides_with_row THEN p.period_name END
+                     ORDER BY p.period_id SEPARATOR ', ') AS duplicated_periods
+    FROM (
+        SELECT
+            es.eventFK AS event_id,
+            es.scope_typeFK AS period_id,
+            COALESCE(st.name, CAST(es.scope_typeFK AS CHAR)) AS period_name,
+            COUNT(DISTINCT sr.event_participantsFK) AS sides_with_row,
+            COUNT(*) AS row_count,
+            (
+                SELECT COUNT(*)
+                FROM event_participants epc
+                WHERE epc.eventFK = es.eventFK AND epc.del = 'no'
+            ) AS event_participant_count
+        FROM scope_result sr
+        JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+                           AND es.scope_typeFK IN (322, 323, 324)
+        JOIN event e2 ON e2.id = es.eventFK AND e2.del = 'no'
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+             AND tt2.sportFK = 5
+        LEFT JOIN scope_type st ON st.id = es.scope_typeFK
+        WHERE sr.del = 'no'
+          AND sr.scope_data_typeFK = 162
+          AND t2.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+        GROUP BY es.eventFK, es.scope_typeFK, st.name
+    ) p
+    GROUP BY p.event_id, p.event_participant_count
+) x ON x.event_id = e.id
+WHERE e.del = 'no'
+  AND (x.short_period_count > 0 OR x.duplicated_period_count > 0)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT es.eventFK) AS eligible_count,
+    1 AS sort_order
+FROM scope_result sr
+JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+                   AND es.scope_typeFK IN (322, 323, 324)
+JOIN event e ON e.id = es.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+WHERE sr.del = 'no'
+  AND sr.scope_data_typeFK = 162
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, event_startdate, event_id;
