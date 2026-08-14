@@ -56,7 +56,7 @@ $ClientScopeKey = 'OUT_OF_SCOPE_TEMPLATE_ID_LIST'
 # validator's own copy rather than imported: Run-Query.ps1 activates it and this only counts it,
 # and a tool that fails a package must not need the tool it is checking to be loadable.
 $TemplateFilterMarkerPattern =
-'(?m)^[ \t]*--[ \t]*AND[ \t]+\w+\.(id|tournament_templateFK)[ \t]*=[ \t]*<tournament_template_id>[ \t]*$'
+'(?m)^[ \t]*--[ \t]*AND[ \t]+\w+\.(id|tournament_templateFK)[ \t]*=[ \t]*<tournament_template_id>[ \t]*\r?$'
 
 # Actionable is the default and is never recorded. Deprecated is absent on purpose:
 # POWERBI_REGISTRY.md's Status column owns it, and a value with two owners drifts.

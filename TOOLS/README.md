@@ -273,6 +273,22 @@ eight of them cost eight times the scan; cutting it up would turn one honest fai
 long run of them. Server-side cost is corrected in the statement, by narrowing the population
 before it groups or sorts. `WORKFLOW.md` owns that correction.
 
+The rule was broken once, on 2026-08-14, and the cost is recorded here so it is not broken
+again. A timeout had been made to cut like a large result does, on the reasoning that a
+primary-key window lets the optimiser drive from it and each window really does read a
+fraction: `GLOBAL-DQ-030` on Golf timed out over the whole statistic range and returned a
+thirty-second of it in 2.1 seconds. The reasoning was sound and the arithmetic was not. Cutting
+that check into 32 windows made it finishable at 843 seconds — every window a full request
+against the largest statistic tables in the database — and left the server answering `504` to a
+three-table `COUNT(*)` for hours afterwards, which stopped the day's work for everyone using it.
+Rewriting the same check as one statement returned the identical 13 findings in 9 seconds.
+
+So a slow statement is never cut, whatever the window keys on. **Never more than one window is
+opened for a statement that failed on time.** A statement that will not run is a statement to
+redesign, and the redesign has been cheaper than the cut every time it has been tried. Anything
+that reads the whole of a shard table to answer a per-row question is asking the wrong question,
+and the runner is not the place to make a wrong question affordable.
+
 Cutting works off the same kind of commented marker the template flag uses:
 
 ```sql
