@@ -245,6 +245,29 @@ other sports' vocabularies - `penalty_stroke_9` (415), `clock_penalty_4` (489),
 476, 747), which do read as golf. Whether the penalty names are a shared generic id or a
 misfiled value is an open question below.
 
+**How the layer divides, measured 2026-08-14 inside the client boundary.** `scope_result` holds
+21830092 active values under the five types, and 99.1 per cent of them are the hole-by-hole
+rounds:
+
+| scope_typeFK | Name | Active values | Share |
+|---:|---|---:|---:|
+| 462 | round1 | 7005919 | 32.1% |
+| 463 | round2 | 6940111 | 31.8% |
+| 464 | round3 | 4182206 | 19.2% |
+| 465 | round4 | 3515383 | 16.1% |
+| 305 | final_result | 186509 | 0.9% |
+
+That proportion is why `GLOBAL-DQ-102` cannot be run for this sport and why `Golf-DQ-097`
+replaces it over `final_result` alone: the four round types are the hole-by-hole layer this file
+parked on 2026-08-12, so auditing them here would take that decision sideways through a check.
+The cost is real as well as procedural - counting the rows takes 140 seconds, and grouping them
+by type exhausted the server's temporary disk outright.
+
+`Golf-DQ-097` returns clean, and the zero was checked rather than assumed: all 186509
+`final_result` values resolve to an event participant of their own event, none to another
+event's and none to a participant row that is missing. What is not covered is stated plainly - a
+value under `round1` to `round4` naming another event's competitor is reported by nothing today.
+
 <!-- MANUAL PASTE ZONE: 3 SCOPES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Properties

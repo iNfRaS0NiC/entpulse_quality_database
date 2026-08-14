@@ -1215,3 +1215,93 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, missing_count DESC, event_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-097
+    -- Name - EVENT_SCOPE_RESULT_OWNER_EVENT_MISMATCH_FINAL_RESULT
+    -- What it does: Finds final_result scope values naming an event participant from a different event, or one that is not active, so the value is attached to a competitor who did not play it.
+    CASE
+        WHEN x.participant_row_missing_count > 0 THEN 'SCOPE_RESULT_PARTICIPANT_ROW_MISSING'
+        ELSE 'SCOPE_RESULT_OWNER_EVENT_MISMATCH'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.tournament_stage_name,
+    x.offending_row_count,
+    x.sample_row,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- GLOBAL-DQ-102 narrowed to one scope type, because the whole layer cannot be read. The
+-- invariant is the same and is a pure relational one: a scope value reaches an event twice
+-- over, once through the container it hangs off and once through the participant it names, and
+-- the two have to arrive at the same event. Nothing a sport does with rounds or holes can make
+-- them disagree legitimately.
+--
+-- Golf writes five scope types and 21830092 active values under them, measured 2026-08-14, and
+-- 99.1 per cent of that sits under round1 to round4: 7005919, 6940111, 4182206 and 3515383
+-- against 186509 for final_result. Those four are the hole-by-hole layer, which SPORTS/Golf.md
+-- parked on 2026-08-12 as deliberately outside the DQ work - so reading them here would be a
+-- decision taken sideways by a check rather than the one already on record. It is also not
+-- affordable: counting the rows takes 140 seconds and grouping them exhausted the server's
+-- temporary disk outright.
+--
+-- What that gives up is written down rather than implied. A scope value under round1 to round4
+-- naming another event's competitor is not reported by anything. The day the hole-by-hole layer
+-- is taken up, this check is where the other four types belong, and its whole shape already
+-- fits them.
+--
+-- The missing participant row is reported by the same check because it is the same failed
+-- resolution: a scope value whose participant cannot be reached is attached to nobody, and
+-- separating it into its own CheckID would split one broken reference in two.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        ts.name AS tournament_stage_name,
+        COUNT(*) AS offending_row_count,
+        SUM(CASE WHEN ep.id IS NULL THEN 1 ELSE 0 END) AS participant_row_missing_count,
+        MIN(CONCAT('scope=', es.id,
+                   ' scope_event=', es.eventFK,
+                   ' ep=', sr.event_participantsFK,
+                   ' ep_event=', COALESCE(CAST(ep.eventFK AS CHAR), 'none'))) AS sample_row
+    FROM scope_result sr
+    JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+         AND es.scope_typeFK IN (305)
+    JOIN event e ON e.id = es.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 3
+    LEFT JOIN event_participants ep ON ep.id = sr.event_participantsFK AND ep.del = 'no'
+    WHERE sr.del = 'no'
+      AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      AND (ep.id IS NULL OR ep.eventFK <> es.eventFK)
+    GROUP BY e.id, e.name, ts.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM scope_result sr
+JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+     AND es.scope_typeFK IN (305)
+JOIN event e ON e.id = es.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 3
+WHERE sr.del = 'no'
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_id;
