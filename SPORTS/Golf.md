@@ -249,6 +249,50 @@ above, and it defeats the direction of any check that assumes lower is better. `
 reports the eleven events by what the storage shows rather than by the tournament they belong to,
 under `TOTAL_PAR_HOLDS_THE_ROUND_TOTAL_NOT_THE_SCORE`.
 
+**The cut is not always after two rounds, and nothing records when it fell.** Found 2026-08-14
+while writing `Golf-DQ-102` and `Golf-DQ-103`. Four tournaments cut after 54 holes, so their
+eliminated players correctly hold a third round: AT&T Pebble Beach Pro-Am, The American Express,
+Alfred Dunhill Links Championship and Office Depot Championship 2005. Measured, the shape reaches
+the field - 87 of 156 at The American Express 2024, 106 of 168 at Alfred Dunhill Links 2021, 66
+of 144 at Office Depot 2005 - against one to three cards where a flag is simply wrong. 161 events
+carry it and 6657 cards, which is why both checks read the field share rather than the card.
+
+The same structure is the honest discriminator and a count is not: an event in which any card
+flagged `made_cut = no` holds a third round did not cut after two, so a 36-hole comparison is the
+wrong comparison there whatever its size. `Golf-DQ-102` excludes those events on that test.
+
+**`mdf` sits beside `made_cut = yes` twelve times out of thirteen, and the exceptions cluster.**
+Measured 2026-08-14 inside the client boundary: 1429 `mdf` cards carry the flag `yes` and 118
+carry `no`, the second group concentrated in 14 events rather than scattered across the sport. The
+convention is `yes`, which follows from what the comment means - made the cut, did not finish - so
+the 118 are the defect. `Golf-DQ-103` reports them.
+
+**A withdrawal or a disqualification legitimately breaks the cut ordering.** 531 cards inside the
+boundary sit on the wrong side of their event's cut line and end `wd`, `dq`, `rtd`, `dns`, `nr` or
+`n/r`. A player who withdraws after a good Friday is flagged as not having made the cut whatever
+they scored, so the comment explains the card and no check should. This is the same reading that
+keeps `wd` out of `RESULT_COMMENT_NO_RESULT_LIST` above, applied to a different question.
+
+**The stroke fields hold three populations, and only one of them is strokes.** Measured
+2026-08-14 over 1097936 numeric values in `31`–`35` inside the boundary: 1088665 sit between 59
+and 119, which is the sport; 3934 sit under 55, which is Modified Stableford points in a stroke
+field; 2976 are `0`; 51 sit between 55 and 58, low but reachable; and 310 sit above 120, up to
+224, which is a raw total written into a round.
+
+The zeros are read two different ways by design, and that is the question changing rather than an
+inconsistency. Where a statement does arithmetic on strokes - `Golf-DQ-102`, `Golf-DQ-104` - a
+zero is absent, because eighteen holes are not played in no strokes. Where a statement asks
+whether the field was filled in at all - `Golf-DQ-106` - a zero is present, because somebody wrote
+it, and a Stableford round worth no points is a real round.
+
+**An amateur is paid nothing, and the finishing order does not care.** Found 2026-08-14 while
+writing `Golf-DQ-107`. 24 cards inside the boundary carry a prize of zero beside a place that
+would have been paid, across thirteen 2026 LPGA events; Kiara Romero was placed sixth in the US
+Women's Open with nothing beside a paid seventh. The Rules of Amateur Status forbid accepting the
+money, so the zero is correct and the rank is correct. 123 participants inside the boundary hold
+only zero-prize cards and 229 hold both, the second group being professionals who missed cuts.
+Any check reading `540 Prize money` against a placing has to compare only cards actually paid.
+
 <!-- MANUAL PASTE ZONE: 3 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types

@@ -148,7 +148,6 @@ WHERE s.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-087
@@ -304,7 +303,6 @@ WHERE ep.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, affected_count DESC, event_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-088
@@ -392,7 +390,6 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, violation_types, event_name;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-089
@@ -485,7 +482,6 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_startdate DESC;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-090
@@ -584,7 +580,6 @@ WHERE ts.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_count DESC, tournament_stage_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-091
@@ -667,7 +662,6 @@ WHERE t.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, named_year, tournament_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-092
@@ -810,7 +804,6 @@ FROM (
 ) y
 
 ORDER BY sort_order, event_startdate DESC, event_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-093
@@ -911,7 +904,6 @@ WHERE s.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, stray_participants DESC, statistic_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-094
@@ -985,7 +977,6 @@ WHERE s.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, affected_count DESC, statistic_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-095
@@ -1107,7 +1098,6 @@ WHERE s.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, affected_count DESC, statistic_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-096
@@ -1242,7 +1232,6 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, missing_count DESC, event_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-097
@@ -1332,7 +1321,6 @@ WHERE sr.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-098
@@ -1418,7 +1406,6 @@ WHERE sc.statistic_data_typeFK = 1471
   AND TRIM(COALESCE(sc.value, '')) <> ''
 
 ORDER BY sort_order, ids_named DESC, statistic_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-099
@@ -1504,7 +1491,6 @@ WHERE lsr.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-100
@@ -1699,7 +1685,6 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, competitors_behind_it DESC, event_id;
-
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-101
@@ -1896,3 +1881,878 @@ WHERE ep.del = 'no'
   )
 
 ORDER BY sort_order, event_id, participant_name;
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-102
+    -- Name - EVENT_RESULTS_CUT_FLAG_CONTRADICTS_THE_36_HOLE_ORDER
+    -- What it does: Flags a card whose cut flag disagrees with where its 36-hole total sits, naming whichever side of the cut line is the smaller.
+    CASE WHEN c.made_cut = 'no' THEN 'MISSED_CUT_CARD_BEATS_THE_CUT_LINE'
+         ELSE 'MADE_CUT_CARD_TRAILS_THE_BEST_MISSED_CARD' END AS check_type,
+    c.event_id,
+    c.event_name,
+    c.season,
+    c.participant_name,
+    c.made_cut AS made_cut_recorded,
+    c.total36 AS thirty_six_hole_total,
+    c.cut_line_yes AS worst_total_that_made_the_cut,
+    c.best_missed AS best_total_that_missed,
+    CASE WHEN c.made_cut = 'no' THEN c.n_no_better ELSE c.n_yes_worse END AS cards_on_this_side,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: The cut divides the field by score, so after 36 holes nobody who
+-- missed it can be ahead of anybody who made it. This finds the cards where that ordering is
+-- broken, and reports whichever side of the line holds fewer of them.
+--
+-- Why the smaller side is the finding, and not the cards that break the order. The cut line is
+-- not stored; it is read off the field as the worst 36-hole total among the players flagged as
+-- having made the cut. One player wrongly flagged as having made it therefore moves the line to
+-- their own score, and every correctly missed player between the true line and that score then
+-- looks wrong. Measured on John Deere Classic 2011: 63 cards appear to beat the line, and the
+-- shorter explanation is a single made-cut card sitting seven strokes behind the last real
+-- qualifier. Counting both sides and reporting the smaller one names the card that has to change
+-- rather than the crowd it displaced.
+--
+-- Two populations are outside the question rather than clean inside it, and both are the sport
+-- rather than the storage. A card ending wd, dq, rtd, dns, nr or n/r stops mid-tournament and is
+-- flagged as not having made the cut whatever it scored, so a withdrawal after a good Friday is
+-- the convention; 531 such cards break the order legitimately. A card commented mdf made the cut
+-- and did not finish, and Golf-DQ-103 owns the flag it should carry. SPORTS/Golf.md owns the
+-- comment vocabulary and why wd is not a no-result marker in this sport.
+--
+-- The cut is not always after 36 holes, and that is read structurally rather than guessed. Where
+-- any card flagged as having missed the cut holds a round-three score, the cut in that event came
+-- later - AT&T Pebble Beach Pro-Am, The American Express and Alfred Dunhill Links all cut after
+-- 54 holes - and a 36-hole comparison is simply the wrong comparison there. Those events are
+-- excluded by that structure and not by a count.
+--
+-- A round of zero strokes is read as absent rather than as a score, which is arithmetic and not
+-- a threshold: eighteen holes cannot be completed in no strokes. 2976 such values sit in 119
+-- events, and two of them reached this statement as a 36-hole total of 0 that would have been
+-- reported against the cut flag instead of against itself.
+--
+-- Measured 2026-08-14 inside the client boundary: 48 events hold one to three cards on the
+-- smaller side, 43 findings on the missed-cut side and 14 on the made-cut side, for 57 in all,
+-- over 342070 cards the question can be asked about. Fifteen further events hold four or more;
+-- they are Barracuda Championship and the other Modified Stableford fields, where a higher total
+-- is better and the whole order inverts, and they are left out of this statement deliberately.
+-- POWERBI.md records that decision.
+FROM (
+    SELECT
+        b.event_id,
+        b.event_name,
+        b.season,
+        b.participant_name,
+        b.made_cut,
+        b.total36,
+        b.cut_line_yes,
+        b.best_missed,
+        b.late_after_cut,
+        SUM(CASE WHEN b.made_cut = 'no' AND b.total36 < b.cut_line_yes THEN 1 ELSE 0 END)
+            OVER (PARTITION BY b.event_id) AS n_no_better,
+        SUM(CASE WHEN b.made_cut = 'yes' AND b.total36 > b.best_missed THEN 1 ELSE 0 END)
+            OVER (PARTITION BY b.event_id) AS n_yes_worse
+    FROM (
+        SELECT
+            a.event_id,
+            a.event_name,
+            a.season,
+            a.participant_name,
+            a.made_cut,
+            a.total36,
+            MAX(CASE WHEN a.made_cut = 'yes' THEN a.total36 END)
+                OVER (PARTITION BY a.event_id) AS cut_line_yes,
+            MIN(CASE WHEN a.made_cut = 'no' THEN a.total36 END)
+                OVER (PARTITION BY a.event_id) AS best_missed,
+            SUM(CASE WHEN a.made_cut = 'no' AND a.late_rounds > 0 THEN 1 ELSE 0 END)
+                OVER (PARTITION BY a.event_id) AS late_after_cut
+        FROM (
+            SELECT
+                e.id AS event_id,
+                e.name AS event_name,
+                t.name AS season,
+                p.name AS participant_name,
+                MAX(CASE WHEN r.result_typeFK = 38 THEN LOWER(TRIM(r.value)) END) AS made_cut,
+                MAX(CASE WHEN r.result_typeFK = 104 THEN LOWER(TRIM(r.value)) END) AS comment_value,
+                SUM(CASE WHEN r.result_typeFK IN (31, 32) AND TRIM(r.value) REGEXP '^[1-9][0-9]*$'
+                         THEN CAST(TRIM(r.value) AS SIGNED) ELSE 0 END) AS total36,
+                SUM(CASE WHEN r.result_typeFK IN (31, 32) AND TRIM(r.value) REGEXP '^[1-9][0-9]*$'
+                         THEN 1 ELSE 0 END) AS n36,
+                SUM(CASE WHEN r.result_typeFK IN (33, 34, 35) AND TRIM(r.value) REGEXP '^[0-9]+$'
+                         THEN 1 ELSE 0 END) AS late_rounds
+            FROM event_participants ep
+            JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+                 AND e.status_type = 'finished'
+            JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+            JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+            JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                 AND tt.sportFK = 3
+            JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+                 AND od.del = 'no' AND od.disciplineFK = 629
+            JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+            JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                 AND r.result_typeFK IN (31, 32, 33, 34, 35, 38, 104)
+            WHERE ep.del = 'no'
+              AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+              -- AND t.tournament_templateFK = <tournament_template_id>
+              -- AND e.startdate >= '<from_datetime>'
+              -- AND e.startdate <  '<to_datetime>'
+            GROUP BY ep.id, e.id, e.name, t.name, p.name
+            HAVING n36 = 2
+               AND made_cut IN ('yes', 'no')
+               AND (comment_value IS NULL
+                    OR comment_value NOT IN ('wd', 'dq', 'rtd', 'dns', 'nr', 'n/r', 'mdf', 'mc'))
+        ) a
+    ) b
+) c
+WHERE c.late_after_cut = 0
+  AND (
+        (c.made_cut = 'no'  AND c.total36 < c.cut_line_yes
+         AND c.n_no_better <= c.n_yes_worse AND c.n_no_better BETWEEN 1 AND 3)
+     OR (c.made_cut = 'yes' AND c.total36 > c.best_missed
+         AND c.n_yes_worse <  c.n_no_better AND c.n_yes_worse BETWEEN 1 AND 3)
+      )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+-- Every card the cut can be asked about: a competitor holding both a numeric first and second
+-- round, a cut flag of yes or no, and no comment that ends the participation early. The four
+-- existence tests say what n36 = 2, made_cut IN ('yes','no') and the comment exclusion say above,
+-- one competitor at a time, which keeps the branch off the group-by.
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+     AND e.status_type = 'finished'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 3
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+     AND od.del = 'no' AND od.disciplineFK = 629
+WHERE ep.del = 'no'
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1 FROM result r1
+      WHERE r1.event_participantsFK = ep.id AND r1.del = 'no'
+        AND r1.result_typeFK = 31 AND TRIM(r1.value) REGEXP '^[1-9][0-9]*$'
+  )
+  AND EXISTS (
+      SELECT 1 FROM result r2
+      WHERE r2.event_participantsFK = ep.id AND r2.del = 'no'
+        AND r2.result_typeFK = 32 AND TRIM(r2.value) REGEXP '^[1-9][0-9]*$'
+  )
+  AND EXISTS (
+      SELECT 1 FROM result r3
+      WHERE r3.event_participantsFK = ep.id AND r3.del = 'no'
+        AND r3.result_typeFK = 38 AND LOWER(TRIM(r3.value)) IN ('yes', 'no')
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM result r4
+      WHERE r4.event_participantsFK = ep.id AND r4.del = 'no'
+        AND r4.result_typeFK = 104
+        AND LOWER(TRIM(r4.value)) IN ('wd', 'dq', 'rtd', 'dns', 'nr', 'n/r', 'mdf', 'mc')
+  )
+
+ORDER BY sort_order, event_id, participant_name;
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-103
+    -- Name - EVENT_RESULTS_CUT_FLAG_CONTRADICTS_THE_ROUNDS_THE_CARD_HOLDS
+    -- What it does: Flags a card flagged as having missed the cut that nevertheless holds a round played after it, and a card commented mdf that is not flagged as having made the cut.
+    CASE WHEN b.comment_value = 'mdf' AND (b.made_cut IS NULL OR b.made_cut <> 'yes')
+              THEN 'MDF_COMMENT_WITHOUT_A_MADE_CUT_FLAG'
+         ELSE 'MISSED_CUT_CARD_HOLDS_A_ROUND_PLAYED_AFTER_THE_CUT' END AS check_type,
+    b.event_id,
+    b.event_name,
+    b.season,
+    b.participant_name,
+    b.made_cut AS made_cut_recorded,
+    b.comment_value AS comment_recorded,
+    b.late_rounds AS rounds_after_the_cut,
+    b.cards_like_this_here AS cards_like_this_in_the_event,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A player who misses the cut goes home, so the rounds they hold
+-- and the flag that says whether they survived have to agree. Two disagreements are reported.
+-- A card flagged as not having made the cut that holds a third, fourth or fifth round played
+-- one of them after being sent home. A card commented mdf made the cut and did not finish -
+-- SPORTS/Golf.md owns that reading - so it cannot also be flagged as having missed it.
+--
+-- Why the first branch counts the event, and the second does not. A cut is not always after two
+-- rounds. AT&T Pebble Beach Pro-Am, The American Express and Alfred Dunhill Links cut after 54
+-- holes, so their missed-cut players correctly hold a third round and the whole field carries
+-- the shape - 66 to 106 cards at a time. That is the same discriminator Golf-DQ-101 is built on
+-- and for the same reason: a fact about the format reaches every card in the event, and a wrong
+-- flag reaches one. The mdf branch needs no such guard, because no format makes mdf mean
+-- anything other than what it means.
+--
+-- Measured 2026-08-14 inside the client boundary, 284 findings over 350235 cards. 166 of them
+-- are cards flagged as having missed the cut while holding a later round, one to three per event;
+-- the events holding more are the 54-hole cuts and are outside the statement. 118 are mdf cards,
+-- and the sport itself settles those: of 1547 mdf cards inside the boundary, 1429 carry the flag
+-- yes and 118 carry no, the second group concentrated in 14 events rather than scattered. A
+-- twelve-to-one majority is the convention, so the minority is the defect and not a second
+-- reading. Where the flag is absent altogether rather than wrong - 11728 cards in 151 events,
+-- whole fields at a time - the shape is an event that never stored the flag, which is a different
+-- finding and not this one. POWERBI.md records this statement against the 200-row gate.
+FROM (
+    SELECT
+        a.event_id,
+        a.event_name,
+        a.season,
+        a.participant_name,
+        a.made_cut,
+        a.comment_value,
+        a.late_rounds,
+        SUM(CASE WHEN a.made_cut = 'no' AND a.late_rounds > 0
+                  AND (a.comment_value IS NULL OR a.comment_value <> 'mdf')
+                 THEN 1 ELSE 0 END) OVER (PARTITION BY a.event_id) AS cards_like_this_here
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            t.name AS season,
+            p.name AS participant_name,
+            MAX(CASE WHEN r.result_typeFK = 38 THEN LOWER(TRIM(r.value)) END) AS made_cut,
+            MAX(CASE WHEN r.result_typeFK = 104 THEN LOWER(TRIM(r.value)) END) AS comment_value,
+            SUM(CASE WHEN r.result_typeFK IN (33, 34, 35) AND TRIM(r.value) REGEXP '^[1-9][0-9]*$'
+                     THEN 1 ELSE 0 END) AS late_rounds
+        FROM event_participants ep
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+             AND e.status_type = 'finished'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+             AND tt.sportFK = 3
+        JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+             AND od.del = 'no' AND od.disciplineFK = 629
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+             AND r.result_typeFK IN (33, 34, 35, 38, 104)
+        WHERE ep.del = 'no'
+          AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+        GROUP BY ep.id, e.id, e.name, t.name, p.name
+    ) a
+) b
+WHERE (
+        (b.made_cut = 'no' AND b.late_rounds > 0
+         AND (b.comment_value IS NULL OR b.comment_value <> 'mdf')
+         AND b.cards_like_this_here BETWEEN 1 AND 3)
+     OR (b.comment_value = 'mdf' AND (b.made_cut IS NULL OR b.made_cut <> 'yes'))
+      )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+-- Every card either branch can speak about: a competitor carrying a cut flag, or carrying the
+-- mdf comment that implies one. A card with neither holds nothing for this statement to read,
+-- and the absent-flag population is counted in the note above rather than audited here.
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+     AND e.status_type = 'finished'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 3
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+     AND od.del = 'no' AND od.disciplineFK = 629
+WHERE ep.del = 'no'
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1 FROM result rf
+      WHERE rf.event_participantsFK = ep.id AND rf.del = 'no'
+        AND (
+              (rf.result_typeFK = 38 AND LOWER(TRIM(rf.value)) IN ('yes', 'no'))
+           OR (rf.result_typeFK = 104 AND LOWER(TRIM(rf.value)) = 'mdf')
+            )
+  )
+
+ORDER BY sort_order, event_id, participant_name;
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-104
+    -- Name - EVENT_RESULTS_RANK_CONTRADICTS_THE_TOTAL_PAR_IT_IS_BUILT_ON
+    -- What it does: Flags a card finishing ahead of another card that scored better over the same number of rounds, in an event where at most three cards do.
+    'RANK_CONTRADICTS_THE_TOTAL_PAR_IT_IS_BUILT_ON' AS check_type,
+    d.event_id,
+    d.event_name,
+    d.season,
+    d.participant_name,
+    d.rank_value AS rank_recorded,
+    d.par_total AS total_par_recorded,
+    d.n_rounds AS rounds_played,
+    d.best_rank_among_worse AS rank_held_by_a_worse_score,
+    d.cards_wrong_here,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: In stroke play the finishing order is the scoring order, so a
+-- card cannot be placed behind a card that scored worse. This compares each competitor with
+-- every competitor in the same event who played the same number of rounds and returned a
+-- strictly worse Total Par, and reports the card whose rank is worse than the best rank any of
+-- them holds.
+--
+-- It asks about order and never about the number. An expected rank cannot be computed here: the
+-- field also contains withdrawals and disqualifications that hold places this statement does not
+-- read, so any counting of positions ahead would be short by however many of those are in front.
+-- Ties make the same trouble from the other side, since a shared place can be written as the
+-- first of the tied positions or as each of them. Comparing two cards with each other is immune
+-- to both, and it is the whole of what the rule says.
+--
+-- Rounds played is part of the comparison and not a filter on it. A Total Par over two rounds and
+-- a Total Par over four are two different measurements, and a player who missed the cut is
+-- correctly placed behind a player who finished with a worse four-round score. Partitioning on
+-- the round count compares only what is comparable, which is why no cut flag appears here at all.
+--
+-- Cards ending wd, dq, rtd, dns, nr, n/r, mc or mdf are outside the population. Their place is
+-- assigned by where the field left them rather than by their score - SPORTS/Golf.md records that
+-- a withdrawal keeps its position in this sport - so their rank owes the score nothing.
+--
+-- Measured 2026-08-14 inside the client boundary: 15 events hold one to three such cards, for 16
+-- findings over 331329 cards. 37 further events hold four or more, 2106 cards, and they are not
+-- a longer version of the same defect. In 22 of them the order is not disturbed but reversed,
+-- because the card is scored in Stableford points where the higher total wins - Barracuda
+-- Championship in twelve editions, Reno-Tahoe Open in two, The International in four, ANZ
+-- Championship in three and Asian Mixed Stableford Challenge 2022, together 1838 cards.
+-- Golf-DQ-105 reports those once per event, which is where the decision actually sits, and this
+-- statement leaves them out. The remaining 15 events hold 268 cards; Zurich Classic of New
+-- Orleans 2023 and Women's World Cup of Golf 2005 are team formats and T-Mobile Match Play 2024
+-- is match play, so a stroke ordering does not apply to them, and the rest have not been read.
+-- They are recorded as undecided rather than counted clean. SPORTS/Golf.md owns the formats and
+-- POWERBI.md the decision.
+FROM (
+    SELECT
+        c.event_id,
+        c.event_name,
+        c.season,
+        c.participant_name,
+        c.rank_value,
+        c.par_total,
+        c.n_rounds,
+        c.best_rank_among_worse,
+        SUM(CASE WHEN c.best_rank_among_worse < c.rank_value THEN 1 ELSE 0 END)
+            OVER (PARTITION BY c.event_id) AS cards_wrong_here
+    FROM (
+        SELECT
+            b.event_id,
+            b.event_name,
+            b.season,
+            b.participant_name,
+            b.rank_value,
+            b.par_total,
+            b.n_rounds,
+            MIN(b.rank_value) OVER (PARTITION BY b.event_id, b.n_rounds ORDER BY b.par_total
+                                    RANGE BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING)
+                AS best_rank_among_worse
+        FROM (
+            SELECT
+                e.id AS event_id,
+                e.name AS event_name,
+                t.name AS season,
+                p.name AS participant_name,
+                MAX(CASE WHEN r.result_typeFK = 104 THEN LOWER(TRIM(r.value)) END) AS comment_value,
+                MAX(CASE WHEN r.result_typeFK = 100 AND TRIM(r.value) REGEXP '^[0-9]+$'
+                         THEN CAST(TRIM(r.value) AS SIGNED) END) AS rank_value,
+                MAX(CASE WHEN r.result_typeFK = 36 AND TRIM(r.value) REGEXP '^[+-]?[0-9]+$'
+                         THEN CAST(REPLACE(TRIM(r.value), '+', '') AS SIGNED) END) AS par_total,
+                SUM(CASE WHEN r.result_typeFK IN (31, 32, 33, 34, 35)
+                          AND TRIM(r.value) REGEXP '^[1-9][0-9]*$'
+                         THEN 1 ELSE 0 END) AS n_rounds
+            FROM event_participants ep
+            JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+                 AND e.status_type = 'finished'
+            JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+            JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+            JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                 AND tt.sportFK = 3
+            JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+                 AND od.del = 'no' AND od.disciplineFK = 629
+            JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+            JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                 AND r.result_typeFK IN (31, 32, 33, 34, 35, 36, 100, 104)
+            WHERE ep.del = 'no'
+              AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+              -- AND t.tournament_templateFK = <tournament_template_id>
+              -- AND e.startdate >= '<from_datetime>'
+              -- AND e.startdate <  '<to_datetime>'
+            GROUP BY ep.id, e.id, e.name, t.name, p.name
+            HAVING rank_value IS NOT NULL
+               AND par_total IS NOT NULL
+               AND n_rounds > 0
+               AND (comment_value IS NULL
+                    OR comment_value NOT IN ('wd', 'dq', 'rtd', 'dns', 'nr', 'n/r', 'mdf', 'mc'))
+        ) b
+    ) c
+) d
+WHERE d.best_rank_among_worse < d.rank_value
+  AND d.cards_wrong_here BETWEEN 1 AND 3
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+-- Every card the comparison can be made on: a competitor holding a numeric rank, a numeric Total
+-- Par, at least one round actually played, and no comment that ends the participation early. The
+-- four tests say what the HAVING above says, one competitor at a time.
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+     AND e.status_type = 'finished'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 3
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+     AND od.del = 'no' AND od.disciplineFK = 629
+WHERE ep.del = 'no'
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1 FROM result rk
+      WHERE rk.event_participantsFK = ep.id AND rk.del = 'no'
+        AND rk.result_typeFK = 100 AND TRIM(rk.value) REGEXP '^[0-9]+$'
+  )
+  AND EXISTS (
+      SELECT 1 FROM result rp
+      WHERE rp.event_participantsFK = ep.id AND rp.del = 'no'
+        AND rp.result_typeFK = 36 AND TRIM(rp.value) REGEXP '^[+-]?[0-9]+$'
+  )
+  AND EXISTS (
+      SELECT 1 FROM result rr
+      WHERE rr.event_participantsFK = ep.id AND rr.del = 'no'
+        AND rr.result_typeFK IN (31, 32, 33, 34, 35) AND TRIM(rr.value) REGEXP '^[1-9][0-9]*$'
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM result rc
+      WHERE rc.event_participantsFK = ep.id AND rc.del = 'no'
+        AND rc.result_typeFK = 104
+        AND LOWER(TRIM(rc.value)) IN ('wd', 'dq', 'rtd', 'dns', 'nr', 'n/r', 'mdf', 'mc')
+  )
+
+ORDER BY sort_order, event_id, rank_recorded;
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-105
+    -- Name - EVENT_RESULTS_THE_WINNER_DOES_NOT_HOLD_THE_BEST_TOTAL_PAR
+    -- What it does: Flags an event whose first-placed card is not the best score in its own field, and separates the events where it is the worst.
+    CASE WHEN d.leader_par = d.worst_par
+              THEN 'WINNER_HOLDS_THE_WORST_TOTAL_PAR_SO_THE_FIELD_IS_ORDERED_THE_OTHER_WAY'
+         ELSE 'WINNER_DOES_NOT_HOLD_THE_BEST_TOTAL_PAR' END AS check_type,
+    d.event_id,
+    d.event_name,
+    d.season,
+    d.template_name,
+    d.leader_par AS total_par_of_the_first_place,
+    d.best_par AS best_total_par_in_the_field,
+    d.worst_par AS worst_total_par_in_the_field,
+    d.cards_read,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: One sentence of the rules decides a stroke-play event - the
+-- lowest score wins - so whoever is written into first place must hold the lowest Total Par in
+-- their own field. This reads each event's field once and reports the event where they do not.
+--
+-- The audited object is the event, and that is the point rather than a convenience. Golf-DQ-104
+-- asks the same question of a single card and is answered by a single card; this one is answered
+-- by a decision taken over the whole field, so 146 rows saying the same thing about Barracuda
+-- Championship 2023 would be 146 copies of one finding. Reporting the event once puts the
+-- decision where somebody can actually take it.
+--
+-- The two check types are two different findings sharing one test. Where the first place holds
+-- the worst score in the field, the order is not damaged but inverted, and the field is not being
+-- read wrongly - it is being scored in Stableford points, where the higher total wins and the
+-- points are stored in the stroke fields this project reads as strokes. Where the first place
+-- holds neither the best nor the worst, one card is wrong and the event needs opening.
+--
+-- Measured 2026-08-14 inside the client boundary, over 3281 events carrying a first place and a
+-- Total Par: 3257 are clean, 22 are inverted and 2 are neither. Every one of the 22 is a Modified
+-- Stableford field - Barracuda Championship in eleven editions, Reno-Tahoe Open in two, The
+-- International in four, ANZ Championship in three and Asian Mixed Stableford Challenge 2022.
+-- The statement is expected to keep returning them for as long as the sport stores points in
+-- stroke fields, and that is its value: it names every such event without being told which
+-- tournaments they are, which is how the format was found in the first place.
+--
+-- Of the two events where the first place holds neither the best nor the worst score, Ladies
+-- Scottish Open 2010 is a card to open - the winner is written at +1 in a field whose best is 0 -
+-- and T-Mobile Match Play 2024 is match play, where a stroke total decides nothing. A format
+-- reaching the second check type is expected: the test is what the field is ordered by, and match
+-- play is not ordered by strokes at all. SPORTS/Golf.md owns both formats.
+FROM (
+    SELECT
+        b.event_id,
+        b.event_name,
+        b.season,
+        b.template_name,
+        COUNT(*) AS cards_read,
+        MIN(b.par_total) AS best_par,
+        MAX(b.par_total) AS worst_par,
+        MIN(CASE WHEN b.rank_value = 1 THEN b.par_total END) AS leader_par
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            t.name AS season,
+            tt.name AS template_name,
+            MAX(CASE WHEN r.result_typeFK = 104 THEN LOWER(TRIM(r.value)) END) AS comment_value,
+            MAX(CASE WHEN r.result_typeFK = 100 AND TRIM(r.value) REGEXP '^[0-9]+$'
+                     THEN CAST(TRIM(r.value) AS SIGNED) END) AS rank_value,
+            MAX(CASE WHEN r.result_typeFK = 36 AND TRIM(r.value) REGEXP '^[+-]?[0-9]+$'
+                     THEN CAST(REPLACE(TRIM(r.value), '+', '') AS SIGNED) END) AS par_total,
+            SUM(CASE WHEN r.result_typeFK IN (31, 32, 33, 34, 35)
+                      AND TRIM(r.value) REGEXP '^[1-9][0-9]*$'
+                     THEN 1 ELSE 0 END) AS n_rounds
+        FROM event_participants ep
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+             AND e.status_type = 'finished'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+             AND tt.sportFK = 3
+        JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+             AND od.del = 'no' AND od.disciplineFK = 629
+        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+             AND r.result_typeFK IN (31, 32, 33, 34, 35, 36, 100, 104)
+        WHERE ep.del = 'no'
+          AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+        GROUP BY ep.id, e.id, e.name, t.name, tt.name
+        HAVING rank_value IS NOT NULL
+           AND par_total IS NOT NULL
+           AND n_rounds > 0
+           AND (comment_value IS NULL
+                OR comment_value NOT IN ('wd', 'dq', 'rtd', 'dns', 'nr', 'n/r', 'mdf', 'mc'))
+    ) b
+    GROUP BY b.event_id, b.event_name, b.season, b.template_name
+) d
+WHERE d.leader_par IS NOT NULL
+  AND d.leader_par <> d.best_par
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+-- Every event the question can be put to: one holding at least one card written into first place
+-- that also carries a numeric Total Par, a round actually played, and no comment ending the
+-- participation early. An event whose first place is missing or unscored is not clean here and
+-- not dirty either - there is nothing to compare - and GLOBAL-DQ-122 owns the missing value.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 3
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+     AND od.del = 'no' AND od.disciplineFK = 629
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result rk ON rk.event_participantsFK = ep.id AND rk.del = 'no'
+           AND rk.result_typeFK = 100 AND TRIM(rk.value) = '1'
+      JOIN result rp ON rp.event_participantsFK = ep.id AND rp.del = 'no'
+           AND rp.result_typeFK = 36 AND TRIM(rp.value) REGEXP '^[+-]?[0-9]+$'
+      WHERE ep.eventFK = e.id AND ep.del = 'no'
+  )
+
+ORDER BY sort_order, event_id;
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-106
+    -- Name - EVENT_RESULTS_A_ROUND_IS_SKIPPED_IN_THE_ROUND_SEQUENCE
+    -- What it does: Flags an event holding a card that carries a round without carrying the round before it, and says how much of the field does.
+    'A_ROUND_IS_SKIPPED_IN_THE_ROUND_SEQUENCE' AS check_type,
+    b.event_id,
+    b.event_name,
+    b.season,
+    b.template_name,
+    GROUP_CONCAT(DISTINCT NULLIF(b.gap_kind, '') ORDER BY b.gap_kind SEPARATOR ' / ') AS gaps_found,
+    SUM(CASE WHEN b.gap_kind <> '' THEN 1 ELSE 0 END) AS cards_affected,
+    COUNT(*) AS cards_in_the_event,
+    MIN(CASE WHEN b.gap_kind <> '' THEN b.participant_name END) AS one_of_the_players,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Rounds are played in order, so a card holding a fourth round must
+-- hold a third, and a card holding a second must hold a first. This reads every card in the sport
+-- and reports the event where one of them does not, together with how many of its field carry the
+-- same gap and which round is missing.
+--
+-- The audited object is the event because the two shapes it finds are both event decisions. Where
+-- a single card skips a round, the event is where the other rounds are and where somebody has to
+-- look; where the whole field skips one, nothing about the individual card is wrong and the
+-- storage of the event is. Reporting the card instead would have turned 21 events into 1027 rows
+-- carrying one decision each, so the row says how many cards and names one of them, which is
+-- enough to find the rest.
+--
+-- No threshold decides anything here, which is why this statement needs none of the field-share
+-- reasoning Golf-DQ-101 and Golf-DQ-103 carry. Every gap is reported; the cards_affected and
+-- cards_in_the_event columns beside it are what tell a storage decision apart from a lost score,
+-- and the reader makes that call rather than the WHERE clause.
+--
+-- A zero counts as a round that is present here, which is the opposite of what Golf-DQ-102 and
+-- Golf-DQ-104 do with the same value, and the difference is the question rather than an
+-- inconsistency. Those statements do arithmetic on a stroke count, and no eighteen holes are
+-- played in no strokes. This one asks whether the field was filled in at all, and a zero is
+-- something somebody wrote. Reading a zero as absent here reported every Modified Stableford
+-- event a second time - a round worth no points is a real round in that format - which is
+-- Golf-DQ-105's finding and not this one.
+--
+-- Measured 2026-08-14 inside the client boundary: 18 events of 3302. Office Depot Championship
+-- 2005 is the clearest single decision - 66 of 143 cards hold a fourth round with no third - and
+-- Marathon Classic 2018, European Girls' Team Championship 2025 and Portugal Masters 2014 hold
+-- one to three cards each, which is a lost score rather than a decision. Twelve of the eighteen
+-- are the Modified Stableford tournaments Golf-DQ-105 also reports, and the two findings are not
+-- the same: that one says the field is ordered the other way, this one says a round slot inside
+-- it was never filled. Both are true of those events and both need doing.
+FROM (
+    SELECT
+        a.event_id,
+        a.event_name,
+        a.season,
+        a.template_name,
+        a.participant_name,
+        TRIM(COALESCE(CONCAT_WS(' / ',
+            CASE WHEN a.h2 = 1 AND a.h1 = 0 THEN 'round 2 without round 1' END,
+            CASE WHEN a.h3 = 1 AND a.h2 = 0 THEN 'round 3 without round 2' END,
+            CASE WHEN a.h4 = 1 AND a.h3 = 0 THEN 'round 4 without round 3' END,
+            CASE WHEN a.h5 = 1 AND a.h4 = 0 THEN 'round 5 without round 4' END), '')) AS gap_kind
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            t.name AS season,
+            tt.name AS template_name,
+            p.name AS participant_name,
+            MAX(CASE WHEN r.result_typeFK = 31 THEN 1 ELSE 0 END) AS h1,
+            MAX(CASE WHEN r.result_typeFK = 32 THEN 1 ELSE 0 END) AS h2,
+            MAX(CASE WHEN r.result_typeFK = 33 THEN 1 ELSE 0 END) AS h3,
+            MAX(CASE WHEN r.result_typeFK = 34 THEN 1 ELSE 0 END) AS h4,
+            MAX(CASE WHEN r.result_typeFK = 35 THEN 1 ELSE 0 END) AS h5
+        FROM event_participants ep
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+             AND e.status_type = 'finished'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+             AND tt.sportFK = 3
+        JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+             AND od.del = 'no' AND od.disciplineFK = 629
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+             AND r.result_typeFK IN (31, 32, 33, 34, 35)
+             AND TRIM(r.value) REGEXP '^[0-9]+$'
+        WHERE ep.del = 'no'
+          AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+        GROUP BY ep.id, e.id, e.name, t.name, tt.name, p.name
+    ) a
+) b
+GROUP BY b.event_id, b.event_name, b.season, b.template_name
+HAVING cards_affected > 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+-- Every event holding at least one round actually played by somebody. An event storing no round
+-- score has no sequence to be out of order, and Golf-DQ-063 owns the event with no results at all.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 3
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+     AND od.del = 'no' AND od.disciplineFK = 629
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result rr ON rr.event_participantsFK = ep.id AND rr.del = 'no'
+           AND rr.result_typeFK IN (31, 32, 33, 34, 35)
+           AND TRIM(rr.value) REGEXP '^[0-9]+$'
+      WHERE ep.eventFK = e.id AND ep.del = 'no'
+  )
+
+ORDER BY sort_order, event_id;
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-107
+    -- Name - EVENT_RESULTS_PRIZE_MONEY_CONTRADICTS_THE_FINISHING_ORDER
+    -- What it does: Flags a card paid less than a card that finished behind it in the same event.
+    'PRIZE_MONEY_CONTRADICTS_THE_FINISHING_ORDER' AS check_type,
+    d.event_id,
+    d.event_name,
+    d.season,
+    d.template_name,
+    d.participant_name,
+    d.rank_value AS rank_recorded,
+    d.prize AS prize_money_recorded,
+    d.best_prize_behind AS most_paid_to_a_worse_finish,
+    d.cards_wrong_here,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A purse is paid down the finishing order, so nobody is paid less
+-- than somebody who finished behind them. This compares each card with every card in the same
+-- event holding a strictly worse rank, and reports the card paid less than the most any of them
+-- received.
+--
+-- Ties need no handling and get none. Players sharing a position share the combined money for the
+-- positions they cover and are paid equally, so the comparison is made against strictly worse
+-- ranks only and two cards on the same place never test each other. That also means a tie paid
+-- unequally is outside this statement rather than hidden by it.
+--
+-- A card paid nothing is not a low point on the purse curve, it is off the curve, and leaving it
+-- in was the difference between this statement being right and being noise. Two entirely correct
+-- populations carry a zero: a player who missed the cut earns nothing, and an amateur cannot
+-- accept prize money however well they finish. The second is the one that bites, because an
+-- amateur's zero sits beside a good finishing place. Run with zeros included, this statement
+-- returned 24 rows and all 24 were the same fact - Asterisk Talley, Kiara Romero, Maria Marin,
+-- Farah O'Keefe and nine other amateurs across thirteen 2026 LPGA events, one of them placed
+-- sixth in the US Women's Open beside a paid seventh. Rule 3-2b of the Rules of Amateur Status
+-- is not a data-quality finding. Comparing only cards that were actually paid is what the rule
+-- about purses actually says. SPORTS/Golf.md records the measurement.
+--
+-- Prize money is a thin layer in this sport and the coverage count says so rather than hiding it.
+-- 9593 values exist sport-wide and 5449 paid cards inside the client boundary carry a rank too,
+-- over 78 events of the 3302 that stored a result. A small eligible population is not a weak
+-- check here: where the money is stored, it is stored for the whole field.
+--
+-- Measured 2026-08-14 inside the client boundary: no findings. That is the check working rather
+-- than the check being empty - the purse ran down the order in every event that recorded one -
+-- and the invariant it guards does not need a population to be worth guarding. No golf format
+-- pays backwards, so unlike Golf-DQ-101 and Golf-DQ-103 this statement applies no field-share
+-- test and would report every card it found.
+FROM (
+    SELECT
+        c.event_id,
+        c.event_name,
+        c.season,
+        c.template_name,
+        c.participant_name,
+        c.rank_value,
+        c.prize,
+        c.best_prize_behind,
+        SUM(CASE WHEN c.best_prize_behind > c.prize THEN 1 ELSE 0 END)
+            OVER (PARTITION BY c.event_id) AS cards_wrong_here
+    FROM (
+        SELECT
+            b.event_id,
+            b.event_name,
+            b.season,
+            b.template_name,
+            b.participant_name,
+            b.rank_value,
+            b.prize,
+            MAX(b.prize) OVER (PARTITION BY b.event_id ORDER BY b.rank_value
+                               RANGE BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING) AS best_prize_behind
+        FROM (
+            SELECT
+                e.id AS event_id,
+                e.name AS event_name,
+                t.name AS season,
+                tt.name AS template_name,
+                p.name AS participant_name,
+                MAX(CASE WHEN r.result_typeFK = 100 AND TRIM(r.value) REGEXP '^[0-9]+$'
+                         THEN CAST(TRIM(r.value) AS SIGNED) END) AS rank_value,
+                MAX(CASE WHEN r.result_typeFK = 540 AND TRIM(r.value) REGEXP '^[0-9]+(\\.[0-9]+)?$'
+                         THEN CAST(TRIM(r.value) AS DECIMAL(14,2)) END) AS prize
+            FROM event_participants ep
+            JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+                 AND e.status_type = 'finished'
+            JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+            JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+            JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                 AND tt.sportFK = 3
+            JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+                 AND od.del = 'no' AND od.disciplineFK = 629
+            JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+            JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                 AND r.result_typeFK IN (100, 540)
+            WHERE ep.del = 'no'
+              AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+              -- AND t.tournament_templateFK = <tournament_template_id>
+              -- AND e.startdate >= '<from_datetime>'
+              -- AND e.startdate <  '<to_datetime>'
+            GROUP BY ep.id, e.id, e.name, t.name, tt.name, p.name
+            HAVING rank_value IS NOT NULL AND prize > 0
+        ) b
+    ) c
+) d
+WHERE d.best_prize_behind > d.prize
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+-- Every card carrying both a finishing place and money actually paid, which is what the comparison
+-- needs on each side. A card holding a rank and a zero is outside the question and not a finding
+-- of it, for the reason given above; most of the sport stores no purse at all, and an
+-- eligible_count far below the sport's card count is the layer being thin rather than the scope
+-- being wrong.
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+     AND e.status_type = 'finished'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 3
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
+     AND od.del = 'no' AND od.disciplineFK = 629
+WHERE ep.del = 'no'
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1 FROM result rk
+      WHERE rk.event_participantsFK = ep.id AND rk.del = 'no'
+        AND rk.result_typeFK = 100 AND TRIM(rk.value) REGEXP '^[0-9]+$'
+  )
+  AND EXISTS (
+      SELECT 1 FROM result rm
+      WHERE rm.event_participantsFK = ep.id AND rm.del = 'no'
+        AND rm.result_typeFK = 540 AND TRIM(rm.value) REGEXP '^[0-9]+(\\.[0-9]+)?$'
+        AND CAST(TRIM(rm.value) AS DECIMAL(14,2)) > 0
+  )
+
+ORDER BY sort_order, event_id, rank_recorded;

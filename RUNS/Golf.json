@@ -4967,6 +4967,103 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Golf 14.08.2026 12-43-21",
+                     "startedUtc":  "2026-08-14T10:43:20Z",
+                     "output":  "D:\\SQL\u0027s Output\\Golf 14.08.2026 12-43-21",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-102",
+                                        "runKey":  "Golf-DQ-102",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_CUT_FLAG_CONTRADICTS_THE_36_HOLE_ORDER",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  58,
+                                        "findings":  57,
+                                        "eligible":  342070,
+                                        "seconds":  46.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-103",
+                                        "runKey":  "Golf-DQ-103",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_CUT_FLAG_CONTRADICTS_THE_ROUNDS_THE_CARD_HOLDS",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  285,
+                                        "findings":  284,
+                                        "eligible":  350235,
+                                        "seconds":  27.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-104",
+                                        "runKey":  "Golf-DQ-104",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_CONTRADICTS_THE_TOTAL_PAR_IT_IS_BUILT_ON",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  17,
+                                        "findings":  16,
+                                        "eligible":  331329,
+                                        "seconds":  45.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-105",
+                                        "runKey":  "Golf-DQ-105",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_THE_WINNER_DOES_NOT_HOLD_THE_BEST_TOTAL_PAR",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  25,
+                                        "findings":  24,
+                                        "eligible":  3281,
+                                        "seconds":  30.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-106",
+                                        "runKey":  "Golf-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_A_ROUND_IS_SKIPPED_IN_THE_ROUND_SEQUENCE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  19,
+                                        "findings":  18,
+                                        "eligible":  3302,
+                                        "seconds":  19.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-107",
+                                        "runKey":  "Golf-DQ-107",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_PRIZE_MONEY_CONTRADICTS_THE_FINISHING_ORDER",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  5449,
+                                        "seconds":  16.9,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"

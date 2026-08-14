@@ -112,6 +112,28 @@ one competitor. The check was written on that discriminator and reports 639. A f
 were left out as undecided rather than counted either way, which is recorded here so the gap is
 visible rather than implied.
 
+Two more from the same day, and the second is the rule catching a check that would have been
+entirely wrong:
+
+| Check | Reported | Of which the sport behaving normally |
+|---|---:|---:|
+| `Golf-DQ-103` | 284 | none - written and assigned |
+| `Golf-DQ-107` candidate | 24 | all 24 - amateurs, and the check was rewritten |
+
+`Golf-DQ-103` is what the gate looks like when the answer comes back clean. It reports 284 rows
+over the threshold, of which 118 are cards commented `mdf` without the matching cut flag. Reading
+them rather than counting them is what settled it: the sport writes `mdf` beside `made_cut = yes`
+on 1429 cards and beside `no` on 118, and a twelve-to-one majority is a convention, so the
+minority is a defect. Had the split been the other way the check would not have been written.
+
+`Golf-DQ-107` never reached 200 and the gate's habit still saved it. The candidate reported 24
+cards paid less than somebody who finished behind them, and every one of the 24 was paid zero
+while placed high - amateurs, who cannot accept prize money. Twelve of the thirteen events were
+2026 LPGA majors and one competitor was placed sixth in the US Women's Open beside a paid
+seventh. Counting would have called that 24 defects; reading it called it Rule 3-2b of the Rules
+of Amateur Status. The statement now compares only cards that were actually paid and returns
+nothing, which is the correct answer to the question the rules ask.
+
 This is the counterpart of `WORKFLOW.md`'s "Zero findings never retires a check": a small count
 is no reason to withdraw a check, and a large one is no reason to trust it.
 
