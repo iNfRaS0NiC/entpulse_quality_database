@@ -1391,3 +1391,89 @@ WHERE sc.statistic_data_typeFK = 1471
   AND TRIM(COALESCE(sc.value, '')) <> ''
 
 ORDER BY sort_order, ids_named DESC, statistic_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-099
+    -- Name - EVENT_SCOPE_LINEUP_RESULT_OWNER_EVENT_MISMATCH
+    -- What it does: Finds scope values attached to a lineup place from a different event, or one that is not active, so the value belongs to somebody who did not play the event holding it.
+    CASE
+        WHEN x.lineup_row_missing_count > 0 THEN 'LINEUP_SCOPE_RESULT_LINEUP_ROW_MISSING'
+        ELSE 'LINEUP_SCOPE_RESULT_OWNER_EVENT_MISMATCH'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.tournament_stage_name,
+    x.offending_row_count,
+    x.sample_row,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The lineup half of the invariant Golf-DQ-097 asserts over the participant half. A scope value
+-- reaches an event twice over, once through the container it hangs off and once through the
+-- lineup place it names, and the two have to arrive at the same event.
+--
+-- Golf writes no lineup row anywhere - measured 2026-08-14, zero for the whole sport - so no
+-- value here can ever be legitimate: every one of them names somebody else's lineup. Sport-wide
+-- there are 128 such values on three events, and the lineup places they name belong to an
+-- American Football game and three football matches - Mississippi State against South Carolina,
+-- Lommel against Roeselare, Maritimo against Rio Ave, Sporting Gijon against Leganes. A
+-- cross-sport reference that resolves rather than failing is the same defect the truncated Event
+-- id produces in Golf-DQ-098, in a different layer.
+--
+-- All three golf events fall on 8 and 9 March 2018, which makes this an import incident on two
+-- days rather than a habit. Two of them sit under Korn Ferry Tour and Champions Tour, outside the
+-- client boundary; the third is the South African Women's Open under Ladies European Tour and is
+-- inside it, holding 36 of the 128. So this check audits one event and reports it, and its
+-- eligible count is 1 rather than 0 - it is not a sentinel.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        ts.name AS tournament_stage_name,
+        COUNT(*) AS offending_row_count,
+        SUM(CASE WHEN l.id IS NULL THEN 1 ELSE 0 END) AS lineup_row_missing_count,
+        MIN(CONCAT('scope=', es.id,
+                   ' scope_event=', es.eventFK,
+                   ' lineup=', lsr.lineupFK,
+                   ' lineup_event=', COALESCE(CAST(ep.eventFK AS CHAR), 'none'))) AS sample_row
+    FROM lineup_scope_result lsr
+    JOIN event_scope es ON es.id = lsr.event_scopeFK AND es.del = 'no'
+         AND es.scope_typeFK IN (305, 462, 463, 464, 465)
+    JOIN event e ON e.id = es.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 3
+    LEFT JOIN lineup l ON l.id = lsr.lineupFK AND l.del = 'no'
+    LEFT JOIN event_participants ep ON ep.id = l.event_participantsFK AND ep.del = 'no'
+    WHERE lsr.del = 'no'
+      AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      AND (l.id IS NULL OR ep.id IS NULL OR ep.eventFK <> es.eventFK)
+    GROUP BY e.id, e.name, ts.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM lineup_scope_result lsr
+JOIN event_scope es ON es.id = lsr.event_scopeFK AND es.del = 'no'
+     AND es.scope_typeFK IN (305, 462, 463, 464, 465)
+JOIN event e ON e.id = es.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 3
+WHERE lsr.del = 'no'
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_id;

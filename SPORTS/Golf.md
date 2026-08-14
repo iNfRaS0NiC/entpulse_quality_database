@@ -268,6 +268,22 @@ by type exhausted the server's temporary disk outright.
 event's and none to a participant row that is missing. What is not covered is stated plainly - a
 value under `round1` to `round4` naming another event's competitor is reported by nothing today.
 
+**The two layers this sweep had not measured are now measured.** `event_scope_detail` holds
+nothing for Golf. `lineup_scope_result` holds 128 active values, which was not the expectation:
+the sport writes no lineup row anywhere, so the layer was expected to be empty by construction.
+
+Every one of the 128 names a lineup place belonging to another sport. They sit on three golf
+events, all on 8 and 9 March 2018, and the places they name are in an American Football game and
+three football matches - Mississippi State against South Carolina, Lommel against Roeselare,
+Maritimo against Rio Ave, Sporting Gijon against Leganes. Two of the three events are under Korn
+Ferry Tour and Champions Tour and fall outside the client boundary; the third, the South African
+Women's Open under Ladies European Tour, is inside it and holds 36 of them. `Golf-DQ-099` reports
+that one and audits exactly one event.
+
+A cross-sport reference that resolves rather than failing is the same shape as the truncated
+Event id in `Golf-DQ-098`, in a different layer. Both succeed at attaching one sport's value to
+another sport's fixture, which is what makes them worse than a broken reference.
+
 <!-- MANUAL PASTE ZONE: 3 SCOPES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Properties
@@ -429,6 +445,15 @@ that reads which events a Comp.Rank covers is reading a short list. The extra co
 first thirteen is that the list also names an event from another sport, and a join on it
 succeeds. This is a schema defect rather than a data one - correcting the values without
 widening the column would truncate them again on the next write.
+
+**The five `tournament_stage`-owned statistics are Comp.Rank at the wrong owner level.**
+Measured 2026-08-14: all five carry `statistic_typeFK = 11` and `object_typeFK = 4`, where the
+sport's confirmed owner is the tournament at `object_typeFK = 3`. They are the Hero Cup 2023,
+the International Crown Playoffs 2023 and the Bank of Hope LPGA of 2021, 2022 and 2023.
+
+They are not a separate population with its own purpose, which is what the open question asked.
+They are the same object attached one level down, and `GLOBAL-DQ-106` is the template that
+asserts the owner level.
 
 <!-- MANUAL PASTE ZONE: 3 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -817,14 +842,15 @@ into the following year.
 1. **How is a pair participant meant to be read?** A foursome is one `athlete` row holding two
    names and no lineup. Whether the two players are reachable at all, and through what, is
    unknown; if they are not, the sport cannot answer "who played" for its pairs formats.
-2. **What are the five `tournament_stage`-owned statistics?** Shard, fields and purpose are all
-   unchecked, and they are the one statistic population this sweep did not touch.
+2. ~~**What are the five `tournament_stage`-owned statistics?**~~ Answered 2026-08-14: Comp.Rank
+   at `object_typeFK = 4` instead of 3. **Statistics** above records which five and what asserts it.
 3. **Are `penalty_stroke_9` and the four `clock_penalty_*` data types genuinely Golf's?** They
    carry values under Golf scopes but read as another sport's vocabulary. A shared generic id
    and a misfiled value look identical from here.
-4. **What do `event_scope_detail` and `lineup_scope_result` hold for Golf?** Neither layer was
-   measured. The second is expected to be empty because the sport writes no lineups, which is
-   an expectation and not a measurement.
+4. ~~**What do `event_scope_detail` and `lineup_scope_result` hold for Golf?**~~ Answered
+   2026-08-14, and the expectation was wrong: `event_scope_detail` is empty, `lineup_scope_result`
+   holds 128 values and all of them name another sport's lineup. **Scope types and data types**
+   above records it; `Golf-DQ-099` reports the one event inside the client boundary.
 5. **Which round is "the" score?** The sport stores strokes per round and no single stroke
    total, so any check comparing a score against a rank has to say which figure it means.
 6. **How is a foursome's side to be read?** 2132 finished Match Play events carry four

@@ -4857,6 +4857,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "14.08.2026 10-46-31",
+                     "startedUtc":  "2026-08-14T08:46:31Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-099",
+                                        "runKey":  "Golf-DQ-099",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SCOPE_LINEUP_RESULT_OWNER_EVENT_MISMATCH",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  1,
+                                        "seconds":  6.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"
