@@ -424,7 +424,15 @@ FROM (
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
     JOIN statistic_config sce ON sce.statisticFK = s.id AND sce.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}} AND sce.del = 'no'
-    JOIN event e ON e.id = sce.value AND e.del = 'no'
+    -- The Event id config enumerates events rather than naming one, as DATABASE.md DB-SEM-011
+    -- says and Golf demonstrates with up to 37 ids in a single value. Equality against the
+    -- whole string reads only the first of them, so the events a statistic covers were
+    -- undercounted wherever a sport stores a list. FIND_IN_SET reads all of them and is exact
+    -- for a single value too. The events are reached through the statistic's own tournament so
+    -- the membership test runs against that tournament's events rather than the whole sport.
+    JOIN tournament_stage tse ON tse.tournamentFK = t.id AND tse.del = 'no'
+    JOIN event e ON e.tournament_stageFK = tse.id AND e.del = 'no'
+         AND FIND_IN_SET(e.id, sce.value) > 0
     WHERE s.del = 'no'
       AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
       AND s.object_typeFK = 3
@@ -454,7 +462,9 @@ FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 JOIN statistic_config sce ON sce.statisticFK = s.id AND sce.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}} AND sce.del = 'no'
-JOIN event e ON e.id = sce.value AND e.del = 'no'
+JOIN tournament_stage tse ON tse.tournamentFK = t.id AND tse.del = 'no'
+JOIN event e ON e.tournament_stageFK = tse.id AND e.del = 'no'
+     AND FIND_IN_SET(e.id, sce.value) > 0
 WHERE s.del = 'no'
   AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
   AND s.object_typeFK = 3
@@ -1259,7 +1269,9 @@ FROM (
               AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
               AND s.object_typeFK = 3
               AND s.objectFK = t.id
-              AND CAST(sc.value AS UNSIGNED) = e.id
+              -- The value enumerates events; equality against the whole string would see only
+              -- the first, so an event named second in a list read as unreferenced.
+              AND FIND_IN_SET(e.id, sc.value) > 0
         ) AS referencing_statistics,
         (
             SELECT COUNT(*)
@@ -1427,7 +1439,10 @@ FROM (
                          AND sp.participantFK = ep.participantFK
                     WHERE sc.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
                       AND sc.del = 'no'
-                      AND CAST(sc.value AS UNSIGNED) = e.id
+                      -- The value enumerates events. Read as a single number it named only the
+                      -- first, so every competitor of every later event in a list counted as
+                      -- omitted from a statistic that in fact covers them.
+                      AND FIND_IN_SET(e.id, sc.value) > 0
                 ) THEN 1 ELSE 0 END AS is_missing
         FROM event e
         JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -1451,7 +1466,7 @@ FROM (
                    AND s2.object_typeFK = 3
               WHERE sc2.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
                 AND sc2.del = 'no'
-                AND CAST(sc2.value AS UNSIGNED) = e.id
+                AND FIND_IN_SET(e.id, sc2.value) > 0
                 AND EXISTS (
                     SELECT 1
                     FROM statistic_participants{{SHARD_ID}} spx
@@ -1490,7 +1505,7 @@ WHERE e.del = 'no'
            AND s2.object_typeFK = 3
       WHERE sc2.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
         AND sc2.del = 'no'
-        AND CAST(sc2.value AS UNSIGNED) = e.id
+        AND FIND_IN_SET(e.id, sc2.value) > 0
         AND EXISTS (
             SELECT 1
             FROM statistic_participants{{SHARD_ID}} spx
@@ -3105,11 +3120,12 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - GLOBAL-DQ-101
     -- Name - COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT
-    -- What it does: Finds Comp.Rank whose Event id config does not resolve to an event under its own tournament, separating a value that is not a number, one naming no event, and one naming an event another tournament owns.
+    -- What it does: Finds Comp.Rank whose Event id config does not resolve to events under its own tournament, separating a malformed value, one naming no event, one naming an event another tournament owns, and a list not all of whose ids land under the tournament.
     CASE
         WHEN x.not_numeric_count > 0 THEN 'EVENT_ID_NOT_NUMERIC'
         WHEN x.no_active_event_count > 0 THEN 'EVENT_ID_NO_ACTIVE_EVENT'
-        ELSE 'EVENT_ID_OUTSIDE_TOURNAMENT'
+        WHEN x.outside_tournament_count > 0 THEN 'EVENT_ID_OUTSIDE_TOURNAMENT'
+        ELSE 'EVENT_ID_LIST_NOT_ALL_UNDER_TOURNAMENT'
     END AS check_type,
     x.statistic_id,
     x.statistic_name,
@@ -3127,38 +3143,75 @@ SELECT
 -- Three defects, one audited object. They are separated by check_type rather than by CheckID
 -- because they are one question - does this id point where it claims - and a statistic
 -- carrying two kinds at once should be one row rather than two.
+-- The value is a list, not an id. DATABASE.md DB-SEM-011 says the config enumerates the
+-- events a statistic covers, and Golf writes up to 37 ids into one value; reading it as a
+-- single number matched only the first and reported every list as a value that is not a
+-- number. Measured on Golf 2026-08-14: 246 of 250 findings were well-formed lists.
+--
+-- So a clean list is the accepted shape, and a list is resolved the only way it can be
+-- without expanding it into rows - by counting how many of the tournament's own events it
+-- names and comparing that with how many ids it holds. A shortfall means an id that resolves
+-- to nothing or to another tournament's event, and the two cannot be told apart this way:
+-- separating them would need an unbounded lookup of every id against the whole event table,
+-- which is the cost this package refuses. A single id keeps the indexed primary-key lookup and
+-- so keeps the finer answer.
 FROM (
     SELECT
-        s.id AS statistic_id,
-        s.name AS statistic_name,
-        tt.name AS template_name,
-        t.name AS tournament_name,
+        v.statistic_id,
+        v.statistic_name,
+        v.template_name,
+        v.tournament_name,
         COUNT(*) AS invalid_config_count,
-        SUM(CASE WHEN TRIM(sc.value) NOT REGEXP '^[0-9]+$' THEN 1 ELSE 0 END) AS not_numeric_count,
-        SUM(CASE WHEN TRIM(sc.value) REGEXP '^[0-9]+$' AND e.id IS NULL THEN 1 ELSE 0 END) AS no_active_event_count,
-        SUBSTRING(GROUP_CONCAT(DISTINCT LEFT(TRIM(sc.value), 20) ORDER BY TRIM(sc.value) SEPARATOR ' | '), 1, 100) AS sample_values
-    FROM statistic_config sc
-    JOIN statistic s ON s.id = sc.statisticFK AND s.del = 'no'
-         AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-         AND s.object_typeFK = 3
-    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
-    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-    LEFT JOIN event e ON TRIM(sc.value) REGEXP '^[0-9]+$'
-         AND e.id = CAST(TRIM(sc.value) AS UNSIGNED) AND e.del = 'no'
-    LEFT JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-    WHERE sc.del = 'no'
-      AND sc.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
-      AND TRIM(COALESCE(sc.value, '')) <> ''
-      AND tt.sportFK = {{SPORT_ID}}
-      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
-      -- AND t.tournament_templateFK = <tournament_template_id>
-      AND (
-            TRIM(sc.value) NOT REGEXP '^[0-9]+$'
-         OR e.id IS NULL
-         OR ts.tournamentFK <> s.objectFK
-          )
-    GROUP BY s.id, s.name, tt.name, t.name
+        SUM(v.not_numeric) AS not_numeric_count,
+        SUM(v.no_active_event) AS no_active_event_count,
+        SUM(v.outside_tournament) AS outside_tournament_count,
+        SUBSTRING(GROUP_CONCAT(DISTINCT LEFT(v.config_value, 20) ORDER BY v.config_value SEPARATOR ' | '), 1, 100) AS sample_values
+    FROM (
+        SELECT
+            sc.id AS config_id,
+            s.id AS statistic_id,
+            s.name AS statistic_name,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            TRIM(sc.value) AS config_value,
+            CASE WHEN TRIM(sc.value) NOT REGEXP '^[0-9]+(,[0-9]+)*$'
+                 THEN 1 ELSE 0 END AS not_numeric,
+            CASE WHEN TRIM(sc.value) REGEXP '^[0-9]+$' AND e.id IS NULL
+                 THEN 1 ELSE 0 END AS no_active_event,
+            CASE WHEN TRIM(sc.value) REGEXP '^[0-9]+$' AND e.id IS NOT NULL
+                      AND ts.tournamentFK <> s.objectFK
+                 THEN 1 ELSE 0 END AS outside_tournament,
+            CASE WHEN TRIM(sc.value) REGEXP '^[0-9]+(,[0-9]+)+$'
+                      AND COUNT(DISTINCT ex.id) <
+                          (LENGTH(TRIM(sc.value)) - LENGTH(REPLACE(TRIM(sc.value), ',', '')) + 1)
+                 THEN 1 ELSE 0 END AS list_unresolved
+        FROM statistic_config sc
+        JOIN statistic s ON s.id = sc.statisticFK AND s.del = 'no'
+             AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+             AND s.object_typeFK = 3
+        JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        LEFT JOIN event e ON TRIM(sc.value) REGEXP '^[0-9]+$'
+             AND e.id = CAST(TRIM(sc.value) AS UNSIGNED) AND e.del = 'no'
+        LEFT JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        LEFT JOIN tournament_stage tsx ON tsx.tournamentFK = s.objectFK AND tsx.del = 'no'
+        LEFT JOIN event ex ON ex.tournament_stageFK = tsx.id AND ex.del = 'no'
+             AND FIND_IN_SET(ex.id, TRIM(sc.value)) > 0
+        WHERE sc.del = 'no'
+          AND sc.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
+          AND TRIM(COALESCE(sc.value, '')) <> ''
+          AND tt.sportFK = {{SPORT_ID}}
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          -- AND t.tournament_templateFK = <tournament_template_id>
+        GROUP BY sc.id, s.id, s.name, s.objectFK, tt.name, t.name,
+                 TRIM(sc.value), e.id, ts.tournamentFK
+    ) v
+    WHERE v.not_numeric = 1
+       OR v.no_active_event = 1
+       OR v.outside_tournament = 1
+       OR v.list_unresolved = 1
+    GROUP BY v.statistic_id, v.statistic_name, v.template_name, v.tournament_name
 ) x
 
 UNION ALL
@@ -3443,8 +3496,15 @@ FROM (
     JOIN statistic_config sc ON sc.statisticFK = s.id AND sc.del = 'no'
          AND sc.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
          AND TRIM(COALESCE(sc.value, '')) <> ''
-         AND TRIM(sc.value) REGEXP '^[0-9]+$'
-    JOIN event e ON e.id = CAST(TRIM(sc.value) AS UNSIGNED) AND e.del = 'no'
+         AND TRIM(sc.value) REGEXP '^[0-9]+(,[0-9]+)*$'
+    -- Every event the value names, not the first one. Reading it as a single number excluded
+    -- a sport's list-valued statistics from this check outright - Golf's 246 of them - and
+    -- compared the claimed discipline against one event where several were named. The events
+    -- are reached through the statistic's own tournament: an id landing outside it is a
+    -- resolution defect and belongs to GLOBAL-DQ-101, not to a discipline contradiction.
+    JOIN tournament_stage tse ON tse.tournamentFK = t.id AND tse.del = 'no'
+    JOIN event e ON e.tournament_stageFK = tse.id AND e.del = 'no'
+         AND FIND_IN_SET(e.id, TRIM(sc.value)) > 0
     JOIN object_discipline ode ON ode.object_typeFK = 5 AND ode.objectFK = e.id AND ode.del = 'no'
     JOIN discipline de ON de.id = ode.disciplineFK AND de.del = 'no'
     WHERE s.del = 'no'
@@ -3480,12 +3540,14 @@ WHERE s.del = 'no'
   )
   AND EXISTS (
       SELECT 1 FROM statistic_config sc2
-      JOIN event e2 ON e2.id = CAST(TRIM(sc2.value) AS UNSIGNED) AND e2.del = 'no'
+      JOIN tournament_stage tse2 ON tse2.tournamentFK = t.id AND tse2.del = 'no'
+      JOIN event e2 ON e2.tournament_stageFK = tse2.id AND e2.del = 'no'
+           AND FIND_IN_SET(e2.id, TRIM(sc2.value)) > 0
       JOIN object_discipline ode2 ON ode2.object_typeFK = 5 AND ode2.objectFK = e2.id AND ode2.del = 'no'
       WHERE sc2.statisticFK = s.id AND sc2.del = 'no'
         AND sc2.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
         AND TRIM(COALESCE(sc2.value, '')) <> ''
-        AND TRIM(sc2.value) REGEXP '^[0-9]+$'
+        AND TRIM(sc2.value) REGEXP '^[0-9]+(,[0-9]+)*$'
   )
 
 ORDER BY sort_order, statistic_id;

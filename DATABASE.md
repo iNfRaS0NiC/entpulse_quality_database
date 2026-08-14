@@ -949,6 +949,19 @@ reaches every event of the tournament rather than only the competition the stati
 so it supports asking whether a ranked participant appears in the tournament at all, but not
 whether every event participant was ranked.
 
+**The value holds a list, not an id.** "Enumerates" is literal: the column is text and a
+statistic covering several events stores their ids comma-separated, without spaces and without
+padding. Measured across the whole server on 2026-08-14, seven sports write multi-id values —
+Alpine on 1062 of its 2488, Cross Country Skiing on 783, Short Track Speed Skating on 231 of
+362, Golf on 246 of 3444 with up to 37 ids in one value, and Freestyle Skiing, Ski
+Mountaineering and Swimming on fewer. Every value on the server is a clean list of digits and
+commas, so `FIND_IN_SET(<event>.id, <config>.value)` is the exact membership test and is
+correct for a single id too. `CAST(value AS UNSIGNED)`, and the implicit conversion an
+`e.id = sc.value` join performs, both read only the id before the first comma — the events a
+statistic covers are then silently undercounted, and a well-formed list reads as a value that
+is not a number. Five DQ templates did exactly that until 2026-08-14; `GLOBAL_DQ/README.md`
+records which.
+
 ### `DB-SEM-012` — One round name exists as a knockout and a non-knockout round type
 
 `round_type.knockout` is the discriminator that separates two rows sharing one `name`. Of
