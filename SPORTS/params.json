@@ -962,6 +962,10 @@
         "MEDAL_ROUND_TYPE_LIST": "9, 138",
         "BRONZE_ROUND_TYPE_LIST": "138",
         "NOT_STARTED_DESC_LIST": "1",
+        "STALE_NOT_STARTED_DAYS": 2,
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
+        "INTEGER_RESULT_TYPE_LIST": "1, 2, 3, 4, 6, 51, 52, 53, 100, 550",
         "_checkSignal": {
             "GLOBAL-DQ-084": {
                 "signal": "Not applicable",
@@ -982,6 +986,46 @@
             "GLOBAL-DQ-085": {
                 "signal": "Not applicable",
                 "reason": "Structural: the template reads a period breakdown stored as several data fields under one scope type, which is how curling stores its ends. Ice Hockey stores each period as its own scope type - 322, 323, 324 - and far more widely as its own result type, 51 to 53 reaching 8501 to 9803 events against 898 in the scope layer. SCOPE_PERIOD_DATA_TYPE_LIST would hold the single field 162 goals and the check would audit 898 events while missing the 8500 the sport actually keeps. Ice-Hockey-DQ-059 asks the same arithmetic of the result layer and reaches 8492."
+            },
+            "GLOBAL-DQ-076": {
+                "signal": "Not applicable",
+                "reason": "Structural in one of its two inputs: the template reports a non-numeric value in a numeric result field, excusing the ones a comment explains, and this sport writes no comment result type. Its numeric question is asked instead by GLOBAL-DQ-124, which needs no comment: every result this sport stores in 1, 2, 3, 4, 6, 51, 52, 53, 100 and 550 is a whole number."
+            },
+            "GLOBAL-DQ-087": {
+                "signal": "Blocked",
+                "reason": "The winner property is expected on every head-to-head sport and is missing from most of them, Ice Hockey included. No check reads it in any sport until it is added everywhere, by standing decision; the same entry will be revisited then. WINNER_VALUE_LIST cannot be recorded from data that does not exist yet."
+            },
+            "GLOBAL-DQ-088": {
+                "signal": "Blocked",
+                "reason": "The same standing decision. The template reads the winner property against the score, and the property is not written in this sport."
+            },
+            "GLOBAL-DQ-020": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template reads a Rank result and the Comment that would excuse an implausible one. Ice Hockey writes no comment result type at all - none of the twelve confirmed types is one - and 100 Rank holds a single value in the whole boundary, which Ice-Hockey-DQ-057 already reports as the defect it is. Where golf writes dq, wd or mdf beside a result, this sport writes it in the event status: Finished OT, Finished AP, Finished after awarded win. Decided 2026-08-14 with the six other comment and rank templates. Measured inside the client's 25 templates; a club competition outside them was not read."
+            },
+            "GLOBAL-DQ-021": {
+                "signal": "Not applicable",
+                "reason": "Structural, twice over: no comment result type, and RESULT_TIE_VALUE_TYPE_LIST has no value in a head-to-head sport, where the pairing settles the place rather than a stored quantity. Soccer and Curling record the same absence for the same reason."
+            },
+            "GLOBAL-DQ-036": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template asks whether a Rank is missing or outside a plausible range, and this sport ranks nothing at event level - 100 Rank holds one value in the boundary, on the 2015 event that also carries the sport's only athlete participation. A head-to-head match is settled by its score, which Ice-Hockey-DQ-057, -058 and -059 read."
+            },
+            "GLOBAL-DQ-052": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template validates the Comment result against the Rank, full time, duration and medal it is meant to excuse. This sport writes no comment result, no full time and no duration, so four of its five inputs do not exist."
+            },
+            "GLOBAL-DQ-116": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template asks whether two competitors sharing a place also share the score that place was read from. Ice Hockey stores no event Rank to share and no comment to excuse it; RESULT_SCORE_TYPE_ID has no value here either, since a head-to-head place comes from the pairing. Ice-Hockey-DQ-058 asks the answerable form - two sides level in a round that must separate them."
+            },
+            "GLOBAL-DQ-117": {
+                "signal": "Not applicable",
+                "reason": "Structural: the same comment absence read against the score. Neither the comment type nor the single scalar score a place is decided from exists in this sport."
+            },
+            "GLOBAL-DQ-122": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template asks whether a Rank stands without the value it was read from. There is no event Rank to stand, no tie-value field in a head-to-head sport, and no comment to excuse either."
             },
             "GLOBAL-DQ-019": {
                 "signal": "Not applicable",
