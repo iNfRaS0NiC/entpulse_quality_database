@@ -12636,6 +12636,116 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "14.08.2026 07-56-32",
+                     "startedUtc":  "2026-08-14T05:56:32Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-014",
+                                        "runKey":  "Modern-Pentathlon-DQ-014",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_WITHOUT_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  8,
+                                        "findings":  7,
+                                        "eligible":  1217,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "14.08.2026 07-56-33",
+                     "startedUtc":  "2026-08-14T05:56:33Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-015",
+                                        "runKey":  "Modern-Pentathlon-DQ-015",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  8,
+                                        "findings":  7,
+                                        "eligible":  1209,
+                                        "seconds":  3.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "14.08.2026 07-56-37",
+                     "startedUtc":  "2026-08-14T05:56:37Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-020",
+                                        "runKey":  "Modern-Pentathlon-DQ-020",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  1801,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "14.08.2026 07-56-38",
+                     "startedUtc":  "2026-08-14T05:56:38Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-023",
+                                        "runKey":  "Modern-Pentathlon-DQ-023",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_EVENTS",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  24,
+                                        "findings":  23,
+                                        "eligible":  1797,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "14.08.2026 07-56-39",
+                     "startedUtc":  "2026-08-14T05:56:39Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-028",
+                                        "runKey":  "Modern-Pentathlon-DQ-028",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_DISCIPLINE_CONTRADICTS_LINKED_EVENT",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  1797,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1kWKqdBc2ZD1AYcMEzGUmZHzgjfEgnLyf8AfbCvkxuKs"

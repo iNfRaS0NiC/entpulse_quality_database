@@ -13026,6 +13026,116 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "14.08.2026 07-55-22",
+                     "startedUtc":  "2026-08-14T05:55:22Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-019",
+                                        "runKey":  "BMX-DQ-019",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_EVENTS",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  433,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "14.08.2026 07-55-23",
+                     "startedUtc":  "2026-08-14T05:55:23Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-043",
+                                        "runKey":  "BMX-DQ-043",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_WITHOUT_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  117,
+                                        "findings":  116,
+                                        "eligible":  547,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "14.08.2026 07-55-24",
+                     "startedUtc":  "2026-08-14T05:55:24Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-047",
+                                        "runKey":  "BMX-DQ-047",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  10,
+                                        "findings":  9,
+                                        "eligible":  417,
+                                        "seconds":  2.5,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "14.08.2026 07-55-27",
+                     "startedUtc":  "2026-08-14T05:55:27Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-081",
+                                        "runKey":  "BMX-DQ-081",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  433,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "14.08.2026 07-55-28",
+                     "startedUtc":  "2026-08-14T05:55:28Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-087",
+                                        "runKey":  "BMX-DQ-087",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_DISCIPLINE_CONTRADICTS_LINKED_EVENT",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  433,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE"

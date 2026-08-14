@@ -1421,35 +1421,58 @@ FROM (
         -- eight finalists is one broken import and not six, and reported per competitor it
         -- read as six - against a coverage count of every Final participant in the sport,
         -- which made the proportion wrong in both halves.
+        -- The Event id config is a list, so membership is FIND_IN_SET rather than a numeric
+        -- comparison. That function cannot use an index and is evaluated per row, so asking it
+        -- inside a correlated EXISTS - once per competitor per event, twice over - made this
+        -- statement unrunnable: Artistic Gymnastics returned in 19 seconds on 2026-08-12 and
+        -- timed out at 180 after the operator changed. The map from event to covering statistic
+        -- is therefore built once for the sport and joined, which asks the list question once
+        -- per statistic instead of once per competitor.
         SELECT
             e.id AS event_id,
             e.name AS event_name,
             tt.name AS template_name,
             t.name AS tournament_name,
             p.name AS participant_name,
-            CASE WHEN NOT EXISTS (
-                    SELECT 1
-                    FROM statistic_config sc
-                    JOIN statistic s ON s.id = sc.statisticFK
-                         AND s.del = 'no'
-                         AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-                         AND s.object_typeFK = 3
-                    JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id
-                         AND sp.del = 'no'
-                         AND sp.participantFK = ep.participantFK
-                    WHERE sc.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
-                      AND sc.del = 'no'
-                      -- The value enumerates events. Read as a single number it named only the
-                      -- first, so every competitor of every later event in a list counted as
-                      -- omitted from a statistic that in fact covers them.
-                      AND FIND_IN_SET(e.id, sc.value) > 0
-                ) THEN 1 ELSE 0 END AS is_missing
+            CASE WHEN MAX(CASE WHEN sp.id IS NOT NULL THEN 1 ELSE 0 END) = 0
+                 THEN 1 ELSE 0 END AS is_missing
         FROM event e
         JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
         JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
         JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
         JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
         JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        -- Every (event, covering statistic) pair the sport holds, built once. Restricted to
+        -- statistics that hold participants, which is also what makes an event eligible: an
+        -- empty statistic omits everyone and is GLOBAL-DQ-010 rather than this.
+        JOIN (
+            SELECT DISTINCT
+                ex.id AS event_id,
+                sx.id AS statistic_id
+            FROM statistic_config scx
+            JOIN statistic sx ON sx.id = scx.statisticFK
+                 AND sx.del = 'no'
+                 AND sx.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+                 AND sx.object_typeFK = 3
+            JOIN tournament tx ON tx.id = sx.objectFK AND tx.del = 'no'
+            JOIN tournament_template ttx ON ttx.id = tx.tournament_templateFK AND ttx.del = 'no'
+                 AND ttx.sportFK = {{SPORT_ID}}
+            JOIN tournament_stage tsx ON tsx.tournamentFK = tx.id AND tsx.del = 'no'
+            JOIN event ex ON ex.tournament_stageFK = tsx.id AND ex.del = 'no'
+                 AND FIND_IN_SET(ex.id, scx.value) > 0
+            WHERE scx.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
+              AND scx.del = 'no'
+              AND tx.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              -- AND tx.tournament_templateFK = <tournament_template_id>
+              AND EXISTS (
+                  SELECT 1
+                  FROM statistic_participants{{SHARD_ID}} spx
+                  WHERE spx.statisticFK = sx.id AND spx.del = 'no'
+              )
+        ) m ON m.event_id = e.id
+        LEFT JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = m.statistic_id
+             AND sp.participantFK = ep.participantFK
+             AND sp.del = 'no'
         WHERE e.del = 'no'
           AND tt.sportFK = {{SPORT_ID}}
           AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
@@ -1457,22 +1480,9 @@ FROM (
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.id BETWEEN <from_event_id> AND <to_event_id>
-          AND EXISTS (
-              SELECT 1
-              FROM statistic_config sc2
-              JOIN statistic s2 ON s2.id = sc2.statisticFK
-                   AND s2.del = 'no'
-                   AND s2.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-                   AND s2.object_typeFK = 3
-              WHERE sc2.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
-                AND sc2.del = 'no'
-                AND FIND_IN_SET(e.id, sc2.value) > 0
-                AND EXISTS (
-                    SELECT 1
-                    FROM statistic_participants{{SHARD_ID}} spx
-                    WHERE spx.statisticFK = s2.id AND spx.del = 'no'
-                )
-          )
+        -- One row per competitor, whatever how many statistics cover the event: a competitor
+        -- listed by any of them is not missing.
+        GROUP BY e.id, e.name, tt.name, t.name, ep.id, p.name
     ) y
     GROUP BY y.event_id, y.event_name, y.template_name, y.tournament_name
 ) x
@@ -1496,20 +1506,29 @@ WHERE e.del = 'no'
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.id BETWEEN <from_event_id> AND <to_event_id>
-  AND EXISTS (
-      SELECT 1
-      FROM statistic_config sc2
-      JOIN statistic s2 ON s2.id = sc2.statisticFK
-           AND s2.del = 'no'
-           AND s2.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-           AND s2.object_typeFK = 3
-      WHERE sc2.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
-        AND sc2.del = 'no'
-        AND FIND_IN_SET(e.id, sc2.value) > 0
+  -- The same map the findings branch joins, so both halves read one population. Built once
+  -- rather than asked per event: FIND_IN_SET is a per-row function with no index behind it.
+  AND e.id IN (
+      SELECT ex.id
+      FROM statistic_config scx
+      JOIN statistic sx ON sx.id = scx.statisticFK
+           AND sx.del = 'no'
+           AND sx.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+           AND sx.object_typeFK = 3
+      JOIN tournament tx ON tx.id = sx.objectFK AND tx.del = 'no'
+      JOIN tournament_template ttx ON ttx.id = tx.tournament_templateFK AND ttx.del = 'no'
+           AND ttx.sportFK = {{SPORT_ID}}
+      JOIN tournament_stage tsx ON tsx.tournamentFK = tx.id AND tsx.del = 'no'
+      JOIN event ex ON ex.tournament_stageFK = tsx.id AND ex.del = 'no'
+           AND FIND_IN_SET(ex.id, scx.value) > 0
+      WHERE scx.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
+        AND scx.del = 'no'
+        AND tx.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+        -- AND tx.tournament_templateFK = <tournament_template_id>
         AND EXISTS (
             SELECT 1
             FROM statistic_participants{{SHARD_ID}} spx
-            WHERE spx.statisticFK = s2.id AND spx.del = 'no'
+            WHERE spx.statisticFK = sx.id AND spx.del = 'no'
         )
   )
 ;
