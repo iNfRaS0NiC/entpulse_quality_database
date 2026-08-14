@@ -397,6 +397,24 @@ a breakdown yet, and `Ice-Hockey-DQ-059` audits only sides holding all three, so
 depends on the answer - but one is recorded as open question 7 below, because the day a check
 does read them it will read 1091 first periods that are not first periods.
 
+**The event medal layer is almost unwritten, and that is a gap rather than a convention.**
+Measured 2026-08-14 over the 483 events in a medal round: 463 carry no `501 Medal` value at
+all - 278 finals and 185 bronze matches - and 737 of the 962 participations in those rounds
+lack the medal their own score implies. The `medal_related` property is on 8 events of 9803.
+Against that, the Comp.Rank `1277 Medal` field holds 10395 values over 443 statistics, and the
+three checks reading it return 0, 0 and 2.
+
+So the sport does record its medals, in the statistic, and does not record them on the event
+that awarded them. Decided 2026-08-14 that the event is the place a medal belongs and its
+absence is a defect: `Ice-Hockey-DQ-077`, `-078` and `-079` assert it, and `-079` names the
+medal each participation should hold, since the score already says who won. The 463 and the 737
+are a work list, not a storage habit.
+
+`GLOBAL-DQ-037` is the one medal template that stays out, and not on that ground: it reads
+`100 Rank` to decide which medal a finalist should hold, and this sport carries one Rank value
+in the whole boundary. `GLOBAL-DQ-093` asks the same question from the round type and is
+instantiated in its place.
+
 Nothing else beyond what the sections above record. This file is one day old and every other
 paragraph in it is a first reading.
 

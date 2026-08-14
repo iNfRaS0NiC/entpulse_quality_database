@@ -179,6 +179,23 @@ template was asking unasked, which is the one outcome the template layer exists 
 `GLOBAL-DQ-096` is a different shape again - 592 of its 593 rows are the single renaming of Czech
 Republic to Czechia, so the count measures one correction rather than 593.
 
+Three more crossed the threshold on the same sport and were assigned anyway, by decision of
+2026-08-14, which is the gate working in the other direction:
+
+| Check | Reported | Of which the sport behaving normally |
+|---|---:|---:|
+| `GLOBAL-DQ-094` | 737 | none - a medal round decides a medal, and the score already names it |
+| `GLOBAL-DQ-093` | 463 | none - same |
+| `GLOBAL-DQ-038` | 475 | none - same |
+
+The three read the event medal layer, which ice hockey has all but left empty: 463 of the 483
+events in a medal round hold no `501 Medal` at all, while the Comp.Rank medal field holds 10395
+values. The reading that would have kept them off the board - the sport keeps its medals in the
+statistic, so the event layer is unused rather than wrong - was put to the user and refused: a
+medal belongs on the event that awarded it, so its absence is a gap. The counts are large
+because the gap is, and `GLOBAL-DQ-094` names the medal each participation should hold rather
+than only reporting that one is missing.
+
 `GLOBAL-DQ-075` is the gate catching the reader instead of the data. `SPORTS/params.json`
 recorded 11 of the sport's 26 confirmed round types, so the check reported the other 15 as
 unexpected. Correcting the parameter to what `GLOBAL-DISCOVERY-018` had already measured returned
