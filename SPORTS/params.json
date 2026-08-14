@@ -957,7 +957,7 @@
         "RESULT_MIRROR_SCORE_TYPE_ID": 6,
         "SCOPE_TYPE_ID": 305,
         "SCOPE_TYPE_LIST": "305, 310, 322, 323, 324, 351, 595",
-        "ROUND_TYPE_LIST": "2, 3, 9, 38, 39, 40, 41, 42, 43, 44, 138",
+        "ROUND_TYPE_LIST": "2, 3, 4, 9, 22, 23, 24, 25, 26, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 89, 90, 91, 92, 135, 136, 138",
         "FINAL_ROUND_TYPE_LIST": "9",
         "MEDAL_ROUND_TYPE_LIST": "9, 138",
         "NOT_STARTED_DESC_LIST": "1"

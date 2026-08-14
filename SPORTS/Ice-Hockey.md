@@ -129,9 +129,17 @@ Twelve active result types inside the boundary, from `GLOBAL-DISCOVERY-007` narr
 | rank | 100 | integer | Finishing place | **1 row, 1 event** |
 
 **`1 Ordinary time` and `51 Period 1` reach every event in the boundary and `4 Final Result`
-does not.** 9803 against 9601 is 202 events holding a period score and no final result, which
-is the first thing a results check here has to be scoped around. `6 Running score` sits between
-them at 9791.
+does not.** 9803 against 9601, and measuring the 202 on 2026-08-14 settled what they are:
+**182 cancelled events and 20 not started**, every one of them holding a running score and a
+period score and none of them a final result. No finished event is among them - all 9596 hold
+the score, on both sides, under all four finished descriptions. `6 Running score` sits between
+the two totals at 9791.
+
+So the sport writes a scoreline for a match it never resolved, and the deciding result is the
+one field it withholds. That is the shape a results check here is scoped around: `finished` is
+the population, and the 202 belong to `GLOBAL-DQ-047`, which reports the 20 not-started ones.
+Five cancelled events from 2021 do hold a final result, which is the reverse of the habit and
+is not yet explained.
 
 **`100 Rank` holds a single row in the whole boundary.** This is a head-to-head sport where the
 result is a score, not a placing, so a rank on one event participant is a stray rather than a
@@ -202,6 +210,26 @@ Period scores exist as result types `51`–`53` on 8501 to 9803 events and as sc
 `322`–`324` on 898. The scope layer is the newer and thinner of the two, and a check reading
 periods must choose one and say which; reading both would double-count every event that has
 them in both places.
+
+**What the scope layer actually holds is a boxscore, not a scoreline.** `GLOBAL-DISCOVERY-010`
+returns 129 rows over three storage layers, and the shape is unlike every listing sport in this
+package:
+
+| Layer | What owns a value | Fields | Reach |
+|---|---|---:|---|
+| `scope_result` | the team | 17 | `164 shots`, `167 faceoff_total_wins`, `165 penalty_minutes`, `86 penalties`, `170 goalie_saves`, `401 goalie_save_percentage`, `468 shooting_percentage`, `470 powerplay_percentage`, `471 penalty_killing_percentage`, `155 blocks`, `221 hits`, `273 missed_shots`, `469 empty_net_goals` |
+| `lineup_scope_result` | one player in the lineup | 18 | the same fields per player, plus `2 points`, `152 assists`, `161 plus_minus`, `177 time_on_ice_secs`, `175 faceoffs_won` |
+| `event_scope_detail` | the container | 1 | `ref_eventFK`, 4 rows under `351 aggregate_score` |
+
+Two facts constrain any check written here. **The team-level `305 final_result` scope carries no
+`162 goals` field at all** - goals appear only under the three period scopes, on 881 to 882
+containers - so the score cannot be read from the final-result scope. And **the per-player layer
+is the larger of the two**: `152 assists` alone holds 31952 values over 1047 containers, against
+1620 rows over 810 for any team field.
+
+The boxscore is what makes the 12 per cent reach of the scope layer bearable rather than a
+defect: a match without it is a match nobody typed a boxscore for, not a match with a missing
+score. `GLOBAL-DQ-107` reports all 8410 of them and is deliberately not instantiated.
 
 <!-- MANUAL PASTE ZONE: 5 SCOPES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -309,12 +337,25 @@ before it is applied here.
 
 ## Event and round representation
 
-26 round types inside the boundary. The group stage is numbered rather than named — `38 "1"`
-through `44 "7"`, carrying 4571, 1280, 1274, 475, 471, 118 and 110 events — and the knockout is
-named: `3 Quarter Finals` (427), `2 Semi Finals` (338), `9 Final` (291), `138 bronze` (198).
+26 round types inside the boundary, and together they account for all 9803 events. The group
+stage is numbered rather than named — `38 "1"` through `44 "7"`, carrying 4571, 1280, 1274, 475,
+471, 118 and 110 events — the knockout is named: `3 Quarter Finals` (427), `2 Semi Finals` (338),
+`9 Final` (291), `138 bronze` (198), `4 1/8` (8) — and a third group settles places rather than
+advancement: `22 5/6` (81), `26 5/8` (50), `23 7/8` (23), `24 9/10` (12), `25 11/12` (8),
+`136 9/12` (3), `135 13/14` (1).
+
+The remaining seven are second numbered series: `89 "1"` (38), `90 "2"` (5), `91 "3"` (3),
+`92 "4"` (1), and `45 "8"` (7), `46 "9"` (7), `47 "10"` (3).
+
+The full confirmed set is `2, 3, 4, 9, 22, 23, 24, 25, 26, 38, 39, 40, 41, 42, 43, 44, 45, 46,
+47, 89, 90, 91, 92, 135, 136, 138`, and `SPORTS/params.json` records exactly that under
+`ROUND_TYPE_LIST`. It first recorded 11 of them, and `GLOBAL-DQ-075` reported the other 15 as
+unexpected round types — 250 events that were filed correctly. `POWERBI.md` records the case.
 
 **The numbered round types carry names that are bare digits**, so a round type's name cannot be
-matched as text without colliding with a placing. The id is the identifier here.
+matched as text without colliding with a placing. Worse, the names repeat across ids: `38` and
+`89` are both named `1`, `39` and `90` both `2`, `40` and `91` both `3`, `41` and `92` both `4`.
+The id is the identifier here, and no statement may match these rounds by name.
 
 `Round` is also an event property on all 9803 events, holding a number. Whether it agrees with
 `event.round_typeFK` is not measured.
@@ -339,11 +380,18 @@ it is a first reading.
    whether the two agree where both exist is unmeasured, and a period check has to know.
 3. **Does the `Round` property agree with `event.round_typeFK`?** Both are on every event in
    the boundary and neither has been read against the other.
-4. **What are the 202 events holding a period score and no Final Result?** 9803 against 9601,
-   and `GameEnded` sits on the same 9601.
+4. ~~**What are the 202 events holding a period score and no Final Result?**~~ Answered
+   2026-08-14: 182 cancelled and 20 not started, no finished event among them. Recorded under
+   Event result types above, and `Ice-Hockey-DQ-057` guards the finished population.
 5. **Are the 20 events with no `object_discipline` relation also the 20 `notstarted` events?**
    The counts are equal, which is either the explanation or a coincidence worth ruling out.
-6. **Is the single `athlete` event participation, the single `100 Rank` value and the one
-   event they share the same defect?** All three point at one event in 2015.
+6. ~~**Is the single `athlete` event participation, the single `100 Rank` value and the one
+   event they share the same defect?**~~ Answered 2026-08-14: yes, and the event is
+   **1837359 Poland-Ukraine**, World Championship 2, 2015-04-22. It carries three
+   `event_participants` rows where every other event in the sport carries two - the two teams
+   and Aleksandr Ossipov - and the third holds the sport's only `100 Rank` value and no
+   `4 Final Result`. `Ice-Hockey-DQ-057` found it independently as its single finding, which is
+   what made the three observations one row. It is one correction, and it belongs to the
+   colleagues rather than to a check.
 
 <!-- MANUAL PASTE ZONE: 5 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

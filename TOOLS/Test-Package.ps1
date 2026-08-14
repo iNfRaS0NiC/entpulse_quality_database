@@ -1337,6 +1337,15 @@ if (Test-Path -LiteralPath $paramsPath) {
                 $recorded = @($params.$sport.PSObject.Properties.Name | Where-Object { $ReservedParamKeys -notcontains $_ })
                 $naBlock = $params.$sport.PSObject.Properties | Where-Object { $_.Name -eq $NotApplicableKey }
                 if ($naBlock) { $unsupplied = @($naBlock.Value.PSObject.Properties.Name) }
+
+                # The client boundary is declared one way round or the other, and the sport
+                # that names what the client takes has still supplied the token every template
+                # reads: TOOLS/Run-Query.ps1 computes the complement at run time. Asking for
+                # the exclusion by name here would force a sport to record both, which the
+                # rule immediately above this one forbids.
+                if ($recorded -contains $InScopeKey -and $recorded -notcontains $ClientScopeKey) {
+                    $recorded += $ClientScopeKey
+                }
             }
             foreach ($token in $needed) {
                 if ($unsupplied -contains $token) {

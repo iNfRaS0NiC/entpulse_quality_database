@@ -137,6 +137,36 @@ nothing, which is the correct answer to the question the rules ask.
 This is the counterpart of `WORKFLOW.md`'s "Zero findings never retires a check": a small count
 is no reason to withdraw a check, and a large one is no reason to trust it.
 
+Ice Hockey opened its first two bands on 2026-08-14 by running all 66 candidates its recorded
+parameters supported, and thirteen of them crossed the threshold. Three were assigned, ten were
+not:
+
+| Check | Reported | Of which the sport behaving normally |
+|---|---:|---:|
+| `GLOBAL-DQ-030` | 371 | none established - assigned |
+| `GLOBAL-DQ-043` | 324 | none established - assigned |
+| `GLOBAL-DQ-096` | 593 | none, but 592 are one renaming - assigned |
+| `GLOBAL-DQ-009` | 15690 | the whole sport registry, which the client boundary cannot reach |
+| `GLOBAL-DQ-107` | 8410 | the scope layer covers 12 per cent of the events |
+| `GLOBAL-DQ-058` | 8192 | the lineup layer covers 16 per cent of the events |
+| `GLOBAL-DQ-049` | 1767 | `Australia-Finland` is how the sport names every event |
+| `GLOBAL-DQ-068` | 554 | 376 differ by one player, which is an ordinary roster |
+| `GLOBAL-DQ-084` | 297 | 278 - a drawn match is a legal ice hockey result |
+| `GLOBAL-DQ-040` | 261 | 249 undeterminable - the Event id config is on 33 statistics |
+| `GLOBAL-DQ-065` | 226 | squads of 24 to 27, which is an ordinary squad |
+| `GLOBAL-DQ-090` | 219 | scheduled 2026 fixtures holding a zero running score |
+| `GLOBAL-DQ-075` | 250 | all of them - the parameter was wrong, not the data |
+
+`GLOBAL-DQ-084` is the case worth keeping: the rule holds in every head-to-head sport documented
+before this one, and ice hockey is the first where a tie is the result rather than a defect.
+`GLOBAL-DQ-096` is the opposite shape - 592 of its 593 rows are the single renaming of Czech
+Republic to Czechia, so the count measures one correction rather than 593.
+
+`GLOBAL-DQ-075` is the gate catching the reader instead of the data. `SPORTS/params.json`
+recorded 11 of the sport's 26 confirmed round types, so the check reported the other 15 as
+unexpected. Correcting the parameter to what `GLOBAL-DISCOVERY-018` had already measured returned
+it to zero, which is what the check is for: it now reports a round type nobody has confirmed.
+
 ## SQL header and name contract
 
 Every approved query begins with `SELECT` as its first word. `SELECT` is alone on the
