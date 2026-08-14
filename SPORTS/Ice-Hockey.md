@@ -364,8 +364,25 @@ The id is the identifier here, and no statement may match these rounds by name.
 
 ## Confirmed sport-specific storage semantics
 
-Nothing beyond what the sections above record. This file is one day old and every paragraph in
-it is a first reading.
+**A level score is a result in this sport, and only some rounds forbid it.** Measured
+2026-08-14: 297 events in the boundary hold the same `4 Final Result` on both sides, and 290 of
+them are in the numbered group rounds `38` to `46`, where a draw is the outcome and the sport
+awards points for it. Whether a tie is legal is therefore a question about the round, not about
+the sport, and no statement here may assert the sport-level rule. `GLOBAL-DQ-084` is recorded
+`Not applicable` in `SPORTS/params.json` on exactly that ground, which is the same signal and
+the same reason `SPORTS/Soccer.md` records; `GLOBAL_DQ/README.md` owns the prerequisite that
+demands it.
+
+The 7 remaining are in rounds that must produce a winner, and they are a defect list rather
+than a rule: the 1998 World Championship final Sweden-Finland stored `0-0`, the 1998 and 1999
+semi-finals, the 2001 U-20 final at `5-5`, and three placement matches from 1933 and 1995. A
+knockout round decided in overtime or on penalty shots stores the deciding goal in
+`2 Extra time` or `3 Penalty shootout`, so a level final result with neither is a match whose
+resolution was never imported. Soccer carries the narrower rule as `Soccer-DQ-022`; the
+equivalent for this sport is **not written and not approved**.
+
+Nothing else beyond what the sections above record. This file is one day old and every other
+paragraph in it is a first reading.
 
 <!-- MANUAL PASTE ZONE: 5 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 

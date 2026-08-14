@@ -151,15 +151,23 @@ not:
 | `GLOBAL-DQ-058` | 8192 | the lineup layer covers 16 per cent of the events |
 | `GLOBAL-DQ-049` | 1767 | `Australia-Finland` is how the sport names every event |
 | `GLOBAL-DQ-068` | 554 | 376 differ by one player, which is an ordinary roster |
-| `GLOBAL-DQ-084` | 297 | 278 - a drawn match is a legal ice hockey result |
+| `GLOBAL-DQ-084` | 297 | 290 - the sport's format admits a draw, so the check is outside its own prerequisite |
 | `GLOBAL-DQ-040` | 261 | 249 undeterminable - the Event id config is on 33 statistics |
 | `GLOBAL-DQ-065` | 226 | squads of 24 to 27, which is an ordinary squad |
 | `GLOBAL-DQ-090` | 219 | scheduled 2026 fixtures holding a zero running score |
 | `GLOBAL-DQ-075` | 250 | all of them - the parameter was wrong, not the data |
 
-`GLOBAL-DQ-084` is the case worth keeping: the rule holds in every head-to-head sport documented
-before this one, and ice hockey is the first where a tie is the result rather than a defect.
-`GLOBAL-DQ-096` is the opposite shape - 592 of its 593 rows are the single renaming of Czech
+`GLOBAL-DQ-084` is not a case of the gate finding a rule that fails, and it is recorded here so
+that nobody reads it as one. **Whether a level score is a result or a defect is a per-sport
+question and the template already says so**: its prerequisite admits only a head-to-head sport
+whose format admits no draw, and instructs any sport that does admit one to record that instead
+of instantiating it. Soccer did exactly that before ice hockey was opened, with the same reason
+and its own narrower `Soccer-DQ-022` for knockout rounds; Curling instantiates it because extra
+ends leave it nothing to draw. Ice hockey joins the first group, not a new one. The 297 rows were
+never evidence against the template - they are what running a check outside its own prerequisite
+returns, and reading them is how the prerequisite got applied.
+
+`GLOBAL-DQ-096` is a different shape again - 592 of its 593 rows are the single renaming of Czech
 Republic to Czechia, so the count measures one correction rather than 593.
 
 `GLOBAL-DQ-075` is the gate catching the reader instead of the data. `SPORTS/params.json`
