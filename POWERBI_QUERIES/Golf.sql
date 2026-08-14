@@ -1305,3 +1305,89 @@ WHERE sr.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-098
+    -- Name - COMP.RANK_SETTINGS_EVENT_ID_LIST_TRUNCATED
+    -- What it does: Finds Comp.Rank whose Event id list fills its column exactly, so the list was cut short, separating one left ending in a fragment of an id from one cut at a number boundary.
+    CASE
+        WHEN NOT EXISTS (
+                SELECT 1
+                FROM tournament_stage tsl
+                JOIN event el ON el.tournament_stageFK = tsl.id AND el.del = 'no'
+                WHERE tsl.tournamentFK = t.id AND tsl.del = 'no'
+                  AND el.id = CAST(SUBSTRING_INDEX(sc.value, ',', -1) AS UNSIGNED)
+            ) THEN 'EVENT_ID_LIST_CUT_MID_NUMBER'
+        ELSE 'EVENT_ID_LIST_CUT_AT_A_NUMBER_BOUNDARY'
+    END AS check_type,
+    s.id AS statistic_id,
+    s.name AS statistic_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    (LENGTH(sc.value) - LENGTH(REPLACE(sc.value, ',', '')) + 1) AS ids_named,
+    SUBSTRING_INDEX(sc.value, ',', -1) AS last_id_in_the_list,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The Event id config holds a comma-separated list, and the column it holds it in stops at 255
+-- characters. Measured on Golf 2026-08-14: 167 values are exactly 255 characters long, nothing
+-- in the sport is longer, and between 240 and 254 there is nothing at all - one value sits at
+-- 231 and five at 239. A distribution of list lengths does not have a cliff; a column limit
+-- does. Freestyle Skiing holds 49 of the same, and no other sport on the server holds any.
+--
+-- What the statistic loses is every event after the cut. What the database gains is worse, and
+-- only in the first of the two shapes below.
+--
+-- EVENT_ID_LIST_CUT_MID_NUMBER is the visible half: the cut fell inside an id and left its
+-- leading digits behind as a token of their own. Thirteen Golf statistics carry one, all of
+-- them with six-digit event ids, because 255 characters hold 36 of those and three characters
+-- of the 37th. Every one of those fragments is a valid event id - 412, 135, 455, 622, 794, 988
+-- and 1353 are football matches played in 2000 - so a join on this field attaches a golf
+-- ranking to a football fixture rather than failing. GLOBAL-DQ-042 did exactly that until
+-- 2026-08-14.
+--
+-- EVENT_ID_LIST_CUT_AT_A_NUMBER_BOUNDARY is the invisible half, and it is the larger one: 154
+-- statistics whose ids are seven digits, where 255 characters hold exactly 32 of them and the
+-- cut lands on a comma. The value reads as a complete list and resolves cleanly, and nothing
+-- but its length says the events after the 32nd were ever meant to be there. That is why this
+-- check reads the length rather than the resolution: Golf-DQ-057 already reports what fails to
+-- resolve, and it sees thirteen of these hundred and sixty-seven.
+--
+-- This is a schema defect rather than a data one. Correcting the values without widening the
+-- column would truncate them again on the next write.
+FROM statistic_config sc
+JOIN statistic s ON s.id = sc.statisticFK AND s.del = 'no'
+     AND s.statistic_typeFK = 11
+     AND s.object_typeFK = 3
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE sc.statistic_data_typeFK = 1471
+  AND sc.del = 'no'
+  AND tt.sportFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND LENGTH(sc.value) = 255
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic_config sc
+JOIN statistic s ON s.id = sc.statisticFK AND s.del = 'no'
+     AND s.statistic_typeFK = 11
+     AND s.object_typeFK = 3
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE sc.statistic_data_typeFK = 1471
+  AND sc.del = 'no'
+  AND tt.sportFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND TRIM(COALESCE(sc.value, '')) <> ''
+
+ORDER BY sort_order, ids_named DESC, statistic_id;

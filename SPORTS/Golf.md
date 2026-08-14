@@ -406,6 +406,30 @@ a million questions here because the Final round type is `225 Main Phase` - ever
 - and the fields run to 250. It returns Artistic Gymnastics in 4.6 seconds and times out on Golf.
 Asking it once instead, as two sets subtracted from one another, takes 39.
 
+**167 Comp.Rank statistics have a truncated Event id list, and 154 of them look intact.**
+Measured 2026-08-14. The column stops at 255 characters and the sport's values pile up against
+that number rather than approaching it: 167 sit at exactly 255, five at 239, one at 231, and
+nothing at all between 240 and 254. `DATABASE.md` `DB-SEM-011` owns the fact; `Golf-DQ-098`
+reports it and separates the two shapes, because they are found differently and repaired the
+same way.
+
+The thirteen with six-digit event ids are cut inside a number. 255 characters hold 36 of them
+and three characters of the 37th, so the value ends in a fragment - `412`, `135`, `455`, `622`,
+`794`, `988`, `1353` - and every one of those fragments is a valid event id belonging to a
+football match played in 2000. `Golf-DQ-057` reports these as
+`EVENT_ID_LIST_NOT_ALL_UNDER_TOURNAMENT`, which is how the whole defect was found.
+
+The hundred and fifty-four with seven-digit ids are cut on a comma. 255 characters hold exactly
+32 of them, the value reads as a complete list, it resolves cleanly against the tournament, and
+nothing but its length says the events after the 32nd were ever meant to be named. Nothing else
+in the package can see them.
+
+The consequence is the same in both: the statistic's event scope stops early, so every check
+that reads which events a Comp.Rank covers is reading a short list. The extra consequence in the
+first thirteen is that the list also names an event from another sport, and a join on it
+succeeds. This is a schema defect rather than a data one - correcting the values without
+widening the column would truncate them again on the next write.
+
 <!-- MANUAL PASTE ZONE: 3 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values

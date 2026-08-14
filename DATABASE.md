@@ -962,6 +962,24 @@ statistic covers are then silently undercounted, and a well-formed list reads as
 is not a number. Five DQ templates did exactly that until 2026-08-14; `GLOBAL_DQ/README.md`
 records which.
 
+**And the column cannot hold a long one.** No value of this field anywhere on the server exceeds
+255 characters, and the lengths pile up against that number rather than approaching it: measured
+on Golf 2026-08-14, 167 values sit at exactly 255, one at 231, five at 239, and nothing at all
+between 240 and 254. A distribution of list lengths has no cliff in it; a column limit does. The
+write is cut silently and every event after the cut is lost from the statistic's scope.
+
+Which half of the defect is visible depends on how long the sport's event ids are. Seven-digit
+ids pack 32 to a 255-character value with the cut landing on a comma, so the value reads as a
+complete list and only its length betrays it - 154 of Golf's. Six-digit ids pack 36 and leave
+three characters of the 37th behind as a token of its own, and that fragment is itself a valid
+event id: `412`, `135`, `455`, `622`, `794`, `988` and `1353` are football matches played in
+2000. A join on such a value attaches one sport's ranking to another sport's fixture rather than
+failing, which is the more dangerous half and the smaller one at thirteen.
+
+Freestyle Skiing holds 49 values at the limit. No other sport on the server holds one. Golf runs
+`Golf-DQ-098` against it; correcting the values without widening the column would truncate them
+again on the next write.
+
 ### `DB-SEM-012` — One round name exists as a knockout and a non-knockout round type
 
 `round_type.knockout` is the discriminator that separates two rows sharing one `name`. Of
