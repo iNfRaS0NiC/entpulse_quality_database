@@ -5064,6 +5064,43 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Golf 14.08.2026 13-21-45",
+                     "startedUtc":  "2026-08-14T11:21:45Z",
+                     "output":  "D:\\SQL\u0027s Output\\Golf 14.08.2026 13-21-45",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-092",
+                                        "runKey":  "Golf-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MATCH_PLAY_OUTCOME_INCOHERENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  1448,
+                                        "findings":  1447,
+                                        "eligible":  12984,
+                                        "seconds":  4.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-108",
+                                        "runKey":  "Golf-DQ-108",
+                                        "parameters":  "",
+                                        "name":  "EVENT_HOLES_PLAYED_CONTRADICTS_THE_MATCH_PLAY_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  279,
+                                        "findings":  278,
+                                        "eligible":  4686,
+                                        "seconds":  2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"

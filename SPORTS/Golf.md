@@ -82,8 +82,19 @@ second shape.
 So a foursome is 1 and 3 against 2 and 4, and the side is readable from the database rather than
 only from the event name. This corrects what this file said until today - that nothing in the
 database says which two belong together - and the correction is left visible because
-`Golf-DQ-092` was written under the old belief and leaves four-entry events unjudged for exactly
-that reason. Extending it is now possible and is not yet done.
+`Golf-DQ-092` was written under the old belief and left four-entry events unjudged for exactly
+that reason. It was extended to them on 2026-08-14: every count in it is now a count of sides
+rather than of rows, and 2132 finished four-player events entered its eligible population.
+
+**A side speaks once, not once per player.** Measured the same day: 2017 of those 2132 events
+carry exactly two values in `4 Final Result`, one on each side, and the partner's entry is left
+empty. 40 more carry none at all and 71 carry more. So a silent row beside a spoken one is the
+convention, and a side is incoherent only when it holds two different words - never when it holds
+fewer words than players. Reading it the other way reported all 2089 correct foursomes as
+contradictions, which is how the convention was found.
+
+`39 Match Play Score` follows the same habit in singles: 7783 of the 9549 two-sided events that
+carry a verdict hold the score on one entry only, and 1766 hold it on both.
 
 The other two paths were re-measured the same day and are genuinely absent: the sport holds zero
 `lineup` rows, and the `1429` Team data field is declared for shard 11 and unused. The number was
@@ -285,6 +296,27 @@ zero is absent, because eighteen holes are not played in no strokes. Where a sta
 whether the field was filled in at all - `Golf-DQ-106` - a zero is present, because somebody wrote
 it, and a Stableford round worth no points is a real round.
 
+**A gender that disagrees with its stage is a defect, and a mixed field is not one.** Decided by
+the user 2026-08-14, which settles the question `Golf-DQ-075` and `Golf-DQ-073` were held open on.
+A woman may not stand in a men's event, and where the two disagree something has to be corrected
+rather than tolerated. A team holding a man and a woman is a different thing and is not this rule:
+such an event carries `mixed` on its stage, which is a third value and not a disagreement with
+either.
+
+That distinction is already what the two checks do, confirmed by measurement the same day. Of the
+1680 entries inside the client boundary whose participant gender differs from their stage's, 1540
+sit on a stage recorded `mixed` and are correct - 12 stroke play events holding 528 women and 788
+men, and 28 match play events holding 112 of each. The two checks exclude them and report the
+remaining 140.
+
+What that leaves is two shapes, and neither is a woman quietly playing well. 105 entries over 29
+participants are national and continental team entities - `England`, `France`, `Australia`,
+`Denmark` - stored once with one gender and entered under both, which is one record needing a
+second. 35 more are individual people, and three of them recur across both disciplines with a
+gender the name contradicts. Michelle Wie West playing a men's stroke play event is the only
+entry in the population that describes something that happened, and under this decision the stage
+that admitted her is what is wrong rather than her.
+
 **An amateur is paid nothing, and the finishing order does not care.** Found 2026-08-14 while
 writing `Golf-DQ-107`. 24 cards inside the boundary carry a prize of zero beside a place that
 would have been paid, across thirteen 2026 LPGA events; Kiara Romero was placed sixth in the US
@@ -428,6 +460,28 @@ rounds written into a field that holds the par of one. The rest are recorded as 
 The property is not decoration. `36 Par` is measured against it - the arithmetic recorded under
 "Event result types" cannot be checked on a stage that does not carry it, and 592 events holding
 43282 participations are in exactly that position.
+
+**`current_hole` is `Thru`, it belongs to match play alone, and it counts holes rather than
+reaching 18.** Measured 2026-08-14 across every discipline and status in the sport. 4860 of 12993
+finished match play events carry it; **no stroke play event carries it in any status**, which
+makes it a property scoped to the discipline that needs it rather than one missing from 3306
+stroke play events. This corrects the note taken from the Builder on 2026-08-13, which recorded it
+as written for both.
+
+Its value follows the match rather than the round. A match won `2&1` ended two holes up with one
+to play, so 17 holes were played; `3&2` ends after 16. Confirmed: of 2936 finished matches holding
+both an `X&Y` score and a numeric `current_hole`, 2797 hold exactly `18 − Y`. A rule asserting 18
+would have called almost all of them wrong.
+
+Above 18 is also correct. A match tied after eighteen goes to sudden death, so 19 and 20 are the
+19th and 20th holes, and the amateur championships play 36-hole finals, so 36 is one match. What
+cannot happen is the other direction - a final margin or an `A/S` beside fewer than eighteen
+holes. `Golf-DQ-108` is written on exactly that split.
+
+One population inside it is unresolved and is recorded rather than assumed: 60 events read exactly
+6 holes played beside a final margin, on `European Tour 1` in clusters of a tournament week across
+2010, 2017, 2018, 2019 and 2022. A value frozen mid-match fits the Builder's behaviour; a
+short-form match play format would look identical. Not confirmed either way.
 
 <!-- MANUAL PASTE ZONE: 3 PROPERTIES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -978,8 +1032,7 @@ into the following year.
    Whether the Par order agrees with the stored Rank is a separate question and is not measured.
 6. ~~**How is a foursome's side to be read?**~~ Answered 2026-08-14 together with question 1:
    odd numbers are one side and even the other, confirmed on all 2008 four-entry events that name
-   every competitor. `Golf-DQ-092` still leaves them unjudged, which is now a gap in the check
-   rather than a gap in the database.
+   every competitor. `Golf-DQ-092` was extended to them on 2026-08-14 and the gap is closed.
 
 **The hole-by-hole scope layer is not audited for now.** Decided 2026-08-12. Its 29653897 values
 are counted sport-wide; most of them sit inside the client's boundary, and they are deliberately
