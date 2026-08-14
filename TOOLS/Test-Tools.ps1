@@ -3524,6 +3524,88 @@ Test-That 'the log accumulates rather than being replaced by the latest run' {
         'a tab that exists is not added again'
 }
 
+Test-That 'Overview counts what is still open, so a dismissed finding leaves the Rows cell' {
+    # The board's whole purpose is answering "how much is left". A row the reviewers marked
+    # No Issue / Change is settled and stays in the result for good, so counting it says there
+    # is work where there is none - 251 of Golf-DQ-048's 283 rows, on the board this came from.
+    #
+    # Three findings here, two of them dismissed. Rows is four - the fixture counts the coverage
+    # row - and must come back as two.
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'OPEN'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'New'))
+    $keys = @('A', 'B', 'C') | ForEach-Object { Get-SheetsFindingKey -Row @($_, '1') -Columns @(0, 1) }
+    $state = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7 }
+        EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'OPEN' }
+        Titles = @('Overview', 'OPEN'); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'OPEN' = 9 }; SheetIndexOf = @{ 'Overview' = 0 }
+        ResultHeaderOf = @{ 'OPEN' = @('check_type', 'event_id', 'Review Status', 'Review Note') }
+        ReviewNotesOf = @{ 'OPEN' = @(
+                [pscustomobject]@{ Key = $keys[0]; Review = 'No Issue / Change'; Note = 'the sport' }
+                [pscustomobject]@{ Key = $keys[1]; Review = 'In Progress'; Note = 'being fixed' }
+                [pscustomobject]@{ Key = $keys[2]; Review = 'no change'; Note = 'legacy spelling' }
+            ) }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $state -OutputFolder 'x' `
+        -Collected @([pscustomobject]@{ Job = $job; Rows = @(
+                    [pscustomobject]@{ check_type = 'A'; event_id = '1' }
+                    [pscustomobject]@{ check_type = 'B'; event_id = '1' }
+                    [pscustomobject]@{ check_type = 'C'; event_id = '1' }
+                ) })
+
+    $rowsColumn = [array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1
+    $write = @($plan.Operations | Where-Object {
+            $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' -and $_.Range -eq "A7:H7" })
+    Assert-Equal 1 $write.Count 'the first span, on the row the check occupies'
+
+    $rows = @($write[0].Values[0])[$rowsColumn - 1]
+    # The legacy spelling counts. It reaches the tab renamed, so a run that failed to subtract
+    # it would report a row the board itself shows as settled.
+    Assert-Equal 2 $rows 'four rows less the two dismissed, the In Progress one still counted'
+
+    # And nothing the statement measured moved. A reviewer may close a row; they may not edit
+    # what the database returned. Findings and Eligible sit in the second span, past the three
+    # columns the run never writes through.
+    $second = @($plan.Operations | Where-Object {
+            $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' -and $_.Range -eq 'L7:V7' })
+    $from = 12
+    Assert-Equal 3 @($second[0].Values[0])[([array]::IndexOf($SheetsOverviewColumns, 'Findings') + 1 - $from)] 'Findings untouched'
+    Assert-Equal 900 @($second[0].Values[0])[([array]::IndexOf($SheetsOverviewColumns, 'Eligible') + 1 - $from)] 'Eligible untouched'
+}
+
+Test-That 'the dismissed count is the same match the tab writes, not a second opinion' {
+    # Overview subtracts before the tabs are planned, so the two could drift apart. They share
+    # one result: a note whose finding is gone cannot be put back beside a row, and it must not
+    # be subtracted from the count either. One dismissed note, key nowhere in this run.
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'MOVED'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $state = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7 }
+        EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{ 'Fixtureball-DQ-002' = 'MOVED' }
+        Titles = @('Overview', 'MOVED'); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'MOVED' = 9 }; SheetIndexOf = @{ 'Overview' = 0 }
+        ResultHeaderOf = @{ 'MOVED' = @('check_type', 'event_id', 'Review Status', 'Review Note') }
+        ReviewNotesOf = @{ 'MOVED' = @(
+                [pscustomobject]@{
+                    Key = (Get-SheetsFindingKey -Row @('X', '4242') -Columns @(0, 1))
+                    Review = 'No Issue / Change'; Note = 'about a row that has gone'
+                }) }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $state -OutputFolder 'x' -Stamp '14.08.2026 09-00-00' `
+        -Collected @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X'; event_id = '7' }) })
+
+    $rowsColumn = [array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1
+    $write = @($plan.Operations | Where-Object {
+            $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' -and $_.Range -eq "A7:H7" })
+    Assert-Equal 2 @($write[0].Values[0])[$rowsColumn - 1] 'nothing subtracted for a note with nowhere to go'
+
+    # And it is logged rather than lost, which is the other half of the same fact.
+    Assert-Equal 1 @($plan.Operations | Where-Object {
+            $_.Kind -eq 'Write' -and $_.Sheet -eq $SheetsReviewLogTabName }).Count 'the note is written to the log'
+}
+
 Test-That 'a check tab centres everything but the way out, which it widens instead' {
     $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'WIDE'; What = ''; Sql = 'SELECT 1;' }
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))

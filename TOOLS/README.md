@@ -818,10 +818,27 @@ they can correct a missing date of birth. The distinction from `Monitor` matters
 direction too: a `Monitor` check still has work in it, so labelling one informational would
 tell the reviewer to skip a tab that needs them.
 
-`Rows` is the count the console printed, and doubles as the jump to that check's tab. A
-check that failed shows `ERROR` instead, so it cannot be misread as a clean zero, and is
-left unlinked because it has no tab; the reason is on the console and in `_summary.csv`,
-along with the durations.
+`Rows` is what is still open, and doubles as the jump to that check's tab. A check that failed
+shows `ERROR` instead, so it cannot be misread as a clean zero, and is left unlinked because it
+has no tab; the reason is on the console and in `_summary.csv`, along with the durations.
+
+**It is the count the console printed less the rows the reviewers marked `No Issue / Change`.**
+The other two row verdicts need no such help. A row marked `Fixed` leaves the result the next
+time the check runs, because the thing it described is gone, so the count falls on its own; a
+row marked `In Progress` is open work and belongs in the count for as long as it says so. `No
+Issue / Change` is the one that is settled and never leaves: the reviewer has decided the row is
+the sport rather than a defect, so it returns every run for good. Counting it makes a finished
+check read as a busy one forever — on `Golf-DQ-048` that was 251 of 283 rows, a board saying
+there were 283 things to do when there were 32.
+
+`Findings`, `Eligible` and `Change` are untouched by this and always carry the full number. They
+are the run's own measurement of the database, and a reviewer's conclusion may close a row but
+may not edit what a statement returned. The tab still holds every row, dismissed ones included,
+so `Rows` and the tab differ on purpose and `Findings` beside it is where the difference shows.
+
+The subtraction uses the same match that puts the notes back beside their findings — computed
+once, read by both — so a note whose finding is no longer in the result is logged rather than
+subtracted. `Sheets.ps1` `$SheetsRowReviewDismissed` owns the value.
 
 `Status` is a manual tracking field, and its dropdown offers the same six words the live
 document does — one list, `$SheetsStatusBands` in `TOOLS/Sheets.ps1`, read by both:
@@ -1260,6 +1277,12 @@ exactly the `COVERAGE` row and nothing else; **2 to 100 in orange**; **above 100
 is a size judgement and not a severity one — severity is `Priority`, which comes from the
 category and does not move. Zero is deliberately uncoloured: a statement that returned nothing
 at all did not honour the coverage contract, and the defect is in the check.
+
+Because the cell counts what is open, the colour follows the review rather than the run, and
+that is the point of it: a check whose findings have all been dismissed goes green, and a
+reviewer working down the board by colour stops being sent back to it. A check dismissed down to
+zero is the one case where the uncoloured zero is not a defect in the statement — `Findings`
+beside it says what the run actually returned.
 
 The cell is a link to the check's tab and a number at the same time, which is why the count
 goes into the `HYPERLINK` formula unquoted. Quoted it is text: it sorts 1, 10, 2 and a band

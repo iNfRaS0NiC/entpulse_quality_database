@@ -361,6 +361,21 @@ $SheetsRowReviewBands = @(
     [pscustomobject]@{ Value = 'In Progress'; Background = '#E8F0FE'; Colour = '#1967D2' }
 )
 
+# The one of the three that closes a finding without changing the data, and the reason Overview
+# needs to know about it at all.
+#
+# The other two settle themselves. A row marked Fixed leaves the result the next time the check
+# runs, because the thing it described is no longer there - the count falls on its own and needs
+# no help. A row marked In Progress is still open work and belongs in the count for exactly as
+# long as it says so. No Issue / Change is different in kind: the reviewer has decided the row is
+# the sport rather than a defect, so the row stays in the result for good, and Overview's Rows
+# goes on reporting work that nobody is ever going to do. On Golf-DQ-048 that was 251 of 283.
+#
+# So Rows counts what is still open and the dismissed rows come out of it. Findings, Eligible and
+# Change are untouched: they are the run's own measurement of the database, and a reviewer's
+# conclusion is not allowed to edit what a statement returned. The tab still holds every row.
+$SheetsRowReviewDismissed = 'No Issue / Change'
+
 # What each spelling written before the list existed meant. Applied wherever a note passes
 # through, so a cell reaches its new column already reading as one of the values above rather
 # than being flagged by the dropdown the same run that introduced it.
@@ -1046,6 +1061,35 @@ function New-SheetsMergePlan {
         $titleOf[$runKey] = $title
     }
 
+    # What the reviewers already concluded about this run's findings, matched once and kept.
+    #
+    # It is done here, between the pass that settles the tab titles and the one that plans
+    # Overview, because Overview is written first and its Rows cell needs to know how many of
+    # these rows have been dismissed. Running the match twice would be the obvious alternative
+    # and is the wrong one: the two passes would each decide for themselves which note belongs
+    # to which finding, and the day they disagreed the board would report a number no tab
+    # supports. One result, two readers.
+    $carriedOf = @{}
+    $dismissedOf = @{}
+    foreach ($item in $Collected) {
+        $runKey = Get-JobRunKey -Job $item.Job
+        $written = @(@($item.Rows) | Select-Object -First $MaxRows)
+        if ($written.Count -eq 0) { continue }
+
+        $title = $titleOf[$runKey]
+        $carried = New-SheetsCarriedReview -Header @($written[0].PSObject.Properties.Name) -Rows $written `
+            -Was $(if ($Existing -and $Existing.ResultHeaderOf -and $Existing.ResultHeaderOf.ContainsKey($title)) {
+                    $Existing.ResultHeaderOf[$title]
+                } else { @() }) `
+            -Notes $(if ($Existing -and $Existing.ReviewNotesOf -and $Existing.ReviewNotesOf.ContainsKey($title)) {
+                    $Existing.ReviewNotesOf[$title]
+                } else { @() })
+
+        $carriedOf[$runKey] = $carried
+        $dismissedOf[$runKey] = @(@($carried.Review) |
+            Where-Object { [string]$_ -eq $SheetsRowReviewDismissed }).Count
+    }
+
     $cells = 0
     $seen = @{}
 
@@ -1063,10 +1107,21 @@ function New-SheetsMergePlan {
         #
         # The numeric columns a reviewer sorts and filters on are Findings, Eligible and
         # Change, and all three stay plain. Rows is the one that can afford to be a formula.
+        #
+        # And what it counts is what is still open. A row the reviewers marked No Issue /
+        # Change is a row they have already decided about, and it stays in the result for good
+        # because nothing about the database is going to change - so leaving it in the count
+        # makes a settled check read as a busy one forever. Those come out, here and only here:
+        # the number written into the cell is the one in $values, so the plain-number fallback
+        # for a check with no tab carries the same subtraction as the link.
         $rowsColumn = [array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1
+        if (($entry.RowsCell -isnot [string]) -and $dismissedOf.ContainsKey($runKey)) {
+            $values[$rowsColumn - 1] = [math]::Max(0, [int]$entry.RowsCell - [int]$dismissedOf[$runKey])
+        }
+
         $rowsLink = $null
         if ($titleOf.ContainsKey($runKey)) {
-            $rowsLink = New-SheetsGidLink -Sheet $titleOf[$runKey] -Text $entry.RowsCell
+            $rowsLink = New-SheetsGidLink -Sheet $titleOf[$runKey] -Text $values[$rowsColumn - 1]
         }
 
         if ($rowOf.ContainsKey($runKey)) {
@@ -1659,13 +1714,11 @@ function New-SheetsMergePlan {
             # correction removes rows and everything under them moves up, so a note left where
             # it was would end up against somebody else's finding - which reads exactly like a
             # judgement somebody made.
-            $carried = New-SheetsCarriedReview -Header $dataHeader -Rows $written `
-                -Was $(if ($Existing -and $Existing.ResultHeaderOf -and $Existing.ResultHeaderOf.ContainsKey($title)) {
-                        $Existing.ResultHeaderOf[$title]
-                    } else { @() }) `
-                -Notes $(if ($Existing -and $Existing.ReviewNotesOf -and $Existing.ReviewNotesOf.ContainsKey($title)) {
-                        $Existing.ReviewNotesOf[$title]
-                    } else { @() })
+            # Matched in the pass that ran before Overview was planned, and taken from there
+            # rather than done again. Overview's Rows already subtracted the dismissed rows this
+            # answer names, so a second match reaching a different answer would leave the board
+            # reporting a count its own tab does not support.
+            $carried = $carriedOf[$runKey]
 
             foreach ($lost in @($carried.Dropped)) {
                 $dropped += [pscustomobject]@{
