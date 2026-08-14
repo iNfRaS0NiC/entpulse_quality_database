@@ -72,6 +72,23 @@ pair's members in a lineup finds nothing. The `team` participants are a differen
 continental and national sides such as `Asia`, `Asia (f)` and `Captains`, used by the cup
 competitions.
 
+**`event_participants.number` carries the side, and odd against even is the rule.** Measured
+2026-08-14 over every finished Match Play event inside the client boundary. A singles match holds
+numbers 1 and 2. A foursome holds 1, 2, 3 and 4 - not 1, 1, 2, 2 - and the pairing is not the
+consecutive one it looks like: in all 2008 four-entry events where every competitor is named in
+the event name, the two named first carry numbers **1 and 3**. There is no exception and no
+second shape.
+
+So a foursome is 1 and 3 against 2 and 4, and the side is readable from the database rather than
+only from the event name. This corrects what this file said until today - that nothing in the
+database says which two belong together - and the correction is left visible because
+`Golf-DQ-092` was written under the old belief and leaves four-entry events unjudged for exactly
+that reason. Extending it is now possible and is not yet done.
+
+The other two paths were re-measured the same day and are genuinely absent: the sport holds zero
+`lineup` rows, and the `1429` Team data field is declared for shard 11 and unused. The number was
+the one path nobody had read.
+
 <!-- MANUAL PASTE ZONE: 3 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types
@@ -839,25 +856,30 @@ into the following year.
 
 ## Open questions
 
-1. **How is a pair participant meant to be read?** A foursome is one `athlete` row holding two
-   names and no lineup. Whether the two players are reachable at all, and through what, is
-   unknown; if they are not, the sport cannot answer "who played" for its pairs formats.
+1. ~~**How is a pair participant meant to be read?**~~ Answered 2026-08-14. The two players are
+   reachable: a foursome is four `event_participants` rows, and `number` carries the side.
+   **Participant and lineup structure** above records the rule and what it corrects.
 2. ~~**What are the five `tournament_stage`-owned statistics?**~~ Answered 2026-08-14: Comp.Rank
    at `object_typeFK = 4` instead of 3. **Statistics** above records which five and what asserts it.
-3. **Are `penalty_stroke_9` and the four `clock_penalty_*` data types genuinely Golf's?** They
-   carry values under Golf scopes but read as another sport's vocabulary. A shared generic id
-   and a misfiled value look identical from here.
+3. ~~**Are `penalty_stroke_9` and the four `clock_penalty_*` data types genuinely Golf's?**~~
+   Answered 2026-08-14 by size: they hold five values between them, one each, all reading `1`.
+   `penalty_stroke_9` sits on one event in 2019 and reads as golf - a penalty stroke at the ninth.
+   The four `clock_penalty_*` sit on a single event on a single day, 2018-06-07, which is the
+   shape of a misfiled write rather than a vocabulary. Five values among 29653897 is not a
+   population a check can be built on.
 4. ~~**What do `event_scope_detail` and `lineup_scope_result` hold for Golf?**~~ Answered
    2026-08-14, and the expectation was wrong: `event_scope_detail` is empty, `lineup_scope_result`
    holds 128 values and all of them name another sport's lineup. **Scope types and data types**
    above records it; `Golf-DQ-099` reports the one event inside the client boundary.
-5. **Which round is "the" score?** The sport stores strokes per round and no single stroke
-   total, so any check comparing a score against a rank has to say which figure it means.
-6. **How is a foursome's side to be read?** 2132 finished Match Play events carry four
-   participant rows, because a foursome is two players a side, and nothing in the database says
-   which two belong together - no lineup, no team field, and the pairing lives only in the event
-   name. `Golf-DQ-092` audits the two-sided matches and leaves these unjudged for that reason.
-   This is question 1 met from the results end rather than a separate question.
+5. ~~**Which round is "the" score?**~~ Answered 2026-08-14: `36 Par`. Of 338799 ranked stroke
+   play competitors 335334 hold it - 99.0 per cent - while only 177821 hold a fourth-round stroke
+   count and 176859 hold all four rounds, and no total-strokes result type exists. Par is the only
+   figure present for the whole population, which is what `RESULT_SCORE_TYPE_ID` already records.
+   Whether the Par order agrees with the stored Rank is a separate question and is not measured.
+6. ~~**How is a foursome's side to be read?**~~ Answered 2026-08-14 together with question 1:
+   odd numbers are one side and even the other, confirmed on all 2008 four-entry events that name
+   every competitor. `Golf-DQ-092` still leaves them unjudged, which is now a gap in the check
+   rather than a gap in the database.
 
 **The hole-by-hole scope layer is not audited for now.** Decided 2026-08-12. Its 29653897 values
 are counted sport-wide; most of them sit inside the client's boundary, and they are deliberately
