@@ -379,7 +379,23 @@ semi-finals, the 2001 U-20 final at `5-5`, and three placement matches from 1933
 knockout round decided in overtime or on penalty shots stores the deciding goal in
 `2 Extra time` or `3 Penalty shootout`, so a level final result with neither is a match whose
 resolution was never imported. Soccer carries the narrower rule as `Soccer-DQ-022`; the
-equivalent for this sport is **not written and not approved**.
+equivalent here is **`Ice-Hockey-DQ-058`**, over 1413 eligible events.
+
+**The period scores add up, and the sum has to include overtime and the shootout.** Measured
+2026-08-14 over the 9596 finished events: 8692 have `51`+`52`+`53` equal to `4 Final Result`
+outright, and a further 897 agree only once `2 Extra time` and `3 Penalty shootout` are added -
+so a sport-level rule that summed the three periods alone would report every match decided
+beyond regulation. `Ice-Hockey-DQ-059` sums all five and reports 4, all of them at the 2026
+Winter Olympics.
+
+**`51 Period 1` doubles as the whole score on 1091 finished events, and this is unresolved.**
+Those events carry no `52` and no `53` at all, and on every one of them the `51` value equals
+the `4 Final Result` exactly, which is what makes it readable as a total rather than as a first
+period in which all the goals happened. They run from 1932 to 2024, so it is not a habit the
+sport has stopped. Ten more carry `51` and `52` and no `53`. Nothing reads the period fields as
+a breakdown yet, and `Ice-Hockey-DQ-059` audits only sides holding all three, so no check
+depends on the answer - but one is recorded as open question 7 below, because the day a check
+does read them it will read 1091 first periods that are not first periods.
 
 Nothing else beyond what the sections above record. This file is one day old and every other
 paragraph in it is a first reading.
@@ -410,5 +426,11 @@ paragraph in it is a first reading.
    `4 Final Result`. `Ice-Hockey-DQ-057` found it independently as its single finding, which is
    what made the three observations one row. It is one correction, and it belongs to the
    colleagues rather than to a check.
+7. **Is `51 Period 1` the first period or the whole game on the 1091 events that store no
+   other period?** The value equals the final result on every one of them, and they run from
+   1932 to 2024. Either the sport wrote a total into a period field, or it wrote a first period
+   and dropped the rest; the two need different corrections and nothing measured so far
+   separates them. The incident layer would - a goal timed into the second period on one of
+   these events settles it - and has not been read against them.
 
 <!-- MANUAL PASTE ZONE: 5 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

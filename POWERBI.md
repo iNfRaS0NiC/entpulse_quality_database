@@ -167,6 +167,15 @@ ends leave it nothing to draw. Ice hockey joins the first group, not a new one. 
 never evidence against the template - they are what running a check outside its own prerequisite
 returns, and reading them is how the prerequisite got applied.
 
+**`Not applicable` is the beginning of the work, not the end of it.** Every one of the three cases
+above ends in a written check rather than a gap: Soccer in `Soccer-DQ-022`, ice hockey in
+`Ice-Hockey-DQ-058` over the rounds that must produce a winner, which reports the 7 events the
+group rounds were hiding. The same happened to `GLOBAL-DQ-085`, which reads a period breakdown
+stored as several fields under one scope type and cannot reach a sport that stores each period as
+its own type: `Ice-Hockey-DQ-059` asks the same arithmetic of the result layer and reaches 8492
+events instead of 898. A signal recorded without the variant beside it leaves the question the
+template was asking unasked, which is the one outcome the template layer exists to prevent.
+
 `GLOBAL-DQ-096` is a different shape again - 592 of its 593 rows are the single renaming of Czech
 Republic to Czechia, so the count measures one correction rather than 593.
 
