@@ -340,8 +340,17 @@ sport is not obviously the same thing as a rank, and what it holds — the sampl
 which reads as a participant id — is not yet established.
 
 **`1271 Points` and `1273 Comment` are declared and all but unused**: 8 values on 2 statistics
-and 2 values on 1. Neither is a population a check can be written against today, and neither is
-structurally absent.
+and 2 values on 1. Neither is structurally absent, and re-read on 2026-08-14 both turned out to
+be populations a check can be written against after all - small ones, but not empty. The Points
+values are `2, 3, 4, 5, 7, 9`, all numeric, and the Comment holds `DQ` twice, so
+`DATA_COMMENT_VALUE_LIST` and `DATA_COMMENT_NO_RESULT_LIST` are both `'dq'` and
+`NUMERIC_DATA_TYPE_LIST` is `1271`. `Ice-Hockey-DQ-094` and `Ice-Hockey-DQ-097` read them and
+report nothing. `DATA_TIME_TYPE_ID` is recorded as `1426`, the field's global id, though this
+sport writes no row into it.
+
+`1277 Medal` holds only `bronze`, `gold` and `silver`, over 10386 values on 440 statistics. That
+is 9 values and 3 statistics fewer than the same measurement returned on 2026-08-13, which is
+the database being corrected under the reading rather than a discrepancy to resolve.
 
 Config: `1463 Start date` and `1464 End date` on 837 statistics each, `1470 Gender` on 797,
 `1471 Event id` on 33. So **40 statistics carry no gender and 67 carry no dates**, against a
@@ -501,6 +510,38 @@ somewhere, which is what makes this a work list where the stage check is a habit
 `PLACEHOLDER_COUNTRY_LIST` is `'International', 'Unknown', 'Undefined'`. The first two exist -
 139 participants carry `International` and 6 carry `Unknown`, all of them teams - and
 `Undefined` never matches, which the template's prerequisite allows.
+
+**The schedule breaks are mostly the twentieth century, and the parameter cannot say so.**
+`GLOBAL-DQ-081` reports 12 of 23 templates as `Ice-Hockey-DQ-098`, and the largest is
+`33 World Championship 1` with seven: `1920 -> 1924` and `1924 -> 1928`, when the championship
+was the Olympic tournament and nothing else; `1939 -> 1947`, the war; and `1979 -> 1981`,
+`1983 -> 1985`, `1987 -> 1989`, the three Olympic years in which no separate world championship
+was held. `10083`, the women's championship, contributes nine because it ran every second year
+until 1997 and every year after, so its own rhythm changed under it. `11076` and `11077` report
+`2011 -> 2017` and `2017 -> 2025` because the Asian Winter Games moved twice.
+
+`SERIES_SKIP_YEARS` cannot suppress any of these, and the reason is structural rather than a
+matter of listing more years: the template discounts a skipped year only if some tournament in
+the sport ran in it, and 1940 to 1946 hold no event anywhere in ice hockey. The parameter is
+recorded as `1940, 1941, 1942, 1943, 1944, 1945, 1946, 2020` for the record of what is known,
+and only `2020` can do any work. Decided 2026-08-14 to instantiate the check anyway: 12 rows
+each carrying a `break_detail` is a list a person reads once, and the alternative is not knowing
+when an import stops arriving.
+
+**`MEDAL_TEMPLATE_ID_LIST` holds 21 of the 25 templates in the boundary.** Nineteen award medals
+and hold them today; `308` and `10849`, the men's and women's `World Championship 2`, are added
+by judgement because a divisional championship awards its own gold, silver and bronze whether or
+not any are stored. The four left out are `313` and `10568`, `Euro Hockey Tour 1`, a seasonal
+series with a winner rather than a podium, and `10501` and `10720`,
+`Winter Olympics Qualification`, which hands out places. `GLOBAL-DQ-125` runs as
+`Ice-Hockey-DQ-100` and reports 0 of 139 eligible.
+
+Five more templates were instantiated on the same day and report nothing at all:
+`Ice-Hockey-DQ-094` over the two Comp.Rank Comment values, `Ice-Hockey-DQ-095` over 9616 events
+whose status could contradict their date, `Ice-Hockey-DQ-096` over 9803 events that could
+duplicate one another, `Ice-Hockey-DQ-097` over the two statistics holding `1271 Points`, and
+`Ice-Hockey-DQ-099` over 9803 events whose whole-unit result fields could hold a fraction. None
+of them is empty scope - each has a population and each population is clean.
 
 Nothing else beyond what the sections above record. This file is one day old and every other
 paragraph in it is a first reading.

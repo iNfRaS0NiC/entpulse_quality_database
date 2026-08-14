@@ -969,6 +969,13 @@
         "ELIMINATION_ROUND_NAME_LIST": "'quarter finals', 'semi finals', 'final', 'bronze', '1/8', '5/6', '5/8', '7/8', '9/10', '9/12', '11/12', '13/14'",
         "GROUP_ROUND_NAME_LIST": "''",
         "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+        "DATA_COMMENT_VALUE_LIST": "'dq'",
+        "DATA_COMMENT_NO_RESULT_LIST": "'dq'",
+        "NUMERIC_DATA_TYPE_LIST": "1271",
+        "SERIES_MIN_YEARS": "3",
+        "SERIES_SKIP_YEARS": "1940, 1941, 1942, 1943, 1944, 1945, 1946, 2020",
+        "MEDAL_TEMPLATE_ID_LIST": "31, 32, 33, 308, 328, 546, 10083, 10560, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285",
+        "DATA_TIME_TYPE_ID": "1426",
         "_checkSignal": {
             "GLOBAL-DQ-009": {
                 "signal": "Not applicable",
