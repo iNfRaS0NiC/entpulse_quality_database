@@ -4483,6 +4483,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "14.08.2026 09-33-15",
+                     "startedUtc":  "2026-08-14T07:33:15Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-096",
+                                        "runKey":  "Golf-DQ-096",
+                                        "parameters":  "",
+                                        "name":  "EVENT_COMP.RANK_OMITS_COMPETITORS_WHO_PLAYED",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3050,
+                                        "seconds":  39,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"

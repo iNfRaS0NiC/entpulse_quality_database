@@ -1080,3 +1080,138 @@ WHERE s.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, affected_count DESC, statistic_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Golf-DQ-096
+    -- Name - EVENT_COMP.RANK_OMITS_COMPETITORS_WHO_PLAYED
+    -- What it does: Finds events whose covering Comp.Rank leaves out competitors who took part, naming how many of the field are missing and who they are.
+    'COMP.RANK_OMITS_COMPETITORS_WHO_PLAYED' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.template_name,
+    x.tournament_name,
+    x.field_size,
+    x.missing_count,
+    x.missing_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- GLOBAL-DQ-042 rewritten for Golf because it cannot be run here. That template asks, for each
+-- competitor of each event, whether the covering statistic lists them - and Golf answers that
+-- question about half a million times, because its Final round type is 225 Main Phase, which is
+-- every tournament event, and its fields run to 250. The template is not slow in itself: the
+-- same statement returns Artistic Gymnastics in 4.6 seconds.
+--
+-- So the question is asked once instead. Every (event, competitor) pair the sport played is one
+-- set, every (event, competitor) pair its Comp.Rank statistics cover is another, and the finding
+-- is the first minus the second. Nothing is looked up per row.
+--
+-- The audited object is the event. A statistic omitting six of eight finalists is one broken
+-- import and not six defects, and missing_count is what the row asserts: the server truncates
+-- GROUP_CONCAT at 1024 characters without saying so.
+FROM (
+    SELECT
+        f.event_id,
+        f.event_name,
+        f.template_name,
+        f.tournament_name,
+        COUNT(DISTINCT f.participant_id) AS field_size,
+        COUNT(DISTINCT CASE WHEN c.participant_id IS NULL THEN f.participant_id END) AS missing_count,
+        GROUP_CONCAT(DISTINCT CASE WHEN c.participant_id IS NULL THEN f.participant_name END
+                     ORDER BY f.participant_name SEPARATOR ' | ') AS missing_participants
+    FROM (
+        -- Who played, for every event a Comp.Rank covers.
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            p.id AS participant_id,
+            p.name AS participant_name
+        FROM event e
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        WHERE e.del = 'no'
+          AND tt.sportFK = 3
+          AND e.round_typeFK IN (225)
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          AND EXISTS (
+              SELECT 1
+              FROM statistic_config scg
+              JOIN statistic sg ON sg.id = scg.statisticFK AND sg.del = 'no'
+                   AND sg.statistic_typeFK = 11 AND sg.object_typeFK = 3
+                   AND sg.objectFK = t.id
+              WHERE scg.statistic_data_typeFK = 1471 AND scg.del = 'no'
+                AND FIND_IN_SET(e.id, scg.value) > 0
+                -- An event covered only by an empty statistic omits everyone, which is
+                -- GLOBAL-DQ-010 reported once rather than this reported per competitor.
+                AND EXISTS (
+                    SELECT 1 FROM statistic_participants11 spg
+                    WHERE spg.statisticFK = sg.id AND spg.del = 'no'
+                )
+          )
+    ) f
+    LEFT JOIN (
+        -- Who the covering statistics rank, as one set for the whole sport.
+        SELECT DISTINCT
+            ex.id AS event_id,
+            spx.participantFK AS participant_id
+        FROM statistic_config scx
+        JOIN statistic sx ON sx.id = scx.statisticFK AND sx.del = 'no'
+             AND sx.statistic_typeFK = 11 AND sx.object_typeFK = 3
+        JOIN tournament tx ON tx.id = sx.objectFK AND tx.del = 'no'
+        JOIN tournament_template ttx ON ttx.id = tx.tournament_templateFK AND ttx.del = 'no'
+             AND ttx.sportFK = 3
+        JOIN tournament_stage tsx ON tsx.tournamentFK = tx.id AND tsx.del = 'no'
+        JOIN event ex ON ex.tournament_stageFK = tsx.id AND ex.del = 'no'
+             AND FIND_IN_SET(ex.id, scx.value) > 0
+        JOIN statistic_participants11 spx ON spx.statisticFK = sx.id AND spx.del = 'no'
+        WHERE scx.statistic_data_typeFK = 1471
+          AND scx.del = 'no'
+          AND tx.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+          -- AND tx.tournament_templateFK = <tournament_template_id>
+    ) c
+      ON c.event_id = f.event_id
+     AND c.participant_id = f.participant_id
+    GROUP BY f.event_id, f.event_name, f.template_name, f.tournament_name
+) x
+WHERE x.missing_count > 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 3
+  AND e.round_typeFK IN (225)
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM statistic_config scg
+      JOIN statistic sg ON sg.id = scg.statisticFK AND sg.del = 'no'
+           AND sg.statistic_typeFK = 11 AND sg.object_typeFK = 3
+           AND sg.objectFK = t.id
+      WHERE scg.statistic_data_typeFK = 1471 AND scg.del = 'no'
+        AND FIND_IN_SET(e.id, scg.value) > 0
+        AND EXISTS (
+            SELECT 1 FROM statistic_participants11 spg
+            WHERE spg.statisticFK = sg.id AND spg.del = 'no'
+        )
+  )
+
+ORDER BY sort_order, missing_count DESC, event_id;

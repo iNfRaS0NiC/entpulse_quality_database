@@ -367,6 +367,22 @@ no rank 2.
 `Monitor` in `SPORTS/params.json` rather than actionable - the volume is a legacy import, and the
 invariant is kept for what arrives tomorrow rather than for what is on the list today.
 
+**Every competitor who played is in the Comp.Rank that covers the event.** Measured 2026-08-14
+over 345930 pairs of event and competitor across 3050 events, and not one of them is missing from
+the statistic covering it. `Golf-DQ-096` asserts it and returns clean.
+
+The zero is the sport, not the check. The same invariant is broken elsewhere - Artistic
+Gymnastics reports 52 events, BMX 9, Modern Pentathlon 7, Triathlon 3 - and the anti-join here
+demonstrably matches, since all 345930 pairs resolve rather than none. What Golf does have is
+`Golf-DQ-048`, which reports 283 Final events that no Comp.Rank names at all: the sport's gap is
+whole events with no ranking rather than rankings that lose part of their field.
+
+`GLOBAL-DQ-042` cannot be run for this sport and this statement replaces it. That template asks,
+for each competitor of each event, whether the covering statistic lists them, which is about half
+a million questions here because the Final round type is `225 Main Phase` - every tournament event
+- and the fields run to 250. It returns Artistic Gymnastics in 4.6 seconds and times out on Golf.
+Asking it once instead, as two sets subtracted from one another, takes 39.
+
 <!-- MANUAL PASTE ZONE: 3 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values
