@@ -983,6 +983,46 @@
                 "signal": "Not applicable",
                 "reason": "Structural: the template reads a period breakdown stored as several data fields under one scope type, which is how curling stores its ends. Ice Hockey stores each period as its own scope type - 322, 323, 324 - and far more widely as its own result type, 51 to 53 reaching 8501 to 9803 events against 898 in the scope layer. SCOPE_PERIOD_DATA_TYPE_LIST would hold the single field 162 goals and the check would audit 898 events while missing the 8500 the sport actually keeps. Ice-Hockey-DQ-059 asks the same arithmetic of the result layer and reaches 8492."
             },
+            "GLOBAL-DQ-019": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template compares a Duration event result against the Rank, and this sport stores neither. Its twelve confirmed result types are goal counts, a medal, an outcome word and one stray Rank value; no duration type appears on any event. Decided 2026-08-14 with the nine other timed and precision templates."
+            },
+            "GLOBAL-DQ-028": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template reads a Time Difference data field on the Comp.Rank participant row, and this sport's statistic type 11 declares Rank, Points, Comment, Medal and Team and nothing else. There is no time field to read."
+            },
+            "GLOBAL-DQ-029": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template asks whether a superseded Duration data field is still in use beside the current Time fields, and this sport's Comp.Rank declares none of the three. Nothing can be deprecated that was never declared."
+            },
+            "GLOBAL-DQ-045": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template needs an absolute full-time result and a list of disciplines in which the sport measures time. Ice Hockey has one discipline, 635 6aSide, and it is decided on goals rather than on a clock; no full-time result type appears on any event."
+            },
+            "GLOBAL-DQ-046": {
+                "signal": "Not applicable",
+                "reason": "Structural: the same absence inside the statistic. The Comp.Rank shard holds no Time and no Time Difference field, and the sport contests no timed discipline."
+            },
+            "GLOBAL-DQ-054": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template asserts that a better rank holds a faster full time, and this sport records no full time. A hockey match is separated by its score, which Ice-Hockey-DQ-058 reads for the rounds that must separate their sides."
+            },
+            "GLOBAL-DQ-056": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template checks that a leader's time plus a competitor's gap equals that competitor's full time. None of the three fields exists in this sport."
+            },
+            "GLOBAL-DQ-111": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template builds an effective time from a duration, a full time and a comment excusing a missing one, and reads it against the rank. Ice Hockey stores no time of any kind and no comment result type."
+            },
+            "GLOBAL-DQ-120": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template reports a measured quantity written to inconsistent precision, and every numeric result this sport stores is a count of goals. A whole number has no precision to be inconsistent about. GLOBAL-DQ-124 is the rule that fits a count, and is decided separately."
+            },
+            "GLOBAL-DQ-121": {
+                "signal": "Not applicable",
+                "reason": "Structural: the same in the statistic. Rank and Points are counts, and 1271 Points holds 8 values over 2 statistics, so there is neither a measured quantity nor a population to read precision from."
+            },
             "GLOBAL-DQ-009": {
                 "signal": "Not applicable",
                 "reason": "The template asserts three participation paths and this sport has a fourth: refereeFK is a ref:participant property on 270 events, so 160 of the 224 officials it reported on 2026-08-14 do referee a match and are not unattached. Its athlete population is a separate problem - 15201 registered athletes appear nowhere in the database, in this sport or any other, and 15187 carry both a date of birth and a country, so they are a question about where the profiles came from rather than a list anybody works through; only 552 sit in a duplicate-name group, so merging will not clear them. Ice-Hockey-DQ-088 reads all four paths, audits the non-athlete registry and reports 329 of 2098."
