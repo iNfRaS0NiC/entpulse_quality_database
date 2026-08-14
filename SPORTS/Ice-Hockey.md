@@ -396,6 +396,22 @@ matched as text without colliding with a placing. Worse, the names repeat across
 `89` are both named `1`, `39` and `90` both `2`, `40` and `91` both `3`, `41` and `92` both `4`.
 The id is the identifier here, and no statement may match these rounds by name.
 
+**The name collision is also a knockout-flag collision, and the two ids are not interchangeable.**
+Measured 2026-08-14: `38 "1"` is `knockout = no` and `89 "1"` is `yes`, and the same holds for
+`39`/`90`, `40`/`91` and `41`/`92`. This is the pair `DB-SEM-012` describes. What it rules out is
+classifying the digits: `89` carries 16 Relegation Playoff games, 8 Olympic Qualification Round
+games and 4 Olympic quarter finals - genuinely elimination - alongside the round-robin First,
+Second and Third Rounds of the 1931 World Championship, which are not. Neither list can hold
+`1` without being wrong about part of what the id covers.
+
+So `GLOBAL-DQ-097` and `GLOBAL-DQ-118` are instantiated on the named rounds only, as
+`Ice-Hockey-DQ-092` and `Ice-Hockey-DQ-093`. `ELIMINATION_ROUND_NAME_LIST` holds the five named
+knockout rounds and the seven placement rounds - `5/6`, `5/8`, `7/8`, `9/10`, `9/12`, `11/12`,
+`13/14`, each a single match with a winner - and `GROUP_ROUND_NAME_LIST` is empty, so the digits
+are left unjudged, which the template's own rule allows. Both return 0 findings today, over 12
+round types and 1440 events: every name the sport spells out is already flagged correctly. They
+are kept for the day a final is filed under a non-knockout id.
+
 `Round` is also an event property on all 9803 events, holding a number. Whether it agrees with
 `event.round_typeFK` is not measured.
 
@@ -467,6 +483,24 @@ reports 309, of which 224 are group standings - `Competition Stats Group A` and 
 World Championship divisions - holding a first, second and third place and no medal at all. The
 reading that a group is not a medal event was refused on the same day: `Ice-Hockey-DQ-083` runs
 whole.
+
+**No tournament stage in this sport carries a city.** `GLOBAL-DQ-034` reports 1348 of 1348
+stages, and on 995 of them the city is the only thing missing; the other 353 also carry no host
+country, and those 353 are the stages whose own country is `International`, where the host is
+what says where the thing was actually played. One field unfilled everywhere is one storage
+habit rather than 1348 defects, and the count is the size of the fill, not a reason to withdraw
+the check: decided 2026-08-14 to instantiate it whole as `Ice-Hockey-DQ-090`. The 353 are the
+part of it that can shrink first.
+
+The Comp.Rank equivalent is a different shape and is instantiated on its own terms.
+`GLOBAL-DQ-035` reports 560 of 757 as `Ice-Hockey-DQ-091`, spread across four fields rather than
+concentrated in one - 322 missing a city, 288 holding a placeholder country, 102 missing the
+gender, 63 missing the country - and 197 statistics are clean. The sport does fill these fields
+somewhere, which is what makes this a work list where the stage check is a habit.
+
+`PLACEHOLDER_COUNTRY_LIST` is `'International', 'Unknown', 'Undefined'`. The first two exist -
+139 participants carry `International` and 6 carry `Unknown`, all of them teams - and
+`Undefined` never matches, which the template's prerequisite allows.
 
 Nothing else beyond what the sections above record. This file is one day old and every other
 paragraph in it is a first reading.

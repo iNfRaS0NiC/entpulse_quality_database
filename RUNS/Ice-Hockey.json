@@ -1328,6 +1328,94 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-14T19:38:14Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-097",
+                                        "runKey":  "GLOBAL-DQ-097",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  12,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-14T19:38:15Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-118",
+                                        "runKey":  "GLOBAL-DQ-118",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND_DETAIL",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  1440,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-14T19:38:16Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-034",
+                                        "runKey":  "GLOBAL-DQ-034",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_CORE_FIELDS",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  1349,
+                                        "findings":  1348,
+                                        "eligible":  1348,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-14T19:38:17Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-035",
+                                        "runKey":  "GLOBAL-DQ-035",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MISSING_CORE_FIELDS",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  561,
+                                        "findings":  560,
+                                        "eligible":  757,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1Vy0mfddOI9cWkWEpeM7oA12BTDuvUB-nevFZwQANn94"

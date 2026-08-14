@@ -966,6 +966,9 @@
         "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
         "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
         "INTEGER_RESULT_TYPE_LIST": "1, 2, 3, 4, 6, 51, 52, 53, 100, 550",
+        "ELIMINATION_ROUND_NAME_LIST": "'quarter finals', 'semi finals', 'final', 'bronze', '1/8', '5/6', '5/8', '7/8', '9/10', '9/12', '11/12', '13/14'",
+        "GROUP_ROUND_NAME_LIST": "''",
+        "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
         "_checkSignal": {
             "GLOBAL-DQ-009": {
                 "signal": "Not applicable",

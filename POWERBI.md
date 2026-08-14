@@ -191,8 +191,17 @@ Seven more crossed the threshold on the same sport and were assigned anyway, by 
 | `GLOBAL-DQ-038` | 475 | none - same as -094 |
 | `GLOBAL-DQ-026` | 309 | none - a ranking that awards a place awards a medal, group phase included |
 | `GLOBAL-DQ-090` | 219 | none - a match nobody has played should hold no score |
+| `GLOBAL-DQ-034` | 1348 | none - a stage should say where it was held; 995 lack only the city |
+| `GLOBAL-DQ-035` | 560 | none - and 197 statistics are already clean, so the sport does fill these |
 
-Every one of the seven reports a field the sport leaves empty across most or all of a layer, and
+`GLOBAL-DQ-034` is the extreme form and was decided the same way on the same day: it reports
+every stage in the sport, because no stage carries a city at all. A field unfilled everywhere is
+one storage habit and not 1348 defects, which is exactly the reading the gate exists to surface -
+and it was still assigned, because the count measures the size of the fill rather than the truth
+of the rule. `GLOBAL-DQ-035` asks the same four fields of the Comp.Rank record and is the
+counter-example that makes the point: 197 of its 757 are clean, so nothing there is a habit.
+
+Every one of the nine reports a field the sport leaves empty across most or all of a layer, and
 in each case the reading that would have kept it off the board - the layer is unused, so its
 emptiness is a habit rather than a gap - was put to the user and refused. The medals are the
 clearest: 463 of the 483 events in a medal round hold no `501 Medal` at all while the Comp.Rank
