@@ -399,6 +399,23 @@ team. Whether a coach should carry a Rank in a scoring leaderboard is not establ
 check reads it; it is recorded here because a coach among athletes is the kind of shape a later
 check would otherwise report as a participant-type error.
 
+**The two shapes are a pair, and a tournament is supposed to carry both.** Decided 2026-08-15:
+a tournament holds one Comp.Rank ranking its teams and one ranking its players, and on the
+player one the `1429 Team` field is filled and names a team. That is the rule, and the two
+halves are asserted separately because their audited objects differ.
+
+`Ice-Hockey-DQ-102` asks it of the tournament and reports 126 of 359 - 77 that hold the team
+ranking and no player ranking, and 49 that hold neither. Only a tournament that staged at least
+one match is eligible: **55 tournaments in the boundary hold no event at all** - 36 with a team
+ranking and 19 with none - and a tournament that was never played cannot be asked for a ranking
+of it. Those 55 are a separate defect and nothing reports them yet.
+
+`Ice-Hockey-DQ-103` asks it of the player ranking and reports 2 statistics of 301, three rows in
+all: `Roman Josi` in `Winter Olympics Male 2014 - Competition Rank(athletes)`, and
+`Christoph Brandner` and `Jeremy Rebek` in `Competition Stats Group A (athletes)` of the 2008
+`World Championship 2`. No row anywhere names something that is not a team, so the second half
+of the rule is clean and the check stands to keep it that way.
+
 **`1271 Points` and `1273 Comment` are declared and all but unused**: 8 values on 2 statistics
 and 2 values on 1. Neither is structurally absent, and re-read on 2026-08-14 both turned out to
 be populations a check can be written against after all - small ones, but not empty. The Points

@@ -765,3 +765,160 @@ WHERE sr.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, event_startdate, event_id, period_name;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-102
+    -- Name - COMP.RANK_TOURNAMENT_MISSING_THE_TEAM_OR_THE_ATHLETE_RANKING
+    -- What it does: Flags tournaments that hold matches but not both the team and the athlete Comp.Rank.
+    CASE
+        WHEN x.comp_ranks = 0 THEN 'TOURNAMENT_HAS_NO_COMP.RANK_AT_ALL'
+        WHEN x.athlete_comp_ranks = 0 THEN 'TOURNAMENT_HAS_NO_ATHLETE_COMP.RANK'
+        ELSE 'TOURNAMENT_HAS_NO_TEAM_COMP.RANK'
+    END AS check_type,
+    x.tournament_id,
+    x.tournament_name,
+    x.template_name,
+    x.first_event_date,
+    x.events,
+    x.comp_ranks,
+    x.team_comp_ranks,
+    x.athlete_comp_ranks,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a tournament that staged at least one match and does not
+-- carry both shapes of Comp.Rank the sport is confirmed to keep - one ranking the teams and one
+-- ranking the players.
+FROM (
+    SELECT
+        t.id AS tournament_id,
+        MIN(t.name) AS tournament_name,
+        MIN(tt.name) AS template_name,
+        MIN(DATE(e.startdate)) AS first_event_date,
+        COUNT(DISTINCT e.id) AS events,
+        COUNT(DISTINCT s.id) AS comp_ranks,
+        COUNT(DISTINCT CASE WHEN p.type = 'team' THEN s.id END) AS team_comp_ranks,
+        COUNT(DISTINCT CASE WHEN p.type <> 'team' THEN s.id END) AS athlete_comp_ranks
+    FROM tournament t
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 5
+    JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+    LEFT JOIN statistic s ON s.objectFK = t.id AND s.del = 'no'
+         AND s.statistic_typeFK = 11 AND s.object_typeFK = 3
+    LEFT JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    LEFT JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    WHERE t.del = 'no'
+      AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY t.id
+) x
+-- The join to event is inner on purpose: a tournament that staged nothing cannot be asked for a
+-- ranking of it, and 55 of the sport's tournaments hold no event at all. That is a separate
+-- defect and SPORTS/Ice-Hockey.md records it rather than this check reporting it here.
+WHERE x.comp_ranks = 0 OR x.team_comp_ranks = 0 OR x.athlete_comp_ranks = 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT t.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament t
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+WHERE t.del = 'no'
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, first_event_date, tournament_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-103
+    -- Name - COMP.RANK_ATHLETE_ROW_DOES_NOT_NAME_ITS_TEAM
+    -- What it does: Flags athlete Comp.Rank rows whose Team field is empty or does not name a team.
+    CASE
+        WHEN x.rows_without_team > 0 AND x.rows_bad_team > 0
+            THEN 'ATHLETE_ROWS_BOTH_MISSING_A_TEAM_AND_NAMING_A_NON_TEAM'
+        WHEN x.rows_without_team > 0
+            THEN 'ATHLETE_ROW_HOLDS_NO_TEAM'
+        ELSE 'ATHLETE_ROW_TEAM_DOES_NOT_NAME_A_TEAM'
+    END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.ranked_rows,
+    x.rows_without_team,
+    x.rows_bad_team,
+    x.affected_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a Comp.Rank that ranks people and does not say which side
+-- each of them played for - the 1429 Team field empty, or holding a value that is not an active
+-- team participant.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        MIN(s.name) AS statistic_name,
+        MIN(tt.name) AS template_name,
+        MIN(t.name) AS tournament_name,
+        COUNT(DISTINCT sp.id) AS ranked_rows,
+        COUNT(DISTINCT CASE WHEN td.id IS NULL THEN sp.id END) AS rows_without_team,
+        COUNT(DISTINCT CASE WHEN td.id IS NOT NULL AND (tp.id IS NULL OR tp.type <> 'team')
+                            THEN sp.id END) AS rows_bad_team,
+        SUBSTRING(GROUP_CONCAT(DISTINCT CASE
+            WHEN td.id IS NULL OR tp.id IS NULL OR tp.type <> 'team' THEN p.name
+        END ORDER BY p.name SEPARATOR ', '), 1, 300) AS affected_participants
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 5
+    JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no' AND p.type <> 'team'
+    LEFT JOIN statistic_data11 td ON td.statistic_participants11FK = sp.id AND td.del = 'no'
+         AND td.statistic_data_typeFK = 1429 AND TRIM(COALESCE(td.value, '')) <> ''
+    LEFT JOIN participant tp ON tp.id = TRIM(td.value) AND tp.del = 'no'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = 11
+      AND s.object_typeFK = 3
+      AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY s.id
+) x
+-- Only a Comp.Rank ranking people is eligible, which is why the participant join excludes the
+-- team type rather than filtering the statistic: a standings table is the other half of the
+-- pair the sport keeps and carries no affiliation by design. Ice-Hockey-DQ-102 asserts that both
+-- halves exist; this one asserts that the half naming people is complete.
+WHERE x.rows_without_team > 0 OR x.rows_bad_team > 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no' AND p.type <> 'team'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, template_name, tournament_name, statistic_id;
