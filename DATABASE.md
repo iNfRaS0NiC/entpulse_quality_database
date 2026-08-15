@@ -218,7 +218,7 @@ Stores an incident for one event-participant row.
 | `incident_typeFK` | Incident-type reference |
 | `incident_code` | Stored incident code |
 | `ref_participantFK` | Additional participant-like reference; target not globally confirmed |
-| `elapsed`, `elapsed_plus` | Stored elapsed components; meaning/format open |
+| `elapsed`, `elapsed_plus` | Stored elapsed components; meaning/format open, and confirmed per sport rather than globally — `SPORTS/Ice-Hockey.md` establishes seconds there from the distribution of 12713 goals across a 3600-second game |
 | `sortorder` | Stored ordering value |
 | `del` | Soft-delete flag |
 

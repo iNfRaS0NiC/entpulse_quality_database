@@ -224,6 +224,13 @@ The incidents cover 2180 of 9803 events at most, so the layer is populated for r
 of the boundary rather than for all of it. That is a coverage figure, not a defect, and a check
 written against incidents has to say which population it audits.
 
+**`incident.elapsed` is seconds in this sport, and the data says so on its own.** `DATABASE.md`
+records the format as open globally. Measured 2026-08-15 over the 8502 finished events holding
+all three period results: 12713 goals under types `7`, `21`, `22` and `8` fall 3758 in the first
+1200 seconds, 4509 in the second, 4221 in the third and 225 beyond 3600, which is a hockey game
+seen through a clock. Read as minutes the same values would put 12585 of 12713 goals after the
+sixtieth minute. The maximum is 4626, a game that went to a shootout.
+
 <!-- MANUAL PASTE ZONE: 5 INCIDENTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Scope types and data types
@@ -703,11 +710,14 @@ paragraph in it is a first reading.
    `4 Final Result`. `Ice-Hockey-DQ-057` found it independently as its single finding, which is
    what made the three observations one row. It is one correction, and it belongs to the
    colleagues rather than to a check.
-7. **Is `51 Period 1` the first period or the whole game on the 1091 events that store no
-   other period?** The value equals the final result on every one of them, and they run from
-   1932 to 2024. Either the sport wrote a total into a period field, or it wrote a first period
-   and dropped the rest; the two need different corrections and nothing measured so far
-   separates them. The incident layer would - a goal timed into the second period on one of
-   these events settles it - and has not been read against them.
+7. **Is `51 Period 1` the first period or the whole game on the 1094 events that store no
+   other period?** Still open, and now known to be unanswerable from inside this database. The
+   value equals the final result on every one of them and they run from 1932 to 2024. Every
+   layer that could separate the two readings was measured on 2026-08-15 and every one of them
+   is empty for exactly these events: **0 goal incidents**, **0 lineup rows**, and of the 19
+   holding any scope container at all, **none holds a period scope**. The evidence is not
+   missing by accident of which layers were read - it is not there. This is a question for the
+   provider rather than for another query, and until it is answered no statement may read `51`
+   as a first period. `Ice-Hockey-DQ-059` is unaffected: it audits only sides holding all three.
 
 <!-- MANUAL PASTE ZONE: 5 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
