@@ -1481,9 +1481,10 @@ LEFT JOIN status_desc sd ON sd.id = e.status_descFK
 -- written into a period field or as a first period whose remaining two never arrived - two
 -- readings needing opposite repairs. Nothing inside the database separates them: the events
 -- carry no goal incident, no lineup row and no period scope container, measured 2026-08-15.
--- SPORTS/Ice-Hockey.md records the question as one for the data provider. Until it is answered
--- no statement may read 51 as a first period, which is why Ice-Hockey-DQ-059 and
--- Ice-Hockey-DQ-104 both audit only sides holding all three.
+-- Because no further query can settle it, the population is reported rather than investigated,
+-- and whoever reads the findings decides what the field means. Until that is settled no
+-- statement may treat 51 as a first period, which is why Ice-Hockey-DQ-059 and
+-- Ice-Hockey-DQ-104 both audit only sides holding all three. SPORTS/Ice-Hockey.md records it.
 JOIN (
     SELECT
         e2.id AS event_id,

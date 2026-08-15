@@ -825,16 +825,16 @@ paragraph in it is a first reading.
    `4 Final Result`. `Ice-Hockey-DQ-057` found it independently as its single finding, which is
    what made the three observations one row. It is one correction, and it belongs to the
    colleagues rather than to a check.
-7. **Is `51 Period 1` the first period or the whole game on the 1091 events that store no
-   other period?** Still open, and now known to be unanswerable from inside this database. The
-   value equals the final result on every one of them and they run from 1932 to 2024. Every
-   layer that could separate the two readings was measured on 2026-08-15 and every one of them
-   is empty for exactly these events: **0 goal incidents**, **0 lineup rows**, and of the 19
-   holding any scope container at all, **none holds a period scope**. The evidence is not
-   missing by accident of which layers were read - it is not there. This is a question for the
-   provider rather than for another query, and until it is answered no statement may read `51`
-   as a first period. `Ice-Hockey-DQ-059` and `Ice-Hockey-DQ-104` are unaffected: both audit
-   only sides holding all three. **`Ice-Hockey-DQ-109` carries the question onto the board**, so
-   that an unanswered question is visible in the run rather than only in this file.
+7. ~~**Is `51 Period 1` the first period or the whole game on the 1091 events that store no
+   other period?**~~ Closed as a question on 2026-08-15 and reported instead. The value equals
+   the final result on every one of them and they run from 1932 to 2024. Every layer that could
+   separate the two readings was measured and every one is empty for exactly these events:
+   **0 goal incidents**, **0 lineup rows**, and of the 19 holding any scope container at all,
+   **none holds a period scope** - so no further query will settle which reading is right.
+   Decided that this makes it a finding rather than an open question: **`Ice-Hockey-DQ-109`**
+   reports the population, and whoever reads the findings decides what the field means. Nothing
+   is pending with anybody. Until the reading is settled no statement may treat `51` as a first
+   period; `Ice-Hockey-DQ-059` and `Ice-Hockey-DQ-104` already audit only sides holding all
+   three, so neither depends on it.
 
 <!-- MANUAL PASTE ZONE: 5 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
