@@ -415,7 +415,10 @@ halves are asserted separately because their audited objects differ.
 ranking and no player ranking, and 49 that hold neither. Only a tournament that staged at least
 one match is eligible: **55 tournaments in the boundary hold no event at all** - 36 with a team
 ranking and 19 with none - and a tournament that was never played cannot be asked for a ranking
-of it. Those 55 are a separate defect and nothing reports them yet.
+of it. Those 55 are already reported elsewhere and need nothing new: 51 of them carry no stage
+either and are `Ice-Hockey-DQ-027`, while the other 4 carry 9 stages between them holding no
+event, which is `Ice-Hockey-DQ-002`. Excluding them here is therefore not a blind spot but the
+avoidance of a third report of the same fact.
 
 `Ice-Hockey-DQ-103` asks it of the player ranking and reports 2 statistics of 301, three rows in
 all: `Roman Josi` in `Winter Olympics Male 2014 - Competition Rank(athletes)`, and
