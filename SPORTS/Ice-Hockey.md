@@ -844,7 +844,7 @@ Nothing else beyond what the sections above record. This file is one day old and
 paragraph in it is a first reading.
 
 **The findings were reviewed on 2026-08-15, and the sport is the first in the package where
-every reporting check has been judged.** 62 of the 110 approved checks returned something, 27093
+every reporting check has been judged.** 62 of the 106 approved checks returned something, 27093
 rows in all, and each was read as one question rather than as its rows. **59 came back a
 defect** and are the data owners' work, not the package's: no statement was changed on their
 account and none should be. **Three came back normal for the sport**, and each of those is a
