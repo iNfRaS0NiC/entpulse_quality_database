@@ -57,8 +57,12 @@ together are 2205 events against the 9803 the boundary holds now - a 22 per cent
 template that first appears in 2026, holding a Great Britain team, which under an exclusion
 list would have arrived inside the boundary with nobody deciding it.
 
-Decided 2026-08-15 to change nothing and put the five to the client. Nothing here is a defect;
-it is a question about what UK Sport wants counted.
+**Answered 2026-08-15: the client does not want those levels counted.** The boundary stays at
+25 templates and the five are out by decision rather than by oversight. The measurement is kept
+because it is the obvious thing for the next reader to notice and re-measure, and because the
+answer would have to be revisited if the client's scope ever widened. Nothing here was a defect
+at any point; it was a question about what UK Sport wants counted, and it has been put and
+answered.
 
 ## Structural coverage
 
@@ -676,6 +680,15 @@ the only population where the two can be compared. It is deliberately not a rest
 consistently wrong, while this one needs a second opinion to exist before it says anything, and
 is silent on every event that has the period once.
 
+**The period breakdown is incomplete on 1104 finished events, and `Ice-Hockey-DQ-109` reports
+them all.** Measured 2026-08-15 over the 9596 finished events holding any period result, the
+shortfall comes in three shapes: **1091** hold the first period alone with a value equal to the
+final result on every side, **10** hold the first and second and no third (1987 to 2001), and
+**3** hold the first alone with a value that differs from the final result - those three are the
+`190 Finished after awarded win` events, where the forfeit score and the period field were never
+going to agree. The check is on the board even though its main reading is a question rather than
+a correction, so that the question is visible in a run and not only in this file.
+
 **`51 Period 1` doubles as the whole score on 1091 finished events, and this is unresolved.**
 Those events carry no `52` and no `53` at all, and on every one of them the `51` value equals
 the `4 Final Result` exactly, which is what makes it readable as a total rather than as a first
@@ -812,7 +825,7 @@ paragraph in it is a first reading.
    `4 Final Result`. `Ice-Hockey-DQ-057` found it independently as its single finding, which is
    what made the three observations one row. It is one correction, and it belongs to the
    colleagues rather than to a check.
-7. **Is `51 Period 1` the first period or the whole game on the 1094 events that store no
+7. **Is `51 Period 1` the first period or the whole game on the 1091 events that store no
    other period?** Still open, and now known to be unanswerable from inside this database. The
    value equals the final result on every one of them and they run from 1932 to 2024. Every
    layer that could separate the two readings was measured on 2026-08-15 and every one of them
@@ -820,6 +833,8 @@ paragraph in it is a first reading.
    holding any scope container at all, **none holds a period scope**. The evidence is not
    missing by accident of which layers were read - it is not there. This is a question for the
    provider rather than for another query, and until it is answered no statement may read `51`
-   as a first period. `Ice-Hockey-DQ-059` is unaffected: it audits only sides holding all three.
+   as a first period. `Ice-Hockey-DQ-059` and `Ice-Hockey-DQ-104` are unaffected: both audit
+   only sides holding all three. **`Ice-Hockey-DQ-109` carries the question onto the board**, so
+   that an unanswered question is visible in the run rather than only in this file.
 
 <!-- MANUAL PASTE ZONE: 5 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

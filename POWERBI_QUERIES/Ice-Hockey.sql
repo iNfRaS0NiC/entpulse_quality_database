@@ -1437,3 +1437,102 @@ FROM (
 ) y
 
 ORDER BY sort_order, template_name, tournament_name;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-109
+    -- Name - EVENT_RESULTS_PERIOD_BREAKDOWN_INCOMPLETE
+    -- What it does: Flags finished events that store some periods and not all three, including the first period standing alone and equal to the final result.
+    CASE
+        WHEN x.has_p1 = 1 AND x.has_p2 = 0 AND x.has_p3 = 0
+             AND x.sides_equal_to_final = x.sides_entered
+            THEN 'PERIOD_1_STANDS_ALONE_AND_EQUALS_THE_FINAL_RESULT'
+        WHEN x.has_p1 = 1 AND x.has_p2 = 0 AND x.has_p3 = 0
+            THEN 'PERIOD_1_STANDS_ALONE_AND_DIFFERS_FROM_THE_FINAL_RESULT'
+        WHEN x.has_p1 = 0
+            THEN 'A_LATER_PERIOD_IS_STORED_WITHOUT_THE_FIRST'
+        ELSE 'THE_PERIOD_SET_STOPS_BEFORE_THE_THIRD'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    sd.name AS status_desc_name,
+    x.has_p1,
+    x.has_p2,
+    x.has_p3,
+    x.sides_entered,
+    x.sides_equal_to_final,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a finished event whose period-by-period score is not the
+-- three periods the sport plays - most often a first period standing alone whose value is the
+-- whole match score.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+LEFT JOIN status_desc sd ON sd.id = e.status_descFK
+-- The dominant shape is not a thin period breakdown but an unanswered question, and the check
+-- exists to keep it visible rather than to state its correction. On 1091 of these events the
+-- first period equals 4 Final Result on every side, which reads either as the whole score
+-- written into a period field or as a first period whose remaining two never arrived - two
+-- readings needing opposite repairs. Nothing inside the database separates them: the events
+-- carry no goal incident, no lineup row and no period scope container, measured 2026-08-15.
+-- SPORTS/Ice-Hockey.md records the question as one for the data provider. Until it is answered
+-- no statement may read 51 as a first period, which is why Ice-Hockey-DQ-059 and
+-- Ice-Hockey-DQ-104 both audit only sides holding all three.
+JOIN (
+    SELECT
+        e2.id AS event_id,
+        COUNT(DISTINCT ep.id) AS sides_entered,
+        MAX(CASE WHEN r.result_typeFK = 51 THEN 1 ELSE 0 END) AS has_p1,
+        MAX(CASE WHEN r.result_typeFK = 52 THEN 1 ELSE 0 END) AS has_p2,
+        MAX(CASE WHEN r.result_typeFK = 53 THEN 1 ELSE 0 END) AS has_p3,
+        SUM(CASE WHEN r.result_typeFK = 51 AND CAST(r.value AS SIGNED) = (
+                SELECT CAST(r2.value AS SIGNED)
+                FROM result r2
+                WHERE r2.event_participantsFK = ep.id AND r2.del = 'no'
+                  AND r2.result_typeFK = 4
+                LIMIT 1
+            ) THEN 1 ELSE 0 END) AS sides_equal_to_final
+    FROM event e2
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+         AND tt2.sportFK = 5
+    JOIN event_participants ep ON ep.eventFK = e2.id AND ep.del = 'no'
+    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+         AND r.result_typeFK IN (51, 52, 53)
+    WHERE e2.del = 'no'
+      AND e2.status_type = 'finished'
+      AND t2.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+      -- AND t2.tournament_templateFK = <tournament_template_id>
+    GROUP BY e2.id
+    HAVING has_p1 = 0 OR has_p2 = 0 OR has_p3 = 0
+) x ON x.event_id = e.id
+WHERE e.del = 'no'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+     AND r.result_typeFK IN (51, 52, 53)
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, event_startdate, event_id;
