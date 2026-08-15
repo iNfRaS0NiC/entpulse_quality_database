@@ -402,9 +402,9 @@ still a gap — but it does change what the statistic medal is evidence of: it s
 won something, not that a country did.
 
 **72 statistics rank a coach alongside the athletes**, and 12370 of their 12373 rows name a
-team. Whether a coach should carry a Rank in a scoring leaderboard is not established and no
-check reads it; it is recorded here because a coach among athletes is the kind of shape a later
-check would otherwise report as a participant-type error.
+team. `Ice-Hockey-DQ-052` already reports exactly those 72 as a mixed participant type, so the
+shape is on the board; what is not established is whether a coach should carry a Rank in a
+scoring leaderboard at all, and no statement asserts that.
 
 **The two shapes are a pair, and a tournament is supposed to carry both.** Decided 2026-08-15:
 a tournament holds one Comp.Rank ranking its teams and one ranking its players, and on the
