@@ -79,7 +79,10 @@ answered.
 | object_discipline | Confirmed | `GLOBAL-DISCOVERY-013` narrowed, one discipline |
 | Statistics | Confirmed | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-030`, `-031` sport-wide |
 | Reference values | Confirmed | `GLOBAL-DISCOVERY-018` narrowed, 26 round types |
-| Other tables | Not checked | |
+| Venues and cities | Confirmed | measured 2026-08-15, `venue_object` on 232 events, `city_object` on none |
+| Status vocabulary map | Confirmed | measured 2026-08-15, `map_sport_status_desc` maps 89 descriptions to the sport |
+| Translations | Confirmed present, unread | measured 2026-08-15, `language` holds 147586 rows over 46 language types |
+| Other tables | Confirmed absent or out of scope | `object_round` never attaches to an event outside `FIFA`; nothing else in `DATABASE.md` is populated for this sport |
 
 ## Tables and relation paths used
 
@@ -384,6 +387,15 @@ The rest are thinner and are recorded so that none of them reads as unknown late
 `refereeFK` is a `ref:participant` property on 270 events, which is a fourth path from an event
 to a person, beside `event_participants`, `lineup` and the Comp.Rank statistic.
 
+**The venue is a relation and it reaches 232 events; the city is not stored at all.** Measured
+2026-08-15 and recorded because `Ice-Hockey-DQ-080` rests on it: `venue_object` with owner type
+`5` carries exactly one row per event on 232 of the 9803, naming real arenas - `BCF Arena`,
+`Gangneung Hockey Centre`, `Kwandong Hockey Centre` - with no event holding two. 9803 less those
+232 is the 9571 that check reports, so its population is now confirmed rather than assumed. No
+tournament stage in the sport carries a venue and **no event carries a `city_object` row at
+all**, so the city of a match is not stored anywhere: the `VenueName` property on 263 events is
+the only other place a location appears, and nothing reads it.
+
 **There is no `discipline` property inside the boundary, and that is correct rather than a
 gap.** The discipline of an event lives in the `object_discipline` relation and nowhere else:
 ice hockey carries `635 6aSide` on 312717 events server-wide, exactly as
@@ -570,6 +582,16 @@ event concluded and wrong for asking how it was decided.
 The 20 `notstarted` events are inside a boundary whose newest template data runs to 2027, so
 they are not necessarily stale; `WORKFLOW.md`'s stale-notstarted rule needs the dates read
 before it is applied here.
+
+**`map_sport_status_desc` cannot be used to validate a status, and that is worth saying because
+it looks as though it could.** Measured 2026-08-15: it maps **89 descriptions** to ice hockey,
+and the sport's events use **6** of them. What the other 83 are is the giveaway - `1st half`,
+`2nd half`, `Halftime` and `Kick Off Delayed` from football, `Top 1st` through `End 9th` from
+baseball, `1st Quarter` to `4th Quarter` from basketball. The map is a permissive allow-list
+rather than a statement about the sport, so a check reading it would accept a hockey match
+described as being at half time. What the sport actually uses is the six under Event status
+above, and `ROUND_TYPE_LIST`-style confirmation belongs in `SPORTS/params.json` rather than in
+this table.
 
 <!-- MANUAL PASTE ZONE: 5 REFERENCE VALUES — insert approved additions immediately before this marker; do not move or delete it. -->
 
