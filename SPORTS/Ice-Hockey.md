@@ -145,6 +145,12 @@ event, lineup, Comp.Rank - so it reported 224 officials as attached to nothing, 
 referee an event**. Any check asking whether a person is used in this sport has to read the
 property as well, which is why `Ice-Hockey-DQ-088` does and reports 64 officials rather than 224.
 
+**Its 329 rows were reviewed on 2026-08-15 and judged normal, and the check is now `Monitor`.**
+A sport registry legitimately holds entries that were never used, and 136 teams, 129 coaches and
+64 officials that no event, lineup, Comp.Rank or `refereeFK` property reaches are not 329 rows
+anybody works through. What the number describes is how much of the registry has never been
+entered anywhere; a rise in it is the question, not the rows.
+
 **The registry role and the participant type disagree on 150 rows**, which is a defect shape
 rather than a vocabulary: 66 rows register a `coach` under the role `athlete`, 4 more under
 role `athlete` with `del` set, 1 registers an `athlete` under the role `coach`, 1 registers an
@@ -346,6 +352,18 @@ defect: a match without it is a match nobody typed a boxscore for, not a match w
 score. It is still an absence somebody has to answer for, so `GLOBAL-DQ-107` is instantiated as
 `Ice-Hockey-DQ-087` and reports 8410 of them.
 
+**Those 8410 were reviewed on 2026-08-15 and judged normal for the sport, and the check is now
+`Monitor`.** The container is written by era rather than by rule: the first year a template
+stores one runs 1997, 2000, 2010, 2016, 2017, 2018, 2022 and 2023, and 14 of the client's 25
+templates have never stored one at all. A narrowing was looked for and there is none. Confined
+to tournaments that store the breakdown somewhere, the check leaves 530 rows over 23
+tournaments - but inside those the shape is 2 or 3 matches carrying it out of 21 to 52: the
+1997 World Championship misses 49 of 52, and every U18 World Championship from 2011 to 2019
+misses 19 of its 21. By round it is no different, the Final at 73 of 288 and the Quarter Finals
+at 114 of 415, so no round is complete either and there is no sub-population where the
+breakdown is reliably expected. The proportion is the finding and a single row is not a defect;
+the number falls on its own if the provider ever writes the layer backwards.
+
 **The period is the container here, not a field inside one, and four templates read the
 opposite.** Most sports store a period-by-period score as several `scope_data_type` columns
 inside one scope; ice hockey gives each period its own `scope_type` - `322`, `323`, `324` - and
@@ -540,6 +558,20 @@ population is a player who appears in some lineup of that tournament - 194 rows 
 counted nowhere. The lineup condition is also what makes the statement runnable: the layer
 reaches 43 tournaments of 414, and comparing across the rest returned a gateway timeout twice
 before the population was narrowed to where an answer exists.
+
+**The same reach decides whether a ranked person can be asked to appear in their tournament at
+all, and `GLOBAL-DQ-030` cannot ask it here.** That template accepts two participation paths -
+an `event_participants` row or a `lineup` row - and in a team sport only the second can ever
+succeed for a player, because the side entered against the event is the team and never the
+person. Ice Hockey writes a lineup for 1616 of its 9803 events, so under a tournament that
+stores none every ranked player is reported by construction. Reviewed 2026-08-15 on the
+findings: 341 of the template's 371 statistics, and the 16650 athletes named in them, sit in
+exactly that state, which is the absence of a layer rather than a stray entry; 66 of those
+statistics carry coaches, read the same way, since 165 coaches do hold a lineup row and the path
+is theirs too. Where the layer is present the rule reads correctly and returns 24 statistics
+over 198 participants. `Ice-Hockey-DQ-110` is that statement, adding the lineup condition to the
+template's own two; `GLOBAL-DQ-030` is recorded `Not applicable` in `SPORTS/params.json`, and
+`Ice-Hockey-DQ-012` keeps its row as `Deprecated`.
 
 **`1271 Points` and `1273 Comment` are declared and all but unused**: 8 values on 2 statistics
 and 2 values on 1. Neither is structurally absent, and re-read on 2026-08-14 both turned out to
@@ -810,6 +842,18 @@ of them is empty scope - each has a population and each population is clean.
 
 Nothing else beyond what the sections above record. This file is one day old and every other
 paragraph in it is a first reading.
+
+**The findings were reviewed on 2026-08-15, and the sport is the first in the package where
+every reporting check has been judged.** 62 of the 110 approved checks returned something, 27093
+rows in all, and each was read as one question rather than as its rows. **59 came back a
+defect** and are the data owners' work, not the package's: no statement was changed on their
+account and none should be. **Three came back normal for the sport**, and each of those is a
+statement about the check rather than about the data - `Ice-Hockey-DQ-087` and
+`Ice-Hockey-DQ-088` are now `Monitor`, recorded above where each layer is described, and
+`GLOBAL-DQ-030` turned out to be unaskable in a team sport and was replaced by
+`Ice-Hockey-DQ-110`. Nothing was judged a parameter fault and nothing was left unclear, so no
+question came back from the review. What that leaves outstanding is a data correction round, and
+`SPORTS/params.json` `_expected` says what each check should return once it has happened.
 
 <!-- MANUAL PASTE ZONE: 5 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 

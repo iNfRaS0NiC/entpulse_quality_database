@@ -1537,3 +1537,108 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, event_startdate, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-110
+    -- Name - COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT_WITH_LINEUPS
+    -- What it does: Flags Comp.Rank participants who never appear in their own tournament, read only where that tournament records who took the ice.
+    'PARTICIPANT_NOT_IN_TOURNAMENT' AS check_type,
+    s.id AS statistic_id,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    COUNT(DISTINCT sp.participantFK) AS stray_participants,
+    COUNT(DISTINCT sp.id) AS stray_participant_rows,
+    GROUP_CONCAT(DISTINCT p.id ORDER BY p.id SEPARATOR ' | ') AS participant_ids,
+    GROUP_CONCAT(DISTINCT p.name ORDER BY p.name SEPARATOR ' | ') AS participant_names,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a Comp.Rank statistic holding participants who are neither
+-- an event participant nor a lineup member anywhere under their own tournament, confined to
+-- tournaments that store at least one lineup.
+-- The confinement is the whole difference from GLOBAL-DQ-030 and is structural rather than a cost
+-- measure. The template asserts two participation paths, and in a team sport only one of them can
+-- ever succeed for a player: the side entered against event_participants is the team, so an
+-- athlete reaches their tournament through lineup or not at all. Ice Hockey writes a lineup for
+-- 1616 of its 9803 events, so under a tournament that stores none the template reports every
+-- ranked player by construction - measured 2026-08-15, 341 of its 371 statistics and 16650 of the
+-- athletes named in them sit in exactly that state, which is the absence of a layer and not a
+-- stray entry. Where the layer is present the same rule reads correctly and returns 24
+-- statistics over 198 participants. SPORTS/Ice-Hockey.md records the measurement, and
+-- SPORTS/params.json classifies GLOBAL-DQ-030 Not applicable for this sport in favour of this
+-- statement.
+-- Coaches travel with the players and are read the same way: 165 of them hold a lineup row, so
+-- the path is theirs too and no participant type is excluded here.
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 5
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM tournament_stage ts4
+      JOIN event e4 ON e4.tournament_stageFK = ts4.id AND e4.del = 'no'
+      JOIN event_participants ep4 ON ep4.eventFK = e4.id AND ep4.del = 'no'
+      JOIN lineup l4 ON l4.event_participantsFK = ep4.id AND l4.del = 'no'
+      WHERE ts4.tournamentFK = t.id
+        AND ts4.del = 'no'
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM tournament_stage ts2
+      JOIN event e2 ON e2.tournament_stageFK = ts2.id AND e2.del = 'no'
+      JOIN event_participants ep2 ON ep2.eventFK = e2.id AND ep2.del = 'no'
+      WHERE ts2.tournamentFK = t.id
+        AND ts2.del = 'no'
+        AND ep2.participantFK = sp.participantFK
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM tournament_stage ts3
+      JOIN event e3 ON e3.tournament_stageFK = ts3.id AND e3.del = 'no'
+      JOIN event_participants ep3 ON ep3.eventFK = e3.id AND ep3.del = 'no'
+      JOIN lineup l3 ON l3.event_participantsFK = ep3.id
+                    AND l3.del = 'no'
+                    AND l3.participantFK = sp.participantFK
+      WHERE ts3.tournamentFK = t.id
+        AND ts3.del = 'no'
+  )
+GROUP BY s.id, tt.name, t.name
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 5
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM tournament_stage ts4
+      JOIN event e4 ON e4.tournament_stageFK = ts4.id AND e4.del = 'no'
+      JOIN event_participants ep4 ON ep4.eventFK = e4.id AND ep4.del = 'no'
+      JOIN lineup l4 ON l4.event_participantsFK = ep4.id AND l4.del = 'no'
+      WHERE ts4.tournamentFK = t.id
+        AND ts4.del = 'no'
+  )
+
+ORDER BY sort_order, template_name, tournament_name;

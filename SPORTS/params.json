@@ -1001,6 +1001,10 @@
                 "signal": "Not applicable",
                 "reason": "Structural: the template asks whether a superseded Duration data field is still in use beside the current Time fields, and this sport's Comp.Rank declares none of the three. Nothing can be deprecated that was never declared."
             },
+            "GLOBAL-DQ-030": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template asserts two participation paths - an event_participants row or a lineup row - and in a team sport only the second can ever succeed for a player, because the side entered against the event is the team. Ice Hockey writes a lineup for 1616 of its 9803 events, so under a tournament that stores none the template reports every ranked player by construction. Measured 2026-08-15: 341 of its 371 statistics and the 16650 athletes named in them sit in exactly that state, which is the absence of a layer rather than a stray entry, and 66 statistics carry coaches read the same way. Where the layer is present the rule reads correctly and returns 24 statistics over 198 participants. Ice-Hockey-DQ-110 is that statement; Ice-Hockey-DQ-012 keeps its row as Deprecated and the ID is never reused."
+            },
             "GLOBAL-DQ-036": {
                 "signal": "Not applicable",
                 "reason": "Structural: the template asks whether a Rank is missing or outside a plausible range, and this sport ranks nothing at event level - 100 Rank holds one value in the boundary, on the 2015 event that also carries the sport's only athlete participation. A head-to-head match is settled by its score, which Ice-Hockey-DQ-057, -058 and -059 read."
@@ -1089,6 +1093,10 @@
                 "signal": "Not applicable",
                 "reason": "Structural: the sport does not store a period as a scope_data_type inside one scope container, which is the shape this template reads. Ice hockey inverts the axis - the period is the container, 322 period1, 323 period2 and 324 period3, and each carries a single 162 goals field. Measured 2026-08-14 over 882 events. It also has no sentinel to place: SCOPE_PERIOD_SENTINEL_LIST is empty, so there is nothing whose position could be wrong. See GLOBAL-DQ-086."
             },
+            "GLOBAL-DQ-107": {
+                "signal": "Monitor",
+                "reason": "Real and population-wide: the scope container carrying the period-by-period score is written by era rather than by rule, so the 8410 finished events reporting on 2026-08-15 are the reach of the layer and not a list of defects. The first year a template stores one runs 1997, 2000, 2010, 2016, 2017, 2018, 2022 and 2023, and 14 of the client's 25 templates have never stored one at all. No narrowing recovers a work list: confining it to tournaments that store the breakdown somewhere leaves 530 rows over 23 tournaments, and inside those the shape is 2 or 3 matches carrying it out of 21 to 52 - the 1997 World Championship misses 49 of 52, and every U18 World Championship from 2011 to 2019 misses 19 of 21. By round it is the same, with the Final at 73 of 288 and the Quarter Finals at 114 of 415, so no round is complete either. The proportion is the finding; the number falls on its own if the provider ever writes the layer backwards. Ice-Hockey-DQ-089, -101 and -109 read what the layer does hold."
+            },
             "GLOBAL-DQ-109": {
                 "signal": "Not applicable",
                 "reason": "Structural: the template compares the discipline event property against the object_discipline relation, and this sport does not write the property. The relation is the only storage ice hockey asserts - 635 6aSide on 312717 events server-wide - and the property is a legacy path that survives as 7 events sport-wide, none of them inside the client boundary. Decided 2026-08-15 that no statement here may read it, so there is no second path for the template to compare against and there never will be. The question it stands in for is asked by GLOBAL-DQ-015 as Ice-Hockey-DQ-067, which reports 20 events with no discipline relation, and by GLOBAL-DQ-023 as Ice-Hockey-DQ-070, which reports 65 Comp.Rank records with none. Ice-Hockey-DQ-049 keeps its row as Deprecated; the ID is never reused."
@@ -1116,6 +1124,10 @@
             "GLOBAL-DQ-122": {
                 "signal": "Not applicable",
                 "reason": "Structural: the template asks whether a Rank stands without the value it was read from. There is no event Rank to stand, no tie-value field in a head-to-head sport, and no comment to excuse either."
+            },
+            "Ice-Hockey-DQ-088": {
+                "signal": "Monitor",
+                "reason": "Real and population-wide: 329 of 2098 registered non-athletes - 136 teams, 129 coaches and 64 officials - are reached by no event, no lineup, no Comp.Rank and no refereeFK property, and a registry legitimately holds entries that were never used. No single row is a defect and none of them is worked through; what the number describes is how much of the sport's registry has never been entered anywhere, and a rise in it is the question rather than the rows themselves. Judged 2026-08-15 on the reviewed findings."
             }
         }
     }
