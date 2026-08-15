@@ -368,10 +368,36 @@ Data fields measured sport-wide: `1270 Rank` on 44110 values over 810 statistics
 on 51941 over 371, `1277 Medal` on 10395 over 443, `1271 Points` on 8 over 2, `1273 Comment` on
 2 over 1.
 
-**`1429 Team` carries more values than `1270 Rank` and reaches fewer than half the statistics.**
-51941 against 44110, on 371 statistics against 810. A Team field on a participant row of a team
-sport is not obviously the same thing as a rank, and what it holds — the sample is `100108`,
-which reads as a participant id — is not yet established.
+**`1429 Team` names the side the ranked person plays for, and it is the field that separates
+two different kinds of Comp.Rank.** Measured 2026-08-15 inside the boundary: all 43708 values
+resolve to an active participant, every one of them of type `team`, and not one repeats the
+participant on its own row — the first pair read is `A.J. Francisco [athlete]` naming
+`USA U18 [team]`. So this is an affiliation and never a duplicate.
+
+That answers what the layer holds, and it turns out to hold two things:
+
+| What the statistic ranks | Statistics | Ranked rows | Naming a team | Holding a Rank | Holding a Medal |
+|---|---:|---:|---:|---:|---:|
+| teams | 445 | 3345 | 0 | 3331 | 855 |
+| athletes | 229 | 31338 | 31338 | 22186 | 6744 |
+| a coach and athletes | 72 | 12373 | 12370 | 9814 | 2787 |
+
+The 445 are standings — the participant is the team, so no affiliation is written and none
+should be. The other 301 are player leaderboards, named `Competition Stats (athletes)` and
+`Competition Stats Group A (athletes)`, where every row is a person and the Team field says
+which side they played for. `GLOBAL-DQ-098` asserts exactly this and reports 0 of 219 as
+`Ice-Hockey-DQ-076`, which is the correct outcome now that the two shapes are known apart.
+
+**So most of the sport's medals are on players, not on teams.** 9531 of the 10386 `1277 Medal`
+values sit on athlete rows and 855 on team rows. That does not change the reading recorded
+under the storage semantics below — the event medal layer is still nearly unwritten and that is
+still a gap — but it does change what the statistic medal is evidence of: it says a named player
+won something, not that a country did.
+
+**72 statistics rank a coach alongside the athletes**, and 12370 of their 12373 rows name a
+team. Whether a coach should carry a Rank in a scoring leaderboard is not established and no
+check reads it; it is recorded here because a coach among athletes is the kind of shape a later
+check would otherwise report as a participant-type error.
 
 **`1271 Points` and `1273 Comment` are declared and all but unused**: 8 values on 2 statistics
 and 2 values on 1. Neither is structurally absent, and re-read on 2026-08-14 both turned out to
@@ -486,6 +512,21 @@ so a sport-level rule that summed the three periods alone would report every mat
 beyond regulation. `Ice-Hockey-DQ-059` sums all five and reports 4, all of them at the 2026
 Winter Olympics.
 
+**Where the boxscore and the result layer both hold a period, they agree three times in a
+thousand short of always.** Measured 2026-08-15 over the 882 events carrying both: 5285 of 5288
+participant-periods are identical, and the three that are not are all a first period at the
+2026 Winter Olympics, all with the result layer holding `0` where the boxscore holds a goal.
+
+| Event | Date | Side | Boxscore | Result |
+|---|---|---|---:|---:|
+| `4849552 Slovakia-Finland` | 2026-02-11 | Slovakia | 1 | 0 |
+| `4849551 Switzerland-France` | 2026-02-12 | Switzerland | 2 | 0 |
+| `4849782 Canada-France` | 2026-02-15 | France | 1 | 0 |
+
+`Ice-Hockey-DQ-059` reports 4 events whose periods do not sum to the final result, also all at
+the 2026 Winter Olympics, so the two readings are almost certainly one import going wrong at one
+tournament rather than two separate faults. Nothing asserts the cross-layer agreement yet.
+
 **`51 Period 1` doubles as the whole score on 1091 finished events, and this is unresolved.**
 Those events carry no `52` and no `53` at all, and on every one of them the `51` value equals
 the `4 Final Result` exactly, which is what makes it readable as a total rather than as a first
@@ -590,18 +631,16 @@ paragraph in it is a first reading.
 
 ## Open questions
 
-1. **What does `1429 Team` hold on a Comp.Rank participant row?** 51941 values on 371
-   statistics, sample `100108`, which reads as a participant id. In a team sport whose Comp.Rank
-   ranks teams, a Team field on the participant row is either a duplicate of the participant or
-   something else entirely, and no check should read it until this is answered.
-2. **Do the period result types and the period scope types describe the same games?**
-   `51`–`53` reach 8501 to 9803 events, `322`–`324` reach 898. Whether the 898 are a subset and
-   whether the two agree where both exist is unmeasured, and a period check has to know.
-   Narrowed 2026-08-14: the scope side is now measured whole - 882 events carry `162 goals`
-   under all three period containers, values `0` to `9`, no blanks and no sentinel - so what
-   remains open is only whether those 882 agree with the result types on the same events.
-   `Ice-Hockey-DQ-089` does not depend on the answer, because it compares the two sides of one
-   event with each other and never with the result layer.
+1. ~~**What does `1429 Team` hold on a Comp.Rank participant row?**~~ Answered 2026-08-15: the
+   side the ranked person plays for. Every one of the 43708 values in the boundary resolves to
+   an active `team` participant and none repeats its own row. It is also what separates the 445
+   team standings from the 301 player leaderboards. Recorded under Statistics above.
+2. ~~**Do the period result types and the period scope types describe the same games?**~~
+   Answered 2026-08-15: yes, and they agree. Where both layers store a period for the same
+   participation, 5285 of 5288 pairs are identical - `period1` 1761, `period2` 1762, `period3`
+   1762 - so the scope periods are a subset of the result periods and say the same thing. The
+   three exceptions are recorded under Event result types above. A period check may read either
+   layer; reading both would double-count the 882 events that have them in both places.
 3. **Does the `Round` property agree with `event.round_typeFK`?** Both are on every event in
    the boundary and neither has been read against the other.
 4. ~~**What are the 202 events holding a period score and no Final Result?**~~ Answered
