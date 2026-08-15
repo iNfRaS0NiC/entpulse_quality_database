@@ -853,7 +853,8 @@ statement about the check rather than about the data - `Ice-Hockey-DQ-087` and
 `GLOBAL-DQ-030` turned out to be unaskable in a team sport and was replaced by
 `Ice-Hockey-DQ-110`. Nothing was judged a parameter fault and nothing was left unclear, so no
 question came back from the review. What that leaves outstanding is a data correction round, and
-`SPORTS/params.json` `_expected` says what each check should return once it has happened.
+what each check should return after it needs no `_expected` entry: the signal supplies it, so
+the two `Monitor` checks expect a number that stays and every other approved check expects zero.
 
 <!-- MANUAL PASTE ZONE: 5 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
