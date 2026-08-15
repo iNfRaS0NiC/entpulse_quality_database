@@ -1320,3 +1320,120 @@ WHERE s.del = 'no'
   )
 
 ORDER BY sort_order, template_name, tournament_name, participant_name;
+
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-108
+    -- Name - COMP.RANK_PLAYER_RANKING_COVERS_NEITHER_EVERY_TEAM_NOR_THE_MEDALLISTS
+    -- What it does: Flags tournaments whose player Comp.Rank lists players for some teams only, covering neither every ranked team nor exactly the medallists.
+    CASE
+        WHEN x.teams_named > x.ranked_teams
+            THEN 'PLAYERS_NAME_A_TEAM_THE_RANKING_DOES_NOT_HOLD'
+        WHEN x.teams_named < x.medal_teams
+            THEN 'NOT_EVEN_EVERY_MEDAL_TEAM_HAS_PLAYERS'
+        ELSE 'PLAYERS_STOP_PART_WAY_THROUGH_THE_RANKED_TEAMS'
+    END AS check_type,
+    x.tournament_id,
+    x.tournament_name,
+    x.template_name,
+    x.ranked_teams,
+    x.teams_named,
+    x.medal_teams,
+    x.medal_teams_named,
+    x.ranked_teams_without_players,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a tournament where the two Comp.Rank shapes disagree about
+-- which teams took part - the player ranking listing players for some of the ranked teams but
+-- neither for all of them nor for exactly the ones that won a medal.
+FROM (
+    SELECT
+        s.objectFK AS tournament_id,
+        MIN(t.name) AS tournament_name,
+        MIN(tt.name) AS template_name,
+        COUNT(DISTINCT CASE WHEN p.type = 'team' THEN sp.participantFK END) AS ranked_teams,
+        COUNT(DISTINCT CASE WHEN p.type <> 'team' THEN CAST(TRIM(td.value) AS UNSIGNED) END) AS teams_named,
+        COUNT(DISTINCT CASE WHEN p.type = 'team' AND md.id IS NOT NULL THEN sp.participantFK END) AS medal_teams,
+        COUNT(DISTINCT CASE WHEN p.type = 'team' AND md.id IS NOT NULL AND pn.team_id IS NOT NULL
+                            THEN sp.participantFK END) AS medal_teams_named,
+        SUBSTRING(GROUP_CONCAT(DISTINCT CASE
+            WHEN p.type = 'team' AND pn.team_id IS NULL THEN p.name
+        END ORDER BY p.name SEPARATOR ', '), 1, 300) AS ranked_teams_without_players
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 5
+    JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    LEFT JOIN statistic_data11 td ON td.statistic_participants11FK = sp.id AND td.del = 'no'
+         AND td.statistic_data_typeFK = 1429 AND TRIM(COALESCE(td.value, '')) <> ''
+    LEFT JOIN statistic_data11 md ON md.statistic_participants11FK = sp.id AND md.del = 'no'
+         AND md.statistic_data_typeFK = 1277 AND TRIM(COALESCE(md.value, '')) <> ''
+    -- The set of teams a tournament's player rows name is built once here rather than asked
+    -- again for every row of every statistic. Asked per row it is two correlated subqueries over
+    -- 43708 player rows and the server returns a gateway timeout; built once it is roughly two
+    -- thousand pairs. WORKFLOW.md owns the rule that a statement which will not run is
+    -- redesigned rather than cut into pieces.
+    LEFT JOIN (
+        SELECT DISTINCT
+            s7.objectFK AS tournament_id,
+            CAST(TRIM(td7.value) AS UNSIGNED) AS team_id
+        FROM statistic s7
+        JOIN tournament t7 ON t7.id = s7.objectFK AND t7.del = 'no'
+        JOIN tournament_template tt7 ON tt7.id = t7.tournament_templateFK AND tt7.del = 'no'
+             AND tt7.sportFK = 5
+        JOIN statistic_participants11 sp7 ON sp7.statisticFK = s7.id AND sp7.del = 'no'
+        JOIN statistic_data11 td7 ON td7.statistic_participants11FK = sp7.id AND td7.del = 'no'
+             AND td7.statistic_data_typeFK = 1429 AND TRIM(COALESCE(td7.value, '')) <> ''
+        WHERE s7.del = 'no' AND s7.statistic_typeFK = 11 AND s7.object_typeFK = 3
+          AND t7.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+          AND (tt7.name IS NULL OR tt7.name NOT LIKE '%(IOC)%')
+    ) pn ON pn.tournament_id = s.objectFK AND pn.team_id = sp.participantFK
+    WHERE s.del = 'no' AND s.statistic_typeFK = 11 AND s.object_typeFK = 3
+      AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY s.objectFK
+    HAVING ranked_teams > 0 AND teams_named > 0
+) x
+-- Two shapes are correct and the sport uses both. Since 1999 every ranked team carries a squad,
+-- and from 1920 to 2004 only the medallists did - 75 tournaments where exactly gold, silver and
+-- bronze hold a full 22 to 25 man roster and nobody else holds one. Neither is a defect, so the
+-- check asserts the pair rather than one of them: a tournament covering some teams but not all,
+-- and not exactly the ones that medalled, is an import that stopped part way. Measured
+-- 2026-08-15 that is 4 tournaments of 233, and two of them are a silver medallist whose whole
+-- squad is absent. SPORTS/Ice-Hockey.md records the two conventions and where each applies.
+WHERE NOT (x.teams_named = x.ranked_teams)
+  AND NOT (x.teams_named = x.medal_teams AND x.teams_named = x.medal_teams_named)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT y.tournament_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT
+        s.objectFK AS tournament_id,
+        COUNT(DISTINCT CASE WHEN p.type = 'team' THEN sp.participantFK END) AS ranked_teams,
+        COUNT(DISTINCT CASE WHEN p.type <> 'team' THEN CAST(TRIM(td.value) AS UNSIGNED) END) AS teams_named
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 5
+    JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    LEFT JOIN statistic_data11 td ON td.statistic_participants11FK = sp.id AND td.del = 'no'
+         AND td.statistic_data_typeFK = 1429 AND TRIM(COALESCE(td.value, '')) <> ''
+    WHERE s.del = 'no' AND s.statistic_typeFK = 11 AND s.object_typeFK = 3
+      AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY s.objectFK
+    HAVING ranked_teams > 0 AND teams_named > 0
+) y
+
+ORDER BY sort_order, template_name, tournament_name;

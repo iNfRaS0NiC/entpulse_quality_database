@@ -175,8 +175,24 @@ the two totals at 9791.
 So the sport writes a scoreline for a match it never resolved, and the deciding result is the
 one field it withholds. That is the shape a results check here is scoped around: `finished` is
 the population, and the 202 belong to `GLOBAL-DQ-047`, which reports the 20 not-started ones.
-Five cancelled events from 2021 do hold a final result, which is the reverse of the habit and
-is not yet explained.
+
+**What an unplayed event may hold is a rule and it is already enforced.** Decided 2026-08-15: a
+result on a `Not started` event is a defect and a result on a `Cancelled` or postponed one is
+not, because a cancelled match may well have been played before the tournament was abandoned.
+Measured the same day, the two populations look nothing alike. The 20 not-started events each
+hold `1 Ordinary time`, `51 Period 1` and `6 Running score`, and **every value is `0`** - a
+fixture carrying an empty scoreline. The 187 cancelled ones hold the same three with real values
+from `0` to `11`, plus periods on ten, `2 Extra time` on one, and `4 Final Result` on five.
+Those five are all from 27 and 29 December 2021, games of the `World Championship U-20` edition
+that was abandoned: `Czechia U20-Canada U20` 3-6, `USA U20-Slovakia U20` 3-2,
+`Austria U20-Finland U20` 1-7, `Russia U20-Switzerland U20` 4-2 and
+`Finland U20-Czechia U20` 1-0. They are matches that were played and then annulled, which is the
+world rather than the database. `Ice-Hockey-DQ-019` reports 20 of 20 and touches none of the
+cancelled ones, so the rule needs no new check.
+
+The three `190 Finished after awarded win` events carry a result on both sides and the values are
+what a forfeit looks like: `Italy-Belgium` 1933 at 1-0, and `Poland-Sweden` and
+`Finland-Czechoslovakia` in 1974 both at 5-0.
 
 **`100 Rank` holds a single row in the whole boundary.** This is a head-to-head sport where the
 result is a score, not a placing, so a rank on one event participant is a stray rather than a
@@ -452,6 +468,33 @@ all: `Roman Josi` in `Winter Olympics Male 2014 - Competition Rank(athletes)`, a
 `Christoph Brandner` and `Jeremy Rebek` in `Competition Stats Group A (athletes)` of the 2008
 `World Championship 2`. No row anywhere names something that is not a team, so the second half
 of the rule is clean and the check stands to keep it that way.
+
+**The player ranking covers the teams two different ways, and both are correct.** Measured
+2026-08-15 over the 233 tournaments carrying both shapes: in **154** every ranked team has a
+squad, and they run from 1999 to 2026; in **75** only three teams do, and those three are always
+exactly gold, silver and bronze holding a full 22 to 25 man roster while nobody else holds one.
+Those 75 run from 1920 to 2004, so this is an editorial practice the sport changed rather than
+two kinds of defect. The 1998 World Championship is the plain case: `Sweden`, `Finland` and
+`Czechia` carry 24, 23 and 24 players and the other thirteen teams carry none.
+
+**Four tournaments are neither, and `Ice-Hockey-DQ-108` reports them.** The rule it asserts is
+the pair: a player ranking covers every ranked team, or exactly the ones that medalled, and
+anything in between is an import that stopped part way. What it finds is not a thin classification
+but whole squads missing, and the check names them in `ranked_teams_without_players`:
+
+| Tournament | Ranked | With players | Missing |
+|---|---:|---:|---|
+| `7977` Winter Olympics 2014 | 12 | 11 | **`Sweden`**, the silver medallist |
+| `27617` World Championship U18 2021 | 10 | 9 | **`Russia U18`**, the silver medallist |
+| `16214` Winter Olympics 2022 | 22 | 10 | twelve teams, `Canada` and `Finland` among them |
+| `27000` World Championship 1933 | 12 | 3 | nine, and the tournament records only two medals |
+
+Two of the four are a silver medallist whose entire 25-man roster is absent while every other
+team in the same tournament carries one, which is a stronger statement than the counts suggest.
+
+The statement builds the set of teams the player rows name once, as a derived table, rather than
+asking it per row: asked per row it is two correlated subqueries over 43708 player rows and the
+server returned a gateway timeout twice. Built once it answers in 8.6 seconds.
 
 **Naming a team is not the same as naming the right one.** `Ice-Hockey-DQ-107` compares the
 `1429 Team` value with the lineups the player actually appears in, inside the same tournament,
