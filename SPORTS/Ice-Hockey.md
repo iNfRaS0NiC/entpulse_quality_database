@@ -185,6 +185,33 @@ thin layer — and it is the same event as the stray `athlete` participation abo
 `549 Final Outcome` and `550 Overall Score` are each on a handful of events and have not been
 read further. Both are named here so that neither reads as an unknown type later.
 
+**The score adds up along two links, and until 2026-08-15 neither was asserted.** The three
+periods make `1 Ordinary time`, and ordinary time with `2 Extra time` and `3 Penalty shootout`
+makes `4 Final Result`. `Ice-Hockey-DQ-059` jumps the middle - it sums the periods straight into
+the final - so an event whose two errors cancel passes it. `Ice-Hockey-DQ-104` asserts both
+links and names which one broke, over 8492 events, and reports 5. All five are at the 2026
+Winter Olympics, and both links fail together on every one of them; no event in the sport fails
+one alone. That is the same import `Ice-Hockey-DQ-059` and `Ice-Hockey-DQ-101` already see from
+two other directions. Until this check existed **`1 Ordinary time` was read by nothing**, on all
+9803 events.
+
+**How a game was decided and how it says it was decided can disagree, and seven do.** The
+pairing is the sport's own: `13 Finished AP` means the shootout settled it and carries both an
+overtime and a shootout score, because a shootout is only reached through overtime;
+`59 Finished OT` carries the overtime score and no shootout; `6 Finished` carries neither.
+`Ice-Hockey-DQ-105` asserts it over 9593 events and reports one `Finished` holding both scores
+and six `Finished OT` holding a shootout - which is to say six games that were decided on
+penalties and are filed as decided in overtime. `190 Finished after awarded win` is left out in
+both directions, since an awarded win is not a way of playing the game out. This is the sport
+variant of `GLOBAL-DQ-089`, which reads an extra-period scope column this sport does not have.
+
+**The timed goals and the scoreline agree on all but eleven events.** `Ice-Hockey-DQ-106`
+counts the goal incidents written against each side and compares them with that side's
+`4 Final Result`, over the 2215 events that carry any goal incident at all - asserting it
+everywhere would report the reach of the incident layer instead. Five incident types are goals
+and the type id is the only safe discriminator, because `11 Penalty shootout missed` carries the
+`goal` code as well: the check counts `7`, `8`, `12`, `21` and `22`.
+
 <!-- MANUAL PASTE ZONE: 5 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
@@ -425,6 +452,15 @@ all: `Roman Josi` in `Winter Olympics Male 2014 - Competition Rank(athletes)`, a
 `Christoph Brandner` and `Jeremy Rebek` in `Competition Stats Group A (athletes)` of the 2008
 `World Championship 2`. No row anywhere names something that is not a team, so the second half
 of the rule is clean and the check stands to keep it that way.
+
+**Naming a team is not the same as naming the right one.** `Ice-Hockey-DQ-107` compares the
+`1429 Team` value with the lineups the player actually appears in, inside the same tournament,
+and reports 1 row of 8918: **`Mason Raymond`** ranked under **`Czechia`**. The eligible
+population is a player who appears in some lineup of that tournament - 194 rows measured on
+2026-08-15 appear in none, which is the lineup layer's reach rather than a defect, and they are
+counted nowhere. The lineup condition is also what makes the statement runnable: the layer
+reaches 43 tournaments of 414, and comparing across the rest returned a gateway timeout twice
+before the population was narrowed to where an answer exists.
 
 **`1271 Points` and `1273 Comment` are declared and all but unused**: 8 values on 2 statistics
 and 2 values on 1. Neither is structurally absent, and re-read on 2026-08-14 both turned out to

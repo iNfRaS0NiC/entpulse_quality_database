@@ -922,3 +922,401 @@ WHERE s.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, template_name, tournament_name, statistic_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-104
+    -- Name - EVENT_RESULTS_REGULATION_AND_FINAL_SCORE_DO_NOT_ADD_UP
+    -- What it does: Flags finished events where regulation time is not the three periods, or the final result is not regulation plus overtime plus the shootout.
+    CASE
+        WHEN x.sides_failing_regulation > 0 AND x.sides_failing_final > 0
+            THEN 'REGULATION_AND_FINAL_BOTH_DISAGREE'
+        WHEN x.sides_failing_regulation > 0
+            THEN 'ORDINARY_TIME_IS_NOT_THE_THREE_PERIODS'
+        ELSE 'FINAL_RESULT_IS_NOT_ORDINARY_TIME_PLUS_EXTRA_TIME_AND_SHOOTOUT'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    sd.name AS status_desc_name,
+    x.sides_entered,
+    x.sides_failing_regulation,
+    x.sides_failing_final,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a finished event whose score does not add up along the
+-- two links the sport stores it in - the three periods into 1 Ordinary time, and ordinary time
+-- with 2 Extra time and 3 Penalty shootout into 4 Final Result.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+LEFT JOIN status_desc sd ON sd.id = e.status_descFK
+-- Two assertions in one statement because they are one arithmetic read in two steps, and
+-- separating them would report the same import twice. Ice-Hockey-DQ-059 sums the periods
+-- straight into the final result and would pass an event whose two errors cancel; this one
+-- names which link broke. 1 Ordinary time is read by no other check in the sport.
+JOIN (
+    SELECT
+        b.event_id,
+        COUNT(*) AS sides_entered,
+        SUM(CASE WHEN b.ordinary <> b.p1 + b.p2 + b.p3 THEN 1 ELSE 0 END) AS sides_failing_regulation,
+        SUM(CASE WHEN b.final <> b.ordinary + b.ot + b.so THEN 1 ELSE 0 END) AS sides_failing_final
+    FROM (
+        SELECT
+            e2.id AS event_id,
+            ep.id AS ep_id,
+            MAX(CASE WHEN r.result_typeFK = 1 THEN CAST(r.value AS SIGNED) END) AS ordinary,
+            MAX(CASE WHEN r.result_typeFK = 51 THEN CAST(r.value AS SIGNED) END) AS p1,
+            MAX(CASE WHEN r.result_typeFK = 52 THEN CAST(r.value AS SIGNED) END) AS p2,
+            MAX(CASE WHEN r.result_typeFK = 53 THEN CAST(r.value AS SIGNED) END) AS p3,
+            COALESCE(MAX(CASE WHEN r.result_typeFK = 2 THEN CAST(r.value AS SIGNED) END), 0) AS ot,
+            COALESCE(MAX(CASE WHEN r.result_typeFK = 3 THEN CAST(r.value AS SIGNED) END), 0) AS so,
+            MAX(CASE WHEN r.result_typeFK = 4 THEN CAST(r.value AS SIGNED) END) AS final
+        FROM event e2
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+             AND tt2.sportFK = 5
+        JOIN event_participants ep ON ep.eventFK = e2.id AND ep.del = 'no'
+        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+             AND r.result_typeFK IN (1, 2, 3, 4, 51, 52, 53)
+             AND TRIM(COALESCE(r.value, '')) REGEXP '^[0-9]+$'
+        WHERE e2.del = 'no'
+          AND e2.status_type = 'finished'
+          AND t2.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+        GROUP BY e2.id, ep.id
+        HAVING ordinary IS NOT NULL AND final IS NOT NULL
+           AND p1 IS NOT NULL AND p2 IS NOT NULL AND p3 IS NOT NULL
+    ) b
+    GROUP BY b.event_id
+    HAVING sides_failing_regulation > 0 OR sides_failing_final > 0
+) x ON x.event_id = e.id
+WHERE e.del = 'no'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT b2.event_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT
+        e3.id AS event_id,
+        ep3.id AS ep_id,
+        MAX(CASE WHEN r3.result_typeFK = 1 THEN CAST(r3.value AS SIGNED) END) AS ordinary,
+        MAX(CASE WHEN r3.result_typeFK = 51 THEN CAST(r3.value AS SIGNED) END) AS p1,
+        MAX(CASE WHEN r3.result_typeFK = 52 THEN CAST(r3.value AS SIGNED) END) AS p2,
+        MAX(CASE WHEN r3.result_typeFK = 53 THEN CAST(r3.value AS SIGNED) END) AS p3,
+        MAX(CASE WHEN r3.result_typeFK = 4 THEN CAST(r3.value AS SIGNED) END) AS final
+    FROM event e3
+    JOIN tournament_stage ts3 ON ts3.id = e3.tournament_stageFK AND ts3.del = 'no'
+    JOIN tournament t3 ON t3.id = ts3.tournamentFK AND t3.del = 'no'
+    JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
+         AND tt3.sportFK = 5
+    JOIN event_participants ep3 ON ep3.eventFK = e3.id AND ep3.del = 'no'
+    JOIN result r3 ON r3.event_participantsFK = ep3.id AND r3.del = 'no'
+         AND r3.result_typeFK IN (1, 4, 51, 52, 53)
+         AND TRIM(COALESCE(r3.value, '')) REGEXP '^[0-9]+$'
+    WHERE e3.del = 'no'
+      AND e3.status_type = 'finished'
+      AND t3.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+      -- AND t3.tournament_templateFK = <tournament_template_id>
+    GROUP BY e3.id, ep3.id
+    HAVING ordinary IS NOT NULL AND final IS NOT NULL
+       AND p1 IS NOT NULL AND p2 IS NOT NULL AND p3 IS NOT NULL
+) b2
+
+ORDER BY sort_order, event_startdate, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-105
+    -- Name - EVENT_STATUS_CONTRADICTS_THE_OVERTIME_OR_SHOOTOUT_SCORE
+    -- What it does: Flags finished events whose detailed status disagrees with whether an overtime or shootout score exists.
+    CASE
+        WHEN x.has_shootout = 1 AND e.status_descFK = 59
+            THEN 'SHOOTOUT_SCORED_WHILE_THE_STATUS_SAYS_DECIDED_IN_OVERTIME'
+        WHEN x.has_shootout = 1 AND e.status_descFK NOT IN (13, 59)
+            THEN 'SHOOTOUT_SCORED_WHILE_THE_STATUS_SAYS_REGULATION'
+        WHEN x.has_extra_time = 1 AND e.status_descFK NOT IN (13, 59)
+            THEN 'OVERTIME_SCORED_WHILE_THE_STATUS_SAYS_REGULATION'
+        WHEN x.has_shootout = 0 AND e.status_descFK = 13
+            THEN 'STATUS_SAYS_DECIDED_ON_PENALTIES_AND_NO_SHOOTOUT_IS_SCORED'
+        ELSE 'STATUS_SAYS_DECIDED_IN_OVERTIME_AND_NO_OVERTIME_IS_SCORED'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    sd.name AS status_desc_name,
+    x.has_extra_time,
+    x.has_shootout,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a finished event where how it was decided and how it is
+-- said to have been decided do not agree - a shootout score under a status that names overtime
+-- or regulation, an overtime score under a status that names regulation, or either status
+-- standing over a score that was never written.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+LEFT JOIN status_desc sd ON sd.id = e.status_descFK
+-- The pairing is the sport's own: 13 Finished AP means the shootout decided it and 59 Finished
+-- OT means overtime did, and a shootout is only ever reached through overtime, so 13 legitimately
+-- carries both scores while 59 carries only the overtime one. 190 Finished after awarded win is
+-- left out of the assertion in both directions - an awarded win is not a way of playing the game
+-- out - and 6 Finished must carry neither. SPORTS/Ice-Hockey.md records the four descriptions.
+-- This is the sport variant of GLOBAL-DQ-089, which reads an extra-period scope column this
+-- sport does not have; the same question is asked of the result layer instead.
+JOIN (
+    SELECT
+        ep.eventFK AS event_id,
+        MAX(CASE WHEN r.result_typeFK = 2 THEN 1 ELSE 0 END) AS has_extra_time,
+        MAX(CASE WHEN r.result_typeFK = 3 THEN 1 ELSE 0 END) AS has_shootout
+    FROM event_participants ep
+    JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+         AND tt2.sportFK = 5
+    LEFT JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+         AND r.result_typeFK IN (2, 3)
+    WHERE ep.del = 'no'
+      AND e2.status_type = 'finished'
+      AND e2.status_descFK IN (6, 13, 59)
+      AND t2.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+      -- AND t2.tournament_templateFK = <tournament_template_id>
+    GROUP BY ep.eventFK
+) x ON x.event_id = e.id
+WHERE e.del = 'no'
+  AND (
+      (e.status_descFK = 6 AND (x.has_extra_time = 1 OR x.has_shootout = 1))
+   OR (e.status_descFK = 59 AND (x.has_extra_time = 0 OR x.has_shootout = 1))
+   OR (e.status_descFK = 13 AND (x.has_extra_time = 0 OR x.has_shootout = 0))
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  AND e.status_descFK IN (6, 13, 59)
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, event_startdate, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-106
+    -- Name - EVENT_GOAL_INCIDENTS_DO_NOT_ADD_UP_TO_THE_SCORE
+    -- What it does: Flags events where the number of goal incidents recorded for a side differs from that side's final result.
+    CASE
+        WHEN x.sides_short > 0 AND x.sides_over > 0 THEN 'ONE_SIDE_HAS_TOO_FEW_GOALS_AND_THE_OTHER_TOO_MANY'
+        WHEN x.sides_short > 0 THEN 'FEWER_GOAL_INCIDENTS_THAN_THE_SCORE'
+        ELSE 'MORE_GOAL_INCIDENTS_THAN_THE_SCORE'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    x.sides_entered,
+    x.sides_short,
+    x.sides_over,
+    x.goals_of_difference,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds an event whose timed goals and whose scoreline disagree,
+-- by counting the goal incidents written against each side and comparing that count with the
+-- side's 4 Final Result.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+-- Only an event that carries at least one goal incident is eligible. The incident layer reaches
+-- roughly a fifth of the boundary, so asserting it everywhere would report the coverage of the
+-- layer rather than a defect - SPORTS/Ice-Hockey.md records the reach. Five incident types are
+-- goals and a sixth shares their code while being a miss: 7, 21, 22 and 8 are scored in play and
+-- 12 is a converted shootout attempt, while 11 Penalty shootout missed is excluded by id because
+-- its code cannot be trusted.
+JOIN (
+    SELECT
+        b.event_id,
+        COUNT(*) AS sides_entered,
+        SUM(CASE WHEN b.goal_incidents < b.final THEN 1 ELSE 0 END) AS sides_short,
+        SUM(CASE WHEN b.goal_incidents > b.final THEN 1 ELSE 0 END) AS sides_over,
+        SUM(ABS(b.goal_incidents - b.final)) AS goals_of_difference
+    FROM (
+        SELECT
+            e2.id AS event_id,
+            ep.id AS ep_id,
+            MAX(CASE WHEN r.result_typeFK = 4 THEN CAST(r.value AS SIGNED) END) AS final,
+            (
+                SELECT COUNT(*)
+                FROM incident i
+                WHERE i.event_participantsFK = ep.id AND i.del = 'no'
+                  AND i.incident_typeFK IN (7, 8, 12, 21, 22)
+            ) AS goal_incidents
+        FROM event e2
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+             AND tt2.sportFK = 5
+        JOIN event_participants ep ON ep.eventFK = e2.id AND ep.del = 'no'
+        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+             AND r.result_typeFK = 4 AND TRIM(COALESCE(r.value, '')) REGEXP '^[0-9]+$'
+        WHERE e2.del = 'no'
+          AND e2.status_type = 'finished'
+          AND t2.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+          AND EXISTS (
+              SELECT 1 FROM incident i2
+              JOIN event_participants ep2 ON ep2.id = i2.event_participantsFK AND ep2.del = 'no'
+              WHERE ep2.eventFK = e2.id AND i2.del = 'no'
+                AND i2.incident_typeFK IN (7, 8, 12, 21, 22)
+          )
+        GROUP BY e2.id, ep.id
+    ) b
+    GROUP BY b.event_id
+    HAVING sides_short > 0 OR sides_over > 0
+) x ON x.event_id = e.id
+WHERE e.del = 'no'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1 FROM incident i3
+      JOIN event_participants ep3 ON ep3.id = i3.event_participantsFK AND ep3.del = 'no'
+      WHERE ep3.eventFK = e.id AND i3.del = 'no'
+        AND i3.incident_typeFK IN (7, 8, 12, 21, 22)
+  )
+
+ORDER BY sort_order, event_startdate, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-107
+    -- Name - COMP.RANK_ATHLETE_TEAM_IS_NOT_A_SIDE_THE_PLAYER_PLAYED_FOR
+    -- What it does: Flags athlete Comp.Rank rows whose Team names a side the player never appeared for in that tournament.
+    'ATHLETE_TEAM_IS_NOT_A_SIDE_THE_PLAYER_PLAYED_FOR' AS check_type,
+    s.id AS statistic_id,
+    s.name AS statistic_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    p.id AS participant_id,
+    p.name AS participant_name,
+    tp.name AS team_named,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a player ranked in a tournament's Comp.Rank whose 1429
+-- Team field names a team that the player never appeared in the lineup of, inside that same
+-- tournament.
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no' AND p.type = 'athlete'
+JOIN statistic_data11 sd ON sd.statistic_participants11FK = sp.id AND sd.del = 'no'
+     AND sd.statistic_data_typeFK = 1429 AND TRIM(COALESCE(sd.value, '')) <> ''
+JOIN participant tp ON tp.id = TRIM(sd.value) AND tp.del = 'no' AND tp.type = 'team'
+-- Ice-Hockey-DQ-103 asserts that the Team field is filled and names a team; this asserts that it
+-- names the right one, which only the lineup can say. The eligible population is therefore a
+-- player who appears in a lineup somewhere in this tournament: without one there is nothing to
+-- check against, and 194 rows measured on 2026-08-15 are in that position rather than wrong.
+-- The lineup EXISTS is also what keeps the statement runnable - the layer reaches 43 tournaments
+-- of 414, and evaluating the comparison over the rest returned a gateway timeout twice.
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM lineup l9
+      JOIN event_participants ep9 ON ep9.id = l9.event_participantsFK AND ep9.del = 'no'
+      JOIN event e9 ON e9.id = ep9.eventFK AND e9.del = 'no'
+      JOIN tournament_stage ts9 ON ts9.id = e9.tournament_stageFK AND ts9.del = 'no'
+      WHERE l9.participantFK = sp.participantFK AND l9.del = 'no'
+        AND ts9.tournamentFK = s.objectFK
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM lineup l8
+      JOIN event_participants ep8 ON ep8.id = l8.event_participantsFK AND ep8.del = 'no'
+      JOIN event e8 ON e8.id = ep8.eventFK AND e8.del = 'no'
+      JOIN tournament_stage ts8 ON ts8.id = e8.tournament_stageFK AND ts8.del = 'no'
+      WHERE l8.participantFK = sp.participantFK AND l8.del = 'no'
+        AND ts8.tournamentFK = s.objectFK
+        AND ep8.participantFK = tp.id
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sp.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN participant p ON p.id = sp.participantFK AND p.del = 'no' AND p.type = 'athlete'
+JOIN statistic_data11 sd ON sd.statistic_participants11FK = sp.id AND sd.del = 'no'
+     AND sd.statistic_data_typeFK = 1429 AND TRIM(COALESCE(sd.value, '')) <> ''
+JOIN participant tp ON tp.id = TRIM(sd.value) AND tp.del = 'no' AND tp.type = 'team'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM lineup l7
+      JOIN event_participants ep7 ON ep7.id = l7.event_participantsFK AND ep7.del = 'no'
+      JOIN event e7 ON e7.id = ep7.eventFK AND e7.del = 'no'
+      JOIN tournament_stage ts7 ON ts7.id = e7.tournament_stageFK AND ts7.del = 'no'
+      WHERE l7.participantFK = sp.participantFK AND l7.del = 'no'
+        AND ts7.tournamentFK = s.objectFK
+  )
+
+ORDER BY sort_order, template_name, tournament_name, participant_name;
