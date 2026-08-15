@@ -1041,6 +1041,14 @@
                 "signal": "Not applicable",
                 "reason": "The template asserts that the teams inside one Comp.Rank hold the same number of athletes, and an ice hockey squad legitimately does not: measured 2026-08-14 the World Championship statistics carry 24 to 27 players per country, so 226 of them are reported and none is a defect. 98 differ by a single player. A squad size is a decision the federation makes, not a field somebody failed to fill."
             },
+            "GLOBAL-DQ-066": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template audits a mixed team format, and this sport contests none. Measured 2026-08-15 - the 1470 Gender config holds male on 443 statistics and female on 212 and never a third value, and all 25 templates in the boundary are male (13) or female (12). The eligible population is empty by the sport's own structure rather than by a shortage of rows, so the check is withdrawn rather than left as a sentinel. Ice-Hockey-DQ-028 keeps its row as Deprecated; the ID is never reused."
+            },
+            "GLOBAL-DQ-067": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template audits a mixed team format, and this sport contests none. Measured 2026-08-15 - the 1470 Gender config holds male on 443 statistics and female on 212 and never a third value, and all 25 templates in the boundary are male (13) or female (12). The eligible population is empty by the sport's own structure rather than by a shortage of rows, so the check is withdrawn rather than left as a sentinel. Ice-Hockey-DQ-029 keeps its row as Deprecated; the ID is never reused."
+            },
             "GLOBAL-DQ-068": {
                 "signal": "Not applicable",
                 "reason": "The same reading at event level: the template asserts that two teams dress the same number of players, and ice hockey teams do not. Measured 2026-08-14 it reported 554 events, 376 of them differing by exactly one player and 127 by two. A dressed roster varies by injury, by suspension and by how many goaltenders a team carries, so the difference is the sport rather than the data."
@@ -1080,6 +1088,10 @@
             "GLOBAL-DQ-092": {
                 "signal": "Not applicable",
                 "reason": "Structural: the sport does not store a period as a scope_data_type inside one scope container, which is the shape this template reads. Ice hockey inverts the axis - the period is the container, 322 period1, 323 period2 and 324 period3, and each carries a single 162 goals field. Measured 2026-08-14 over 882 events. It also has no sentinel to place: SCOPE_PERIOD_SENTINEL_LIST is empty, so there is nothing whose position could be wrong. See GLOBAL-DQ-086."
+            },
+            "GLOBAL-DQ-109": {
+                "signal": "Not applicable",
+                "reason": "Structural: the template compares the discipline event property against the object_discipline relation, and this sport does not write the property. The relation is the only storage ice hockey asserts - 635 6aSide on 312717 events server-wide - and the property is a legacy path that survives as 7 events sport-wide, none of them inside the client boundary. Decided 2026-08-15 that no statement here may read it, so there is no second path for the template to compare against and there never will be. The question it stands in for is asked by GLOBAL-DQ-015 as Ice-Hockey-DQ-067, which reports 20 events with no discipline relation, and by GLOBAL-DQ-023 as Ice-Hockey-DQ-070, which reports 65 Comp.Rank records with none. Ice-Hockey-DQ-049 keeps its row as Deprecated; the ID is never reused."
             },
             "GLOBAL-DQ-111": {
                 "signal": "Not applicable",

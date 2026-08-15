@@ -37,6 +37,29 @@ Cup of Asia, the Winter Youth Olympic Games, the European Youth Olympic Festival
 Southeast Asian Games and the 4 Nations Cup. **No club league is in scope, including
 `9694 Great Britain 1`.**
 
+**Great Britain plays 112 matches in five templates the boundary does not take, and whether it
+should is the client's call rather than ours.** Measured 2026-08-15; four separate participant
+records carry the name:
+
+| Team | id | Template outside the boundary | GB matches | Template total | Years |
+|---|---:|---|---:|---:|---|
+| `Great Britain U20` | 47031 | `309 B-World Championship U-20 1` male | 40 | 570 | 2006–2016 |
+| `Great Britain` | 1696372 | `10850 World Championship 3` female | 39 | 395 | 2011–2022 |
+| `Great Britain` | 341 | `320 Friendlies 1` male | 25 | 683 | 2016–2026 |
+| `Great Britain U18` | 1885307 | `11496 World Championship U18 2` female | 5 | 30 | 2026 |
+| `Great Britain` | 341 | `314 Euro Ice Hockey Challenge 1` male | 3 | 527 | 2008 only |
+
+There is a pattern in what the boundary took: divisions 1 and 2 of the men's senior World
+Championship, but only division 1 of the U-20 and of the U18, and divisions 1 and 2 of the
+women's while Great Britain competed in division 3. A template is taken whole, so the five
+together are 2205 events against the 9803 the boundary holds now - a 22 per cent increase for
+112 matches of the client's own. `11496` is also the case the inclusion form was chosen for: a
+template that first appears in 2026, holding a Great Britain team, which under an exclusion
+list would have arrived inside the boundary with nobody deciding it.
+
+Decided 2026-08-15 to change nothing and put the five to the client. Nothing here is a defect;
+it is a question about what UK Sport wants counted.
+
 ## Structural coverage
 
 | Area | Status | Evidence |
@@ -287,6 +310,17 @@ The rest are thinner and are recorded so that none of them reads as unknown late
 `refereeFK` is a `ref:participant` property on 270 events, which is a fourth path from an event
 to a person, beside `event_participants`, `lineup` and the Comp.Rank statistic.
 
+**There is no `discipline` property inside the boundary, and that is correct rather than a
+gap.** The discipline of an event lives in the `object_discipline` relation and nowhere else:
+ice hockey carries `635 6aSide` on 312717 events server-wide, exactly as
+`SPORTS/Artistic-Gymnastics.md` carries `Vault` on 1424, `Floor Exercise` on 1388 and each
+apparatus on its own rows. The `discipline` event property is a legacy path that survives in 64
+sports and is only substantial where a sport never adopted the relation - 319645 events in
+Fencing - while every team sport holds a remnant: 7 events in ice hockey, 9 in Curling, 14 in
+Handball, 5 in Volleyball. None of the ice hockey 7 is inside the client boundary. Decided
+2026-08-15 that no statement here may read the property, and that the relation is the only
+storage the sport asserts.
+
 **`Spectators` holds 268 rows over 266 events**, so two events carry it twice. A property the
 sport writes once per event holding two values is a duplicate rather than a range.
 
@@ -479,6 +513,12 @@ are a work list, not a storage habit.
 in the whole boundary. `GLOBAL-DQ-093` asks the same question from the round type and is
 instantiated in its place.
 
+**The sport contests men and women and nothing else.** `1470 Gender` on the Comp.Rank config
+holds `male` on 443 statistics and `female` on 212, and never a third value; all 25 templates in
+the boundary are `male` (13) or `female` (12). There is no mixed team format anywhere, which is
+what `GLOBAL-DQ-066` and `GLOBAL-DQ-067` audit - a mixed side whose composition is uneven - so
+both reach an empty population by the sport's own structure rather than by a shortage of rows.
+
 **No Comp.Rank participant in this sport carries a phase.** `GLOBAL-DQ-033` reports 746 of 746
 statistics, and the `object_round` rows it reads do not exist anywhere in the sport. `Golf` and
 `Soccer` both record the identical measurement as a structural absence and do not run the check.
@@ -567,8 +607,12 @@ paragraph in it is a first reading.
 4. ~~**What are the 202 events holding a period score and no Final Result?**~~ Answered
    2026-08-14: 182 cancelled and 20 not started, no finished event among them. Recorded under
    Event result types above, and `Ice-Hockey-DQ-057` guards the finished population.
-5. **Are the 20 events with no `object_discipline` relation also the 20 `notstarted` events?**
-   The counts are equal, which is either the explanation or a coincidence worth ruling out.
+5. ~~**Are the 20 events with no `object_discipline` relation also the 20 `notstarted` events?**~~
+   Answered 2026-08-15: yes, the same 20. All of them are `Not started` in
+   `33 World Championship 1`, dated 2026-11-06 to 2026-11-11, so they are fixtures whose
+   discipline has not been written yet rather than played events missing one.
+   `Ice-Hockey-DQ-067` reports them and needs no change; what it reports is a fixture waiting
+   to be completed, and it should fall to zero on its own.
 6. ~~**Is the single `athlete` event participation, the single `100 Rank` value and the one
    event they share the same defect?**~~ Answered 2026-08-14: yes, and the event is
    **1837359 Poland-Ukraine**, World Championship 2, 2015-04-22. It carries three

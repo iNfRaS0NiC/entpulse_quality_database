@@ -1185,6 +1185,31 @@ the shape — that Comp.Rank presence is a per-sport population fact — rather 
 to be cited. A check asserting that every stage has one would report the shape of the feed
 for most sports rather than a defect.
 
+### `DB-SEM-019` — An event's discipline belongs in `object_discipline`, and the `discipline` property is a legacy path
+
+Two storage paths exist and they are not equal. **The relation is the one the database
+means**: `object_discipline` with `object_typeFK = 5` is where an event's discipline is
+recorded, and it is where a sport's own vocabulary is visible — Ice Hockey holds `6aSide` on
+312 717 events, Artistic Gymnastics holds `Vault` on 1 424, `Floor Exercise` on 1 388 and each
+remaining apparatus on its own rows, Golf holds `Match Play` and `Stroke Play`, Curling holds
+`4aSide` and `Mixed Doubles`. A sport whose events lack the relation has a gap, and that is
+what `GLOBAL-DQ-015` and `GLOBAL-DQ-023` report.
+
+The `discipline` **event property** is the older path. Measured 2026-08-15 it survives in 64
+sports, and its size separates the two populations cleanly: it is substantial only where a
+sport never moved to the relation — Fencing 319 645 events, Swimming 45 839, Short Track
+24 191 — while every team sport carries a remnant of a handful, Ice Hockey 7, Curling 9,
+Handball 14, Volleyball 5, Cricket 8. A remnant of that size is not a second opinion about the
+discipline; it is what is left of an abandoned convention.
+
+The consequence for a check: **the relation is asserted and the property is not read**. A
+statement wanting an event's discipline joins `object_discipline`; one wanting to know whether
+the discipline is recorded at all tests that relation and never the property. `GLOBAL-DQ-109`
+compares the two paths and is therefore instantiable only in a sport that genuinely writes
+both — it is recorded `Not applicable` for Ice Hockey on 2026-08-15 for exactly this reason,
+and any sport reaching the same conclusion should record it the same way rather than leaving
+the check to audit an empty population.
+
 <!-- MANUAL PASTE ZONE: DATABASE STRUCTURAL SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---
