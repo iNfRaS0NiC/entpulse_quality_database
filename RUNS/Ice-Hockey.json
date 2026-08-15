@@ -3077,6 +3077,88 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Ice-Hockey 15.08.2026 12-12-28",
+                     "startedUtc":  "2026-08-15T10:12:27Z",
+                     "output":  "D:\\SQL\u0027s Output\\Ice-Hockey 15.08.2026 12-12-28",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-104",
+                                        "runKey":  "Ice-Hockey-DQ-104",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_REGULATION_AND_FINAL_SCORE_DO_NOT_ADD_UP",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  8492,
+                                        "seconds":  1.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-105",
+                                        "runKey":  "Ice-Hockey-DQ-105",
+                                        "parameters":  "",
+                                        "name":  "EVENT_STATUS_CONTRADICTS_THE_OVERTIME_OR_SHOOTOUT_SCORE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  8,
+                                        "findings":  7,
+                                        "eligible":  9593,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-106",
+                                        "runKey":  "Ice-Hockey-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "EVENT_GOAL_INCIDENTS_DO_NOT_ADD_UP_TO_THE_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  12,
+                                        "findings":  11,
+                                        "eligible":  2215,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-107",
+                                        "runKey":  "Ice-Hockey-DQ-107",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_ATHLETE_TEAM_IS_NOT_A_SIDE_THE_PLAYER_PLAYED_FOR",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  8918,
+                                        "seconds":  7.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-108",
+                                        "runKey":  "Ice-Hockey-DQ-108",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PLAYER_RANKING_COVERS_NEITHER_EVERY_TEAM_NOR_THE_MEDALLISTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  233,
+                                        "seconds":  8.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1Vy0mfddOI9cWkWEpeM7oA12BTDuvUB-nevFZwQANn94"

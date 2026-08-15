@@ -267,6 +267,26 @@ The incidents cover 2180 of 9803 events at most, so the layer is populated for r
 of the boundary rather than for all of it. That is a coverage figure, not a defect, and a check
 written against incidents has to say which population it audits.
 
+**Only the goals in this layer are audited, and that is a scope decision rather than an
+oversight.** Decided 2026-08-15: the client's subject is the result, so a layer describing what
+happened during a match earns a check only where it verifies a result. `Ice-Hockey-DQ-106`
+qualifies because it counts goals against the scoreline; the penalties, the substitutions and
+the spectator count do not. Three candidates were measured to the point of being writable and
+then declined, and the measurements are recorded here so that nobody makes them twice:
+
+| Candidate | What it would assert | Findings | Eligible |
+|---|---|---:|---:|
+| Penalty minutes | `165 penalty_minutes` in the boxscore equals the sum of incident types `23`, `24`, `25`, `47`, `51`, `52` | 116 | 1546 |
+| Substitutions | a `20 Substitution out` has a `32 Substitution in` | 3 | 237 |
+| Duplicate property | an event property is written once | 2 | 9803 |
+
+The penalty measurement is worth keeping for its shape rather than its size: **89 of the 116
+differ by exactly `+10`**, the boxscore counting ten minutes the incidents do not account for,
+against 27 scattered differences of `-12` to `+20`. That is one repeated omission rather than
+116 separate ones. The duplicate property is `Spectators` on 2 events, both times the same value
+twice, and no GLOBAL template covers a duplicated event property - the package guards duplicate
+results, Comp.Rank data, Comp.Rank config and participants, but not this.
+
 **`incident.elapsed` is seconds in this sport, and the data says so on its own.** `DATABASE.md`
 records the format as open globally. Measured 2026-08-15 over the 8502 finished events holding
 all three period results: 12713 goals under types `7`, `21`, `22` and `8` fall 3758 in the first
