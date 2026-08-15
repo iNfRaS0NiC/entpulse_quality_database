@@ -402,6 +402,11 @@ Confirmed active combinations:
 |---:|---|---|
 | `138` | `phase` | The round a Comp.Rank participant's rank was taken from |
 | `4` | `indicator` | Round attachment on a tournament stage |
+
+**An event's round is not stored here.** It is the direct column `event.round_typeFK`. Measured
+2026-08-15: owner type `5` (event) appears in `object_round` for exactly one sport, `FIFA`, on
+949 events, and nowhere else in the database. A statement wanting an event's round reads the
+column; `object_round` answers a different question about a different owner.
 | `4` | `schedule` | Round attachment on a tournament stage |
 | `5` | `week` | Round attachment on an event |
 

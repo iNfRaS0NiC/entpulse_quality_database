@@ -498,8 +498,26 @@ are left unjudged, which the template's own rule allows. Both return 0 findings 
 round types and 1440 events: every name the sport spells out is already flagged correctly. They
 are kept for the day a final is filed under a non-knockout id.
 
-`Round` is also an event property on all 9803 events, holding a number. Whether it agrees with
-`event.round_typeFK` is not measured.
+**`Round` is also an event property on all 9803 events, it disagrees with `event.round_typeFK`
+on 341 of them, and nothing here reads it.** Decided 2026-08-15: the round of an event is
+`event.round_typeFK` and the property is not a second opinion the client is interested in. No
+statement may compare the two, and the 341 are not findings.
+
+The measurement is recorded because the disagreement is real and someone will find it again.
+Every event carries the property, 9462 repeat the round type's own name, and the 341 that do not
+are all filed under `38 "1"` while the property says `2`, `3`, `4`, `5` or `6`. They cluster
+into **64 stages** — a group of 15 matches holding 3 on round `1` and 12 disagreeing — so what
+they measure is 64 imports that put a whole group stage on the first round, not 341 separate
+mistakes. Were it ever read, the correction would be derivable: the round type carrying the
+property's name with the same knockout flag, `2` to `39`, `3` to `40`, `4` to `41`, `5` to `42`,
+`6` to `43`.
+
+This is not the same case as the `discipline` property, which is a remnant. The `Round` property
+is written everywhere — 123 sports, and 317265 ice hockey events server-wide — so it is a
+parallel copy the feed maintains rather than an abandoned path. What makes it unread here is the
+client's decision, not its size. `object_round` is no help either: it attaches a round to a
+tournament stage or to a Comp.Rank participant, and the only sport where it attaches to an event
+is `FIFA`, on 949 events.
 
 <!-- MANUAL PASTE ZONE: 5 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -663,8 +681,11 @@ paragraph in it is a first reading.
    1762 - so the scope periods are a subset of the result periods and say the same thing. The
    three exceptions are recorded under Event result types above. A period check may read either
    layer; reading both would double-count the 882 events that have them in both places.
-3. **Does the `Round` property agree with `event.round_typeFK`?** Both are on every event in
-   the boundary and neither has been read against the other.
+3. ~~**Does the `Round` property agree with `event.round_typeFK`?**~~ Answered 2026-08-15: on
+   9462 of 9803 events, and the 341 that disagree cluster into 64 stages imported with a whole
+   group on round `1`. No check was written: the client reads the round from
+   `event.round_typeFK` and not from the property. Recorded under Event and round representation
+   above.
 4. ~~**What are the 202 events holding a period score and no Final Result?**~~ Answered
    2026-08-14: 182 cancelled and 20 not started, no finished event among them. Recorded under
    Event result types above, and `Ice-Hockey-DQ-057` guards the finished population.
