@@ -690,3 +690,78 @@ WHERE sr.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, event_startdate, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-101
+    -- Name - EVENT_RESULTS_PERIOD_SCORE_DISAGREES_WITH_THE_BOXSCORE
+    -- What it does: Flags participations whose period goals differ between the result layer and the boxscore.
+    'PERIOD_SCORE_DISAGREES_BETWEEN_THE_TWO_LAYERS' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    st.name AS period_name,
+    pt.name AS participant_name,
+    sr.value AS boxscore_says,
+    r.value AS result_says,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a participation whose goals in one period are stored
+-- twice and differently - once in the result layer as type 51, 52 or 53, and once in the
+-- boxscore as the 162 goals field of the matching period scope.
+FROM scope_result sr
+JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+                   AND es.scope_typeFK IN (322, 323, 324)
+JOIN scope_type st ON st.id = es.scope_typeFK
+JOIN event e ON e.id = es.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+-- The period scope ids run 271 above their result types - 322 to 51, 323 to 52, 324 to 53 -
+-- and the arithmetic is written out rather than hidden in a CASE so that a fourth period
+-- arriving under a scope type that does not continue the run is simply not matched, instead
+-- of being matched to the wrong result type. SPORTS/Ice-Hockey.md records both vocabularies.
+JOIN result r ON r.event_participantsFK = sr.event_participantsFK AND r.del = 'no'
+     AND r.result_typeFK = es.scope_typeFK - 271
+     AND TRIM(COALESCE(r.value, '')) REGEXP '^[0-9]+$'
+JOIN event_participants ep ON ep.id = sr.event_participantsFK AND ep.del = 'no'
+JOIN participant pt ON pt.id = ep.participantFK AND pt.del = 'no'
+WHERE sr.del = 'no'
+  AND sr.scope_data_typeFK = 162
+  AND TRIM(COALESCE(sr.value, '')) REGEXP '^[0-9]+$'
+  AND CAST(sr.value AS SIGNED) <> CAST(r.value AS SIGNED)
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT es.eventFK) AS eligible_count,
+    1 AS sort_order
+-- Eligible is an event storing a period in both layers for the same participation, which is
+-- the only population where the two can be compared at all. An event holding the period in
+-- one layer only is not a disagreement and is counted nowhere here.
+FROM scope_result sr
+JOIN event_scope es ON es.id = sr.event_scopeFK AND es.del = 'no'
+                   AND es.scope_typeFK IN (322, 323, 324)
+JOIN event e ON e.id = es.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+JOIN result r ON r.event_participantsFK = sr.event_participantsFK AND r.del = 'no'
+     AND r.result_typeFK = es.scope_typeFK - 271
+     AND TRIM(COALESCE(r.value, '')) REGEXP '^[0-9]+$'
+WHERE sr.del = 'no'
+  AND sr.scope_data_typeFK = 162
+  AND TRIM(COALESCE(sr.value, '')) REGEXP '^[0-9]+$'
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, event_startdate, event_id, period_name;

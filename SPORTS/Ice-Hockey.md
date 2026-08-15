@@ -525,7 +525,12 @@ participant-periods are identical, and the three that are not are all a first pe
 
 `Ice-Hockey-DQ-059` reports 4 events whose periods do not sum to the final result, also all at
 the 2026 Winter Olympics, so the two readings are almost certainly one import going wrong at one
-tournament rather than two separate faults. Nothing asserts the cross-layer agreement yet.
+tournament rather than two separate faults. **`Ice-Hockey-DQ-101`** asserts the agreement, over
+882 eligible events - those storing a period in both layers for the same participation, which is
+the only population where the two can be compared. It is deliberately not a restatement of
+`-059`: that check sums one layer against its own final result and would pass a period written
+consistently wrong, while this one needs a second opinion to exist before it says anything, and
+is silent on every event that has the period once.
 
 **`51 Period 1` doubles as the whole score on 1091 finished events, and this is unresolved.**
 Those events carry no `52` and no `53` at all, and on every one of them the `51` value equals
