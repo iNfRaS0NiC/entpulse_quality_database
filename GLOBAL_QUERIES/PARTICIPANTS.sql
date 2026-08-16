@@ -211,41 +211,57 @@ FROM (
                 -- and carries the athletes in lineups, and one carries them only in the
                 -- Comp.Rank statistic. Counting a single path calls a busy record empty in
                 -- every sport that uses another, and empty is what this column is read for.
-                (
-                    SELECT COUNT(*)
-                    FROM event_participants ep
-                    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
-                    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-                    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-                    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-                    WHERE ep.participantFK = p.id
-                      AND ep.del = 'no'
-                      AND tt.sportFK = {{SPORT_ID}}
-                ) + (
-                    SELECT COUNT(*)
-                    FROM lineup l
-                    JOIN event_participants ep2 ON ep2.id = l.event_participantsFK AND ep2.del = 'no'
-                    JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
-                    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
-                    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
-                    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
-                    WHERE l.participantFK = p.id
-                      AND l.del = 'no'
-                      AND tt2.sportFK = {{SPORT_ID}}
-                ) + (
-                    SELECT COUNT(*)
-                    FROM statistic_participants{{SHARD_ID}} sp
-                    JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
-                         AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-                    JOIN tournament t3 ON t3.id = s.objectFK AND t3.del = 'no'
-                    JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
-                    WHERE sp.participantFK = p.id
-                      AND sp.del = 'no'
-                      AND s.object_typeFK = 3
-                      AND tt3.sportFK = {{SPORT_ID}}
-                ) AS appearances
+                --
+                -- Each path is grouped once for the whole sport and joined, rather than counted
+                -- again for every registered person. The three were correlated subqueries until
+                -- 2026-08-16, which made the statement run one five-table join per person: on
+                -- Cycling that is around 22000 registered people against 1.27 million
+                -- participations, and the server answered neither the athlete run nor the coach
+                -- one. Grouping first turns the same answer into one pass per path.
+                -- A person on no path has no row in the derived table rather than a zero, so the
+                -- sum coalesces - and zero still has to arrive as zero, because people_never_seen
+                -- counts it and a NULL there would silently stop counting the empty records this
+                -- statement exists to find.
+                COALESCE(ea.appearances, 0)
+                    + COALESCE(la.appearances, 0)
+                    + COALESCE(sa.appearances, 0) AS appearances
             FROM object_participants op
             JOIN participant p ON p.id = op.participantFK AND p.del = 'no'
+            LEFT JOIN (
+                SELECT ep.participantFK AS participantFK, COUNT(*) AS appearances
+                FROM event_participants ep
+                JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+                JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+                JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+                JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                WHERE ep.del = 'no'
+                  AND tt.sportFK = {{SPORT_ID}}
+                GROUP BY ep.participantFK
+            ) ea ON ea.participantFK = p.id
+            LEFT JOIN (
+                SELECT l.participantFK AS participantFK, COUNT(*) AS appearances
+                FROM lineup l
+                JOIN event_participants ep2 ON ep2.id = l.event_participantsFK AND ep2.del = 'no'
+                JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+                JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+                JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+                JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+                WHERE l.del = 'no'
+                  AND tt2.sportFK = {{SPORT_ID}}
+                GROUP BY l.participantFK
+            ) la ON la.participantFK = p.id
+            LEFT JOIN (
+                SELECT sp.participantFK AS participantFK, COUNT(*) AS appearances
+                FROM statistic_participants{{SHARD_ID}} sp
+                JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+                     AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+                JOIN tournament t3 ON t3.id = s.objectFK AND t3.del = 'no'
+                JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
+                WHERE sp.del = 'no'
+                  AND s.object_typeFK = 3
+                  AND tt3.sportFK = {{SPORT_ID}}
+                GROUP BY sp.participantFK
+            ) sa ON sa.participantFK = p.id
             WHERE op.object = 'sport'
               AND op.objectFK = {{SPORT_ID}}
               AND op.del = 'no'
