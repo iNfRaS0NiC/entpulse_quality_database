@@ -412,6 +412,23 @@ majority named for it and a consistent minority named one lower.
 The offset is exactly one and runs the length of the chain. What produces it is not confirmed;
 it is recorded under Open questions rather than asserted.
 
+**99 stages of 3505 carry dates that do not match the racing inside them**, and `Cycling-DQ-005`
+carries `GLOBAL-DQ-004` whole because every shape in them is a wrong date rather than a
+convention. Read on 2026-08-16, the 99 fall three ways:
+
+| Shape | Stages | Worst case |
+|---|---:|---|
+| an event falls outside the stage window | 39 | `World Championship TTT` 2019, stage declared for 20 September, race held on the 23rd |
+| the window ends after the last race | 44 | `Tour of Indonesia` 2018, window 25 January to 28 December against racing on 25 to 28 January - 334 days |
+| the window starts before the first race | 16 | `Tro-Bro Leon` 2017, window opening 16 April for a race on the 17th |
+
+Two of those are worth naming because they are the same mistake at different sizes. Twenty-nine
+of the wide windows overrun by a single day, which on a stage race reads as a calendar rounded
+outward - but `Classica Andorra Pirineus` 2024 gives a one-day race a window of 2 June to 2
+September, and `Tour of Qinghai Lake` 2019 overruns by 31 days. And the `European Youth Olympic
+Festival` repeats a shape of its own: the stage is declared across the whole festival while the
+cycling runs on one or two days of it.
+
 **424 finished events hold a broken rank sequence, and none of the three shapes is the sport
 behaving normally.** `Cycling-DQ-003` carries `GLOBAL-DQ-119`, which separates them itself:
 
