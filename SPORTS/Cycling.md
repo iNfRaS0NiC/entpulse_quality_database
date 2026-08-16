@@ -388,6 +388,15 @@ it is recorded under Open questions rather than asserted.
 **Split stages share a round.** `Stage 3b`, `Stage 8a` and `Stage 8b` appear beside their whole
 counterparts, which is the sport running two half-stages in one day.
 
+**No event here is named after the riders in it, and that follows from the competition model
+rather than from this sport's habits.** Only a head-to-head sport writes `Team 1 - Team 2`,
+because that name is the contest between two entries; a field of 120 riders has nothing to put
+in such a name. `GLOBAL-DQ-096 EVENT_NAME_DOES_NOT_NAME_ITS_PARTICIPANTS` therefore does not
+apply and is recorded `Not applicable` in `SPORTS/params.json`. Measured 2026-08-16 before the
+rule was stated: 9611 of 9611 events, every one naming zero of its 94 to 124 competitors. The
+three sports that do instantiate that template - Curling, Ice Hockey and Soccer - are all
+`H2H (team)`, and `GLOBAL_DQ/README.md` now carries the rule.
+
 **`173 Final` is the only round that travels**, reaching 599 events across 14 templates and 24
 tournaments - `Race` 385, `Time Trial` 199, `Stage` 8. The championships settle on `Final`
 while the stage races number their rounds, and rounds `15` to `21` exist in a single template,

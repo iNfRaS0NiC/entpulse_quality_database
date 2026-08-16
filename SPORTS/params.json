@@ -1180,6 +1180,12 @@
             "ROUND_TYPE_LIST": "0 (unnamed), 38 to 58 the stage numbers 1 to 21, 89 a second round also named 1, 173 Final",
             "FINAL_ROUND_TYPE_LIST": "173 Final"
         },
+        "_checkSignal": {
+            "GLOBAL-DQ-096": {
+                "signal": "Not applicable",
+                "reason": "Structural, and settled by the competition model rather than by this sport's numbers: only a head-to-head sport names an event after its competitors, because Team 1 - Team 2 is what such a name is and a field of riders has nothing to put there. Cycling is Listing (individual and team), so the template does not apply, and it names its events Race, Stage 3, Prologue, Time Trial and after the course - Polenca - Andratx. Measured 2026-08-16 before the rule was stated: 9611 of 9611, every row NAMES_NO_PARTICIPANT with zero named against fields of 94 to 124. No narrower population survives, since not one event in the sport names a single competitor, so no sport variant is written. GLOBAL_DQ/README.md carries the rule."
+            }
+        },
         "_notApplicable": {
             "DATA_TEAM_TYPE_ID": "1429 Team is declared for the statistic type and holds no value in this sport; GLOBAL-DISCOVERY-031 measured zero on 2026-08-16",
             "LINEUP_TYPE_LIST": "the sport writes no lineup at all: a road race enters each rider directly on the event, so there is no squad to name",
