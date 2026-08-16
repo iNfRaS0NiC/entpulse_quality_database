@@ -225,6 +225,20 @@ FROM (
                 COALESCE(ea.appearances, 0)
                     + COALESCE(la.appearances, 0)
                     + COALESCE(sa.appearances, 0) AS appearances
+            -- One row per registry entry, not per person, and two sports register somebody
+            -- more than once. Measured 2026-08-16 over what this statement actually reads -
+            -- op.del = 'no', p.del = 'no', type athlete - Soccer holds 366540 rows for 364896
+            -- people and Ice Hockey 44602 for 43659, while Artistic Gymnastics, BMX, Curling,
+            -- Cycling, Golf, Modern Pentathlon and Triathlon each hold exactly one row per
+            -- person. The repeats carry the same role and the same active flag, so nothing
+            -- distinguishes them: Ice Hockey's person-plus-role count is 43660 against 43659
+            -- people. In those two sports a person registered five times therefore arrives as a
+            -- group of five, people counts registrations rather than people, and HAVING
+            -- COUNT(*) > 1 admits a group that is one person entered twice. Left as it is by
+            -- decision on 2026-08-16 rather than by oversight: correcting it moves the row count
+            -- of every sport already opened, and the two affected sports are not the one being
+            -- opened. Recorded here so the next reader meets the measurement and not the
+            -- surprise.
             FROM object_participants op
             JOIN participant p ON p.id = op.participantFK AND p.del = 'no'
             LEFT JOIN (
