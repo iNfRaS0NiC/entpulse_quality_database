@@ -220,6 +220,28 @@ and the decision has not been made.
 - `HUD` is two riders, African Championships 2025 and Santos Tour Down Under WE 2026.
 - `OOT` is one rider, Tour of Qinghai Lake 2025 stage 2.
 
+**The leader/gap convention holds, and the forty events that break it break it three ways.**
+`101 Duration` writes the winner's absolute time and everybody else's gap behind it with a
+leading `+`, and `Cycling-DQ-013` carries `GLOBAL-DQ-019` unchanged to report where that fails.
+Run 2026-08-16: **40 events of 9606**, spread over 2004 to 2026 with eight of them from 2023
+onwards, so this is not a legacy tail that stopped being written.
+
+| Shape | Events | What stands in the row |
+|---|---:|---|
+| `RANK1_HAS_PLUS` | 20 | The winner stored as a gap |
+| `NON_RANK1_MISSING_PLUS` | 17 | A rider behind the winner carrying a bare time - `0:06`, `0:51`, `10:23`, `12:06` |
+| `NON_RANK1_WRONG_FORMAT` | 3 | A space after the plus: `+ 0:52`, `+ 0:02`, `+ 0:00` |
+
+The twenty winners divide again, and the three groups need different corrections. Fourteen hold
+`+0:00`, where the gap is right and the winner's time is simply absent. Four hold a real gap -
+`+0:26`, `+0:56`, `+1:00`, `+1:14` - so either the rank is wrong or the time belongs to somebody
+else. Two, both 2026, hold a full race duration with a stray plus in front of it: `+3:56:55` and
+`+4:35:17`.
+
+**None of the three shapes is a convention of the sport, and that was measured rather than
+assumed.** A house style would show in thousands of events; the space after the plus appears in
+3 of 9606 and `+0:00` on a winner in 14.
+
 <!-- MANUAL PASTE ZONE: 30 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
