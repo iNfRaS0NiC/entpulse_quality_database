@@ -438,6 +438,37 @@ here and there is nothing in the database to check the squad against. It does no
 findings: `Tour de France` 2007 and `Pan American Championship` 2006 hold **no team entry at
 all** and still report a stray, and the two large ones are proven misattachments.
 
+**A Comp.Rank keeps its ranks inside its own field, and that was measured before any check was
+written on it.** Across all 1736 tournament-owned Comp.Rank records, measured 2026-08-16:
+
+| Highest rank against the number ranked | Statistics |
+|---|---:|
+| Fits the field | 1638 |
+| Up to 5 above | 90 |
+| Up to twice the field | 3 |
+| More than twice the field | 5 |
+
+94% hold, so a rank above the field size is an exception in this sport rather than a way of
+listing a partial field, and `Cycling-DQ-015` carries `GLOBAL-DQ-031` on that basis. It reports
+**27 ranked riders in 8 statistics**, run 2026-08-16.
+
+The eight divide into three shapes, read on the row rather than counted:
+
+- **One is unarguable.** `Asian Championships Race Male` 2017 (statistic `338703`) holds rank
+  `1005` in a field of 62, and the same statistic also holds a rank of `0` at the other end.
+- **Two are the same broken import that `Cycling-DQ-014` reports from the other side.**
+  `Tirreno-Adriatico` 2015 (`343473`) ranks 1 to 20 contiguously and then 49, 50, 72, 86, 111,
+  131, 142, 144, and 22 of its riders never rode that tournament. `Paris - Nice` 2015 (`343472`)
+  ranks 1 to 20 and then a lone 66, with 14 strays. One correction each clears both checks.
+- **Five are a tail sitting above a contiguous block** - `Gent - Wevelgem` 2005 ranks 1 to 23
+  then 39 and 69, and the two `Santos Tour Down Under WE`, `Post Danmark Rundt` and
+  `Pan American Games WE Race Female` records hold the same shape more mildly.
+
+**Rank `0` exists in this layer and no check written here reports it.** It occurs in statistic
+`338703` beside the 1005, and `GLOBAL-DQ-031` does not read it because zero is below the field
+size rather than above it. Recorded so it is not lost; `GLOBAL-DQ-012` is the template that
+reads an invalid rank and it has not been decided yet.
+
 <!-- MANUAL PASTE ZONE: 30 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values
