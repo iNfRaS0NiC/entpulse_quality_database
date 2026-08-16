@@ -13158,6 +13158,94 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-16T17:12:12Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-111",
+                                        "runKey":  "GLOBAL-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  48,
+                                        "findings":  47,
+                                        "eligible":  8001,
+                                        "seconds":  9.6,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-16T17:14:06Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-111",
+                                        "runKey":  "GLOBAL-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  48,
+                                        "findings":  47,
+                                        "eligible":  8001,
+                                        "seconds":  6.7,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-16T17:25:20Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-111",
+                                        "runKey":  "GLOBAL-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  48,
+                                        "findings":  47,
+                                        "eligible":  8001,
+                                        "seconds":  6.8,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-16T17:30:23Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-111",
+                                        "runKey":  "GLOBAL-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  48,
+                                        "findings":  47,
+                                        "eligible":  8001,
+                                        "seconds":  4.1,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE"

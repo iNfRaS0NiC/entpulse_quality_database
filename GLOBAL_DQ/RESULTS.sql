@@ -2988,7 +2988,7 @@ SELECT
     -- Name - EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC
     -- What it does: Flags timed events where a lower-ranked finisher is faster, or the effective time cannot be read. Participants marked as non-finishers are ignored.
     CASE
-        WHEN x.unreadable_count > 0 AND x.non_monotonic_pair_count > 0
+        WHEN x.unreadable_count > 0 AND x.non_monotonic_count > 0
             THEN 'EFFECTIVE_TIME_UNPARSEABLE_AND_NOT_MONOTONIC'
         WHEN x.unreadable_count > 0 THEN 'EFFECTIVE_TIME_UNPARSEABLE'
         ELSE 'RANK_EFFECTIVE_TIME_NOT_MONOTONIC'
@@ -2996,7 +2996,7 @@ SELECT
     x.event_id,
     x.event_name,
     x.tournament_stage_name,
-    x.unreadable_count + x.non_monotonic_pair_count AS offending_count,
+    x.unreadable_count + x.non_monotonic_count AS offending_count,
     COALESCE(x.sample_unreadable, x.sample_non_monotonic) AS sample_offence,
     NULL AS eligible_count,
     0 AS sort_order
@@ -3020,161 +3020,129 @@ SELECT
 -- whose time cannot be parsed would otherwise leave the comparison silently, which is the
 -- same failure the checks joining through a broken reference already had: the population
 -- narrows and the result still reads as clean.
--- The participant dataset below is also the coverage scope: a ranked participant carrying
--- an effective time, excluding every Comment value that means they did not finish. Every
--- unreadable value is counted directly from the left side before any pair is required; the
--- self-join exists only for readable same-kind values whose ranks differ. The outer aggregate
--- then collapses both possible violation kinds to one row for their event.
+--
+-- Rebuilt on 2026-08-16 in three steps, each removing work done per row that belongs
+-- somewhere else. It had timed out at 504 after 180 seconds on Cycling, whose 1270283
+-- participations are two orders of magnitude past the sports it was written on, and the three
+-- costs were independent: an all-pairs self-join inside each event, whose cost grew with the
+-- square of the field - about 69 million pairs there; a correlated NOT EXISTS over result for
+-- the Comment, asked once per participant; and an EXISTS over object_discipline asked once per
+-- participant for a property of the event. The raw time is now also read once instead of
+-- roughly twelve times per row, since MariaDB cannot see a select alias from the same level
+-- and every REGEXP and SUBSTRING_INDEX below was re-evaluating the same COALESCE. BMX and
+-- Triathlon return the identical events and coverage before and after all three steps: 47 of
+-- 8001 and 3210 of 3603.
+-- offending_count changed meaning in the first step and says so here: it counts offending
+-- riders rather than offending pairs, which is what the rest of this package counts. On BMX
+-- that is 700 where the pair count read 2084; on Triathlon the two agree at 82517.
 FROM (
     SELECT
-        a.event_id,
-        MAX(a.event_name) AS event_name,
-        MAX(a.tournament_stage_name) AS tournament_stage_name,
-        COUNT(DISTINCT CASE WHEN a.seconds IS NULL THEN a.ep_id END) AS unreadable_count,
+        w.event_id,
+        MAX(w.event_name) AS event_name,
+        MAX(w.tournament_stage_name) AS tournament_stage_name,
+        COUNT(DISTINCT CASE WHEN w.seconds IS NULL THEN w.ep_id END) AS unreadable_count,
         COUNT(DISTINCT CASE
-            WHEN a.seconds IS NOT NULL AND b.seconds IS NOT NULL AND b.seconds < a.seconds
-            THEN CONCAT(a.ep_id, ':', b.ep_id)
-        END) AS non_monotonic_pair_count,
-        MIN(CASE WHEN a.seconds IS NULL
-            THEN CONCAT('rank ', a.rank_value, ' = ', a.effective_raw)
+            WHEN w.seconds IS NOT NULL AND w.best_seconds_behind IS NOT NULL
+             AND w.best_seconds_behind < w.seconds
+            THEN w.ep_id
+        END) AS non_monotonic_count,
+        MIN(CASE WHEN w.seconds IS NULL
+            THEN CONCAT('rank ', w.rank_value, ' = ', w.effective_raw)
         END) AS sample_unreadable,
         MIN(CASE
-            WHEN a.seconds IS NOT NULL AND b.seconds IS NOT NULL AND b.seconds < a.seconds
-            THEN CONCAT('rank ', a.rank_value, ' = ', a.effective_raw,
-                        ' vs rank ', b.rank_value, ' = ', b.effective_raw)
+            WHEN w.seconds IS NOT NULL AND w.best_seconds_behind IS NOT NULL
+             AND w.best_seconds_behind < w.seconds
+            THEN CONCAT('rank ', w.rank_value, ' = ', w.effective_raw,
+                        ', beaten by ', w.best_seconds_behind, 's recorded further back')
         END) AS sample_non_monotonic
     FROM (
+        -- The fastest time recorded anywhere behind this rider, taken once per row instead of
+        -- by pairing every rider in the event with every rider below them. The partition keeps
+        -- gaps and absolute times apart, exactly as the join's b.is_gap = a.is_gap condition
+        -- did, and RANGE ... 1 FOLLOWING takes only ranks strictly greater, which is what
+        -- b.rank_value > a.rank_value did - ties included, so two riders sharing a place are
+        -- still not compared with each other.
         SELECT
-            ep.id AS ep_id,
-            e.id AS event_id,
-            e.name AS event_name,
-            ts.name AS tournament_stage_name,
-            CAST(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_RANK_TYPE_ID}} THEN r.value END)) AS UNSIGNED) AS rank_value,
-            COALESCE(
-                NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-            ) AS effective_raw,
-            CASE WHEN COALESCE(
-                    NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                    NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                 ) LIKE '+%' THEN 1 ELSE 0 END AS is_gap,
-            CASE
-                WHEN TRIM(LEADING '+' FROM COALESCE(
+            v.ep_id,
+            v.event_id,
+            v.event_name,
+            v.tournament_stage_name,
+            v.rank_value,
+            v.effective_raw,
+            v.is_gap,
+            v.seconds,
+            MIN(v.seconds) OVER (
+                PARTITION BY v.event_id, v.is_gap
+                ORDER BY v.rank_value
+                RANGE BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING
+            ) AS best_seconds_behind
+        FROM (
+            -- The time is parsed here, from a value the level below resolved once. Everything
+            -- in this block used to sit inside the grouped query, where each branch had to
+            -- repeat the whole COALESCE over two MAX expressions because a select alias is not
+            -- visible to its siblings.
+            SELECT
+                g.ep_id,
+                g.event_id,
+                g.event_name,
+                g.tournament_stage_name,
+                g.rank_value,
+                g.effective_raw,
+                CASE WHEN g.effective_raw LIKE '+%' THEN 1 ELSE 0 END AS is_gap,
+                CASE
+                    WHEN TRIM(LEADING '+' FROM g.effective_raw)
+                         NOT REGEXP '^[0-9]+(:[0-5][0-9])?(\\.[0-9]+)?$' THEN NULL
+                    WHEN TRIM(LEADING '+' FROM g.effective_raw) LIKE '%:%'
+                    THEN CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM g.effective_raw), ':', 1) AS DECIMAL(14,3)) * 60
+                       + CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM g.effective_raw), ':', -1) AS DECIMAL(14,3))
+                    ELSE CAST(TRIM(LEADING '+' FROM g.effective_raw) AS DECIMAL(14,3))
+                END AS seconds
+            FROM (
+                SELECT
+                    ep.id AS ep_id,
+                    e.id AS event_id,
+                    e.name AS event_name,
+                    ts.name AS tournament_stage_name,
+                    CAST(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_RANK_TYPE_ID}} THEN r.value END)) AS UNSIGNED) AS rank_value,
+                    COALESCE(
                         NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
                         NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                     )) NOT REGEXP '^[0-9]+(:[0-5][0-9])?(\\.[0-9]+)?$' THEN NULL
-                WHEN TRIM(LEADING '+' FROM COALESCE(
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                     )) LIKE '%:%'
-                THEN CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM COALESCE(
-                            NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                            NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                         )), ':', 1) AS DECIMAL(14,3)) * 60
-                   + CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM COALESCE(
-                            NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                            NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                         )), ':', -1) AS DECIMAL(14,3))
-                ELSE CAST(TRIM(LEADING '+' FROM COALESCE(
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                     )) AS DECIMAL(14,3))
-            END AS seconds
-        FROM event_participants ep
-        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
-        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-             AND tt.sportFK = {{SPORT_ID}}
-        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
-        WHERE ep.del = 'no'
-          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
-          -- AND t.tournament_templateFK = <tournament_template_id>
-          -- AND e.startdate >= '<from_datetime>'
-          -- AND e.startdate <  '<to_datetime>'
-          AND EXISTS (
-              SELECT 1 FROM object_discipline od
-              WHERE od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
-                AND od.disciplineFK IN ({{TIMED_DISCIPLINE_LIST}})
-          )
-          AND NOT EXISTS (
-              SELECT 1 FROM result rc
-              WHERE rc.event_participantsFK = ep.id AND rc.del = 'no'
-                AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
-                AND LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
-          )
-        GROUP BY ep.id, e.id, e.name, ts.name
-        HAVING rank_value IS NOT NULL AND effective_raw IS NOT NULL
-    ) a
-    LEFT JOIN (
-        SELECT
-            ep.id AS ep_id,
-            e.id AS event_id,
-            CAST(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_RANK_TYPE_ID}} THEN r.value END)) AS UNSIGNED) AS rank_value,
-            COALESCE(
-                NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-            ) AS effective_raw,
-            CASE WHEN COALESCE(
-                    NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                    NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                 ) LIKE '+%' THEN 1 ELSE 0 END AS is_gap,
-            CASE
-                WHEN TRIM(LEADING '+' FROM COALESCE(
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                     )) NOT REGEXP '^[0-9]+(:[0-5][0-9])?(\\.[0-9]+)?$' THEN NULL
-                WHEN TRIM(LEADING '+' FROM COALESCE(
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                     )) LIKE '%:%'
-                THEN CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM COALESCE(
-                            NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                            NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                         )), ':', 1) AS DECIMAL(14,3)) * 60
-                   + CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM COALESCE(
-                            NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                            NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                         )), ':', -1) AS DECIMAL(14,3))
-                ELSE CAST(TRIM(LEADING '+' FROM COALESCE(
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                     )) AS DECIMAL(14,3))
-            END AS seconds
-        FROM event_participants ep
-        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
-        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-             AND tt.sportFK = {{SPORT_ID}}
-        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
-        WHERE ep.del = 'no'
-          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
-          -- AND t.tournament_templateFK = <tournament_template_id>
-          -- AND e.startdate >= '<from_datetime>'
-          -- AND e.startdate <  '<to_datetime>'
-          AND EXISTS (
-              SELECT 1 FROM object_discipline od
-              WHERE od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
-                AND od.disciplineFK IN ({{TIMED_DISCIPLINE_LIST}})
-          )
-          AND NOT EXISTS (
-              SELECT 1 FROM result rc
-              WHERE rc.event_participantsFK = ep.id AND rc.del = 'no'
-                AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
-                AND LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
-          )
-        GROUP BY ep.id, e.id
-        HAVING rank_value IS NOT NULL AND effective_raw IS NOT NULL
-    ) b
-      ON b.event_id = a.event_id
-     AND b.rank_value > a.rank_value
-     AND b.is_gap = a.is_gap
-     AND a.seconds IS NOT NULL
-     AND b.seconds IS NOT NULL
-     AND b.seconds < a.seconds
-    GROUP BY a.event_id
-    HAVING unreadable_count > 0 OR non_monotonic_pair_count > 0
+                    ) AS effective_raw,
+                    -- The no-result Comment is read out of the same pass over result that
+                    -- already produces the rank and the time, instead of by a correlated
+                    -- NOT EXISTS asked once per participant.
+                    MAX(CASE WHEN r.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+                              AND LOWER(TRIM(r.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
+                             THEN 1 ELSE 0 END) AS did_not_finish
+                FROM event_participants ep
+                JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+                JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+                JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+                JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                     AND tt.sportFK = {{SPORT_ID}}
+                -- The timed events, resolved once for the sport rather than probed per
+                -- participant for a property that belongs to the event.
+                JOIN (
+                    SELECT DISTINCT od.objectFK AS event_id
+                    FROM object_discipline od
+                    WHERE od.object_typeFK = 5
+                      AND od.del = 'no'
+                      AND od.disciplineFK IN ({{TIMED_DISCIPLINE_LIST}})
+                ) td ON td.event_id = e.id
+                JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                WHERE ep.del = 'no'
+                  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+                  -- AND t.tournament_templateFK = <tournament_template_id>
+                  -- AND e.startdate >= '<from_datetime>'
+                  -- AND e.startdate <  '<to_datetime>'
+                GROUP BY ep.id, e.id, e.name, ts.name
+                HAVING rank_value IS NOT NULL AND effective_raw IS NOT NULL
+                   AND did_not_finish = 0
+            ) g
+        ) v
+    ) w
+    GROUP BY w.event_id
+    HAVING unreadable_count > 0 OR non_monotonic_count > 0
 ) x
 
 UNION ALL
@@ -3182,78 +3150,45 @@ UNION ALL
 SELECT
     'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT eligible.event_id) AS eligible_count,
+    COUNT(DISTINCT c.event_id) AS eligible_count,
     1 AS sort_order
+-- Coverage deliberately counts the whole format-audit population, not only events that
+-- happen to offer a monotonic comparison. This is the same ranked-finisher/effective-time
+-- dataset as the findings branch, including the no-result Comment exclusion. A single
+-- unreadable time therefore cannot become a finding outside coverage, while an event with
+-- only one readable time is truthfully covered for format but not compared.
 FROM (
-    -- Coverage deliberately counts the whole format-audit population, not only events that
-    -- happen to offer a monotonic comparison. This is the same ranked-finisher/effective-time
-    -- dataset as the findings branch, including the no-result Comment exclusion below. A
-    -- single unreadable time therefore cannot become a finding outside coverage, while an
-    -- event with only one readable time is truthfully covered for format but not compared.
-    SELECT DISTINCT
-        c.event_id
-    FROM (
-        SELECT
-            ep.id AS ep_id,
-            e.id AS event_id,
-            CAST(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_RANK_TYPE_ID}} THEN r.value END)) AS UNSIGNED) AS rank_value,
-            COALESCE(
-                NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-            ) AS effective_raw,
-            CASE WHEN COALESCE(
-                    NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                    NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                 ) LIKE '+%' THEN 1 ELSE 0 END AS is_gap,
-            CASE
-                WHEN TRIM(LEADING '+' FROM COALESCE(
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                     )) NOT REGEXP '^[0-9]+(:[0-5][0-9])?(\\.[0-9]+)?$' THEN NULL
-                WHEN TRIM(LEADING '+' FROM COALESCE(
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                     )) LIKE '%:%'
-                THEN CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM COALESCE(
-                            NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                            NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                         )), ':', 1) AS DECIMAL(14,3)) * 60
-                   + CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM COALESCE(
-                            NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                            NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                         )), ':', -1) AS DECIMAL(14,3))
-                ELSE CAST(TRIM(LEADING '+' FROM COALESCE(
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-                        NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-                     )) AS DECIMAL(14,3))
-            END AS seconds
-        FROM event_participants ep
-        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
-        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-             AND tt.sportFK = {{SPORT_ID}}
-        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
-        WHERE ep.del = 'no'
-          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
-          -- AND t.tournament_templateFK = <tournament_template_id>
-          -- AND e.startdate >= '<from_datetime>'
-          -- AND e.startdate <  '<to_datetime>'
-          AND EXISTS (
-              SELECT 1 FROM object_discipline od
-              WHERE od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
-                AND od.disciplineFK IN ({{TIMED_DISCIPLINE_LIST}})
-          )
-          AND NOT EXISTS (
-              SELECT 1 FROM result rc
-              WHERE rc.event_participantsFK = ep.id AND rc.del = 'no'
-                AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
-                AND LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
-          )
-        GROUP BY ep.id, e.id
-        HAVING rank_value IS NOT NULL AND effective_raw IS NOT NULL
-    ) c
-) eligible
+    SELECT
+        e.id AS event_id
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = {{SPORT_ID}}
+    JOIN (
+        SELECT DISTINCT od.objectFK AS event_id
+        FROM object_discipline od
+        WHERE od.object_typeFK = 5
+          AND od.del = 'no'
+          AND od.disciplineFK IN ({{TIMED_DISCIPLINE_LIST}})
+    ) td ON td.event_id = e.id
+    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+    WHERE ep.del = 'no'
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY ep.id, e.id
+    HAVING CAST(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_RANK_TYPE_ID}} THEN r.value END)) AS UNSIGNED) IS NOT NULL
+       AND COALESCE(
+               NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
+               NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
+           ) IS NOT NULL
+       AND MAX(CASE WHEN r.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+                     AND LOWER(TRIM(r.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
+                    THEN 1 ELSE 0 END) = 0
+) c
 
 ORDER BY sort_order, event_id;
 

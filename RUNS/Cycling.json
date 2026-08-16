@@ -2315,6 +2315,207 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "cm",
+                     "startedUtc":  "2026-08-16T17:05:45Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad\\cm",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-052",
+                                        "runKey":  "GLOBAL-DQ-052",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  1489,
+                                        "findings":  1488,
+                                        "eligible":  114436,
+                                        "seconds":  19.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "GLOBAL-DQ-057",
+                                        "runKey":  "GLOBAL-DQ-057",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_COMMENT_INVALID_OR_CONTRADICTED",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  58,
+                                        "findings":  57,
+                                        "eligible":  30656,
+                                        "seconds":  8.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "GLOBAL-DQ-111",
+                                        "runKey":  "GLOBAL-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "",
+                                        "rows":  0,
+                                        "findings":  null,
+                                        "eligible":  null,
+                                        "seconds":  180.3,
+                                        "status":  "ERROR: The remote server returned an error: (504) Gateway Timeout."
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "b5",
+                     "startedUtc":  "2026-08-16T17:34:25Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad\\b5",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-038",
+                                        "runKey":  "GLOBAL-DQ-038",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_MEDAL_ROUND",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  17,
+                                        "findings":  16,
+                                        "eligible":  592,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "GLOBAL-DQ-039",
+                                        "runKey":  "GLOBAL-DQ-039",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_UNEXPECTED_MEDAL_FOR_NON_MEDAL_ROUND",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  9021,
+                                        "seconds":  7.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "GLOBAL-DQ-041",
+                                        "runKey":  "GLOBAL-DQ-041",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_ON_NON_MEDAL_ROUND_PHASE",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  1395,
+                                        "seconds":  12.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "GLOBAL-DQ-073",
+                                        "runKey":  "GLOBAL-DQ-073",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_UNEXPECTED_MEDAL_RELATED_FOR_NON_MEDAL_ROUND",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  9021,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "GLOBAL-DQ-021",
+                                        "runKey":  "GLOBAL-DQ-021",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  39,
+                                        "findings":  38,
+                                        "eligible":  9612,
+                                        "seconds":  45,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "GLOBAL-DQ-076",
+                                        "runKey":  "GLOBAL-DQ-076",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9613,
+                                        "seconds":  25.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "GLOBAL-DQ-122",
+                                        "runKey":  "GLOBAL-DQ-122",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  9612,
+                                        "seconds":  36,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "GLOBAL-DQ-077",
+                                        "runKey":  "GLOBAL-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "",
+                                        "rows":  0,
+                                        "findings":  null,
+                                        "eligible":  null,
+                                        "seconds":  0,
+                                        "status":  "SKIPPED: needs NUMERIC_DATA_TYPE_LIST"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "16.08.2026 19-37-03",
+                     "startedUtc":  "2026-08-16T17:37:03Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-077",
+                                        "runKey":  "GLOBAL-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  1736,
+                                        "seconds":  8.6,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs"

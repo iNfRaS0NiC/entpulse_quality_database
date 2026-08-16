@@ -232,10 +232,43 @@ three spellings of one idea. Measured 2026-08-16 by `GLOBAL-DISCOVERY-026`:
 | `HUD` | 2 | 2 | unread |
 | `OOT` | 1 | 1 | unread |
 
-**Disqualification is written three ways** - `Disqualified` 1400, `DSQ` 146, `DQ` 5 - and
-being outside the time limit is written at least twice, `HD` 3111 against `OTL` 137 and
-possibly `OOT` 1. Neither is a defect until somebody decides which spelling the sport means,
-and the decision has not been made.
+**Disqualification is not written three ways, and the first reading of this table was wrong.**
+It was recorded here as three spellings of one idea - `Disqualified` 1400, `DSQ` 146, `DQ` 5 -
+and the data does not support that. Measured on 2026-08-16 against the Rank and Duration each
+row also holds:
+
+| Value | Rows | Also holding a Rank | Also holding a time | Rank range |
+|---|---:|---:|---:|---|
+| `DNF` | 101190 | 103 | 76 | 10-171 |
+| `DNS` | 8364 | 20 | 24 | 10-161 |
+| `HD` | 3111 | 47 | 48 | 109-185 |
+| **`Disqualified`** | **1400** | **1247** | **1253** | **1-196** |
+| `DSQ` | 146 | 3 | 3 | 142 |
+| `OTL` | 137 | 2 | 2 | 64-65 |
+| `+1 lap` | 40 | 40 | 0 | 100-106 |
+| `a` | 19 | 19 | 19 | 10-20 |
+| `FF1` to `FF14` | 16 | 16 | 7 | each equals its own number |
+| `FTM` | 5 | 0 | 0 | - |
+| `DQ` | 5 | 0 | 0 | - |
+| `HUD` | 2 | 0 | 0 | - |
+| `OOT` | 1 | 0 | 0 | - |
+
+`DSQ` and `DQ` behave like a disqualification and almost never keep a place. **`Disqualified` is
+the opposite: 1247 of its 1400 rows keep their finishing place, 1253 keep a time, one holds a
+medal, and the places run from 1 to 196.** Either the word is being used for something else, or
+1247 riders are marked disqualified while still classified. `Cycling-DQ-077` reports them.
+
+**`FF#` is not a comment code at all but an echo of the rank.** `FF2` sits on place 2, `FF3` on
+place 3, `FF6` on place 6, every time exactly; `FF1`, `FF2` and `FF3` also hold a medal. It is a
+value written into the wrong column. **`a` likewise sits beside a real result** - all 19 riders
+hold a place between 10 and 20 and a time. **`+1 lap` is consistent**: 40 rows, every one with a
+place between 100 and 106 and no time, which is exactly what a lap down looks like.
+
+Being outside the time limit is still written at least twice, `HD` 3111 against `OTL` 137 and
+possibly `OOT` 1, and nobody has yet decided which spelling the sport means.
+
+The counts here differ slightly from the first census of the same column - `DNF` was 101136 and
+is now 101190 - because colleagues are correcting the data while we read it.
 
 **The five unread values were read on the row on 2026-08-16** and each is confined:
 
@@ -931,6 +964,52 @@ none on a row count. They are recorded one by one in `SPORTS/params.json`:
 | No third-place round | `-093` `-094` | the round types are `0`, `38`-`58`, `89` and `173 Final` |
 | No elimination or group round | `-097` `-118` | the same 24 round types |
 | No team data value | `-064` `-065` `-066` `-095` `-098` | `1429 Team` is declared and empty here |
+| No score to read the Comment against | `-117` | `GLOBAL-DQ-052` audits the Comment instead, against the Rank, the time and the Medal |
+
+**The comment vocabulary is declared as eight approved values and seven that mean no result.**
+`RESULT_COMMENT_VALUE_LIST` holds `dnf`, `dns`, `hd`, `disqualified`, `dsq`, `dq`, `otl` and
+`+1 lap`; `RESULT_COMMENT_NO_RESULT_LIST` holds the same minus `+1 lap`, which keeps its place
+by design. The five values left out are left out deliberately so the check reports them - `a`,
+`FF1` to `FF14`, `FTM`, `HUD` and `OOT`, 44 rows in all, none with a reading anybody has
+confirmed. The ranking layer uses a tighter vocabulary and is declared separately: `DNF`, `DNS`,
+`HD`, `Disqualified`, `DSQ` and `DQ`, all six meaning no result, with `FF#` and `HUD` outside it
+on 15 rows.
+
+`Cycling-DQ-077` carries `GLOBAL-DQ-052` and reports **1488 of 114436**: 1421
+`COMMENT_NO_RESULT_WITH_RANK` - the 1247 `Disqualified` above plus 103 `DNF`, 47 `HD`, 20 `DNS`,
+3 `DSQ` and 2 `OTL` - 43 `COMMENT_INVALID_VALUE`, 23 with a time and 1 with a medal.
+`Cycling-DQ-078` carries `GLOBAL-DQ-057` on the ranking layer and reports **57 of 30656**: 41
+with a rank, 15 invalid values and 1 with a time.
+
+**Eight further templates were unblocked by three parameter decisions** and are carried whole:
+
+| Check | Carries | Findings / eligible | What the rows hold |
+|---|---|---|---|
+| `Cycling-DQ-073` | `GLOBAL-DQ-021` EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT | 38 / 9612 | a shared place whose times disagree. The worst is `Stage 11` of a Grand Tour with **164 riders all on place 2** |
+| `Cycling-DQ-074` | `GLOBAL-DQ-038` EVENT_SETTINGS_MISSING_MEDAL_RELATED | 16 / 592 | Olympic road races and time trials carrying no `medal_related` property |
+| `Cycling-DQ-075` and `-079` | `GLOBAL-DQ-039` and `-073` | 1 / 9021 each | the same event seen twice: `4119091 Race`, `World Championship RR` 2011, awarding a medal on round type `38` which is stage 1 |
+| `Cycling-DQ-076` | `GLOBAL-DQ-041` | 0 / 1395 | |
+| `Cycling-DQ-080` | `GLOBAL-DQ-076` | 0 / 9613 | |
+| `Cycling-DQ-081` | `GLOBAL-DQ-077` | 0 / 1736 | |
+| `Cycling-DQ-082` | `GLOBAL-DQ-122` EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE | 4 / 9612 | three events rank a whole field with no time at all - `Oceania Championships` 2011 twice and `African Championships` 2005 - and `Ronde van Drenthe` 2015 has 40 of 106 ranked riders without one |
+
+The three parameters those rest on: `MEDAL_ROUND_TYPE_LIST` is `173 Final` alone, since a stage
+of a tour awards nothing; `NUMERIC_RESULT_TYPE_LIST` is `100 Rank`, `102 Points` and
+`222 Laps behind`, with `101 Duration` deliberately outside because it is a time and reading it
+as a number would report the whole sport; and `RESULT_TIE_VALUE_TYPE_LIST` is `101 Duration`,
+because two riders share a place when they record the same time.
+
+**`GLOBAL-DQ-111` is `Not checked` for this sport, and that is a cost problem rather than a
+structural one.** It compares one finisher's effective time with another's and timed out at 504
+after 180 seconds. It was rebuilt on 2026-08-16 in three steps, each removing work done per row
+that belonged somewhere else: an all-pairs self-join inside each event, about 69 million pairs
+here; a correlated `NOT EXISTS` over `result` for the Comment, asked once per participant; and
+an `EXISTS` over `object_discipline` asked once per participant for a property of the event. The
+raw time is now read once instead of roughly twelve times per row. BMX and Triathlon return the
+identical events and coverage after every step - 47 of 8001 and 3210 of 3603 - so the rewrite is
+sound and the other sports gained from it. **Cycling still does not finish**, and the statement
+was not sharded to make it: `WORKFLOW.md` owns that rule. The area is `Not checked`, never
+`Not used`.
 
 <!-- MANUAL PASTE ZONE: 30 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 

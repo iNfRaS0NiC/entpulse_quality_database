@@ -4012,18 +4012,36 @@ Test-That 'GLOBAL-DQ-111 keeps unreadable times, one event row and symmetric no-
     Assert-Equal 1 $statement.Count 'GLOBAL-DQ-111 statement count'
     $sql = $statement[0].Sql
 
+    # The pair comparison was a self-join until 2026-08-16 and is a window now, so what is
+    # asserted here is what the comparison must mean rather than how it is written. The three
+    # properties are the same three the self-join carried: an unreadable time counts on its own,
+    # a gap is never compared with an absolute time, and only strictly lower ranks are looked at.
     Assert-True ($sql -match 'EFFECTIVE_TIME_UNPARSEABLE_AND_NOT_MONOTONIC') `
         'the combined event-level violation type is missing'
-    Assert-True ($sql -match '(?is)LEFT\s+JOIN\s*\(.+?\)\s*b\s+ON') `
+    Assert-True ($sql -match '(?is)COUNT\(DISTINCT\s+CASE\s+WHEN\s+w\.seconds\s+IS\s+NULL\s+THEN\s+w\.ep_id\s+END\)\s+AS\s+unreadable_count') `
         'unreadable left-side values would again depend on finding a peer'
-    Assert-True ($sql -match '(?is)b\.is_gap\s*=\s*a\.is_gap\s+AND\s+a\.seconds\s+IS\s+NOT\s+NULL\s+AND\s+b\.seconds\s+IS\s+NOT\s+NULL\s+AND\s+b\.seconds\s*<\s*a\.seconds') `
-        'the self-join no longer prunes readable non-monotonic pairs before materialization'
-    Assert-True ($sql -match '(?m)^\s*GROUP BY a\.event_id\s*$') `
+    Assert-True ($sql -match '(?is)PARTITION\s+BY\s+v\.event_id,\s*v\.is_gap') `
+        'a gap and an absolute time could again be compared with each other'
+    Assert-True ($sql -match '(?is)ORDER\s+BY\s+v\.rank_value\s+RANGE\s+BETWEEN\s+1\s+FOLLOWING\s+AND\s+UNBOUNDED\s+FOLLOWING') `
+        'the comparison no longer looks only at strictly lower ranks, so tied riders would be compared with each other'
+    Assert-True ($sql -match '(?is)best_seconds_behind\s*<\s*w\.seconds') `
+        'the non-monotonic condition is missing'
+    Assert-True ($sql -match '(?m)^\s*GROUP BY w\.event_id\s*$') `
         'findings are not collapsed to one row per event'
-    Assert-Equal 3 ([regex]::Matches($sql, 'RESULT_COMMENT_NO_RESULT_LIST')).Count `
-        'no-result exclusions in the two finding inputs and coverage input'
-    Assert-True ($sql -match '(?is)SELECT\s+DISTINCT\s+c\.event_id.+?\)\s+eligible') `
+    Assert-Equal 2 ([regex]::Matches($sql, 'RESULT_COMMENT_NO_RESULT_LIST')).Count `
+        'no-result exclusions in the finding input and the coverage input'
+    Assert-True ($sql -match '(?is)COUNT\(DISTINCT\s+c\.event_id\)\s+AS\s+eligible_count') `
         'coverage no longer counts the pre-violation event population'
+    # The three costs removed on 2026-08-16, each of which made the statement time out on a
+    # sport of Cycling's size. They are asserted as absences because reintroducing any one of
+    # them is silent: the statement still returns the right rows, on the sports small enough
+    # to finish.
+    Assert-Equal 0 ([regex]::Matches($sql, '(?is)LEFT\s+JOIN\s*\(.+?\)\s*b\s+ON')).Count `
+        'the all-pairs self-join is back, whose cost grows with the square of the field'
+    Assert-Equal 0 ([regex]::Matches($sql, '(?i)NOT\s+EXISTS\s*\(')).Count `
+        'a correlated subquery is back, asked once per participant'
+    Assert-Equal 2 ([regex]::Matches($sql, 'RESULT_DURATION_TYPE_ID')).Count `
+        'the raw effective time is read more than once per branch again, so every REGEXP below re-evaluates it'
 }
 
 Test-That 'GLOBAL-DQ-102 keeps the scope-type list symmetric across findings and coverage' {

@@ -1181,7 +1181,15 @@
             "FINAL_ROUND_TYPE_LIST": "173 Final",
             "RESULT_FULL_TIME_TYPE_ID": "557 Full time - declared although the sport writes not one row of it. It is the field that would hold a rider absolute finishing time, and its absence is the finding rather than a reason to drop the checks that read it; see _checkSignal GLOBAL-DQ-045",
             "TIMED_DISCIPLINE_LIST": "628 Road Race, the only discipline in the sport, and it is decided on the clock: 101 Duration carries 1140133 values over 9609 events",
-            "MEDAL_TEMPLATE_ID_LIST": "every championship and Games in the sport, 29 templates: 484 and 9513 World Championship 1 (male, female), 10054 World Championship 1 (mixed), 485 and 486 Summer Olympics, 9870 and 9871 European Championship 1, 11046, 11047 and 11048 African Championship, 11049 and 11050 Asian Championship, 11052 Asian Games, 11054 and 11055 South East Asian Games, 11056 and 11057 European Youth Olympic Festival, 11058 and 11059 European Games, 11060 and 11061 Pan American Championship, 11062 and 11063 Pan American Games, 11084 and 11085 Commonwealth Games, 11086 and 11087 Oceania Championship, 11101 and 11121 Youth Olympics. Ten of the 29 hold no medal at all today and are named here anyway, because a template awards medals by what it is rather than by what it currently stores. The five professional templates are deliberately outside the list - 483 and 9764 World Tour 1, 9432 Category Pro, 9481 Category 1, 10356 World Tour 1 Grand Tour - because a stage race and a one-day classic award none, and they hold 1187 of the 1795 rankings in the sport between them"
+            "MEDAL_TEMPLATE_ID_LIST": "every championship and Games in the sport, 29 templates: 484 and 9513 World Championship 1 (male, female), 10054 World Championship 1 (mixed), 485 and 486 Summer Olympics, 9870 and 9871 European Championship 1, 11046, 11047 and 11048 African Championship, 11049 and 11050 Asian Championship, 11052 Asian Games, 11054 and 11055 South East Asian Games, 11056 and 11057 European Youth Olympic Festival, 11058 and 11059 European Games, 11060 and 11061 Pan American Championship, 11062 and 11063 Pan American Games, 11084 and 11085 Commonwealth Games, 11086 and 11087 Oceania Championship, 11101 and 11121 Youth Olympics. Ten of the 29 hold no medal at all today and are named here anyway, because a template awards medals by what it is rather than by what it currently stores. The five professional templates are deliberately outside the list - 483 and 9764 World Tour 1, 9432 Category Pro, 9481 Category 1, 10356 World Tour 1 Grand Tour - because a stage race and a one-day classic award none, and they hold 1187 of the 1795 rankings in the sport between them",
+            "RESULT_COMMENT_VALUE_LIST": "the eight comment values on an event result that carry a settled meaning: DNF did not finish, DNS did not start, HD hors delai, Disqualified, DSQ and DQ the two codes for the same, OTL over the time limit, and '+1 lap' a rider a lap down. Five further values occur and are deliberately left out so that the check reports them, 44 rows in all: 'a' on 19 riders of one 2018 race, FF1 to FF14 across three events, FTM on five Giro d'Italia stages, HUD on two and OOT on one. None of the five has a reading anybody has confirmed",
+            "RESULT_COMMENT_NO_RESULT_LIST": "the seven of the eight that mean the rider has no result, so a Rank, a time or a Medal beside one is a contradiction. '+1 lap' is the one left out, and correctly: measured 2026-08-16 all 40 of its rows carry a Rank between 100 and 106 and none carries a duration, which is exactly what a lap down looks like - the place is kept and the time is not. Disqualified is inside the list although 1247 of its 1400 rows hold a Rank, because the word means what it means; those 1247 are the finding rather than the definition",
+            "DATA_COMMENT_VALUE_LIST": "the six comment values the ranking layer uses, which is a tighter vocabulary than the event layer: DNF, DNS, HD, Disqualified, DSQ and DQ. Neither 'a', OTL, '+1 lap', FTM nor OOT reaches this layer at all. FF1 to FF14 and HUD do, on 15 rows between them, and are left out so the check reports them",
+            "DATA_COMMENT_NO_RESULT_LIST": "all six, since every value the ranking layer uses means the rider has no result; there is no equivalent of '+1 lap' here",
+            "MEDAL_ROUND_TYPE_LIST": "173 Final, the only round in the sport that awards a medal. The other 23 round types are the stage numbers 1 to 21 under ids 38 to 58, the unnamed 0 and the duplicate 89, and a stage of a tour awards nothing. 592 events carry a 501 Medal result and 599 carry round type 173",
+            "NUMERIC_RESULT_TYPE_LIST": "100 Rank, 102 Points and 222 Laps behind, the three result types whose value is a plain number. 101 Duration is deliberately outside: it is a time, written as +#:# or #:#:#, and reading it as a number would report the whole sport. 104 Comment is a vocabulary and 501 Medal is a colour",
+            "RESULT_TIE_VALUE_TYPE_LIST": "101 Duration, the value that decides a shared place here. Two riders hold the same place when they record the same time, which on a road stage is the whole bunch finishing together; the time is what a tie has to agree on",
+            "NUMERIC_DATA_TYPE_LIST": "1270 Rank, the only Comp.Rank data type whose value is a plain number. 1426 Time and 1427 Time Difference are times, 1273 Comment is a vocabulary and 1277 Medal is a colour"
         },
         "_checkSignal": {
             "GLOBAL-DQ-033": {
@@ -1274,7 +1282,7 @@
             },
             "GLOBAL-DQ-117": {
                 "signal": "Not applicable",
-                "reason": "Structural: the sport records no score of any kind. GLOBAL-DISCOVERY-007 measured six result types sport-wide on 2026-08-16 - 100 Rank, 101 Duration, 104 Comment, 501 Medal, 102 Points and 222 Laps behind - and none of them is a deciding, mirrored or running score. A road race is decided by the order riders cross the line and by the clock, not by points scored against an opponent."
+                "reason": "Structural: it reads the Comment against the score that decides the ranking, and the sport records no score. GLOBAL-DISCOVERY-007 measured six result types sport-wide on 2026-08-16 - 100 Rank, 101 Duration, 104 Comment, 501 Medal, 102 Points and 222 Laps behind - and none of them decides an event by points. The Comment is audited instead by GLOBAL-DQ-052, which reads it against the Rank, the time and the Medal."
             },
             "GLOBAL-DQ-094": {
                 "signal": "Not applicable",
@@ -1359,6 +1367,14 @@
         },
         "RESULT_FULL_TIME_TYPE_ID": "557",
         "TIMED_DISCIPLINE_LIST": "628",
-        "MEDAL_TEMPLATE_ID_LIST": "484, 485, 486, 9513, 9870, 9871, 10054, 11046, 11047, 11048, 11049, 11050, 11052, 11054, 11055, 11056, 11057, 11058, 11059, 11060, 11061, 11062, 11063, 11084, 11085, 11086, 11087, 11101, 11121"
+        "MEDAL_TEMPLATE_ID_LIST": "484, 485, 486, 9513, 9870, 9871, 10054, 11046, 11047, 11048, 11049, 11050, 11052, 11054, 11055, 11056, 11057, 11058, 11059, 11060, 11061, 11062, 11063, 11084, 11085, 11086, 11087, 11101, 11121",
+        "RESULT_COMMENT_VALUE_LIST": "'dnf', 'dns', 'hd', 'disqualified', 'dsq', 'dq', 'otl', '+1 lap'",
+        "RESULT_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'hd', 'disqualified', 'dsq', 'dq', 'otl'",
+        "DATA_COMMENT_VALUE_LIST": "'dnf', 'dns', 'hd', 'disqualified', 'dsq', 'dq'",
+        "DATA_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'hd', 'disqualified', 'dsq', 'dq'",
+        "MEDAL_ROUND_TYPE_LIST": "173",
+        "NUMERIC_RESULT_TYPE_LIST": "100, 102, 222",
+        "RESULT_TIE_VALUE_TYPE_LIST": "101",
+        "NUMERIC_DATA_TYPE_LIST": "1270"
     }
 }
