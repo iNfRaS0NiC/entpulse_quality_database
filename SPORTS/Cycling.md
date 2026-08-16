@@ -412,6 +412,22 @@ majority named for it and a consistent minority named one lower.
 The offset is exactly one and runs the length of the chain. What produces it is not confirmed;
 it is recorded under Open questions rather than asserted.
 
+**424 finished events hold a broken rank sequence, and none of the three shapes is the sport
+behaving normally.** `Cycling-DQ-003` carries `GLOBAL-DQ-119`, which separates them itself:
+
+| Shape | Events | What it reads like |
+|---|---:|---|
+| `RANK_SEQUENCE_TIE_DOES_NOT_SKIP` | 227 | two riders share a place and the next does not skip - place 72 shared by 2 followed by 73 |
+| `RANK_SEQUENCE_GAP` | 191 | a place is missing - place 34 followed by 36, and on the U23 World Championship road race 10 followed by 16 and 16 by 72 |
+| `RANK_SEQUENCE_DOES_NOT_START_AT_ONE` | 6 | three are `Stage 1b - B` of `Settimana Internazionale Coppi e Bartali`, starting at 10, 9 and 7, which reads as a split stage continuing the first half's numbering |
+
+Two readings were tested against the data and neither held. The ties are not team time trials
+sharing a team place: every one is "shared by 2" deep in a road field, on stages of the Vuelta a
+Pais Vasco and the Tour de France. And the gaps are not a disqualified rider's place having been
+removed - 130 of the 191 gap events carry a commented rider, which is 68 per cent against a base
+rate of 78 per cent across all 9608 finished events, so a gapped event is if anything *less*
+likely to hold a comment than an ordinary one.
+
 **Split stages share a round.** `Stage 3b`, `Stage 8a` and `Stage 8b` appear beside their whole
 counterparts, which is the sport running two half-stages in one day.
 
