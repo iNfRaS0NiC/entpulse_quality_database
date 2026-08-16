@@ -993,6 +993,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-16T12:35:02Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-008",
+                                        "runKey":  "Cycling-DQ-008",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_NO_PARTICIPANTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  60,
+                                        "findings":  59,
+                                        "eligible":  1795,
+                                        "seconds":  2.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs"

@@ -360,6 +360,18 @@ into hours, which on a Grand Tour is the back of the field.
 `Paris-Tours`. This is the largest empty population read so far and is the one that does not
 look like a notation.
 
+**59 Comp.Rank records of 1795 hold no participant at all, and 52 of them are two seasons.**
+`Cycling-DQ-008` carries `GLOBAL-DQ-010`. The split by tournament year is 28 in 2020, 24 in
+2025, and 7 across 2004, 2007, 2015 and 2018 together. All of them sit in the professional
+templates - `Category 1` 24, `Category Pro` 21, `World Tour 1` 13, `World Tour 1 Grand Tour` 1.
+
+The obvious reading was tested and is wrong: these are not rankings created for races that were
+then cancelled. **Every one of the 59 tournaments raced** - each holds finished events, measured
+2026-08-16 - so the results exist at event level and the tournament ranking beside them was left
+empty. Two bad seasons in the Comp.Rank layer rather than a defect scattered through the sport,
+and 2020 being one of them is not the pandemic cancelling the racing, because the racing
+happened.
+
 **77 Final events of 599 are reached by no Comp.Rank**, and `Cycling-DQ-006` carries
 `GLOBAL-DQ-040`, which labels the three things that number holds: 64
 `FINAL_EVENT_NOT_IN_ANY_COMP_RANK` where the tournament ranks but not that final, 11
