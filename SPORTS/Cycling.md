@@ -428,6 +428,20 @@ after the race it ranks: `GLOBAL-DQ-051` reported 43 names, 30 of them for the h
 place** - immediately before `Male` or `Female`, as in `Amstel Gold Race␣␣Male - Competition
 Rank`. One naming template that lost a space, not sixteen separate mistakes.
 
+**The event names keep the rule, and that is a decision rather than an oversight.**
+`Cycling-DQ-011` carries `GLOBAL-DQ-049` unchanged, because the sport has only 95 distinct event
+names - most events are called `Race`, `Stage 4` or `Prologue` - and the template reports 11 of
+them. Seven are the hyphen convention and three are correct diacritics, so ten of the eleven are
+right; at that size `violation_types` tells them apart on the row and the rule is not swamping
+anything. It is dropped on the stage and Comp.Rank names because there it was 58 of 59 and 30 of
+43.
+
+The three diacritic names were checked rather than assumed: `Meisterschaft von Zürich`,
+`Züri Metzgete` and `Trofeo Pollença-Port de Andratx` store **valid UTF-8**, one two-byte
+character each, and the separate `REPLACEMENT_CHARACTER` and `MOJIBAKE_DOUBLE_ENCODED` rules do
+not fire on them. **The one real finding is `HTML_ENTITY`**: `Trofeo Port d&#39;Andratx - Port
+d&#39;Pollenca`, where the apostrophe was left as its HTML code.
+
 The rule is dropped for stage and Comp.Rank names. `GLOBAL-DQ-050` still asks whether the same race is
 spelled two ways, which is a different question and a real one here: `Milano - Sanremo` stands
 beside `Milano-Sanremo`, and `Gent - Wevelgem` beside `Gent-Wevelgem`.
