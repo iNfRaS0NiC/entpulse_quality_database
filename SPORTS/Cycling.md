@@ -406,6 +406,38 @@ to make, so part of this check falls on its own as the season runs.
 **`1277 Medal` holds one medal too many in three statistics**: `gold` on 689 values over 688
 statistics and `silver` on 689 over 687, against `bronze` on 685 over 685.
 
+**29 Comp.Rank records of 1736 rank a rider who never rode in their tournament**, and
+`Cycling-DQ-014` carries `GLOBAL-DQ-030`. Run 2026-08-16, 150 seconds. The 29 are two separate
+problems and the row's `stray_participants` count is what tells them apart.
+
+**Two of them are one broken link rather than 325 broken riders.** The
+`Omloop Het Nieuwsblad Male - Competition Rank` statistics for 2014 and 2015 hang under the
+`Category Pro` season container, and every rider they rank rode that race in the `World Tour 1`
+container instead. The match is exact and was measured rather than inferred: all 170 of
+statistic `338870` rode tournament `27869` `2014`, stage `Omloop Het Nieuwsblad`, 1 March 2014,
+and all 155 of statistic `338912` rode tournament `27870` `2015`, stage `Omloop Het Nieuwsblad`,
+28 February 2015. The statistic is attached to the wrong tournament, and the correction is one
+foreign key each.
+
+The other 27 hold between 1 and 22 strays, 15 of them exactly one, across `World Tour 1` 17,
+`Category Pro` 6, `World Tour 1 Grand Tour` 5 and `Pan American Championship` 1.
+
+**The duplicate-person reading was tested and does not explain them.** Ten stray names were
+looked up in `participant`: `Benjamin King`, `Victor Grange`, `Amanda Spratt`,
+`Anna van der Breggen`, `Chantal Blaak`, `Christine Majerus` and `Alexis Ryan` each hold exactly
+one id in the whole database, so the rider is not a second record of somebody already in the
+tournament. `Jose Gutierrez` holds 16 ids and `Francisco Perez` 7, which is a common name across
+every sport rather than evidence of a split record.
+
+**One route to a false positive exists here and cannot be closed, which is why it is written
+down.** The template looks for the rider either directly on an event or through a team's active
+lineup, and this sport writes no lineup at all, so only the direct path is live. Most of these
+tournaments do enter teams - between 16 and 67 team entries each, the team time trials - so a
+rider ranked individually who entered the tournament only inside a team squad would be reported
+here and there is nothing in the database to check the squad against. It does not cover the
+findings: `Tour de France` 2007 and `Pan American Championship` 2006 hold **no team entry at
+all** and still report a stray, and the two large ones are proven misattachments.
+
 <!-- MANUAL PASTE ZONE: 30 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values
