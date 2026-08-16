@@ -1191,6 +1191,50 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-16T14:08:25Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-003",
+                                        "runKey":  "GLOBAL-DQ-003",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NO_EVENTS",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  24,
+                                        "findings":  23,
+                                        "eligible":  3528,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-16T14:08:28Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-055",
+                                        "runKey":  "GLOBAL-DQ-055",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_DUPLICATE_IN_EVENT",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  24,
+                                        "findings":  23,
+                                        "eligible":  9612,
+                                        "seconds":  11,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs"

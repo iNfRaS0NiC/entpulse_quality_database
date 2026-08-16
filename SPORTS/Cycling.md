@@ -594,6 +594,23 @@ September, and `Tour of Qinghai Lake` 2019 overruns by 31 days. And the `Europea
 Festival` repeats a shape of its own: the stage is declared across the whole festival while the
 cycling runs on one or two days of it.
 
+**23 stages of 3528 hold no event at all, and the layer cannot say why.** `Cycling-DQ-016`
+carries `GLOBAL-DQ-003` as `Monitor`. Every one of the 23 is a named race off the calendar -
+`Tour of Hangzhou` 2013, `Giro del Trentino` 2015, `Giro del Piemonte` 2017, `Tour of Japan`
+2021, `Trofeo Baracchi` in both 2024 and 2025 - concentrated in `Category 1` 17, `Category Pro`
+4, `World Tour 1` 1 and `Summer Paralympics` 1.
+
+**Two of them are races still ahead of us** - `GP Kranj` on 30 August 2026 and
+`Gran Premio del Lazio` on 19 September 2026 - so a handful of rows here is what an open season
+looks like and the check will never sit at zero for long.
+
+**For the other 21 the database holds nothing that separates a cancelled race from an unimported
+one.** `tournament_stage` carries no status column at all, confirmed on 2026-08-16 by asking for
+it and being told the column does not exist; status lives on the event, which is precisely what
+is missing. `Maryland Cycling Classic` appears for 2020 and for 2021, and that race was called
+off in both years, so at least part of this population is a calendar entry for racing that never
+happened. The start date is what tells the two halves apart on the row.
+
 **424 finished events hold a broken rank sequence, and none of the three shapes is the sport
 behaving normally.** `Cycling-DQ-003` carries `GLOBAL-DQ-119`, which separates them itself:
 

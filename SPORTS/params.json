@@ -1181,6 +1181,10 @@
             "FINAL_ROUND_TYPE_LIST": "173 Final"
         },
         "_checkSignal": {
+            "GLOBAL-DQ-003": {
+                "signal": "Monitor",
+                "reason": "Real, but the population never empties and part of it is not a defect. Measured 2026-08-16: 23 tournament stages of 3528 hold no event, and 2 of them are races still ahead of us - GP Kranj on 30 August 2026 and Gran Premio del Lazio on 19 September 2026 - which fill themselves as the season runs, so a season opening always carries a few. The other 21 are past races, and the database cannot say which of them were cancelled: tournament_stage has no status column at all, confirmed 2026-08-16, and the status lives on the event, which is exactly what is missing here. Maryland Cycling Classic appears for both 2020 and 2021 and was called off both years, so a cancelled race and an unimported result look identical in this layer. Read the start date first at every run: a stage dated in the past is the half worth pursuing."
+            },
             "GLOBAL-DQ-071": {
                 "signal": "Monitor",
                 "reason": "Real and population-wide, and the template separates the two things it holds without needing a variant. Measured 2026-08-16: 967 events carry no participant, of which 966 are races that were never run - 793 of the 796 Cancelled, all 172 Not started, which are the 2026 calendar still ahead, and 1 Postponed - and they arrive under check_type NO_PARTICIPANTS_NOT_FINISHED_EVENT. A cancelled race has no start list because it had no start, so no row there is correctable and the proportion is what the number describes. The one row that is a defect keeps its own label, NO_PARTICIPANTS_FINISHED_EVENT: event 1688924, Stage 2 of Criterium International 2014 under Category Pro, finished with nobody entered. Read that label first at every run; a second row under it is a new finding rather than more of the same."
