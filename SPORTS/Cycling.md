@@ -486,6 +486,30 @@ The eight divide into three shapes, read on the row rather than counted:
   then 39 and 69, and the two `Santos Tour Down Under WE`, `Post Danmark Rundt` and
   `Pan American Games WE Race Female` records hold the same shape more mildly.
 
+**21 Comp.Rank records of 522 configure a date range that does not contain the racing they
+list**, and `Cycling-DQ-019` carries `GLOBAL-DQ-025`. Every one of them sits in a national-team
+template, and two of the shapes repeat rather than scatter.
+
+**`European Games` has the month wrong four times over, in the same place each time.** The
+configured range keeps the correct day of the month and moves it to January:
+
+| Statistic | Configured | The race |
+|---|---|---|
+| `European Games Race Male` 2015 | 21.01.2015 | 21.06.2015 |
+| `European Games Time Trial Male` 2015 | 21.01.2015 | 18.06.2015 |
+| `European Games Race Male` 2019 | 23.01.2019 | 23.06.2019 |
+| `European Games Time Trial Male` 2019 | 23.01.2019 | 25.06.2019 |
+
+**`Asian Championships WE Time Trial Female` is two days out, every year.** The same statistic
+name reports for 2016, 2017, 2018, 2019 and 2022, each time configured for a single day with
+the race two days earlier, and 2012 and 2015 hold the same fault at a larger distance. Seven of
+the 21 are one recurring mistake in one annual statistic.
+
+The remaining ten are single: `African Championship` 2012, 2015 and 2016, `South East Asian
+Games` 2015, 2019 and 2022, `Asian Games` 2018, `Pan American Championship` 2005 and two more.
+Nothing here reads as a convention - a configured range that begins before the earliest race or
+ends after the latest is allowed by the template and is not what these rows hold.
+
 **Rank `0` exists in this layer and no check written here reports it.** It occurs in statistic
 `338703` beside the 1005, and `GLOBAL-DQ-031` does not read it because zero is below the field
 size rather than above it. Recorded so it is not lost; `GLOBAL-DQ-012` is the template that
