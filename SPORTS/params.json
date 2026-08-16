@@ -1130,5 +1130,59 @@
                 "reason": "Real and population-wide: 329 of 2098 registered non-athletes - 136 teams, 129 coaches and 64 officials - are reached by no event, no lineup, no Comp.Rank and no refereeFK property, and a registry legitimately holds entries that were never used. No single row is a defect and none of them is worked through; what the number describes is how much of the sport's registry has never been entered anywhere, and a rise in it is the question rather than the rows themselves. Judged 2026-08-15 on the reviewed findings."
             }
         }
+    },
+    "Cycling": {
+        "SPORT_ID": 30,
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "STATISTIC_TYPE_ID": 11,
+        "STATISTIC_OWNER_TYPE_ID": 3,
+        "SHARD_ID": 11,
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_DURATION_TYPE_ID": 101,
+        "RESULT_COMMENT_TYPE_ID": 104,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "DATA_RANK_TYPE_ID": 1270,
+        "DATA_DEPRECATED_DURATION_TYPE_ID": 1272,
+        "DATA_COMMENT_TYPE_ID": 1273,
+        "DATA_MEDAL_TYPE_ID": 1277,
+        "DATA_TIME_TYPE_ID": 1426,
+        "DATA_TIME_DIFFERENCE_TYPE_ID": 1427,
+        "CONFIG_START_DATE_TYPE_ID": 1463,
+        "CONFIG_END_DATE_TYPE_ID": 1464,
+        "CONFIG_GENDER_TYPE_ID": 1470,
+        "CONFIG_EVENT_ID_TYPE_ID": 1471,
+        "ROUND_TYPE_LIST": "0, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 89, 173",
+        "FINAL_ROUND_TYPE_LIST": "173",
+        "_names": {
+            "SPORT_ID": "30 Cycling",
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: the client takes this sport whole, all 51 templates",
+            "STATISTIC_TYPE_ID": "11 Competition Stats, called Comp.Rank in this project",
+            "STATISTIC_OWNER_TYPE_ID": "3 tournament",
+            "SHARD_ID": "11 statistic_participants11 and statistic_data11",
+            "RESULT_RANK_TYPE_ID": "100 Rank",
+            "RESULT_DURATION_TYPE_ID": "101 Duration",
+            "RESULT_COMMENT_TYPE_ID": "104 Comment",
+            "RESULT_MEDAL_TYPE_ID": "501 Medal",
+            "DATA_RANK_TYPE_ID": "1270 Rank",
+            "DATA_DEPRECATED_DURATION_TYPE_ID": "1272 Duration",
+            "DATA_COMMENT_TYPE_ID": "1273 Comment",
+            "DATA_MEDAL_TYPE_ID": "1277 Medal",
+            "DATA_TIME_TYPE_ID": "1426 Time",
+            "DATA_TIME_DIFFERENCE_TYPE_ID": "1427 Time Difference",
+            "CONFIG_START_DATE_TYPE_ID": "1463 Start date",
+            "CONFIG_END_DATE_TYPE_ID": "1464 End date",
+            "CONFIG_GENDER_TYPE_ID": "1470 Gender",
+            "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id",
+            "ROUND_TYPE_LIST": "0 (unnamed), 38 to 58 the stage numbers 1 to 21, 89 a second round also named 1, 173 Final",
+            "FINAL_ROUND_TYPE_LIST": "173 Final"
+        },
+        "_notApplicable": {
+            "DATA_TEAM_TYPE_ID": "1429 Team is declared for the statistic type and holds no value in this sport; GLOBAL-DISCOVERY-031 measured zero on 2026-08-16",
+            "LINEUP_TYPE_LIST": "the sport writes no lineup at all: a road race enters each rider directly on the event, so there is no squad to name",
+            "INCIDENT_TYPE_LIST": "the sport writes no incident at all: a road race records no discrete in-race event of the kind the table holds"
+        }
     }
 }

@@ -20,6 +20,7 @@ mechanisms from `DATABASE.md`.
 | 42 | Modern-Pentathlon | Listing (individual and team) | `SPORTS/Modern-Pentathlon.md` | In progress | 2026-08-06 | Modern Pentathlon |
 | 3 | Golf | Hybrid (individual and team) | `SPORTS/Golf.md` | In progress | 2026-08-13 | Golf |
 | 5 | Ice-Hockey | H2H (team) | `SPORTS/Ice-Hockey.md` | In progress | 2026-08-15 | Ice Hockey |
+| 30 | Cycling | Listing (individual and team) | `SPORTS/Cycling.md` | In progress | 2026-08-16 | Cycling |
 
 <!-- MANUAL PASTE ZONE: SPORT INDEX — insert approved additions immediately before this marker; do not move or delete it. -->
 
