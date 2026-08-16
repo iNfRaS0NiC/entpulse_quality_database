@@ -19,7 +19,7 @@ mechanisms from `DATABASE.md`.
 | 1 | Soccer | H2H (team) | `SPORTS/Soccer.md` | In progress | 2026-08-05 | Soccer |
 | 42 | Modern-Pentathlon | Listing (individual and team) | `SPORTS/Modern-Pentathlon.md` | In progress | 2026-08-06 | Modern Pentathlon |
 | 3 | Golf | Hybrid (individual and team) | `SPORTS/Golf.md` | In progress | 2026-08-13 | Golf |
-| 5 | Ice-Hockey | H2H (team) | `SPORTS/Ice-Hockey.md` | In progress | 2026-08-14 | Ice Hockey |
+| 5 | Ice-Hockey | H2H (team) | `SPORTS/Ice-Hockey.md` | In progress | 2026-08-15 | Ice Hockey |
 
 <!-- MANUAL PASTE ZONE: SPORT INDEX — insert approved additions immediately before this marker; do not move or delete it. -->
 

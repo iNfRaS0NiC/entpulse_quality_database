@@ -12,7 +12,7 @@ correction is required.
 ## Identity and evidence
 
 - First discovery date: 2026-08-14
-- Latest evidence date: 2026-08-14
+- Latest evidence date: 2026-08-15
 - Verification boundary: the client's 25 tournament templates, 9803 active events. The sport
   holds 112 active templates and 316395 events server-wide, so **everything below describes
   3.1 per cent of the sport** unless the paragraph says otherwise. Registry, statistic and
