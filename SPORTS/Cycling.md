@@ -852,6 +852,86 @@ that to be: a correct scope over a population that cannot exist in this sport, n
 pointing at the wrong place. `GLOBAL-DQ-058` proves it from the other side by reporting 100 per
 cent of a population that does exist.
 
+**A timed sport that stores no full time, and the absence is the finding.** `557 Full time` is
+the global result type that holds a competitor's absolute finishing time. Cycling writes **not
+one row of it**, measured 2026-08-16 against the two other opened sports that are decided on the
+clock:
+
+| Sport | `101 Duration` rows | `557 Full time` rows | Events with a duration | Events with a full time |
+|---|---:|---:|---:|---:|
+| **Cycling** | **1140133** | **0** | 9609 | **0** |
+| Triathlon | 112386 | 112386 | 3603 | 3603 |
+| BMX | 61620 | 964 | 8014 | 49 |
+
+Triathlon writes one against every duration it holds. **This costs more here than the count
+suggests**, because `101 Duration` follows the leader/gap convention: the winner's absolute time
+is stored and everybody else carries only a gap, so the actual finishing time of the fiftieth
+rider is written down nowhere at this layer. It can be computed from the winner's time and the
+gap; it cannot be read.
+
+`Cycling-DQ-069` carries `GLOBAL-DQ-045` as `Monitor` and reports **9610 events of 9610**, every
+one `RANK_PRESENT_DURATION_FULL_TIME_MISSING`. It is instantiated rather than called not
+applicable **because a timed sport is expected to hold a full time**, and a check that says so is
+what makes the gap visible; the number falls the day the field starts being written.
+
+**The ranking layer holds the same gap half-closed.** `1426 Time` is written on **85926 of the
+181997 ranked participants** and reaches **776 of 1795 statistics**, so an absolute time does
+survive one layer up, for less than half of the placings. `Cycling-DQ-070` carries
+`GLOBAL-DQ-046` as `Monitor` and reports **1734 statistics of 1734**, every one
+`RANK_PRESENT_TIME_MISSING`: there is no ranking in which every ranked rider carries a time.
+`1427 Time Difference` sits on 67886 across 1070 statistics.
+
+`Cycling-DQ-071` carries `GLOBAL-DQ-054`, which compares one rider's full time with another's and
+therefore audits **nothing at all today - `eligible_count` is 0**. That is a sentinel rather than
+a misdirected scope, and the distinction is the one `POWERBI.md` owns: the sport is timed and the
+storage exists globally, so this population is empty today and will not be once the gap above is
+closed. It is numbered now so it is already in place on the day the field is filled.
+
+**Medals are awarded by 29 templates and by no other, and that list is what makes the medal-set
+check readable.** `Cycling-DQ-068` is `GLOBAL-DQ-026` with two changes. The template counts a
+medal over the team holding it where the statistic assigns one, so that a winning relay reads as
+one gold rather than four; this sport assigns no team value and fields no relay, so that clause
+is dropped. And it is narrowed to the medal templates: unnarrowed it reported **1274 rankings of
+which 1271 held no medal at all**, which is `Tour de France` and `Giro d'Italia` behaving
+correctly, since a stage race awards none. The five professional templates - `483` and `9764
+World Tour 1`, `9432 Category Pro`, `9481 Category 1`, `10356 World Tour 1 Grand Tour` - hold
+1187 of the sport's 1795 rankings between them and are outside the list.
+
+**Ten championship and Games templates award no medal at all, and naming them is the point.**
+The list holds all 29 rather than the 19 that currently award, because a template is
+medal-awarding by what it is and not by what it stores today:
+
+| Template | Gender | Rankings holding no medal |
+|---|---|---:|
+| `11050` Asian Championship | female | 26 |
+| `11056` European Youth Olympic Festival | male | 20 |
+| `11057` European Youth Olympic Festival | female | 14 |
+| `11052` Asian Games | male | 6 |
+| `11058` / `11059` European Games | male / female | 4 / 4 |
+| `11055` South East Asian Games | female | 2 |
+| `11048` African Championship | mixed | 1 |
+| `11101` / `11121` Youth Olympics | male / female | 1 / 1 |
+
+Narrowed, `Cycling-DQ-068` reports **87 of 549**: 84 `No_Medals_At_All` - the 79 above plus five
+scattered through templates that otherwise award - and **3 `Duplicate_Medal_Tie_Shape`**, which
+are the same three `Cycling-DQ-027` reports and the same excess of one gold and one silver
+already recorded under `1277 Medal`.
+
+`Cycling-DQ-072` carries `GLOBAL-DQ-125` and asks the reverse - a medal awarded outside a medal
+template - and returns **0 of 1246**, which corroborates the list from the other side.
+
+**Twenty-two templates are not applicable, each on a structure the sport does not store**, and
+none on a row count. They are recorded one by one in `SPORTS/params.json`:
+
+| Missing structure | Templates | The evidence |
+|---|---|---|
+| No score of any kind | `-084` `-085` `-090` `-094` `-108` `-114` `-116` `-117` | the six result types are `100 Rank`, `101 Duration`, `104 Comment`, `501 Medal`, `102 Points`, `222 Laps behind` |
+| No winner | `-087` `-088` | none of the 16 event property names is a winner, and a winner names one of two sides |
+| No period of play | `-086` `-089` `-091` `-092` | the scope layer is the checkpoint chain: `distance`, `altitude`, `distance_type`, the jersey groups |
+| No third-place round | `-093` `-094` | the round types are `0`, `38`-`58`, `89` and `173 Final` |
+| No elimination or group round | `-097` `-118` | the same 24 round types |
+| No team data value | `-064` `-065` `-066` `-095` `-098` | `1429 Team` is declared and empty here |
+
 <!-- MANUAL PASTE ZONE: 30 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics

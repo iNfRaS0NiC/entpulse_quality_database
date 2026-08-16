@@ -1178,7 +1178,10 @@
             "CONFIG_GENDER_TYPE_ID": "1470 Gender",
             "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id",
             "ROUND_TYPE_LIST": "0 (unnamed), 38 to 58 the stage numbers 1 to 21, 89 a second round also named 1, 173 Final",
-            "FINAL_ROUND_TYPE_LIST": "173 Final"
+            "FINAL_ROUND_TYPE_LIST": "173 Final",
+            "RESULT_FULL_TIME_TYPE_ID": "557 Full time - declared although the sport writes not one row of it. It is the field that would hold a rider absolute finishing time, and its absence is the finding rather than a reason to drop the checks that read it; see _checkSignal GLOBAL-DQ-045",
+            "TIMED_DISCIPLINE_LIST": "628 Road Race, the only discipline in the sport, and it is decided on the clock: 101 Duration carries 1140133 values over 9609 events",
+            "MEDAL_TEMPLATE_ID_LIST": "every championship and Games in the sport, 29 templates: 484 and 9513 World Championship 1 (male, female), 10054 World Championship 1 (mixed), 485 and 486 Summer Olympics, 9870 and 9871 European Championship 1, 11046, 11047 and 11048 African Championship, 11049 and 11050 Asian Championship, 11052 Asian Games, 11054 and 11055 South East Asian Games, 11056 and 11057 European Youth Olympic Festival, 11058 and 11059 European Games, 11060 and 11061 Pan American Championship, 11062 and 11063 Pan American Games, 11084 and 11085 Commonwealth Games, 11086 and 11087 Oceania Championship, 11101 and 11121 Youth Olympics. Ten of the 29 hold no medal at all today and are named here anyway, because a template awards medals by what it is rather than by what it currently stores. The five professional templates are deliberately outside the list - 483 and 9764 World Tour 1, 9432 Category Pro, 9481 Category 1, 10356 World Tour 1 Grand Tour - because a stage race and a one-day classic award none, and they hold 1187 of the 1795 rankings in the sport between them"
         },
         "_checkSignal": {
             "GLOBAL-DQ-033": {
@@ -1232,12 +1235,130 @@
             "GLOBAL-DQ-096": {
                 "signal": "Not applicable",
                 "reason": "Structural, and settled by the competition model rather than by this sport's numbers: only a head-to-head sport names an event after its competitors, because Team 1 - Team 2 is what such a name is and a field of riders has nothing to put there. Cycling is Listing (individual and team), so the template does not apply, and it names its events Race, Stage 3, Prologue, Time Trial and after the course - Polenca - Andratx. Measured 2026-08-16 before the rule was stated: 9611 of 9611, every row NAMES_NO_PARTICIPANT with zero named against fields of 94 to 124. No narrower population survives, since not one event in the sport names a single competitor, so no sport variant is written. GLOBAL_DQ/README.md carries the rule."
+            },
+            "GLOBAL-DQ-045": {
+                "signal": "Monitor",
+                "reason": "Real, population-wide, and the number is the size of one gap rather than a list of separate faults. The sport is timed - 101 Duration carries 1140133 values over 9609 events - and writes not one row of 557 Full time, measured 2026-08-16 beside Triathlon, which writes a full time against every one of its 112386 durations, and BMX, which writes 964 against 61620. It matters more than the count suggests: 101 Duration follows the leader/gap convention, so the winner absolute time is stored and every other rider carries only a gap, which leaves the actual finishing time of the fiftieth rider written down nowhere at this layer. Reported whole the template returns 9610 events of 9610, every one RANK_PRESENT_DURATION_FULL_TIME_MISSING. It is instantiated rather than called Not applicable because the absence is the finding: a timed sport is expected to store a full time, and the count falls the day the field starts being written. GLOBAL-DQ-046 says the same one layer up."
+            },
+            "GLOBAL-DQ-046": {
+                "signal": "Monitor",
+                "reason": "The Comp.Rank half of what GLOBAL-DQ-045 reports on the event. Measured 2026-08-16 the template returns 1734 statistics of 1734, every one RANK_PRESENT_TIME_MISSING, which matches the storage directly: 1426 Time is written on 85926 of the 181997 ranked participants in the sport and reaches 776 of 1795 statistics, so no ranking exists in which every ranked rider carries a time. Unlike the event layer this one is half-populated rather than empty, so the number will move gradually rather than in one step."
+            },
+            "GLOBAL-DQ-054": {
+                "signal": "Monitor",
+                "reason": "A sentinel, and the second of the two things POWERBI.md allows an eligible_count of 0 to be. The statement compares one rider full time with another, and the sport writes no full time at all, so there is no pair to read: eligible_count is 0 on a correct scope rather than a misdirected one. It is not a structural absence - Cycling is a timed sport and the storage exists globally as result type 557 - so this is a population that is empty today and will not be once the gap GLOBAL-DQ-045 reports is closed. Instantiated so that it is already in place on the day the field is filled rather than being remembered then."
+            },
+            "GLOBAL-DQ-084": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport records no score of any kind. GLOBAL-DISCOVERY-007 measured six result types sport-wide on 2026-08-16 - 100 Rank, 101 Duration, 104 Comment, 501 Medal, 102 Points and 222 Laps behind - and none of them is a deciding, mirrored or running score. A road race is decided by the order riders cross the line and by the clock, not by points scored against an opponent."
+            },
+            "GLOBAL-DQ-085": {
+                "signal": "Not applicable",
+                "reason": "Structural on two counts: the sport records no score of any kind among its six result types, and its scope layer is a chain of course checkpoints rather than periods of play."
+            },
+            "GLOBAL-DQ-090": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport records no score of any kind. GLOBAL-DISCOVERY-007 measured six result types sport-wide on 2026-08-16 - 100 Rank, 101 Duration, 104 Comment, 501 Medal, 102 Points and 222 Laps behind - and none of them is a deciding, mirrored or running score. A road race is decided by the order riders cross the line and by the clock, not by points scored against an opponent."
+            },
+            "GLOBAL-DQ-108": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport records no score of any kind. GLOBAL-DISCOVERY-007 measured six result types sport-wide on 2026-08-16 - 100 Rank, 101 Duration, 104 Comment, 501 Medal, 102 Points and 222 Laps behind - and none of them is a deciding, mirrored or running score. A road race is decided by the order riders cross the line and by the clock, not by points scored against an opponent."
+            },
+            "GLOBAL-DQ-114": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport records no score of any kind. GLOBAL-DISCOVERY-007 measured six result types sport-wide on 2026-08-16 - 100 Rank, 101 Duration, 104 Comment, 501 Medal, 102 Points and 222 Laps behind - and none of them is a deciding, mirrored or running score. A road race is decided by the order riders cross the line and by the clock, not by points scored against an opponent."
+            },
+            "GLOBAL-DQ-116": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport records no score of any kind. GLOBAL-DISCOVERY-007 measured six result types sport-wide on 2026-08-16 - 100 Rank, 101 Duration, 104 Comment, 501 Medal, 102 Points and 222 Laps behind - and none of them is a deciding, mirrored or running score. A road race is decided by the order riders cross the line and by the clock, not by points scored against an opponent."
+            },
+            "GLOBAL-DQ-117": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport records no score of any kind. GLOBAL-DISCOVERY-007 measured six result types sport-wide on 2026-08-16 - 100 Rank, 101 Duration, 104 Comment, 501 Medal, 102 Points and 222 Laps behind - and none of them is a deciding, mirrored or running score. A road race is decided by the order riders cross the line and by the clock, not by points scored against an opponent."
+            },
+            "GLOBAL-DQ-094": {
+                "signal": "Not applicable",
+                "reason": "Structural on two counts: the sport records no score among its six result types, and it runs no third-place round. Its round types are 0, the stage numbers 1 to 21 under ids 38 to 58, 89 and 173 Final, measured sport-wide by GLOBAL-DISCOVERY-018 on 2026-08-16."
+            },
+            "GLOBAL-DQ-087": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport writes no Winner property. GLOBAL-DISCOVERY-011 measured 16 event property names sport-wide on 2026-08-16 and none of them is a winner. Nor is one expected: a winner names one of two sides, and a road race enters 92 to 124 riders, which is the same competition-model rule that settles GLOBAL-DQ-096 and GLOBAL-DQ-083."
+            },
+            "GLOBAL-DQ-088": {
+                "signal": "Not applicable",
+                "reason": "Structural on two counts: the sport writes no Winner property among its 16 event property names, and records no score among its six result types."
+            },
+            "GLOBAL-DQ-086": {
+                "signal": "Not applicable",
+                "reason": "Structural: the scope layer exists here but holds nothing resembling a period of play. GLOBAL-DISCOVERY-009 measured scope types 101 checkpoint1 through 148 checkpoint48 on 2026-08-16, and under them event_scope_detail carries the course - distance, distance_to_go, distance_type, distance_name, altitude - together with the Yellow, Green, Polka dot and White jersey groups. There is no half, third or quarter to sum, and nothing to compare between two sides."
+            },
+            "GLOBAL-DQ-089": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport has no extra period. Its scope layer is a chain of course checkpoints carrying distance, altitude and jersey groups, and a road race has no overtime - a tie on the line is settled by the finish photograph, not by more racing."
+            },
+            "GLOBAL-DQ-091": {
+                "signal": "Not applicable",
+                "reason": "Structural: the scope layer exists here but holds nothing resembling a period of play. GLOBAL-DISCOVERY-009 measured scope types 101 checkpoint1 through 148 checkpoint48 on 2026-08-16, and under them event_scope_detail carries the course - distance, distance_to_go, distance_type, distance_name, altitude - together with the Yellow, Green, Polka dot and White jersey groups. There is no half, third or quarter to sum, and nothing to compare between two sides."
+            },
+            "GLOBAL-DQ-092": {
+                "signal": "Not applicable",
+                "reason": "Structural: the scope layer exists here but holds nothing resembling a period of play. GLOBAL-DISCOVERY-009 measured scope types 101 checkpoint1 through 148 checkpoint48 on 2026-08-16, and under them event_scope_detail carries the course - distance, distance_to_go, distance_type, distance_name, altitude - together with the Yellow, Green, Polka dot and White jersey groups. There is no half, third or quarter to sum, and nothing to compare between two sides."
+            },
+            "GLOBAL-DQ-093": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport runs no third-place round. Its round types are 0, the stage numbers 1 to 21 under ids 38 to 58, 89 and 173 Final, measured sport-wide by GLOBAL-DISCOVERY-018 on 2026-08-16, and a mass-start race settles all three medals in one race."
+            },
+            "GLOBAL-DQ-097": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport runs neither elimination rounds nor group stages. Its round types are 0, the stage numbers 1 to 21 under ids 38 to 58, 89 and 173 Final, measured sport-wide by GLOBAL-DISCOVERY-018 on 2026-08-16, so there is no knockout flag to contradict."
+            },
+            "GLOBAL-DQ-118": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport runs neither elimination rounds nor group stages. Its round types are 0, the stage numbers 1 to 21 under ids 38 to 58, 89 and 173 Final, measured sport-wide by GLOBAL-DISCOVERY-018 on 2026-08-16, so there is no knockout flag to contradict."
+            },
+            "GLOBAL-DQ-064": {
+                "signal": "Not applicable",
+                "reason": "Structural: statistic data type 1429 Team is declared for this statistic type and holds no value in this sport, measured by GLOBAL-DISCOVERY-031 on 2026-08-16, and the sport fields no relay whose members share one place. See _notApplicable DATA_TEAM_TYPE_ID. GLOBAL-DQ-026 reads the same field and is carried instead as Cycling-DQ-068, which drops the relay clause because the COALESCE it sits in can only ever take its second half here."
+            },
+            "GLOBAL-DQ-065": {
+                "signal": "Not applicable",
+                "reason": "Structural: statistic data type 1429 Team is declared for this statistic type and holds no value in this sport, measured by GLOBAL-DISCOVERY-031 on 2026-08-16, and the sport fields no relay whose members share one place. See _notApplicable DATA_TEAM_TYPE_ID. GLOBAL-DQ-026 reads the same field and is carried instead as Cycling-DQ-068, which drops the relay clause because the COALESCE it sits in can only ever take its second half here."
+            },
+            "GLOBAL-DQ-066": {
+                "signal": "Not applicable",
+                "reason": "Structural: statistic data type 1429 Team is declared for this statistic type and holds no value in this sport, measured by GLOBAL-DISCOVERY-031 on 2026-08-16, and the sport fields no relay whose members share one place. See _notApplicable DATA_TEAM_TYPE_ID. GLOBAL-DQ-026 reads the same field and is carried instead as Cycling-DQ-068, which drops the relay clause because the COALESCE it sits in can only ever take its second half here."
+            },
+            "GLOBAL-DQ-095": {
+                "signal": "Not applicable",
+                "reason": "Structural: statistic data type 1429 Team is declared for this statistic type and holds no value in this sport, measured by GLOBAL-DISCOVERY-031 on 2026-08-16, and the sport fields no relay whose members share one place. See _notApplicable DATA_TEAM_TYPE_ID. GLOBAL-DQ-026 reads the same field and is carried instead as Cycling-DQ-068, which drops the relay clause because the COALESCE it sits in can only ever take its second half here."
+            },
+            "GLOBAL-DQ-098": {
+                "signal": "Not applicable",
+                "reason": "Structural: statistic data type 1429 Team is declared for this statistic type and holds no value in this sport, measured by GLOBAL-DISCOVERY-031 on 2026-08-16, and the sport fields no relay whose members share one place. See _notApplicable DATA_TEAM_TYPE_ID. GLOBAL-DQ-026 reads the same field and is carried instead as Cycling-DQ-068, which drops the relay clause because the COALESCE it sits in can only ever take its second half here."
             }
         },
         "_notApplicable": {
             "DATA_TEAM_TYPE_ID": "1429 Team is declared for the statistic type and holds no value in this sport; GLOBAL-DISCOVERY-031 measured zero on 2026-08-16",
             "LINEUP_TYPE_LIST": "the sport writes no lineup at all: a road race enters each rider directly on the event, so there is no squad to name",
-            "INCIDENT_TYPE_LIST": "the sport writes no incident at all: a road race records no discrete in-race event of the kind the table holds"
-        }
+            "INCIDENT_TYPE_LIST": "the sport writes no incident at all: a road race records no discrete in-race event of the kind the table holds",
+            "RESULT_FINAL_SCORE_TYPE_ID": "the sport records no score: GLOBAL-DISCOVERY-007 measured six result types sport-wide on 2026-08-16 - 100 Rank, 101 Duration, 104 Comment, 501 Medal, 102 Points, 222 Laps behind - and none of them decides an event by points",
+            "RESULT_SCORE_TYPE_ID": "the same six result types hold no score of any kind",
+            "RESULT_MIRROR_SCORE_TYPE_ID": "the same six result types hold no score, so there is no mirrored pair of score fields either",
+            "WINNER_VALUE_LIST": "the sport writes no Winner property: GLOBAL-DISCOVERY-011 measured 16 event property names sport-wide on 2026-08-16 and none is a winner. A winner names one of two sides and this sport enters 92 to 124 riders",
+            "WINNER_HOME_VALUE_LIST": "no Winner property exists here, so no home side vocabulary does either",
+            "WINNER_AWAY_VALUE_LIST": "no Winner property exists here, so no away side vocabulary does either",
+            "SCOPE_TYPE_ID": "the scope layer is a chain of course checkpoints rather than periods of play: scope types 101 checkpoint1 to 148 checkpoint48, carrying distance, altitude, distance_type and the jersey groups. No single scope type contains a match",
+            "SCOPE_TYPE_LIST": "the same checkpoint chain: there is no period vocabulary to list",
+            "SCOPE_PERIOD_DATA_TYPE_LIST": "event_scope_detail carries the course rather than a score per period - distance, distance_to_go, distance_type, distance_name, altitude and the Yellow, Green, Polka dot and White jersey groups",
+            "SCOPE_PERIOD_SENTINEL_LIST": "no period values exist, so no sentinel vocabulary does",
+            "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "a road race has no overtime: a tie on the line is settled by the finish photograph rather than by more racing",
+            "EXTRA_PERIOD_STATUS_DESC_LIST": "no extra period exists, so no status describes one",
+            "BRONZE_ROUND_TYPE_LIST": "the sport runs no third-place round: its round types are 0, the stage numbers 1 to 21 under ids 38 to 58, 89 and 173 Final, and a mass-start race settles all three medals at once",
+            "ELIMINATION_ROUND_NAME_LIST": "the sport runs no elimination round; the same 24 round types are stage numbers and a Final",
+            "GROUP_ROUND_NAME_LIST": "the sport runs no group stage; the same 24 round types are stage numbers and a Final"
+        },
+        "RESULT_FULL_TIME_TYPE_ID": "557",
+        "TIMED_DISCIPLINE_LIST": "628",
+        "MEDAL_TEMPLATE_ID_LIST": "484, 485, 486, 9513, 9870, 9871, 10054, 11046, 11047, 11048, 11049, 11050, 11052, 11054, 11055, 11056, 11057, 11058, 11059, 11060, 11061, 11062, 11063, 11084, 11085, 11086, 11087, 11101, 11121"
     }
 }

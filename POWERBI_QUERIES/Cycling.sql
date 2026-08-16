@@ -628,3 +628,139 @@ WHERE ep.del = 'no'
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Cycling-DQ-068
+    -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID_WITH_THE_RIDER_AS_THE_MEDAL_HOLDER
+    -- What it does: Flags Comp.Rank medals that do not match the Rank places, including missing, over-awarded, or under-awarded medals, counting each rider as its own medal holder.
+    CASE
+-- What it does, stated in full: GLOBAL-DQ-026 for Cycling, with the relay clause removed. The
+-- template counts a medal over the team that holds it where the statistic assigns one and over
+-- the participant where it does not, written as COALESCE(team_value, participant), so that the
+-- four members of a winning relay read as one gold rather than four duplicates. This sport
+-- assigns no team value at all - statistic data type 1429 Team is declared for the statistic
+-- type and holds nothing here, measured by GLOBAL-DISCOVERY-031 on 2026-08-16 - and it fields
+-- no relay, so the second half of that COALESCE is the only half that can ever apply. Keeping
+-- the join would have made the template unrunnable for the want of a parameter the sport has
+-- recorded as not applicable, while dropping it changes no row the template would have
+-- returned. Every threshold, label and comparison below is the template's, unchanged.
+        -- Nothing to compare the medals with. The missing Rank is Cycling-DQ-021's finding and
+        -- is not restated here; what this row says is that the medal set was not audited.
+        WHEN x.ranked_holders = 0 THEN 'Medal_Set_Unreadable_Without_Rank'
+        WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All'
+        -- A shared place removes the place below it, so a second gold beside a silver is a
+        -- contradiction, while a second gold without one is the shape a tie actually takes.
+        WHEN x.gold_count > x.rank1_count AND x.silver_count > 0 THEN 'Duplicate_Gold_With_Silver_Present'
+        WHEN x.silver_count > x.rank2_count AND x.bronze_count > 0 THEN 'Duplicate_Silver_With_Bronze_Present'
+        WHEN x.gold_count > x.rank1_count OR x.silver_count > x.rank2_count THEN 'Duplicate_Medal_Tie_Shape'
+        WHEN x.bronze_count > x.rank3_count THEN 'Duplicate_Bronze'
+        -- The other side of a tie: the place is shared and carries a medal, but not one for
+        -- every competitor standing on it.
+        WHEN (x.rank1_count > 1 AND x.gold_count   BETWEEN 1 AND x.rank1_count - 1)
+          OR (x.rank2_count > 1 AND x.silver_count BETWEEN 1 AND x.rank2_count - 1)
+          OR (x.rank3_count > 1 AND x.bronze_count BETWEEN 1 AND x.rank3_count - 1)
+             THEN 'Medal_Missing_For_Shared_Place'
+        -- An empty place is only legitimate when a tie above it consumed it: after k
+        -- competitors starting at first, the next place is k + 1.
+        WHEN x.rank1_count = 0 THEN 'Podium_Without_First_Place'
+        WHEN (x.rank1_count = 1 AND x.rank2_count = 0)
+          OR (1 + x.rank1_count + x.rank2_count = 3 AND x.rank3_count = 0)
+             THEN 'Podium_Truncated_Below_Medal'
+        ELSE 'Missing_Specific_Medal'
+    END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    CONCAT_WS(', ',
+        IF(x.rank1_count > 0, CONCAT('1st x', x.rank1_count), NULL),
+        IF(x.rank2_count > 0, CONCAT('2nd x', x.rank2_count), NULL),
+        IF(x.rank3_count > 0, CONCAT('3rd x', x.rank3_count), NULL)
+    ) AS places_held,
+    CONCAT_WS(', ',
+        IF(x.gold_count   < x.rank1_count, CONCAT('gold ',   x.gold_count,   ' of ', x.rank1_count), NULL),
+        IF(x.silver_count < x.rank2_count, CONCAT('silver ', x.silver_count, ' of ', x.rank2_count), NULL),
+        IF(x.bronze_count < x.rank3_count, CONCAT('bronze ', x.bronze_count, ' of ', x.rank3_count), NULL)
+    ) AS missing_medals,
+    CONCAT_WS(', ',
+        IF(x.gold_count   > x.rank1_count, CONCAT('gold x',   x.gold_count,   ' for ', x.rank1_count), NULL),
+        IF(x.silver_count > x.rank2_count, CONCAT('silver x', x.silver_count, ' for ', x.rank2_count), NULL),
+        IF(x.bronze_count > x.rank3_count, CONCAT('bronze x', x.bronze_count, ' for ', x.rank3_count), NULL)
+    ) AS duplicated_medals,
+    CONCAT('gold=', x.gold_count, ' silver=', x.silver_count, ' bronze=', x.bronze_count,
+           ' first=', x.rank1_count, ' second=', x.rank2_count, ' third=', x.rank3_count) AS medal_holder_counts,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        -- A place is held by one competitor, and here that competitor is always the rider:
+        -- the sport assigns no team value and fields no relay, so there is no group of
+        -- people sharing one medal to collapse.
+        COUNT(DISTINCT CASE WHEN LOWER(TRIM(sd.value)) = 'gold' THEN sp.id END) AS gold_count,
+        COUNT(DISTINCT CASE WHEN LOWER(TRIM(sd.value)) = 'silver' THEN sp.id END) AS silver_count,
+        COUNT(DISTINCT CASE WHEN LOWER(TRIM(sd.value)) = 'bronze' THEN sp.id END) AS bronze_count,
+        COUNT(DISTINCT CASE WHEN sd.value IS NOT NULL AND TRIM(sd.value) <> ''
+             THEN sp.id END) AS total_medal_count,
+        COUNT(DISTINCT CASE WHEN rkd.value IS NOT NULL AND TRIM(rkd.value) <> ''
+             THEN sp.id END) AS ranked_holders,
+        COUNT(DISTINCT CASE WHEN TRIM(rkd.value) = '1' THEN sp.id END) AS rank1_count,
+        COUNT(DISTINCT CASE WHEN TRIM(rkd.value) = '2' THEN sp.id END) AS rank2_count,
+        COUNT(DISTINCT CASE WHEN TRIM(rkd.value) = '3' THEN sp.id END) AS rank3_count
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    LEFT JOIN statistic_data11 sd
+      ON sd.statistic_participants11FK = sp.id
+     AND sd.del = 'no'
+     AND sd.statistic_data_typeFK = 1277
+    LEFT JOIN statistic_data11 rkd
+      ON rkd.statistic_participants11FK = sp.id
+     AND rkd.del = 'no'
+     AND rkd.statistic_data_typeFK = 1270
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = 11
+      AND s.object_typeFK = 3
+      AND tt.sportFK = 30
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- Only the templates that award a medal. The five professional ones - 483 and 9764
+      -- World Tour 1, 9432 Category Pro, 9481 Category 1, 10356 World Tour 1 Grand Tour -
+      -- award none by the nature of the racing, and unnarrowed they made this statement
+      -- report 1271 rankings of 1274 for holding no medal, which is a stage race behaving
+      -- correctly. The list names every championship and Games in the sport, including the
+      -- ten that hold no medal today, because a template is medal-awarding by what it is
+      -- rather than by what it currently stores.
+      AND t.tournament_templateFK IN (484, 485, 486, 9513, 9870, 9871, 10054, 11046, 11047, 11048, 11049, 11050, 11052, 11054, 11055, 11056, 11057, 11058, 11059, 11060, 11061, 11062, 11063, 11084, 11085, 11086, 11087, 11101, 11121)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY s.id, s.name, tt.name, t.name
+) x
+WHERE x.ranked_holders = 0
+   OR x.gold_count   <> x.rank1_count
+   OR x.silver_count <> x.rank2_count
+   OR x.bronze_count <> x.rank3_count
+   OR x.rank1_count = 0
+   OR (x.rank1_count = 1 AND x.rank2_count = 0)
+   OR (1 + x.rank1_count + x.rank2_count = 3 AND x.rank3_count = 0)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 30
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK IN (484, 485, 486, 9513, 9870, 9871, 10054, 11046, 11047, 11048, 11049, 11050, 11052, 11054, 11055, 11056, 11057, 11058, 11059, 11060, 11061, 11062, 11063, 11084, 11085, 11086, 11087, 11101, 11121)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+;
