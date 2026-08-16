@@ -652,6 +652,36 @@ likely to hold a comment than an ordinary one.
 **Split stages share a round.** `Stage 3b`, `Stage 8a` and `Stage 8b` appear beside their whole
 counterparts, which is the sport running two half-stages in one day.
 
+**And the two halves of a split stage share one ranking, which is why one rank check is written
+here rather than carried.** At `Settimana Internazionale Coppi e Bartali`, `Stage 1b - A teams`
+and `Stage 1b - B teams` hold 25 teams each and between them exactly the places 1 to 50, every
+place in one half and in neither the other. Read on 2026-08-16 over all three stages:
+
+| Stage | Half | Places held |
+|---:|---|---|
+| `838664` | A | 1-9, 11, 12, 14, 15, 17-21, 25, 29, 33, 35, 37, 38, 41 |
+| `838664` | B | 10, 13, 16, 22-24, 26-28, 30-32, 34, 36, 39, 40, 42-50 |
+
+So a team placed 41st in a 25-team event is correctly placed, and the field it was placed in is
+the other 50. These six events are every event in the sport whose name ends in ` teams`.
+
+`Cycling-DQ-018` is `GLOBAL-DQ-020` with that one shape excluded and everything else carried
+unchanged, and reports **16 of 9602** against the template's 22 of 9608. The 16 are two further
+things, and the row's `ranks_held` separates them:
+
+- **Twelve are an incomplete import rather than a wrong place.** Nine are `World Championship
+  U23` road races and time trials from 2005 to 2009 holding 11 to 22 riders of a field that
+  started 150, with their true places - event `346180` stores 15 riders placed 16, 72, 107 and
+  115. A reading that they hold one nation only was tested and is wrong: they carry 8 to 14
+  nations each. Denmark appears in all nine, which points at the source rather than explaining
+  the shape. `346519 Prologue`, `346586 Gent-Wevelgem` and `495050 Stage` hold the same shape.
+- **Four are a single place outside its field.** `Eugen Wacker` 1005 in a field of 62, which
+  `Cycling-DQ-015` reports from the Comp.Rank side as well; `Klaas Sys` 101 of 100; `Jakob Piil`
+  86 of 75; `Tamiko Butler` 32 of 31.
+
+Across the whole sport 134 events of 9608 hold a place above their own field, which is 1.4 per
+cent, so the invariant holds here and the exceptions are worth reading one by one.
+
 **No event here is named after the riders in it, and that follows from the competition model
 rather than from this sport's habits.** Only a head-to-head sport writes `Team 1 - Team 2`,
 because that name is the contest between two entries; a field of 120 riders has nothing to put

@@ -275,3 +275,140 @@ WHERE st.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_name;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Cycling-DQ-018
+    -- Name - EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE_APART_FROM_THE_SPLIT_HALVES
+    -- What it does: Flags unexplained Ranks above the participant count when there is also a gap from the previous Rank, excluding the halves of a split stage that share one ranking.
+    'RANK_OUTLIER_ABOVE_FIELD_SIZE' AS check_type,
+    z.event_id,
+    z.event_name,
+    z.template_name,
+    z.participant_count,
+    z.affected_count,
+-- What it does, stated in full: GLOBAL-DQ-020 for Cycling, minus the one shape in this sport
+-- that breaks the rule by design. A split stage is run as two events over the same field and
+-- the two halves share a single ranking: `Stage 1b - A teams` and `Stage 1b - B teams` at
+-- `Settimana Internazionale Coppi e Bartali` hold 25 teams each and between them exactly the
+-- ranks 1 to 50, every rank in one half and not the other. Measured 2026-08-16 over three
+-- stages and six events, which are all the events in the sport whose name ends in ` teams`.
+-- Reported by the template, that is 6 of 22 findings, none of them a wrong rank. Everything
+-- else in GLOBAL-DQ-020 is carried unchanged, including the window that reads the next lower
+-- rank across the whole field and the Comment exclusion sitting beside the outlier filter.
+    z.ranks_held,
+    -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
+    -- group_concat_max_len without saying so, and affected_count is what the row asserts.
+    z.affected_participants,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        y.event_id,
+        y.event_name,
+        y.template_name,
+        MAX(y.participant_count) AS participant_count,
+        COUNT(*) AS affected_count,
+        GROUP_CONCAT(DISTINCT y.rank_value ORDER BY y.rank_value SEPARATOR ', ') AS ranks_held,
+        GROUP_CONCAT(DISTINCT CONCAT(y.participant_name, ' (', y.rank_value, ')')
+            ORDER BY CONCAT(y.participant_name, ' (', y.rank_value, ')') SEPARATOR ', ')
+            AS affected_participants
+    FROM (
+    SELECT
+        x.event_participants_id,
+        x.event_id,
+        x.event_name,
+        x.template_name,
+        x.participant_name,
+        x.rank_value,
+        x.participant_count,
+        x.next_lower_rank
+    FROM (
+        SELECT
+            ep.id AS event_participants_id,
+            e.id AS event_id,
+            e.name AS event_name,
+            tt.name AS template_name,
+            p.name AS participant_name,
+            CAST(r.value AS UNSIGNED) AS rank_value,
+            pc.participant_count,
+            MAX(CAST(r.value AS UNSIGNED)) OVER (
+                PARTITION BY e.id
+                ORDER BY CAST(r.value AS UNSIGNED)
+                RANGE BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+            ) AS next_lower_rank
+        FROM event_participants ep
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN (
+            SELECT ep2.eventFK AS eventFK, COUNT(*) AS participant_count
+            FROM event_participants ep2
+            JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+            JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+            JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+            JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+                 AND tt2.sportFK = 30
+            WHERE ep2.del = 'no'
+            GROUP BY ep2.eventFK
+        ) pc ON pc.eventFK = e.id
+        JOIN result r ON r.event_participantsFK = ep.id
+             AND r.result_typeFK = 100
+             AND r.del = 'no'
+             AND r.value REGEXP '^[1-9][0-9]*$'
+        WHERE ep.del = 'no'
+          AND tt.sportFK = 30
+          AND e.status_type = 'finished'
+          AND e.status_descFK = 6
+          -- The one shape in this sport that breaks the rule by design, excluded here and
+          -- nowhere else: the two halves of a split stage share one ranking.
+          AND e.name NOT LIKE '% teams'
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+    ) x
+    WHERE x.rank_value > x.participant_count
+      AND NOT EXISTS (
+          SELECT 1
+          FROM result rc
+          WHERE rc.event_participantsFK = x.event_participants_id
+            AND rc.result_typeFK = 104
+            AND rc.del = 'no'
+            AND rc.value IS NOT NULL
+            AND TRIM(rc.value) <> ''
+      )
+    ) y
+    WHERE y.next_lower_rank IS NULL
+       OR y.rank_value > y.next_lower_rank + 1
+    GROUP BY y.event_id, y.event_name, y.template_name
+) z
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id
+     AND r.result_typeFK = 100
+     AND r.del = 'no'
+     AND r.value REGEXP '^[1-9][0-9]*$'
+WHERE ep.del = 'no'
+  AND tt.sportFK = 30
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  AND e.name NOT LIKE '% teams'
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, affected_count DESC, event_id;
