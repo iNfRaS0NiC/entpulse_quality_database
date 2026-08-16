@@ -353,6 +353,15 @@ into hours, which on a Grand Tour is the back of the field.
 `Paris-Tours`. This is the largest empty population read so far and is the one that does not
 look like a notation.
 
+**77 Final events of 599 are reached by no Comp.Rank**, and `Cycling-DQ-006` carries
+`GLOBAL-DQ-040`, which labels the three things that number holds: 64
+`FINAL_EVENT_NOT_IN_ANY_COMP_RANK` where the tournament ranks but not that final, 11
+`TOURNAMENT_HAS_NO_COMP_RANK`, and 2 `COMP.RANK_EVENT_SCOPE_UNDETERMINABLE`. They sit in four
+templates - `World Championship 1` holds 52, `African Championship` 20, `Asian Championship` 4
+and the `European Youth Olympic Festival` 1. Among the eleven is the 2026 World Championship
+road race and mixed relay, which is a race still ahead of us rather than a link anybody failed
+to make, so part of this check falls on its own as the season runs.
+
 **`1277 Medal` holds one medal too many in three statistics**: `gold` on 689 values over 688
 statistics and `silver` on 689 over 687, against `bronze` on 685 over 685.
 
