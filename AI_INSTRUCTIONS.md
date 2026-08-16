@@ -486,7 +486,7 @@ POWERBI/DQ AUTHORIZATION
 DQ work starts only when the user explicitly names:
 
 - a sport;
-- a DQ category or problem area.
+- one or more DQ categories or problem areas.
 
 An ordinary request to check data is not automatically a permanent DQ check.
 
@@ -494,7 +494,8 @@ Use only confirmed structure for the sport.
 
 If evidence is insufficient, return only the necessary structural query and wait.
 
-Propose candidates only within the opened category.
+Propose candidates only within the opened categories. Several may be open at once and the
+candidates from all of them are brought back together; the approval is still per check.
 
 Assign <SportSlug>-DQ-NNN only after the user selects and approves a concrete check.
 

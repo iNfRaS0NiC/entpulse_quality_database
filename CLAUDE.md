@@ -39,6 +39,17 @@ most often needed:
 
 - Apply an approved change directly to the file, but only after the user has confirmed
   that specific change. Without confirmation, propose it — do not write.
+- **Every conclusion is the user's, not only every write.** A measurement, a shape found in
+  the data, an anomaly, a candidate check, a template classification, a decision to narrow or
+  withdraw — each is reported and decided by them. Nothing seen in the database is filed away
+  or dropped quietly: what does not become a check is still said out loud and still decided
+  by them, because the reason a candidate was abandoned is the part nobody can reconstruct
+  later. Measuring, profiling and reading rows need no permission; concluding from them does.
+- **Name a check by what it does, never by its ID alone.** Every question, option, table and
+  summary that mentions a CheckID or a GLOBAL template carries its name and one line of what
+  it asserts. The same holds for the database: an id travels with the name of the thing it
+  identifies — template, tournament, status, round type, participant — because a decision made
+  against a bare number is a decision made blind.
 - After writing, report exactly which files, CheckIDs and rules changed.
 - Load only what the current sport and query domain need. Never load every sport file or
   every SQL file; `README.md` defines the minimal context profiles.
@@ -69,7 +80,9 @@ than only in their owner:
 - **CheckIDs are permanent.** Never renumber, delete or reuse an assigned DQ CheckID. A
   deprecated check keeps its row and its ID; gaps are expected.
 - **No DQ without approval.** A DQ CheckID is assigned only after the user names a sport
-  and a category and then approves a concrete check.
+  and one or more categories and then approves a concrete check. Several categories may be
+  open at once and their candidates come back in one batch; the approval is still per check.
+  `POWERBI.md`'s authorization gate owns the rule.
 - **The 200-row gate.** A candidate returning more than 200 finding rows is run and read
   before it is numbered, and what share of those rows is the sport behaving normally is
   established first. Where that is not certain, the check is not written — ask instead. An

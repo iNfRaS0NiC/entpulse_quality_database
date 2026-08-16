@@ -31,19 +31,28 @@ returns counts or unusual values.
 DQ work starts only after the user explicitly names:
 
 1. the sport;
-2. the requested category or problem area.
+2. the requested categories or problem areas.
 
 Examples such as `MISSING_VALUES`, `NO_RELATED_RECORDS`, `DATE_RANGE_MISMATCH`,
-`WRONG_GENDER` and `WRONG_RESULTS` are category examples, not active requests. Do not propose, name, number or generate DQ checks outside the category
+`WRONG_GENDER` and `WRONG_RESULTS` are category examples, not active requests. Do not propose, name, number or generate DQ checks outside the categories
 opened by the user.
+
+**Several categories may be open at once, and the candidates from all of them are brought
+back together.** One at a time was never the rule and buys no protection: the gate is the
+check, and it does not weaken because the candidate beside it belongs to a different column.
+Working them singly costs a round trip per category and hides the overlaps — one measurement
+usually decides a missing value and a wrong one at the same time, so splitting by category
+means measuring twice and deciding the second half without the first in view. What stays one
+at a time is the decision, never the batch it arrives in: each candidate is still named,
+explained and approved separately, and an unapproved one is not written.
 
 ## Approval and identity workflow
 
-1. The user chooses the sport and DQ category.
+1. The user chooses the sport and one or more DQ categories.
 2. Use only confirmed structure for that sport.
 3. If evidence is insufficient, return only the required structural SQL and wait for
    its result.
-4. Propose candidates only inside the opened category.
+4. Propose candidates only inside the opened categories.
 5. Wait for the user to select a concrete candidate.
 6. Read `POWERBI_REGISTRY.md` and assign the next unused sport-scoped CheckID only
    after approval.

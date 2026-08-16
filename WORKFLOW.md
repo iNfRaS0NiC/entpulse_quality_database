@@ -355,11 +355,24 @@ Later updates target only the smallest relevant part of that sport file.
 Run `TOOLS/Test-Package.ps1` afterwards. It checks that the index row, the sport file and
 `params.json` agree, which is the cheapest place to catch a slug or sport-ID mismatch.
 
+**An open question is worked, not collected.** Every entry under the sport file's
+`Open questions` is taken to an answer, one at a time and each on its own, and a sport is not
+finished while one still stands. The section is a queue and never a list of things the file
+happens to be unsure about: a question nobody returns to reads a year later as a settled
+absence, and the next reader plans around a gap that was only ever unmeasured. Answering costs
+one query while the sport is still loaded and costs a re-derivation of the whole sport
+afterwards, which is why it happens now rather than at the end. Where the answer cannot be
+reached from the database, the question is closed by recording what stops it - the same act as
+answering it, and never the same as leaving it open. Ice Hockey is the confirmed case:
+seven questions raised and all seven struck through with their answers, `SPORTS/Ice-Hockey.md`
+2026-08-15.
+
 ### 4. Open DQ work
 
-Only after the sport file records a confirmed structure, and only for a category the user
-opens. `POWERBI.md` owns the DQ contract. A structural finding never becomes a DQ check
-automatically.
+Only after the sport file records a confirmed structure, and only for the categories the user
+opens - several of which may be open at once, with the candidates from all of them brought
+back together. `POWERBI.md` owns the DQ contract and its authorization gate owns that rule. A
+structural finding never becomes a DQ check automatically.
 
 For a sport whose structure matches an existing template's prerequisite, the approved check
 is a registry row with `Family` set, not a new statement. That is the whole point of the
@@ -441,6 +454,9 @@ generated block was pasted unless it is present in the latest file.
 - [ ] Detail output is capped and columns are narrow; no `SELECT *` and no unbounded `GROUP_CONCAT`.
 - [ ] QueryID or CheckID is unique for one executable statement.
 - [ ] No structural finding was converted into DQ automatically.
+- [ ] Every open question raised for the sport was worked to an answer, one at a time.
+- [ ] Nothing read from the database was concluded on without the user deciding it.
+- [ ] Every CheckID and template named to the user carried its name and what it asserts.
 - [ ] No documentation block was emitted without an explicit update command.
 - [ ] Every Markdown addition targets one unique marker immediately before it.
 - [ ] Every replacement identifies exact existing content.
