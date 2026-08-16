@@ -181,3 +181,97 @@ WHERE ts.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, stage_name;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Cycling-DQ-010
+    -- Name - COMP.RANK_NAME_FORMAT_INVALID_APART_FROM_THE_HYPHEN_CONVENTION
+    -- What it does: Flags Comp.Rank names breaking a text-hygiene rule, accepting the unspaced hyphen this sport names its courses with.
+    'Name_Format_Invalid' AS check_type,
+    MIN(x.object_name) AS statistic_name,
+    x.violation_types,
+    COUNT(DISTINCT x.object_id) AS affected_object_count,
+    MIN(x.object_id) AS sample_object_id,
+    MIN(x.template_name) AS sample_template_name,
+    MIN(x.tournament_name) AS sample_tournament_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds stage names breaking a text-hygiene rule - spacing,
+-- control or corrupted characters, capitalisation, a placeholder or a numeric-only name - one
+-- row per name, naming every rule it breaks. Every rule GLOBAL-DQ-048 carries is kept except
+-- HYPHEN_WITHOUT_SPACES.
+-- That one rule is the whole difference and is why the template is not instantiated here. A road
+-- race is named after the two places it runs between and the sport writes that join without
+-- spaces - Paris-Roubaix, Milano-Sanremo, Gent-Wevelgem, Bayern-Rundfahrt, Arnhem-Veenendaal
+-- Classic - and a Dutch or German race name hyphenates inside a single word as well, as
+-- 3-daagse van West-Vlaanderen does twice. Run on 2026-08-16 the template reported 59 names, 58
+-- of them for that rule alone and one for a trailing space, so the rule fires on the way this
+-- sport spells its calendar and hides the thirteen rules that would have found something.
+-- Ice Hockey reached the same conclusion from the opposite direction, joining two team names the
+-- same way, and Ice-Hockey-DQ-082 is the same statement over events.
+-- Not a weaker check. A rule matching almost every row in the population tests nothing.
+-- GLOBAL-DQ-050 still owns the case-inconsistency question and is decided separately: it is what
+-- reports Milano - Sanremo spelled beside Milano-Sanremo, which is a real disagreement and is
+-- not what this rule was firing on.
+FROM (
+    SELECT
+        st.id AS object_id,
+        st.name AS object_name,
+        (CONVERT(st.name USING utf8mb4) COLLATE utf8mb4_bin) AS name_bin,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        CONCAT_WS(', ',
+            IF(CHAR_LENGTH(st.name) <> CHAR_LENGTH(TRIM(st.name)), 'LEADING_OR_TRAILING_SPACE', NULL),
+            IF(st.name LIKE '%  %', 'DOUBLE_SPACE', NULL),
+            IF(st.name REGEXP '[[:cntrl:]]', 'CONTROL_CHARACTER', NULL),
+            -- Semicolon as \\x{3B}, never literal: the Pool cuts the statement at the first one.
+            IF(st.name LIKE '%&#%' OR LOWER(st.name) REGEXP '&(amp|quot|apos|lt|gt|nbsp)\\x{3B}', 'HTML_ENTITY', NULL),
+            IF(HEX(st.name) LIKE '%EFBFBD%', 'REPLACEMENT_CHARACTER', NULL),
+            IF(HEX(st.name) LIKE '%C2A0%', 'NON_BREAKING_SPACE', NULL),
+            IF(HEX(st.name) LIKE '%E2808B%', 'ZERO_WIDTH_SPACE', NULL),
+            IF(HEX(st.name) LIKE '%C383%' OR HEX(st.name) LIKE '%C382%', 'MOJIBAKE_DOUBLE_ENCODED', NULL),
+            IF(LENGTH(st.name) <> CHAR_LENGTH(st.name), 'NON_ASCII_CHARACTER', NULL),
+            IF((CONVERT(st.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z][12][0-9][0-9][0-9]|[12][0-9][0-9][0-9][A-Za-z]', 'YEAR_GLUED_TO_WORD', NULL),
+            IF((CONVERT(st.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Z][A-Z][a-z]', 'DOUBLE_CAPITAL', NULL),
+            IF((CONVERT(st.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '[A-Za-z]'
+               AND (CONVERT(st.name USING utf8mb4) COLLATE utf8mb4_bin) NOT REGEXP '[a-z]', 'ALL_UPPERCASE', NULL),
+            IF((CONVERT(st.name USING utf8mb4) COLLATE utf8mb4_bin) REGEXP '^[a-z]', 'STARTS_LOWERCASE', NULL),
+            IF(LOWER(TRIM(st.name)) IN ('test','testing','temp','tmp','xxx','asd','qwe','tbd','tba','n/a','undefined','stats','new stats'), 'PLACEHOLDER_NAME', NULL),
+            IF(TRIM(st.name) REGEXP '^[0-9]+$', 'NUMERIC_ONLY_NAME', NULL)
+        ) AS violation_types
+    FROM statistic st
+    JOIN tournament t ON t.id = st.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 30
+    WHERE st.del = 'no'
+      AND st.statistic_typeFK = 11
+      AND st.object_typeFK = 3
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND st.name IS NOT NULL
+      AND TRIM(st.name) <> ''
+      -- AND t.tournament_templateFK = <tournament_template_id>
+) x
+WHERE x.violation_types <> ''
+GROUP BY x.name_bin, x.violation_types
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT st.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic st
+JOIN tournament t ON t.id = st.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 30
+WHERE st.del = 'no'
+  AND st.statistic_typeFK = 11
+  AND st.object_typeFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND st.name IS NOT NULL
+  AND TRIM(st.name) <> ''
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, statistic_name;

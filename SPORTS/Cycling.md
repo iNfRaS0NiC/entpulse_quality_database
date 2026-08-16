@@ -422,7 +422,13 @@ thirteen and drops the one, and reports **1**: `Gran Premio Citta di Peccioli`, 
 trailing space. Ice Hockey reached the same place from the opposite direction, joining two team
 names the same way, and `Ice-Hockey-DQ-082` is the same statement over events.
 
-The rule is dropped for stage names only. `GLOBAL-DQ-050` still asks whether the same race is
+The same rule fires on the Comp.Rank names for the same reason, since a statistic is titled
+after the race it ranks: `GLOBAL-DQ-051` reported 43 names, 30 of them for the hyphen alone.
+`Cycling-DQ-010` drops that rule and reports **16, every one of them `DOUBLE_SPACE` in the same
+place** - immediately before `Male` or `Female`, as in `Amstel Gold Race␣␣Male - Competition
+Rank`. One naming template that lost a space, not sixteen separate mistakes.
+
+The rule is dropped for stage and Comp.Rank names. `GLOBAL-DQ-050` still asks whether the same race is
 spelled two ways, which is a different question and a real one here: `Milano - Sanremo` stands
 beside `Milano-Sanremo`, and `Gent - Wevelgem` beside `Gent-Wevelgem`.
 
