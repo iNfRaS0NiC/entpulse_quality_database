@@ -189,6 +189,13 @@ Two of the 23 are not riders. `1385084 Race` under `World Championship 1` double
 doubles `Peloton` - the single time in 575 events that the live-update placeholder is written
 twice, and the one row here that carries no result either way.
 
+**One rider of 19735 is entered under the wrong stage gender**, and `Cycling-DQ-051` is
+`GLOBAL-DQ-123` with `Peloton` excluded for the same reason as `Cycling-DQ-050`: the placeholder
+is stored as a male athlete and enters 54 female stages, so it contradicts a stage gender by
+construction and was one of the template's two rows. What remains is `Liontin Setiawan`
+(participant `917476`), stored female and entered in 4 male stages, first seen on event
+`2684897`.
+
 <!-- MANUAL PASTE ZONE: 30 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types
@@ -510,10 +517,39 @@ Games` 2015, 2019 and 2022, `Asian Games` 2018, `Pan American Championship` 2005
 Nothing here reads as a convention - a configured range that begins before the earliest race or
 ends after the latest is allowed by the template and is not what these rows hold.
 
-**Rank `0` exists in this layer and no check written here reports it.** It occurs in statistic
-`338703` beside the 1005, and `GLOBAL-DQ-031` does not read it because zero is below the field
-size rather than above it. Recorded so it is not lost; `GLOBAL-DQ-012` is the template that
-reads an invalid rank and it has not been decided yet.
+**Rank `0` exists in this layer**, in statistic `338703` beside the 1005. `GLOBAL-DQ-031` does
+not read it because zero is below the field size rather than above it; `Cycling-DQ-021` carries
+`GLOBAL-DQ-012`, which is the template that reads an invalid rank, and reports **4 statistics of
+1736**: `European Youth Olympic Festival Race Female` 2025 and three from the `World Tour 1`
+2012 season - `Vattenfall Cyclassics`, `Milano-Sanremo` and `E3 Harelbeke`, the last with two
+records.
+
+**Six further Comp.Rank checks were read together on 2026-08-16 and each holds a small, legible
+population.** None needed a sport variant and none is a convention of the sport:
+
+| Check | Carries | Findings | What the rows hold |
+|---|---|---:|---|
+| `Cycling-DQ-024` | `GLOBAL-DQ-024` COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_STAGE | 8 / 1795 | **seven are one annual statistic**: `African Championships WE Team Time Trial Female` in 2013, 2015, 2016, 2017, 2018, 2019 and 2021, configured one to three days off its own stages every year |
+| `Cycling-DQ-025` | `GLOBAL-DQ-028` COMP.RANK_RESULTS_TIME_DIFFERENCE_FORMAT | 1 / 957 | `African Championships Time Trial Male` 2024, rank 8 holding `4:29` with the `+` missing |
+| `Cycling-DQ-026` | `GLOBAL-DQ-044` COMP.RANK_RESULTS_GENDER_MISMATCH | 2 / 1721 | both are a male statistic holding an entirely female field - `Omloop Het Nieuwsblad Male` 2015 with 155 women and no men, and `Zueri Metzgete Male` 2008 with 47 |
+| `Cycling-DQ-027` | `GLOBAL-DQ-072` COMP.RANK_RESULTS_MEDAL_RANK_MISMATCH | 3 / 1395 | silver on rank 3 twice and gold on rank 2 once, at the `European Championship TT` 2017 and the `African Championships` 2018 and 2021 |
+| `Cycling-DQ-028` | `GLOBAL-DQ-103` COMP.RANK_PARTICIPANT_DUPLICATE | 1 / 1736 | `Pan American Championships Race Male` 2017, one rider with two rows |
+| `Cycling-DQ-029` | `GLOBAL-DQ-115` COMP.RANK_PARTICIPANT_REFERENCE_INVALID | 1 / 181997 | `Gennady Mikhaylov` is soft-deleted and still holds 2 live data rows in `Tour of Flanders` 2007 |
+
+**Statistic `338912` is now reported by four separate checks, and it is one broken link.**
+`Omloop Het Nieuwsblad Male - Competition Rank` 2015 hangs under the wrong tournament, and that
+single fault surfaces as 155 riders who never rode there (`Cycling-DQ-014`), a rank running to
+144 in a field of 28 (`Cycling-DQ-015`), and a male statistic whose whole field is female
+(`Cycling-DQ-026`). Its 2014 twin `338870` behaves the same way. Repointing each at its
+`World Tour 1` tournament clears all of it.
+
+**Five Final events omit a rider from the Comp.Rank covering them, and the sixth thing the
+template found was not a rider.** `Cycling-DQ-050` is `GLOBAL-DQ-042` with `Peloton` excluded,
+because the live-update placeholder is absent from every Comp.Rank by construction: the template
+reported 21 events of which **17 were Peloton and nothing else**, which buried the five that
+matter. What remains is entirely Olympic - `Summer Olympics` 2004 missing `Evgeny Vakker` from
+both the road race and the time trial and `Jonathan P. McCarty` from the road race, 2008 missing
+six riders from one stage and `Ralf Grabsch` from another, and 2020 missing `Yudai Arashiro`.
 
 <!-- MANUAL PASTE ZONE: 30 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -719,6 +755,55 @@ three sports that do instantiate that template - Curling, Ice Hockey and Soccer 
 tournaments - `Race` 385, `Time Trial` 199, `Stage` 8. The championships settle on `Final`
 while the stage races number their rounds, and rounds `15` to `21` exist in a single template,
 `10356 World Tour 1 Grand Tour`.
+
+**Four hierarchy checks were read together on 2026-08-16**, each with a population small enough
+to read on the row:
+
+| Check | Carries | Findings | What the rows hold |
+|---|---|---:|---|
+| `Cycling-DQ-020` | `GLOBAL-DQ-001` TEMPLATE_NO_TOURNAMENTS_OR_STAGES | 8 / 44 | the nine templates already recorded under Identity: five hold tournaments and no stages - `10350` and `10352 World Championship RR`, `10351` and `10353 World Championship TT`, `10680 Summer Paralympics` - and `11051 Asian Championship` and `11053 Asian Games` hold nothing at all |
+| `Cycling-DQ-022` | `GLOBAL-DQ-014` TEMPLATE_STAGE_GENDER_MISMATCH | 1 / 3518 | stage `903102 Zueri Metzgete` is female under a male template, and the same race carries a male Comp.Rank holding 47 women under `Cycling-DQ-026` |
+| `Cycling-DQ-023` | `GLOBAL-DQ-017` EVENT_RESULTS_MISSING_FOR_FINISHED | 1 / 9610 | `Criterium International` 2014 `Stage 2`, the same event `Cycling-DQ-002` names as its one real defect - finished, nobody entered, so no result either |
+| `Cycling-DQ-030` | `GLOBAL-DQ-080` TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES | 4 / 412 | see below - all four are correct today |
+
+**`Cycling-DQ-030` is `Monitor` because every row it holds today is right, and the invariant is
+still worth keeping.** Two findings are the professional season container: `Category Pro` names
+a tournament for the year it ends in and opens it on **20 October of the year before**, seen on
+tournament `8452` named `2013` with stages from 2012, on `8461` named `2014` with stages from
+2013, and a third time in the first-event dates of the `Tour of California` and
+`Omloop Het Nieuwsblad` statistics. The other two are `Summer Olympics 2020`, whose stages fall
+in 2021 because Tokyo was postponed - the name is the right name for those Games. A year
+genuinely mistyped would arrive here too, which is what the check is kept for.
+
+**Nineteen further templates were run on 2026-08-16 and returned nothing**, each over a real
+population rather than an empty one, and each is instantiated on that basis - a check that
+guards an invariant is not disposable for holding no findings on the day it was written:
+
+| Check | Carries | Eligible |
+|---|---|---:|
+| `Cycling-DQ-031` | `GLOBAL-DQ-018` EVENT_RESULTS_MEDAL_INVALID_VALUE | 1777 |
+| `Cycling-DQ-032` | `GLOBAL-DQ-027` COMP.RANK_RESULTS_MEDAL_INVALID_VALUE | 1395 |
+| `Cycling-DQ-033` | `GLOBAL-DQ-029` COMP.RANK_RESULTS_DEPRECATED_DURATION_USED | 1795 |
+| `Cycling-DQ-034` | `GLOBAL-DQ-043` EVENT_PARTICIPANTS_GENDER_MISMATCH | 1270417 |
+| `Cycling-DQ-035` | `GLOBAL-DQ-053` EVENT_RESULTS_MEDAL_RANK_MISMATCH | 1777 |
+| `Cycling-DQ-036` | `GLOBAL-DQ-059` EVENT_RESULTS_DUPLICATE_ROWS | 9611 |
+| `Cycling-DQ-037` | `GLOBAL-DQ-060` COMP.RANK_RESULTS_DUPLICATE_ROWS | 1736 |
+| `Cycling-DQ-038` | `GLOBAL-DQ-075` EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET | 10527 |
+| `Cycling-DQ-039` | `GLOBAL-DQ-078` TOURNAMENT_NAME_FORMAT_INVALID | 93 |
+| `Cycling-DQ-040` | `GLOBAL-DQ-079` TEMPLATE_NAME_FORMAT_INVALID | 22 |
+| `Cycling-DQ-041` | `GLOBAL-DQ-082` TOURNAMENT_STAGE_EVENT_DISCIPLINE_INCONSISTENT | 3502 |
+| `Cycling-DQ-042` | `GLOBAL-DQ-099` COMP.RANK_VALUE_BELONGS_TO_ANOTHER_FIELD | 334779 |
+| `Cycling-DQ-043` | `GLOBAL-DQ-100` COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT | 1791 |
+| `Cycling-DQ-044` | `GLOBAL-DQ-101` COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT | 522 |
+| `Cycling-DQ-045` | `GLOBAL-DQ-105` COMP.RANK_SETTINGS_SCALAR_DUPLICATE_ROWS | 1795 |
+| `Cycling-DQ-046` | `GLOBAL-DQ-106` COMP.RANK_UNEXPECTED_OWNER_TYPE | 1795 |
+| `Cycling-DQ-047` | `GLOBAL-DQ-109` EVENT_SETTINGS_DISCIPLINE_STORAGE_MISMATCH | 64 |
+| `Cycling-DQ-048` | `GLOBAL-DQ-110` COMP.RANK_DISCIPLINE_CONTRADICTS_LINKED_EVENT | 522 |
+| `Cycling-DQ-049` | `GLOBAL-DQ-113` COMP.RANK_PARTICIPANT_TYPE_MIXED | 1736 |
+
+**Not one of the nineteen has an eligible count of zero**, which was checked rather than assumed:
+the smallest is 22 templates and the largest 1.27 million participations, so none of them is a
+scope pointing at nothing and none is a sentinel over an empty population.
 
 <!-- MANUAL PASTE ZONE: 30 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 

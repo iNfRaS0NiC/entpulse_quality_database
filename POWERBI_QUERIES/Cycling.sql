@@ -412,3 +412,219 @@ WHERE ep.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, affected_count DESC, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Cycling-DQ-050
+    -- Name - EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK_APART_FROM_THE_LIVE_UPDATE_PLACEHOLDER
+    -- What it does: Flags Final events where Comp.Rank is missing a competitor who took part, ignoring the Peloton placeholder that is never ranked.
+    'FINAL_PARTICIPANT_NOT_IN_COMP.RANK' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.template_name,
+    x.tournament_name,
+    x.field_size,
+    x.missing_count,
+-- What it does, stated in full: GLOBAL-DQ-042 for Cycling, minus the one entry in this sport
+-- that is not a competitor. Peloton, participant 205191, is the live-update mechanism: the
+-- feed enters the bunch as one row while a race is running, and it carries no rank and no
+-- duration on any of its 576 entries across 575 events. It is therefore absent from every
+-- Comp.Rank by design. Measured 2026-08-16, the template reported 21 events of which 17 were
+-- Peloton and nothing else, which buried the five events that are missing an actual rider.
+-- The exclusion is applied to both branches so the two read one population.
+    -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
+    -- group_concat_max_len without saying so, and missing_count is what the row asserts.
+    x.missing_participants,
+    NULL AS eligible_count
+FROM (
+    SELECT
+        y.event_id,
+        y.event_name,
+        y.template_name,
+        y.tournament_name,
+        COUNT(*) AS field_size,
+        SUM(y.is_missing) AS missing_count,
+        GROUP_CONCAT(CASE WHEN y.is_missing = 1 THEN y.participant_name END
+                     ORDER BY y.participant_name SEPARATOR ', ') AS missing_participants
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            p.name AS participant_name,
+            CASE WHEN MAX(CASE WHEN sp.id IS NOT NULL THEN 1 ELSE 0 END) = 0
+                 THEN 1 ELSE 0 END AS is_missing
+        FROM event e
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN (
+            SELECT DISTINCT
+                ex.id AS event_id,
+                sx.id AS statistic_id
+            FROM statistic_config scx
+            JOIN statistic sx ON sx.id = scx.statisticFK
+                 AND sx.del = 'no'
+                 AND sx.statistic_typeFK = 11
+                 AND sx.object_typeFK = 3
+            JOIN tournament tx ON tx.id = sx.objectFK AND tx.del = 'no'
+            JOIN tournament_template ttx ON ttx.id = tx.tournament_templateFK AND ttx.del = 'no'
+                 AND ttx.sportFK = 30
+            JOIN tournament_stage tsx ON tsx.tournamentFK = tx.id AND tsx.del = 'no'
+            JOIN event ex ON ex.tournament_stageFK = tsx.id AND ex.del = 'no'
+                 AND FIND_IN_SET(ex.id, scx.value) > 0
+            WHERE scx.statistic_data_typeFK = 1471
+              AND scx.del = 'no'
+              -- AND tx.tournament_templateFK = <tournament_template_id>
+              AND EXISTS (
+                  SELECT 1
+                  FROM statistic_participants11 spx
+                  WHERE spx.statisticFK = sx.id AND spx.del = 'no'
+              )
+        ) m ON m.event_id = e.id
+        LEFT JOIN statistic_participants11 sp ON sp.statisticFK = m.statistic_id
+             AND sp.participantFK = ep.participantFK
+             AND sp.del = 'no'
+        WHERE e.del = 'no'
+          AND tt.sportFK = 30
+          AND e.round_typeFK IN (173)
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          -- The live-update placeholder, which is never ranked and is not a competitor.
+          AND ep.participantFK <> 205191
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.id BETWEEN <from_event_id> AND <to_event_id>
+        GROUP BY e.id, e.name, tt.name, t.name, ep.id, p.name
+    ) y
+    GROUP BY y.event_id, y.event_name, y.template_name, y.tournament_name
+) x
+WHERE x.missing_count > 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 30
+  AND e.round_typeFK IN (173)
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND ep.participantFK <> 205191
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.id BETWEEN <from_event_id> AND <to_event_id>
+  AND e.id IN (
+      SELECT ex.id
+      FROM statistic_config scx
+      JOIN statistic sx ON sx.id = scx.statisticFK
+           AND sx.del = 'no'
+           AND sx.statistic_typeFK = 11
+           AND sx.object_typeFK = 3
+      JOIN tournament tx ON tx.id = sx.objectFK AND tx.del = 'no'
+      JOIN tournament_template ttx ON ttx.id = tx.tournament_templateFK AND ttx.del = 'no'
+           AND ttx.sportFK = 30
+      JOIN tournament_stage tsx ON tsx.tournamentFK = tx.id AND tsx.del = 'no'
+      JOIN event ex ON ex.tournament_stageFK = tsx.id AND ex.del = 'no'
+           AND FIND_IN_SET(ex.id, scx.value) > 0
+      WHERE scx.statistic_data_typeFK = 1471
+        AND scx.del = 'no'
+        -- AND tx.tournament_templateFK = <tournament_template_id>
+        AND EXISTS (
+            SELECT 1
+            FROM statistic_participants11 spx
+            WHERE spx.statisticFK = sx.id AND spx.del = 'no'
+        )
+  )
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Cycling-DQ-051
+    -- Name - PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED_APART_FROM_THE_LIVE_UPDATE_PLACEHOLDER
+    -- What it does: Flags participants whose stored gender conflicts with the gender of a stage they entered, ignoring the Peloton placeholder that enters stages of both genders.
+    CASE
+        WHEN x.participant_type = 'athlete' THEN 'ATHLETE_GENDER_NOT_STAGE_GENDER'
+        ELSE 'TEAM_GENDER_NOT_STAGE_GENDER'
+    END AS check_type,
+    x.participant_id,
+    x.participant_name,
+    x.participant_type,
+    x.participant_gender,
+    x.stage_genders,
+    x.entry_count,
+    x.example_event_id,
+    NULL AS eligible_count
+-- What it does, stated in full: GLOBAL-DQ-123 for Cycling, minus the one entry in this sport
+-- that is not a person. Peloton, participant 205191, is the live-update mechanism: the feed
+-- enters the bunch as one row while a race is running. It is stored as a male athlete and is
+-- entered in 54 female stages, so it contradicts a stage gender by construction rather than by
+-- mistake. Measured 2026-08-16, the template reported 2 rows and that was one of them. The
+-- exclusion is applied to both branches so the two read one population.
+FROM (
+    SELECT
+        p.id AS participant_id,
+        p.name AS participant_name,
+        p.type AS participant_type,
+        LOWER(TRIM(p.gender)) AS participant_gender,
+        GROUP_CONCAT(DISTINCT LOWER(TRIM(ts.gender))
+                     ORDER BY LOWER(TRIM(ts.gender)) SEPARATOR ', ') AS stage_genders,
+        COUNT(DISTINCT ep.id) AS entry_count,
+        MIN(e.id) AS example_event_id
+    FROM event_participants ep
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = 30
+      AND p.type IN ('athlete', 'team')
+      AND ts.gender IS NOT NULL
+      AND TRIM(ts.gender) <> ''
+      AND LOWER(TRIM(ts.gender)) <> 'undefined'
+      AND p.gender IS NOT NULL
+      AND TRIM(p.gender) <> ''
+      AND LOWER(TRIM(p.gender)) <> LOWER(TRIM(ts.gender))
+      AND (p.type <> 'athlete' OR LOWER(TRIM(ts.gender)) <> 'mixed')
+      -- The live-update placeholder, which is not a person and enters both genders.
+      AND p.id <> 205191
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY p.id, p.name, p.type, LOWER(TRIM(p.gender))
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT p.id) AS eligible_count
+FROM event_participants ep
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = 30
+  AND p.type IN ('athlete', 'team')
+  AND ts.gender IS NOT NULL
+  AND TRIM(ts.gender) <> ''
+  AND LOWER(TRIM(ts.gender)) <> 'undefined'
+  AND p.gender IS NOT NULL
+  AND TRIM(p.gender) <> ''
+  AND p.id <> 205191
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+;
