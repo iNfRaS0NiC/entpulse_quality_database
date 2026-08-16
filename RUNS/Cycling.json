@@ -1015,6 +1015,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-16T12:42:49Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-009",
+                                        "runKey":  "Cycling-DQ-009",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_FORMAT_INVALID_APART_FROM_THE_HYPHEN_CONVENTION",
+                                        "category":  "MALFORMED_NAME",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  3528,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs"

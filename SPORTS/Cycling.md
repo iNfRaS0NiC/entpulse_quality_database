@@ -412,6 +412,20 @@ list entered before the race fell - and no check reports them.
   `DATABASE.md` `DB-SEM-012` records that one round name exists under two ids; this is that
   case, with one event on the wrong side of it.
 
+**The unspaced hyphen is how this sport spells its calendar, and one text-hygiene rule fires on
+it.** A road race is named after the two places it runs between - `Paris-Roubaix`,
+`Milano-Sanremo`, `Gent-Wevelgem` - and Dutch and German race names hyphenate inside a word as
+well, as `3-daagse van West-Vlaanderen` does twice. Run on 2026-08-16, `GLOBAL-DQ-048` reported
+59 stage names of which **58 broke `HYPHEN_WITHOUT_SPACES` and nothing else**, so the rule was
+matching the convention and hiding the thirteen rules beside it. `Cycling-DQ-009` keeps those
+thirteen and drops the one, and reports **1**: `Gran Premio Citta di Peccioli`, carrying a
+trailing space. Ice Hockey reached the same place from the opposite direction, joining two team
+names the same way, and `Ice-Hockey-DQ-082` is the same statement over events.
+
+The rule is dropped for stage names only. `GLOBAL-DQ-050` still asks whether the same race is
+spelled two ways, which is a different question and a real one here: `Milano - Sanremo` stands
+beside `Milano-Sanremo`, and `Gent - Wevelgem` beside `Gent-Wevelgem`.
+
 **Name patterns.** The whole tail was read in one statement on 2026-08-16 rather than by
 pursuing it value by value, because in road cycling every race carries its own name and the
 tail is a list of races rather than a list of forms. `tournament_stage` holds 541 patterns over
