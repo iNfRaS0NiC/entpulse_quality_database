@@ -442,9 +442,27 @@ character each, and the separate `REPLACEMENT_CHARACTER` and `MOJIBAKE_DOUBLE_EN
 not fire on them. **The one real finding is `HTML_ENTITY`**: `Trofeo Port d&#39;Andratx - Port
 d&#39;Pollenca`, where the apostrophe was left as its HTML code.
 
-The rule is dropped for stage and Comp.Rank names. `GLOBAL-DQ-050` still asks whether the same race is
-spelled two ways, which is a different question and a real one here: `Milano - Sanremo` stands
-beside `Milano-Sanremo`, and `Gent - Wevelgem` beside `Gent-Wevelgem`.
+The rule is dropped for stage and Comp.Rank names. `GLOBAL-DQ-050` still asks whether the same
+race is spelled two ways, which is a different question and a real one here - `Cycling-DQ-012`
+carries it and reports **9 races each spelled two ways**:
+
+| Minority spelling | Times | Dominant spelling | Times |
+|---|---:|---|---:|
+| `Milano - Sanremo` | 1 | `Milano-Sanremo` | 25 |
+| `Paris - Roubaix Femmes` | 1 | `Paris-Roubaix Femmes` | 6 |
+| `Southeast Asian Games` | 2 | `South East Asian Games` | 10 |
+| `Gent-Wevelgem` | 4 | `Gent - Wevelgem` | 19 |
+| `La Polynormande` | 4 | `La Poly Normande` | 8 |
+| `Gent-Wevelgem WE` | 5 | `Gent - Wevelgem WE` | 8 |
+| `Paris-Roubaix` | 7 | `Paris - Roubaix` | 19 |
+| `Paris-Nice` | 8 | `Paris - Nice` | 15 |
+| `Liege-Bastogne-Liege` | 9 | `Liege - Bastogne - Liege` | 17 |
+
+**The sport has no single house style, and that is what makes this check worth keeping.**
+`Milano-Sanremo` dominates unspaced while `Paris - Roubaix` and `Gent - Wevelgem` dominate
+spaced, so the unspaced hyphen is a convention the sport follows without agreeing on. Dropping
+`HYPHEN_WITHOUT_SPACES` from the two format checks above accepts both spellings; this check is
+what still reports that one race carries both.
 
 **Name patterns.** The whole tail was read in one statement on 2026-08-16 rather than by
 pursuing it value by value, because in road cycling every race carries its own name and the
