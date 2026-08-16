@@ -137,6 +137,13 @@ it names is out of scope.
 than people. The measurement is recorded in `GLOBAL_QUERIES/PARTICIPANTS.sql` beside the
 statement it affects.
 
+**64 events of 9611 carry an entry row pointing at nobody.** `Cycling-DQ-007` carries
+`GLOBAL-DQ-104` and every one of the 64 comes back under the single label
+`EVENT_PARTICIPANT_REFERENCE_MISSING` with `offending_types` reading `none`, so this is a broken
+reference rather than a participant type the sport does not use. One to five such rows per
+event, across the stage races - `Tour de Suisse`, `Tour de Pologne`, `Paris - Nice`,
+`Tour de Romandie` - and `Milano-Sanremo`, which holds five.
+
 **2791 registered athletes and teams are reached by no event and no Comp.Rank of this sport,
 and that number holds two different findings.** Measured 2026-08-16: **2457 are entered nowhere
 in the database at all** - 2175 athletes, 2016 of them carrying a date of birth, and 282 teams -

@@ -971,6 +971,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-16T12:31:44Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-007",
+                                        "runKey":  "Cycling-DQ-007",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_REFERENCE_OR_TYPE_INVALID",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  65,
+                                        "findings":  64,
+                                        "eligible":  9612,
+                                        "seconds":  6.1,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs"
