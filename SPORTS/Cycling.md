@@ -339,6 +339,25 @@ Under them `event_scope_detail` carries the course rather than a score:
 **A scope type `0` exists whose name is empty**, on 95 events, and it carries `distance` and
 `distance_type` with the sample values `Finish` and `mountain1`. It is not read further.
 
+**The chain is far longer than the first reading of it, which said checkpoint1 to at least
+checkpoint48.** Measured directly over `event_scope` on 2026-08-16, the sport writes **193 scope
+types**: `101 checkpoint1` to `200 checkpoint100`, then `205 checkpoint101` to
+`296 checkpoint192`, with the ids `201` to `204` unused, plus the unnamed `0`. Reach falls the
+whole way down - `checkpoint1` on 1095 events, `checkpoint48` on 385, `checkpoint100` on 18,
+`checkpoint192` on 1 - because a longer race carries more points. `SCOPE_TYPE_LIST` names the
+192 checkpoints and leaves `0` out, since it names nothing.
+
+The same measurement puts scope type `0` on **1 event** rather than the 95 recorded above. The
+two counts come from different statements and are not reconciled; the figure that the parameter
+rests on is the type list, which both agree about.
+
+**`Cycling-DQ-091` carries `GLOBAL-DQ-102`** and asserts that a scope result points at a
+participant of its own event. It reports **0 of 1067**, so the checkpoint layer is
+referentially sound. **`GLOBAL-DQ-107` is `Not applicable`**, and for a narrower reason than the
+period checks beside it: it asserts that a finished event carries a scope *container*, one row
+standing for the whole race, and no such type exists here. A checkpoint is a point along the
+course, not a wrapper around it.
+
 <!-- MANUAL PASTE ZONE: 30 SCOPES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Properties
@@ -998,6 +1017,49 @@ of a tour awards nothing; `NUMERIC_RESULT_TYPE_LIST` is `100 Rank`, `102 Points`
 `222 Laps behind`, with `101 Duration` deliberately outside because it is a time and reading it
 as a number would report the whole sport; and `RESULT_TIE_VALUE_TYPE_LIST` is `101 Duration`,
 because two riders share a place when they record the same time.
+
+**The city is never written, on either layer, and two checks say so at 100 per cent.**
+`Cycling-DQ-083` carries `GLOBAL-DQ-034` and reports **3528 stages of 3528**; `Cycling-DQ-084`
+carries `GLOBAL-DQ-035` and reports **1795 statistics of 1795**. Every row on both is
+`city` and nothing else. The column exists and the sport does not use it: **the geography of a
+road race lives in the `StartName` and `EndName` event properties**, on 8997 events each, and a
+race running between two towns has no one city to name. Both are `Monitor` for that reason, and
+both are kept because the other fields they assert - the name, the country, the Gender setting
+and the host-country rule - are audited and clean today. `missing_fields` is what to read first
+at every run: a row naming anything beyond `city` is a new finding.
+
+**23930 participations of 1270517 hold no usable place**, and `Cycling-DQ-085` carries
+`GLOBAL-DQ-036` whole. It was read before being numbered, being far over the 200-row gate, and
+it is one thing plus two:
+
+| Shape | Rows |
+|---|---:|
+| `NO_RESULT_OF_ANY_TYPE` | 23928 |
+| `RANK_OVER_MAX` | 1 - `Eugen Wacker` at 1005, the same row `Cycling-DQ-015` and `Cycling-DQ-018` report |
+| `RANK_AND_COMMENT_MISSING_OTHER_RESULT_PRESENT` | 1 |
+
+The 23928 are riders entered on an event with no rank, no time and no comment - nothing at all.
+They are **concentrated rather than scattered: 1359 events of 9613**, about 18 riders each on
+average, and the worst hold **437 apiece**, which is a whole start list entered and never
+resolved. That is 1.9 per cent of the sport's participations.
+
+**Nine further templates were carried on the last parameter decisions.** Six return nothing over
+real populations - `Cycling-DQ-086` (`GLOBAL-DQ-047`, 168 not-started events), `-089`
+(`GLOBAL-DQ-062`, 10578), `-091` (`GLOBAL-DQ-102`, 1067), `-092` (`GLOBAL-DQ-120`, 9600), `-093`
+(`GLOBAL-DQ-121`, 1730) and `-094` (`GLOBAL-DQ-124`, 9613). Two hold findings:
+
+- **`Cycling-DQ-088`** carries `GLOBAL-DQ-061` and reports **1 of 9781**: `Classic Grand Besancon
+  Doubs`, due 16 April 2021, still standing `Postponed` **1948 days later**.
+- **`Cycling-DQ-090`** carries `GLOBAL-DQ-081` and reports **14 templates of 29** whose editions
+  skip years. All are annual championships: `Asian Championship` jumps 2004 to 2011 and 2019 to
+  2022, `Oceania Championship` 2005 to 2009 and again 2009 to 2011, `African Championship` 2013
+  to 2015 and 2019 to 2021. `SERIES_SKIP_YEARS` is deliberately `0` here - unlike the rest of
+  the package, which skips 2020 - because cycling raced through 2020 and the Tour de France was
+  held, so a hole that year is a hole worth reporting.
+
+**`Cycling-DQ-087`** carries `GLOBAL-DQ-056` and audits nothing today, `eligible_count` 0. It is
+the second sentinel beside `Cycling-DQ-071`, for the same reason: it adds the leader's full time
+to a rider's gap, and there are no full times to add.
 
 **`GLOBAL-DQ-111` is `Not checked` for this sport, and that is a cost problem rather than a
 structural one.** It compares one finisher's effective time with another's and timed out at 504

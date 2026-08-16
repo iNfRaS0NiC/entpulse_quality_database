@@ -1189,7 +1189,20 @@
             "MEDAL_ROUND_TYPE_LIST": "173 Final, the only round in the sport that awards a medal. The other 23 round types are the stage numbers 1 to 21 under ids 38 to 58, the unnamed 0 and the duplicate 89, and a stage of a tour awards nothing. 592 events carry a 501 Medal result and 599 carry round type 173",
             "NUMERIC_RESULT_TYPE_LIST": "100 Rank, 102 Points and 222 Laps behind, the three result types whose value is a plain number. 101 Duration is deliberately outside: it is a time, written as +#:# or #:#:#, and reading it as a number would report the whole sport. 104 Comment is a vocabulary and 501 Medal is a colour",
             "RESULT_TIE_VALUE_TYPE_LIST": "101 Duration, the value that decides a shared place here. Two riders hold the same place when they record the same time, which on a road stage is the whole bunch finishing together; the time is what a tie has to agree on",
-            "NUMERIC_DATA_TYPE_LIST": "1270 Rank, the only Comp.Rank data type whose value is a plain number. 1426 Time and 1427 Time Difference are times, 1273 Comment is a vocabulary and 1277 Medal is a colour"
+            "NUMERIC_DATA_TYPE_LIST": "1270 Rank, the only Comp.Rank data type whose value is a plain number. 1426 Time and 1427 Time Difference are times, 1273 Comment is a vocabulary and 1277 Medal is a colour",
+            "PLACEHOLDER_COUNTRY_LIST": "International, Unknown and Undefined, the package's usual three. Only International occurs here, on 438 stages, and GLOBAL-DQ-034 excludes it from the test on the stage's own country while still testing it on the host country. The other two name values that never match, which is harmless and keeps the list comparable",
+            "RANK_MAX_PLAUSIBLE": "250. The largest field the sport enters is 208 riders, at the 2023 World Championship road race, and the highest place any check has read as legitimate is 196; 250 leaves room above both without accepting the 1005 that GLOBAL-DQ-031 already reports",
+            "NOT_STARTED_DESC_LIST": "1 Not started and 5 Postponed, the two statuses under which the racing is still to come. The sport uses five detailed statuses in all, measured 2026-08-16: Finished 9613 events, Cancelled 796, Not started 167, Postponed 1 and Abandoned 1. Abandoned is deliberately outside the list because the race did start, which is exactly the case the template warns against. Cancelled is outside for a different reason: it will never run at all, so a result stored under it is a separate question from one stored before the start",
+            "STALE_NOT_STARTED_DAYS": "2, the package-wide value, unchanged. It measures how long a status went unmaintained after the event's own date, which is a property of the feed rather than of the sport",
+            "DUPLICATE_KEY_INCLUDES_EVENT_NAME": "1. The sport does not name an event after its competitors - GLOBAL-DQ-096 is Not applicable here for exactly that reason - so the name is an independent fact about the event and belongs in the key. Stage 1b - A teams and Stage 1b - B teams run in the same slot and are told apart by it",
+            "DUPLICATE_KEY_USES_CALENDAR_DAY": "1. A race passes a given point once a day; the sport runs no heats. The one shape that puts two events in a day is the split stage, and those carry different names, which the key already includes",
+            "SERIES_MIN_YEARS": "3, the package-wide value",
+            "SERIES_SKIP_YEARS": "0, nothing skipped, and that is a decision rather than an omission. The other sports in the package skip 2020 for the pandemic; cycling raced that year - the Tour de France was held - so a template with a hole in 2020 has a hole worth reporting. The one-day races the pandemic did cancel are true breaks in the world and will arrive here as findings, which is what the template says they are",
+            "FULL_TIME_TOLERANCE_SECONDS": "1 second. Durations here are written to the second on a road stage and to the hundredth on a time trial, and a second is the coarser of the two. The value is inert today because the sport stores no full time at all; it is recorded so the arithmetic check is ready when GLOBAL-DQ-045 stops reporting",
+            "INTEGER_RESULT_TYPE_LIST": "100 Rank, 102 Points and 222 Laps behind, the three that count in whole units by definition. Stated from what the fields mean rather than read off the data: none of the three holds a fraction today, and that is not what makes them integral",
+            "PRECISION_RESULT_TYPE_LIST": "101 Duration, the only result field in the sport that carries a decimal at all: 1275 of its 1140293 values do, written like +0:00.27. Rank, Points and Laps behind hold none. Duration must stay out of NUMERIC_RESULT_TYPE_LIST for the reason the template gives - clock notation would read as non-numeric - and it belongs here for the same reason it is excluded there",
+            "PRECISION_DATA_TYPE_LIST": "1426 Time and 1427 Time Difference, the two Comp.Rank fields that carry a written time and therefore a scale",
+            "SCOPE_TYPE_LIST": "the 192 checkpoint scope types, ids 101 to 200 and 205 to 296, named checkpoint1 to checkpoint192. The chain is far longer than first recorded: measured 2026-08-16 over event_scope, the sport writes 193 scope types, and the unnamed type 0 is left out of the list because it names nothing. Reach falls along the chain - checkpoint1 on 1095 events, checkpoint48 on 385, checkpoint100 on 18, checkpoint192 on 1 - because a longer race carries more points"
         },
         "_checkSignal": {
             "GLOBAL-DQ-033": {
@@ -1343,6 +1356,22 @@
             "GLOBAL-DQ-098": {
                 "signal": "Not applicable",
                 "reason": "Structural: statistic data type 1429 Team is declared for this statistic type and holds no value in this sport, measured by GLOBAL-DISCOVERY-031 on 2026-08-16, and the sport fields no relay whose members share one place. See _notApplicable DATA_TEAM_TYPE_ID. GLOBAL-DQ-026 reads the same field and is carried instead as Cycling-DQ-068, which drops the relay clause because the COALESCE it sits in can only ever take its second half here."
+            },
+            "GLOBAL-DQ-107": {
+                "signal": "Not applicable",
+                "reason": "Structural, and the reason is narrower than the one recorded for the period checks. The template asserts that a finished event carries a scope container - one scope row standing for the whole event, under which the period-by-period breakdown hangs. This sport has no such type. Its 193 scope types are checkpoint1 to checkpoint192 plus an unnamed 0, measured 2026-08-16, and a checkpoint is a point along the course rather than a wrapper around the race. GLOBAL-DQ-102 does apply and is carried, because it asserts referential integrity over whatever scope rows exist rather than the presence of a container."
+            },
+            "GLOBAL-DQ-034": {
+                "signal": "Monitor",
+                "reason": "Real, and it will not reach zero, because one of the four fields it asserts is never written in this sport. Measured 2026-08-16 it reports 3528 stages of 3528, every single row under Missing_Stage_Field for city and nothing else. The column exists and the sport simply does not use it: the geography of a road race lives in the StartName and EndName event properties instead, on 8997 events each, and a race that runs between two towns has no one city to name. The other three fields - the name, the country and the host-country rule - are audited and are clean today, which is what the check is worth keeping for. Read missing_fields first at every run: a row naming anything other than city alone is a new finding."
+            },
+            "GLOBAL-DQ-035": {
+                "signal": "Monitor",
+                "reason": "The Comp.Rank half of GLOBAL-DQ-034 and the same shape. Measured 2026-08-16 it reports 1795 statistics of 1795, every one for city alone. The name, the Gender setting and the country are audited and clean. Read missing_fields first: anything beyond city is new."
+            },
+            "GLOBAL-DQ-056": {
+                "signal": "Monitor",
+                "reason": "A sentinel, exactly as GLOBAL-DQ-054 is. It checks that a rider's full time equals the leader's full time plus their own gap, and the sport stores no full time at all, so there is nothing to add up: eligible_count is 0 on a correct scope rather than a misdirected one. Not a structural absence - Cycling is timed and result type 557 exists globally - so the population is empty today and will not be once the gap GLOBAL-DQ-045 reports is closed. FULL_TIME_TOLERANCE_SECONDS is recorded as 1 for the same day."
             }
         },
         "_notApplicable": {
@@ -1355,8 +1384,7 @@
             "WINNER_VALUE_LIST": "the sport writes no Winner property: GLOBAL-DISCOVERY-011 measured 16 event property names sport-wide on 2026-08-16 and none is a winner. A winner names one of two sides and this sport enters 92 to 124 riders",
             "WINNER_HOME_VALUE_LIST": "no Winner property exists here, so no home side vocabulary does either",
             "WINNER_AWAY_VALUE_LIST": "no Winner property exists here, so no away side vocabulary does either",
-            "SCOPE_TYPE_ID": "the scope layer is a chain of course checkpoints rather than periods of play: scope types 101 checkpoint1 to 148 checkpoint48, carrying distance, altitude, distance_type and the jersey groups. No single scope type contains a match",
-            "SCOPE_TYPE_LIST": "the same checkpoint chain: there is no period vocabulary to list",
+            "SCOPE_TYPE_ID": "no scope type stands for the whole event. The 193 types are checkpoint1 to checkpoint192 plus an unnamed 0, and a checkpoint is a point along the course rather than a container for the race. SCOPE_TYPE_LIST is declared and names the 192 checkpoints, because GLOBAL-DQ-102 reads them as a set",
             "SCOPE_PERIOD_DATA_TYPE_LIST": "event_scope_detail carries the course rather than a score per period - distance, distance_to_go, distance_type, distance_name, altitude and the Yellow, Green, Polka dot and White jersey groups",
             "SCOPE_PERIOD_SENTINEL_LIST": "no period values exist, so no sentinel vocabulary does",
             "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "a road race has no overtime: a tie on the line is settled by the finish photograph rather than by more racing",
@@ -1375,6 +1403,19 @@
         "MEDAL_ROUND_TYPE_LIST": "173",
         "NUMERIC_RESULT_TYPE_LIST": "100, 102, 222",
         "RESULT_TIE_VALUE_TYPE_LIST": "101",
-        "NUMERIC_DATA_TYPE_LIST": "1270"
+        "NUMERIC_DATA_TYPE_LIST": "1270",
+        "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+        "RANK_MAX_PLAUSIBLE": "250",
+        "NOT_STARTED_DESC_LIST": "1, 5",
+        "STALE_NOT_STARTED_DAYS": "2",
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": "1",
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": "1",
+        "SERIES_MIN_YEARS": "3",
+        "SERIES_SKIP_YEARS": "0",
+        "FULL_TIME_TOLERANCE_SECONDS": "1",
+        "INTEGER_RESULT_TYPE_LIST": "100, 102, 222",
+        "PRECISION_RESULT_TYPE_LIST": "101",
+        "PRECISION_DATA_TYPE_LIST": "1426, 1427",
+        "SCOPE_TYPE_LIST": "101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296"
     }
 }
