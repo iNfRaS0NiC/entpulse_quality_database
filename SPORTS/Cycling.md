@@ -63,7 +63,8 @@ like rather than an answered one. Recorded under Open questions.
 | Event results | Confirmed | `GLOBAL-DISCOVERY-007` sport-wide, 6 types, and `-026` over all six |
 | Incidents | Confirmed absent | `GLOBAL-DISCOVERY-008` returned nothing |
 | Lineups | Confirmed absent | `GLOBAL-DISCOVERY-005` returned nothing |
-| Scope layer | Confirmed | `GLOBAL-DISCOVERY-009`, `-010` sport-wide |
+| Scope layer | Confirmed | `GLOBAL-DISCOVERY-009`, `-010` sport-wide; the type list re-measured over `event_scope` on 2026-08-16 and found to be 193 rather than the 48 first read |
+| `object_round` | Confirmed absent | no row of any type points at a Comp.Rank participant: 0 across 181997, measured 2026-08-16 |
 | Properties | Confirmed | `GLOBAL-DISCOVERY-011` sport-wide, 33 rows |
 | object_relation | Confirmed | `GLOBAL-DISCOVERY-012` sport-wide, 5 pairs |
 | object_discipline | Confirmed | `GLOBAL-DISCOVERY-013` sport-wide, one discipline |
