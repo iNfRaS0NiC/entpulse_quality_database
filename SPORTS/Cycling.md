@@ -365,6 +365,16 @@ events, `cancelled` / `106 Cancelled` on 796, `notstarted` / `1 Not started` on 
 `notstarted` / `5 Postponed` on 1, `interrupted` / `17 Abandoned` on 1. Five combinations, and
 796 cancelled events is a population no other opened sport carries at that share.
 
+**967 events carry no participant at all, and 966 of them are races that were never run.**
+Measured 2026-08-16: 793 of the 796 `Cancelled`, all 172 `Not started` - which are the 2026
+calendar still ahead of us - and the single `Postponed`. A cancelled race has no start list
+because it had no start, so none of those rows is correctable, and `Cycling-DQ-002` carries
+`GLOBAL-DQ-071` as `Monitor` for that reason. **One row is a defect and the template labels it
+separately**, under `NO_PARTICIPANTS_FINISHED_EVENT`: event `1688924`, `Stage 2` of
+`Criterium International` 2014 under `Category Pro`, finished on 29 March 2014 with nobody
+entered. The three cancelled races that *do* hold participants are the opposite shape - a start
+list entered before the race fell - and no check reports them.
+
 **Round types**, `GLOBAL-DISCOVERY-018` sport-wide, 24 of them. Twenty-one are stage numbers
 `1` to `21` under ids `38` to `58`, one is `173 Final` on 599 events, and two are neither:
 
