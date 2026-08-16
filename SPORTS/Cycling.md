@@ -167,6 +167,28 @@ with one participation, 1875549 with none, both born 2004-05-11) and `Brayan Var
 with eight, 1825040 with none). An empty record beside a used one, on the same date of birth,
 is the shape a duplicate has. No coach shares a name with another.
 
+**One participant is not a person: `Peloton`, id `205191`, typed `athlete` and gendered male.**
+It is entered on **575 events across 8 templates between 17 June 2010 and 9 August 2026** and
+carries **no rank and no duration on any of its 576 entries** - not an empty value, no result
+row at all. Confirmed 2026-08-16 that it is a **live-update mechanism**: the feed enters the
+bunch as one row while a race is running. It is out of scope for this project and no check is
+written on it, but it counts inside every field size read from `event_participants`, so a
+statement that measures a field is measuring one row more than the race held. No equivalent
+placeholder exists under `Gruppo`, `Group`, `Gruppetto`, `Bunch` or `Autobus`, which were
+checked by name and return nothing.
+
+**23 events of 9612 enter the same competitor twice**, and `Cycling-DQ-017` carries
+`GLOBAL-DQ-055` whole. Every one is a plain doubling - two rows where there should be one, and
+three events double two competitors each. It is not systematic: `Sergio Pardilla` is doubled in
+4 events out of the 469 he entered, `Jose Antonio de Segovia` and `Jonas van Genechten` in 3
+each, `Alexey Tsatevich`, `Francisco Javier Vila` and `Yurij Metlushenko` in 2. They sit almost
+entirely in `World Tour 1` and `Category Pro`.
+
+Two of the 23 are not riders. `1385084 Race` under `World Championship 1` doubles the team
+`Pinarello Q36.5 Pro Cycling Team`, and `3748190 Stage 9` under `World Tour 1 Grand Tour`
+doubles `Peloton` - the single time in 575 events that the live-update placeholder is written
+twice, and the one row here that carries no result either way.
+
 <!-- MANUAL PASTE ZONE: 30 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types
