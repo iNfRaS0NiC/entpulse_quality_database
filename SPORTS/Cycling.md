@@ -137,6 +137,23 @@ it names is out of scope.
 than people. The measurement is recorded in `GLOBAL_QUERIES/PARTICIPANTS.sql` beside the
 statement it affects.
 
+**2791 registered athletes and teams are reached by no event and no Comp.Rank of this sport,
+and that number holds two different findings.** Measured 2026-08-16: **2457 are entered nowhere
+in the database at all** - 2175 athletes, 2016 of them carrying a date of birth, and 282 teams -
+while **334 race in a neighbouring cycling sport**: 131 in `Para Cycling`, 129 in
+`Track Cycling`, 52 in `Mountain Bike`, 16 in two of those and 6 across other combinations. The
+second group is a work list, since a registration pointing at the wrong sport is one field to
+correct; the first is a question about where complete profiles attached to nothing came from.
+
+`GLOBAL-DQ-009 PARTICIPANT_NO_PARTICIPATION_ANYWHERE` cannot separate them, and correctly so:
+it asserts the participation paths **inside the sport that registered the participant**, which
+is what makes a rider filed under the wrong sport indistinguishable from a stranded record.
+`Cycling-DQ-001` reads the same two paths - the third, the lineup, has nothing to read here -
+and says which of the two each row is, naming the neighbouring sport where there is one. The
+template is therefore not instantiated for this sport and carries no `_checkSignal` entry: none
+of the four signal values describes it, since the structure it reads is present and its answer
+is correct as far as it goes.
+
 **41 groups of athletes share a name**, and 39 of them carry conflicting dates of birth, which
 is what a namesake looks like rather than a duplicate. Two do not: `Isaiah Thompson` (1818611
 with one participation, 1875549 with none, both born 2004-05-11) and `Brayan Vargas` (1347817
