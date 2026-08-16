@@ -467,10 +467,17 @@ against that shape first.
    used to check the stage number at all.
 2. **Are `102 Points` and `222 Laps behind` one field or two?** They cover the same 12 events
    and the same 31 rows, and both sample as `0`.
-3. **What are the nine templates that hold tournaments and no events?** `10350 World
-   Championship RR` (male) holds 69 tournaments and no event, `10352` (female) 42, `10351` and
-   `10353 World Championship TT` 9 and 16, and the three `Summer Paralympics` templates one
-   each. The `(IOC)` twins carry the same counts against the same names.
+3. **Why do 136 World Championship editions hold no stage at all?** Half answered 2026-08-16
+   and the half that remains is narrower for it. `Cycling-DQ-004` reports 142 tournaments with
+   no stage, and 136 of them sit in the four templates that also hold no events: `10350 World
+   Championship RR` (male) 69, `10352` (female) 42, `10353 World Championship TT` (female) 16
+   and `10351` (male) 9. Their names are years - `1927`, `1928` - so these are historical
+   editions entered as tournaments and left without content, and that is *why* those templates
+   report no events: a tournament with no stage can hold none. The remaining six are scattered
+   one apiece across `484 World Championship 1`, `10680` and `11789 Summer Paralympics`,
+   `11049` and `11050 Asian Championship` and `11086 Oceania Championship`. What is still open
+   is whether the 136 are a skeleton somebody intends to fill or an import that stopped, and
+   what the `(IOC)` twins carrying the same tournament counts against the same names are.
 4. **Which spelling of a disqualification does the sport mean?** `Disqualified` on 1400 rows,
    `DSQ` on 146 and `DQ` on 5, with `HD` 3111, `OTL` 137 and possibly `OOT` 1 doing the same
    for a rider outside the time limit. No comment vocabulary parameter is recorded until this
