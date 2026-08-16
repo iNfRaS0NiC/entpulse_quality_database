@@ -234,6 +234,21 @@ FROM (
             ORDER BY CONCAT(y.participant_name, ' (', y.rank_value, ')') SEPARATOR ', ')
             AS affected_participants
     FROM (
+    -- The field size is grouped once for the sport and the next lower rank is a window over
+    -- the event's own ranks. Both were correlated subqueries until 2026-08-16, which made the
+    -- statement count the field again for every rank row it read: on Cycling that is 1.14
+    -- million rank rows over 1.27 million participations, and the server answered 504 both
+    -- inside a batch and alone. GLOBAL-DQ-031 carries the same rewrite and records the
+    -- measurement that separated the two costs.
+    --
+    -- Two orderings matter here and neither is cosmetic. The window is computed before
+    -- rank_value > participant_count, because the rank it looks for is the next lower one
+    -- anywhere in the field rather than the next lower outlier. And the Comment exclusion moved
+    -- out of the innermost query to sit beside that filter, because the correlated subquery it
+    -- replaced read every rank in the event including the commented ones - leaving the
+    -- exclusion where it was would have hidden a commented rider from the window and moved the
+    -- gap. On a sport writing 114381 comments over 7520 events, as Cycling does, that is not a
+    -- rounding difference.
     SELECT
         x.event_participants_id,
         x.event_id,
@@ -242,17 +257,7 @@ FROM (
         x.participant_name,
         x.rank_value,
         x.participant_count,
-        (
-            SELECT MAX(CAST(r2.value AS UNSIGNED))
-            FROM event_participants ep3
-            JOIN result r2 ON r2.event_participantsFK = ep3.id
-                 AND r2.result_typeFK = {{RESULT_RANK_TYPE_ID}}
-                 AND r2.del = 'no'
-                 AND r2.value REGEXP '^[1-9][0-9]*$'
-            WHERE ep3.eventFK = x.event_id
-              AND ep3.del = 'no'
-              AND CAST(r2.value AS UNSIGNED) < x.rank_value
-        ) AS next_lower_rank
+        x.next_lower_rank
     FROM (
         SELECT
             ep.id AS event_participants_id,
@@ -261,18 +266,29 @@ FROM (
             tt.name AS template_name,
             p.name AS participant_name,
             CAST(r.value AS UNSIGNED) AS rank_value,
-            (
-                SELECT COUNT(*)
-                FROM event_participants ep2
-                WHERE ep2.eventFK = e.id
-                  AND ep2.del = 'no'
-            ) AS participant_count
+            pc.participant_count,
+            MAX(CAST(r.value AS UNSIGNED)) OVER (
+                PARTITION BY e.id
+                ORDER BY CAST(r.value AS UNSIGNED)
+                RANGE BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+            ) AS next_lower_rank
         FROM event_participants ep
         JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
         JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
         JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
         JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
         JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN (
+            SELECT ep2.eventFK AS eventFK, COUNT(*) AS participant_count
+            FROM event_participants ep2
+            JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+            JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+            JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+            JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+                 AND tt2.sportFK = {{SPORT_ID}}
+            WHERE ep2.del = 'no'
+            GROUP BY ep2.eventFK
+        ) pc ON pc.eventFK = e.id
         JOIN result r ON r.event_participantsFK = ep.id
              AND r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
              AND r.del = 'no'
@@ -285,17 +301,17 @@ FROM (
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
-          AND NOT EXISTS (
-              SELECT 1
-              FROM result rc
-              WHERE rc.event_participantsFK = ep.id
-                AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
-                AND rc.del = 'no'
-                AND rc.value IS NOT NULL
-                AND TRIM(rc.value) <> ''
-          )
     ) x
     WHERE x.rank_value > x.participant_count
+      AND NOT EXISTS (
+          SELECT 1
+          FROM result rc
+          WHERE rc.event_participantsFK = x.event_participants_id
+            AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+            AND rc.del = 'no'
+            AND rc.value IS NOT NULL
+            AND TRIM(rc.value) <> ''
+      )
     ) y
     WHERE y.next_lower_rank IS NULL
        OR y.rank_value > y.next_lower_rank + 1

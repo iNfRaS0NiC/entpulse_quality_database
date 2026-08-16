@@ -1135,7 +1135,7 @@
         "SPORT_ID": 30,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
         "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
-        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
         "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
         "STATISTIC_TYPE_ID": 11,
         "STATISTIC_OWNER_TYPE_ID": 3,
@@ -1159,6 +1159,7 @@
         "_names": {
             "SPORT_ID": "30 Cycling",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: the client takes this sport whole, all 51 templates",
+            "REGISTRY_PARTICIPANT_TYPE_LIST": "athlete and team. coach is deliberately left out - the sport registers 98 of them and no check here audits a coach, decided 2026-08-16. It is also the only type the registry holds that none of GLOBAL-DQ-009's three participation paths can reach, since a coach is entered on no event, the sport writes no lineup, and no coach appears in a Comp.Rank",
             "STATISTIC_TYPE_ID": "11 Competition Stats, called Comp.Rank in this project",
             "STATISTIC_OWNER_TYPE_ID": "3 tournament",
             "SHARD_ID": "11 statistic_participants11 and statistic_data11",

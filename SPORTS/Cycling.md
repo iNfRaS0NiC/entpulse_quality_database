@@ -116,9 +116,20 @@ The sport registry (`object_participants`) holds 12 role-type-gender combination
 147 female, 87 inactive male teams and 1 female, 38 mixed teams, 96 active male coaches and 1
 inactive.
 
+**Coaches are out of scope for this sport, decided 2026-08-16.** The registry holds 97 active
+and 1 inactive, and no check written here audits one. The exclusion is recorded in
+`SPORTS/params.json` as `REGISTRY_PARTICIPANT_TYPE_LIST`, which names `athlete` and `team`
+only; `GLOBAL-DQ-009 PARTICIPANT_NO_PARTICIPATION_ANYWHERE` is the sole template that reads
+the list. It is also the type that template could never clear: a coach is entered on no event,
+this sport writes no lineup, and no coach appears in a Comp.Rank, so all 98 were reported for
+the absence of a path rather than for a defect. Ice Hockey answered the same shape differently
+because it has a fourth path - `refereeFK` on 270 events - and Cycling's property list holds
+no equivalent.
+
 **One registry row disagrees with the participant it registers**: `Mauro Gianetti` (id 75943)
 is registered under the role `athlete` while the participant is typed `coach`. One row, and
-the same shape Ice Hockey carries on 150.
+the same shape Ice Hockey carries on 150. It is recorded rather than checked, since the type
+it names is out of scope.
 
 **Every person in the registry appears exactly once.** Measured 2026-08-16 over what
 `GLOBAL-DISCOVERY-033` reads - `op.del = 'no'`, `p.del = 'no'`, type `athlete` - Cycling holds

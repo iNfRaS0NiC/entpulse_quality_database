@@ -920,28 +920,55 @@ SELECT
     -- Name - COMP.RANK_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE
     -- What it does: Flags Comp.Rank participants with an unexplained Rank above the number of ranked participants and a gap from the previous Rank.
     'RANK_OUTLIER_ABOVE_FIELD_SIZE' AS check_type,
-    sp.id AS statistic_participants_id,
-    f.statistic_id,
-    f.template_name,
-    f.tournament_name,
+    z.statistic_participants_id,
+    z.statistic_id,
+    z.template_name,
+    z.tournament_name,
     p.name AS participant_name,
-    CAST(sd.value AS UNSIGNED) AS rank_value,
-    f.participant_count,
-    (
-        SELECT MAX(CAST(sd2.value AS UNSIGNED))
+    z.rank_value,
+    z.participant_count,
+    z.next_lower_rank,
+    NULL AS eligible_count
 -- What it does, stated in full: Finds Comp.Rank participants whose Rank exceeds the number
 -- ranked and is disconnected from the next lower Rank, with no Comment to explain it.
-        FROM statistic_participants{{SHARD_ID}} sp2
-        JOIN statistic_data{{SHARD_ID}} sd2 ON sd2.statistic_participants{{SHARD_ID}}FK = sp2.id
-             AND sd2.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
-             AND sd2.del = 'no'
-             AND sd2.value REGEXP '^[1-9][0-9]*$'
-        WHERE sp2.statisticFK = f.statistic_id
-          AND sp2.del = 'no'
-          AND CAST(sd2.value AS UNSIGNED) < CAST(sd.value AS UNSIGNED)
-    ) AS next_lower_rank,
-    NULL AS eligible_count
+--
+-- next_lower_rank is a window over the statistic's own ranks, computed once. It was a
+-- correlated subquery until 2026-08-16, and that shape did not survive a large sport: on
+-- Cycling the statement answered 504 twice, once inside a batch and once alone. Two things
+-- were wrong with it and the measurement separated them. The subquery correlated on
+-- f.statistic_id, a derived-table column, which can make the server rebuild f once per
+-- candidate row; pointing it at sp.statisticFK instead brought the same answer back in 94.9
+-- seconds, which proves the rebuild and is still far too slow. What remains is the subquery
+-- itself, run once per row over a shard table every sport shares. The window does the work in
+-- one pass and the statement returns in 11.2 seconds.
+--
+-- The window is deliberately computed before rank_value > participant_count is applied. The
+-- rank it looks for is the next lower one anywhere in the statistic, not the next lower one
+-- among the outliers, and filtering first would compare an outlier against another outlier.
 FROM (
+    SELECT
+        g.statistic_participants_id,
+        g.statistic_id,
+        g.template_name,
+        g.tournament_name,
+        g.participant_id,
+        g.rank_value,
+        g.participant_count,
+        MAX(g.rank_value) OVER (
+            PARTITION BY g.statistic_id
+            ORDER BY g.rank_value
+            RANGE BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+        ) AS next_lower_rank
+    FROM (
+        SELECT
+            sp.id AS statistic_participants_id,
+            f.statistic_id,
+            f.template_name,
+            f.tournament_name,
+            sp.participantFK AS participant_id,
+            CAST(sd.value AS UNSIGNED) AS rank_value,
+            f.participant_count
+        FROM (
     SELECT
         s.id AS statistic_id,
         tt.name AS template_name,
@@ -965,25 +992,27 @@ FROM (
       -- AND s.id BETWEEN <from_statistic_id> AND <to_statistic_id>
     GROUP BY s.id, tt.name, t.name
     HAVING MAX(CAST(sdf.value AS UNSIGNED)) > COUNT(DISTINCT spf.id)
-) f
-JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = f.statistic_id AND sp.del = 'no'
-JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
-JOIN statistic_data{{SHARD_ID}} sd ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
-     AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
-     AND sd.del = 'no'
-     AND sd.value REGEXP '^[1-9][0-9]*$'
-WHERE CAST(sd.value AS UNSIGNED) > f.participant_count
+        ) f
+        JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = f.statistic_id AND sp.del = 'no'
+        JOIN statistic_data{{SHARD_ID}} sd ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+             AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+             AND sd.del = 'no'
+             AND sd.value REGEXP '^[1-9][0-9]*$'
+    ) g
+) z
+JOIN participant p ON p.id = z.participant_id AND p.del = 'no'
+WHERE z.rank_value > z.participant_count
+  AND (z.next_lower_rank IS NULL
+       OR z.rank_value > z.next_lower_rank + 1)
   AND NOT EXISTS (
       SELECT 1
       FROM statistic_data{{SHARD_ID}} sdc
-      WHERE sdc.statistic_participants{{SHARD_ID}}FK = sp.id
+      WHERE sdc.statistic_participants{{SHARD_ID}}FK = z.statistic_participants_id
         AND sdc.statistic_data_typeFK = {{DATA_COMMENT_TYPE_ID}}
         AND sdc.del = 'no'
         AND sdc.value IS NOT NULL
         AND TRIM(sdc.value) <> ''
   )
-HAVING next_lower_rank IS NULL
-    OR rank_value > next_lower_rank + 1
 
 UNION ALL
 
