@@ -805,6 +805,53 @@ guards an invariant is not disposable for holding no findings on the day it was 
 the smallest is 22 templates and the largest 1.27 million participations, so none of them is a
 scope pointing at nothing and none is a sentinel over an empty population.
 
+**The missing-value category was read whole on 2026-08-16**, and sixteen templates are carried
+unchanged. Seven hold findings:
+
+| Check | Carries | Findings / eligible | What the rows hold |
+|---|---|---|---|
+| `Cycling-DQ-052` | `GLOBAL-DQ-002` TOURNAMENT_STAGE_MISSING_AGE_CLASS | 4 / 3528 | `Flandrien 0.0 Classic`, `Tour of Istanbul`, `Tour of Holland`, `Summer Paralympics` |
+| `Cycling-DQ-054` | `GLOBAL-DQ-006` EVENT_MISSING_ROUND_TYPE | 51 / 10578 | all of them `round_typeFK = 0`, the unnamed round already recorded above |
+| `Cycling-DQ-055` | `GLOBAL-DQ-007` PARTICIPANT_MISSING_DATE_OF_BIRTH | 723 / 21973 | see below |
+| `Cycling-DQ-056` | `GLOBAL-DQ-008` PARTICIPANT_MISSING_PROFILE_FIELDS | 4 / 19736 | `Peloton`, `Warseno`, `Habibullah` and `Fitriyani`, each missing `first_name` - the last three are single-name riders from Indonesia and Pakistan |
+| `Cycling-DQ-058` | `GLOBAL-DQ-013` TEMPLATE_MISSING_SET_SUBSET_GENDER_NAME | **42 / 44** | one field, not four: `tournament_subset` is empty on almost every template in the sport |
+| `Cycling-DQ-059` | `GLOBAL-DQ-015` EVENT_SETTINGS_MISSING_DISCIPLINE | 12 / 10578 | mostly the 2026 season, and the same twelve events the discipline census left uncovered |
+| `Cycling-DQ-061` and `-062` | `GLOBAL-DQ-022` and `-023` | 3 and 4 / 1795 | the same three Grand Tour statistics - `Tour de France` 2004 and 2025, `Giro d'Italia` 2025 - plus `Giro del Trentino` 2015 on the discipline |
+
+Seven return nothing today over real populations and are instantiated on that basis:
+`Cycling-DQ-053` (`GLOBAL-DQ-005`, 3528 stages), `-057` (`-011`, 1795), `-060` (`-016`, 10578),
+`-063` (`-032`, 1736), `-064` (`-037`, 592), `-065` (`-069`, **1246372 result values**) and
+`-066` (`-070`, 181997).
+
+**723 riders of 21973 carry no date of birth, and the row says which of them matter.**
+`Cycling-DQ-055` carries `GLOBAL-DQ-007` whole. At 3.3 per cent this is a gap rather than a
+convention, and the template projects the participation counts beside the name, so the list
+sorts itself: the largest is `Peloton` with 576 entries, which is the live-update placeholder
+and not a person, and the largest real one is `Joshua Giddings` of Great Britain with 141 event
+entries and 13 Comp.Rank placings. It was read before being numbered because it is over the
+200-row gate.
+
+**95 per cent of events carry no venue, and `Cycling-DQ-067` is `Monitor` for that reason.**
+`GLOBAL-DQ-074` reports 10034 of 10578, on the event and on its stage together. This was
+deliberately not called a structural absence: **544 events do carry a venue**, so the storage
+exists and is used. A road race runs between two towns rather than at a ground, so most of the
+population has nothing to record. What the check is kept for is the direction of the number.
+
+**Six templates in this category and beside it are not applicable, each for a structural
+reason**, recorded in `SPORTS/params.json` and never on a row count alone:
+
+| Template | Reported | The structure it reads |
+|---|---|---|
+| `GLOBAL-DQ-033` COMP.RANK_RESULTS_MISSING_PHASE | 1736 / 1736 | a phase is a stage inside a ranking, and a mass-start road race has none. `object_round` holds **no row of any type** pointing at a Comp.Rank participant here - 0 across 181997 |
+| `GLOBAL-DQ-083` EVENT_PARTICIPANT_COUNT_NOT_TWO | 9614 / 9614 | wants exactly two entries; this sport enters 92 to 124 riders. The same competition-model rule that settles `GLOBAL-DQ-096` |
+| `GLOBAL-DQ-058` EVENT_TEAM_PARTICIPANT_WITHOUT_LINEUP | 172 / 172 | every team time trial in the sport, 21 teams each with no lineup, because the sport writes no lineup |
+| `GLOBAL-DQ-067`, `-068`, `-112` | eligible **0** | the same lineup layer, audited from three further angles |
+
+The three with an eligible count of zero are the second of the two things `POWERBI.md` allows
+that to be: a correct scope over a population that cannot exist in this sport, not a scope
+pointing at the wrong place. `GLOBAL-DQ-058` proves it from the other side by reporting 100 per
+cent of a population that does exist.
+
 <!-- MANUAL PASTE ZONE: 30 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics

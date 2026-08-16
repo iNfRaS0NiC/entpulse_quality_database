@@ -1181,6 +1181,34 @@
             "FINAL_ROUND_TYPE_LIST": "173 Final"
         },
         "_checkSignal": {
+            "GLOBAL-DQ-033": {
+                "signal": "Not applicable",
+                "reason": "Structural by the competition model, and the measurement only corroborates it. A phase is a stage within a ranking - heats, semi-finals, a final - and a mass-start road race has none: the field starts together and finishes once, which is why this sport's round types are the stage numbers 1 to 21 and Final and nothing else. The template reads a phase row in object_round on the ranked participant, and Cycling holds no object_round row of any type pointing at a Comp.Rank participant: 0 across 181997 of them, measured 2026-08-16. Reported whole, it returns 1736 of 1736 statistics with missing_count equal to field_size in every row, which is the template saying the layer is absent rather than finding a defect. Curling, which the template documents, does write phases and leaves 535 of 562 statistics without them; that is a data state and this is not."
+            },
+            "GLOBAL-DQ-083": {
+                "signal": "Not applicable",
+                "reason": "Structural by the competition model, the same rule that settles GLOBAL-DQ-096: only a head-to-head sport puts exactly two entries in an event, and a road race enters the whole peloton. Cycling is Listing (individual and team) by DATABASE.md DB-SEM-015, and its fields run 92 to 124 riders. Measured 2026-08-16 the template reported 9614 of 9614 events, 9613 as MORE_THAN_TWO_PARTICIPANTS and one as FEWER, so no narrower population survives and no sport variant is written."
+            },
+            "GLOBAL-DQ-058": {
+                "signal": "Not applicable",
+                "reason": "Structural: the sport writes no lineup at all, so a team entered on an event can never have one. Measured 2026-08-16 the template reported 172 of 172 events under EVENT_NO_TEAM_HAS_LINEUP - every team time trial in the sport, 21 teams each with 0 lineups - which is the template restating the absence of the layer. See _notApplicable LINEUP_TYPE_LIST, and GLOBAL-DQ-067, -068 and -112, which read the same layer and audit nothing at all."
+            },
+            "GLOBAL-DQ-067": {
+                "signal": "Not applicable",
+                "reason": "Structural: reads the lineup layer, which this sport does not write. eligible_count is 0, and that is the correct scope over a population that cannot exist here rather than a misdirected one - a road race enters each rider directly and names no squad. See _notApplicable LINEUP_TYPE_LIST."
+            },
+            "GLOBAL-DQ-068": {
+                "signal": "Not applicable",
+                "reason": "Structural: reads the lineup layer, which this sport does not write. eligible_count is 0, and that is the correct scope over a population that cannot exist here rather than a misdirected one. See _notApplicable LINEUP_TYPE_LIST."
+            },
+            "GLOBAL-DQ-112": {
+                "signal": "Not applicable",
+                "reason": "Structural: reads the lineup layer, which this sport does not write. eligible_count is 0, and that is the correct scope over a population that cannot exist here rather than a misdirected one. See _notApplicable LINEUP_TYPE_LIST."
+            },
+            "GLOBAL-DQ-074": {
+                "signal": "Monitor",
+                "reason": "Real, and it will not reach zero, which is why it is instantiated rather than dropped. Measured 2026-08-16: 10034 events of 10578 carry no venue on either the event or its stage, which is 95 per cent. It is not a structural absence and was not treated as one - 544 events do carry a venue, so the storage exists and is used - but a road race runs between two towns rather than at a ground, so most of this population has no venue to record. What the check is worth keeping for is the direction of the number: a season that starts filling venues, or one that stops, shows here."
+            },
             "GLOBAL-DQ-080": {
                 "signal": "Monitor",
                 "reason": "The invariant is right and every finding it holds today is not a defect, which is why it is instantiated rather than dropped. Measured 2026-08-16, 4 tournaments of 412. Two are the professional season container: Category Pro names a tournament for the year it ends in and starts it on 20 October of the year before, confirmed independently on tournaments 8452 named 2013 with stages from 2012 and 8461 named 2014 with stages from 2013, and seen a third time in the first event dates of the Tour of California and Omloop Het Nieuwsblad statistics. Two are Summer Olympics 2020, whose stages are in 2021 because Tokyo was postponed, and the name is the correct name of those Games. A year genuinely typed wrong would arrive here too and is what the check is kept for. Read the template first at every run: a row outside Category Pro and the postponed Olympics is a new finding."
