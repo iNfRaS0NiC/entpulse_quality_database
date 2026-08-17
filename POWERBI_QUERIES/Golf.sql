@@ -1414,7 +1414,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - Golf-DQ-098
     -- Name - COMP.RANK_SETTINGS_EVENT_ID_LIST_TRUNCATED
-    -- What it does: Finds Comp.Rank whose Event id list fills its column exactly, so the list was cut short, separating one left ending in a fragment of an id from one cut at a number boundary.
+    -- What it does: Finds Comp.Rank whose Event id list is exactly 255 characters, so the column cut it short, and says whether the cut fell inside an id or on a comma.
     CASE
         WHEN NOT EXISTS (
                 SELECT 1
@@ -1429,8 +1429,12 @@ SELECT
     s.name AS statistic_name,
     tt.name AS template_name,
     t.name AS tournament_name,
-    (LENGTH(sc.value) - LENGTH(REPLACE(sc.value, ',', '')) + 1) AS ids_named,
-    SUBSTRING_INDEX(sc.value, ',', -1) AS last_id_in_the_list,
+    -- How many pieces the text breaks into when split on commas, which is not how many events
+    -- the ranking covers. At a boundary cut the two agree; at a mid-number cut the last piece is
+    -- a fragment, so the event count is one lower. The column said ids_named until 2026-08-17
+    -- and that name asserted the thing this check exists to disprove.
+    (LENGTH(sc.value) - LENGTH(REPLACE(sc.value, ',', '')) + 1) AS items_after_split,
+    SUBSTRING_INDEX(sc.value, ',', -1) AS last_item_in_the_list,
     NULL AS eligible_count,
     0 AS sort_order
 -- The Event id config holds a comma-separated list, and the column it holds it in stops at 255
@@ -1494,7 +1498,7 @@ WHERE sc.statistic_data_typeFK = 1471
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND TRIM(COALESCE(sc.value, '')) <> ''
 
-ORDER BY sort_order, ids_named DESC, statistic_id;
+ORDER BY sort_order, items_after_split DESC, statistic_id;
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-099
