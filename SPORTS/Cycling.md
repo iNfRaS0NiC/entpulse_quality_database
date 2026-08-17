@@ -1085,6 +1085,63 @@ on both its runs on 2026-08-16 for exactly that reason, and was rewritten to gro
 participation path once rather than count it per person. Any statement written here is read
 against that shape first.
 
+**Six checks are written for this sport because no template asks what cycling asks.** They were
+designed on 2026-08-16 and 2026-08-17 from the confirmed structure above, and each was measured
+before it was numbered.
+
+| Check | What it asserts | Findings / eligible |
+|---|---|---|
+| `Cycling-DQ-095` EVENT_AVERAGE_SPEED_IMPLAUSIBLE | the distance and the winning time give a speed a bicycle race reaches | 39 / 7937 |
+| `Cycling-DQ-096` EVENT_SCOPE_CHECKPOINT_CHAIN_INCONSISTENT | a checkpoint's distance, remaining distance, finish marker and jersey group read as written | 104 / 1094 |
+| `Cycling-DQ-097` EVENT_SPLIT_STAGE_HALF_WITHOUT_ITS_SIBLING | a lettered half of a split stage has another half beside it | 1 / 68 |
+| `Cycling-DQ-098` EVENT_RIDER_OLDER_THAN_THE_STAGE_AGE_CLASS_ALLOWS | the field matches the age class the stage is run under | 14 / 77 |
+| `Cycling-DQ-099` COMP.RANK_CLASSIFIES_A_RIDER_WHO_ABANDONED | a rider placed in a ranking finished the events it covers | 0 / 522 |
+| `Cycling-DQ-100` TOURNAMENT_STAGE_NUMBERS_NOT_CONTIGUOUS | a tour's stage numbers run without a hole | 1 / 1218 |
+
+**The speed check reads two fields nothing else compares, and each is the other's only witness.**
+`Kilometers` is a metadata property on the event and the winner's `101 Duration` is the one
+absolute time a race stores; a distance typed with a digit too many and a time typed with one
+too few produce a row here and nowhere else. The bands were measured before the thresholds were
+set: of 7939 races where both values parse, **7771 fall between 30 and 50 km/h**, 109 between 50
+and 60 - a short time trial - and 20 between 15 and 30, a mountain stage. Outside those, **7 run
+below 15 km/h, the slowest at 0.67, and 32 above 60, the fastest at 100.7**. The two grey bands
+are deliberately not reported, because a 55 km/h prologue and a 28 km/h summit finish are both
+real and reporting them would bury the 39 that cannot be.
+
+**The checkpoint check audits the one layer this sport has to itself**, in four shapes:
+`distance_to_go` below zero on 6 events, worst at `-4.0 km`; a jersey group left blank on 86,
+where every other row names `Peloton` or a breakaway numbered 1 to 13; two finish lines in one
+race, on 1; and a distance that is neither a number with its unit nor the word `Finish` on 11,
+including **`64..0 km` with two decimal points**.
+
+**The age-class check takes its ceilings from the data and not from the labels, and that is the
+whole difficulty.** The class named `JUNIOR` is attached to the `World Championship U23` races:
+its field is 419 riders aged 19, 669 aged 20, 844 aged 21 and 911 aged 22, so **`JUNIOR` means
+under 23 here whatever the word says**, and the UCI's junior ceiling of 18 would have reported
+2843 riders racing correctly. `YOUTH` sits on the `European Youth Olympic Festival` and the
+`Youth Olympics` at 15 to 18. Above the two lines there are 13 riders in 14 events, none of them
+borderline: `Raimondas Rumsas`, born 1972, in a U23 World Championship road race, and
+`Benjamin Noval`, born 1979, at a European Youth Olympic Festival.
+
+**Three drafts were wrong and the data said so before anything was numbered**, which is recorded
+here because each mistake is repeatable:
+
+- **A rider abandoning does not contradict a placing in another race of the same meeting.** Asked
+  against every event of the tournament, the abandonment check reported 700 riders across every
+  championship template - a championship holds a road race and a time trial, and the two are
+  independent. Tied through the ranking's own `1471 Event id` list it reports nothing, and the
+  sport is clean on the rule.
+- **A `REGEXP_REPLACE` backreference does not survive this package's execution path.** `\1`
+  arrives at the server as a literal `1`, so every name parsed to the same value: the split-stage
+  check reported all 30 halves as orphans and the stage-number check reported none at all. Both
+  are parsed with `SUBSTRING` and `CAST` instead.
+- **A gap does not have to grow with the place, and that is the sport rather than a defect.** A
+  check asserting it reported **1267 events and 29003 riders**, a median of 14 per event,
+  concentrated in `Category 1`, `Category Pro`, `World Tour 1` and the Grand Tours - the mass
+  finishes. Riders crossing the line together are credited with their group's time while their
+  placing is where they actually finished, so a rider placed 150th can hold `+0:00` while the
+  hundredth holds `+1:21`. The check was **not written**.
+
 <!-- MANUAL PASTE ZONE: 30 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

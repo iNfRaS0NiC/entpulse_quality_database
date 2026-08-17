@@ -764,3 +764,561 @@ WHERE s.del = 'no'
   AND t.tournament_templateFK IN (484, 485, 486, 9513, 9870, 9871, 10054, 11046, 11047, 11048, 11049, 11050, 11052, 11054, 11055, 11056, 11057, 11058, 11059, 11060, 11061, 11062, 11063, 11084, 11085, 11086, 11087, 11101, 11121)
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Cycling-DQ-095
+    -- Name - EVENT_AVERAGE_SPEED_IMPLAUSIBLE
+    -- What it does: Flags finished races where the distance and the winning time give a speed no bicycle race reaches.
+    CASE WHEN g.kmh < 15 THEN 'AVERAGE_SPEED_TOO_LOW' ELSE 'AVERAGE_SPEED_TOO_HIGH' END AS check_type,
+    g.event_id,
+    g.event_name,
+    g.template_name,
+    g.tournament_stage_name,
+    g.event_startdate,
+    g.distance_km,
+    g.winning_time,
+    ROUND(g.kmh, 2) AS average_kmh,
+    NULL AS eligible_count
+-- What it does, stated in full: Divides the Kilometers property by the winner's Duration and
+-- reports the race where the answer is below 15 km/h or above 60. Neither field is checked
+-- anywhere else against the other, and each is the only witness the other has: a distance
+-- typed with a digit too many and a time typed with one too few produce the same row here and
+-- nowhere else in the package.
+--
+-- The bands were measured over the sport on 2026-08-16 before the thresholds were set. Of 7939
+-- races where both values parse, 7771 fall between 30 and 50 km/h, which is road racing; 109
+-- sit between 50 and 60, which is a short time trial; and 20 between 15 and 30, which is a
+-- mountain stage. Outside those, 7 races run below 15 km/h - the slowest at 0.67 - and 32 above
+-- 60, the fastest at 100.7. The two grey bands are deliberately not reported: a 55 km/h prologue
+-- and a 28 km/h mountain-top finish are both real, and a check that reports them buries the 39
+-- that cannot be.
+--
+-- Only the winner is read. Every other rider carries a gap rather than an absolute time - the
+-- leader/gap convention this sport writes, recorded in SPORTS/Cycling.md - so the winner is the
+-- one row from which a speed can be computed at all.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        tt.name AS template_name,
+        ts.name AS tournament_stage_name,
+        e.startdate AS event_startdate,
+        CAST(pr.value AS DECIMAL(10,2)) AS distance_km,
+        w.value AS winning_time,
+        CAST(pr.value AS DECIMAL(10,2)) /
+            ( CAST(SUBSTRING_INDEX(w.value, ':', 1) AS DECIMAL(12,4))
+            + CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(w.value, ':', 2), ':', -1) AS DECIMAL(12,4)) / 60
+            + CAST(SUBSTRING_INDEX(w.value, ':', -1) AS DECIMAL(12,4)) / 3600 ) AS kmh
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 30
+    -- The distance, as the sport writes it: a metadata property on the event rather than a
+    -- column. A value that is not a plain positive number cannot be divided and is left to
+    -- Cycling-DQ-096, which reads the malformed distances in the checkpoint layer.
+    JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id AND pr.del = 'no'
+         AND pr.name = 'Kilometers'
+         AND pr.value REGEXP '^[0-9]+(\\.[0-9]+)?$'
+         AND CAST(pr.value AS DECIMAL(10,2)) > 0
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN result rk ON rk.event_participantsFK = ep.id AND rk.result_typeFK = 100 AND rk.del = 'no'
+         AND TRIM(rk.value) = '1'
+    -- h:mm:ss only. A prologue written mm:ss is a different shape and reading it as hours
+    -- would report every one of them; those races are simply not covered here and the
+    -- coverage branch counts the same population so the proportion says so.
+    JOIN result w ON w.event_participantsFK = ep.id AND w.result_typeFK = 101 AND w.del = 'no'
+         AND w.value REGEXP '^[0-9]+:[0-5][0-9]:[0-5][0-9]$'
+    WHERE e.del = 'no'
+      AND e.status_type = 'finished'
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+) g
+WHERE g.kmh < 15 OR g.kmh > 60
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 30
+JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id AND pr.del = 'no'
+     AND pr.name = 'Kilometers'
+     AND pr.value REGEXP '^[0-9]+(\\.[0-9]+)?$'
+     AND CAST(pr.value AS DECIMAL(10,2)) > 0
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result rk ON rk.event_participantsFK = ep.id AND rk.result_typeFK = 100 AND rk.del = 'no'
+     AND TRIM(rk.value) = '1'
+JOIN result w ON w.event_participantsFK = ep.id AND w.result_typeFK = 101 AND w.del = 'no'
+     AND w.value REGEXP '^[0-9]+:[0-5][0-9]:[0-5][0-9]$'
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Cycling-DQ-096
+    -- Name - EVENT_SCOPE_CHECKPOINT_CHAIN_INCONSISTENT
+    -- What it does: Flags checkpoints along a course whose distance, remaining distance, finish marker or jersey group cannot be read as written.
+    x.check_type,
+    x.event_id,
+    x.event_name,
+    x.template_name,
+    x.tournament_stage_name,
+    x.offending_rows,
+    x.sample_value,
+    NULL AS eligible_count
+-- What it does, stated in full: Audits the checkpoint chain this sport writes under event_scope
+-- and nothing else does. Four shapes, each measured on 2026-08-16 before being written:
+--   * a remaining distance below zero, 7 rows over 6 events, the worst at -4.0 km;
+--   * a jersey group left blank, 247 rows over 86 events, where every other row names either
+--     Peloton or a breakaway group numbered 1 to 13;
+--   * more than one finish line in a race, 2 rows over 1 event;
+--   * a distance that is neither a number with its unit nor the word Finish, 146 rows over 11
+--     events, including 64..0 km with two decimal points.
+-- The event is the audited object rather than the checkpoint, because a chain written wrong is
+-- written wrong at once; offending_rows carries how far it reaches.
+--
+-- GLOBAL-DQ-102 already asserts that a scope result points at a participant of its own event and
+-- returns nothing here, so the layer is referentially sound; what it cannot see is whether the
+-- values inside it make sense as a course. GLOBAL-DQ-107 is Not applicable for this sport
+-- because no scope type stands for the whole race - the 193 types are checkpoint1 to
+-- checkpoint192 plus an unnamed 0 - which is the same reason this statement had to be written
+-- rather than carried.
+FROM (
+    SELECT
+        g.check_type,
+        g.event_id,
+        MAX(g.event_name) AS event_name,
+        MAX(g.template_name) AS template_name,
+        MAX(g.tournament_stage_name) AS tournament_stage_name,
+        COUNT(*) AS offending_rows,
+        MIN(g.offending_value) AS sample_value
+    FROM (
+        SELECT
+            CASE
+                WHEN esd.name = 'distance_to_go' THEN 'CHECKPOINT_DISTANCE_TO_GO_NEGATIVE'
+                WHEN esd.name LIKE '%jersey group' THEN 'CHECKPOINT_JERSEY_GROUP_BLANK'
+                ELSE 'CHECKPOINT_DISTANCE_MALFORMED'
+            END AS check_type,
+            e.id AS event_id,
+            e.name AS event_name,
+            tt.name AS template_name,
+            ts.name AS tournament_stage_name,
+            CONCAT(esd.name, ' = ', COALESCE(esd.value, '')) AS offending_value
+        FROM event_scope es
+        JOIN event e ON e.id = es.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+             AND tt.sportFK = 30
+        JOIN event_scope_detail esd ON esd.event_scopeFK = es.id AND esd.del = 'no'
+        WHERE es.del = 'no'
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          AND (
+              (esd.name = 'distance_to_go' AND esd.value LIKE '-%')
+              OR
+              (esd.name LIKE '%jersey group' AND (esd.value IS NULL OR TRIM(esd.value) = ''))
+              OR
+              (esd.name = 'distance'
+               AND esd.value NOT REGEXP '^[0-9]+(\\.[0-9]+)? km$'
+               AND esd.value <> 'Finish')
+          )
+    ) g
+    GROUP BY g.check_type, g.event_id
+
+    UNION ALL
+
+    SELECT
+        'CHECKPOINT_MORE_THAN_ONE_FINISH_LINE' AS check_type,
+        f.event_id,
+        MAX(f.event_name),
+        MAX(f.template_name),
+        MAX(f.tournament_stage_name),
+        COUNT(*) AS offending_rows,
+        CONCAT('finish_line written ', COUNT(*), ' times') AS sample_value
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            tt.name AS template_name,
+            ts.name AS tournament_stage_name
+        FROM event_scope es
+        JOIN event e ON e.id = es.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+             AND tt.sportFK = 30
+        JOIN event_scope_detail esd ON esd.event_scopeFK = es.id AND esd.del = 'no'
+             AND esd.name = 'distance_type' AND esd.value = 'finish_line'
+        WHERE es.del = 'no'
+          -- AND t.tournament_templateFK = <tournament_template_id>
+    ) f
+    GROUP BY f.event_id
+    HAVING COUNT(*) > 1
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT es.eventFK) AS eligible_count
+FROM event_scope es
+JOIN event e ON e.id = es.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 30
+JOIN event_scope_detail esd ON esd.event_scopeFK = es.id AND esd.del = 'no'
+WHERE es.del = 'no'
+  -- AND t.tournament_templateFK = <tournament_template_id>
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Cycling-DQ-097
+    -- Name - EVENT_SPLIT_STAGE_HALF_WITHOUT_ITS_SIBLING
+    -- What it does: Flags a lettered half of a split stage that stands alone, with no other half beside it.
+    'SPLIT_STAGE_HALF_WITHOUT_SIBLING' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.template_name,
+    x.tournament_stage_id,
+    x.tournament_stage_name,
+    x.stage_number,
+    x.half_letter,
+    NULL AS eligible_count
+-- What it does, stated in full: A split stage is one day's racing run as two events, and this
+-- sport writes them as a number and a letter - Stage 1a and Stage 1b, Stage 8a and Stage 8b,
+-- Stage 5A and Stage 5B, Stage 1b - A teams and Stage 1b - B teams. A half with no sibling is
+-- either a missing import or a stage lettered by mistake. Measured 2026-08-16: 1 of 30 lettered
+-- events, Stage 3b at Vuelta Ciclista a la Provincia de San Juan with no Stage 3a.
+--
+-- The number and the letter are cut out with SUBSTRING and CAST rather than a REGEXP_REPLACE
+-- backreference, which does not survive this package's execution path: \1 arrives at the server
+-- as a literal 1 and every name parses to the same value. Found on 2026-08-16 while writing
+-- this statement, and the first draft reported every half as an orphan because of it.
+-- The letter is lowered before comparison, because the sport writes both cases.
+FROM (
+    SELECT
+        ts.id AS tournament_stage_id,
+        ts.name AS tournament_stage_name,
+        tt.name AS template_name,
+        e.id AS event_id,
+        e.name AS event_name,
+        CAST(SUBSTRING(e.name, 7) AS UNSIGNED) AS stage_number,
+        LOWER(SUBSTRING(REGEXP_REPLACE(e.name, '^Stage [0-9]+', ''), 1, 1)) AS half_letter
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 30
+    WHERE e.del = 'no'
+      AND e.name REGEXP '^Stage [0-9]+[ABab]([^A-Za-z0-9]|$)'
+      -- AND t.tournament_templateFK = <tournament_template_id>
+) x
+LEFT JOIN (
+    SELECT
+        e2.tournament_stageFK AS tournament_stage_id,
+        CAST(SUBSTRING(e2.name, 7) AS UNSIGNED) AS stage_number,
+        LOWER(SUBSTRING(REGEXP_REPLACE(e2.name, '^Stage [0-9]+', ''), 1, 1)) AS half_letter,
+        COUNT(*) AS held
+    FROM event e2
+    WHERE e2.del = 'no'
+      AND e2.name REGEXP '^Stage [0-9]+[ABab]([^A-Za-z0-9]|$)'
+    GROUP BY e2.tournament_stageFK, stage_number, half_letter
+) sib
+  ON sib.tournament_stage_id = x.tournament_stage_id
+ AND sib.stage_number = x.stage_number
+ AND sib.half_letter <> x.half_letter
+WHERE sib.held IS NULL
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 30
+WHERE e.del = 'no'
+  AND e.name REGEXP '^Stage [0-9]+[ABab]([^A-Za-z0-9]|$)'
+  -- AND t.tournament_templateFK = <tournament_template_id>
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Cycling-DQ-098
+    -- Name - EVENT_RIDER_OLDER_THAN_THE_STAGE_AGE_CLASS_ALLOWS
+    -- What it does: Flags races run under an age class whose field contains a rider too old for it.
+    'RIDER_OVER_THE_AGE_CLASS_CEILING' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.template_name,
+    x.tournament_stage_name,
+    x.age_class_name,
+    COUNT(DISTINCT x.participant_id) AS over_age_riders,
+    -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
+    -- group_concat_max_len without saying so, and over_age_riders is what the row asserts.
+    GROUP_CONCAT(DISTINCT CONCAT(x.participant_name, ' aged ', x.age_in_the_year)
+                 ORDER BY x.participant_name SEPARATOR ', ') AS over_age_participants,
+    NULL AS eligible_count
+-- What it does, stated in full: The sport attaches an age class to the stage through
+-- object_relation 4 -> 151, and stores each rider's date of birth as a participant property.
+-- Read together they say whether the field matches the race, and nothing in the package reads
+-- them together.
+--
+-- The two ceilings come from the data and not from the labels, which is the whole difficulty
+-- here. Measured 2026-08-16 across every JUNIOR and YOUTH stage: the JUNIOR class is attached to
+-- the World Championship U23 races, and its field is 419 riders aged 19, 669 aged 20, 844 aged
+-- 21 and 911 aged 22 - so JUNIOR means under 23 in this database whatever the word says, and a
+-- ceiling of 18 taken from the UCI would report 2843 riders racing correctly. YOUTH sits on the
+-- European Youth Olympic Festival and the Youth Olympics with 98 riders aged 15, 350 aged 16,
+-- 36 aged 17 and 44 aged 18.
+--
+-- Above those two ceilings there are 13 riders, and they are not borderline: ten over the U23
+-- line including Raimondas Rumsas, born 1972, in a U23 World Championship road race, and three
+-- over the YOUTH line including Benjamin Noval, born 1979, at a European Youth Olympic Festival.
+-- Age is counted as the year of the race minus the year of birth, which is how cycling defines a
+-- category, rather than as a birthday that may not have come round yet.
+--
+-- The event is the audited object rather than the rider, because a field imported into the
+-- wrong race is one fault and not one per name in it.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        tt.name AS template_name,
+        ts.name AS tournament_stage_name,
+        ac.name AS age_class_name,
+        p.id AS participant_id,
+        p.name AS participant_name,
+        YEAR(e.startdate) - YEAR(STR_TO_DATE(pr.value, '%Y-%m-%d')) AS age_in_the_year
+    FROM object_relation orr
+    JOIN tournament_age_class ac ON ac.id = orr.rel_objectFK
+    JOIN tournament_stage ts ON ts.id = orr.objectFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 30
+    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no' AND p.type = 'athlete'
+    JOIN property pr ON pr.object = 'participant' AND pr.objectFK = p.id AND pr.del = 'no'
+         AND pr.name = 'date_of_birth'
+         AND pr.value REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+    WHERE orr.del = 'no'
+      AND orr.object_typeFK = 4
+      AND orr.rel_object_typeFK = 151
+      AND ac.name IN ('JUNIOR', 'YOUTH')
+      -- AND t.tournament_templateFK = <tournament_template_id>
+) x
+WHERE (x.age_class_name = 'JUNIOR' AND x.age_in_the_year > 22)
+   OR (x.age_class_name = 'YOUTH'  AND x.age_in_the_year > 18)
+GROUP BY x.event_id, x.event_name, x.template_name, x.tournament_stage_name, x.age_class_name
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM object_relation orr
+JOIN tournament_age_class ac ON ac.id = orr.rel_objectFK
+JOIN tournament_stage ts ON ts.id = orr.objectFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 30
+JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no' AND p.type = 'athlete'
+JOIN property pr ON pr.object = 'participant' AND pr.objectFK = p.id AND pr.del = 'no'
+     AND pr.name = 'date_of_birth'
+     AND pr.value REGEXP '^[0-9]{4}-[0-9]{2}-[0-9]{2}$'
+WHERE orr.del = 'no'
+  AND orr.object_typeFK = 4
+  AND orr.rel_object_typeFK = 151
+  AND ac.name IN ('JUNIOR', 'YOUTH')
+  -- AND t.tournament_templateFK = <tournament_template_id>
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Cycling-DQ-099
+    -- Name - COMP.RANK_CLASSIFIES_A_RIDER_WHO_ABANDONED
+    -- What it does: Flags rankings that give a place to a rider who did not finish an event that same ranking covers.
+    'CLASSIFIED_AFTER_ABANDONING' AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    COUNT(DISTINCT x.participant_id) AS riders,
+    -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
+    -- group_concat_max_len without saying so, and riders is what the row asserts.
+    GROUP_CONCAT(DISTINCT CONCAT(x.participant_name, ' placed ', x.rank_value,
+                                 ' but ', x.comment_value, ' on event ', x.event_id)
+                 ORDER BY x.participant_name SEPARATOR ' | ') AS contradicted_riders,
+    NULL AS eligible_count
+-- What it does, stated in full: A rider who abandons is out of the classification - that is what
+-- abandoning means in this sport, on a one-day race and in a general classification alike. This
+-- reports a rider holding a numeric place in a Comp.Rank while carrying DNF or DNS on an event
+-- the same Comp.Rank names in its Event id setting.
+--
+-- The link through the Event id setting is what makes the rule true, and the first draft did not
+-- have it. Asked against every event of the tournament instead, the statement reported 700 riders
+-- across every championship template, all of them correct: a championship holds a road race and a
+-- time trial, and abandoning one has nothing to do with a placing in the other. Tied to the
+-- events a ranking actually covers, measured 2026-08-16, it reports nothing at all - the sport is
+-- clean on this - and the check is kept for the invariant rather than for a population.
+--
+-- FIND_IN_SET because the Event id config holds a comma-separated list, which DATABASE.md
+-- DB-SEM-011 owns; a numeric cast would read only the id before the first comma.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        p.id AS participant_id,
+        p.name AS participant_name,
+        TRIM(rk.value) AS rank_value,
+        UPPER(TRIM(cm.value)) AS comment_value,
+        e2.id AS event_id
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 30
+    JOIN statistic_config sc ON sc.statisticFK = s.id AND sc.statistic_data_typeFK = 1471
+         AND sc.del = 'no'
+    JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    JOIN statistic_data11 rk ON rk.statistic_participants11FK = sp.id
+         AND rk.statistic_data_typeFK = 1270 AND rk.del = 'no'
+         AND TRIM(rk.value) REGEXP '^[0-9]+$'
+    JOIN event e2 ON FIND_IN_SET(e2.id, sc.value) > 0 AND e2.del = 'no'
+    JOIN event_participants ep2 ON ep2.eventFK = e2.id AND ep2.del = 'no'
+         AND ep2.participantFK = sp.participantFK
+    JOIN result cm ON cm.event_participantsFK = ep2.id AND cm.result_typeFK = 104
+         AND cm.del = 'no'
+         AND LOWER(TRIM(cm.value)) IN ('dnf', 'dns')
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = 11
+      AND s.object_typeFK = 3
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      -- AND t.tournament_templateFK = <tournament_template_id>
+) x
+GROUP BY x.statistic_id, x.statistic_name, x.template_name, x.tournament_name
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 30
+JOIN statistic_config sc ON sc.statisticFK = s.id AND sc.statistic_data_typeFK = 1471
+     AND sc.del = 'no'
+JOIN statistic_participants11 sp ON sp.statisticFK = s.id AND sp.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  -- AND t.tournament_templateFK = <tournament_template_id>
+;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Cycling-DQ-100
+    -- Name - TOURNAMENT_STAGE_NUMBERS_NOT_CONTIGUOUS
+    -- What it does: Flags stage races whose numbered stages skip a number between the first and the last.
+    'STAGE_NUMBERS_SKIP_A_VALUE' AS check_type,
+    g.tournament_stage_id,
+    g.tournament_stage_name,
+    g.template_name,
+    g.tournament_name,
+    g.lowest_number,
+    g.highest_number,
+    g.numbers_held_count,
+    g.numbers_held,
+    NULL AS eligible_count
+-- What it does, stated in full: A tour runs its stages consecutively, so the numbers between the
+-- first and the last are all present. A hole is a stage nobody imported.
+--
+-- The lettered halves are counted towards their own number, and getting that wrong is what a
+-- first draft did: reading only names of the exact shape 'Stage N', it reported 9 tours as
+-- holding a gap - Tour of Britain at 1,2,3,4,5,6,8 and Circuit Sarthe at 1,3,4 among them - and
+-- every one of the nine was a split stage whose halves are named Stage 3a and Stage 3b. Counted
+-- properly the sport reports nothing at all, measured 2026-08-16, which is the answer rather
+-- than a failure: this sport numbers its stages correctly.
+--
+-- Kept for the invariant. A tour that loses a stage in an import will show here on the day it
+-- happens, and there is no other statement in the package that would notice.
+--
+-- Only races with more than two numbered stages are read, because two stages cannot skip
+-- anything and a one-day race numbers nothing.
+FROM (
+    SELECT
+        ts.id AS tournament_stage_id,
+        ts.name AS tournament_stage_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        MIN(CAST(SUBSTRING(e.name, 7) AS UNSIGNED)) AS lowest_number,
+        MAX(CAST(SUBSTRING(e.name, 7) AS UNSIGNED)) AS highest_number,
+        COUNT(DISTINCT CAST(SUBSTRING(e.name, 7) AS UNSIGNED)) AS numbers_held_count,
+        GROUP_CONCAT(DISTINCT CAST(SUBSTRING(e.name, 7) AS UNSIGNED)
+                     ORDER BY CAST(SUBSTRING(e.name, 7) AS UNSIGNED) SEPARATOR ',') AS numbers_held
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 30
+    WHERE e.del = 'no'
+      AND e.name REGEXP '^Stage [0-9]+'
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY ts.id, ts.name, tt.name, t.name
+    HAVING numbers_held_count > 2
+       AND highest_number - lowest_number + 1 > numbers_held_count
+) g
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT c.tournament_stage_id) AS eligible_count
+FROM (
+    SELECT ts.id AS tournament_stage_id
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 30
+    WHERE e.del = 'no'
+      AND e.name REGEXP '^Stage [0-9]+'
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY ts.id
+    HAVING COUNT(DISTINCT CAST(SUBSTRING(e.name, 7) AS UNSIGNED)) > 2
+) c
+;
