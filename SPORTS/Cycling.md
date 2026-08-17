@@ -1029,20 +1029,41 @@ both are kept because the other fields they assert - the name, the country, the 
 and the host-country rule - are audited and clean today. `missing_fields` is what to read first
 at every run: a row naming anything beyond `city` is a new finding.
 
-**23930 participations of 1270517 hold no usable place**, and `Cycling-DQ-085` carries
-`GLOBAL-DQ-036` whole. It was read before being numbered, being far over the 200-row gate, and
-it is one thing plus two:
+**23930 participations of 1270517 hold no usable place**, and `Cycling-DQ-085` reports them
+**one row per event** rather than one per rider. It is the sport variant
+`EVENT_RESULTS_RANK_INVALID_OR_MISSING_BY_EVENT`, not `GLOBAL-DQ-036` whole, and the reason is
+the size of a cycling field. The template audits the participation, which is right where a field
+is small - measured 2026-08-16 it returns 1 row on Triathlon, 44 on BMX, 69 on
+Artistic-Gymnastics and 357 on Modern-Pentathlon, and on all four the rider's name is what a
+reviewer needs. Here it returned 23930, because one unresolved race contributes its whole start
+list. Folded to the event that is **1361 rows of 9612 events**, and the counts still sum to
+23930: nothing is dropped, only gathered.
 
-| Shape | Rows |
+| Shape | Events |
 |---|---:|
-| `NO_RESULT_OF_ANY_TYPE` | 23928 |
-| `RANK_OVER_MAX` | 1 - `Eugen Wacker` at 1005, the same row `Cycling-DQ-015` and `Cycling-DQ-018` report |
-| `RANK_AND_COMMENT_MISSING_OTHER_RESULT_PRESENT` | 1 |
+| `EVENT_PART_OF_FIELD_HOLDS_NO_RESULT` | 1359 |
+| `EVENT_RANK_OVER_MAX` | 1 - `Eugen Wacker` at 1005, the same row `Cycling-DQ-015` and `Cycling-DQ-018` report |
+| `EVENT_RANK_MISSING_WITH_OTHER_RESULT_PRESENT` | 1 - `Magdalena Polanska`, holding other results |
+| `EVENT_WHOLE_FIELD_HOLDS_NO_RESULT` | 0 |
 
-The 23928 are riders entered on an event with no rank, no time and no comment - nothing at all.
-They are **concentrated rather than scattered: 1359 events of 9613**, about 18 riders each on
-average, and the worst hold **437 apiece**, which is a whole start list entered and never
-resolved. That is 1.9 per cent of the sport's participations.
+**The fold corrected a claim this file used to make.** Read per participation, the 23930 looked
+like whole start lists entered and never resolved, because the worst events hold 437 apiece and
+supplied most of the rows. With `field_size` standing beside `affected_count` that reading does
+not survive: **not one event of 9612 has its whole field unresolved**, and half the reported
+events are a single rider.
+
+| How much of the field is unresolved | Events |
+|---|---:|
+| exactly 1 rider | 690 |
+| 2 to 3 riders | 92 |
+| under 10 per cent of the field | 279 |
+| 10 to 50 per cent | 260 |
+| half the field or more | 40 |
+
+The 40 heaviest events supplied 23025 of the 23930 participations, which is why the 690
+single-rider cases were invisible before. Those two are different work - one race to look at
+against one rider to chase - and the check now says which it is. Overall this is 1.9 per cent of
+the sport's participations. The statement costs 51 seconds against the template's 33.
 
 **Nine further templates were carried on the last parameter decisions.** Six return nothing over
 real populations - `Cycling-DQ-086` (`GLOBAL-DQ-047`, 168 not-started events), `-089`
@@ -1062,17 +1083,52 @@ real populations - `Cycling-DQ-086` (`GLOBAL-DQ-047`, 168 not-started events), `
 the second sentinel beside `Cycling-DQ-071`, for the same reason: it adds the leader's full time
 to a rider's gap, and there are no full times to add.
 
-**`GLOBAL-DQ-111` is `Not checked` for this sport, and that is a cost problem rather than a
-structural one.** It compares one finisher's effective time with another's and timed out at 504
-after 180 seconds. It was rebuilt on 2026-08-16 in three steps, each removing work done per row
-that belonged somewhere else: an all-pairs self-join inside each event, about 69 million pairs
-here; a correlated `NOT EXISTS` over `result` for the Comment, asked once per participant; and
-an `EXISTS` over `object_discipline` asked once per participant for a property of the event. The
-raw time is now read once instead of roughly twelve times per row. BMX and Triathlon return the
-identical events and coverage after every step - 47 of 8001 and 3210 of 3603 - so the rewrite is
-sound and the other sports gained from it. **Cycling still does not finish**, and the statement
-was not sharded to make it: `WORKFLOW.md` owns that rule. The area is `Not checked`, never
-`Not used`.
+**`GLOBAL-DQ-111` runs whole for this sport since 2026-08-17 and is `Cycling-DQ-101`, carried as
+`Monitor`.** It compares one finisher's effective time with another's, and it spent a day as
+`Not checked` because it timed out at 504 after 180 seconds. Two rebuilds closed that, the first
+for cost and the second for a defect.
+
+The 2026-08-16 rebuild removed three costs, each work done per row that belonged somewhere else:
+an all-pairs self-join inside each event, about 69 million pairs here; a correlated `NOT EXISTS`
+over `result` for the Comment, asked once per participant; and an `EXISTS` over
+`object_discipline` asked once per participant for a property of the event. It was not enough
+here.
+
+**The 2026-08-17 rebuild started from a defect, not a cost. The parser accepted at most one
+colon**, so it read `M:SS` and plain seconds and voided everything else - and a road stage lasts
+four to seven hours, so its winner's time always carries two. **8956 of this sport's 1140293
+`101 Duration` values were being read as unreadable**, which did more than inflate the count: an
+unparseable time leaves the comparison, so every stage leader was silently removed from the
+audit that exists to compare him. Reading hours dropped one measured window from 1780 findings to
+173. Triathlon, whose races also run past the hour, went from 3210 findings of 3603 events to **0
+of 3603** - the whole of its result had been the parser. BMX, which races in under a minute, is
+unchanged at 47 of 8001, and that is what says the `M:SS` path was not disturbed.
+
+Three further costs came out in the same pass and are what brings this sport inside the limit.
+The largest by far: coverage was aggregating all 1140293 participations a second time only to
+learn whether each event holds at least one eligible one, which `EXISTS` answers by stopping at
+the first. The other two are small - the per-participation grouping no longer carries
+`event_name` and `tournament_stage_name` through 1270283 rows, and the two counters are `SUM`
+rather than `COUNT(DISTINCT)` over a row that is already one per participation.
+
+**It finishes in 176.5 seconds against the server's 180, and that margin is the second reason it
+is `Monitor` rather than a plain check.** It runs today; a busy server returns a 504 and the run
+reports it failed. Two further ideas were tried and both are recorded because they are the
+obvious next ones and both are wrong: narrowing the `result` join to the four types the statement
+reads saves nothing, because those four are 99.9 per cent of the rows; and lifting the repeated
+`TRIM(LEADING '+' ...)` into a derived table of its own made the statement time out again, since
+MariaDB materialises every level and a new level costs more than the eight scalar evaluations it
+removes. **It was never sharded to make it fit** - `WORKFLOW.md` owns that rule. Four date windows
+were run only to measure, and they returned the identical 1300 findings of 9609 events that the
+whole statement returns.
+
+What it reports is 1300 events of 9609 in the `628 Road Race` discipline. Two thirds are
+`EFFECTIVE_TIME_UNPARSEABLE` and every one of those is a value written wrong rather than a race
+run wrong: a winner's time truncated to `4:20:1` where `4:20:01` belongs, a gap of `+27:72` where
+seconds cannot be 72, a stray space or underscore. Those are **271 rows of 1133607** and they are
+a work list. The rest are `RANK_EFFECTIVE_TIME_NOT_MONOTONIC` and are not all defects, for the
+reason recorded above: the same-time rule credits a whole group with the leader's time while the
+places inside it follow the order the riders crossed.
 
 <!-- MANUAL PASTE ZONE: 30 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -1203,9 +1259,13 @@ here because each mistake is repeatable:
    Because `101 Duration` carries the winner's absolute time and everybody else's gap, the
    actual finishing time of a rider behind the winner exists nowhere at event level.
    `Cycling-DQ-069` and `-070` report it and `-071` and `-087` wait on it.
-10. **Why do 1359 events hold riders with no result of any kind?** 23928 participations, and
-    the worst events hold **437 apiece** - a whole start list entered and never resolved.
-    `Cycling-DQ-085` reports them.
+10. **Why do 1359 events hold riders with no result of any kind?** 23928 participations across
+    9612 finished events. **Reshaped 2026-08-17 and narrower for it**: this was asked as "a whole
+    start list entered and never resolved", and that is not what it is. Not one event has its
+    whole field unresolved, **690 of the 1359 are a single rider**, and 40 heavy events supplied
+    23025 of the participations. So there are two questions here, not one - what happens in a
+    race that loses half its field, and why a lone rider is left unresolved in an otherwise
+    complete result. `Cycling-DQ-085` now reports per event and says which.
 11. **Why do 79 rankings in championship and Games templates award no medal?** `11050 Asian
     Championship` (female) holds 26 such, the two `European Youth Olympic Festival` templates 34
     between them, and `Asian Games`, `European Games`, `South East Asian Games`, `African

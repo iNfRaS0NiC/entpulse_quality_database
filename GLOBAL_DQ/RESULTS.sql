@@ -2994,8 +2994,8 @@ SELECT
         ELSE 'RANK_EFFECTIVE_TIME_NOT_MONOTONIC'
     END AS check_type,
     x.event_id,
-    x.event_name,
-    x.tournament_stage_name,
+    ev.name AS event_name,
+    tsn.name AS tournament_stage_name,
     x.unreadable_count + x.non_monotonic_count AS offending_count,
     COALESCE(x.sample_unreadable, x.sample_non_monotonic) AS sample_offence,
     NULL AS eligible_count,
@@ -3035,16 +3035,42 @@ SELECT
 -- offending_count changed meaning in the first step and says so here: it counts offending
 -- riders rather than offending pairs, which is what the rest of this package counts. On BMX
 -- that is 700 where the pair count read 2084; on Triathlon the two agree at 82517.
+--
+-- Rebuilt again on 2026-08-17, for a defect rather than a cost, and the cost followed. The
+-- parser accepted at most one colon, so it read M:SS and plain seconds and voided everything
+-- else. A road stage lasts four to seven hours and its winner's time is always written with
+-- two, which made 8956 of Cycling's 1140293 Duration values unreadable and, worse, quietly
+-- removed every leader from the comparison. Shard 1 of Cycling fell from 1780 findings to 173
+-- once hours were read. Triathlon, whose races also run past the hour, fell from 3210 findings
+-- of 3603 events to 0 of 3603 - the whole result was the parser. BMX, which races in under a
+-- minute, is unchanged at 47 of 8001, which is what says the M:SS path was not disturbed.
+-- Three further costs came out in the same pass, and together they are what brings Cycling
+-- inside the gateway limit at last: 176.5 seconds whole, returning 1300 events of 9609.
+--   1. Coverage no longer repeats the per-participation aggregation. It asked the identical
+--      1140293-row question a second time only to learn whether each event holds at least one
+--      eligible participant, which EXISTS answers by stopping at the first. This is the whole
+--      saving; the other two are small.
+--   2. The per-participation grouping no longer carries event_name and tournament_stage_name
+--      through 1270283 rows. It groups on two integers and the names are joined at the end,
+--      onto the roughly 1300 events that survive.
+--   3. unreadable_count and non_monotonic_count are SUM rather than COUNT(DISTINCT). The row
+--      they counted is already one per participation, so the DISTINCT bought nothing and cost
+--      a second pass.
+-- Two things were tried and are recorded because they are the obvious next ideas and both are
+-- wrong here. Narrowing the result join to the four types the statement reads saves nothing:
+-- those four are 99.9 per cent of the rows in the sports measured. And lifting the repeated
+-- TRIM(LEADING '+' ...) into a derived table of its own made the statement time out again -
+-- MariaDB materialises every level, so a new level costs more than the eight scalar
+-- evaluations it removes. Repeated cheap expressions are not the thing to hunt here; repeated
+-- passes over the rows are.
 FROM (
     SELECT
         w.event_id,
-        MAX(w.event_name) AS event_name,
-        MAX(w.tournament_stage_name) AS tournament_stage_name,
-        COUNT(DISTINCT CASE WHEN w.seconds IS NULL THEN w.ep_id END) AS unreadable_count,
-        COUNT(DISTINCT CASE
+        SUM(CASE WHEN w.seconds IS NULL THEN 1 ELSE 0 END) AS unreadable_count,
+        SUM(CASE
             WHEN w.seconds IS NOT NULL AND w.best_seconds_behind IS NOT NULL
              AND w.best_seconds_behind < w.seconds
-            THEN w.ep_id
+            THEN 1 ELSE 0
         END) AS non_monotonic_count,
         MIN(CASE WHEN w.seconds IS NULL
             THEN CONCAT('rank ', w.rank_value, ' = ', w.effective_raw)
@@ -3063,13 +3089,9 @@ FROM (
         -- b.rank_value > a.rank_value did - ties included, so two riders sharing a place are
         -- still not compared with each other.
         SELECT
-            v.ep_id,
             v.event_id,
-            v.event_name,
-            v.tournament_stage_name,
             v.rank_value,
             v.effective_raw,
-            v.is_gap,
             v.seconds,
             MIN(v.seconds) OVER (
                 PARTITION BY v.event_id, v.is_gap
@@ -3081,17 +3103,22 @@ FROM (
             -- in this block used to sit inside the grouped query, where each branch had to
             -- repeat the whole COALESCE over two MAX expressions because a select alias is not
             -- visible to its siblings.
+            -- Three shapes are read, not two: H:MM:SS, M:SS and plain seconds, each with an
+            -- optional fraction. The hours branch is not decoration. A road stage lasts four
+            -- to seven hours and its winner's absolute time is always written with two
+            -- colons, so a parser accepting one silently voided every leader in the sport.
             SELECT
-                g.ep_id,
                 g.event_id,
-                g.event_name,
-                g.tournament_stage_name,
                 g.rank_value,
                 g.effective_raw,
                 CASE WHEN g.effective_raw LIKE '+%' THEN 1 ELSE 0 END AS is_gap,
                 CASE
                     WHEN TRIM(LEADING '+' FROM g.effective_raw)
-                         NOT REGEXP '^[0-9]+(:[0-5][0-9])?(\\.[0-9]+)?$' THEN NULL
+                         NOT REGEXP '^[0-9]+(:[0-5][0-9]){0,2}(\\.[0-9]+)?$' THEN NULL
+                    WHEN TRIM(LEADING '+' FROM g.effective_raw) REGEXP '^[0-9]+:[0-5][0-9]:[0-5][0-9]'
+                    THEN CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM g.effective_raw), ':', 1) AS DECIMAL(14,3)) * 3600
+                       + CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(TRIM(LEADING '+' FROM g.effective_raw), ':', 2), ':', -1) AS DECIMAL(14,3)) * 60
+                       + CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM g.effective_raw), ':', -1) AS DECIMAL(14,3))
                     WHEN TRIM(LEADING '+' FROM g.effective_raw) LIKE '%:%'
                     THEN CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM g.effective_raw), ':', 1) AS DECIMAL(14,3)) * 60
                        + CAST(SUBSTRING_INDEX(TRIM(LEADING '+' FROM g.effective_raw), ':', -1) AS DECIMAL(14,3))
@@ -3099,10 +3126,7 @@ FROM (
                 END AS seconds
             FROM (
                 SELECT
-                    ep.id AS ep_id,
-                    e.id AS event_id,
-                    e.name AS event_name,
-                    ts.name AS tournament_stage_name,
+                    ep.eventFK AS event_id,
                     CAST(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_RANK_TYPE_ID}} THEN r.value END)) AS UNSIGNED) AS rank_value,
                     COALESCE(
                         NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
@@ -3130,12 +3154,16 @@ FROM (
                       AND od.disciplineFK IN ({{TIMED_DISCIPLINE_LIST}})
                 ) td ON td.event_id = e.id
                 JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                     AND r.result_typeFK IN ({{RESULT_RANK_TYPE_ID}}, {{RESULT_FULL_TIME_TYPE_ID}},
+                                            {{RESULT_DURATION_TYPE_ID}}, {{RESULT_COMMENT_TYPE_ID}})
                 WHERE ep.del = 'no'
                   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
                   -- AND t.tournament_templateFK = <tournament_template_id>
                   -- AND e.startdate >= '<from_datetime>'
                   -- AND e.startdate <  '<to_datetime>'
-                GROUP BY ep.id, e.id, e.name, ts.name
+                -- Two integers, not four columns. The event and stage names used to be carried
+                -- through this grouping and are joined onto the surviving events instead.
+                GROUP BY ep.id, ep.eventFK
                 HAVING rank_value IS NOT NULL AND effective_raw IS NOT NULL
                    AND did_not_finish = 0
             ) g
@@ -3144,51 +3172,64 @@ FROM (
     GROUP BY w.event_id
     HAVING unreadable_count > 0 OR non_monotonic_count > 0
 ) x
+JOIN event ev ON ev.id = x.event_id
+JOIN tournament_stage tsn ON tsn.id = ev.tournament_stageFK
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT c.event_id) AS eligible_count,
+    COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 -- Coverage deliberately counts the whole format-audit population, not only events that
 -- happen to offer a monotonic comparison. This is the same ranked-finisher/effective-time
 -- dataset as the findings branch, including the no-result Comment exclusion. A single
 -- unreadable time therefore cannot become a finding outside coverage, while an event with
 -- only one readable time is truthfully covered for format but not compared.
-FROM (
-    SELECT
-        e.id AS event_id
-    FROM event_participants ep
-    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
-    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-         AND tt.sportFK = {{SPORT_ID}}
-    JOIN (
-        SELECT DISTINCT od.objectFK AS event_id
-        FROM object_discipline od
-        WHERE od.object_typeFK = 5
-          AND od.del = 'no'
-          AND od.disciplineFK IN ({{TIMED_DISCIPLINE_LIST}})
-    ) td ON td.event_id = e.id
-    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
-    WHERE ep.del = 'no'
-      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
-      -- AND t.tournament_templateFK = <tournament_template_id>
-      -- AND e.startdate >= '<from_datetime>'
-      -- AND e.startdate <  '<to_datetime>'
-    GROUP BY ep.id, e.id
-    HAVING CAST(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_RANK_TYPE_ID}} THEN r.value END)) AS UNSIGNED) IS NOT NULL
-       AND COALESCE(
-               NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} THEN r.value END)), ''),
-               NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = {{RESULT_DURATION_TYPE_ID}} THEN r.value END)), '')
-           ) IS NOT NULL
-       AND MAX(CASE WHEN r.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
-                     AND LOWER(TRIM(r.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
-                    THEN 1 ELSE 0 END) = 0
-) c
+-- Asked as a semi-join rather than by aggregating every participation a second time. The
+-- question is whether the event holds at least one eligible participant, so EXISTS stops at
+-- the first one it finds; the aggregate form read all 1140293 of Cycling's rows to answer it
+-- and was the single largest cost in the statement. The NOT EXISTS inside is per event, not
+-- per participant, and is reached only until the first qualifying rider is found.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+JOIN (
+    SELECT DISTINCT od.objectFK AS event_id
+    FROM object_discipline od
+    WHERE od.object_typeFK = 5
+      AND od.del = 'no'
+      AND od.disciplineFK IN ({{TIMED_DISCIPLINE_LIST}})
+) td ON td.event_id = e.id
+WHERE e.del = 'no'
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result rr ON rr.event_participantsFK = ep.id AND rr.del = 'no'
+           AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+           AND rr.value IS NOT NULL
+      JOIN result rd ON rd.event_participantsFK = ep.id AND rd.del = 'no'
+           AND rd.result_typeFK IN ({{RESULT_FULL_TIME_TYPE_ID}}, {{RESULT_DURATION_TYPE_ID}})
+           AND rd.value IS NOT NULL
+           AND TRIM(rd.value) <> ''
+      WHERE ep.eventFK = e.id
+        AND ep.del = 'no'
+        AND NOT EXISTS (
+            SELECT 1
+            FROM result rc
+            WHERE rc.event_participantsFK = ep.id
+              AND rc.del = 'no'
+              AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+              AND LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
+        )
+  )
 
 ORDER BY sort_order, event_id;
 

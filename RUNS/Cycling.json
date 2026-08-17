@@ -7170,6 +7170,50 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "17.08.2026 07-36-14",
+                     "startedUtc":  "2026-08-17T05:36:14Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-101",
+                                        "runKey":  "Cycling-DQ-101",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "New",
+                                        "rows":  1301,
+                                        "findings":  1300,
+                                        "eligible":  9609,
+                                        "seconds":  170.1,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 07-39-15",
+                     "startedUtc":  "2026-08-17T05:39:15Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-085",
+                                        "runKey":  "Cycling-DQ-085",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_INVALID_OR_MISSING_BY_EVENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  1362,
+                                        "findings":  1361,
+                                        "eligible":  9612,
+                                        "seconds":  48.1,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs"

@@ -4018,7 +4018,7 @@ Test-That 'GLOBAL-DQ-111 keeps unreadable times, one event row and symmetric no-
     # a gap is never compared with an absolute time, and only strictly lower ranks are looked at.
     Assert-True ($sql -match 'EFFECTIVE_TIME_UNPARSEABLE_AND_NOT_MONOTONIC') `
         'the combined event-level violation type is missing'
-    Assert-True ($sql -match '(?is)COUNT\(DISTINCT\s+CASE\s+WHEN\s+w\.seconds\s+IS\s+NULL\s+THEN\s+w\.ep_id\s+END\)\s+AS\s+unreadable_count') `
+    Assert-True ($sql -match '(?is)SUM\(CASE\s+WHEN\s+w\.seconds\s+IS\s+NULL\s+THEN\s+1\s+ELSE\s+0\s+END\)\s+AS\s+unreadable_count') `
         'unreadable left-side values would again depend on finding a peer'
     Assert-True ($sql -match '(?is)PARTITION\s+BY\s+v\.event_id,\s*v\.is_gap') `
         'a gap and an absolute time could again be compared with each other'
@@ -4030,18 +4030,34 @@ Test-That 'GLOBAL-DQ-111 keeps unreadable times, one event row and symmetric no-
         'findings are not collapsed to one row per event'
     Assert-Equal 2 ([regex]::Matches($sql, 'RESULT_COMMENT_NO_RESULT_LIST')).Count `
         'no-result exclusions in the finding input and the coverage input'
-    Assert-True ($sql -match '(?is)COUNT\(DISTINCT\s+c\.event_id\)\s+AS\s+eligible_count') `
+    Assert-True ($sql -match '(?is)COUNT\(DISTINCT\s+e\.id\)\s+AS\s+eligible_count') `
         'coverage no longer counts the pre-violation event population'
-    # The three costs removed on 2026-08-16, each of which made the statement time out on a
-    # sport of Cycling's size. They are asserted as absences because reintroducing any one of
-    # them is silent: the statement still returns the right rows, on the sports small enough
+    # The effective time is read in three shapes since 2026-08-17. A parser accepting one colon
+    # reads M:SS and voids H:MM:SS, which is every road-stage winner: it made 8956 of Cycling's
+    # Duration values unreadable and removed the leaders from the comparison, and it was the
+    # whole of Triathlon's 3210 findings. The failure is silent on a sport that races inside the
+    # hour, which is why it survived two sports and a rebuild.
+    Assert-True ($sql -match "(?is)NOT\s+REGEXP\s+'\^\[0-9\]\+\(:\[0-5\]\[0-9\]\)\{0,2\}") `
+        'the effective-time parser accepts at most one colon again, so every time written in hours reads as unreadable'
+    Assert-True ($sql -match '(?is)AS\s+DECIMAL\(14,3\)\)\s*\*\s*3600') `
+        'the hours branch is gone, so H:MM:SS no longer converts to seconds'
+    # The costs removed on 2026-08-16 and 2026-08-17, each of which made the statement time out
+    # on a sport of Cycling's size. They are asserted as absences because reintroducing any one
+    # of them is silent: the statement still returns the right rows, on the sports small enough
     # to finish.
     Assert-Equal 0 ([regex]::Matches($sql, '(?is)LEFT\s+JOIN\s*\(.+?\)\s*b\s+ON')).Count `
         'the all-pairs self-join is back, whose cost grows with the square of the field'
-    Assert-Equal 0 ([regex]::Matches($sql, '(?i)NOT\s+EXISTS\s*\(')).Count `
-        'a correlated subquery is back, asked once per participant'
-    Assert-Equal 2 ([regex]::Matches($sql, 'RESULT_DURATION_TYPE_ID')).Count `
-        'the raw effective time is read more than once per branch again, so every REGEXP below re-evaluates it'
+    Assert-Equal 0 ([regex]::Matches($sql, '(?is)GROUP\s+BY\s+ep\.id,\s*e\.id,\s*e\.name')).Count `
+        'the per-participation grouping carries the event and stage names through every row again'
+    # Coverage asks whether an event holds one eligible participant, and EXISTS stops at the
+    # first. Aggregating the whole participation set a second time to answer it was the single
+    # largest cost in the statement. The NOT EXISTS below is inside that semi-join, per event.
+    Assert-True ($sql -match '(?is)AND\s+EXISTS\s*\(\s*SELECT\s+1\s+FROM\s+event_participants\s+ep') `
+        'coverage aggregates every participation a second time instead of stopping at the first eligible one'
+    Assert-Equal 1 ([regex]::Matches($sql, '(?i)NOT\s+EXISTS\s*\(')).Count `
+        'a correlated subquery is back on the finding side, asked once per participant'
+    Assert-Equal 3 ([regex]::Matches($sql, 'RESULT_DURATION_TYPE_ID')).Count `
+        'the effective time is read a different number of times than the finding input, its type filter and the coverage semi-join'
 }
 
 Test-That 'GLOBAL-DQ-102 keeps the scope-type list symmetric across findings and coverage' {

@@ -768,6 +768,153 @@ WHERE s.del = 'no'
 
 -- ================================================================================
 SELECT
+    -- CheckID - Cycling-DQ-085
+    -- Name - EVENT_RESULTS_RANK_INVALID_OR_MISSING_BY_EVENT
+    -- What it does: Flags finished events holding riders with no usable place, saying whether the whole field or part of it is unresolved.
+    CASE
+        WHEN x.rank_not_integer_count > 0 THEN 'EVENT_RANK_NOT_INTEGER'
+        WHEN x.rank_over_max_count > 0 THEN 'EVENT_RANK_OVER_MAX'
+        WHEN x.no_result_count = x.field_size THEN 'EVENT_WHOLE_FIELD_HOLDS_NO_RESULT'
+        WHEN x.no_result_count > 0 THEN 'EVENT_PART_OF_FIELD_HOLDS_NO_RESULT'
+        ELSE 'EVENT_RANK_MISSING_WITH_OTHER_RESULT_PRESENT'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.tournament_stage_name,
+    x.template_name,
+    x.field_size,
+    x.affected_count,
+    x.rank_not_integer_count,
+    x.rank_over_max_count,
+    x.no_result_count,
+    x.rank_missing_other_result_count,
+    x.sample_offence,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds finished events in which a rider ends with no place that
+-- can be used - a Rank that is not a plain positive integer, a Rank past the largest field this
+-- sport starts, or no Rank and no Comment to explain its absence - and reports the event rather
+-- than the rider.
+--
+-- The audited object is the event because of what the sport does to the numbers. The global
+-- template GLOBAL-DQ-036 EVENT_RESULTS_RANK_INVALID_OR_MISSING audits the participation, which
+-- is the right object where a field is small: measured 2026-08-16 it returns 1 row on Triathlon,
+-- 44 on BMX, 69 on Artistic-Gymnastics and 357 on Modern-Pentathlon, and on all four the rider's
+-- name is exactly what a reviewer needs. Cycling starts 92 to 124 riders per event and the same
+-- template returns 23930 rows of 1270517 participations, because one unresolved race contributes
+-- its entire start list. Folded to the event that is roughly 1400 rows, and the worst of them
+-- says 437 riders in one race rather than appearing 437 times. The template keeps its shape for
+-- the other four sports and this statement replaces it here only.
+--
+-- Whole field against part of it is the distinction worth carrying, and it is why the counts
+-- travel as named columns instead of one total. A race where every entered rider holds no result
+-- of any kind is a start list imported and never resolved - one act, one thing to fix. A race
+-- where three riders of 120 hold nothing is three riders to chase. Reported as one number those
+-- read the same, and they are not the same work.
+--
+-- 250 is RANK_MAX_PLAUSIBLE from SPORTS/params.json, written out because a sport statement in
+-- this package carries its values rather than placeholders. It is the largest field this sport
+-- starts with room over it, not a limit anybody enforces.
+--
+-- The result rows are read once per participation through a LEFT JOIN and a MAX(CASE) pass
+-- rather than by three correlated subqueries per rider. The LEFT JOIN is not cosmetic: a rider
+-- carrying no result row at all is precisely what NO_RESULT_OF_ANY_TYPE names, and an inner join
+-- would drop the finding it exists to make.
+FROM (
+    SELECT
+        y.event_id,
+        MAX(y.event_name) AS event_name,
+        MAX(y.tournament_stage_name) AS tournament_stage_name,
+        MAX(y.template_name) AS template_name,
+        COUNT(DISTINCT y.ep_id) AS field_size,
+        COUNT(DISTINCT CASE WHEN y.offence IS NOT NULL THEN y.ep_id END) AS affected_count,
+        COUNT(DISTINCT CASE WHEN y.offence = 'RANK_NOT_INTEGER' THEN y.ep_id END) AS rank_not_integer_count,
+        COUNT(DISTINCT CASE WHEN y.offence = 'RANK_OVER_MAX' THEN y.ep_id END) AS rank_over_max_count,
+        COUNT(DISTINCT CASE WHEN y.offence = 'NO_RESULT_OF_ANY_TYPE' THEN y.ep_id END) AS no_result_count,
+        COUNT(DISTINCT CASE WHEN y.offence = 'RANK_AND_COMMENT_MISSING_OTHER_RESULT_PRESENT' THEN y.ep_id END) AS rank_missing_other_result_count,
+        MIN(CASE WHEN y.offence IS NOT NULL
+                 THEN CONCAT(y.participant_name, ' - ', y.offence,
+                             COALESCE(CONCAT(', rank = ', y.rank_raw), ''))
+            END) AS sample_offence
+    FROM (
+        SELECT
+            g.ep_id,
+            g.event_id,
+            g.event_name,
+            g.tournament_stage_name,
+            g.template_name,
+            g.participant_name,
+            g.rank_raw,
+            CASE
+                WHEN g.rank_raw IS NOT NULL AND g.rank_raw NOT REGEXP '^[1-9][0-9]*$'
+                     THEN 'RANK_NOT_INTEGER'
+                WHEN g.rank_raw IS NOT NULL AND CAST(g.rank_raw AS UNSIGNED) > 250
+                     THEN 'RANK_OVER_MAX'
+                WHEN g.rank_raw IS NULL AND g.comment_raw IS NULL AND g.has_any_result = 0
+                     THEN 'NO_RESULT_OF_ANY_TYPE'
+                WHEN g.rank_raw IS NULL AND g.comment_raw IS NULL
+                     THEN 'RANK_AND_COMMENT_MISSING_OTHER_RESULT_PRESENT'
+            END AS offence
+        FROM (
+            SELECT
+                ep.id AS ep_id,
+                e.id AS event_id,
+                e.name AS event_name,
+                ts.name AS tournament_stage_name,
+                tt.name AS template_name,
+                p.name AS participant_name,
+                NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = 100 THEN r.value END)), '') AS rank_raw,
+                NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = 104 THEN r.value END)), '') AS comment_raw,
+                MAX(CASE WHEN r.value IS NOT NULL AND TRIM(r.value) <> '' THEN 1 ELSE 0 END) AS has_any_result
+            FROM event_participants ep
+            JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+            JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+            JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+            JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                 AND tt.sportFK = 30
+            JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+            LEFT JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+            WHERE ep.del = 'no'
+              AND e.del = 'no'
+              AND e.status_type = 'finished'
+              AND e.status_descFK = 6
+              -- AND t.tournament_templateFK = <tournament_template_id>
+              -- AND e.startdate >= '<from_datetime>'
+              -- AND e.startdate <  '<to_datetime>'
+            GROUP BY ep.id, e.id, e.name, ts.name, tt.name, p.name
+        ) g
+    ) y
+    GROUP BY y.event_id
+    HAVING affected_count > 0
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+-- Coverage counts the finished events that hold at least one entered rider, which is the
+-- population the findings branch reads. An event nobody entered cannot hold a rider with no
+-- place, and counting it would say the check looked somewhere it did not.
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 30
+WHERE ep.del = 'no'
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, affected_count DESC, event_id;
+
+-- ================================================================================
+SELECT
     -- CheckID - Cycling-DQ-095
     -- Name - EVENT_AVERAGE_SPEED_IMPLAUSIBLE
     -- What it does: Flags finished races where the distance and the winning time give a speed no bicycle race reaches.
