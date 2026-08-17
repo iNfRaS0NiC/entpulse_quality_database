@@ -1278,8 +1278,8 @@
                 "reason": "The Comp.Rank half of what GLOBAL-DQ-045 reports on the event. Measured 2026-08-16 the template returns 1734 statistics of 1734, every one RANK_PRESENT_TIME_MISSING, which matches the storage directly: 1426 Time is written on 85926 of the 181997 ranked participants in the sport and reaches 776 of 1795 statistics, so no ranking exists in which every ranked rider carries a time. Unlike the event layer this one is half-populated rather than empty, so the number will move gradually rather than in one step."
             },
             "GLOBAL-DQ-054": {
-                "signal": "Monitor",
-                "reason": "A sentinel, and the second of the two things POWERBI.md allows an eligible_count of 0 to be. The statement compares one rider full time with another, and the sport writes no full time at all, so there is no pair to read: eligible_count is 0 on a correct scope rather than a misdirected one. It is not a structural absence - Cycling is a timed sport and the storage exists globally as result type 557 - so this is a population that is empty today and will not be once the gap GLOBAL-DQ-045 reports is closed. Instantiated so that it is already in place on the day the field is filled rather than being remembered then."
+                "signal": "Sentinel",
+                "reason": "The second of the two things POWERBI.md allows an eligible_count of 0 to be, and carried as Monitor until the signal vocabulary had a word for it on 2026-08-17. The statement compares one rider full time with another, and the sport writes no full time at all, so there is no pair to read: eligible_count is 0 on a correct scope rather than a misdirected one. It is not a structural absence - Cycling is a timed sport and the storage exists globally as result type 557 - so this is a population that is empty today and will not be once the gap GLOBAL-DQ-045 reports is closed. Instantiated so that it is already in place on the day the field is filled rather than being remembered then."
             },
             "GLOBAL-DQ-084": {
                 "signal": "Not applicable",
@@ -1374,8 +1374,8 @@
                 "reason": "Structural, and the reason is narrower than the one recorded for the period checks. The template asserts that a finished event carries a scope container - one scope row standing for the whole event, under which the period-by-period breakdown hangs. This sport has no such type. Its 193 scope types are checkpoint1 to checkpoint192 plus an unnamed 0, measured 2026-08-16, and a checkpoint is a point along the course rather than a wrapper around the race. GLOBAL-DQ-102 does apply and is carried, because it asserts referential integrity over whatever scope rows exist rather than the presence of a container."
             },
             "GLOBAL-DQ-056": {
-                "signal": "Monitor",
-                "reason": "A sentinel, exactly as GLOBAL-DQ-054 is. It checks that a rider's full time equals the leader's full time plus their own gap, and the sport stores no full time at all, so there is nothing to add up: eligible_count is 0 on a correct scope rather than a misdirected one. Not a structural absence - Cycling is timed and result type 557 exists globally - so the population is empty today and will not be once the gap GLOBAL-DQ-045 reports is closed. FULL_TIME_TOLERANCE_SECONDS is recorded as 1 for the same day."
+                "signal": "Sentinel",
+                "reason": "A sentinel exactly as GLOBAL-DQ-054 is, and reclassified with it on 2026-08-17. It checks that a rider's full time equals the leader's full time plus their own gap, and the sport stores no full time at all, so there is nothing to add up: eligible_count is 0 on a correct scope rather than a misdirected one. Not a structural absence - Cycling is timed and result type 557 exists globally - so the population is empty today and will not be once the gap GLOBAL-DQ-045 reports is closed. FULL_TIME_TOLERANCE_SECONDS is recorded as 1 for the same day."
             },
             "GLOBAL-DQ-102": {
                 "signal": "Out of client scope",

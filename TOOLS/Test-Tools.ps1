@@ -1748,6 +1748,38 @@ Test-That 'a check outside the client boundary is a recordable signal expecting 
     Assert-Equal 'Non-zero' (Get-ExpectedForSignal -Signal 'Monitor') 'and a running check still is'
 }
 
+Test-That 'a sentinel is a running check whose population has not arrived yet' {
+    # The fourth answer to eligible_count = 0, and the only one still waiting for something.
+    # POWERBI.md always allowed a zero to be a correct scope over a legitimately empty
+    # population, and until this value existed that answer had nowhere to live where the run
+    # could read it - so Cycling-DQ-071 and Cycling-DQ-087 were asked about on every run while
+    # SPORTS/Cycling.md had answered weeks earlier.
+    Assert-True ($CheckSignalValues -contains 'Sentinel') 'the runner accepts it'
+
+    # And it does not join the family that expects nothing. Those describe a check nobody
+    # should be counting; this one is approved, running, and watching. When the rows arrive,
+    # every one it returns is a defect.
+    Assert-Equal 'Zero' (Get-ExpectedForSignal -Signal 'Sentinel') `
+        'the expectation is recorded before the day it is needed, not on it'
+    Assert-Equal '' (Get-ExpectedForSignal -Signal 'Not applicable') `
+        'unlike Not applicable, which reads a structure the sport does not have'
+
+    # The verdict says so too, rather than reporting Audited nothing beside a classification
+    # the same document carries. It is the signal that decides, not the count.
+    Assert-Equal 'Sentinel' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 0 `
+            -Eligible 0 -Previous $null -Ran $true -Signal 'Sentinel') `
+        'a declared sentinel reads as one'
+    Assert-Equal 'Audited nothing' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 0 `
+            -Eligible 0 -Previous $null -Ran $true -Signal '') `
+        'and an undeclared zero is still the open question it always was'
+
+    # The day the population arrives, the sentinel stops being one and is judged on its numbers
+    # like any other check. Nothing here is permanent.
+    Assert-Equal 'Clean' (Get-CheckVerdict -Expected 'Zero' -Residual $null -Findings 0 `
+            -Eligible 400 -Previous $null -Ran $true -Signal 'Sentinel') `
+        'a filled population is read on what it returned'
+}
+
 Test-That 'a recorded expectation overrides the one the signal implies' {
     $jobs = @([pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Signal = 'Actionable' })
     $hydrated = @(Set-JobCheckExpectation -Jobs $jobs -SportName 'Fixtureball')
@@ -2179,7 +2211,7 @@ Test-That 'a column index becomes its spreadsheet letter' {
     Assert-Equal 'A' (ConvertTo-SheetsColumnName -Index 1) 'first'
     Assert-Equal 'Z' (ConvertTo-SheetsColumnName -Index 26) 'last single letter'
     Assert-Equal 'AA' (ConvertTo-SheetsColumnName -Index 27) 'first double letter'
-    Assert-Equal 'U' (ConvertTo-SheetsColumnName -Index 21) 'the last Overview column'
+    Assert-Equal 'W' (ConvertTo-SheetsColumnName -Index 23) 'the last Overview column'
 }
 
 Test-That 'the reviewer columns split the row into the spans a run may write' {
@@ -2210,7 +2242,7 @@ Test-That 'a check the document already holds is updated in the row it occupies'
 
     Assert-Equal 2 $writes.Count 'two spans, written around the reviewer columns'
     Assert-Equal 'A7:H7' $writes[0].Range 'the first span, on the row the check already has'
-    Assert-Equal 'L7:V7' $writes[1].Range 'the second span, resuming after Comment'
+    Assert-Equal 'L7:W7' $writes[1].Range 'the second span, resuming after Comment'
     foreach ($write in $writes) {
         Assert-True ($write.Range -notmatch '^[IJK]') "a run must never write $($write.Range)"
     }
@@ -2230,10 +2262,10 @@ Test-That 'a check the document has never held is appended, seeded status and al
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
     # DQ-002 is in the document and not in this run, so it gets a Verdict cell of its own.
     # The append is the whole-row write, and it is the one under test here.
-    $appended = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'A*:V*' -and $_.Range -ne 'A1:V1' })
+    $appended = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'A*:W*' -and $_.Range -ne 'A1:W1' })
 
     Assert-Equal 1 $appended.Count 'one whole-row write'
-    Assert-Equal 'A8:V8' $appended[0].Range 'appended below the last row in use, not sorted into place'
+    Assert-Equal 'A8:W8' $appended[0].Range 'appended below the last row in use, not sorted into place'
     Assert-Equal 'No issue' $appended[0].Values[0][8] 'the seeded status goes in on a new row'
 }
 
@@ -2251,11 +2283,12 @@ Test-That 'a withdrawn check is retired by any run, not only by a complete one' 
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
         -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
 
-    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'L8:V8' })
+    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'L8:W8' })
     Assert-Equal 1 $span.Count 'the run-owned columns are written in one span'
     Assert-Equal 'Deprecated' $span[0].Values[0][0] 'Signal says so'
-    Assert-Equal 'Deprecated' $span[0].Values[0][8] 'and so does Verdict'
+    Assert-Equal 'Deprecated' $span[0].Values[0][9] 'and so does Verdict'
     Assert-Equal '' $span[0].Values[0][3] 'Findings is cleared rather than left reading as current'
+    Assert-Equal '' $span[0].Values[0][4] 'and so is All findings, which is no more current than it is'
 
     # Status is I, and this is the one thing a run puts there: a row reading Deprecated in
     # Signal and Verdict while Status still said Not reviewed was asking to be reviewed and
@@ -2309,7 +2342,7 @@ Test-That 'a withdrawn check that ran anyway keeps the numbers it just produced'
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
         -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
 
-    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'L8:V8' })
+    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'L8:W8' })
     Assert-Equal 1 $span.Count 'one write, the run own'
     Assert-Equal 5 $span[0].Values[0][3] 'holding what the run measured rather than a cleared cell'
 }
@@ -2321,15 +2354,15 @@ Test-That 'the Overview header is rewritten every run, so a new column gets a na
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
 
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
-    $header = @($fresh.Operations | Where-Object { $_.Range -eq 'A1:V1' })
+    $header = @($fresh.Operations | Where-Object { $_.Range -eq 'A1:W1' })
     Assert-Equal 1 $header.Count 'an empty document gets its header'
-    Assert-Equal 'Trends' $header[0].Values[0][21] 'out to the last column the board writes'
+    Assert-Equal 'Trends' $header[0].Values[0][22] 'out to the last column the board writes'
 
     $existing = [pscustomobject]@{
         HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}
     }
     $again = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
-    Assert-Equal 1 @($again.Operations | Where-Object { $_.Range -eq 'A1:V1' }).Count `
+    Assert-Equal 1 @($again.Operations | Where-Object { $_.Range -eq 'A1:W1' }).Count `
         'and a document that already has one gets it again, in case the board has grown'
 }
 
@@ -2369,7 +2402,7 @@ Test-That 'a check that stopped running keeps its tab and is marked instead' {
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x' -Complete
 
     Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'DeleteSheet' }).Count 'nothing is deleted'
-    $marked = @($plan.Operations | Where-Object { $_.Range -eq 'T3:T3' })
+    $marked = @($plan.Operations | Where-Object { $_.Range -eq 'U3:U3' })
     Assert-Equal 1 $marked.Count 'the absent check gets its Verdict cell written'
     Assert-Equal 'Not in this run' $marked[0].Values[0][0] 'saying it did not run rather than nothing'
 }
@@ -2505,7 +2538,7 @@ Test-That 'a check tab never writes the two cells the reviewer owns' {
             $_.Sheet -eq 'OWNED' -and $_.Kind -eq 'Write' -and $_.Range -match '^[A-Z]2:[A-Z]2$' })
     Assert-Equal 2 $identity.Count 'the identity row is written in two spans'
     Assert-Equal 'A2:D2' $identity[0].Range 'up to What it does'
-    Assert-Equal 'G2:O2' $identity[1].Range 'resuming after Comment and Check By'
+    Assert-Equal 'G2:P2' $identity[1].Range 'resuming after Comment and Check By'
     Assert-Equal 0 @($plan.Operations | Where-Object {
             $_.Sheet -eq 'OWNED' -and $_.Range -in @('E2', 'F2') }).Count 'and never through E2 or F2'
 }
@@ -2813,7 +2846,7 @@ Test-That 'a check tab carries its header row and both of its links' {
     $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected `
         @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
 
-    $header = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A1:O1' })
+    $header = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A1:P1' })
     Assert-Equal 1 $header.Count 'the header row is written'
     Assert-Equal 'What it does' $header[0].Values[0][3] 'so D names what D2 holds'
 
@@ -2822,7 +2855,7 @@ Test-That 'a check tab carries its header row and both of its links' {
     Assert-Equal 'Comment' $header[0].Values[0][4] 'Comment at E'
     Assert-Equal 'Check By' $header[0].Values[0][5] 'and Check By at F'
     Assert-Equal 'Expected' $header[0].Values[0][6] 'the comparison block starts at G'
-    Assert-Equal 'Verdict' $header[0].Values[0][11] 'and ends with the verdict at L'
+    Assert-Equal 'Verdict' $header[0].Values[0][12] 'and ends with the verdict at M'
     Assert-True ($header[0].Values[0] -notcontains 'Priority') 'Priority is gone, being a board sort'
     Assert-True ($header[0].Values[0] -notcontains 'Signal') 'and so is the signal pair'
     Assert-True ($header[0].Values[0] -notcontains 'Signal reason') 'both of it'
@@ -2946,7 +2979,7 @@ Test-That 'a board with no table gets one' {
     Assert-Equal 'Overview' $board[0].Name 'under the plain name, one board to a document'
     Assert-Equal 0 $board[0].FromRow 'starting on the header row'
     Assert-Equal 3 $board[0].ToRow 'and covering both appended checks'
-    Assert-Equal 22 $board[0].ToCol 'across every column the board writes'
+    Assert-Equal 23 $board[0].ToCol 'across every column the board writes'
 }
 
 Test-That 'a board holding only its header is not made a table' {
@@ -2982,7 +3015,7 @@ Test-That 'a stale table on Overview is widened to the columns the board writes'
     Assert-Equal 3 $board[0].ToRow 'down to the row the appended check now occupies'
     # No column here is anybody's choice to preserve - every one is written by the runner - so
     # a remembered width just leaves the newest column outside the table without a header.
-    Assert-Equal 22 $board[0].ToCol 'and out to every column the board writes'
+    Assert-Equal 23 $board[0].ToCol 'and out to every column the board writes'
     Assert-Equal 'Table1' $board[0].Name 'while keeping their own name for it'
 }
 
@@ -3137,7 +3170,7 @@ Test-That 'the board is centred, its owned headings named, and sorted by priorit
     $formats = @($plan.Operations | Where-Object { $_.Kind -eq 'Format' -and $_.Sheet -eq 'Overview' })
 
     # One rule over the whole board, with no end row, so next week's rows are centred too.
-    $whole = @($formats | Where-Object { $_.FromCol -eq 0 -and $_.ToCol -eq 22 })
+    $whole = @($formats | Where-Object { $_.FromCol -eq 0 -and $_.ToCol -eq 23 })
     Assert-Equal 1 $whole.Count 'the whole board takes one alignment rule'
     Assert-Equal 'CENTER' $whole[0].Align 'centred'
     Assert-Equal $null $whole[0].ToRow 'and unbounded, so it follows the board down'
@@ -3570,14 +3603,26 @@ Test-That 'Overview counts what is still open, so a dismissed finding leaves the
     # it would report a row the board itself shows as settled.
     Assert-Equal 2 $rows 'four rows less the two dismissed, the In Progress one still counted'
 
-    # And nothing the statement measured moved. A reviewer may close a row; they may not edit
-    # what the database returned. Findings and Eligible sit in the second span, past the three
-    # columns the run never writes through.
+    # Every other column that counts findings carries the same subtraction, because a board
+    # reporting 2 open rows beside a Findings of 3 is a board arguing with itself. Rows had the
+    # subtraction to itself for a while, and that is exactly what it looked like.
     $second = @($plan.Operations | Where-Object {
-            $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' -and $_.Range -eq 'L7:V7' })
+            $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' -and $_.Range -eq 'L7:W7' })
     $from = 12
-    Assert-Equal 3 @($second[0].Values[0])[([array]::IndexOf($SheetsOverviewColumns, 'Findings') + 1 - $from)] 'Findings untouched'
-    Assert-Equal 900 @($second[0].Values[0])[([array]::IndexOf($SheetsOverviewColumns, 'Eligible') + 1 - $from)] 'Eligible untouched'
+    $secondRow = @($second[0].Values[0])
+    $at = {
+        param([string]$column)
+        return $secondRow[([array]::IndexOf($SheetsOverviewColumns, $column) + 1 - $from)]
+    }
+    Assert-Equal 1 (& $at 'Findings') 'Findings counts what is still open - three, less the two dismissed'
+
+    # And the statement's own result is still on the board, in the one column that never
+    # subtracts. A reviewer may close a row; they may not edit what the database returned, and
+    # the day somebody asks how many rows the check actually matches, the answer has to be here
+    # rather than reconstructed by counting the tab.
+    Assert-Equal 3 (& $at 'All findings') 'All findings is what the statement returned'
+    Assert-Equal 900 (& $at 'Eligible') `
+        'Eligible untouched - dismissing a finding does not shrink the population it came from'
 }
 
 Test-That 'the dismissed count is the same match the tab writes, not a second opinion' {

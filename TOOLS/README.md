@@ -508,7 +508,7 @@ must not be confused with it: there, a parameter is missing and the statement ca
 Here every parameter **is** recorded, the statement runs, and what is in doubt is whether its
 findings are defects.
 
-Four values are recordable. `Actionable` is the default and is never written down — a fifth
+Five values are recordable. `Actionable` is the default and is never written down — a sixth
 value on every check would make the block a second copy of the registry. `Deprecated` is
 deliberately not a signal: `POWERBI_REGISTRY.md`'s `Status` column owns it, and a value with
 two owners drifts.
@@ -518,6 +518,7 @@ two owners drifts.
 | `Monitor` | Real, but population-wide. The proportion is the finding; a single row is not a defect | Must have an `Approved` row — it describes a check that runs |
 | `Not applicable` | The sport has nothing for the check to read, so it reports the whole population | No row requirement, either way |
 | `Out of client scope` | The sport stores what the check reads, but only outside the client's boundary, so the check audits nothing this client is buying | No row requirement, either way |
+| `Sentinel` | The scope is right and the structure is there; the population it audits is empty today and the check is waiting for it | Must have an `Approved` row — it describes a check that runs |
 | `Blocked` | Would report the sport's normal shape as a defect until something else is fixed first | Must **not** have an `Approved` row — it says "not yet" |
 
 `Blocked` and `Not applicable` are easy to confuse and the difference matters: a block lifts
@@ -540,6 +541,26 @@ deprecated — a deprecated CheckID never comes back, and this one is meant to.
 Like `Not applicable`, it suppresses the run's `eligible_count = 0` question, and for the same
 reason: a zero there is still not clean data, and the entry records which of the answers it is
 rather than pretending the question was never asked.
+
+`Sentinel` is the fourth of that family and is the only one of them that is waiting for
+something. `POWERBI.md` says `eligible_count = 0` is one of exactly two things — a misdirected
+scope to correct, or a correct scope over a population that is legitimately empty today — and
+until this value existed only the first had a word. A run therefore asked the same question
+about the same checks every time, and the answer lived in the sport file where the run could
+not see it; the `Decisions` tab then showed two unanswered questions that had been answered
+weeks earlier. This is that answer, written where the run reads it.
+
+It is not `Not applicable`, because the column, the layer and the relation are all there and a
+row arriving tomorrow would be audited. It is not `Out of client scope`, because the boundary
+is not what empties it. It is not `Blocked`, because nothing has to be repaired first and the
+check is approved and running now. What is true is that the sport has not yet imported a row of
+the kind it reads — and the day it does, the check that was written for that day is the one
+already watching. That is why a sentinel is never dropped: a check removed for returning
+nothing is the check that will be missing when the rows arrive.
+
+The sport file must say what the empty population is and why it is expected to fill, exactly as
+it must for the other three. A signal recorded without that sentence is a row count promoted to
+a classification, which is the thing this whole section exists to prevent.
 
 **A signal is read off the structure, never off the current population.** A sport that stores
 no such column, no such layer and no such relation is `Not applicable`. A sport that stores
@@ -612,7 +633,15 @@ The default comes from the signal, so most checks need no entry at all:
 | `Actionable` | `Zero` |
 | `Monitor` | `Non-zero` |
 | `Informational` | `Non-zero` |
+| `Sentinel` | `Zero` |
 | `Blocked`, `Not applicable`, `Out of client scope` | nothing — no count anybody should be expecting |
+
+`Sentinel` expects `Zero` rather than nothing, and the difference from the three below it is
+the point: those three describe a check that should not be counted at all, while a sentinel is
+a live check whose population has not arrived. When it does, every row it returns is a defect —
+so the expectation is the one it will be judged by, recorded before the day it is needed rather
+than on it. A sentinel whose invariant is population-wide writes `Non-zero` itself, as any
+check may.
 
 ```json
 "BMX": {

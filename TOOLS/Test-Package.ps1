@@ -72,7 +72,8 @@ $TemplateFilterMarkerPattern =
 
 # Actionable is the default and is never recorded. Deprecated is absent on purpose:
 # POWERBI_REGISTRY.md's Status column owns it, and a value with two owners drifts.
-$CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable', 'Out of client scope')
+$CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable',
+    'Out of client scope', 'Sentinel')
 
 # What a re-run should return once the findings have been corrected, and the default each
 # signal implies. Only the exception is recorded, so an entry restating its own default is a
@@ -83,6 +84,7 @@ $ExpectedBySignal = @{
     'Actionable'    = 'Zero'
     'Monitor'       = 'Non-zero'
     'Informational' = 'Non-zero'
+    'Sentinel'      = 'Zero'
 }
 
 # The priority band each registry Category falls in. Run-Query.ps1 declares the same map and
@@ -1244,6 +1246,13 @@ if (Test-Path -LiteralPath $paramsPath) {
                     }
                     if ($signal -eq 'Monitor' -and -not $isApproved) {
                         $sportFindings += "SPORTS/params.json: '$sport' classifies $key as 'Monitor' but POWERBI_REGISTRY.md has no Approved row for it; Monitor describes a check that runs"
+                    }
+                    # Sentinel carries Monitor's requirement and not Blocked's, which is the
+                    # whole distinction: it says the check is approved, running and watching an
+                    # empty population, so a sentinel with no Approved row is a check watching
+                    # nothing from nowhere.
+                    if ($signal -eq 'Sentinel' -and -not $isApproved) {
+                        $sportFindings += "SPORTS/params.json: '$sport' classifies $key as 'Sentinel' but POWERBI_REGISTRY.md has no Approved row for it; a sentinel is a check that runs"
                     }
                 }
             }

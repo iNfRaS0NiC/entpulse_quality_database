@@ -996,6 +996,12 @@ a misdirected scope, and the distinction is the one `POWERBI.md` owns: the sport
 storage exists globally, so this population is empty today and will not be once the gap above is
 closed. It is numbered now so it is already in place on the day the field is filled.
 
+It carries the `Sentinel` signal since 2026-08-17, and did not before because the vocabulary had
+no such word - it was recorded as `Monitor` with a reason beginning "A sentinel". That cost
+something real: the run reads the signal to decide which `eligible_count = 0` questions are
+already answered, so this one and `Cycling-DQ-087` were raised on the `Decisions` tab of every
+run while the answer sat here, where the run could not see it. `TOOLS/README.md` owns the word.
+
 **Medals are awarded by 29 templates and by no other, and that list is what makes the medal-set
 check readable.** `Cycling-DQ-068` is `GLOBAL-DQ-026` with two changes. The template counts a
 medal over the team holding it where the statistic assigns one, so that a winning relay reads as
@@ -1158,7 +1164,8 @@ real populations - `Cycling-DQ-086` (`GLOBAL-DQ-047`, 168 not-started events), `
 
 **`Cycling-DQ-087`** carries `GLOBAL-DQ-056` and audits nothing today, `eligible_count` 0. It is
 the second sentinel beside `Cycling-DQ-071`, for the same reason: it adds the leader's full time
-to a rider's gap, and there are no full times to add.
+to a rider's gap, and there are no full times to add. It carries the `Sentinel` signal from the
+same day and for the same reason as its twin.
 
 **`GLOBAL-DQ-111` runs whole for this sport since 2026-08-17 and is `Cycling-DQ-101`, carried as
 `Monitor`.** It compares one finisher's effective time with another's, and it spent a day as

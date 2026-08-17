@@ -122,11 +122,22 @@ $SheetsMaxRowsPerCheck = 50000
 $SheetsCellBudgetWarning = 8000000
 
 # The columns on the live Overview, in order, matching the workbook so the two read alike.
+#
+# Findings, Prev findings, Change, Verdict and Trends all read what is still open: the rows
+# the reviewers marked No Issue / Change come off every one of them, as they already came off
+# Rows. A settled finding stays in the result for good, because nothing about the database is
+# going to change - so counting it forever made a finished check read as a busy one, and the
+# board disagreed with its own Rows column about how much work was left.
+#
+# All findings is the one column that does not subtract. It is what the statement returned,
+# and it is here because the reviewers' decisions are a reading of the data rather than a
+# change to it: the day somebody asks how many rows the check actually matches, that number
+# has to be on the board rather than reconstructed from the tab.
 $SheetsOverviewColumns = @(
     'Sport', 'CheckID', 'Parameters', 'Check Name', 'Priority', 'Category', 'What it does',
     'Rows', 'Status', 'Check By', 'Comment', 'Signal', 'Signal reason',
-    'Expected', 'Findings', 'Eligible', 'Prev findings', 'Prev eligible', 'Change',
-    'Verdict', 'Last run', 'Trends')
+    'Expected', 'Findings', 'All findings', 'Eligible', 'Prev findings', 'Prev eligible',
+    'Change', 'Verdict', 'Last run', 'Trends')
 
 # Row 1 of a check tab. Without it D2 and E2 hold "1 Structure" and "NO_RELATED_RECORDS" over
 # nothing, and a reader has to go back to Overview to learn what they are.
@@ -141,11 +152,16 @@ $SheetsOverviewColumns = @(
 # classification of the check, settled before the statement was sent and unchanged by reading
 # what it returned, so on a tab opened to look at findings they are two columns of noise
 # between the identity and the reviewer's own cells. Overview still carries both, hidden.
+#
+# All findings sits beside Findings here for the same reason it does on Overview, and it
+# matters more on a tab than on the board: this is the page where somebody is looking at the
+# rows themselves, and the difference between the two numbers is exactly how many of the rows
+# below them have already been decided about.
 $SheetsCheckTabColumns = @(
     'Check ID', 'Check Name', 'SQL Used', 'What it does',
     'Comment', 'Check By',
-    'Expected', 'Findings', 'Eligible', 'Prev findings', 'Change', 'Verdict', 'Trends',
-    'Category', 'Parameters')
+    'Expected', 'Findings', 'All findings', 'Eligible', 'Prev findings', 'Change', 'Verdict',
+    'Trends', 'Category', 'Parameters')
 
 # Who owns what. The runner writes around these and never through them: they hold the only
 # thing in the document that cannot be regenerated, which is what a person concluded from
@@ -769,6 +785,11 @@ function New-SheetsOverviewRow {
         [string]$Entry.Signal
         [string]$Entry.SignalReason
         [string]$Entry.Expected
+        # Findings and All findings both leave here as the raw count. What the reviewers have
+        # settled is not known to the run - it is read off the live document - so the
+        # subtraction belongs to the merge, which is the only place that has both numbers.
+        # Set-SheetsOpenCounts does it, to this array, before anything is written.
+        $Entry.Findings
         $Entry.Findings
         $Entry.Eligible
         $Entry.PrevFindings
@@ -778,6 +799,87 @@ function New-SheetsOverviewRow {
         [string]$Entry.PrevRunId
         [string]$Entry.Trend
     )
+}
+
+function Get-SheetsOpenCounts {
+    <#
+        One check's numbers with the reviewers' settled rows taken out of them.
+
+        A row marked No Issue / Change is one somebody has already read and decided about, and
+        it stays in the result for good, because the decision is a reading of the data rather
+        than a change to it. Counting it forever made a finished check read as a busy one -
+        and only Rows had the subtraction, so the board disagreed with the five columns beside
+        it about how much work was left.
+
+        What comes off here: Findings, Prev findings, Change, Verdict, and every point of the
+        trend. What does not: All findings, which is the statement's own result, and Eligible
+        and Prev eligible, which count the population a finding came out of. Dismissing a
+        finding does not shrink the population it was found in.
+
+        The count is today's, and it comes off the historical points as well, because nobody
+        recorded a per-run figure to use instead. That is the honest reading rather than a
+        convenient one: a reduced present against a raw past would invent a drop on the day the
+        reviewers worked, and the trend exists to answer which way the open work is moving. It
+        also leaves Change alone, since the same figure comes off both ends of it.
+
+        Returns the pieces rather than writing them, so the Overview row and the check tab's
+        identity row take the same numbers from one calculation instead of each doing it.
+    #>
+    param($Entry, [int]$Dismissed)
+
+    $open = $Entry.Findings
+    $prev = $Entry.PrevFindings
+    $change = $Entry.Change
+    $verdict = [string]$Entry.Verdict
+    $trend = [string]$Entry.Trend
+    $trendRuns = $Entry.TrendRuns
+
+    if ($Dismissed -gt 0) {
+        if ($null -ne $open) { $open = [math]::Max(0, [int]$open - $Dismissed) }
+        if ($null -ne $prev) { $prev = [math]::Max(0, [int]$prev - $Dismissed) }
+        if ($null -ne $open -and $null -ne $prev) { $change = [int]$open - [int]$prev }
+
+        # Re-judged rather than adjusted. The verdict is not a number to subtract from: whether
+        # a check is Clean, Resolved or Above residual is decided by rules that read the count
+        # against an expectation, and the count they have to read is the open one.
+        $previous = $null
+        if ($null -ne $prev) {
+            $previous = [pscustomobject]@{ Findings = $prev; Eligible = $Entry.PrevEligible }
+        }
+        $ran = -not ([string]$Entry.Status -like 'ERROR*' -or [string]$Entry.Status -like 'SKIPPED*')
+        $verdict = Get-CheckVerdict -Expected ([string]$Entry.Expected) `
+            -Residual $Entry.ExpectedResidual -Findings $open -Eligible $Entry.Eligible `
+            -Previous $previous -Ran $ran -Signal ([string]$Entry.Signal)
+
+        # The series is rebuilt from its points rather than edited as a string: the colouring
+        # is per point and comes from the direction between neighbours, and a point that reads
+        # ERR is not a measurement and must stay the word it is.
+        $points = @($Entry.TrendPoints)
+        if ($points.Count -gt 1) {
+            $shifted = @()
+            foreach ($point in $points) {
+                $value = [string]$point.Value
+                $number = 0
+                if ([int]::TryParse($value, [ref]$number)) {
+                    $value = [string][math]::Max(0, $number - $Dismissed)
+                }
+                $shifted += [pscustomobject]@{ Value = $value; Stamp = $point.Stamp }
+            }
+            $series = New-TrendSeries -Points $shifted
+            $trend = $series.Text
+            $trendRuns = $series.Runs
+        }
+    }
+
+    return [pscustomobject]@{
+        Findings     = $open
+        AllFindings  = $Entry.Findings
+        PrevFindings = $prev
+        Change       = $change
+        Verdict      = $verdict
+        Trend        = $trend
+        TrendRuns    = $trendRuns
+    }
 }
 
 function New-SheetsMergePlan {
@@ -1082,6 +1184,10 @@ function New-SheetsMergePlan {
     # supports. One result, two readers.
     $carriedOf = @{}
     $dismissedOf = @{}
+    # One check's numbers after the dismissals come off, computed while Overview is planned and
+    # read again when its tab is written. Two calculations of the same thing is how the board
+    # and the tab end up disagreeing, which is the defect this whole column set exists to close.
+    $openOf = @{}
     foreach ($item in $Collected) {
         $runKey = Get-JobRunKey -Job $item.Job
         $written = @(@($item.Rows) | Select-Object -First $MaxRows)
@@ -1122,12 +1228,29 @@ function New-SheetsMergePlan {
         # And what it counts is what is still open. A row the reviewers marked No Issue /
         # Change is a row they have already decided about, and it stays in the result for good
         # because nothing about the database is going to change - so leaving it in the count
-        # makes a settled check read as a busy one forever. Those come out, here and only here:
-        # the number written into the cell is the one in $values, so the plain-number fallback
-        # for a check with no tab carries the same subtraction as the link.
+        # makes a settled check read as a busy one forever. Those come out here: the number
+        # written into the cell is the one in $values, so the plain-number fallback for a check
+        # with no tab carries the same subtraction as the link.
+        $dismissed = $(if ($dismissedOf.ContainsKey($runKey)) { [int]$dismissedOf[$runKey] } else { 0 })
         $rowsColumn = [array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1
-        if (($entry.RowsCell -isnot [string]) -and $dismissedOf.ContainsKey($runKey)) {
-            $values[$rowsColumn - 1] = [math]::Max(0, [int]$entry.RowsCell - [int]$dismissedOf[$runKey])
+        if (($entry.RowsCell -isnot [string]) -and $dismissed -gt 0) {
+            $values[$rowsColumn - 1] = [math]::Max(0, [int]$entry.RowsCell - $dismissed)
+        }
+
+        # The same subtraction on every other column that counts findings, so the board agrees
+        # with itself. Rows used to have it alone, which is how a check could read 0 open rows
+        # beside a Findings of 40 and a verdict of Above residual. Kept for the check tab too,
+        # which takes these same numbers rather than recomputing them.
+        $open = Get-SheetsOpenCounts -Entry $entry -Dismissed $dismissed
+        $openOf[$runKey] = $open
+        foreach ($pair in @(
+                @{ Column = 'Findings'; Value = $open.Findings }
+                @{ Column = 'All findings'; Value = $open.AllFindings }
+                @{ Column = 'Prev findings'; Value = $open.PrevFindings }
+                @{ Column = 'Change'; Value = $open.Change }
+                @{ Column = 'Verdict'; Value = [string]$open.Verdict })) {
+            $at = [array]::IndexOf($SheetsOverviewColumns, [string]$pair.Column)
+            if ($at -ge 0) { $values[$at] = $pair.Value }
         }
 
         $rowsLink = $null
@@ -1156,7 +1279,7 @@ function New-SheetsMergePlan {
             # or text, is left alone.
             $rich = New-SheetsTrendRichText -Sheet 'Overview' -Row $row `
                 -Column ([array]::IndexOf($SheetsOverviewColumns, 'Trends') + 1) `
-                -Text ([string]$entry.Trend) -Runs $entry.TrendRuns
+                -Text ([string]$open.Trend) -Runs $open.TrendRuns
             if ($rich) { $plan += $rich }
 
             $wanted = $(if ($Existing -and $Existing.EmptyCommentOf) { [bool]$Existing.EmptyCommentOf[$runKey] } else { $false })
@@ -1187,7 +1310,7 @@ function New-SheetsMergePlan {
 
             $rich = New-SheetsTrendRichText -Sheet 'Overview' -Row $nextRow `
                 -Column ([array]::IndexOf($SheetsOverviewColumns, 'Trends') + 1) `
-                -Text ([string]$entry.Trend) -Runs $entry.TrendRuns
+                -Text ([string]$open.Trend) -Runs $open.TrendRuns
             if ($rich) { $plan += $rich }
 
             # Comment mirrors the check tab's G2, so a comment is written once beside the rows
@@ -1309,8 +1432,10 @@ function New-SheetsMergePlan {
             }
         }
 
-        # Signal through Trends in one span: eleven columns that all belong to the run, none of
-        # them the reviewer's, and contiguous so it is one write rather than nine.
+        # Signal through Trends in one span: twelve columns that all belong to the run, none of
+        # them the reviewer's, and contiguous so it is one write rather than twelve. Built by
+        # walking the column list rather than by position, so All findings arriving in the
+        # middle of it was cleared by the default arm without this needing to know.
         $from = [array]::IndexOf($SheetsOverviewColumns, 'Signal') + 1
         $to = [array]::IndexOf($SheetsOverviewColumns, 'Trends') + 1
         $values = @()
@@ -1522,6 +1647,12 @@ function New-SheetsMergePlan {
 
         # Row 2 holds the identity, and Comment and Check By in the middle of it belong to the
         # reviewer, so the same two-span treatment applies as on Overview.
+        #
+        # The finding counts come from what Overview already worked out for this check, never
+        # from the entry directly. The tab and the board have to say the same thing about the
+        # rows immediately below this row, and the surest way to make two numbers agree is for
+        # there to be one number.
+        $open = $(if ($openOf.ContainsKey($runKey)) { $openOf[$runKey] } else { $null })
         $identity = @(
             [string]$item.Job.CheckId
             [string]$item.Job.Name
@@ -1530,12 +1661,13 @@ function New-SheetsMergePlan {
             ''
             ''
             [string]$(if ($entry) { $entry.Expected } else { '' })
-            $(if ($entry) { $entry.Findings } else { $null })
+            $(if ($open) { $open.Findings } else { $null })
+            $(if ($open) { $open.AllFindings } else { $null })
             $(if ($entry) { $entry.Eligible } else { $null })
-            $(if ($entry) { $entry.PrevFindings } else { $null })
-            $(if ($entry) { $entry.Change } else { $null })
-            [string]$(if ($entry) { $entry.Verdict } else { '' })
-            [string]$(if ($entry) { $entry.Trend } else { '' })
+            $(if ($open) { $open.PrevFindings } else { $null })
+            $(if ($open) { $open.Change } else { $null })
+            [string]$(if ($open) { $open.Verdict } else { '' })
+            [string]$(if ($open) { $open.Trend } else { '' })
             [string]$(if ($entry) { $entry.Category } else { '' })
             [string]$(if ($entry) { $entry.Parameters } else { '' })
         )
@@ -1554,10 +1686,10 @@ function New-SheetsMergePlan {
         # The same colouring on the tab's own copy of the series. Written after the identity
         # row above, which put the plain string there first: if the rich write is ever refused,
         # the cell still reads correctly and only loses its colour.
-        if ($entry) {
+        if ($open) {
             $rich = New-SheetsTrendRichText -Sheet $title -Row 2 `
                 -Column ([array]::IndexOf($SheetsCheckTabColumns, 'Trends') + 1) `
-                -Text ([string]$entry.Trend) -Runs $entry.TrendRuns
+                -Text ([string]$open.Trend) -Runs $open.TrendRuns
             if ($rich) { $plan += $rich }
         }
 

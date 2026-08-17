@@ -1851,7 +1851,8 @@ $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesK
 # down for every check would make the block a second copy of the registry. Deprecated is
 # deliberately absent - POWERBI_REGISTRY.md's Status column owns that, and a value with two
 # owners drifts.
-$CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable', 'Out of client scope')
+$CheckSignalValues = @('Monitor', 'Informational', 'Blocked', 'Not applicable',
+    'Out of client scope', 'Sentinel')
 
 # What a re-run should return after the reported findings have been corrected. This is a
 # different question from the signal, and the difference is the whole reason the block
@@ -1872,10 +1873,16 @@ $CheckExpectValues = @('Zero', 'Non-zero', 'Residual')
 # applicable and Out of client scope are absent rather than empty: a check that must not run
 # yet, that reads a layer the sport does not have, or whose whole population sits outside the
 # client's boundary has no count anybody should be expecting.
+#
+# Sentinel is present, and that is the difference between it and the three that are absent. It
+# is a live check whose population has not arrived, not a check nobody should be counting: the
+# day a row of the kind it reads is imported, every finding it returns is a defect. Recording
+# the expectation now rather than on that day is the whole reason the block exists.
 $ExpectedBySignal = @{
     'Actionable'    = 'Zero'
     'Monitor'       = 'Non-zero'
     'Informational' = 'Non-zero'
+    'Sentinel'      = 'Zero'
 }
 
 # What to work through first, banded from the Category POWERBI_REGISTRY.md already records
@@ -3176,7 +3183,7 @@ function New-RunSummaryRow {
     $previous = $(if ($script:PreviousRun.ContainsKey($runKey)) { $script:PreviousRun[$runKey] } else { $null })
     $ran = -not ($Status -like 'ERROR*' -or $Status -like 'SKIPPED*')
     $verdict = Get-CheckVerdict -Expected $expected -Residual $expectedResidual `
-        -Findings $Findings -Eligible $Eligible -Previous $previous -Ran $ran
+        -Findings $Findings -Eligible $Eligible -Previous $previous -Ran $ran -Signal $signal
 
     $change = $null
     if ($null -ne $Findings -and $null -ne $previous -and $null -ne $previous.Findings) {
@@ -3229,15 +3236,22 @@ function New-RunSummaryRow {
         PrevRunId    = $(if ($previous) { [string]$previous.RunId } else { '' })
         Trend        = $trend
         TrendRuns    = $trendRuns
+        # The series as points rather than as the string built from them. The live document
+        # subtracts the findings its reviewers have already settled, and a rendered trend cannot
+        # be re-levelled by editing text: each point is coloured against the one before it, and
+        # a point reading ERR is not a measurement to shift. Carried so the merge can rebuild
+        # the series from the same points at the level the board actually reports.
+        TrendPoints  = $points
     }
 }
 
 function Save-RunSummaryCsv {
-    # TrendRuns is left out. It is character offsets into the Trend string - structure for the
-    # live document's colouring, not a fact about the run - and in a flat file it would arrive
-    # as the word System.Object[] in a column nobody can read.
+    # TrendRuns and TrendPoints are left out. One is character offsets into the Trend string and
+    # the other the points it was built from - both structure for the live document, not facts
+    # about the run - and in a flat file each arrives as the word System.Object[] in a column
+    # nobody can read. Trend itself stays, because the rendered series is the readable form.
     param($Summary, [string]$Path)
-    $Summary | Select-Object -Property * -ExcludeProperty TrendRuns |
+    $Summary | Select-Object -Property * -ExcludeProperty TrendRuns, TrendPoints |
         Export-Csv -LiteralPath $Path -NoTypeInformation -Encoding UTF8
 }
 
@@ -3479,7 +3493,8 @@ function Get-CheckVerdict {
         $Findings,
         $Eligible,
         $Previous,
-        [bool]$Ran
+        [bool]$Ran,
+        [string]$Signal = ''
     )
 
     # A failed or skipped statement produced nothing to judge, and the Rows cell already says
@@ -3492,7 +3507,17 @@ function Get-CheckVerdict {
     # POWERBI.md is explicit that this is never clean data, so it outranks every comparison:
     # a check auditing nothing returns the same numbers whether the scope is misdirected or
     # the population is legitimately empty, and both want a person before anything else.
-    if ($null -ne $Eligible -and [int]$Eligible -eq 0) { return 'Audited nothing' }
+    #
+    # Unless a person has already been: a sentinel is that question answered, in the sport file
+    # and in the signal, and a board that keeps reporting Audited nothing beside it is arguing
+    # with a classification the same document carries. The word is different from the other
+    # three classified zeros because this one is not settled forever - it says the check is
+    # watching an empty population, and the day rows arrive the verdict returns to whatever the
+    # numbers say.
+    if ($null -ne $Eligible -and [int]$Eligible -eq 0) {
+        if ($Signal -eq 'Sentinel') { return 'Sentinel' }
+        return 'Audited nothing'
+    }
 
     $now = [int]$Findings
 
@@ -4994,7 +5019,14 @@ if ($isBatch) {
     # and somebody fills it, but not inside the boundary this client bought. Golf's knockout
     # checks are the case - the sport contests match play almost only under templates the client
     # does not take - and the zero lifts on the day that boundary moves, not on an import.
-    $classifiedZero = @('Not applicable', 'Out of client scope')
+    #
+    # Sentinel is the third answer and the only one that is waiting for something: the scope is
+    # right, the structure is there, and the sport has not yet imported a row of the kind the
+    # check reads. POWERBI.md names it as one of exactly two things a zero can be, and until the
+    # signal existed it had no word - so a run asked about the same checks every time while the
+    # answer sat in the sport file, out of the run's reach. Cycling-DQ-071 and Cycling-DQ-087
+    # are the case, and had been answered for weeks before the Decisions tab stopped asking.
+    $classifiedZero = @('Not applicable', 'Out of client scope', 'Sentinel')
     $audited = @($collected | Where-Object {
             0 -eq (Get-CoverageCount -Rows $_.Rows) -and
             $classifiedZero -notcontains [string]$_.Job.Signal
