@@ -211,6 +211,10 @@
             "GLOBAL-DQ-034": {
                 "signal": "Monitor",
                 "reason": "the host-country relation and the city link are unpopulated wherever the direct country column is filled, which is the normal storage for this sport, so those two of the core fields report broadly rather than per defect. The other core fields in the same check still read as defects. SPORTS/Triathlon.md owns the storage finding."
+            },
+            "Triathlon-DQ-069": {
+                "signal": "Monitor",
+                "reason": "the per-discipline floor and ceiling seconds the check compares against are judgement values chosen for this package, not cut-offs any federation publishes, and the same holds for the twice-the-event-fastest rule. A row is therefore a time worth looking at rather than a time known to be wrong, and the check is read as a review queue. The statement's own extended comment says the same. SPORTS/Triathlon.md owns the reading."
             }
         }
     },

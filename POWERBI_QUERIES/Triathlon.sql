@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Triathlon-DQ-068
     -- Name - EVENT_SETTINGS_DISCIPLINE_NAME_MISMATCH
-    -- What it does: Flags events where the discipline named in the event name is missing from its relations. Uses special matching for sprint and relay formats and ignores Aquathlon.
+    -- What it does: Finds events whose name gives a discipline that is missing from its relations.
     'EVENT_DISCIPLINE_NOT_MATCHING_NAME' AS check_type,
     x.event_id,
     x.event_name,
@@ -118,7 +118,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - Triathlon-DQ-069
     -- Name - EVENT_RESULTS_FULL_TIME_OUT_OF_DISCIPLINE_BAND
-    -- What it does: Flags Full times that look too short, too long, or more than twice the event's fastest time. These are review cases, not official rule failures.
+    -- What it does: Finds Full times that look too short, too long, or more than twice the event's fastest time.
     CASE
         WHEN x.secs < x.floor_secs   THEN 'FULL_TIME_BELOW_DISCIPLINE_FLOOR'
         WHEN x.secs > x.ceiling_secs THEN 'FULL_TIME_ABOVE_DISCIPLINE_CEILING'

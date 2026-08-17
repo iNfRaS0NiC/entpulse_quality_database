@@ -577,7 +577,7 @@ ORDER BY sort_order, affected_count DESC, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-036
     -- Name - EVENT_RESULTS_RANK_INVALID_OR_MISSING
-    -- What it does: Flags finished-event participants whose Rank is missing without a Comment, not a positive integer, or above the sport's maximum.
+    -- What it does: Finds competitors in a finished event whose Rank is missing, unexplained, or not a usable number.
     CASE
         WHEN r_rank_value IS NOT NULL AND r_rank_value NOT REGEXP '^[1-9][0-9]*$' THEN 'RANK_NOT_INTEGER'
         WHEN r_rank_value IS NOT NULL AND r_rank_value REGEXP '^[1-9][0-9]*$' AND CAST(r_rank_value AS UNSIGNED) > {{RANK_MAX_PLAUSIBLE}} THEN 'RANK_OVER_MAX'
@@ -674,7 +674,7 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-037
     -- Name - EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL
-    -- What it does: Flags finished Finals where Medal values do not match Rank results, including missing, duplicated, unreadable, or incomplete medals.
+    -- What it does: Finds finished Finals whose medals do not match the places its own results hold.
     CASE
 -- What it does, stated in full: Finds finished Final-round events whose Medal set does not
 -- follow the places its own Rank results hold, separating an unreadable set, no medals at
@@ -1360,7 +1360,7 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-056
     -- Name - EVENT_DURATION_FULL_TIME_ARITHMETIC_MISMATCH
-    -- What it does: Flags timed results where Full time does not equal the leader's Full time plus the participant's gap, within the sport's tolerance.
+    -- What it does: Finds timed results whose Full time does not equal the leader's time plus that rider's gap.
     'DURATION_FULL_TIME_ARITHMETIC_MISMATCH' AS check_type,
     x.event_id,
     x.event_name,
@@ -1497,7 +1497,7 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-059
     -- Name - EVENT_RESULTS_DUPLICATE_ROWS
-    -- What it does: Flags duplicate result rows for the same participant and result type, and shows whether the values match or conflict.
+    -- What it does: Finds a participant holding the same result type twice.
     'Result_Duplicate_Rows' AS check_type,
     d.event_id,
     d.event_name,
@@ -1649,7 +1649,7 @@ ORDER BY sort_order, blank_result_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-076
     -- Name - EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC
-    -- What it does: Flags text stored in numeric result fields, including status codes, nan values, thousands separators, and other non-numeric text.
+    -- What it does: Finds text stored in numeric result fields.
     x.check_type,
     x.event_id,
     x.event_name,
@@ -2077,7 +2077,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-088
     -- Name - EVENT_WINNER_CONTRADICTS_SCORE
-    -- What it does: Finds finished head-to-head events whose Winner names the lower-scoring side, or names a side at all while the two scores are equal.
+    -- What it does: Finds finished head-to-head events whose Winner is not the higher-scoring side.
     CASE
         WHEN x.score_1 = x.score_2 THEN 'WINNER_NAMED_ON_EQUAL_SCORE'
         ELSE 'WINNER_CONTRADICTS_SCORE'
@@ -2995,7 +2995,7 @@ ORDER BY sort_order, event_id, event_participants_id;
 SELECT
     -- CheckID - GLOBAL-DQ-111
     -- Name - EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC
-    -- What it does: Flags timed events where a lower-ranked finisher is faster, or the effective time cannot be read. Participants marked as non-finishers are ignored.
+    -- What it does: Finds timed events where a rider placed behind another records a faster time, or a time that cannot be read.
     CASE
         WHEN x.unreadable_count > 0 AND x.non_monotonic_count > 0
             THEN 'EFFECTIVE_TIME_UNPARSEABLE_AND_NOT_MONOTONIC'
@@ -3325,7 +3325,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-116
     -- Name - EVENT_RESULTS_RANK_TIE_CONTRADICTED_BY_SCORE
-    -- What it does: Finds event participants sharing a Rank with another in a finished event while the score that decides the ranking does not agree across the tie, separating a tie whose scores differ from one where a tied participant holds no score at all.
+    -- What it does: Finds competitors sharing a place in a finished event whose scores do not back up the tie.
     'RANK_TIE_SCORE_DIFFERS' AS check_type,
     ep.id AS event_participants_id,
     e.id AS event_id,
@@ -3619,7 +3619,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-119
     -- Name - EVENT_RESULTS_RANK_SEQUENCE_BROKEN
-    -- What it does: Flags non-standard Rank sequences: not starting at 1, missing places, or ties that do not skip the correct number of places.
+    -- What it does: Finds Rank sequences that do not run 1, 2, 3 with ties skipping the places they consume.
     CASE
         WHEN x.start_breaks > 0 THEN 'RANK_SEQUENCE_DOES_NOT_START_AT_ONE'
         WHEN x.gaps > 0 THEN 'RANK_SEQUENCE_GAP'
@@ -3846,7 +3846,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-122
     -- Name - EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE
-    -- What it does: Flags finished events where ranked participants have no value in the fields used for ranking. Explained non-finishers are ignored.
+    -- What it does: Finds finished events whose ranked competitors hold no value in the field the ranking is built from.
     CASE
 -- What it does, stated in full: Finds finished events whose ranked participants hold no
 -- value in any result field their placing is read from, separating an event holding none at

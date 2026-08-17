@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Cycling-DQ-001
     -- Name - PARTICIPANT_REGISTERED_BUT_NEVER_ENTERED_IN_THIS_SPORT
-    -- What it does: Flags participants registered to the sport that no event and no Comp.Rank of this sport reaches, separating the ones that race in another sport from the ones entered nowhere at all.
+    -- What it does: Finds participants registered to cycling that no cycling event or Comp.Rank reaches.
     CASE WHEN (
         SELECT COUNT(*)
         FROM event_participants ep4
@@ -99,7 +99,7 @@ ORDER BY sort_order, check_type, participant_type, participant_name;
 SELECT
     -- CheckID - Cycling-DQ-009
     -- Name - TOURNAMENT_STAGE_NAME_FORMAT_INVALID_APART_FROM_THE_HYPHEN_CONVENTION
-    -- What it does: Flags stage names breaking a text-hygiene rule, accepting the unspaced hyphen this sport names its courses with.
+    -- What it does: Finds stage names that break a text-hygiene rule, allowing the unspaced hyphen this sport uses.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS stage_name,
     x.violation_types,
@@ -189,7 +189,7 @@ ORDER BY sort_order, stage_name;
 SELECT
     -- CheckID - Cycling-DQ-010
     -- Name - COMP.RANK_NAME_FORMAT_INVALID_APART_FROM_THE_HYPHEN_CONVENTION
-    -- What it does: Flags Comp.Rank names breaking a text-hygiene rule, accepting the unspaced hyphen this sport names its courses with.
+    -- What it does: Finds Comp.Rank names that break a text-hygiene rule, allowing the unspaced hyphen this sport uses.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS statistic_name,
     x.violation_types,
@@ -285,7 +285,7 @@ ORDER BY sort_order, statistic_name;
 SELECT
     -- CheckID - Cycling-DQ-018
     -- Name - EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE_APART_FROM_THE_SPLIT_HALVES
-    -- What it does: Flags unexplained Ranks above the participant count when there is also a gap from the previous Rank, excluding the halves of a split stage that share one ranking.
+    -- What it does: Finds unexplained Ranks above the field size that also sit after a gap, skipping the halves of a split stage.
     'RANK_OUTLIER_ABOVE_FIELD_SIZE' AS check_type,
     z.event_id,
     z.event_name,
@@ -432,7 +432,7 @@ ORDER BY sort_order, affected_count DESC, event_id;
 SELECT
     -- CheckID - Cycling-DQ-050
     -- Name - EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK_APART_FROM_THE_LIVE_UPDATE_PLACEHOLDER
-    -- What it does: Flags Final events where Comp.Rank is missing a competitor who took part, ignoring the Peloton placeholder that is never ranked.
+    -- What it does: Finds Final events whose Comp.Rank is missing a rider who took part, skipping the Peloton placeholder.
     'FINAL_PARTICIPANT_NOT_IN_COMP.RANK' AS check_type,
     x.event_id,
     x.event_name,
@@ -568,7 +568,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - Cycling-DQ-051
     -- Name - PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED_APART_FROM_THE_LIVE_UPDATE_PLACEHOLDER
-    -- What it does: Flags participants whose stored gender conflicts with the gender of a stage they entered, ignoring the Peloton placeholder that enters stages of both genders.
+    -- What it does: Finds participants whose gender does not match the gender of a stage they entered, skipping the Peloton placeholder.
     CASE
         WHEN x.participant_type = 'athlete' THEN 'ATHLETE_GENDER_NOT_STAGE_GENDER'
         ELSE 'TEAM_GENDER_NOT_STAGE_GENDER'
@@ -654,7 +654,7 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - Cycling-DQ-068
     -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID_WITH_THE_RIDER_AS_THE_MEDAL_HOLDER
-    -- What it does: Flags Comp.Rank medals that do not match the Rank places, including missing, over-awarded, or under-awarded medals, counting each rider as its own medal holder.
+    -- What it does: Finds Comp.Rank medals that do not match the places the ranking holds, counting each rider as its own medal holder.
     CASE
 -- What it does, stated in full: GLOBAL-DQ-026 for Cycling, with the relay clause removed. The
 -- template counts a medal over the team that holds it where the statistic assigns one and over
@@ -792,7 +792,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - Cycling-DQ-085
     -- Name - EVENT_RESULTS_RANK_INVALID_OR_MISSING_BY_EVENT
-    -- What it does: Flags finished events holding riders with no usable place, saying whether the whole field or part of it is unresolved.
+    -- What it does: Finds finished events holding riders with no usable place.
     CASE
         WHEN x.rank_not_integer_count > 0 THEN 'EVENT_RANK_NOT_INTEGER'
         WHEN x.rank_over_max_count > 0 THEN 'EVENT_RANK_OVER_MAX'

@@ -171,6 +171,16 @@ events, and the statement accepts either — `RESULT_TIE_VALUE_TYPE_LIST` is `55
 holding any one listed field accounts for the place. Exactly one participant in the sport
 lacks `557` while holding `101`, and that is correctly not a finding.
 
+**`Triathlon-DQ-069 EVENT_RESULTS_FULL_TIME_OUT_OF_DISCIPLINE_BAND` is a review queue, not a
+defect list.** It reads a full time against a floor and a ceiling in seconds chosen per
+discipline for this package, and against a rule that no time may exceed twice the fastest in
+its own event. None of the three is a cut-off any federation publishes; they are judgement
+values, set so that a time far outside what the discipline plausibly produces surfaces for a
+human to look at. A row therefore says the time is worth checking, never that it is wrong,
+and the check carries the `Monitor` signal for that reason rather than because of how many
+rows it returns today. Widening or narrowing a band changes what is reported and nothing
+about the data.
+
 <!-- MANUAL PASTE ZONE: 50 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types

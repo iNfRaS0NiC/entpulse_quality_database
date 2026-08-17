@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-029
     -- Name - TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES
-    -- What it does: Flags five common cases where a tournament name year does not match the years covered by its stages. Excludes the postponed 2020 Summer Olympics editions.
+    -- What it does: Finds tournaments whose name says one year and whose stages run in another.
     CASE
         WHEN x.stage_span > 2 THEN 'STAGES_SPAN_MORE_THAN_TWO_YEARS'
         WHEN x.stage_span = 2 AND x.name_has_span = 0 THEN 'SINGLE_YEAR_NAME_ON_SEASON'
@@ -83,7 +83,7 @@ ORDER BY sort_order, first_stage_year;
 SELECT
     -- CheckID - Artistic-Gymnastics-DQ-089
     -- Name - EVENT_DISCIPLINE_CONTRADICTS_EVENT_NAME
-    -- What it does: Flags gymnastics events where the stored apparatus differs from the apparatus clearly stated in the event name.
+    -- What it does: Finds events whose stored apparatus is not the one the event name gives.
     'Event_Discipline_Contradicts_Name' AS check_type,
     x.event_id,
     x.event_name,

@@ -885,7 +885,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Soccer-DQ-089
     -- Name - EVENT_SCOPE_TIE_REFERENCE_INVALID
-    -- What it does: Flags two-leg ties whose other-leg reference is invalid, points to itself, does not exist, or belongs to another tournament.
+    -- What it does: Finds two-leg ties whose other-leg reference does not point at a real leg of the same tournament.
     CASE
         WHEN x.not_an_id = 1 THEN 'Tie_Reference_Is_Not_An_Event_Id'
         WHEN x.self_reference = 1 THEN 'Tie_Reference_Names_Its_Own_Event'

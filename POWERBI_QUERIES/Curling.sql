@@ -217,7 +217,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-074
     -- Name - EVENT_SCOPE_ENDS_BELOW_MINIMUM
-    -- What it does: Flags games with fewer than six scored regular ends and shows whether the event was awarded or finished normally.
+    -- What it does: Finds games with fewer than six scored regular ends.
     CASE
         WHEN e.status_descFK = 190 THEN 'FEW_ENDS_AWARDED_WIN'
         ELSE 'FEW_ENDS_PLAIN_FINISHED'
@@ -393,7 +393,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-078
     -- Name - COMP.RANK_TEAM_ROSTER_SIZE_CONTRADICTS_DISCIPLINE
-    -- What it does: Flags Comp.Rank team sizes that conflict with the discipline, including Mixed Doubles pairs and 4aSide teams.
+    -- What it does: Finds Comp.Rank team sizes that are wrong for the discipline.
     CASE
         WHEN x.doubles_team_not_two > 0 THEN 'MIXED_DOUBLES_TEAM_NOT_TWO'
         WHEN x.four_a_side_sized_like_doubles * 2 > x.team_count THEN 'FOUR_A_SIDE_STATISTIC_IS_DOUBLES_SHAPED'
@@ -516,7 +516,7 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - Curling-DQ-082
     -- Name - EVENT_SCOPE_CONTAINER_SHAPE_CONTRADICTS_DISCIPLINE
-    -- What it does: Flags curling events with an invalid number or structure of ends, including ten ends in Mixed Doubles.
+    -- What it does: Finds curling events with the wrong number or structure of ends.
     CASE
         WHEN x.container_shape = '9-end' THEN 'CONTAINER_SHAPE_NOT_A_SCHEDULED_LENGTH'
         ELSE 'MIXED_DOUBLES_WITH_TEN_END_CONTAINER'
@@ -613,7 +613,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - Curling-DQ-083
     -- Name - COMP.RANK_TEAM_ATHLETE_RANK_DISAGREE
-    -- What it does: Flags Comp.Rank records where team and athlete results disagree, or one side of the team-athlete pair is missing.
+    -- What it does: Finds Comp.Rank records where the team result and the athlete results do not match.
     CASE
         WHEN x.kind = 'team' AND x.partner_id IS NULL THEN 'TEAM_STATISTIC_WITHOUT_ATHLETE_PARTNER'
         WHEN x.kind = 'athlete' AND x.partner_id IS NULL THEN 'ATHLETE_STATISTIC_WITHOUT_TEAM_PARTNER'
@@ -852,7 +852,7 @@ ORDER BY sort_order, duplicate_event_count DESC;
 SELECT
     -- CheckID - Curling-DQ-095
     -- Name - COMP.RANK_PARTICIPANT_TYPE_CONTRADICTS_STATISTIC_KIND
-    -- What it does: Flags Comp.Rank participant types that conflict with the ranking name: athlete rankings must contain athletes and team rankings must contain teams.
+    -- What it does: Finds athlete rankings holding teams, and team rankings holding athletes.
     CASE
         WHEN x.statistic_kind = 'athletes' THEN 'ATHLETES_STATISTIC_HOLDS_NON_ATHLETE'
         ELSE 'TEAM_STATISTIC_HOLDS_NON_TEAM'

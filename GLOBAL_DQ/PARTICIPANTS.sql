@@ -387,7 +387,7 @@ ORDER BY sort_order, participant_id;
 SELECT
     -- CheckID - GLOBAL-DQ-043
     -- Name - EVENT_PARTICIPANTS_GENDER_MISMATCH
-    -- What it does: Flags participant lineups that conflict with the participant gender, including mixed teams missing one gender.
+    -- What it does: Finds team lineups whose members do not match the team's gender.
     CASE
         WHEN x.participant_type = 'team' AND x.participant_gender = 'mixed'
              AND x.lineup_rows > 0 AND (x.lineup_male = 0 OR x.lineup_female = 0)
@@ -736,7 +736,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-071
     -- Name - EVENT_NO_PARTICIPANTS
-    -- What it does: Flags events with no active participants and shows whether the event is finished and whether deleted participant rows exist.
+    -- What it does: Finds events with no active participants.
     CASE
         WHEN e.status_type = 'finished' AND e.status_descFK = 6 THEN 'NO_PARTICIPANTS_FINISHED_EVENT'
         ELSE 'NO_PARTICIPANTS_NOT_FINISHED_EVENT'

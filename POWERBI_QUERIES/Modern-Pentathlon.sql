@@ -483,7 +483,7 @@ ORDER BY sort_order, event_year, event_id;
 SELECT
     -- CheckID - Modern-Pentathlon-DQ-096
     -- Name - EVENT_RESULTS_ZERO_SCORE_WITHOUT_STATUS
-    -- What it does: Flags competitors with a zero score and no Comment explaining it, whether it affects one, several, or all competitors.
+    -- What it does: Finds competitors with a zero score and no Comment explaining it.
     CASE
         WHEN g.zero_scored_participants * 2 >= g.field_size THEN 'ZERO_SCORE_ACROSS_THE_FIELD'
         WHEN g.zero_scored_participants > 1                 THEN 'ZERO_SCORE_FOR_SEVERAL'

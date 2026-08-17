@@ -498,7 +498,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-026
     -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID
-    -- What it does: Flags Comp.Rank medals that do not match the Rank places, including missing, over-awarded, or under-awarded medals. Relay members count as one team medal.
+    -- What it does: Finds Comp.Rank medals that do not match the places the ranking holds.
     CASE
 -- What it does, stated in full: Finds Comp.Rank whose medal set does not follow the places
 -- its own Rank rows hold: a type missing, held by more competitors than the place takes,
@@ -778,7 +778,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-029
     -- Name - COMP.RANK_RESULTS_DEPRECATED_DURATION_USED
-    -- What it does: Flags Comp.Rank records still using the old Duration field and shows whether Time or Time Difference is also populated.
+    -- What it does: Finds Comp.Rank records still using the old Duration field.
     'Deprecated_Duration_Used' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
@@ -1307,7 +1307,7 @@ WHERE s.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-040
     -- Name - EVENT_FINAL_WITHOUT_COMP.RANK
-    -- What it does: Flags Final events not linked by any Comp.Rank Event id in their tournament, including tournaments with no Comp.Rank or no event scope.
+    -- What it does: Finds Final events that no Comp.Rank in their tournament lists.
     CASE
         WHEN x.tournament_statistics = 0 THEN 'TOURNAMENT_HAS_NO_COMP_RANK'
         WHEN x.statistics_with_event_config = 0 THEN 'COMP.RANK_EVENT_SCOPE_UNDETERMINABLE'
@@ -1824,7 +1824,7 @@ ORDER BY sort_order, violating_record_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-051
     -- Name - COMP.RANK_NAME_FORMAT_INVALID
-    -- What it does: Flags Comp.Rank names with spacing, character, hyphenation, capitalisation, placeholder, or numeric-name problems.
+    -- What it does: Finds Comp.Rank names that break a text-hygiene rule.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS statistic_name,
     x.violation_types,
@@ -2006,7 +2006,7 @@ WHERE sd.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-060
     -- Name - COMP.RANK_RESULTS_DUPLICATE_ROWS
-    -- What it does: Flags duplicate Comp.Rank data rows for the same participant and field, and shows whether the values match or conflict.
+    -- What it does: Finds a Comp.Rank participant holding the same field twice.
     'Comp_Rank_Duplicate_Rows' AS check_type,
     d.statistic_id,
     d.statistic_name,
@@ -2078,7 +2078,7 @@ WHERE sd.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-064
     -- Name - COMP.RANK_ATHLETE_TEAM_MISSING_OR_INVALID
-    -- What it does: Flags athletes in a team-based Comp.Rank whose Team value is missing, invalid, duplicated, or conflicting.
+    -- What it does: Finds athletes in a team-based Comp.Rank without a usable Team value.
     CASE
         WHEN x.team_value IS NULL   THEN 'TEAM_VALUE_MISSING'
         WHEN tp.id IS NULL          THEN 'TEAM_VALUE_UNRESOLVED'
@@ -2630,7 +2630,7 @@ WHERE sm.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-077
     -- Name - COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC
-    -- What it does: Flags text stored in numeric Comp.Rank fields, including status codes, nan values, thousands separators, and other non-numeric text.
+    -- What it does: Finds text stored in numeric Comp.Rank fields.
     x.check_type,
     x.statistic_id,
     x.statistic_name,
@@ -3256,7 +3256,7 @@ ORDER BY sort_order;
 SELECT
     -- CheckID - GLOBAL-DQ-101
     -- Name - COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT
-    -- What it does: Flags Comp.Rank Event id settings that are malformed, name no event, point to another tournament's event, or hold a list whose ids do not all belong to the tournament.
+    -- What it does: Finds Comp.Rank whose Event id setting names an event that does not exist or belongs to another tournament.
     CASE
         WHEN x.not_numeric_count > 0 THEN 'EVENT_ID_NOT_NUMERIC'
         WHEN x.no_active_event_count > 0 THEN 'EVENT_ID_NO_ACTIVE_EVENT'
@@ -3459,7 +3459,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-105
     -- Name - COMP.RANK_SETTINGS_SCALAR_DUPLICATE_ROWS
-    -- What it does: Flags duplicate Comp.Rank settings for start date, end date, or gender, whether the duplicate values match or conflict.
+    -- What it does: Finds a Comp.Rank setting stored more than once for start date, end date or gender.
     CASE
         WHEN x.conflicting_groups > 0 THEN 'SETTINGS_CONFLICTING_VALUES'
         ELSE 'SETTINGS_DUPLICATE_IDENTICAL'

@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - Golf-DQ-085
     -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID_IN_MEDAL_TEMPLATE
-    -- What it does: Flags Golf Comp.Rank medals that do not match the Rank places, including missing, over-awarded, or under-awarded medals.
+    -- What it does: Finds Golf Comp.Rank medals that do not match the places the ranking holds.
     CASE
 -- What it does, stated in full: Finds Comp.Rank under a Golf template that awards medals
 -- whose medal set does not follow the places its own Rank rows hold: a type missing, held by
@@ -152,7 +152,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - Golf-DQ-087
     -- Name - EVENT_RESULTS_RANK_INVALID_OR_MISSING_STROKE_PLAY
-    -- What it does: Flags Stroke Play players whose Rank is missing without an explanation, invalid, or above the sport's maximum.
+    -- What it does: Finds Stroke Play players whose Rank is missing, unexplained, or not a usable number.
     z.check_type,
     z.event_id,
     z.event_name,
@@ -307,7 +307,7 @@ ORDER BY sort_order, affected_count DESC, event_id;
 SELECT
     -- CheckID - Golf-DQ-088
     -- Name - EVENT_NAME_FORMAT_INVALID_STROKE_PLAY
-    -- What it does: Flags Stroke Play event names with spacing, character, hyphenation, capitalisation, placeholder, or numeric-name problems.
+    -- What it does: Finds Stroke Play event names that break a text-hygiene rule.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS event_name,
     x.violation_types,
@@ -666,7 +666,7 @@ ORDER BY sort_order, named_year, tournament_id;
 SELECT
     -- CheckID - Golf-DQ-092
     -- Name - EVENT_RESULTS_MATCH_PLAY_OUTCOME_INCOHERENT
-    -- What it does: Flags a finished Match Play event whose outcome does not hold together, reading singles and foursomes alike and treating an all-square score as the halved match it is.
+    -- What it does: Finds a finished Match Play event whose outcome does not hold together.
     z.check_type,
     z.event_id,
     z.event_name,
@@ -997,7 +997,7 @@ ORDER BY sort_order, stray_participants DESC, statistic_id;
 SELECT
     -- CheckID - Golf-DQ-094
     -- Name - COMP.RANK_RESULTS_RANK_ABOVE_PLAUSIBLE_MAXIMUM
-    -- What it does: Finds Comp.Rank statistics holding a Rank above the largest place golf can award, counting the affected competitors and naming them with the value each carries.
+    -- What it does: Finds Comp.Rank holding a Rank above the largest place golf can award.
     'RANK_ABOVE_PLAUSIBLE_MAXIMUM' AS check_type,
     s.id AS statistic_id,
     tt.name AS template_name,
@@ -1070,7 +1070,7 @@ ORDER BY sort_order, affected_count DESC, statistic_id;
 SELECT
     -- CheckID - Golf-DQ-095
     -- Name - COMP.RANK_RESULTS_RANK_ABOVE_FIELD_SIZE
-    -- What it does: Finds Comp.Rank statistics ranking competitors beyond the number of competitors they hold, where the rank is also cut off from the next lower one and carries no Comment.
+    -- What it does: Finds Comp.Rank ranking competitors beyond the number it holds, where the rank is also cut off and carries no Comment.
     'RANK_ABOVE_FIELD_SIZE' AS check_type,
     o.statistic_id,
     o.template_name,
@@ -1191,7 +1191,7 @@ ORDER BY sort_order, affected_count DESC, statistic_id;
 SELECT
     -- CheckID - Golf-DQ-096
     -- Name - EVENT_COMP.RANK_OMITS_COMPETITORS_WHO_PLAYED
-    -- What it does: Finds events whose covering Comp.Rank leaves out competitors who took part, naming how many of the field are missing and who they are.
+    -- What it does: Finds events whose covering Comp.Rank leaves out competitors who took part.
     'COMP.RANK_OMITS_COMPETITORS_WHO_PLAYED' AS check_type,
     x.event_id,
     x.event_name,
@@ -1325,7 +1325,7 @@ ORDER BY sort_order, missing_count DESC, event_id;
 SELECT
     -- CheckID - Golf-DQ-097
     -- Name - EVENT_SCOPE_RESULT_OWNER_EVENT_MISMATCH_FINAL_RESULT
-    -- What it does: Finds final_result scope values naming an event participant from a different event, or one that is not active, so the value is attached to a competitor who did not play it.
+    -- What it does: Finds final_result scope values naming an event participant from another event, or one that is not active.
     CASE
         WHEN x.participant_row_missing_count > 0 THEN 'SCOPE_RESULT_PARTICIPANT_ROW_MISSING'
         ELSE 'SCOPE_RESULT_OWNER_EVENT_MISMATCH'
@@ -1503,7 +1503,7 @@ ORDER BY sort_order, items_after_split DESC, statistic_id;
 SELECT
     -- CheckID - Golf-DQ-099
     -- Name - EVENT_SCOPE_LINEUP_RESULT_OWNER_EVENT_MISMATCH
-    -- What it does: Finds scope values attached to a lineup place from a different event, or one that is not active, so the value belongs to somebody who did not play the event holding it.
+    -- What it does: Finds scope values attached to a lineup place from another event, or one that is not active.
     CASE
         WHEN x.lineup_row_missing_count > 0 THEN 'LINEUP_SCOPE_RESULT_LINEUP_ROW_MISSING'
         ELSE 'LINEUP_SCOPE_RESULT_OWNER_EVENT_MISMATCH'
@@ -1978,7 +1978,7 @@ ORDER BY sort_order, event_id, participant_name;
 SELECT
     -- CheckID - Golf-DQ-102
     -- Name - EVENT_RESULTS_CUT_FLAG_CONTRADICTS_THE_36_HOLE_ORDER
-    -- What it does: Flags a card whose cut flag disagrees with where its 36-hole total sits, naming whichever side of the cut line is the smaller.
+    -- What it does: Finds a card whose cut flag does not fit where its 36-hole total sits.
     CASE WHEN c.made_cut = 'no' THEN 'MISSED_CUT_CARD_BEATS_THE_CUT_LINE'
          ELSE 'MADE_CUT_CARD_TRAILS_THE_BEST_MISSED_CARD' END AS check_type,
     c.event_id,
@@ -2446,7 +2446,7 @@ ORDER BY sort_order, event_id, rank_recorded;
 SELECT
     -- CheckID - Golf-DQ-105
     -- Name - EVENT_RESULTS_THE_WINNER_DOES_NOT_HOLD_THE_BEST_TOTAL_PAR
-    -- What it does: Flags an event whose first-placed card is not the best score in its own field, and separates the events where it is the worst.
+    -- What it does: Finds an event whose first-placed card is not the best score in its own field.
     CASE WHEN d.leader_par = d.worst_par
               THEN 'WINNER_HOLDS_THE_WORST_TOTAL_PAR_SO_THE_FIELD_IS_ORDERED_THE_OTHER_WAY'
          ELSE 'WINNER_DOES_NOT_HOLD_THE_BEST_TOTAL_PAR' END AS check_type,
@@ -2580,7 +2580,7 @@ ORDER BY sort_order, event_id;
 SELECT
     -- CheckID - Golf-DQ-106
     -- Name - EVENT_RESULTS_A_ROUND_IS_SKIPPED_IN_THE_ROUND_SEQUENCE
-    -- What it does: Flags an event holding a card that carries a round without carrying the round before it, and says how much of the field does.
+    -- What it does: Finds an event holding a card that carries a round without the round before it.
     'A_ROUND_IS_SKIPPED_IN_THE_ROUND_SEQUENCE' AS check_type,
     b.event_id,
     b.event_name,

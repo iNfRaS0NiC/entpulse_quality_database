@@ -872,7 +872,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-048
     -- Name - TOURNAMENT_STAGE_NAME_FORMAT_INVALID
-    -- What it does: Flags stage names with spacing, character, hyphenation, capitalisation, placeholder, or numeric-name problems.
+    -- What it does: Finds stage names that break a text-hygiene rule.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS stage_name,
     x.violation_types,
@@ -957,7 +957,7 @@ ORDER BY sort_order, violation_types, stage_name;
 SELECT
     -- CheckID - GLOBAL-DQ-049
     -- Name - EVENT_NAME_FORMAT_INVALID
-    -- What it does: Flags event names with spacing, character, hyphenation, capitalisation, placeholder, or numeric-name problems.
+    -- What it does: Finds event names that break a text-hygiene rule.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS event_name,
     x.violation_types,
@@ -1042,7 +1042,7 @@ ORDER BY sort_order, violation_types, event_name;
 SELECT
     -- CheckID - GLOBAL-DQ-050
     -- Name - TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT
-    -- What it does: Flags less common spellings of the same stage name when only case or spacing differs, and shows the preferred spelling.
+    -- What it does: Finds stage names that differ from another only by case or spacing.
     CASE
         WHEN v.occurrence_count = v.dominant_count THEN 'NAME_CASE_NO_DOMINANT_SPELLING'
         ELSE 'NAME_CASE_MINORITY_SPELLING'
@@ -1124,7 +1124,7 @@ ORDER BY sort_order, dominant_spelling, stage_name;
 SELECT
     -- CheckID - GLOBAL-DQ-061
     -- Name - EVENT_STATUS_TIME_CONFLICT
-    -- What it does: Flags events whose status conflicts with the date: finished in the future, or still not started after the sport's allowed delay.
+    -- What it does: Finds events whose status does not fit their date.
     'Status_Time_Conflict' AS check_type,
     CASE
         WHEN e.status_type = 'finished' THEN 'FINISHED_WITH_FUTURE_STARTDATE'
@@ -1189,7 +1189,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-062
     -- Name - EVENT_DUPLICATE_BY_METADATA
-    -- What it does: Flags possible duplicate events with the same stage, discipline, date, and participants, including exact-time and same-day matches.
+    -- What it does: Finds events that look like the same event entered twice: same stage, discipline, date and competitors.
     CASE
         WHEN COUNT(DISTINCT d.startdate) = 1 THEN 'DUPLICATE_SAME_TIMESTAMP'
         ELSE 'DUPLICATE_SAME_DAY_DIFFERENT_TIME'
@@ -1522,7 +1522,7 @@ WHERE e.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-078
     -- Name - TOURNAMENT_NAME_FORMAT_INVALID
-    -- What it does: Flags tournament names with spacing, character, hyphenation, capitalisation, placeholder, or invalid numeric-name problems.
+    -- What it does: Finds tournament names that break a text-hygiene rule.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS tournament_name,
     x.violation_types,
@@ -1600,7 +1600,7 @@ ORDER BY sort_order, violation_types, tournament_name;
 SELECT
     -- CheckID - GLOBAL-DQ-079
     -- Name - TEMPLATE_NAME_FORMAT_INVALID
-    -- What it does: Flags template names with spacing, character, hyphenation, capitalisation, placeholder, or numeric-name problems.
+    -- What it does: Finds template names that break a text-hygiene rule.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS template_name,
     x.violation_types,
@@ -1669,7 +1669,7 @@ ORDER BY sort_order, violation_types, template_name;
 SELECT
     -- CheckID - GLOBAL-DQ-080
     -- Name - TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES
-    -- What it does: Flags season-year mismatches: a span versus one year, one year versus a span, named years with no stage, or stages covering more than two years.
+    -- What it does: Finds tournaments whose name says one year and whose stages run in another.
     CASE
         WHEN x.stage_span > 2 THEN 'STAGES_SPAN_MORE_THAN_TWO_YEARS'
         WHEN x.stage_span = 2 AND x.name_has_span = 0 THEN 'SINGLE_YEAR_NAME_ON_SEASON'
@@ -1757,7 +1757,7 @@ ORDER BY sort_order, first_stage_year;
 SELECT
     -- CheckID - GLOBAL-DQ-081
     -- Name - TEMPLATE_TOURNAMENT_YEAR_GAP
-    -- What it does: Flags tournament editions that do not follow the template's usual schedule, while ignoring years when the sport did not run.
+    -- What it does: Finds tournament editions that skip a year the template usually runs.
     'Template_Edition_Gap' AS check_type,
     r.template_id,
     r.template_name,
@@ -2031,7 +2031,7 @@ WHERE ts.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-087
     -- Name - EVENT_WINNER_MISSING_OR_INVALID
-    -- What it does: Finds finished head-to-head events with no Winner property, or one whose value is empty or outside the side vocabulary the sport uses.
+    -- What it does: Finds finished head-to-head events with no usable Winner value.
     CASE
         WHEN pr.id IS NULL THEN 'WINNER_MISSING'
         WHEN TRIM(pr.value) = '' THEN 'WINNER_VALUE_EMPTY'
@@ -2271,7 +2271,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-097
     -- Name - EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND
-    -- What it does: Flags round types with an incorrect knockout setting: elimination rounds marked No, or non-elimination rounds marked Yes.
+    -- What it does: Finds round types whose knockout setting is wrong for that round.
     CASE
         WHEN LOWER(TRIM(rt.name)) IN ({{ELIMINATION_ROUND_NAME_LIST}}) THEN 'ELIMINATION_ROUND_NOT_MARKED_KNOCKOUT'
         ELSE 'NON_ELIMINATION_ROUND_MARKED_KNOCKOUT'

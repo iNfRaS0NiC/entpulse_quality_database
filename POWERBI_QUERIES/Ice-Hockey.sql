@@ -414,7 +414,7 @@ ORDER BY sort_order, event_startdate, event_id;
 SELECT
     -- CheckID - Ice-Hockey-DQ-082
     -- Name - EVENT_NAME_FORMAT_INVALID_APART_FROM_THE_HYPHEN_CONVENTION
-    -- What it does: Flags event names breaking a text-hygiene rule, accepting the sport's unspaced hyphen between the two team names.
+    -- What it does: Finds event names that break a text-hygiene rule, allowing the unspaced hyphen between the two team names.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS event_name,
     x.violation_types,
@@ -1443,7 +1443,7 @@ ORDER BY sort_order, template_name, tournament_name;
 SELECT
     -- CheckID - Ice-Hockey-DQ-109
     -- Name - EVENT_RESULTS_PERIOD_BREAKDOWN_INCOMPLETE
-    -- What it does: Flags finished events that store some periods and not all three, including the first period standing alone and equal to the final result.
+    -- What it does: Finds finished events that store some periods and not all three.
     CASE
         WHEN x.has_p1 = 1 AND x.has_p2 = 0 AND x.has_p3 = 0
              AND x.sides_equal_to_final = x.sides_entered
