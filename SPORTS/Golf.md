@@ -994,6 +994,13 @@ difference and `1429` Team both resolve for statistic type 11 and Golf stores no
 population. That is a sentinel rather than a misdirected scope: the field exists, the sport has
 not used it, and the day it does the check is already pointed at it.
 
+All four carry the `Sentinel` signal since 2026-08-17. They were recorded as `Monitor` with
+reasons that already began "this is a sentinel", which is what a missing word looks like in a
+file: the run reads the signal rather than the reason, so it asked about all four on the
+`Decisions` tab of every run while this paragraph had answered them. The signal also changes
+what is expected of them — `Sentinel` implies `Zero`, and when the Team and Time difference
+fields are first written, every row these four return is a defect.
+
 **A missing finishing position is explained by `38 Made cut`, not by a Comment.** Confirmed
 2026-08-13. The field holds `yes` or `no` on 351045 participants over 3201 Stroke Play events —
 near-complete coverage of the discipline — and a player who missed the cut carries `no` and no

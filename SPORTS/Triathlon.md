@@ -390,6 +390,15 @@ Confirmed `event.status_type` / `status_descFK` combinations: `finished`/6,
 status resolves to two distinct detailed statuses, so a check keyed on the coarse value alone
 conflates not-started with postponed events.
 
+**No not-started event is on the books today, and `Triathlon-DQ-047` is a `Sentinel` for that
+reason.** Measured 2026-08-17: 3603 events `finished`/6 and 18 `cancelled`/106, and nothing
+else. The check reads not-started events that already hold a result, so its `eligible_count` is
+0 — a correct scope over a population that is empty rather than absent, since the two
+`notstarted` statuses above are confirmed combinations this sport uses. That is the distinction
+`POWERBI.md` owns, and it is why the check is numbered now rather than on the day one of those
+events arrives carrying a result it should not have. The population empties and refills with the
+calendar; the check does not have to be remembered each time it does.
+
 Confirmed active `event.round_typeFK` values:
 
 | round_typeFK | Name | Note |

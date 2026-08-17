@@ -215,6 +215,10 @@
             "Triathlon-DQ-069": {
                 "signal": "Monitor",
                 "reason": "the per-discipline floor and ceiling seconds the check compares against are judgement values chosen for this package, not cut-offs any federation publishes, and the same holds for the twice-the-event-fastest rule. A row is therefore a time worth looking at rather than a time known to be wrong, and the check is read as a review queue. The statement's own extended comment says the same. SPORTS/Triathlon.md owns the reading."
+            },
+            "GLOBAL-DQ-047": {
+                "signal": "Sentinel",
+                "reason": "The check reads not-started events that already hold a result, and the sport holds no not-started event at all: measured 2026-08-17, 3603 finished and 18 cancelled and nothing else. The scope is correct and the population is empty today rather than absent - SPORTS/Triathlon.md confirms notstarted/1 and notstarted/5 as combinations this sport uses, so events of the kind it audits have existed and will again with the calendar. Instantiated so it is already in place on the day one arrives carrying a result it should not have."
             }
         }
     },
@@ -319,6 +323,10 @@
             "GLOBAL-DQ-049": {
                 "signal": "Monitor",
                 "reason": "an event name is the pairing that plays it, so every event name contains a hyphen with no surrounding spaces and the check reports the sport's whole distinct-name vocabulary under HYPHEN_WITHOUT_SPACES. The rule is not wrong, it is describing the naming convention; the rows worth reading are the ones breaking a second rule as well. SPORTS/Curling.md names this check directly."
+            },
+            "GLOBAL-DQ-047": {
+                "signal": "Sentinel",
+                "reason": "eligible_count is 0 on a correct scope over a population that is legitimately empty today, which SPORTS/Curling.md already records in those words. Carried as an unwritten Actionable until the signal vocabulary had a word for it on 2026-08-17, which is why every run asked about it on the Decisions tab while the sport file had answered. Curling-DQ-101 reads the same status family and also audits finished events, so it covers 17920 and is not a sentinel."
             }
         }
     },
@@ -861,7 +869,7 @@
                 "reason": "eligible_count is 0 and this is a sentinel, not a misdirected scope: statistic_data11 declares the 1273 Comment field for statistic type 11 and Golf writes no row into it today. The scope is correct and the population is legitimately empty, so the check stands ready for the first Comp.Rank comment the sport writes. SPORTS/Golf.md owns the distinction."
             },
             "GLOBAL-DQ-065": {
-                "signal": "Monitor",
+                "signal": "Sentinel",
                 "reason": "eligible_count is 0 for the same reason as GLOBAL-DQ-057: the 1429 Team data field is declared for statistic type 11 and Golf writes no row into it. The sport does field teams - the Ryder Cup and Presidents Cup sides - so the population is legitimately empty rather than structurally absent."
             },
             "GLOBAL-DQ-033": {
@@ -893,7 +901,7 @@
                 "reason": "Golf records its course in the tournament_stage Venue property, on 5176 stages sport-wide, and uses the global venue_object relation for part of its events only - inside the client boundary 7560 of 16544 carry one and 8984 do not. The check reads the relation, so what it reports is how far that mechanism has been populated rather than a per-event defect. SPORTS/BMX.md records the same reading for a sport at nought per cent. Confirmed as Monitor on 2026-08-13."
             },
             "GLOBAL-DQ-064": {
-                "signal": "Monitor",
+                "signal": "Sentinel",
                 "reason": "eligible_count is 0 and this is a sentinel: the template's eligible population is the statistic that uses the 1429 Team field at all, and Golf writes no row into it. The scope is correct and the population is legitimately empty."
             },
             "GLOBAL-DQ-083": {
@@ -913,11 +921,11 @@
                 "reason": "Structural: eligible_count is 0 because the sport writes no lineup row, so no mixed team can hold an uneven one. The layer is absent rather than empty, which is why this is not a sentinel like GLOBAL-DQ-066."
             },
             "GLOBAL-DQ-066": {
-                "signal": "Monitor",
+                "signal": "Sentinel",
                 "reason": "eligible_count is 0 and this is a sentinel on the same footing as GLOBAL-DQ-064 and GLOBAL-DQ-065: statistic_data11 declares the 1429 Team field for statistic type 11 and Golf writes no row into it, so no statistic can be measured for team gender balance. The field exists and the sport has not used it; the day it does, the check is already pointed at it."
             },
             "GLOBAL-DQ-028": {
-                "signal": "Monitor",
+                "signal": "Sentinel",
                 "reason": "eligible_count is 0 and this is a sentinel: statistic_data11 declares the 1427 Time difference field for statistic type 11 and Golf writes no row into it, which is expected of a sport whose 17 result types measure strokes, points, par, rank, money and status and never time. Same shape as GLOBAL-DQ-057 on the 1273 Comment field."
             },
             "Golf-DQ-095": {

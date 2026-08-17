@@ -342,6 +342,11 @@ defines: the scope is correct and the population is legitimately empty today, so
 right answer and not a scope to correct. `Curling-DQ-101` reads the same status family but
 also audits finished events, so it covers 17920.
 
+It carries the `Sentinel` signal since 2026-08-17, and did not before because the vocabulary
+had no such word — which cost something visible. The run reads the signal to decide which
+`eligible_count = 0` questions are already answered, so it raised this one on the `Decisions`
+tab of every run while the paragraph above had answered it. `TOOLS/README.md` owns the word.
+
 `Curling-DQ-007` was briefly a sentinel and briefly `Not applicable`, and was neither. Its
 coverage was zero because `GLOBAL-DQ-007` reached participants through `event_participants`
 alone, and this sport enters teams — its athletes are carried by lineups and by the Comp.Rank
