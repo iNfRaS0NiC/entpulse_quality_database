@@ -3093,29 +3093,39 @@ Test-That 'the SQL tab holds every statement, each linking back to its results' 
     Assert-Equal 2 (@($c2 | Select-Object -Unique)).Count 'and the two forward links differ'
 }
 
-Test-That 'the hidden columns are hidden only on the run that creates the board' {
+Test-That 'the hidden columns are hidden on a new board and on every full sport pass' {
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
 
     # One operation per contiguous run. Collapsing the set to its lowest and highest would
-    # hide C through M and take Check Name, Rows and Status with it.
+    # hide C through the last of them and take Check Name, Rows and Status with it.
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
     $hide = @($fresh.Operations | Where-Object { $_.Kind -eq 'HideColumns' })
-    Assert-Equal 2 $hide.Count 'hidden when Overview is created, and the gap is not bridged'
+    Assert-Equal 3 $hide.Count 'hidden when Overview is created, and the gaps are not bridged'
     Assert-Equal 3 $hide[0].From 'Parameters at C'
     Assert-Equal 3 $hide[0].To 'and only C'
     Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Signal') + 1) $hide[1].From 'from Signal'
     Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Signal reason') + 1) $hide[1].To 'to Signal reason'
+    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Eligible') + 1) $hide[2].From 'from Eligible'
+    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Prev eligible') + 1) $hide[2].To 'to Prev eligible'
 
-    # Somebody who unhides them has decided something; putting them back every week is the
-    # same defect as overwriting a comment.
     $existing = [pscustomobject]@{
         HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
         EmptyCommentOf = @{}; TabOf = @{}; Titles = @('Overview'); EmptyTabs = @{}
         RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
     }
+
+    # A partial run leaves them as it found them. Re-running one check after a reported fix is
+    # not the moment to repaint a board somebody is reading.
     Assert-Equal 0 @((New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
                 -OutputFolder 'x').Operations | Where-Object { $_.Kind -eq 'HideColumns' }).Count `
-        'and never re-hidden afterwards'
+        'a partial run does not touch them'
+
+    # A full sport pass does. That is the moment the document is remade for reading, and these
+    # are the columns that are noise while reading it - by decision of 2026-08-17, which also
+    # accepts the cost: a column unhidden between two full passes closes again on the next.
+    Assert-Equal 3 @((New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
+                -OutputFolder 'x' -Complete).Operations | Where-Object { $_.Kind -eq 'HideColumns' }).Count `
+        'a complete one closes them again'
 }
 
 Test-That 'the runner renames a document it named itself, and nobody else' {
@@ -3141,11 +3151,16 @@ Test-That 'the Rows colour bands are rewritten every run, over that column only'
 
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
     $rules = @($fresh.Operations | Where-Object { $_.Kind -eq 'FormatRules' })
-    # Two columns carry bands now - Rows and Status.
-    Assert-Equal 2 $rules.Count 'a new document gets its bands'
-    Assert-Equal 8 $rules[0].Column 'on Rows at H'
-    Assert-Equal 0 @($rules[0].Drop).Count 'with nothing to remove'
-    Assert-Equal 3 @($rules[0].Rules).Count 'clean, a handful, and a hundred or more'
+    # Four columns carry bands now - Rows, Status, and the pair that says which way a check
+    # moved. Change and Verdict were added on 2026-08-17 so a column of a hundred reads the way
+    # one check's Trends cell already did.
+    Assert-Equal 4 $rules.Count 'a new document gets its bands'
+    # Found by the column it covers, not by where it happens to sit in the plan: four columns
+    # are banded now and the order they are emitted in is not part of the contract.
+    $rowsBand = @($rules | Where-Object { $_.Column -eq ([array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1) })
+    Assert-Equal 1 $rowsBand.Count 'Rows is banded'
+    Assert-Equal 0 @($rowsBand[0].Drop).Count 'with nothing to remove'
+    Assert-Equal 3 @($rowsBand[0].Rules).Count 'clean, a handful, and a hundred or more'
 
     # Column H is index 7 to 8; a rule over the whole board, or over any other column, is
     # somebody else's and survives.
@@ -3162,7 +3177,21 @@ Test-That 'the Rows colour bands are rewritten every run, over that column only'
     }
     $again = @(@(New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
                 -OutputFolder 'x').Operations | Where-Object { $_.Kind -eq 'FormatRules' })
-    Assert-Equal 2 $again.Count 'and an existing one gets them again'
+    Assert-Equal 4 $again.Count 'and an existing one gets them again'
+
+    # Change takes plain numeric rules; Verdict holds a word, so its rule reads the Change cell
+    # on its own row through a formula. Both carry the trend's own three colours.
+    $changeRule = @($again | Where-Object { $_.Column -eq ([array]::IndexOf($SheetsOverviewColumns, 'Change') + 1) })
+    $verdictRule = @($again | Where-Object { $_.Column -eq ([array]::IndexOf($SheetsOverviewColumns, 'Verdict') + 1) })
+    Assert-Equal 1 $changeRule.Count 'Change is banded'
+    Assert-Equal 'NUMBER_LESS' $changeRule[0].Rules[0].Type 'down is a number below zero'
+    Assert-Equal $SheetsTrendColours['down'] $changeRule[0].Rules[0].Colour 'in the green the trend uses'
+    Assert-Equal $SheetsTrendColours['up'] $changeRule[0].Rules[1].Colour 'and the red'
+    Assert-Equal $SheetsTrendColours['level'] $changeRule[0].Rules[2].Colour 'and the black'
+    Assert-Equal 1 $verdictRule.Count 'and so is Verdict'
+    Assert-Equal 'CUSTOM_FORMULA' $verdictRule[0].Rules[0].Type 'a word cannot be compared to zero'
+    Assert-True ([bool]($verdictRule[0].Rules[0].Values[0] -match '\$U\$?2|\$[A-Z]+2')) `
+        'so it reads the Change cell on its own row'
     $rowsRule = @($again | Where-Object { $_.Column -eq 8 })
     $statusRule = @($again | Where-Object { $_.Column -eq 9 })
     Assert-Equal '0 2' (@($rowsRule[0].Drop) -join ' ') 'replacing only the rules that cover Rows'
@@ -3646,16 +3675,43 @@ Test-That 'a board written before a column existed has room made for it, not its
         RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'RETIRED' = 9 }
         SheetIndexOf = @{ 'Overview' = 0 }; CheckTabHeaderOf = @{ 'RETIRED' = $stale }
     }
+    # A check tab is migrated by moving two rows, never by inserting a column. Overview is a
+    # board where every row has the same columns; a check tab is not - rows 1 and 2 are the
+    # identity, row 5 down is the result, and insertDimension takes the whole column. The first
+    # version of this pushed a column through every result table on the board, and although the
+    # tables were rebuilt at their proper width immediately and no value moved, Sheets had
+    # already named the column it briefly saw: 107 tabs came back reading "Column 11" beside
+    # their result headers.
+    $state2 = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewHeader = $SheetsOverviewColumns
+        OverviewRowOf = @{}; EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{}
+        Titles = @('Overview', 'RETIRED'); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'RETIRED' = 9 }
+        SheetIndexOf = @{ 'Overview' = 0 }
+        CheckTabHeaderOf = @{ 'RETIRED' = $stale }
+        CheckTabIdentityOf = @{ 'RETIRED' = @($stale | ForEach-Object { 'was:' + $_ }) }
+    }
     $plan2 = New-SheetsMergePlan -Summary @() -Collected @() -Existing $state2 -OutputFolder 'x'
-    Assert-Equal 1 @($plan2.Operations | Where-Object {
-            $_.Kind -eq 'InsertColumn' -and $_.Sheet -eq 'RETIRED' }).Count 'the stale tab gets its room'
-    $named = @($plan2.Operations | Where-Object {
+    Assert-Equal 0 @($plan2.Operations | Where-Object {
+            $_.Kind -eq 'InsertColumn' -and $_.Sheet -eq 'RETIRED' }).Count `
+        'no column is pushed through the result table below'
+
+    $moved = @($plan2.Operations | Where-Object {
             $_.Kind -eq 'Write' -and $_.Sheet -eq 'RETIRED' -and
-            $_.Range -eq ('A1:{0}1' -f (CheckTabLastColumn)) })
-    Assert-Equal 1 $named.Count 'and its header row, which nothing else would write'
+            $_.Range -eq ('A1:{0}2' -f (CheckTabLastColumn)) })
+    Assert-Equal 1 $moved.Count 'the two identity rows are rewritten instead'
     Assert-Equal 'Time Spent (minutes)' `
-        @($named[0].Values[0])[([array]::IndexOf($SheetsCheckTabColumns, 'Time Spent (minutes)'))] `
-        'so the new column carries its name rather than one Sheets made up'
+        @($moved[0].Values[0])[([array]::IndexOf($SheetsCheckTabColumns, 'Time Spent (minutes)'))] `
+        'the new column carries its name rather than one Sheets made up'
+
+    # Every old value lands under the heading it belongs to, wherever that heading has moved,
+    # and a column with no old counterpart arrives empty rather than holding its neighbour.
+    Assert-Equal 'was:Verdict' `
+        @($moved[0].Values[1])[([array]::IndexOf($SheetsCheckTabColumns, 'Verdict'))] `
+        'and the values follow their own names'
+    Assert-Equal '' `
+        @($moved[0].Values[1])[([array]::IndexOf($SheetsCheckTabColumns, 'Time Spent (minutes)'))] `
+        'while the column that has no past is blank'
 }
 
 Test-That 'Overview counts what is still open, so a dismissed finding leaves the Rows cell' {
@@ -3868,9 +3924,21 @@ Test-That 'a result column is sized from its own header, and the header row wrap
 
     # The reviewer columns are part of the header and get sized with it.
     $widths = @($plan.Operations | Where-Object { $_.Kind -eq 'ColumnWidth' -and $_.Sheet -eq 'HDR' })
-    $covered = 0
-    foreach ($span in $widths) { if ($span.To -gt $covered) { $covered = $span.To } }
-    Assert-Equal 4 $covered 'both projected columns and both reviewer columns are sized'
+    $widthOf = @{}
+    foreach ($span in $widths) {
+        for ($c = [int]$span.From; $c -le [int]$span.To; $c++) { $widthOf[$c] = [int]$span.Width }
+    }
+    foreach ($column in 1..4) { Assert-True $widthOf.ContainsKey($column) "result column $column is sized" }
+
+    # And the two columns of the identity row that the default width does not fit. A check tab
+    # stacks two tables in one set of columns, so one width serves both and the wider wins:
+    # Trends sits past this result's four columns and would otherwise never be sized at all,
+    # while Time Spent shares a column with a projected name and must not shrink to it.
+    $trendsAt = [array]::IndexOf($SheetsCheckTabColumns, 'Trends') + 1
+    $timeAt = [array]::IndexOf($SheetsCheckTabColumns, 'Time Spent (minutes)') + 1
+    Assert-Equal $SheetsTrendsColumnWidth $widthOf[$trendsAt] 'Trends is opened out to hold the whole series'
+    Assert-True ($widthOf[$timeAt] -ge $SheetsTimeSpentColumnWidth) `
+        'and Time Spent is never narrower than its own heading needs'
 }
 
 Test-That 'a trend colours each count against the one before it' {

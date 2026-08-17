@@ -200,16 +200,21 @@ $SheetsCheckTabReviewerColumns = @(
 # of repetition next to the two things a reviewer navigates by. All three stay in the sheet
 # and in _summary.csv; unhiding brings back every value.
 #
-# Hidden once, on the run that creates Overview, and never re-hidden: somebody who unhides one
-# has decided something, and putting it back every week is the same defect as overwriting a
-# comment. Contiguous runs are hidden together and gaps are not bridged, so hiding C does not
-# take D through K with it.
+# Hidden on the run that creates Overview and on every run that covers the whole sport.
+# Contiguous runs are hidden together and gaps are not bridged, so hiding C does not take D
+# through K with it.
+#
+# Eligible, Prev findings and Prev eligible joined the list on 2026-08-17 at the reviewers'
+# asking. All three are context for a number rather than the number: how large the population
+# was, and what the run before said. Change and Verdict already answer "did this move, and
+# which way", so the two counts they were computed from are a reader's second question and not
+# their first. Unhiding brings every value back, and _summary.csv carries them regardless.
 #
 # Derived rather than written as numbers, for the reason the reviewer columns above now are:
 # these were the literal 3, 12 and 13 until a column arrived to the left of Signal, and a
 # literal here would have hidden Signal reason and Expected instead.
 $SheetsOverviewHiddenColumns = @(
-    @('Parameters', 'Signal', 'Signal reason') |
+    @('Parameters', 'Signal', 'Signal reason', 'Eligible', 'Prev findings', 'Prev eligible') |
         ForEach-Object { [array]::IndexOf($SheetsOverviewColumns, $_) + 1 })
 
 # How Overview colours its Rows column, and what each band means.
@@ -336,6 +341,19 @@ $SheetsReviewerHeaderColour = '#FFFFFF'
 # link in row 3 and a result value below it, and at the default width the link was clipped by
 # whatever sat in B - a control nobody can read is not a control.
 $SheetsCheckTabFirstColumnWidth = 175
+
+# Wide enough for the heading to be read rather than guessed at. 'Time Spent (minutes)' is
+# twenty characters against a default column of about eleven, so at the default it arrives as
+# 'Time Spent (m' on both boards - and a column somebody is meant to type into has to say what
+# it wants first.
+$SheetsTimeSpentColumnWidth = 150
+
+# Wide enough for the whole series. $TrendRunCount keeps five recorded runs and this run makes
+# six, and a point renders as '2789 (17.08 13:47)' - about eighteen characters, with three more
+# for the arrow between them. Six points is therefore around 123 characters, and this is what
+# that measures at the sheet's own size. The column exists to be read across, so sizing it to
+# anything less makes it a cell somebody has to click into to use.
+$SheetsTrendsColumnWidth = 900
 
 # A result column is sized from its own header, and the header row wraps.
 #
@@ -1000,33 +1018,43 @@ function New-SheetsMergePlan {
             $plan += [pscustomobject]@{ Kind = 'InsertColumn'; Sheet = 'Overview'; At = [int]$at }
         }
     }
+    # A check tab is migrated by moving two rows, never by inserting a column. Overview is a
+    # board where every row has the same columns, so making room in the sheet is exactly right
+    # there. A check tab is not: rows 1 and 2 are the identity, row 5 down is the result, and
+    # the two have nothing to do with each other. insertDimension does not know that - it takes
+    # the whole column - so the first version of this pushed a column through every result table
+    # on the board. The tables were rebuilt at their proper width straight afterwards and no
+    # value moved, but Sheets had already named the column it briefly saw, and 107 tabs came
+    # back with the words "Column 11" sitting beside their result headers.
+    #
+    # So the values are placed by name instead. Only a tab this run does not produce can need
+    # it - anything it does produce has both rows rewritten below - and a name that has no old
+    # column simply arrives empty.
     if ($Existing -and $Existing.CheckTabHeaderOf) {
         foreach ($title in @($Existing.CheckTabHeaderOf.Keys)) {
-            $at = @(Get-SheetsColumnInsertions -Was $Existing.CheckTabHeaderOf[$title] `
-                    -Now $SheetsCheckTabColumns)
-            if ($at.Count -eq 0) { continue }
-            foreach ($one in $at) {
-                $plan += [pscustomobject]@{ Kind = 'InsertColumn'; Sheet = [string]$title; At = [int]$one }
+            $was = @($Existing.CheckTabHeaderOf[$title])
+            if ($was.Count -eq 0) { continue }
+            if (@(Get-SheetsColumnInsertions -Was $was -Now $SheetsCheckTabColumns).Count -eq 0) { continue }
+
+            $had = @()
+            if ($Existing.CheckTabIdentityOf -and $Existing.CheckTabIdentityOf.ContainsKey($title)) {
+                $had = @($Existing.CheckTabIdentityOf[$title])
+            }
+            $moved = @()
+            foreach ($name in $SheetsCheckTabColumns) {
+                $from = [array]::IndexOf($was, [string]$name)
+                $moved += $(if ($from -ge 0 -and $from -lt $had.Count) { $had[$from] } else { '' })
             }
 
-            # And the header row with it. A tab this run produced has row 1 rewritten anyway,
-            # but a tab it does not - a check that has stopped running, one belonging to another
-            # sport's catalogue - keeps whatever it had, and an inserted column would sit there
-            # unnamed. Sheets will not leave a column of a table unnamed, so it invents one: the
-            # retired GLOBAL-DQ-019 tab came back from the first migration reading "Column 16"
-            # and "Column 17" where Time Spent and All findings belong.
-            #
-            # Safe precisely here and not in general. The insertion has just made the header and
-            # the row agree, so naming the columns states what row 2 now holds; writing row 1
-            # over a tab whose columns could not be reconciled would assert a layout the values
-            # underneath do not have. That is why this hangs off the insertion rather than being
-            # done for every tab on the board.
+            # Both rows in one write, the names above the values they name. The reviewer's own
+            # cells travel with everything else: they are being carried to where they now
+            # belong, not overwritten, and their content is what was just read off this tab.
             $plan += [pscustomobject]@{
                 Kind   = 'Write'
                 Sheet  = [string]$title
                 Range  = (New-SheetsRange -FromColumn 1 -FromRow 1 `
-                        -ToColumn $SheetsCheckTabColumns.Count -ToRow 1)
-                Values = @(, $SheetsCheckTabColumns)
+                        -ToColumn $SheetsCheckTabColumns.Count -ToRow 2)
+                Values = @($SheetsCheckTabColumns, $moved)
             }
         }
     }
@@ -1064,10 +1092,23 @@ function New-SheetsMergePlan {
     # range" otherwise - and Invoke-SheetsPlan sends every AddSheet before any write.
     if (-not $Existing -or -not $Existing.HasOverviewSheet) {
         $plan += [pscustomobject]@{ Kind = 'AddSheet'; Sheet = 'Overview' }
+    }
 
-        # One operation per contiguous run, not one spanning the lowest to the highest. That
-        # shortcut held while the hidden columns were the adjacent L and M; adding C to the
-        # list would have hidden C through M and taken Check Name, Rows and Status with it.
+    # The columns the board ships closed, on a new document and on every run that covers the
+    # whole sport. Creation alone was the rule until 2026-08-17, on the reasoning that somebody
+    # who unhides one has decided something and putting it back weekly is the same defect as
+    # overwriting a comment. The reviewers asked for the opposite and it is their board: a full
+    # sport pass is the moment the document is remade for reading, and these are the columns
+    # that are noise while reading it.
+    #
+    # The cost is real and is theirs to accept - a column unhidden between two full passes
+    # closes again on the next one. A partial run still leaves them exactly as it found them,
+    # so re-running one check after a fix does not repaint the board.
+    #
+    # One operation per contiguous run, not one spanning the lowest to the highest. That
+    # shortcut held while the hidden columns were the adjacent L and M; adding C to the list
+    # would have hidden C through M and taken Check Name, Rows and Status with it.
+    if (-not $Existing -or -not $Existing.HasOverviewSheet -or $Complete) {
         foreach ($span in @(Split-SheetsColumnRuns -Columns $SheetsOverviewHiddenColumns)) {
             $plan += [pscustomobject]@{
                 Kind = 'HideColumns'; Sheet = 'Overview'; From = $span.From; To = $span.To
@@ -1081,25 +1122,66 @@ function New-SheetsMergePlan {
     # Sheets had to name for itself.
     $rowsColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1
     $statusColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Status') + 1
+    $changeColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Change') + 1
+    $verdictColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Verdict') + 1
     $existingRules = @()
     if ($Existing -and $Existing.ConditionalFormatsOf -and $Existing.ConditionalFormatsOf.ContainsKey('Overview')) {
         $existingRules = @($Existing.ConditionalFormatsOf['Overview'])
     }
 
-    # Both columns' rules are dropped in one pass. Deleting by index renumbers what follows,
+    # Every column's rules are dropped in one pass. Deleting by index renumbers what follows,
     # so two planner entries each computing its own indexes against the same original list
     # would have the second one delete a rule the first had already shifted.
-    $dropOf = @{ $rowsColumnIndex = @(); $statusColumnIndex = @() }
+    $ruled = @($rowsColumnIndex, $statusColumnIndex, $changeColumnIndex, $verdictColumnIndex)
+    $dropOf = @{}
+    foreach ($column in $ruled) { $dropOf[$column] = @() }
     for ($index = 0; $index -lt $existingRules.Count; $index++) {
         # Only a rule covering exactly one of these columns. One drawn across the whole board,
         # or over any other column, was somebody's and is left where it is.
         $ranges = @($existingRules[$index].ranges)
         if ($ranges.Count -eq 0) { continue }
-        foreach ($column in @($rowsColumnIndex, $statusColumnIndex)) {
+        foreach ($column in $ruled) {
             $mine = @($ranges | Where-Object {
                     [int]$_.startColumnIndex -eq ($column - 1) -and
                     [int]$_.endColumnIndex -eq $column })
             if ($mine.Count -eq $ranges.Count) { $dropOf[$column] += $index }
+        }
+    }
+
+    # Change and Verdict read the way Trends does: down is the check improving, up is it getting
+    # worse, and level is neither. The reviewers asked for it and the reason is the same one the
+    # trend colouring already answers - which way is this moving - except that a trend is read
+    # per check and these two are read down a column of a hundred.
+    #
+    # Change carries the numbers, so it takes plain numeric rules. Verdict carries a word, and a
+    # word cannot be compared to zero - so its rule reads the Change cell on its own row through
+    # a custom formula. The column is addressed absolutely and the row relatively, against a
+    # range that starts on row 2, which is what makes one rule follow every row down.
+    $changeCell = '$' + (ConvertTo-SheetsColumnName -Index $changeColumnIndex) + '2'
+    $movementBands = @(
+        @{ Down = @{ Type = 'NUMBER_LESS'; Values = @('0') }
+            Up = @{ Type = 'NUMBER_GREATER'; Values = @('0') }
+            Level = @{ Type = 'NUMBER_EQ'; Values = @('0') }
+            Column = $changeColumnIndex }
+        @{ Down = @{ Type = 'CUSTOM_FORMULA'; Values = @("=AND($changeCell<>`"`", $changeCell<0)") }
+            Up = @{ Type = 'CUSTOM_FORMULA'; Values = @("=AND($changeCell<>`"`", $changeCell>0)") }
+            Level = @{ Type = 'CUSTOM_FORMULA'; Values = @("=AND($changeCell<>`"`", $changeCell=0)") }
+            Column = $verdictColumnIndex }
+    )
+    foreach ($band in $movementBands) {
+        $plan += [pscustomobject]@{
+            Kind   = 'FormatRules'
+            Sheet  = 'Overview'
+            Column = [int]$band.Column
+            Drop   = $dropOf[[int]$band.Column]
+            # The trend's own three colours, read from the same map rather than repeated here.
+            # These two columns and that series answer one question between them, and a green
+            # that drifted apart from the green beside it would be worse than no colour at all.
+            Rules  = @(
+                [pscustomobject]@{ Type = $band.Down.Type; Values = $band.Down.Values; Colour = $SheetsTrendColours['down'] }
+                [pscustomobject]@{ Type = $band.Up.Type; Values = $band.Up.Values; Colour = $SheetsTrendColours['up'] }
+                [pscustomobject]@{ Type = $band.Level.Type; Values = $band.Level.Values; Colour = $SheetsTrendColours['level'] }
+            )
         }
     }
     $plan += [pscustomobject]@{
@@ -1123,6 +1205,20 @@ function New-SheetsMergePlan {
     $plan += [pscustomobject]@{
         Kind    = 'Format'; Sheet = 'Overview'
         FromRow = 0; ToRow = $null; FromCol = 0; ToCol = $width; Align = 'CENTER'
+    }
+
+    # The two columns the default width does not fit: one a heading nobody can read at eleven
+    # characters, the other a series meant to be read across. Set on every run rather than at
+    # creation, because a board that already exists is the one that needs them.
+    foreach ($sized in @(
+            @{ Name = 'Time Spent (minutes)'; Width = $SheetsTimeSpentColumnWidth }
+            @{ Name = 'Trends'; Width = $SheetsTrendsColumnWidth })) {
+        $at = [array]::IndexOf($SheetsOverviewColumns, [string]$sized.Name)
+        if ($at -lt 0) { continue }
+        $plan += [pscustomobject]@{
+            Kind = 'ColumnWidth'; Sheet = 'Overview'
+            From = ($at + 1); To = ($at + 1); Width = [int]$sized.Width
+        }
     }
 
     # The three headings that name the reviewer's own columns. Status is one of them even
@@ -1799,6 +1895,20 @@ function New-SheetsMergePlan {
             $cells += $slice.Count
         }
 
+        # The same two columns the board widens, for the same two reasons. A check tab carries
+        # its own copy of the series and its own cell for what the check cost, and a heading
+        # clipped to 'Time Spent (m' is no more readable here than it is there.
+        foreach ($sized in @(
+                @{ Name = 'Time Spent (minutes)'; Width = $SheetsTimeSpentColumnWidth }
+                @{ Name = 'Trends'; Width = $SheetsTrendsColumnWidth })) {
+            $at = [array]::IndexOf($SheetsCheckTabColumns, [string]$sized.Name)
+            if ($at -lt 0) { continue }
+            $plan += [pscustomobject]@{
+                Kind = 'ColumnWidth'; Sheet = $title
+                From = ($at + 1); To = ($at + 1); Width = [int]$sized.Width
+            }
+        }
+
         # The same colouring on the tab's own copy of the series. Written after the identity
         # row above, which put the plain string there first: if the rich write is ever refused,
         # the cell still reads correctly and only loses its colour.
@@ -2030,11 +2140,40 @@ function New-SheetsMergePlan {
             # width carries a name of ordinary length, and the wrap carries the rest onto a
             # second line rather than letting the cap clip them. Only the header row wraps -
             # a wrapped value would make one tall row of every finding holding a long string.
+            #
+            # A check tab stacks two tables in one set of columns - the identity on rows 1 and 2,
+            # the result from row 5 - so one width has to serve both, and the wider of the two
+            # wins. Narrowing to the result would clip 'Time Spent (minutes)' back to the
+            # heading nobody could read; widening past it never hides anything, it only leaves
+            # air in a result column. Raised rather than overwritten, so a projected name longer
+            # than either of these still gets the room it asked for.
+            $identityWidthOf = @{}
+            foreach ($sized in @(
+                    @{ Name = 'Time Spent (minutes)'; Width = $SheetsTimeSpentColumnWidth }
+                    @{ Name = 'Trends'; Width = $SheetsTrendsColumnWidth })) {
+                $at = [array]::IndexOf($SheetsCheckTabColumns, [string]$sized.Name)
+                if ($at -ge 0) { $identityWidthOf[($at + 1)] = [int]$sized.Width }
+            }
             foreach ($span in (Get-SheetsResultColumnWidths -Header $header `
                         -FirstColumnWidth $SheetsCheckTabFirstColumnWidth)) {
+                for ($column = [int]$span.From; $column -le [int]$span.To; $column++) {
+                    $wide = [int]$span.Width
+                    if ($identityWidthOf.ContainsKey($column) -and $identityWidthOf[$column] -gt $wide) {
+                        $wide = [int]$identityWidthOf[$column]
+                    }
+                    $identityWidthOf.Remove($column)
+                    $plan += [pscustomobject]@{
+                        Kind = 'ColumnWidth'; Sheet = $title
+                        From = $column; To = $column; Width = $wide
+                    }
+                }
+            }
+            # Whatever the result never reached. A narrow result stops well before Trends, and
+            # that column still has to be read across.
+            foreach ($column in @($identityWidthOf.Keys)) {
                 $plan += [pscustomobject]@{
                     Kind = 'ColumnWidth'; Sheet = $title
-                    From = $span.From; To = $span.To; Width = $span.Width
+                    From = [int]$column; To = [int]$column; Width = [int]$identityWidthOf[$column]
                 }
             }
 
@@ -2697,6 +2836,7 @@ function Read-SheetState {
     $hasHeader = $false
     $overviewHeader = @()
     $checkTabHeaderOf = @{}
+    $checkTabIdentityOf = @{}
     $sqlBlocks = @()
     $resultHeaderOf = @{}
     $reviewNotesOf = @{}
@@ -2798,6 +2938,12 @@ function Read-SheetState {
             if ($rows.Count -gt 0) {
                 $checkTabHeaderOf[$checkTabs[$i]] = @(@($rows[0]) | ForEach-Object { [string]$_ })
             }
+            # The identity row whole, not just the Check ID out of it. A tab this run does not
+            # produce is the only thing that can carry a layout the package has moved on from,
+            # and moving its values to where they now belong needs the values.
+            if ($rows.Count -gt 1) {
+                $checkTabIdentityOf[$checkTabs[$i]] = @(@($rows[1]) | ForEach-Object { [string]$_ })
+            }
 
             $checkId = ''
             if ($rows.Count -gt 1 -and @($rows[1]).Count -gt 0) { $checkId = [string]@($rows[1])[0] }
@@ -2826,6 +2972,7 @@ function Read-SheetState {
         HasOverviewHeader = $hasHeader
         OverviewHeader    = $overviewHeader
         CheckTabHeaderOf  = $checkTabHeaderOf
+        CheckTabIdentityOf = $checkTabIdentityOf
         OverviewRowOf     = $rowOf
         EmptyCommentOf    = $emptyComment
         StatusOf          = $statusOf
