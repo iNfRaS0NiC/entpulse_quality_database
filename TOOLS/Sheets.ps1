@@ -41,6 +41,13 @@ $SheetsWriteChunk = 2000
 # result header. Sixty keeps the URL comfortably inside what a GET is served at.
 $SheetsReadChunk = 60
 
+# Table declarations per batchUpdate. Not a size limit - a batch of two hundred is accepted
+# when every request in it is good. It is a blast radius: batchUpdate is atomic, so one
+# request Google refuses discards the whole call, and a refusal it answers with 500 names
+# neither the request nor the reason. In one call a single bad table costs every table on the
+# board and says nothing; in twenties it costs twenty and the output says which twenty.
+$SheetsTableChunk = 20
+
 $script:SheetsAccessToken = ''
 $script:SheetsTokenExpiry = [datetime]::MinValue
 
@@ -691,18 +698,22 @@ function New-SheetsCarriedReview {
 }
 
 function ConvertTo-SheetsIdentityTableName {
-    # The name of a check tab's identity table: the check's own number and what the block is,
-    # without the sport. Every tab in the document belongs to one sport, so the prefix would
-    # repeat on all of them and distinguish none.
+    # The name of a check tab's identity table: the whole CheckID and what the block is.
     #
-    # Falls back to the whole CheckID for anything not shaped like one - an ad-hoc statement
-    # has no number to take - because a table still needs a name and a collision is worse than
-    # a long one.
+    # The prefix used to be dropped here, on the reasoning that every tab belongs to one sport
+    # and so the sport distinguishes nothing. That is false, and the document it broke says how:
+    # a sport board carries the sport's own checks beside the GLOBAL templates it runs, and the
+    # two number themselves independently, so Cycling-DQ-019 and GLOBAL-DQ-019 both arrived here
+    # as DQ_019_Overview. A table name has to be unique across the whole spreadsheet, and Google
+    # answers a duplicate with 500 Internal error rather than a message naming the clash - so a
+    # single colliding request took the whole atomic batch with it and the document went 92 tabs
+    # without a table, with nothing in the output saying which request was at fault.
+    #
+    # The result table below it never had the defect: it is named for the CheckID in full, which
+    # is why GLOBAL_DQ_019 and Cycling_DQ_019 have always coexisted on the same board.
     param([string]$CheckId)
 
-    $stem = [string]$CheckId
-    if ($stem -match '(DQ-\d+)$') { $stem = $Matches[1] }
-    return (ConvertTo-SheetsTableName -Name ($stem + '_Overview'))
+    return (ConvertTo-SheetsTableName -Name ([string]$CheckId + '_Overview'))
 }
 
 function New-SheetsCommentMirror {
@@ -3091,15 +3102,40 @@ function Invoke-SheetsPlan {
         }
     }
 
-    if ($tableRequests.Count -gt 0) {
-        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $tableRequests } | Out-Null
+    # In chunks, and every chunk is attempted even after one has failed. The board is worth more
+    # with the tables that can be declared than with none of them, and what could not be
+    # declared has to be named rather than inferred: Google answers a refused table with 500 and
+    # no detail, so the names in this chunk are the only description of the failure anybody gets.
+    $tablesApplied = 0
+    $tableFailures = @()
+    for ($start = 0; $start -lt $tableRequests.Count; $start += $SheetsTableChunk) {
+        $end = [math]::Min($start + $SheetsTableChunk, $tableRequests.Count) - 1
+        $chunk = @($tableRequests[$start..$end])
+        try {
+            Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $chunk } | Out-Null
+            $tablesApplied += $chunk.Count
+        }
+        catch {
+            $names = @($chunk | ForEach-Object {
+                    $t = $(if ($_.addTable) { $_.addTable.table } else { $_.updateTable.table })
+                    [string]$t.name
+                })
+            $tableFailures += ("tables {0}-{1} of {2} were refused ({3}): {4}" -f
+                ($start + 1), ($end + 1), $tableRequests.Count,
+                ($_.Exception.Message -replace '\s+', ' '), ($names -join ', '))
+        }
+    }
+
+    if ($tableFailures.Count -gt 0) {
+        throw ("{0} of {1} table declaration(s) applied. " -f $tablesApplied, $tableRequests.Count) +
+        ($tableFailures -join ' | ')
     }
 
     return [pscustomobject]@{
         Added   = $adds.Count
         Cleared = $clears.Count
         Written = $writes.Count
-        Tables  = $tableRequests.Count
+        Tables  = $tablesApplied
     }
 }
 

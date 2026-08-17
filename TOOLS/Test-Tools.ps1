@@ -2890,10 +2890,16 @@ Test-That 'a result block is declared a table, and an existing one is corrected 
     Assert-Equal 1 $result.Count 'the result block is named for the check'
     Assert-Equal 4 $result[0].FromRow 'starting on the header row of the block'
     Assert-Equal 8 $result[0].ToRow 'and ending past the last row it holds'
-    # The identity block takes the check's number and nothing else: every tab in the document
-    # is the same sport, so the sport in the name would distinguish none of them.
-    $identity = @($table | Where-Object { $_.Name -eq 'DQ_002_Overview' })
-    Assert-Equal 1 $identity.Count 'the identity block is named for the check number alone'
+    # The identity block takes the whole CheckID, prefix included. It used to take the number
+    # alone, on the reasoning that every tab is the same sport - but a sport board carries the
+    # sport's own checks beside the GLOBAL templates it runs, those number themselves
+    # independently, and Cycling-DQ-019 and GLOBAL-DQ-019 both came out as DQ_019_Overview.
+    # A duplicate table name is answered by Google with 500 and no detail, and batchUpdate is
+    # atomic, so that one collision left a 109-tab board with tables on 17 of them.
+    $identity = @($table | Where-Object { $_.Name -eq 'Fixtureball_DQ_002_Overview' })
+    Assert-Equal 1 $identity.Count 'the identity block is named for the check in full, prefix included'
+    Assert-Equal 0 @($table | Where-Object { $_.Name -eq 'DQ_002_Overview' }).Count `
+        'never for the number alone, which two prefixes can share'
     Assert-Equal 0 $identity[0].FromRow 'covering the header'
     Assert-Equal 3 $identity[0].ToRow 'the identity row and the way back'
     Assert-Equal 0 $fresh.KnownTables.Count 'with nothing existing to update'
@@ -3661,7 +3667,7 @@ Test-That 'a check tab centres everything but the way out, which it widens inste
 
     # The identity block is a different kind of thing from the results, so a different colour.
     $tables = @($plan.Operations | Where-Object { $_.Kind -eq 'Table' -and $_.Sheet -eq 'WIDE' })
-    $identity = @($tables | Where-Object { $_.Name -eq 'DQ_002_Overview' })
+    $identity = @($tables | Where-Object { $_.Name -eq 'Fixtureball_DQ_002_Overview' })
     # The block naming the check recedes; the block holding rows takes the colour every other
     # block of data wears, the board included.
     Assert-Equal $SheetsIdentityHeaderColour $identity[0].HeaderColour 'the identity block recedes into grey'
