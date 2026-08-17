@@ -3563,6 +3563,54 @@ Test-That 'the log accumulates rather than being replaced by the latest run' {
         'a tab that exists is not added again'
 }
 
+Test-That 'a board written before a column existed has room made for it, not its rows rewritten' {
+    # A run rewrites the rows it produced and leaves the rest exactly as it found them, which is
+    # right: those rows hold the last full run's numbers. But a column added in the middle
+    # changes what each position means, and an untouched row then reads one column to the left
+    # of itself. On the board this was found on, a retired GLOBAL-DQ-019 showed its Eligible
+    # under All findings, its Trends under Last run, and a Change cell reading "Not in this run"
+    # - nothing corrupted, and nothing visibly wrong from any single cell.
+    $was = @($SheetsOverviewColumns | Where-Object { $_ -ne 'All findings' })
+    $at = @(Get-SheetsColumnInsertions -Was $was -Now $SheetsOverviewColumns)
+    Assert-Equal 1 $at.Count 'one column has been added'
+    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'All findings')) $at[0] `
+        'and the room is made where it now sits, not at the end'
+
+    # A board already at today's width is left alone. This runs on every board every run, so
+    # doing nothing has to be the ordinary case rather than a special one.
+    Assert-Equal 0 @(Get-SheetsColumnInsertions -Was $SheetsOverviewColumns -Now $SheetsOverviewColumns).Count `
+        'a current board needs no room made'
+    Assert-Equal 0 @(Get-SheetsColumnInsertions -Was @() -Now $SheetsOverviewColumns).Count `
+        'and a board with no header at all is not migrated on a guess'
+
+    # Only insertion. A column removed or moved would mean deleting or reordering cells holding
+    # somebody's data, which is a decision rather than a repair - so the whole migration is
+    # abandoned rather than half applied.
+    $reordered = @('Sport', 'Check Name', 'CheckID') + @($SheetsOverviewColumns | Select-Object -Skip 3)
+    Assert-Equal 0 @(Get-SheetsColumnInsertions -Was $reordered -Now $SheetsOverviewColumns).Count `
+        'a reordered board is left as it is'
+    $removed = @($was | Where-Object { $_ -ne 'Priority' })
+    Assert-Equal 0 @(Get-SheetsColumnInsertions -Was ($removed + 'Priority') -Now $SheetsOverviewColumns).Count `
+        'and so is one whose columns cannot be reconciled by insertion alone'
+
+    # The plan carries it as an operation against the tab, and the transport sends it in the
+    # structure batch - before any value - so the rows this run does write land in the layout
+    # the insertion just made.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 9 -Verdict 'New'))
+    $state = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewHeader = $was
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7 }
+        EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{}
+        Titles = @('Overview'); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5 }; SheetIndexOf = @{ 'Overview' = 0 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $state -OutputFolder 'x'
+    $inserts = @($plan.Operations | Where-Object { $_.Kind -eq 'InsertColumn' })
+    Assert-Equal 1 $inserts.Count 'the plan makes room once'
+    Assert-Equal 'Overview' $inserts[0].Sheet 'on the board that needs it'
+    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'All findings')) $inserts[0].At 'at the new column'
+}
+
 Test-That 'Overview counts what is still open, so a dismissed finding leaves the Rows cell' {
     # The board's whole purpose is answering "how much is left". A row the reviewers marked
     # No Issue / Change is settled and stays in the result for good, so counting it says there

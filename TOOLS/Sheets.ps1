@@ -801,6 +801,52 @@ function New-SheetsOverviewRow {
     )
 }
 
+function Get-SheetsColumnInsertions {
+    <#
+        Where a column has been added since a tab was last written, as indices into the current
+        column list.
+
+        A run rewrites the rows it produced and leaves every other row exactly as it found it -
+        which is right, because those rows hold the last full run's numbers and nobody else's
+        run is entitled to guess at them. But a column added in the middle of the list changes
+        what each position means, and a row nobody rewrote then reads one column to the left of
+        itself: on the board this was found on, a retired check showed its Eligible under All
+        findings, its Trends under Last run, and a Change cell reading "Not in this run".
+
+        Nothing was corrupted and nothing could be seen to be wrong from the cell alone, which
+        is the part worth fixing. The answer is to make room before writing rather than to
+        rewrite rows this run has no business rewriting: an inserted column pushes what is
+        already there to the right, so every untouched row lands back under its own headings.
+
+        Only insertion is reported. A column removed or moved is not migrated and deliberately
+        so - both would mean deleting or reordering cells that hold somebody's data, and that is
+        a decision rather than a repair. A board whose header cannot be reconciled by insertion
+        alone is left as it is and rewritten by the run, which is the behaviour that was there
+        before this existed.
+    #>
+    param($Was, $Now)
+
+    $old = @($Was | ForEach-Object { [string]$_ })
+    $new = @($Now | ForEach-Object { [string]$_ })
+    if ($old.Count -eq 0) { return @() }
+
+    $insertions = @()
+    $at = 0
+    for ($i = 0; $i -lt $new.Count; $i++) {
+        $name = [string]$new[$i]
+        if ($at -lt $old.Count -and [string]$old[$at] -eq $name) { $at++; continue }
+        # Present in the old header but not here: moved or the two have gone out of step, which
+        # is not something an insertion can put right. Nothing is emitted for it.
+        if ($old -contains $name) { continue }
+        $insertions += $i
+    }
+
+    # Every old column has to be accounted for, or this is not a pure insertion and the indices
+    # would push somebody's cells somewhere arbitrary. Better to leave the board alone.
+    if ($at -ne $old.Count) { return @() }
+    return $insertions
+}
+
 function Get-SheetsOpenCounts {
     <#
         One check's numbers with the reviewers' settled rows taken out of them.
@@ -917,6 +963,28 @@ function New-SheetsMergePlan {
     $dropped = @()
     $width = $SheetsOverviewColumns.Count
     $overviewSpans = Split-SheetsWritableSpans -Width $width -Reserved $SheetsOverviewReviewerColumns
+
+    # Room for a column the package has added since this document was last written, made before
+    # anything is written into it. Both boards get it: Overview, and each check tab's own
+    # identity row, which carries the same set of counts and grew the same way.
+    #
+    # It has to happen first, and it does - Invoke-SheetsPlan sends the structure batch before
+    # any values - so a row this run does rewrite lands in the layout the insertion just made,
+    # and a row it does not is pushed along with it. The alternative was rewriting rows the run
+    # did not produce, which would have replaced somebody's last full run with a guess.
+    if ($Existing -and $Existing.OverviewHeader) {
+        foreach ($at in @(Get-SheetsColumnInsertions -Was $Existing.OverviewHeader -Now $SheetsOverviewColumns)) {
+            $plan += [pscustomobject]@{ Kind = 'InsertColumn'; Sheet = 'Overview'; At = [int]$at }
+        }
+    }
+    if ($Existing -and $Existing.CheckTabHeaderOf) {
+        foreach ($title in @($Existing.CheckTabHeaderOf.Keys)) {
+            foreach ($at in @(Get-SheetsColumnInsertions -Was $Existing.CheckTabHeaderOf[$title] `
+                        -Now $SheetsCheckTabColumns)) {
+                $plan += [pscustomobject]@{ Kind = 'InsertColumn'; Sheet = [string]$title; At = [int]$at }
+            }
+        }
+    }
 
     $rowOf = @{}
     if ($Existing -and $Existing.OverviewRowOf) {
@@ -2536,7 +2604,16 @@ function Read-SheetState {
     # Through K rather than through B, because the merge needs to know which Comment cells are
     # empty as well as which checks are on the board.
     $reads = @()
-    if ($hasOverview) { $reads += 'Overview!A1:K' }
+    # Out to the last column the board writes, computed rather than lettered: this used to stop
+    # at K, which was everything the merge then needed - the CheckIDs, the Status and which
+    # Comment cells are empty. It now also has to see row 1 whole, because a header narrower
+    # than the current column list is how a board says it predates a column the package has
+    # since added, and the columns added since have all come after K. A hundred rows of a
+    # twenty-three column board is one small range; stopping short of it is what cost the
+    # information.
+    if ($hasOverview) {
+        $reads += ('Overview!A1:' + (ConvertTo-SheetsColumnName -Index $SheetsOverviewColumns.Count))
+    }
     # The SQL tab whole, because a run that holds only some of the checks still has to leave
     # the blocks belonging to the others where they were. Column A is all of it.
     $hasSql = ($titles -contains $SheetsSqlTabName)
@@ -2549,7 +2626,11 @@ function Read-SheetState {
     $checkTabs = @($titles | Where-Object {
             $_ -ne 'Overview' -and $_ -ne $SheetsSqlTabName -and $_ -ne $SheetsReviewLogTabName
         })
-    foreach ($title in $checkTabs) { $reads += "'" + ($title -replace "'", "''") + "'!A2" }
+    # Rows 1 and 2 of every check tab, in one range rather than the single A2 cell this used to
+    # ask for. Row 2 is the identity the tab is matched by; row 1 is the column names it was
+    # last written with, and the merge needs those to see that the tab predates a column the
+    # package has since added. It costs no extra range, which is what the read is chunked by.
+    foreach ($title in $checkTabs) { $reads += "'" + ($title -replace "'", "''") + "'!1:2" }
 
     # Row 5 of every check tab: the result's own column names, which say both where the reviewer
     # columns are and which columns identify a finding. Cheap - one row per tab - and it is what
@@ -2566,6 +2647,8 @@ function Read-SheetState {
     # of minting a second set beside them.
     $emptyTabs = @{}
     $hasHeader = $false
+    $overviewHeader = @()
+    $checkTabHeaderOf = @{}
     $sqlBlocks = @()
     $resultHeaderOf = @{}
     $reviewNotesOf = @{}
@@ -2591,6 +2674,9 @@ function Read-SheetState {
             # Row 1 is the header when there is one at all; CheckID is column B.
             $hasHeader = ($rows.Count -gt 0 -and @($rows[0]).Count -gt 0 -and
                 -not [string]::IsNullOrWhiteSpace([string]@($rows[0])[0]))
+            # And the names it holds, so the merge can see which columns the board was last
+            # written with and place any that have been added since.
+            if ($hasHeader) { $overviewHeader = @(@($rows[0]) | ForEach-Object { [string]$_ }) }
             for ($r = 1; $r -lt $rows.Count; $r++) {
                 $cells = @($rows[$r])
                 if ($cells.Count -lt 2) { continue }
@@ -2652,19 +2738,27 @@ function Read-SheetState {
         # A tab is matched to its check by the Check ID its own A2 carries, never by its
         # title: the title is an abbreviation of the check name, and a name can change without
         # the check becoming a different one.
+        #
+        # The range is rows 1 and 2 together, so row 1 arrives first and the identity second.
+        # A tab whose row 1 is blank still returns two entries, the first of them empty, so the
+        # identity is read from index 1 and never from whichever row happened to have content.
         for ($i = 0; $i -lt $checkTabs.Count; $i++) {
             $index = $i + $offset
             if ($index -ge $ranges.Count) { break }
             $rows = @($ranges[$index].values)
 
+            if ($rows.Count -gt 0) {
+                $checkTabHeaderOf[$checkTabs[$i]] = @(@($rows[0]) | ForEach-Object { [string]$_ })
+            }
+
             $checkId = ''
-            if ($rows.Count -gt 0 -and @($rows[0]).Count -gt 0) { $checkId = [string]@($rows[0])[0] }
+            if ($rows.Count -gt 1 -and @($rows[1]).Count -gt 0) { $checkId = [string]@($rows[1])[0] }
 
             if (-not [string]::IsNullOrWhiteSpace($checkId)) { $tabOf[$checkId] = $checkTabs[$i] }
             else { $emptyTabs[$checkTabs[$i]] = $true }
         }
 
-        # Row 5 of each tab, in the same order, straight after the A2 block.
+        # Row 5 of each tab, in the same order, straight after the identity block.
         $headerAt = $offset + $checkTabs.Count
         for ($i = 0; $i -lt $checkTabs.Count; $i++) {
             $index = $i + $headerAt
@@ -2682,6 +2776,8 @@ function Read-SheetState {
         Titles            = $titles
         HasOverviewSheet  = $hasOverview
         HasOverviewHeader = $hasHeader
+        OverviewHeader    = $overviewHeader
+        CheckTabHeaderOf  = $checkTabHeaderOf
         OverviewRowOf     = $rowOf
         EmptyCommentOf    = $emptyComment
         StatusOf          = $statusOf
@@ -2786,6 +2882,39 @@ function Invoke-SheetsPlan {
                     gridProperties = @{ rowCount = [int]$resize.Rows }
                 }
                 fields     = 'gridProperties.rowCount'
+            }
+        }
+    }
+
+    # Room for a column added since the tab was last written, made here so that every write
+    # below it lands in the layout it expects. Only a tab the document already has can need it,
+    # so a tab this run is adding is never in the list - it is created at today's width.
+    #
+    # Ascending, and the indices are positions in the finished layout, which is what makes
+    # applying them in order correct: an insertion at 15 does not move anything at 9, so a
+    # second insertion further right still finds its own place. inheritFromBefore is false
+    # because the column to the left is a numeric result column and the new one is a heading
+    # this run is about to write - borrowing its formatting is how a header cell arrives
+    # right-aligned and bold for no reason anybody can trace.
+    # The ids come from what the document already had, never from $gidOf: that map is not built
+    # until the structure batch has been sent and answered, and a tab this batch is minting
+    # cannot need an insertion anyway.
+    $existingIdOf = @{}
+    if ($Plan.PSObject.Properties.Name -contains 'KnownSheetIds' -and $Plan.KnownSheetIds) {
+        foreach ($key in $Plan.KnownSheetIds.Keys) { $existingIdOf[[string]$key] = [int]$Plan.KnownSheetIds[$key] }
+    }
+    foreach ($insert in @($operations | Where-Object { $_.Kind -eq 'InsertColumn' } |
+                Sort-Object -Property Sheet, At)) {
+        if (-not $existingIdOf.ContainsKey([string]$insert.Sheet)) { continue }
+        $structure += @{
+            insertDimension = @{
+                range             = @{
+                    sheetId    = [int]$existingIdOf[[string]$insert.Sheet]
+                    dimension  = 'COLUMNS'
+                    startIndex = [int]$insert.At
+                    endIndex   = ([int]$insert.At + 1)
+                }
+                inheritFromBefore = $false
             }
         }
     }
