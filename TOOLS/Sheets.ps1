@@ -1108,10 +1108,24 @@ function New-SheetsMergePlan {
     # One operation per contiguous run, not one spanning the lowest to the highest. That
     # shortcut held while the hidden columns were the adjacent L and M; adding C to the list
     # would have hidden C through M and taken Check Name, Rows and Status with it.
+    #
+    # Stated in full rather than added to: the six are hidden and every other column the board
+    # writes is shown. Hiding alone was what this did, and it made the board's layout a function
+    # of its own history rather than of this file. Three documents went through one run on
+    # 2026-08-17 and came out with three different answers - BMX with the six, Cycling with four
+    # of them, and Triathlon with twelve, including Findings, Change, Verdict and Trends. A
+    # column inserted in the middle carries its neighbour's hidden flag and moves everybody
+    # else's along the row, and nothing ever put any of it back.
     if (-not $Existing -or -not $Existing.HasOverviewSheet -or $Complete) {
-        foreach ($span in @(Split-SheetsColumnRuns -Columns $SheetsOverviewHiddenColumns)) {
-            $plan += [pscustomobject]@{
-                Kind = 'HideColumns'; Sheet = 'Overview'; From = $span.From; To = $span.To
+        $shown = @(1..$width | Where-Object { $SheetsOverviewHiddenColumns -notcontains $_ })
+        foreach ($state in @(
+                @{ Columns = $SheetsOverviewHiddenColumns; Hidden = $true }
+                @{ Columns = $shown; Hidden = $false })) {
+            foreach ($span in @(Split-SheetsColumnRuns -Columns $state.Columns)) {
+                $plan += [pscustomobject]@{
+                    Kind = 'HideColumns'; Sheet = 'Overview'
+                    From = $span.From; To = $span.To; Hidden = [bool]$state.Hidden
+                }
             }
         }
     }
@@ -3148,10 +3162,17 @@ function Invoke-SheetsPlan {
 
     $script:SheetsStage = 'hiding columns and colouring Rows'
     # Both need a tab id, so they wait for the batch that creates the tab.
+    #
+    # The operation carries which way it is setting the flag. It used to set only true, which
+    # is how a board ended up hiding whatever it had ever hidden - and the planner now states
+    # the whole row either way, so a column the package does not hide is opened rather than
+    # left as it was found.
     $hides = @($operations | Where-Object { $_.Kind -eq 'HideColumns' })
     $second = @()
     foreach ($hide in $hides) {
         if (-not $gidOf.ContainsKey($hide.Sheet)) { continue }
+        $hiddenByUser = $true
+        if ($hide.PSObject.Properties.Name -contains 'Hidden') { $hiddenByUser = [bool]$hide.Hidden }
         $second += @{
             updateDimensionProperties = @{
                 range      = @{
@@ -3160,7 +3181,7 @@ function Invoke-SheetsPlan {
                     startIndex = [int]$hide.From - 1
                     endIndex   = [int]$hide.To
                 }
-                properties = @{ hiddenByUser = $true }
+                properties = @{ hiddenByUser = $hiddenByUser }
                 fields     = 'hiddenByUser'
             }
         }

@@ -3099,7 +3099,8 @@ Test-That 'the hidden columns are hidden on a new board and on every full sport 
     # One operation per contiguous run. Collapsing the set to its lowest and highest would
     # hide C through the last of them and take Check Name, Rows and Status with it.
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
-    $hide = @($fresh.Operations | Where-Object { $_.Kind -eq 'HideColumns' })
+    $ops = @($fresh.Operations | Where-Object { $_.Kind -eq 'HideColumns' })
+    $hide = @($ops | Where-Object { $_.Hidden })
     Assert-Equal 3 $hide.Count 'hidden when Overview is created, and the gaps are not bridged'
     Assert-Equal 3 $hide[0].From 'Parameters at C'
     Assert-Equal 3 $hide[0].To 'and only C'
@@ -3107,6 +3108,19 @@ Test-That 'the hidden columns are hidden on a new board and on every full sport 
     Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Signal reason') + 1) $hide[1].To 'to Signal reason'
     Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Eligible') + 1) $hide[2].From 'from Eligible'
     Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Prev eligible') + 1) $hide[2].To 'to Prev eligible'
+
+    # And every other column is opened, not left as it was found. Hiding alone made a board's
+    # layout a function of its own history: three documents went through one run on 2026-08-17
+    # and came out with the six, with four of them, and with twelve - the last hiding Findings,
+    # Change, Verdict and Trends, which are the columns the board is opened to read.
+    $show = @($ops | Where-Object { -not $_.Hidden })
+    $covered = @()
+    foreach ($span in ($hide + $show)) { $covered += @([int]$span.From..[int]$span.To) }
+    Assert-Equal $SheetsOverviewColumns.Count (@($covered | Sort-Object -Unique).Count) `
+        'every column the board writes is stated one way or the other'
+    Assert-Equal 0 @($show | Where-Object {
+            $SheetsOverviewHiddenColumns -contains [int]$_.From }).Count `
+        'and no column is both shown and hidden'
 
     $existing = [pscustomobject]@{
         HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
@@ -3118,14 +3132,16 @@ Test-That 'the hidden columns are hidden on a new board and on every full sport 
     # not the moment to repaint a board somebody is reading.
     Assert-Equal 0 @((New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
                 -OutputFolder 'x').Operations | Where-Object { $_.Kind -eq 'HideColumns' }).Count `
-        'a partial run does not touch them'
+        'a partial run does not touch them, in either direction'
 
     # A full sport pass does. That is the moment the document is remade for reading, and these
     # are the columns that are noise while reading it - by decision of 2026-08-17, which also
     # accepts the cost: a column unhidden between two full passes closes again on the next.
-    Assert-Equal 3 @((New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
-                -OutputFolder 'x' -Complete).Operations | Where-Object { $_.Kind -eq 'HideColumns' }).Count `
-        'a complete one closes them again'
+    $onComplete = @((New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
+                -OutputFolder 'x' -Complete).Operations | Where-Object { $_.Kind -eq 'HideColumns' })
+    Assert-Equal 3 @($onComplete | Where-Object { $_.Hidden }).Count 'a complete one closes them again'
+    Assert-True (@($onComplete | Where-Object { -not $_.Hidden }).Count -gt 0) `
+        'and opens everything else, so the layout comes from this file and not from the board'
 }
 
 Test-That 'the runner renames a document it named itself, and nobody else' {
