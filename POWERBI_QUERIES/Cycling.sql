@@ -286,6 +286,11 @@ SELECT
     z.event_id,
     z.event_name,
     z.template_name,
+    -- The edition, carried from GLOBAL-DQ-020 where it was added on 2026-08-17. It matters more
+    -- here than anywhere else the template runs: this sport names its events Stage 4, which is
+    -- the same string in every tour of every year, so without the tournament a finding row
+    -- cannot be placed in time or even in the right race.
+    z.tournament_name,
     z.participant_count,
     z.affected_count,
 -- What it does, stated in full: GLOBAL-DQ-020 for Cycling, minus the one shape in this sport
@@ -308,6 +313,7 @@ FROM (
         y.event_id,
         y.event_name,
         y.template_name,
+        y.tournament_name,
         MAX(y.participant_count) AS participant_count,
         COUNT(*) AS affected_count,
         GROUP_CONCAT(DISTINCT y.rank_value ORDER BY y.rank_value SEPARATOR ', ') AS ranks_held,
@@ -320,6 +326,7 @@ FROM (
         x.event_id,
         x.event_name,
         x.template_name,
+        x.tournament_name,
         x.participant_name,
         x.rank_value,
         x.participant_count,
@@ -330,6 +337,7 @@ FROM (
             e.id AS event_id,
             e.name AS event_name,
             tt.name AS template_name,
+            t.name AS tournament_name,
             p.name AS participant_name,
             CAST(r.value AS UNSIGNED) AS rank_value,
             pc.participant_count,
@@ -383,14 +391,14 @@ FROM (
     ) y
     WHERE y.next_lower_rank IS NULL
        OR y.rank_value > y.next_lower_rank + 1
-    GROUP BY y.event_id, y.event_name, y.template_name
+    GROUP BY y.event_id, y.event_name, y.template_name, y.tournament_name
 ) z
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep

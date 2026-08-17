@@ -204,6 +204,12 @@ SELECT
     z.event_id,
     z.event_name,
     z.template_name,
+    -- The edition, which the template alone does not give. A template is the series that runs
+    -- every year - PGA Tour 1, Tour de France - and the tournament under it is the year's
+    -- staging, so without this column an event named Stage 4 or Round 2 cannot be placed in
+    -- time at all. Added 2026-08-17 at the review's request, after reading finding rows that
+    -- named a template and a round and left the reader guessing the season.
+    z.tournament_name,
     z.participant_count,
     z.affected_count,
 -- What it does, stated in full: Finds finished events holding a Rank that exceeds the
@@ -227,6 +233,7 @@ FROM (
         y.event_id,
         y.event_name,
         y.template_name,
+        y.tournament_name,
         MAX(y.participant_count) AS participant_count,
         COUNT(*) AS affected_count,
         GROUP_CONCAT(DISTINCT y.rank_value ORDER BY y.rank_value SEPARATOR ', ') AS ranks_held,
@@ -254,6 +261,7 @@ FROM (
         x.event_id,
         x.event_name,
         x.template_name,
+        x.tournament_name,
         x.participant_name,
         x.rank_value,
         x.participant_count,
@@ -264,6 +272,7 @@ FROM (
             e.id AS event_id,
             e.name AS event_name,
             tt.name AS template_name,
+            t.name AS tournament_name,
             p.name AS participant_name,
             CAST(r.value AS UNSIGNED) AS rank_value,
             pc.participant_count,
@@ -315,14 +324,14 @@ FROM (
     ) y
     WHERE y.next_lower_rank IS NULL
        OR y.rank_value > y.next_lower_rank + 1
-    GROUP BY y.event_id, y.event_name, y.template_name
+    GROUP BY y.event_id, y.event_name, y.template_name, y.tournament_name
 ) z
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep

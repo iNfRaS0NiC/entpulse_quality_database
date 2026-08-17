@@ -7214,6 +7214,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-28-54",
+                     "startedUtc":  "2026-08-17T08:28:54Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-018",
+                                        "runKey":  "Cycling-DQ-018",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE_APART_FROM_THE_SPLIT_HALVES",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  17,
+                                        "findings":  16,
+                                        "eligible":  9606,
+                                        "seconds":  34.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs"
