@@ -64,6 +64,19 @@ function Complete-Group {
     }
 }
 
+# The last column each board writes, as a letter. Derived rather than written down: these tests
+# hard-coded W and P until a column arrived between Comment and Signal, and thirteen of them
+# failed on the letter rather than on the behaviour they were about.
+function OverviewLastColumn { return (ConvertTo-SheetsColumnName -Index $SheetsOverviewColumns.Count) }
+function CheckTabLastColumn { return (ConvertTo-SheetsColumnName -Index $SheetsCheckTabColumns.Count) }
+# The first column after the reviewer's own block, where the run resumes writing.
+function OverviewSecondSpanFrom {
+    return ((@($SheetsOverviewReviewerColumns) | Measure-Object -Maximum).Maximum + 1)
+}
+function CheckTabSecondSpanFrom {
+    return ((@($SheetsCheckTabReviewerColumns) | Measure-Object -Maximum).Maximum + 1)
+}
+
 function Test-That {
     # One case. A case fails by throwing, so an assertion helper is just a throw.
     param([string]$Describes, [scriptblock]$Body)
@@ -2242,7 +2255,8 @@ Test-That 'a check the document already holds is updated in the row it occupies'
 
     Assert-Equal 2 $writes.Count 'two spans, written around the reviewer columns'
     Assert-Equal 'A7:H7' $writes[0].Range 'the first span, on the row the check already has'
-    Assert-Equal 'L7:W7' $writes[1].Range 'the second span, resuming after Comment'
+    Assert-Equal ('{0}7:{1}7' -f (ConvertTo-SheetsColumnName -Index (OverviewSecondSpanFrom)), (OverviewLastColumn)) `
+        $writes[1].Range 'the second span, resuming after the reviewer block'
     foreach ($write in $writes) {
         Assert-True ($write.Range -notmatch '^[IJK]') "a run must never write $($write.Range)"
     }
@@ -2262,10 +2276,11 @@ Test-That 'a check the document has never held is appended, seeded status and al
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
     # DQ-002 is in the document and not in this run, so it gets a Verdict cell of its own.
     # The append is the whole-row write, and it is the one under test here.
-    $appended = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like 'A*:W*' -and $_.Range -ne 'A1:W1' })
+    $last = OverviewLastColumn
+    $appended = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -like "A*:$last*" -and $_.Range -ne "A1:${last}1" })
 
     Assert-Equal 1 $appended.Count 'one whole-row write'
-    Assert-Equal 'A8:W8' $appended[0].Range 'appended below the last row in use, not sorted into place'
+    Assert-Equal "A8:${last}8" $appended[0].Range 'appended below the last row in use, not sorted into place'
     Assert-Equal 'No issue' $appended[0].Values[0][8] 'the seeded status goes in on a new row'
 }
 
@@ -2283,7 +2298,8 @@ Test-That 'a withdrawn check is retired by any run, not only by a complete one' 
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
         -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
 
-    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'L8:W8' })
+    $secondSpan = '{0}8:{1}8' -f (ConvertTo-SheetsColumnName -Index (OverviewSecondSpanFrom)), (OverviewLastColumn)
+    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq $secondSpan })
     Assert-Equal 1 $span.Count 'the run-owned columns are written in one span'
     Assert-Equal 'Deprecated' $span[0].Values[0][0] 'Signal says so'
     Assert-Equal 'Deprecated' $span[0].Values[0][9] 'and so does Verdict'
@@ -2342,7 +2358,8 @@ Test-That 'a withdrawn check that ran anyway keeps the numbers it just produced'
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
         -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
 
-    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'L8:W8' })
+    $secondSpan = '{0}8:{1}8' -f (ConvertTo-SheetsColumnName -Index (OverviewSecondSpanFrom)), (OverviewLastColumn)
+    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq $secondSpan })
     Assert-Equal 1 $span.Count 'one write, the run own'
     Assert-Equal 5 $span[0].Values[0][3] 'holding what the run measured rather than a cleared cell'
 }
@@ -2354,15 +2371,15 @@ Test-That 'the Overview header is rewritten every run, so a new column gets a na
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
 
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
-    $header = @($fresh.Operations | Where-Object { $_.Range -eq 'A1:W1' })
+    $header = @($fresh.Operations | Where-Object { $_.Range -eq ('A1:{0}1' -f (OverviewLastColumn)) })
     Assert-Equal 1 $header.Count 'an empty document gets its header'
-    Assert-Equal 'Trends' $header[0].Values[0][22] 'out to the last column the board writes'
+    Assert-Equal 'Trends' $header[0].Values[0][($SheetsOverviewColumns.Count - 1)] 'out to the last column the board writes'
 
     $existing = [pscustomobject]@{
         HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}
     }
     $again = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
-    Assert-Equal 1 @($again.Operations | Where-Object { $_.Range -eq 'A1:W1' }).Count `
+    Assert-Equal 1 @($again.Operations | Where-Object { $_.Range -eq ('A1:{0}1' -f (OverviewLastColumn)) }).Count `
         'and a document that already has one gets it again, in case the board has grown'
 }
 
@@ -2402,7 +2419,8 @@ Test-That 'a check that stopped running keeps its tab and is marked instead' {
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x' -Complete
 
     Assert-Equal 0 @($plan.Operations | Where-Object { $_.Kind -eq 'DeleteSheet' }).Count 'nothing is deleted'
-    $marked = @($plan.Operations | Where-Object { $_.Range -eq 'U3:U3' })
+    $verdictAt = ConvertTo-SheetsColumnName -Index ([array]::IndexOf($SheetsOverviewColumns, 'Verdict') + 1)
+    $marked = @($plan.Operations | Where-Object { $_.Range -eq "${verdictAt}3:${verdictAt}3" })
     Assert-Equal 1 $marked.Count 'the absent check gets its Verdict cell written'
     Assert-Equal 'Not in this run' $marked[0].Values[0][0] 'saying it did not run rather than nothing'
 }
@@ -2538,7 +2556,8 @@ Test-That 'a check tab never writes the two cells the reviewer owns' {
             $_.Sheet -eq 'OWNED' -and $_.Kind -eq 'Write' -and $_.Range -match '^[A-Z]2:[A-Z]2$' })
     Assert-Equal 2 $identity.Count 'the identity row is written in two spans'
     Assert-Equal 'A2:D2' $identity[0].Range 'up to What it does'
-    Assert-Equal 'G2:P2' $identity[1].Range 'resuming after Comment and Check By'
+    Assert-Equal ('{0}2:{1}2' -f (ConvertTo-SheetsColumnName -Index (CheckTabSecondSpanFrom)), (CheckTabLastColumn)) `
+        $identity[1].Range 'resuming after the reviewer block'
     Assert-Equal 0 @($plan.Operations | Where-Object {
             $_.Sheet -eq 'OWNED' -and $_.Range -in @('E2', 'F2') }).Count 'and never through E2 or F2'
 }
@@ -2846,7 +2865,7 @@ Test-That 'a check tab carries its header row and both of its links' {
     $plan = New-SheetsMergePlan -Summary $summary -Existing $existing -OutputFolder 'x' -Collected `
         @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X' }) })
 
-    $header = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq 'A1:P1' })
+    $header = @($plan.Operations | Where-Object { $_.Sheet -eq 'LINKED' -and $_.Range -eq ('A1:{0}1' -f (CheckTabLastColumn)) })
     Assert-Equal 1 $header.Count 'the header row is written'
     Assert-Equal 'What it does' $header[0].Values[0][3] 'so D names what D2 holds'
 
@@ -2854,8 +2873,9 @@ Test-That 'a check tab carries its header row and both of its links' {
     # disagree - but a reader still has to be told where the reviewer's cells are.
     Assert-Equal 'Comment' $header[0].Values[0][4] 'Comment at E'
     Assert-Equal 'Check By' $header[0].Values[0][5] 'and Check By at F'
-    Assert-Equal 'Expected' $header[0].Values[0][6] 'the comparison block starts at G'
-    Assert-Equal 'Verdict' $header[0].Values[0][12] 'and ends with the verdict at M'
+    Assert-Equal 'Time Spend (minutes)' $header[0].Values[0][6] 'the reviewer block ends with what it cost them'
+    Assert-Equal 'Expected' $header[0].Values[0][7] 'and the comparison block starts after it'
+    Assert-Equal 'Verdict' $header[0].Values[0][([array]::IndexOf($SheetsCheckTabColumns, 'Verdict'))] 'and the verdict where the list puts it'
     Assert-True ($header[0].Values[0] -notcontains 'Priority') 'Priority is gone, being a board sort'
     Assert-True ($header[0].Values[0] -notcontains 'Signal') 'and so is the signal pair'
     Assert-True ($header[0].Values[0] -notcontains 'Signal reason') 'both of it'
@@ -2979,7 +2999,7 @@ Test-That 'a board with no table gets one' {
     Assert-Equal 'Overview' $board[0].Name 'under the plain name, one board to a document'
     Assert-Equal 0 $board[0].FromRow 'starting on the header row'
     Assert-Equal 3 $board[0].ToRow 'and covering both appended checks'
-    Assert-Equal 23 $board[0].ToCol 'across every column the board writes'
+    Assert-Equal $SheetsOverviewColumns.Count $board[0].ToCol 'across every column the board writes'
 }
 
 Test-That 'a board holding only its header is not made a table' {
@@ -3015,7 +3035,7 @@ Test-That 'a stale table on Overview is widened to the columns the board writes'
     Assert-Equal 3 $board[0].ToRow 'down to the row the appended check now occupies'
     # No column here is anybody's choice to preserve - every one is written by the runner - so
     # a remembered width just leaves the newest column outside the table without a header.
-    Assert-Equal 23 $board[0].ToCol 'and out to every column the board writes'
+    Assert-Equal $SheetsOverviewColumns.Count $board[0].ToCol 'and out to every column the board writes'
     Assert-Equal 'Table1' $board[0].Name 'while keeping their own name for it'
 }
 
@@ -3083,8 +3103,8 @@ Test-That 'the hidden columns are hidden only on the run that creates the board'
     Assert-Equal 2 $hide.Count 'hidden when Overview is created, and the gap is not bridged'
     Assert-Equal 3 $hide[0].From 'Parameters at C'
     Assert-Equal 3 $hide[0].To 'and only C'
-    Assert-Equal 12 $hide[1].From 'from L'
-    Assert-Equal 13 $hide[1].To 'to M'
+    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Signal') + 1) $hide[1].From 'from Signal'
+    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Signal reason') + 1) $hide[1].To 'to Signal reason'
 
     # Somebody who unhides them has decided something; putting them back every week is the
     # same defect as overwriting a comment.
@@ -3170,16 +3190,20 @@ Test-That 'the board is centred, its owned headings named, and sorted by priorit
     $formats = @($plan.Operations | Where-Object { $_.Kind -eq 'Format' -and $_.Sheet -eq 'Overview' })
 
     # One rule over the whole board, with no end row, so next week's rows are centred too.
-    $whole = @($formats | Where-Object { $_.FromCol -eq 0 -and $_.ToCol -eq 23 })
+    $whole = @($formats | Where-Object { $_.FromCol -eq 0 -and $_.ToCol -eq $SheetsOverviewColumns.Count })
     Assert-Equal 1 $whole.Count 'the whole board takes one alignment rule'
     Assert-Equal 'CENTER' $whole[0].Align 'centred'
     Assert-Equal $null $whole[0].ToRow 'and unbounded, so it follows the board down'
 
-    # Status at I, Check By at J, Comment at K - the three the runner writes around.
+    # Status, Check By, Comment and Time Spend - the block the runner writes around. Named from
+    # the reviewer list rather than lettered, so a column joining it does not have to be counted
+    # by hand here as well as declared there.
     $owned = @($formats | Where-Object { $_.Colour -eq $SheetsReviewerHeaderColour })
-    Assert-Equal 3 $owned.Count 'the reviewer three are named on the header row'
-    Assert-Equal '8 9 10' ((@($owned | ForEach-Object { $_.FromCol }) | Sort-Object) -join ' ') `
-        'at Status, Check By and Comment'
+    Assert-Equal $SheetsOverviewReviewerColumns.Count $owned.Count `
+        'every column the reviewer owns is named on the header row'
+    Assert-Equal ((@($SheetsOverviewReviewerColumns | ForEach-Object { $_ - 1 }) | Sort-Object) -join ' ') `
+        ((@($owned | ForEach-Object { $_.FromCol }) | Sort-Object) -join ' ') `
+        'and at exactly the columns that list declares'
     Assert-Equal 1 $owned[0].ToRow 'on the header row alone, not down the column'
     Assert-True ([bool]$owned[0].Bold) 'and bold'
 
@@ -3655,8 +3679,9 @@ Test-That 'Overview counts what is still open, so a dismissed finding leaves the
     # reporting 2 open rows beside a Findings of 3 is a board arguing with itself. Rows had the
     # subtraction to itself for a while, and that is exactly what it looked like.
     $second = @($plan.Operations | Where-Object {
-            $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' -and $_.Range -eq 'L7:W7' })
-    $from = 12
+            $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' -and
+            $_.Range -eq ('{0}7:{1}7' -f (ConvertTo-SheetsColumnName -Index (OverviewSecondSpanFrom)), (OverviewLastColumn)) })
+    $from = OverviewSecondSpanFrom
     $secondRow = @($second[0].Values[0])
     $at = {
         param([string]$column)
