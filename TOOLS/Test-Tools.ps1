@@ -3633,6 +3633,29 @@ Test-That 'a board written before a column existed has room made for it, not its
     Assert-Equal 1 $inserts.Count 'the plan makes room once'
     Assert-Equal 'Overview' $inserts[0].Sheet 'on the board that needs it'
     Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'All findings')) $inserts[0].At 'at the new column'
+
+    # A check tab this run does not produce gets the room and the names together. Sheets will
+    # not leave a column of a table unnamed and invents one - the retired tab came back from the
+    # first migration reading "Column 16" where Time Spent belongs - and nothing else would ever
+    # write row 1 of a tab whose check has stopped running.
+    $stale = @($SheetsCheckTabColumns | Where-Object { $_ -ne 'Time Spent (minutes)' })
+    $state2 = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewHeader = $SheetsOverviewColumns
+        OverviewRowOf = @{}; EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{}
+        Titles = @('Overview', 'RETIRED'); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'RETIRED' = 9 }
+        SheetIndexOf = @{ 'Overview' = 0 }; CheckTabHeaderOf = @{ 'RETIRED' = $stale }
+    }
+    $plan2 = New-SheetsMergePlan -Summary @() -Collected @() -Existing $state2 -OutputFolder 'x'
+    Assert-Equal 1 @($plan2.Operations | Where-Object {
+            $_.Kind -eq 'InsertColumn' -and $_.Sheet -eq 'RETIRED' }).Count 'the stale tab gets its room'
+    $named = @($plan2.Operations | Where-Object {
+            $_.Kind -eq 'Write' -and $_.Sheet -eq 'RETIRED' -and
+            $_.Range -eq ('A1:{0}1' -f (CheckTabLastColumn)) })
+    Assert-Equal 1 $named.Count 'and its header row, which nothing else would write'
+    Assert-Equal 'Time Spent (minutes)' `
+        @($named[0].Values[0])[([array]::IndexOf($SheetsCheckTabColumns, 'Time Spent (minutes)'))] `
+        'so the new column carries its name rather than one Sheets made up'
 }
 
 Test-That 'Overview counts what is still open, so a dismissed finding leaves the Rows cell' {

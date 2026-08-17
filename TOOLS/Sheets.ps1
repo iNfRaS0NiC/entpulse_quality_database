@@ -1002,9 +1002,31 @@ function New-SheetsMergePlan {
     }
     if ($Existing -and $Existing.CheckTabHeaderOf) {
         foreach ($title in @($Existing.CheckTabHeaderOf.Keys)) {
-            foreach ($at in @(Get-SheetsColumnInsertions -Was $Existing.CheckTabHeaderOf[$title] `
-                        -Now $SheetsCheckTabColumns)) {
-                $plan += [pscustomobject]@{ Kind = 'InsertColumn'; Sheet = [string]$title; At = [int]$at }
+            $at = @(Get-SheetsColumnInsertions -Was $Existing.CheckTabHeaderOf[$title] `
+                    -Now $SheetsCheckTabColumns)
+            if ($at.Count -eq 0) { continue }
+            foreach ($one in $at) {
+                $plan += [pscustomobject]@{ Kind = 'InsertColumn'; Sheet = [string]$title; At = [int]$one }
+            }
+
+            # And the header row with it. A tab this run produced has row 1 rewritten anyway,
+            # but a tab it does not - a check that has stopped running, one belonging to another
+            # sport's catalogue - keeps whatever it had, and an inserted column would sit there
+            # unnamed. Sheets will not leave a column of a table unnamed, so it invents one: the
+            # retired GLOBAL-DQ-019 tab came back from the first migration reading "Column 16"
+            # and "Column 17" where Time Spent and All findings belong.
+            #
+            # Safe precisely here and not in general. The insertion has just made the header and
+            # the row agree, so naming the columns states what row 2 now holds; writing row 1
+            # over a tab whose columns could not be reconciled would assert a layout the values
+            # underneath do not have. That is why this hangs off the insertion rather than being
+            # done for every tab on the board.
+            $plan += [pscustomobject]@{
+                Kind   = 'Write'
+                Sheet  = [string]$title
+                Range  = (New-SheetsRange -FromColumn 1 -FromRow 1 `
+                        -ToColumn $SheetsCheckTabColumns.Count -ToRow 1)
+                Values = @(, $SheetsCheckTabColumns)
             }
         }
     }
