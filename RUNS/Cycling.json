@@ -7236,6 +7236,314 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-54-33",
+                     "startedUtc":  "2026-08-17T08:54:33Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-004",
+                                        "runKey":  "Cycling-DQ-004",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NO_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  7,
+                                        "findings":  6,
+                                        "eligible":  418,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-54-34",
+                     "startedUtc":  "2026-08-17T08:54:34Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-020",
+                                        "runKey":  "Cycling-DQ-020",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NO_TOURNAMENTS_OR_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  40,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-54-34",
+                     "startedUtc":  "2026-08-17T08:54:34Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-030",
+                                        "runKey":  "Cycling-DQ-030",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  412,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-54-35",
+                     "startedUtc":  "2026-08-17T08:54:35Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-039",
+                                        "runKey":  "Cycling-DQ-039",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  26,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-54-35",
+                     "startedUtc":  "2026-08-17T08:54:35Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-040",
+                                        "runKey":  "Cycling-DQ-040",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  20,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-54-36",
+                     "startedUtc":  "2026-08-17T08:54:36Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-058",
+                                        "runKey":  "Cycling-DQ-058",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_MISSING_SET_SUBSET_GENDER_NAME",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  39,
+                                        "findings":  38,
+                                        "eligible":  40,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-54-37",
+                     "startedUtc":  "2026-08-17T08:54:37Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-090",
+                                        "runKey":  "Cycling-DQ-090",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_YEAR_GAP",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  15,
+                                        "findings":  14,
+                                        "eligible":  29,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-17T08:54:59Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-004",
+                                        "runKey":  "Cycling-DQ-004",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NO_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  7,
+                                        "findings":  6,
+                                        "eligible":  418,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-17T08:55:00Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-020",
+                                        "runKey":  "Cycling-DQ-020",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NO_TOURNAMENTS_OR_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  40,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-58-09",
+                     "startedUtc":  "2026-08-17T08:58:09Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-077",
+                                        "runKey":  "Cycling-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  1481,
+                                        "findings":  1480,
+                                        "eligible":  114436,
+                                        "seconds":  16,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-58-26",
+                     "startedUtc":  "2026-08-17T08:58:26Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-083",
+                                        "runKey":  "Cycling-DQ-083",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_CORE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3529,
+                                        "findings":  3528,
+                                        "eligible":  3528,
+                                        "seconds":  1.1,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-58-28",
+                     "startedUtc":  "2026-08-17T08:58:28Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-084",
+                                        "runKey":  "Cycling-DQ-084",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MISSING_CORE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  1796,
+                                        "findings":  1795,
+                                        "eligible":  1795,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-58-29",
+                     "startedUtc":  "2026-08-17T08:58:29Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-085",
+                                        "runKey":  "Cycling-DQ-085",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_INVALID_OR_MISSING_BY_EVENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  1362,
+                                        "findings":  1361,
+                                        "eligible":  9612,
+                                        "seconds":  47.9,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 10-59-17",
+                     "startedUtc":  "2026-08-17T08:59:17Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-101",
+                                        "runKey":  "Cycling-DQ-101",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  1301,
+                                        "findings":  1300,
+                                        "eligible":  9609,
+                                        "seconds":  174.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs"

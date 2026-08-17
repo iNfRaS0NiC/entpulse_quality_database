@@ -12,19 +12,45 @@ correction is required.
 ## Identity and evidence
 
 - First discovery date: 2026-08-16
-- Latest evidence date: 2026-08-16
-- Verification boundary: **the whole sport**. All 51 tournament templates, 735 tournaments,
-  3528 stages, 10578 active events and 1270283 event participations, 2001 to 2026. Nothing
-  below is narrowed unless the paragraph says so.
+- Latest evidence date: 2026-08-17
+- Verification boundary: **40 of the sport's 51 tournament templates**, 418 tournaments, 3528
+  stages, 10578 active events and 1270283 event participations, 2001 to 2026. The eleven outside
+  it hold no stage, no event and no participation between them, so the boundary removes 317 empty
+  tournaments and nothing else. Nothing below is narrowed further unless the paragraph says so.
 
 `sport.name` is `Cycling` and the provider code is `cy`. `SPORTS.md` maps that to the
 repository slug `Cycling`.
 
-**The client takes this sport whole, and that is a decision rather than an absence.** Soccer
-and Ice Hockey are limited to the national-team competitions because the league and club
+**The client takes this sport's racing whole, and that is a decision rather than an absence.**
+Soccer and Ice Hockey are limited to the national-team competitions because the league and club
 calendar that dominates them is outside what UK Sport asked for. Cycling is not: confirmed on
-2026-08-16 that all 51 templates are in scope, professional road racing included, so
-`OUT_OF_SCOPE_TEMPLATE_ID_LIST` is `0` and no statement here carries a template filter.
+2026-08-16 that professional road racing is in scope alongside the championships.
+
+**Eleven templates are outside it, and every one of them is a shell.** Confirmed by the review
+on 2026-08-17 and written into `OUT_OF_SCOPE_TEMPLATE_ID_LIST`:
+
+- **Seven `(IOC)` twins**, `12652` to `12658`, carrying 181 tournaments and **0 stages, 0 events,
+  0 participations**. They exist for the IOC historical project and nothing else. They mirror
+  their non-IOC counterparts exactly, tournament count for tournament count - 69, 42, 9 and 16 -
+  which is what made them look like duplicates before anybody knew what they were.
+- **Four pre-2004 World Championship shells**, `10350` and `10352 World Championship RR` and
+  `10351` and `10353 World Championship TT`, carrying 136 tournaments named `1927` through `2002`
+  and, again, no stage and no event. The client's window is 2004 to 2025, so these editions were
+  never going to be filled here.
+
+**The boundary removes 317 empty tournaments and not one event.** That is why it changes nothing
+below the tournament: measured 2026-08-17, `Cycling-DQ-004 TOURNAMENT_NO_STAGES` falls from 142
+findings of 554 tournaments to **6 of 418**, `Cycling-DQ-020 TEMPLATE_NO_TOURNAMENTS_OR_STAGES`
+from 8 of 44 to 4 of 40, and `Cycling-DQ-058` from 42 of 44 to 38 of 40. Every check reading an
+event, a result or a statistic returns exactly what it returned before.
+
+**The six that remain are a work list rather than noise, and each one is named.** `2002` under
+`484 World Championship 1`, which is a year before the window; `2024` under both
+`10680 Summer Paralympics` and `11789 Summer Paralympics`, which will not be filled here because
+Para Cycling was not a separate sport when they were entered; `2020` under `11049` and
+`11050 Asian Championship` and `2025` under `11086 Oceania Championship`, all three cancelled
+editions. The review holds that the five cancelled and Paralympic ones are candidates for
+deletion rather than for filling.
 
 That decision is what makes cost the sport's central problem, and the shape of the cost is
 specific. **Cycling holds fewer events than Ice Hockey and sixty-five times more
@@ -265,8 +291,9 @@ value written into the wrong column. **`a` likewise sits beside a real result** 
 hold a place between 10 and 20 and a time. **`+1 lap` is consistent**: 40 rows, every one with a
 place between 100 and 106 and no time, which is exactly what a lap down looks like.
 
-Being outside the time limit is still written at least twice, `HD` 3111 against `OTL` 137 and
-possibly `OOT` 1, and nobody has yet decided which spelling the sport means.
+Being outside the time limit is written five ways, not two. `HD` 3111 rows and `OTL` 137 were
+known; `FTM`, `HUD` and `OOT` were confirmed as the same thing by the review on 2026-08-17,
+each read off the published result. All five are in the no-result list.
 
 The counts here differ slightly from the first census of the same column - `DNF` was 101136 and
 is now 101190 - because colleagues are correcting the data while we read it.
@@ -349,15 +376,24 @@ whole way down - `checkpoint1` on 1095 events, `checkpoint48` on 385, `checkpoin
 192 checkpoints and leaves `0` out, since it names nothing.
 
 The same measurement puts scope type `0` on **1 event** rather than the 95 recorded above. The
-two counts come from different statements and are not reconciled; the figure that the parameter
-rests on is the type list, which both agree about.
+two counts come from different statements and are **retired rather than reconciled**: the review
+confirmed on 2026-08-17 that the client does not need the scope layer for this sport at present,
+so neither figure is worth the measurement it would take to settle. The figure the parameter
+rests on is the type list, which both agree about, and it stands ready for the day the layer is
+wanted.
 
-**`Cycling-DQ-091` carries `GLOBAL-DQ-102`** and asserts that a scope result points at a
-participant of its own event. It reports **0 of 1067**, so the checkpoint layer is
-referentially sound. **`GLOBAL-DQ-107` is `Not applicable`**, and for a narrower reason than the
-period checks beside it: it asserts that a finished event carries a scope *container*, one row
-standing for the whole race, and no such type exists here. A checkpoint is a point along the
-course, not a wrapper around it.
+**`Cycling-DQ-091` and `Cycling-DQ-096` are `Out of client scope` since 2026-08-17, and that is
+the client's boundary rather than a judgement about the data.** `-091` carries `GLOBAL-DQ-102`,
+asserts that a scope result points at a participant of its own event, and reports **0 of 1067**,
+so the layer is referentially sound. `-096` reads the checkpoint chain and holds **104 findings
+of 1094** - unreadable distances, remaining distances, finish markers and jersey groups - which
+is a real work list held rather than dropped. Both come back with nothing to rebuild the day the
+layer is wanted; the structure is documented and the checks are written.
+
+**`GLOBAL-DQ-107` is `Not applicable`**, and for a narrower reason than the period checks beside
+it: it asserts that a finished event carries a scope *container*, one row standing for the whole
+race, and no such type exists here. A checkpoint is a point along the course, not a wrapper
+around it.
 
 <!-- MANUAL PASTE ZONE: 30 SCOPES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -986,14 +1022,27 @@ none on a row count. They are recorded one by one in `SPORTS/params.json`:
 | No team data value | `-064` `-065` `-066` `-095` `-098` | `1429 Team` is declared and empty here |
 | No score to read the Comment against | `-117` | `GLOBAL-DQ-052` audits the Comment instead, against the Rank, the time and the Medal |
 
-**The comment vocabulary is declared as eight approved values and seven that mean no result.**
-`RESULT_COMMENT_VALUE_LIST` holds `dnf`, `dns`, `hd`, `disqualified`, `dsq`, `dq`, `otl` and
-`+1 lap`; `RESULT_COMMENT_NO_RESULT_LIST` holds the same minus `+1 lap`, which keeps its place
-by design. The five values left out are left out deliberately so the check reports them - `a`,
-`FF1` to `FF14`, `FTM`, `HUD` and `OOT`, 44 rows in all, none with a reading anybody has
-confirmed. The ranking layer uses a tighter vocabulary and is declared separately: `DNF`, `DNS`,
-`HD`, `Disqualified`, `DSQ` and `DQ`, all six meaning no result, with `FF#` and `HUD` outside it
-on 15 rows.
+**The comment vocabulary is declared as eleven approved values and ten that mean no result.**
+`RESULT_COMMENT_VALUE_LIST` holds `dnf`, `dns`, `hd`, `disqualified`, `dsq`, `dq`, `otl`, `ftm`,
+`hud`, `oot` and `+1 lap`; `RESULT_COMMENT_NO_RESULT_LIST` holds the same minus `+1 lap`, which
+keeps its place by design.
+
+**`FTM`, `HUD` and `OOT` joined both lists on 2026-08-17, when the review read them off the
+published results and confirmed all three mean outside the time limit** - the same thing `HD` and
+`OTL` already meant. `FTM` on Mareczko Jakub at the 2019 Giro stage 12, `HUD` at the 2026 Santos
+Women's Tour stage 1, `OOT` at the 2025 Tour of Qinghai stage 2, each checked against Pro Cycling
+Stats. **So the sport writes being outside the time limit five different ways**: `HD` 3111 rows,
+`OTL` 137, and a handful each of the three. That is not a defect any check can assert, and it is
+recorded here for whoever maintains the vocabulary.
+
+**Two values are still left out deliberately so the check reports them**: `a`, on 19 rows, and
+`FF1` to `FF14`. `FF#` is answered - it is the rank written into the wrong column - and `a` is
+not: it sits beside a real result on all 19 riders, placed 10 to 20 and holding times, and a
+misplaced value is the first thing to test, because that is what `FF#` turned out to be.
+
+The ranking layer uses a tighter vocabulary and is declared separately: `DNF`, `DNS`, `HD`,
+`Disqualified`, `DSQ` and `DQ`, all six meaning no result, with `FF#` and `HUD` outside it on 15
+rows.
 
 `Cycling-DQ-077` carries `GLOBAL-DQ-052` and reports **1488 of 114436**: 1421
 `COMMENT_NO_RESULT_WITH_RANK` - the 1247 `Disqualified` above plus 103 `DNF`, 47 `HD`, 20 `DNS`,
@@ -1022,12 +1071,16 @@ because two riders share a place when they record the same time.
 **The city is never written, on either layer, and two checks say so at 100 per cent.**
 `Cycling-DQ-083` carries `GLOBAL-DQ-034` and reports **3528 stages of 3528**; `Cycling-DQ-084`
 carries `GLOBAL-DQ-035` and reports **1795 statistics of 1795**. Every row on both is
-`city` and nothing else. The column exists and the sport does not use it: **the geography of a
-road race lives in the `StartName` and `EndName` event properties**, on 8997 events each, and a
-race running between two towns has no one city to name. Both are `Monitor` for that reason, and
-both are kept because the other fields they assert - the name, the country, the Gender setting
-and the host-country rule - are audited and clean today. `missing_fields` is what to read first
-at every run: a row naming anything beyond `city` is a new finding.
+`city` and nothing else. The geography of a road race also lives in the `StartName` and `EndName`
+event properties, on 8997 events each.
+
+**That looked like a convention and it is not.** Both checks were `Monitor` until 2026-08-17 on
+the reading that a race running between two towns has no one city to name. **The review settled
+it the other way: the column is simply not filled for this sport and it should be.** Both are
+ordinary checks now, reporting a defect, and they will read 100 per cent until somebody fills it.
+The other fields they assert - the name, the country, the Gender setting and the host-country
+rule - are audited and clean today, so `missing_fields` stays the column to read first at every
+run: a row naming anything beyond `city` is a new finding.
 
 **23930 participations of 1270517 hold no usable place**, and `Cycling-DQ-085` reports them
 **one row per event** rather than one per rider. It is the sport variant
@@ -1202,77 +1255,102 @@ here because each mistake is repeatable:
 
 ## Open questions
 
-1. **What produces the one-stage offset between the round type and the event name?** Every
-   numbered round holds a minority named one lower - 175 of 1117 on round `41`, 160 of 923 on
-   `42`, and so on down the chain. A prologue occupying a round would produce exactly this, but
-   nothing has been read that confirms it. Answering it decides whether the round number can be
-   used to check the stage number at all.
+Answered by the review on 2026-08-17, all twelve put to it at once. **Ten are closed, one is
+narrower and open, and one is untouched.** The numbering is kept rather than compacted, because
+answers given against these numbers exist outside this file.
+
+1. ~~**What produces the one-stage offset between the round type and the event name?**~~
+   **Answered 2026-08-17: there is no Prologue round type in the system.** Where a tournament
+   stage holds a prologue, the round type carries the **sequence of the event** rather than the
+   number of the stage, and every following round is one out. That is the whole of the 175 of
+   1117 on round `41`, the 160 of 923 on `42` and the rest of the chain.
+   **The round number therefore cannot check the stage number, and no check in this package
+   tries to.** `Cycling-DQ-100 TOURNAMENT_STAGE_NUMBERS_NOT_CONTIGUOUS` reads the numbers out of
+   the event names for exactly this reason, which was luck rather than judgement at the time and
+   is now the documented reason. Nothing is written on the round type as a stage reference, and
+   nothing should be until a Prologue type exists.
 2. ~~**Are `102 Points` and `222 Laps behind` one field or two?**~~ **Answered 2026-08-16: they
    are one field written twice.** All 31 participations hold **both** types, all 62 values are
    `0`, and the 12 events are the four Olympic starts of 2004, 2008 and 2012 - road race and
    time trial, men and women. The holders are the podium: 12 firsts, 9 seconds, 8 thirds and 2
    with no rank. It is a vestige of the Olympic import for three Games rather than two
    measurements, and no check is written on either type.
-3. **Why do 136 World Championship editions hold no stage at all?** Half answered 2026-08-16
-   and the half that remains is narrower for it. `Cycling-DQ-004` reports 142 tournaments with
-   no stage, and 136 of them sit in the four templates that also hold no events: `10350 World
-   Championship RR` (male) 69, `10352` (female) 42, `10353 World Championship TT` (female) 16
-   and `10351` (male) 9. Their names are years - `1927`, `1928` - so these are historical
-   editions entered as tournaments and left without content, and that is *why* those templates
-   report no events: a tournament with no stage can hold none. The remaining six are scattered
-   one apiece across `484 World Championship 1`, `10680` and `11789 Summer Paralympics`,
-   `11049` and `11050 Asian Championship` and `11086 Oceania Championship`. What is still open
-   is whether the 136 are a skeleton somebody intends to fill or an import that stopped, and
-   what the `(IOC)` twins carrying the same tournament counts against the same names are.
-4. **Why does `Disqualified` keep the rider's place?** The question has changed shape since it
-   was first asked as "which spelling does the sport mean". Measured 2026-08-16, `DSQ` and `DQ`
-   behave like a disqualification and almost never hold a place, while **1247 of `Disqualified`'s
-   1400 rows keep their place, 1253 keep a time and one holds a medal**, over places 1 to 196.
-   Either the word is being used for something else or those 1247 riders are wrongly marked.
-   `Cycling-DQ-077` reports them and the comment vocabulary is now recorded either way, with
-   `Disqualified` inside the no-result list because the word means what it means. Being outside
-   the time limit is still written at least twice, `HD` 3111 against `OTL` 137 and possibly
-   `OOT` 1, and that half is unchanged.
-5. **What do `a`, `FTM`, `HUD` and `OOT` mean?** Each was read on the row and each is confined
-   to a handful of events. **`FF#` is no longer among them: answered 2026-08-16, it is an echo
-   of the rank** - `FF2` on place 2, `FF3` on place 3, every one exactly, with `FF1`, `FF2` and
-   `FF3` also holding a medal - so it is a value written into the wrong column rather than a
-   code. `a` also sits beside a real result, 19 riders all placed 10 to 20 with times, which
-   narrows it without answering it.
-6. **Why is `1427 Time Difference` empty on 2790 riders across 46 statistics?** Now part of a
-   larger question rather than a curiosity of its own: the sport writes **no `557 Full time` at
-   all** and holds `1426 Time` on only 85926 of 181997 ranked participants. See question 9.
-7. ~~**What are the 12 events with no `object_discipline` relation?**~~ **Answered 2026-08-16:
-   they are the 2026 calendar not yet filled in.** One has been raced - `China Xizang
-   Trans-Himalaya` stage 5 on 6 August - and eleven are still to come, across `Tour of
-   Istanbul`, `Flandrien 0.0 Classic` and `Tour of Holland`. Those same three races are what
-   `Cycling-DQ-052` reports for a missing age class, so it is one incomplete set-up seen from
-   two sides rather than two faults.
+3. ~~**Why do 136 World Championship editions hold no stage at all?**~~ **Answered 2026-08-17 and
+   it moved the sport's client boundary.** The 136 are historical editions entered for the IOC
+   project and empty because they fall outside the client's 2004 to 2025 window - their
+   tournaments are named `1927` through `2002`. The `(IOC)` twin templates are the same thing
+   under their own name and **are used exclusively for that project**. Both groups are now
+   outside the client scope, eleven templates in all, and the section above records what that
+   removed. Of the six empty tournaments left, the review names each: `2002` predates the window,
+   the two `Summer Paralympics` 2024 editions will not be filled here because Para Cycling was
+   not a separate sport when they were entered, and `Asian Championship` 2020 twice and
+   `Oceania Championship` 2025 were cancelled. **The review holds that those five are candidates
+   for deletion rather than for filling**, which is a decision for whoever owns the data and is
+   recorded here rather than acted on.
+4. **Why does `Disqualified` keep the rider's place?** **Half answered 2026-08-17 and narrower
+   for it, but open.** The review explains what happens to *the rest of the field*: when a rider
+   is disqualified his result is removed and **nobody below him is renumbered**, so the places
+   stand as they were raced. Lance Armstrong struck from the 2002 Tour de France is the example,
+   and the second-placed rider stays second rather than inheriting the win. That is a rule of the
+   sport and the package should not treat an unshifted field as a defect.
+   **What it does not explain is the finding.** Measured 2026-08-16, **1247 of `Disqualified`'s
+   1400 rows keep the disqualified rider's own place**, 1253 keep his time and one holds a medal,
+   over places 1 to 196. By the rule just given those results should be gone. So the question is
+   now precisely this: **at a disqualification, is the place removed only from the classification
+   while the event result stays, or should the event result go too and these 1247 are wrong?**
+   The review says the case needs discussing because there are many like it. `Cycling-DQ-077`
+   holds them until it is.
+   Being outside the time limit is settled and moves to question 5.
+5. ~~**What do `a`, `FTM`, `HUD` and `OOT` mean?**~~ **Three of the four answered 2026-08-17:
+   `FTM`, `HUD` and `OOT` all mean outside the time limit**, the same thing `HD` and `OTL`
+   already meant, each confirmed on the row against the published result. All three join
+   `RESULT_COMMENT_VALUE_LIST` and `RESULT_COMMENT_NO_RESULT_LIST`, so the riders carrying them
+   leave the rank and time comparisons as the rule intends. **The sport therefore writes being
+   outside the time limit in five different ways** - `HD` 3111 rows, `OTL` 137, `FTM`, `HUD` and
+   `OOT` a handful each - which is not a defect any check can assert but is worth one sentence to
+   whoever maintains the vocabulary.
+   **`a` is the one left.** It sits beside a real result on 19 riders, all placed 10 to 20, all
+   with times, and nothing has been read that says what it is. `FF#` looked equally opaque until
+   it turned out to be the rank written into the wrong column, so a misplaced value is the first
+   thing to test.
+6. ~~**Why is `1427 Time Difference` empty on 2790 riders across 46 statistics?**~~ **Answered
+   2026-08-17 as the Comp.Rank face of question 7**, and it closes with it. Nothing separate.
+7. ~~**Why does a timed sport store no full time?**~~ **Answered 2026-08-17: the sport is missing
+   `557 Full time` and it should have it.** This is a gap in the import rather than a convention
+   of the sport, so the leader/gap reading of `101 Duration` is what exists rather than what was
+   intended. The review asks for the absence to be reported in full against Triathlon, which
+   writes one for every one of its 112386 durations, and expects the finding to stay at 100 per
+   cent until the field is populated.
+   `Cycling-DQ-069` reports **9611 events of 9611** and `Cycling-DQ-070` **1734 Comp.Rank records
+   of 1734**, and both stay `Monitor` for that reason: a total finding that is waiting on one
+   import is a state to watch, not a list anybody can work through row by row. `Cycling-DQ-071`
+   and `Cycling-DQ-087` stay sentinels at `eligible_count` 0 and become real checks on the day
+   the first full time is written.
 8. ~~**What is scope type `0`?**~~ **Answered 2026-08-16 as a single malformed row**, on event
    `828866`, `Stage 8` of the Tour de France on 11 July 2010. It carries two details,
    `distance = Finish` and `distance_type = mountain1`, so the distance field holds a word where
-   a number belongs. **One discrepancy is left standing rather than resolved**: this was recorded
-   above as being on 95 events, and reading `event_scope` directly gives one. The two figures
-   come from different statements and whoever wrote the first should say what it counted.
-9. **Why does a timed sport store no full time?** `557 Full time` is written on **0 of the
-   sport's 1140133 duration rows**, against Triathlon writing one for every one of its 112386.
-   Because `101 Duration` carries the winner's absolute time and everybody else's gap, the
-   actual finishing time of a rider behind the winner exists nowhere at event level.
-   `Cycling-DQ-069` and `-070` report it and `-071` and `-087` wait on it.
-10. **Why do 1359 events hold riders with no result of any kind?** 23928 participations across
-    9612 finished events. **Reshaped 2026-08-17 and narrower for it**: this was asked as "a whole
-    start list entered and never resolved", and that is not what it is. Not one event has its
-    whole field unresolved, **690 of the 1359 are a single rider**, and 40 heavy events supplied
-    23025 of the participations. So there are two questions here, not one - what happens in a
-    race that loses half its field, and why a lone rider is left unresolved in an otherwise
-    complete result. `Cycling-DQ-085` now reports per event and says which.
-11. **Why do 79 rankings in championship and Games templates award no medal?** `11050 Asian
-    Championship` (female) holds 26 such, the two `European Youth Olympic Festival` templates 34
-    between them, and `Asian Games`, `European Games`, `South East Asian Games`, `African
-    Championship` and `Youth Olympics` the rest. `Cycling-DQ-068` reports them.
-12. **Why is `city` never written?** Not one of the 3528 stages and not one of the 1795
-    Comp.Rank records holds one. The geography lives in the `StartName` and `EndName` event
-    properties instead, on 8997 events each, which may be the whole answer or may be why nobody
-    filled the column. `Cycling-DQ-083` and `-084` carry it as `Monitor`.
+   a number belongs. **The discrepancy between the 95 events recorded earlier and the one read
+   from `event_scope` is retired rather than resolved**: the review confirmed on 2026-08-17 that
+   the client does not need the scope layer for this sport at present, so neither figure is worth
+   the measurement it would take. `Cycling-DQ-091` and `Cycling-DQ-096` are `Out of client scope`
+   and hold their 0 and 104 findings until it is wanted again.
+9. ~~**Why do 1359 events hold riders with no result of any kind?**~~ **Answered 2026-08-17 and
+   the answer is the rule the check already follows**: a rider with no rank and no comment is a
+   problem to report; a rider with a comment and no rank is correct and must not be. That is
+   exactly what `Cycling-DQ-085` asserts - its finding conditions require both to be absent - so
+   the check needed no change and both halves of it stand. The 40 races that lose half their
+   field and the 690 that leave one rider unresolved are both real, and the fold to the event is
+   what lets a reviewer tell them apart.
+10. ~~**Why do 79 rankings in championship and Games templates award no medal?**~~ **Answered
+    2026-08-17: the medals are missing from the data and must be added.** The check is sound as
+    written and the medal-template list needs no narrowing. `Cycling-DQ-068` stays `Actionable`.
+11. ~~**Why is `city` never written?**~~ **Answered 2026-08-17: it is not written for this sport
+    and it should be.** Not a convention of road racing, then, but an unfilled column, so
+    `Cycling-DQ-083` and `Cycling-DQ-084` stop being `Monitor` and become ordinary checks
+    reporting a defect. They read **3528 stages of 3528 and 1795 Comp.Rank records of 1795**, and
+    they will read that until the column is filled. `missing_fields` stays the column to read
+    first at every run: a row naming anything beyond `city` is a new finding.
+12. ~~**Was the round type usable as a stage reference?**~~ Folded into question 1, which answers
+    it.
 
 <!-- MANUAL PASTE ZONE: 30 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

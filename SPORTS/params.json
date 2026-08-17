@@ -1133,7 +1133,7 @@
     },
     "Cycling": {
         "SPORT_ID": 30,
-        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "10350, 10351, 10352, 10353, 12652, 12653, 12654, 12655, 12656, 12657, 12658",
         "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
         "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
         "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
@@ -1369,17 +1369,17 @@
                 "signal": "Not applicable",
                 "reason": "Structural, and the reason is narrower than the one recorded for the period checks. The template asserts that a finished event carries a scope container - one scope row standing for the whole event, under which the period-by-period breakdown hangs. This sport has no such type. Its 193 scope types are checkpoint1 to checkpoint192 plus an unnamed 0, measured 2026-08-16, and a checkpoint is a point along the course rather than a wrapper around the race. GLOBAL-DQ-102 does apply and is carried, because it asserts referential integrity over whatever scope rows exist rather than the presence of a container."
             },
-            "GLOBAL-DQ-034": {
-                "signal": "Monitor",
-                "reason": "Real, and it will not reach zero, because one of the four fields it asserts is never written in this sport. Measured 2026-08-16 it reports 3528 stages of 3528, every single row under Missing_Stage_Field for city and nothing else. The column exists and the sport simply does not use it: the geography of a road race lives in the StartName and EndName event properties instead, on 8997 events each, and a race that runs between two towns has no one city to name. The other three fields - the name, the country and the host-country rule - are audited and are clean today, which is what the check is worth keeping for. Read missing_fields first at every run: a row naming anything other than city alone is a new finding."
-            },
-            "GLOBAL-DQ-035": {
-                "signal": "Monitor",
-                "reason": "The Comp.Rank half of GLOBAL-DQ-034 and the same shape. Measured 2026-08-16 it reports 1795 statistics of 1795, every one for city alone. The name, the Gender setting and the country are audited and clean. Read missing_fields first: anything beyond city is new."
-            },
             "GLOBAL-DQ-056": {
                 "signal": "Monitor",
                 "reason": "A sentinel, exactly as GLOBAL-DQ-054 is. It checks that a rider's full time equals the leader's full time plus their own gap, and the sport stores no full time at all, so there is nothing to add up: eligible_count is 0 on a correct scope rather than a misdirected one. Not a structural absence - Cycling is timed and result type 557 exists globally - so the population is empty today and will not be once the gap GLOBAL-DQ-045 reports is closed. FULL_TIME_TOLERANCE_SECONDS is recorded as 1 for the same day."
+            },
+            "GLOBAL-DQ-102": {
+                "signal": "Out of client scope",
+                "reason": "Out of client scope by the review's decision of 2026-08-17, answering the open question about scope type 0: the client does not need the scope layer for this sport at present. The structure is present and the check is correct - GLOBAL-DQ-102 reads 1067 events and reports none, and the sport variant Cycling-DQ-096 reads 1094 and reports 104 - so this is neither Not applicable nor Clean. It is a boundary the client drew, and it is reversible: the day the scope layer is wanted, both come back with nothing to rebuild. The checkpoint chain measured on 2026-08-16 runs checkpoint1 to checkpoint192 and the 104 findings are unreadable distances, remaining distances, finish markers and jersey groups, which is a real work list held rather than dropped."
+            },
+            "Cycling-DQ-096": {
+                "signal": "Out of client scope",
+                "reason": "Out of client scope by the review's decision of 2026-08-17, answering the open question about scope type 0: the client does not need the scope layer for this sport at present. The structure is present and the check is correct - GLOBAL-DQ-102 reads 1067 events and reports none, and the sport variant Cycling-DQ-096 reads 1094 and reports 104 - so this is neither Not applicable nor Clean. It is a boundary the client drew, and it is reversible: the day the scope layer is wanted, both come back with nothing to rebuild. The checkpoint chain measured on 2026-08-16 runs checkpoint1 to checkpoint192 and the 104 findings are unreadable distances, remaining distances, finish markers and jersey groups, which is a real work list held rather than dropped."
             }
         },
         "_notApplicable": {
@@ -1404,8 +1404,8 @@
         "RESULT_FULL_TIME_TYPE_ID": "557",
         "TIMED_DISCIPLINE_LIST": "628",
         "MEDAL_TEMPLATE_ID_LIST": "484, 485, 486, 9513, 9870, 9871, 10054, 11046, 11047, 11048, 11049, 11050, 11052, 11054, 11055, 11056, 11057, 11058, 11059, 11060, 11061, 11062, 11063, 11084, 11085, 11086, 11087, 11101, 11121",
-        "RESULT_COMMENT_VALUE_LIST": "'dnf', 'dns', 'hd', 'disqualified', 'dsq', 'dq', 'otl', '+1 lap'",
-        "RESULT_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'hd', 'disqualified', 'dsq', 'dq', 'otl'",
+        "RESULT_COMMENT_VALUE_LIST": "'dnf', 'dns', 'hd', 'disqualified', 'dsq', 'dq', 'otl', 'ftm', 'hud', 'oot', '+1 lap'",
+        "RESULT_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'hd', 'disqualified', 'dsq', 'dq', 'otl', 'ftm', 'hud', 'oot'",
         "DATA_COMMENT_VALUE_LIST": "'dnf', 'dns', 'hd', 'disqualified', 'dsq', 'dq'",
         "DATA_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'hd', 'disqualified', 'dsq', 'dq'",
         "MEDAL_ROUND_TYPE_LIST": "173",
