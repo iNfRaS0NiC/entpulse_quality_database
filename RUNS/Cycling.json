@@ -7544,6 +7544,50 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "17.08.2026 11-12-25",
+                     "startedUtc":  "2026-08-17T09:12:25Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-077",
+                                        "runKey":  "Cycling-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  1465,
+                                        "findings":  1464,
+                                        "eligible":  114436,
+                                        "seconds":  15.7,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "17.08.2026 11-12-42",
+                     "startedUtc":  "2026-08-17T09:12:42Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-078",
+                                        "runKey":  "Cycling-DQ-078",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_COMMENT_INVALID_OR_CONTRADICTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  43,
+                                        "findings":  42,
+                                        "eligible":  30656,
+                                        "seconds":  7.7,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs"

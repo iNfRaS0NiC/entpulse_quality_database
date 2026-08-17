@@ -285,11 +285,31 @@ the opposite: 1247 of its 1400 rows keep their finishing place, 1253 keep a time
 medal, and the places run from 1 to 196.** Either the word is being used for something else, or
 1247 riders are marked disqualified while still classified. `Cycling-DQ-077` reports them.
 
-**`FF#` is not a comment code at all but an echo of the rank.** `FF2` sits on place 2, `FF3` on
-place 3, `FF6` on place 6, every time exactly; `FF1`, `FF2` and `FF3` also hold a medal. It is a
-value written into the wrong column. **`a` likewise sits beside a real result** - all 19 riders
-hold a place between 10 and 20 and a time. **`+1 lap` is consistent**: 40 rows, every one with a
-place between 100 and 106 and no time, which is exactly what a lap down looks like.
+**`FF#` means Photo Finish, and the number is the place the photograph decided.** Answered by the
+review on 2026-08-17, and it **corrects what this file said until then**: the agreement between
+`FF2` and place 2 was read here as the rank echoed into the wrong column, which is exactly
+backwards. It is a code, the number is part of it, and the agreement is the point rather than the
+symptom. Measured over both layers: `FF1` to `FF14`, 16 riders on the event layer and 15 on the
+ranking layer, **every one on the place its own number names and not one without a place**;
+`FF1`, `FF2` and `FF3` also hold a medal, which a mis-typed rank never would.
+
+**The number is unbounded because it is a rank** - the review's own example is that `FF1` and
+`FF2000` are the same code on different places - so the vocabulary declares `ff1` through `ff250`,
+the ceiling `RANK_MAX_PLAUSIBLE` already sets for a plausible place in this sport. A photo finish
+recorded past 250 would be reported, and so would a rank past 250, which is the same boundary
+read twice rather than a new one.
+
+**`FF#` is approved vocabulary and is deliberately not a no-result value.** Its holders keep the
+place, the time and in three cases the medal.
+
+**`a` is an error, and the review says to keep reporting it.** It sits in **one event of the
+sport's 10578**: `Driedaagse De Panne-Koksijde` 2018, the women's race of 22 March 2018, event
+`2681702`, a field of 20. The winner holds `3:52:23` and no comment; **all nineteen behind her
+hold `+0:00` and `a`** - the whole bunch on the winner's time, annotated once and never again
+anywhere in the sport. It stays out of the vocabulary so `Cycling-DQ-077` keeps naming it.
+
+**`+1 lap` is consistent**: 40 rows, every one with a place between 100 and 106 and no time,
+which is exactly what a lap down looks like.
 
 Being outside the time limit is written five ways, not two. `HD` 3111 rows and `OTL` 137 were
 known; `FTM`, `HUD` and `OOT` were confirmed as the same thing by the review on 2026-08-17,
@@ -1035,14 +1055,18 @@ Stats. **So the sport writes being outside the time limit five different ways**:
 `OTL` 137, and a handful each of the three. That is not a defect any check can assert, and it is
 recorded here for whoever maintains the vocabulary.
 
-**Two values are still left out deliberately so the check reports them**: `a`, on 19 rows, and
-`FF1` to `FF14`. `FF#` is answered - it is the rank written into the wrong column - and `a` is
-not: it sits beside a real result on all 19 riders, placed 10 to 20 and holding times, and a
-misplaced value is the first thing to test, because that is what `FF#` turned out to be.
+**`ff1` through `ff250` are approved on both layers and are on neither no-result list.** Photo
+Finish annotates a place that was decided by the photograph, so its holder has a result by
+definition. The ceiling is `RANK_MAX_PLAUSIBLE`, for the reason given in the results section.
 
-The ranking layer uses a tighter vocabulary and is declared separately: `DNF`, `DNS`, `HD`,
-`Disqualified`, `DSQ` and `DQ`, all six meaning no result, with `FF#` and `HUD` outside it on 15
-rows.
+**One value is left out deliberately so the check reports it: `a`, on 19 rows in one event.** The
+review's verdict of 2026-08-17 is that it is an error, and it stays outside the vocabulary for
+that reason rather than because nobody has read it.
+
+The ranking layer writes a narrower set and is declared separately: `DNF` 28951 rows, `HD` 928,
+`DNS` 617, `Disqualified` 116, `DSQ` 29 and `HUD` 1 mean no result there, and the `FF` ladder
+sits beside them as an annotation on 15 rows. **`Disqualified` holds a rank on 34 of its 116**,
+which is the Comp.Rank face of the same defect the event layer shows on 1247.
 
 `Cycling-DQ-077` carries `GLOBAL-DQ-052` and reports **1488 of 114436**: 1421
 `COMMENT_NO_RESULT_WITH_RANK` - the 1247 `Disqualified` above plus 103 `DNF`, 47 `HD`, 20 `DNS`,
@@ -1255,9 +1279,14 @@ here because each mistake is repeatable:
 
 ## Open questions
 
-Answered by the review on 2026-08-17, all twelve put to it at once. **Ten are closed, one is
-narrower and open, and one is untouched.** The numbering is kept rather than compacted, because
-answers given against these numbers exist outside this file.
+**All twelve are answered and closed**, put to the review together on 2026-08-17 and settled the
+same day. The numbering is kept rather than compacted, because answers given against these
+numbers exist outside this file, and each entry keeps its question above its answer so that a
+reader a year from now can see what was being asked.
+
+**Two answers corrected this file rather than adding to it**, and both are marked where they
+sit: the `(IOC)` twins are out of the client scope rather than a curiosity, and `FF#` is Photo
+Finish rather than a rank in the wrong column.
 
 1. ~~**What produces the one-stage offset between the round type and the event name?**~~
    **Answered 2026-08-17: there is no Prologue round type in the system.** Where a tournament
@@ -1287,19 +1316,19 @@ answers given against these numbers exist outside this file.
    `Oceania Championship` 2025 were cancelled. **The review holds that those five are candidates
    for deletion rather than for filling**, which is a decision for whoever owns the data and is
    recorded here rather than acted on.
-4. **Why does `Disqualified` keep the rider's place?** **Half answered 2026-08-17 and narrower
-   for it, but open.** The review explains what happens to *the rest of the field*: when a rider
-   is disqualified his result is removed and **nobody below him is renumbered**, so the places
-   stand as they were raced. Lance Armstrong struck from the 2002 Tour de France is the example,
-   and the second-placed rider stays second rather than inheriting the win. That is a rule of the
-   sport and the package should not treat an unshifted field as a defect.
-   **What it does not explain is the finding.** Measured 2026-08-16, **1247 of `Disqualified`'s
-   1400 rows keep the disqualified rider's own place**, 1253 keep his time and one holds a medal,
-   over places 1 to 196. By the rule just given those results should be gone. So the question is
-   now precisely this: **at a disqualification, is the place removed only from the classification
-   while the event result stays, or should the event result go too and these 1247 are wrong?**
-   The review says the case needs discussing because there are many like it. `Cycling-DQ-077`
-   holds them until it is.
+4. ~~**Why does `Disqualified` keep the rider's place?**~~ **Answered 2026-08-17 in two halves,
+   and the package follows only one of them.** What happens to *the rest of the field* is a rule
+   of the sport: when a rider is disqualified **nobody below him is renumbered**, so the places
+   stand as they were raced. Lance Armstrong struck from the 2002 Tour de France is the review's
+   example, and the second-placed rider stays second rather than inheriting the win. An unshifted
+   field is therefore not a defect and nothing here treats it as one.
+   What happens to *the disqualified rider himself* depends on the source, and the review's
+   instruction for this package is unambiguous: **for the check, a `Disqualified` rider must hold
+   no rank.** So `Disqualified` stays in both no-result lists and the finding stands.
+   **That makes 1247 of `Disqualified`'s 1400 event rows a work list** - they keep the place,
+   1253 keep the time and one holds a medal, over places 1 to 196 - and **34 of its 116 Comp.Rank
+   records besides**, measured 2026-08-17. `Cycling-DQ-077` reports the event layer and the
+   ranking checks report the other.
    Being outside the time limit is settled and moves to question 5.
 5. ~~**What do `a`, `FTM`, `HUD` and `OOT` mean?**~~ **Three of the four answered 2026-08-17:
    `FTM`, `HUD` and `OOT` all mean outside the time limit**, the same thing `HD` and `OTL`
@@ -1309,10 +1338,19 @@ answers given against these numbers exist outside this file.
    outside the time limit in five different ways** - `HD` 3111 rows, `OTL` 137, `FTM`, `HUD` and
    `OOT` a handful each - which is not a defect any check can assert but is worth one sentence to
    whoever maintains the vocabulary.
-   **`a` is the one left.** It sits beside a real result on 19 riders, all placed 10 to 20, all
-   with times, and nothing has been read that says what it is. `FF#` looked equally opaque until
-   it turned out to be the rank written into the wrong column, so a misplaced value is the first
-   thing to test.
+   **`a` is answered too: it is an error, and the review says to keep reporting it.** Read in
+   full on 2026-08-17, it sits in **one event of the sport's 10578** - the women's
+   `Driedaagse De Panne-Koksijde` of 22 March 2018, event `2681702` - where the winner holds
+   `3:52:23` and no comment and **all nineteen riders behind her hold `+0:00` and `a`**. The whole
+   bunch on the winner's time, annotated once and never again anywhere in the sport, which is what
+   a one-off import artefact looks like rather than a code. It stays outside the vocabulary so
+   `Cycling-DQ-077` keeps naming it.
+   **And `FF#` is not what this file said it was.** It was read here as the rank echoed into the
+   wrong column; the review answered on 2026-08-17 that it means **Photo Finish** and the number
+   is the place the photograph decided, so the agreement with the rank is the code working rather
+   than a symptom of a mistake. `ff1` through `ff250` are approved on both layers and are on
+   neither no-result list. The results section carries the measurement and the reason for the
+   ceiling.
 6. ~~**Why is `1427 Time Difference` empty on 2790 riders across 46 statistics?**~~ **Answered
    2026-08-17 as the Comp.Rank face of question 7**, and it closes with it. Nothing separate.
 7. ~~**Why does a timed sport store no full time?**~~ **Answered 2026-08-17: the sport is missing
