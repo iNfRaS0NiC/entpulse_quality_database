@@ -617,6 +617,51 @@ first thirteen is that the list also names an event from another sport, and a jo
 succeeds. This is a schema defect rather than a data one - correcting the values without
 widening the column would truncate them again on the next write.
 
+**All 167 are match play, and that is the mechanism rather than a coincidence.** Measured
+2026-08-17 over the sport's 3441 rankings: **every one of the 3179 that says stroke play in its
+name holds exactly one event id**, without a single exception, so a stroke play list is 6 or 7
+characters and cannot reach a limit of 255. The 243 that say match play hold between 1 and 37,
+because match play is a bracket and each match is its own event. **167 of those 243 are cut.** The
+76 that are not are the small brackets, and nothing protects them beyond their size.
+
+**The true list is recoverable by rule, which is worth recording before anybody assumes it is
+lost.** Measured 2026-08-17: the ids that survived the cut span **exactly one tournament stage in
+all 167 cases**, and that stage's name is the ranking's own name - `British Boys Amateur
+Championship - Match Play` for the ranking of the same name. So a ranking's true event list is
+every event of the stage its survivors belong to. Those stages hold **32 to 120 events** against
+the 32 the list names, and rebuilding the largest needs **959 characters**. The rule survived the
+test rather than being proven: what would disprove it is a ranking whose stage holds events it
+should not cover, and that cannot be checked from the database, because the record of where a
+ranking ends lived in the field that was cut.
+
+**Applied to all 167 the rule returns 6288 events, a median of 38 per ranking, and it exposes one
+false positive the check cannot avoid.** Statistic `336075`, `The Queens` 2016, gains nothing: its
+stage holds exactly 32 events, its stored list holds exactly 32, and all 32 resolve. Thirty-two
+seven-digit ids plus thirty-one commas come to exactly 255 characters, so **that value reached the
+limit by arithmetic rather than by being cut**, and there is nothing to repair in it. From the
+stored value alone a list cut at 255 cannot be told from one that is 255 characters long on its
+own, so `Golf-DQ-098` reports 167 where 166 are real. Seven further rankings gain only two events
+each — `The Presidents Cup` 2005, 2007 and 2009, `The Queens` 2015 and 2017, `International Crown`
+2016 and `European Boys' Team Championship Flight C` 2010 — and those are genuine, their stages
+holding 34 or 35 against the 32 stored. `output/Golf-DQ-098-rebuild.sql` carries the query and its
+own reading notes.
+
+**What `Golf-DQ-098` is worth after the repair, so that nobody removes it as an empty check.**
+Once the column is widened and the 167 rewritten it returns zero, and at that point it is the
+only thing in the package that can see the column narrow again. `Golf-DQ-057` cannot take over:
+measured 2026-08-17, it reports **13 of the 13** cut inside a number and **0 of the 154** cut on a
+comma, because those resolve perfectly. That asymmetry is also a trap in the order of repair -
+fixing the thirteen visible fragments alone takes `Golf-DQ-057` to nearly zero and makes the
+defect look settled while 154 stand untouched.
+
+**It is not promoted to a GLOBAL template, and the reason is a measurement rather than a
+judgement about how general the defect is.** Measured across every sport on the server
+2026-08-17: Golf holds 167 and **Freestyle Skiing holds 64**, and no other sport holds one. None
+of the nine sports documented here except Golf has a single case, so a template would have one
+instantiation. The statement carries nothing Golf-specific and can be promoted in an hour on the
+day a sport with brackets is opened. **Freestyle Skiing held 49 on 2026-08-14 and 64 on
+2026-08-17**, so the population grows as data arrives rather than sitting still in the archive.
+
 **The five `tournament_stage`-owned statistics are Comp.Rank at the wrong owner level.**
 Measured 2026-08-14: all five carry `statistic_typeFK = 11` and `object_typeFK = 4`, where the
 sport's confirmed owner is the tournament at `object_typeFK = 3`. They are the Hero Cup 2023,

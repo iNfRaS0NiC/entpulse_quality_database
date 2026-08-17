@@ -6787,6 +6787,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-17T07:57:25Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-057",
+                                        "runKey":  "Golf-DQ-057",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  16,
+                                        "findings":  15,
+                                        "eligible":  3419,
+                                        "seconds":  2.1,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"
