@@ -2873,7 +2873,7 @@ Test-That 'a check tab carries its header row and both of its links' {
     # disagree - but a reader still has to be told where the reviewer's cells are.
     Assert-Equal 'Comment' $header[0].Values[0][4] 'Comment at E'
     Assert-Equal 'Check By' $header[0].Values[0][5] 'and Check By at F'
-    Assert-Equal 'Time Spend (minutes)' $header[0].Values[0][6] 'the reviewer block ends with what it cost them'
+    Assert-Equal 'Time Spent (minutes)' $header[0].Values[0][6] 'the reviewer block ends with what it cost them'
     Assert-Equal 'Expected' $header[0].Values[0][7] 'and the comparison block starts after it'
     Assert-Equal 'Verdict' $header[0].Values[0][([array]::IndexOf($SheetsCheckTabColumns, 'Verdict'))] 'and the verdict where the list puts it'
     Assert-True ($header[0].Values[0] -notcontains 'Priority') 'Priority is gone, being a board sort'
@@ -3195,7 +3195,7 @@ Test-That 'the board is centred, its owned headings named, and sorted by priorit
     Assert-Equal 'CENTER' $whole[0].Align 'centred'
     Assert-Equal $null $whole[0].ToRow 'and unbounded, so it follows the board down'
 
-    # Status, Check By, Comment and Time Spend - the block the runner writes around. Named from
+    # Status, Check By, Comment and Time Spent - the block the runner writes around. Named from
     # the reviewer list rather than lettered, so a column joining it does not have to be counted
     # by hand here as well as declared there.
     $owned = @($formats | Where-Object { $_.Colour -eq $SheetsReviewerHeaderColour })

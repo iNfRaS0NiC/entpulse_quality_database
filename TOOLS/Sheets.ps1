@@ -133,14 +133,14 @@ $SheetsCellBudgetWarning = 8000000
 # and it is here because the reviewers' decisions are a reading of the data rather than a
 # change to it: the day somebody asks how many rows the check actually matches, that number
 # has to be on the board rather than reconstructed from the tab.
-# Time Spend (minutes) is the reviewer's, and unlike Comment it is theirs on both boards
+# Time Spent (minutes) is the reviewer's, and unlike Comment it is theirs on both boards
 # separately. Comment is written once beside the rows that provoked it and mirrored onto
 # Overview by a formula; this one is not, by decision of 2026-08-17. How long a check took to
 # work through and how long it took to read the board about it are two different numbers, and
 # a mirror would force them to be one - so each side holds its own and nothing links them.
 $SheetsOverviewColumns = @(
     'Sport', 'CheckID', 'Parameters', 'Check Name', 'Priority', 'Category', 'What it does',
-    'Rows', 'Status', 'Check By', 'Comment', 'Time Spend (minutes)', 'Signal', 'Signal reason',
+    'Rows', 'Status', 'Check By', 'Comment', 'Time Spent (minutes)', 'Signal', 'Signal reason',
     'Expected', 'Findings', 'All findings', 'Eligible', 'Prev findings', 'Prev eligible',
     'Change', 'Verdict', 'Last run', 'Trends')
 
@@ -163,12 +163,12 @@ $SheetsOverviewColumns = @(
 # rows themselves, and the difference between the two numbers is exactly how many of the rows
 # below them have already been decided about.
 #
-# Time Spend (minutes) joins the reviewer's own cells here rather than sitting out at the end,
+# Time Spent (minutes) joins the reviewer's own cells here rather than sitting out at the end,
 # because the three belong together: who read it, what they concluded, and what it cost them.
 # It holds no relation to Overview's column of the same name - see the note there.
 $SheetsCheckTabColumns = @(
     'Check ID', 'Check Name', 'SQL Used', 'What it does',
-    'Comment', 'Check By', 'Time Spend (minutes)',
+    'Comment', 'Check By', 'Time Spent (minutes)',
     'Expected', 'Findings', 'All findings', 'Eligible', 'Prev findings', 'Change', 'Verdict',
     'Trends', 'Category', 'Parameters')
 
@@ -176,22 +176,22 @@ $SheetsCheckTabColumns = @(
 # thing in the document that cannot be regenerated, which is what a person concluded from
 # reading it. Everything else the runner can rebuild from the run.
 #
-# Overview's are Status, Check By, Comment and Time Spend (minutes); a check tab's are the same
+# Overview's are Status, Check By, Comment and Time Spent (minutes); a check tab's are the same
 # fields for one check. Note that a check tab's Comment is the source and Overview's is a
 # formula reading it - so overwriting either would cost the text, and the runner writes neither.
-# Time Spend is not mirrored either way and is simply never written.
+# Time Spent is not mirrored either way and is simply never written.
 #
 # Found by name rather than written as numbers. They were 7 and 8 on a check tab and moved to
 # 5 and 6 when Signal and Signal reason came out, and a comment at the old literal 7 would
 # have been the reviewer's text sitting in what is now Expected while Comment was overwritten
 # every run. Nothing here needs to know a position that the column list already states - which
 # is why Overview's list is derived here too, rather than being the literal 9, 10, 11 it was
-# when Time Spend arrived between Comment and Signal.
+# when Time Spent arrived between Comment and Signal.
 $SheetsOverviewReviewerColumns = @(
-    @('Status', 'Check By', 'Comment', 'Time Spend (minutes)') |
+    @('Status', 'Check By', 'Comment', 'Time Spent (minutes)') |
         ForEach-Object { [array]::IndexOf($SheetsOverviewColumns, $_) + 1 })
 $SheetsCheckTabReviewerColumns = @(
-    @('Comment', 'Check By', 'Time Spend (minutes)') |
+    @('Comment', 'Check By', 'Time Spent (minutes)') |
         ForEach-Object { [array]::IndexOf($SheetsCheckTabColumns, $_) + 1 })
 
 # Columns Overview ships hidden. Signal and Signal reason are the runner's classification,
@@ -802,7 +802,7 @@ function New-SheetsOverviewRow {
         $SeededStatus
         ''
         ''
-        # Time Spend (minutes). Blank on a row being added and never touched again: the run has
+        # Time Spent (minutes). Blank on a row being added and never touched again: the run has
         # nothing to say about how long a check took somebody, and no formula puts a number here.
         ''
         [string]$Entry.Signal
@@ -1106,7 +1106,7 @@ function New-SheetsMergePlan {
     # The three headings that name the reviewer's own columns. Status is one of them even
     # though the runner seeds it: what the seed says is a starting point, and the column is
     # theirs to move.
-    foreach ($own in @('Status', 'Check By', 'Comment', 'Time Spend (minutes)')) {
+    foreach ($own in @('Status', 'Check By', 'Comment', 'Time Spent (minutes)')) {
         $at = [array]::IndexOf($SheetsOverviewColumns, $own)
         if ($at -lt 0) { continue }
         $plan += [pscustomobject]@{
@@ -1751,7 +1751,7 @@ function New-SheetsMergePlan {
             [string]$item.Job.What
             ''
             ''
-            # Time Spend (minutes), the third of the reviewer's own cells. Written blank only on
+            # Time Spent (minutes), the third of the reviewer's own cells. Written blank only on
             # a tab being created, like the two above it, and never afterwards.
             ''
             [string]$(if ($entry) { $entry.Expected } else { '' })
@@ -1879,7 +1879,7 @@ function New-SheetsMergePlan {
 
         # The two headings that name the reviewer's own columns, on a header row that is
         # otherwise the runner's.
-        foreach ($own in @('Comment', 'Check By', 'Time Spend (minutes)')) {
+        foreach ($own in @('Comment', 'Check By', 'Time Spent (minutes)')) {
             $at = [array]::IndexOf($SheetsCheckTabColumns, $own)
             if ($at -lt 0) { continue }
             $plan += [pscustomobject]@{
