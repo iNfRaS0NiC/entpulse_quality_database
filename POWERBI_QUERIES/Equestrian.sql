@@ -1192,3 +1192,677 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, event_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-098
+    -- Name - COMP.RANK_PAIR_SIDES_CONTRADICT_EACH_OTHER
+    -- What it does: Flags Comp.Rank records where the rider row and the horse row of one Pair carry different values in the same data field.
+    'Comp_Rank_Pair_Sides_Contradict' AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.contradicting_pair_count,
+    x.field_list,
+    x.sample_group,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Takes every Comp.Rank Pair holding exactly one rider and one
+-- horse, and reports the fields in which the two rows disagree.
+-- The rule is the sport's own and no GLOBAL template can express it, because no other sport
+-- stores a ride as two participant rows. A rider and the horse it rode are one result written
+-- twice, so the two rows are a mirror: measured 2026-08-18 across 10741 pairs and eleven data
+-- fields, Rank, Comment, Penalties, Score, Time, Points, Percentage and both Jump Off fields
+-- agree on every single pair, and not once does one side carry a value the other lacks. Only
+-- Team and Medal disagree at all, on 20 and 2 pairs.
+-- A pair holding two riders or two horses is not audited here: that is a different defect and
+-- Equestrian-DQ-060 and Equestrian-DQ-100 own it. Fields the pair does not use are skipped
+-- rather than reported, so an unwritten field is never read as a contradiction.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(DISTINCT c.pair_value) AS contradicting_pair_count,
+        GROUP_CONCAT(DISTINCT c.field_name ORDER BY c.field_name SEPARATOR ', ') AS field_list,
+        MIN(CONCAT('pair=', c.pair_value,
+                   ' field=', c.field_name,
+                   ' rider=', c.athlete_value,
+                   ' horse=', c.horse_value)) AS sample_group
+    FROM (
+        SELECT
+            s2.id AS statistic_id,
+            sd.value AS pair_value,
+            sdt.name AS field_name,
+            MAX(CASE WHEN p.type = 'athlete' THEN v.value END) AS athlete_value,
+            MAX(CASE WHEN p.type = 'horse' THEN v.value END) AS horse_value
+        FROM statistic s2
+        JOIN tournament t2
+          ON t2.id = s2.objectFK
+         AND t2.del = 'no'
+        JOIN tournament_template tt2
+          ON tt2.id = t2.tournament_templateFK
+         AND tt2.del = 'no'
+         AND tt2.sportFK = 37
+        JOIN statistic_participants11 sp
+          ON sp.statisticFK = s2.id
+         AND sp.del = 'no'
+        JOIN statistic_data11 sd
+          ON sd.statistic_participants11FK = sp.id
+         AND sd.statistic_data_typeFK = 1276
+         AND sd.del = 'no'
+         AND sd.value IS NOT NULL
+         AND sd.value <> ''
+        JOIN participant p
+          ON p.id = sp.participantFK
+         AND p.del = 'no'
+        JOIN statistic_data11 v
+          ON v.statistic_participants11FK = sp.id
+         AND v.del = 'no'
+         AND v.statistic_data_typeFK <> 1276
+         AND v.value IS NOT NULL
+         AND v.value <> ''
+        JOIN statistic_data_type sdt
+          ON sdt.id = v.statistic_data_typeFK
+        WHERE s2.del = 'no'
+          AND s2.statistic_typeFK = 11
+          AND s2.object_typeFK = 3
+          AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
+          AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+        GROUP BY
+            s2.id,
+            sd.value,
+            sdt.name
+        HAVING
+            COUNT(DISTINCT CASE WHEN p.type = 'athlete' THEN sp.id END) = 1
+        AND COUNT(DISTINCT CASE WHEN p.type = 'horse' THEN sp.id END) = 1
+        AND MAX(CASE WHEN p.type = 'athlete' THEN v.value END) IS NOT NULL
+        AND MAX(CASE WHEN p.type = 'horse' THEN v.value END) IS NOT NULL
+        AND MAX(CASE WHEN p.type = 'athlete' THEN v.value END)
+         <> MAX(CASE WHEN p.type = 'horse' THEN v.value END)
+    ) c
+    JOIN statistic s
+      ON s.id = c.statistic_id
+     AND s.del = 'no'
+    JOIN tournament t
+      ON t.id = s.objectFK
+     AND t.del = 'no'
+    JOIN tournament_template tt
+      ON tt.id = t.tournament_templateFK
+     AND tt.del = 'no'
+    GROUP BY
+        s.id,
+        s.name,
+        tt.name,
+        t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t
+  ON t.id = s.objectFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 37
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM statistic_participants11 sp9
+      JOIN statistic_data11 pr9
+        ON pr9.statistic_participants11FK = sp9.id
+       AND pr9.statistic_data_typeFK = 1276
+       AND pr9.del = 'no'
+      WHERE sp9.statisticFK = s.id
+        AND sp9.del = 'no'
+  )
+
+ORDER BY sort_order, statistic_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-099
+    -- Name - EVENT_PARTICIPATION_WITHOUT_A_VALID_HORSE
+    -- What it does: Flags event participations by a rider that do not name an active horse through the horseFK reference property.
+    f.check_type,
+    f.participation_id,
+    f.event_id,
+    f.event_name,
+    f.event_startdate,
+    f.template_name,
+    f.tournament_name,
+    f.rider_name,
+    f.horse_reference,
+    CASE
+        WHEN COUNT(*) OVER (PARTITION BY f.event_id) >= f.field_size
+        THEN 'whole field'
+        ELSE 'part of the field'
+    END AS field_reach,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Every ride in this sport is a rider and a horse, and the
+-- participation stores only the rider: the horse is reached through a property of type
+-- ref:participant named horseFK, whose value is a participant.id. A rider participation that
+-- does not resolve to an active horse is therefore half a ride.
+-- ../DATABASE.md section 6 owns the mechanism and ../SPORTS/Equestrian.md records that team
+-- participations carry no horseFK and correctly so, which is why only athlete participations
+-- are audited here.
+-- The four classes are four different defects with four different causes and are reported
+-- apart rather than as one absence: the property missing entirely, present but holding nothing
+-- usable, holding an id no active participant answers to, and holding a participant that is
+-- not a horse. A statement testing only for presence reports the first and misses the rest.
+-- Measured 2026-08-18 that is 736 participations against 114507 that resolve, so 99.4 percent
+-- of the sport names its horse and the reported rows are not the sport.
+-- field_reach is why the count is not the finding. Dangling references and most empty ones sit
+-- beside riders whose horse resolves, and each is one rider's defect: 272 and 183 of them,
+-- spread over 242 and 105 events from 2005 to 2026. The remaining 281 take an entire field at
+-- once - seven events from 2004 to 2016 with no horse layer written at all, two more holding
+-- nothing usable, and one 2026 event whose whole field points at participants that are not
+-- horses. Those are ten events to load again rather than 281 rows to correct one by one, and
+-- the column says which a row is without the reviewer counting.
+FROM (
+    SELECT
+        CASE
+            WHEN pr.id IS NULL THEN 'Event_Participation_Horse_Reference_Absent'
+            WHEN pr.value IS NULL OR TRIM(pr.value) = '' OR TRIM(pr.value) = '0'
+              OR pr.value NOT REGEXP '^[0-9]+$' THEN 'Event_Participation_Horse_Reference_Empty'
+            WHEN h.id IS NULL THEN 'Event_Participation_Horse_Reference_Dangling'
+            ELSE 'Event_Participation_Horse_Reference_Not_A_Horse'
+        END AS check_type,
+        ep.id AS participation_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        p.name AS rider_name,
+        pr.value AS horse_reference,
+        (SELECT COUNT(DISTINCT ep9.id)
+           FROM event_participants ep9
+           JOIN participant p9
+             ON p9.id = ep9.participantFK
+            AND p9.del = 'no'
+            AND p9.type = 'athlete'
+          WHERE ep9.eventFK = e.id
+            AND ep9.del = 'no') AS field_size
+    FROM event_participants ep
+    JOIN event e
+      ON e.id = ep.eventFK
+     AND e.del = 'no'
+    JOIN tournament_stage ts
+      ON ts.id = e.tournament_stageFK
+     AND ts.del = 'no'
+    JOIN tournament t
+      ON t.id = ts.tournamentFK
+     AND t.del = 'no'
+    JOIN tournament_template tt
+      ON tt.id = t.tournament_templateFK
+     AND tt.del = 'no'
+     AND tt.sportFK = 37
+    JOIN participant p
+      ON p.id = ep.participantFK
+     AND p.del = 'no'
+     AND p.type = 'athlete'
+    LEFT JOIN property pr
+      ON pr.objectFK = ep.id
+     AND pr.object = 'event_participants'
+     AND pr.name = 'horseFK'
+     AND pr.del = 'no'
+    LEFT JOIN participant h
+      ON pr.value REGEXP '^[0-9]+$'
+     AND h.id = CAST(pr.value AS UNSIGNED)
+     AND h.del = 'no'
+    WHERE ep.del = 'no'
+      AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      AND (
+            pr.id IS NULL
+         OR pr.value IS NULL
+         OR TRIM(pr.value) = ''
+         OR TRIM(pr.value) = '0'
+         OR pr.value NOT REGEXP '^[0-9]+$'
+         OR h.id IS NULL
+         OR h.type <> 'horse'
+      )
+) f
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e
+  ON e.id = ep.eventFK
+ AND e.del = 'no'
+JOIN tournament_stage ts
+  ON ts.id = e.tournament_stageFK
+ AND ts.del = 'no'
+JOIN tournament t
+  ON t.id = ts.tournamentFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+ AND tt.sportFK = 37
+JOIN participant p
+  ON p.id = ep.participantFK
+ AND p.del = 'no'
+ AND p.type = 'athlete'
+WHERE ep.del = 'no'
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+
+ORDER BY sort_order, check_type, participation_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-100
+    -- Name - COMP.RANK_PAIR_MISSING_ONE_OF_ITS_TWO_SIDES
+    -- What it does: Flags Comp.Rank records holding a Pair that is not one rider and one horse.
+    'Comp_Rank_Pair_Missing_One_Side' AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.pairs_horse_without_rider,
+    x.pairs_rider_without_horse,
+    x.pairs_neither_shape,
+    x.sample_group,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A ride in this sport is a rider and the horse it rode, stored
+-- as two participant rows bound by data field 1276 Pair. A Pair that carries only one of the
+-- two names half a ride, and the half that is missing says which.
+-- Measured 2026-08-18, 11978 Pairs hold exactly one rider and one horse, 418 hold a horse with
+-- no rider, 27 a rider with no horse, and 2 hold two horses and no rider at all. So 96.4
+-- percent of the sport is the well-formed shape and the reported Pairs are not the sport.
+-- Team participant rows carry no Pair value and are therefore never audited here: a team
+-- classification row is not a ride. Equestrian-DQ-060 owns the opposite defect, a Pair holding
+-- one participant twice, and Equestrian-DQ-098 owns a well-formed Pair whose two rows disagree.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        SUM(CASE WHEN g.athletes = 0 AND g.horses = 1 THEN 1 ELSE 0 END) AS pairs_horse_without_rider,
+        SUM(CASE WHEN g.athletes = 1 AND g.horses = 0 THEN 1 ELSE 0 END) AS pairs_rider_without_horse,
+        SUM(CASE WHEN NOT (g.athletes = 0 AND g.horses = 1)
+                  AND NOT (g.athletes = 1 AND g.horses = 0) THEN 1 ELSE 0 END) AS pairs_neither_shape,
+        MIN(CONCAT('pair=', g.pair_value,
+                   ' riders=', g.athletes,
+                   ' horses=', g.horses)) AS sample_group
+    FROM (
+        SELECT
+            s2.id AS statistic_id,
+            sd.value AS pair_value,
+            COUNT(DISTINCT CASE WHEN p.type = 'athlete' THEN sp.participantFK END) AS athletes,
+            COUNT(DISTINCT CASE WHEN p.type = 'horse' THEN sp.participantFK END) AS horses
+        FROM statistic s2
+        JOIN tournament t2
+          ON t2.id = s2.objectFK
+         AND t2.del = 'no'
+        JOIN tournament_template tt2
+          ON tt2.id = t2.tournament_templateFK
+         AND tt2.del = 'no'
+         AND tt2.sportFK = 37
+        JOIN statistic_participants11 sp
+          ON sp.statisticFK = s2.id
+         AND sp.del = 'no'
+        JOIN statistic_data11 sd
+          ON sd.statistic_participants11FK = sp.id
+         AND sd.statistic_data_typeFK = 1276
+         AND sd.del = 'no'
+         AND sd.value IS NOT NULL
+         AND sd.value <> ''
+        JOIN participant p
+          ON p.id = sp.participantFK
+         AND p.del = 'no'
+        WHERE s2.del = 'no'
+          AND s2.statistic_typeFK = 11
+          AND s2.object_typeFK = 3
+          AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
+          AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+        GROUP BY
+            s2.id,
+            sd.value
+        HAVING
+            COUNT(DISTINCT CASE WHEN p.type = 'athlete' THEN sp.participantFK END) <> 1
+         OR COUNT(DISTINCT CASE WHEN p.type = 'horse' THEN sp.participantFK END) <> 1
+    ) g
+    JOIN statistic s
+      ON s.id = g.statistic_id
+     AND s.del = 'no'
+    JOIN tournament t
+      ON t.id = s.objectFK
+     AND t.del = 'no'
+    JOIN tournament_template tt
+      ON tt.id = t.tournament_templateFK
+     AND tt.del = 'no'
+    GROUP BY
+        s.id,
+        s.name,
+        tt.name,
+        t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t
+  ON t.id = s.objectFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 37
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM statistic_participants11 sp9
+      JOIN statistic_data11 pr9
+        ON pr9.statistic_participants11FK = sp9.id
+       AND pr9.statistic_data_typeFK = 1276
+       AND pr9.del = 'no'
+      WHERE sp9.statisticFK = s.id
+        AND sp9.del = 'no'
+  )
+
+ORDER BY sort_order, statistic_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-101
+    -- Name - EVENT_LINEUP_MEMBER_WITHOUT_A_VALID_HORSE
+    -- What it does: Flags lineup members that do not name an active horse through the horseFK reference property.
+    CASE
+        WHEN pr.id IS NULL THEN 'Lineup_Member_Horse_Reference_Absent'
+        WHEN pr.value IS NULL OR TRIM(pr.value) = '' OR TRIM(pr.value) = '0'
+          OR pr.value NOT REGEXP '^[0-9]+$' THEN 'Lineup_Member_Horse_Reference_Empty'
+        WHEN h.id IS NULL THEN 'Lineup_Member_Horse_Reference_Dangling'
+        ELSE 'Lineup_Member_Horse_Reference_Not_A_Horse'
+    END AS check_type,
+    l.id AS lineup_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    tp.name AS team_name,
+    p.name AS rider_name,
+    pr.value AS horse_reference,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A team here does not field riders, it fields pairs. The lineup
+-- of a team participation lists its riders one by one, and each member carries its own horseFK
+-- reference, so the lineup is a list of rider-and-horse pairs rather than a list of people.
+-- ../SPORTS/Equestrian.md records the structure and ../DATABASE.md section 6 the mechanism.
+-- A member whose reference does not resolve to an active horse is half a pair, and the team it
+-- rides for is short one mount.
+-- This is the lineup half of Equestrian-DQ-099, and it is a separate statement because the
+-- audited object is a lineup row rather than an event participation: the property owner is
+-- different, the failure counts are different, and one statement cannot cover both objects.
+-- Measured 2026-08-18, 17967 of 18145 lineup rows resolve to an active horse, 154 carry no
+-- property at all and 24 point at a participant that does not exist. The two classes that
+-- return nothing today are kept because they are structural: the sport stores the same
+-- reference in the same way on both owners, so a lineup can fail in the same four ways an
+-- event participation already does.
+FROM lineup l
+JOIN event_participants ep
+  ON ep.id = l.event_participantsFK
+ AND ep.del = 'no'
+JOIN event e
+  ON e.id = ep.eventFK
+ AND e.del = 'no'
+JOIN tournament_stage ts
+  ON ts.id = e.tournament_stageFK
+ AND ts.del = 'no'
+JOIN tournament t
+  ON t.id = ts.tournamentFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+ AND tt.sportFK = 37
+JOIN participant p
+  ON p.id = l.participantFK
+ AND p.del = 'no'
+LEFT JOIN participant tp
+  ON tp.id = ep.participantFK
+ AND tp.del = 'no'
+LEFT JOIN property pr
+  ON pr.objectFK = l.id
+ AND pr.object = 'lineup'
+ AND pr.name = 'horseFK'
+ AND pr.del = 'no'
+LEFT JOIN participant h
+  ON pr.value REGEXP '^[0-9]+$'
+ AND h.id = CAST(pr.value AS UNSIGNED)
+ AND h.del = 'no'
+WHERE l.del = 'no'
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  AND (
+        pr.id IS NULL
+     OR pr.value IS NULL
+     OR TRIM(pr.value) = ''
+     OR TRIM(pr.value) = '0'
+     OR pr.value NOT REGEXP '^[0-9]+$'
+     OR h.id IS NULL
+     OR h.type <> 'horse'
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT l.id) AS eligible_count,
+    1 AS sort_order
+FROM lineup l
+JOIN event_participants ep
+  ON ep.id = l.event_participantsFK
+ AND ep.del = 'no'
+JOIN event e
+  ON e.id = ep.eventFK
+ AND e.del = 'no'
+JOIN tournament_stage ts
+  ON ts.id = e.tournament_stageFK
+ AND ts.del = 'no'
+JOIN tournament t
+  ON t.id = ts.tournamentFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+ AND tt.sportFK = 37
+WHERE l.del = 'no'
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+
+ORDER BY sort_order, check_type, lineup_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-102
+    -- Name - OBJECT_DISCIPLINE_NOT_ONE_OF_THE_SPORT_FOUR_DISCIPLINES
+    -- What it does: Flags discipline assignments on an event or a Comp.Rank that name a test, a phase or a renamed discipline instead of one of the sport's four.
+    'Event_Discipline_Not_One_Of_The_Four' AS check_type,
+    od.id AS assignment_id,
+    od.object_typeFK AS owner_type_id,
+    od.objectFK AS owner_id,
+    d.id AS discipline_id,
+    d.name AS discipline_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: This sport is four sports in one container - Dressage, Jumping,
+-- Eventing and Driving - and object_discipline is what separates them. ../DATABASE.md
+-- DB-SEM-019 owns the storage: an event's discipline lives in object_discipline with owner type
+-- 5, a Comp.Rank's in owner type 83, and the discipline property is a legacy path.
+-- The four are discipline 424 Eventing, 425 Dressage, 426 Jumping and 428 Driving. Everything
+-- else the sport writes into that column is one of three things and none of them is a fifth
+-- discipline: 69 Show Jumping is a second name for 426 Jumping; 70, 71 and 75 name a dressage
+-- test - Grand Prix Freestyle, Grand Prix, Grand Prix Special; and 72, 73, 74, 347 and 402 name
+-- a phase inside eventing - Cross Country, Dressage, Jumping, Cross Country Fences.
+-- A test and a phase are real things and they belong somewhere. They do not belong here,
+-- because anything reading the four to tell one sub-sport from another cannot place them, and
+-- the separation the whole sport rests on silently fails for those objects.
+-- Measured 2026-08-18 that is 370 events and 31 Comp.Rank records against 5675 and 434, so the
+-- four cover 93 percent of events and 93 percent of the ranking layer. The vocabulary was read
+-- whole before this was written: all twenty-one values the sport uses are accounted for above,
+-- so the reported rows are not a sample of an unknown list.
+-- The two owners are asked in separate branches on purpose. object_discipline is one table for
+-- every sport and every owner type, so a statement that reaches it first and works out the
+-- owner afterwards drives from the whole table: written that way this took 53 seconds against
+-- the 3 it takes driving from the sport's own events and statistics.
+FROM event e
+JOIN tournament_stage ts
+  ON ts.id = e.tournament_stageFK
+ AND ts.del = 'no'
+JOIN tournament t
+  ON t.id = ts.tournamentFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+ AND tt.sportFK = 37
+JOIN object_discipline od
+  ON od.object_typeFK = 5
+ AND od.objectFK = e.id
+ AND od.del = 'no'
+JOIN discipline d
+  ON d.id = od.disciplineFK
+WHERE e.del = 'no'
+  AND od.disciplineFK NOT IN (424, 425, 426, 428)
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+UNION ALL
+
+SELECT
+    'Comp_Rank_Discipline_Not_One_Of_The_Four' AS check_type,
+    od2.id,
+    od2.object_typeFK,
+    od2.objectFK,
+    d2.id,
+    d2.name,
+    tt2.name,
+    t2.name,
+    NULL,
+    0
+FROM statistic s
+JOIN tournament t2
+  ON t2.id = s.objectFK
+ AND t2.del = 'no'
+JOIN tournament_template tt2
+  ON tt2.id = t2.tournament_templateFK
+ AND tt2.del = 'no'
+ AND tt2.sportFK = 37
+JOIN object_discipline od2
+  ON od2.object_typeFK = 83
+ AND od2.objectFK = s.id
+ AND od2.del = 'no'
+JOIN discipline d2
+  ON d2.id = od2.disciplineFK
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND od2.disciplineFK NOT IN (424, 425, 426, 428)
+  AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
+  AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t2.tournament_templateFK = <tournament_template_id>
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT cov.assignment_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT od3.id AS assignment_id
+    FROM event e3
+    JOIN tournament_stage ts3
+      ON ts3.id = e3.tournament_stageFK
+     AND ts3.del = 'no'
+    JOIN tournament t3
+      ON t3.id = ts3.tournamentFK
+     AND t3.del = 'no'
+    JOIN tournament_template tt3
+      ON tt3.id = t3.tournament_templateFK
+     AND tt3.del = 'no'
+     AND tt3.sportFK = 37
+    JOIN object_discipline od3
+      ON od3.object_typeFK = 5
+     AND od3.objectFK = e3.id
+     AND od3.del = 'no'
+    WHERE e3.del = 'no'
+      AND (tt3.name IS NULL OR tt3.name NOT LIKE '%(IOC)%')
+      AND t3.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      -- AND t3.tournament_templateFK = <tournament_template_id>
+
+    UNION ALL
+
+    SELECT od4.id
+    FROM statistic s4
+    JOIN tournament t4
+      ON t4.id = s4.objectFK
+     AND t4.del = 'no'
+    JOIN tournament_template tt4
+      ON tt4.id = t4.tournament_templateFK
+     AND tt4.del = 'no'
+     AND tt4.sportFK = 37
+    JOIN object_discipline od4
+      ON od4.object_typeFK = 83
+     AND od4.objectFK = s4.id
+     AND od4.del = 'no'
+    WHERE s4.del = 'no'
+      AND s4.statistic_typeFK = 11
+      AND s4.object_typeFK = 3
+      AND (tt4.name IS NULL OR tt4.name NOT LIKE '%(IOC)%')
+      AND t4.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      -- AND t4.tournament_templateFK = <tournament_template_id>
+) cov
+
+ORDER BY sort_order, check_type, assignment_id;
