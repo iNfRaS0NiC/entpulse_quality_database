@@ -7303,6 +7303,73 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Equestrian 18.08.2026 20-35-07",
+                     "startedUtc":  "2026-08-18T18:35:06Z",
+                     "output":  "D:\\SQL\u0027s Output\\Equestrian 18.08.2026 20-35-07",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Equestrian-DQ-098",
+                                        "runKey":  "Equestrian-DQ-098",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PAIR_SIDES_CONTRADICT_EACH_OTHER",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  14,
+                                        "findings":  13,
+                                        "eligible":  376,
+                                        "seconds":  6.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-108",
+                                        "runKey":  "Equestrian-DQ-108",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PAIR_FIELD_CARRIED_BY_ONE_SIDE_ONLY",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  11,
+                                        "findings":  10,
+                                        "eligible":  376,
+                                        "seconds":  7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-109",
+                                        "runKey":  "Equestrian-DQ-109",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RANKED_PARTICIPATION_HOLDING_NO_MEASURE_WHERE_THE_FIELD_IS_MEASURED",
+                                        "category":  "MISSING_VALUES",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  1419,
+                                        "findings":  1418,
+                                        "eligible":  109933,
+                                        "seconds":  5.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-110",
+                                        "runKey":  "Equestrian-DQ-110",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NAME_STOPPED_AT_THE_STORAGE_CEILING",
+                                        "category":  "MALFORMED_NAME",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  87,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "15DvzC1TLzhMB9bXeyy-2OUa0Xmfo0Mn84-isqYSs9cU"

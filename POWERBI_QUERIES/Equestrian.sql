@@ -1215,11 +1215,16 @@ SELECT
 -- stores a ride as two participant rows. A rider and the horse it rode are one result written
 -- twice, so the two rows are a mirror: measured 2026-08-18 across 10741 pairs and eleven data
 -- fields, Rank, Comment, Penalties, Score, Time, Points, Percentage and both Jump Off fields
--- agree on every single pair, and not once does one side carry a value the other lacks. Only
--- Team and Medal disagree at all, on 20 and 2 pairs.
+-- agree on every single pair where both sides carry the field. Only Team and Medal disagree at
+-- all, on 20 and 2 pairs.
 -- A pair holding two riders or two horses is not audited here: that is a different defect and
--- Equestrian-DQ-060 and Equestrian-DQ-100 own it. Fields the pair does not use are skipped
--- rather than reported, so an unwritten field is never read as a contradiction.
+-- Equestrian-DQ-060 and Equestrian-DQ-100 own it.
+-- What this statement cannot see, and what it must not be read as clearing: a field written on
+-- one side and absent from the other. Comparing needs both values to exist, so a pair where
+-- only the rider carries Team forms no group here at all and falls silently outside the
+-- question rather than passing it. Measured 2026-08-18 that is 255 pairs on Team, one on
+-- Comment and one on Medal, none of which this returns. Equestrian-DQ-108 owns them, and this
+-- comment claimed the opposite until it was measured on 2026-08-18.
 FROM (
     SELECT
         s.id AS statistic_id,
@@ -2636,3 +2641,363 @@ WHERE op.object = 'sport'
   AND op.del = 'no'
 
 ORDER BY sort_order, check_type, participant_name;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-108
+    -- Name - COMP.RANK_PAIR_FIELD_CARRIED_BY_ONE_SIDE_ONLY
+    -- What it does: Flags Comp.Rank pairs holding a data field on the rider row or the horse row alone, where the same record writes that field on both sides for other pairs.
+    CASE
+        WHEN g.athlete_rows > 0 THEN 'Comp_Rank_Field_On_The_Rider_Row_Only'
+        ELSE 'Comp_Rank_Field_On_The_Horse_Row_Only'
+    END AS check_type,
+    g.statistic_id,
+    s.name AS statistic_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    g.pair_value,
+    sdt.name AS field_name,
+    g.pairs_with_both_sides AS same_field_on_both_sides_here,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A rider and the horse it rode are two rows and one competitor,
+-- so the sport writes the ride's result into both. Equestrian-DQ-098 asks whether the two rows
+-- disagree; this asks whether one of them is simply absent, which is a different defect and one
+-- that check cannot see - it compares two values and needs both to exist before it can compare.
+-- Measured 2026-08-18, 255 pairs carry Team on the rider row alone, one carries Comment on the
+-- horse row alone and one carries Medal on the rider row alone.
+-- Most of the 255 are not reported and the condition is why. Summer Olympics 2016 and 2020 write
+-- Team on the rider row for their entire field and never on a horse row at all - 107 and 100
+-- pairs, no exceptions - so within those records the one-sided form is the convention rather
+-- than an omission, and a shape reaching a whole field is a format. The condition therefore
+-- reports a one-sided value only where the same Comp.Rank record writes that field on both
+-- sides for some other pair, which is the record contradicting itself rather than following a
+-- convention this project does not own. That leaves 10: nine on the rider row and one on the
+-- horse row.
+-- The grain is the Comp.Rank record and not the tournament, which is what makes it 10 rather
+-- than 48. Eventing European Championships 2017 holds two records, and one of them writes Team
+-- one-sidedly throughout while the other writes it both ways; read per tournament that is 40
+-- findings, read per record it is none, because neither record contradicts itself. The record
+-- is the right grain because it is what a convention belongs to - one load, one writer.
+-- Pairs holding two riders or two horses are not audited: Equestrian-DQ-100 owns that.
+FROM (
+  SELECT
+      w.*,
+      SUM(CASE WHEN w.athlete_rows > 0 AND w.horse_rows > 0 THEN 1 ELSE 0 END)
+          OVER (PARTITION BY w.statistic_id, w.field_id) AS pairs_with_both_sides
+  FROM (
+    SELECT
+        pr.statistic_id,
+        pr.pair_value,
+        v.statistic_data_typeFK AS field_id,
+        SUM(CASE WHEN pr.athlete_row = v.statistic_participants11FK THEN 1 ELSE 0 END) AS athlete_rows,
+        SUM(CASE WHEN pr.horse_row = v.statistic_participants11FK THEN 1 ELSE 0 END) AS horse_rows
+    FROM (
+        SELECT
+            s2.id AS statistic_id,
+            sd2.value AS pair_value,
+            MAX(CASE WHEN p2.type = 'athlete' THEN sp2.id END) AS athlete_row,
+            MAX(CASE WHEN p2.type = 'horse' THEN sp2.id END) AS horse_row
+        FROM statistic s2
+        JOIN tournament t2
+          ON t2.id = s2.objectFK
+         AND t2.del = 'no'
+        JOIN tournament_template tt2
+          ON tt2.id = t2.tournament_templateFK
+         AND tt2.del = 'no'
+         AND tt2.sportFK = 37
+        JOIN statistic_participants11 sp2
+          ON sp2.statisticFK = s2.id
+         AND sp2.del = 'no'
+        JOIN statistic_data11 sd2
+          ON sd2.statistic_participants11FK = sp2.id
+         AND sd2.statistic_data_typeFK = 1276
+         AND sd2.del = 'no'
+         AND sd2.value IS NOT NULL
+         AND sd2.value <> ''
+        JOIN participant p2
+          ON p2.id = sp2.participantFK
+         AND p2.del = 'no'
+        WHERE s2.del = 'no'
+          AND s2.statistic_typeFK = 11
+          AND s2.object_typeFK = 3
+          AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
+          AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+        GROUP BY
+            s2.id,
+            sd2.value
+        HAVING
+            COUNT(DISTINCT CASE WHEN p2.type = 'athlete' THEN sp2.id END) = 1
+        AND COUNT(DISTINCT CASE WHEN p2.type = 'horse' THEN sp2.id END) = 1
+    ) pr
+    JOIN statistic_data11 v
+      ON v.statistic_participants11FK IN (pr.athlete_row, pr.horse_row)
+     AND v.del = 'no'
+     AND v.statistic_data_typeFK <> 1276
+     AND v.value IS NOT NULL
+     AND v.value <> ''
+    GROUP BY
+        pr.statistic_id,
+        pr.pair_value,
+        v.statistic_data_typeFK
+  ) w
+) g
+JOIN statistic_data_type sdt
+  ON sdt.id = g.field_id
+JOIN statistic s
+  ON s.id = g.statistic_id
+ AND s.del = 'no'
+JOIN tournament t
+  ON t.id = s.objectFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+WHERE (g.athlete_rows = 0 OR g.horse_rows = 0)
+  AND g.pairs_with_both_sides > 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t
+  ON t.id = s.objectFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 37
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM statistic_participants11 sp9
+      JOIN statistic_data11 pr9
+        ON pr9.statistic_participants11FK = sp9.id
+       AND pr9.statistic_data_typeFK = 1276
+       AND pr9.del = 'no'
+      WHERE sp9.statisticFK = s.id
+        AND sp9.del = 'no'
+  )
+
+ORDER BY sort_order, statistic_id, pair_value;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-109
+    -- Name - EVENT_RANKED_PARTICIPATION_HOLDING_NO_MEASURE_WHERE_THE_FIELD_IS_MEASURED
+    -- What it does: Flags ranked event participations carrying none of the sport's measuring result types, in events where part of the field carries one.
+    'Ranked_Participation_Without_Any_Measure' AS check_type,
+    f.participation_id,
+    f.event_id,
+    f.event_name,
+    f.event_startdate,
+    f.discipline,
+    f.template_name,
+    f.tournament_name,
+    f.rider_name,
+    f.rank_value,
+    f.ranked_field,
+    f.measured_in_field,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A place in a ranked field is produced by something - a mark, a
+-- fault count, a time, a points total. This asks whether the participation carrying the place
+-- also carries any of them: 644 Score, 312 Errors, 101 Duration, 102 Points, 6 Running Score,
+-- 515 and 516 Jump Off, 545 Penalties. Eight result types, and the participation must hold none.
+-- Equestrian-DQ-093 asks a narrower form of this and returns 336: it reads 644 Score alone, so
+-- it cannot see a dressage card measured on points or an eventing card measured on penalties.
+-- Reading all eight raises it to 1418 across 385 events, and the extra thousand are Dressage and
+-- Eventing rather than more of the same.
+-- The condition that makes it mean anything is the last one. Measured 2026-08-18, 66282 ranked
+-- participations across 2867 events carry no measure at all and take the whole ranked field with
+-- them - 55513 of those in Jumping, where the sport is loaded with a place and nothing else.
+-- That is the format and it is not reported. What is reported is the 1418 sitting in a field
+-- whose other members are measured, where the event itself proves a measure was available and
+-- this card did not get one.
+-- 0xC2A0 is replaced before the emptiness test because ../SPORTS/Equestrian.md records 69 Score
+-- values whose entire content is one non-breaking space; TRIM does not remove it and a naive
+-- test reads those cards as measured.
+FROM (
+    SELECT
+        ep.id AS participation_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        COALESCE(d.name, '(none)') AS discipline,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        p.name AS rider_name,
+        CAST(rk.value AS UNSIGNED) AS rank_value,
+        COUNT(*) OVER (PARTITION BY e.id) AS ranked_field,
+        SUM(CASE WHEN mv.measured = 1 THEN 1 ELSE 0 END) OVER (PARTITION BY e.id) AS measured_in_field,
+        mv.measured AS this_one_measured
+    FROM event_participants ep
+    JOIN result rk
+      ON rk.event_participantsFK = ep.id
+     AND rk.result_typeFK = 100
+     AND rk.del = 'no'
+     AND rk.value REGEXP '^[0-9]+$'
+    JOIN event e
+      ON e.id = ep.eventFK
+     AND e.del = 'no'
+    JOIN tournament_stage ts
+      ON ts.id = e.tournament_stageFK
+     AND ts.del = 'no'
+    JOIN tournament t
+      ON t.id = ts.tournamentFK
+     AND t.del = 'no'
+    JOIN tournament_template tt
+      ON tt.id = t.tournament_templateFK
+     AND tt.del = 'no'
+     AND tt.sportFK = 37
+    JOIN participant p
+      ON p.id = ep.participantFK
+     AND p.del = 'no'
+    LEFT JOIN object_discipline od
+      ON od.object_typeFK = 5
+     AND od.objectFK = e.id
+     AND od.del = 'no'
+    LEFT JOIN discipline d
+      ON d.id = od.disciplineFK
+    JOIN (
+        SELECT
+            ep3.id AS participation_id,
+            MAX(CASE WHEN m.id IS NULL THEN 0 ELSE 1 END) AS measured
+        FROM event_participants ep3
+        JOIN event e3
+          ON e3.id = ep3.eventFK
+         AND e3.del = 'no'
+        JOIN tournament_stage ts3
+          ON ts3.id = e3.tournament_stageFK
+         AND ts3.del = 'no'
+        JOIN tournament t3
+          ON t3.id = ts3.tournamentFK
+         AND t3.del = 'no'
+        JOIN tournament_template tt3
+          ON tt3.id = t3.tournament_templateFK
+         AND tt3.del = 'no'
+         AND tt3.sportFK = 37
+        LEFT JOIN result m
+          ON m.event_participantsFK = ep3.id
+         AND m.del = 'no'
+         AND m.result_typeFK IN (644, 312, 101, 102, 6, 515, 516, 545)
+         AND m.value IS NOT NULL
+         AND TRIM(REPLACE(m.value, 0xC2A0, '')) <> ''
+        WHERE ep3.del = 'no'
+          AND t3.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t3.tournament_templateFK = <tournament_template_id>
+        GROUP BY
+            ep3.id
+    ) mv
+      ON mv.participation_id = ep.id
+    WHERE ep.del = 'no'
+      AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+) f
+WHERE f.this_one_measured = 0
+  AND f.measured_in_field > 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN result rk
+  ON rk.event_participantsFK = ep.id
+ AND rk.result_typeFK = 100
+ AND rk.del = 'no'
+ AND rk.value REGEXP '^[0-9]+$'
+JOIN event e
+  ON e.id = ep.eventFK
+ AND e.del = 'no'
+JOIN tournament_stage ts
+  ON ts.id = e.tournament_stageFK
+ AND ts.del = 'no'
+JOIN tournament t
+  ON t.id = ts.tournamentFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+ AND tt.sportFK = 37
+WHERE ep.del = 'no'
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+
+ORDER BY sort_order, event_id, rank_value;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-110
+    -- Name - TEMPLATE_NAME_STOPPED_AT_THE_STORAGE_CEILING
+    -- What it does: Flags tournament templates whose name is as long as any name the sport stores, which is where a name clipped by the column stops rather than where it ends.
+    'Template_Name_At_The_Storage_Ceiling' AS check_type,
+    tt.id AS template_id,
+    tt.name AS template_name,
+    LENGTH(tt.name) AS name_length,
+    SUBSTRING_INDEX(tt.name, ' ', -1) AS last_word,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A name that stops exactly where the storage stops has not
+-- ended, it has been cut, and nothing downstream can tell the difference: the clipped name
+-- travels into every report, every board tab and every join anybody makes on it.
+-- Measured 2026-08-18 the sport's template names reach 50 characters and no further, and four
+-- sit at 50. Two of them end mid-word - FEI Jumping World Cup Northern Central European Le and
+-- the Southern one beside it, each missing the rest of League - while the two North America
+-- names reach exactly 50 and end on a complete League. So the ceiling is real and it clips some
+-- names and merely touches others, which is why last_word is projected: it turns the finding
+-- into a one-glance decision instead of a measurement the reviewer has to repeat.
+-- The ceiling is read from the data rather than written in, so the statement keeps working if
+-- the column is widened: it reports the names at whatever the current maximum is, and where that
+-- maximum is a real title rather than a cut one the finding is read and dismissed. That is the
+-- honest form. A hard-coded 50 would go silently blind the day the column changes, which is the
+-- day this check is most needed.
+-- No GLOBAL template asks this. It is written here because Equestrian is where it was found;
+-- the question is not sport-specific and belongs in GLOBAL_DQ if anybody promotes it.
+FROM tournament_template tt
+WHERE tt.del = 'no'
+  AND tt.sportFK = 37
+  AND tt.id NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND tt.id = <tournament_template_id>
+  AND LENGTH(tt.name) = (
+      SELECT MAX(LENGTH(tt2.name))
+      FROM tournament_template tt2
+      WHERE tt2.del = 'no'
+        AND tt2.sportFK = 37
+        AND tt2.id NOT IN (12779, 12780, 12781, 12785, 12787)
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT tt.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament_template tt
+WHERE tt.del = 'no'
+  AND tt.sportFK = 37
+  AND tt.id NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND tt.id = <tournament_template_id>
+  AND tt.name IS NOT NULL
+  AND tt.name <> ''
+
+ORDER BY sort_order, template_id;
