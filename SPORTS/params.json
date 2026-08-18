@@ -1539,6 +1539,10 @@
             "GLOBAL-DQ-116": {
                 "signal": "Not applicable",
                 "reason": "the template cannot separate a contradicted tie from an unscored one, and this sport writes result type 644 Score on 2125 of its 5511 ranked events, so 6226 of the 6308 rows it returns are RANK_TIE_SCORE_MISSING and say only that most events are not scored on that field. Equestrian-DQ-070 audits the scored events alone and returns 26."
+            },
+            "GLOBAL-DQ-014": {
+                "signal": "Sentinel",
+                "reason": "the scope is right and the population is empty today. The check compares a stage's gender against its template's and ignores mixed on either side, and measured 2026-08-18 every one of the sport's 3386 stages is mixed, so nothing is eligible. It is not structurally absent: tournament_stage.gender exists and is populated, and one template already carries a definite gender, so a stage written male or female tomorrow would be audited at once. Equestrian-DQ-072 reports the disagreement that exists today, which sits on the template side where this check cannot see it."
             }
         }
     }

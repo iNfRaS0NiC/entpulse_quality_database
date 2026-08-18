@@ -822,3 +822,79 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, event_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-072
+    -- Name - TEMPLATE_GENDER_NOT_REFLECTED_IN_ANY_STAGE
+    -- What it does: Flags templates declaring a gender that none of their stages carries.
+    'Template_Gender_Not_Reflected_In_Any_Stage' AS check_type,
+    tt.id AS tournament_template_id,
+    tt.name AS template_name,
+    tt.gender AS template_gender,
+    COUNT(DISTINCT ts.id) AS stage_count,
+    MIN(ts.gender) AS sample_stage_gender,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a template whose gender is a definite one - not mixed and
+-- not empty - where no stage beneath it carries that gender.
+-- It is the inverse of GLOBAL-DQ-014, which compares a stage against its template and ignores
+-- mixed on either side. That template therefore cannot see a template declaring a gender its
+-- own stages never carry, and in this sport that is where the disagreement sits: measured
+-- 2026-08-18 every one of the 3386 stages is mixed, so the comparison has nothing to audit,
+-- while one template of the 81 declares itself male and all 109 of its stages are mixed.
+-- Which side is wrong is not asserted here. What is asserted is that the two disagree, which
+-- is a thing somebody has to look at either way.
+FROM tournament_template tt
+JOIN tournament t
+  ON t.tournament_templateFK = tt.id
+ AND t.del = 'no'
+JOIN tournament_stage ts
+  ON ts.tournamentFK = t.id
+ AND ts.del = 'no'
+WHERE tt.del = 'no'
+  AND tt.sportFK = 37
+  AND tt.gender IS NOT NULL
+  AND TRIM(tt.gender) <> ''
+  AND LOWER(TRIM(tt.gender)) <> 'mixed'
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND NOT EXISTS (
+      SELECT 1
+      FROM tournament_stage ts2
+      JOIN tournament t2
+        ON t2.id = ts2.tournamentFK
+       AND t2.del = 'no'
+      WHERE t2.tournament_templateFK = tt.id
+        AND ts2.del = 'no'
+        AND LOWER(TRIM(ts2.gender)) = LOWER(TRIM(tt.gender))
+  )
+GROUP BY
+    tt.id,
+    tt.name,
+    tt.gender
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT tt.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament_template tt
+JOIN tournament t
+  ON t.tournament_templateFK = tt.id
+ AND t.del = 'no'
+JOIN tournament_stage ts
+  ON ts.tournamentFK = t.id
+ AND ts.del = 'no'
+WHERE tt.del = 'no'
+  AND tt.sportFK = 37
+  AND tt.gender IS NOT NULL
+  AND TRIM(tt.gender) <> ''
+  AND LOWER(TRIM(tt.gender)) <> 'mixed'
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, tournament_template_id;
