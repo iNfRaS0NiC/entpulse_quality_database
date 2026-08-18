@@ -1523,6 +1523,10 @@
             "GLOBAL-DQ-067": {
                 "signal": "Monitor",
                 "reason": "asserts that a lineup holding both genders holds them in equal number, which the sport does not require: 2040 of its 2818 mixed lineups are uneven. The proportion is the finding, and a shift in it would be worth reading."
+            },
+            "GLOBAL-DQ-004": {
+                "signal": "Not applicable",
+                "reason": "the template requires a stage's dates to equal its first and last event dates, and this sport does not store them that way: a stage is written as whole days, 00:00:00 to 23:59:59, so a stage containing every one of its events still differs from their span by the hours at each end. Measured 2026-08-18 that is 3303 of the 3338 stages reported. Equestrian-DQ-067 asserts containment instead and reports the 18 where an event genuinely falls outside."
             }
         }
     }

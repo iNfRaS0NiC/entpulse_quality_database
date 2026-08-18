@@ -416,3 +416,99 @@ WHERE s.del = 'no'
   )
 
 ORDER BY sort_order, statistic_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-067
+    -- Name - TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE
+    -- What it does: Flags tournament stages holding an event that starts outside the stage's own dates.
+    'Stage_Event_Outside_Date_Range' AS check_type,
+    x.tournament_stage_id,
+    x.tournament_stage_name,
+    x.template_name,
+    x.tournament_name,
+    x.stage_startdate,
+    x.stage_enddate,
+    x.earliest_event_startdate,
+    x.latest_event_startdate,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a stage whose first or last event starts before the stage
+-- begins or after it ends, so the stage does not contain the competition it names.
+-- GLOBAL-DQ-004 asserts something stronger and this sport does not store it. That template
+-- requires the stage dates to equal the first and last event dates; Equestrian writes a stage as
+-- whole days, from 00:00:00 to 23:59:59, so a stage containing every one of its events still
+-- differs from their span by the hours at each end. Measured 2026-08-18 that is 3303 of the 3338
+-- stages the template reports, and reading them says only that the sport rounds to the day.
+-- What is left once the rounding is allowed for is 18 stages where an event genuinely falls
+-- outside, and those are what this reports. The 17 stages that contain their events without
+-- being written as whole days are not reported either: containment is the rule, not the format.
+FROM (
+    SELECT
+        ts.id AS tournament_stage_id,
+        ts.name AS tournament_stage_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.startdate AS stage_startdate,
+        ts.enddate AS stage_enddate,
+        MIN(e.startdate) AS earliest_event_startdate,
+        MAX(e.startdate) AS latest_event_startdate
+    FROM tournament_stage ts
+    JOIN tournament t
+      ON t.id = ts.tournamentFK
+     AND t.del = 'no'
+    JOIN tournament_template tt
+      ON tt.id = t.tournament_templateFK
+     AND tt.del = 'no'
+    JOIN event e
+      ON e.tournament_stageFK = ts.id
+     AND e.del = 'no'
+    WHERE ts.del = 'no'
+      AND tt.sportFK = 37
+      AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      AND ts.startdate IS NOT NULL
+      AND ts.enddate IS NOT NULL
+      AND e.startdate IS NOT NULL
+    GROUP BY
+        ts.id,
+        ts.name,
+        tt.name,
+        t.name,
+        ts.startdate,
+        ts.enddate
+    HAVING
+        MIN(e.startdate) < ts.startdate
+     OR MAX(e.startdate) > ts.enddate
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ts.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament_stage ts
+JOIN tournament t
+  ON t.id = ts.tournamentFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+WHERE ts.del = 'no'
+  AND tt.sportFK = 37
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND ts.startdate IS NOT NULL
+  AND ts.enddate IS NOT NULL
+  AND EXISTS (
+      SELECT 1
+      FROM event e2
+      WHERE e2.tournament_stageFK = ts.id
+        AND e2.del = 'no'
+        AND e2.startdate IS NOT NULL
+  )
+
+ORDER BY sort_order, tournament_stage_id;
