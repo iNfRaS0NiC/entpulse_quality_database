@@ -1527,6 +1527,18 @@
             "GLOBAL-DQ-004": {
                 "signal": "Not applicable",
                 "reason": "the template requires a stage's dates to equal its first and last event dates, and this sport does not store them that way: a stage is written as whole days, 00:00:00 to 23:59:59, so a stage containing every one of its events still differs from their span by the hours at each end. Measured 2026-08-18 that is 3303 of the 3338 stages reported. Equestrian-DQ-067 asserts containment instead and reports the 18 where an event genuinely falls outside."
+            },
+            "GLOBAL-DQ-009": {
+                "signal": "Not applicable",
+                "reason": "the template reaches a participant through event_participants, lineup and the Comp.Rank shard, and a horse enters none of them: a participation names its horse through the horseFK reference property. So it reports 18203 horses, most of the register, where measured 2026-08-18 only 967 are genuinely unused. Equestrian-DQ-068 asks each type by the path that can carry it and returns 1207."
+            },
+            "GLOBAL-DQ-055": {
+                "signal": "Not applicable",
+                "reason": "a rider commonly rides two horses in one class here, so being entered twice is the sport rather than a duplicate: measured 2026-08-18, 3977 of the 3998 rider-and-event pairs the template returns name a different horse per entry, across 1270 of its 1273 events. Equestrian-DQ-069 asserts that the entries must name as many distinct horses as there are entries and returns 5."
+            },
+            "GLOBAL-DQ-116": {
+                "signal": "Not applicable",
+                "reason": "the template cannot separate a contradicted tie from an unscored one, and this sport writes result type 644 Score on 2125 of its 5511 ranked events, so 6226 of the 6308 rows it returns are RANK_TIE_SCORE_MISSING and say only that most events are not scored on that field. Equestrian-DQ-070 audits the scored events alone and returns 26."
             }
         }
     }

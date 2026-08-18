@@ -512,3 +512,313 @@ WHERE ts.del = 'no'
   )
 
 ORDER BY sort_order, tournament_stage_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-068
+    -- Name - PARTICIPANT_NO_PARTICIPATION_BY_OWN_PATH
+    -- What it does: Flags registered riders, horses and teams that no path in the sport reaches.
+    'No_Participation_By_Own_Path' AS check_type,
+    p.id AS participant_id,
+    p.name AS participant_name,
+    p.type AS participant_type,
+    p.gender AS participant_gender,
+    op.active AS registry_active_flag,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a participant the sport registers and never uses, asking
+-- each type by the path that can carry it.
+-- GLOBAL-DQ-009 asks the same question through event_participants, lineup and the Comp.Rank
+-- shard, and a horse enters none of those: a participation names its horse through the horseFK
+-- reference property instead. So the template reports 18203 horses, which is most of the
+-- register, and measured 2026-08-18 only 967 of them are genuinely unused.
+-- Here a rider or a team is looked for in the participation and lineup layers, and a horse in
+-- the horseFK values and the Comp.Rank shard. What comes back is 967 horses, 205 riders and 35
+-- teams that nothing in the sport reaches.
+-- No template filter is marked and none belongs here. The audited object is a registry entry,
+-- which has no tournament_template relation to narrow on, exactly as GLOBAL-DQ-009 has none.
+FROM object_participants op
+JOIN participant p
+  ON p.id = op.participantFK
+ AND p.del = 'no'
+ AND p.type IN ('athlete', 'horse', 'team')
+LEFT JOIN (
+    SELECT DISTINCT ep.participantFK AS participant_id
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 37
+    WHERE ep.del = 'no'
+) entered
+  ON entered.participant_id = p.id
+LEFT JOIN (
+    SELECT DISTINCT l.participantFK AS participant_id
+    FROM lineup l
+    JOIN event_participants ep2 ON ep2.id = l.event_participantsFK AND ep2.del = 'no'
+    JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+         AND tt2.sportFK = 37
+    WHERE l.del = 'no'
+) listed
+  ON listed.participant_id = p.id
+LEFT JOIN (
+    SELECT DISTINCT sp.participantFK AS participant_id
+    FROM statistic_participants11 sp
+    JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+         AND s.statistic_typeFK = 11 AND s.object_typeFK = 3
+    JOIN tournament t3 ON t3.id = s.objectFK AND t3.del = 'no'
+    JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
+         AND tt3.sportFK = 37
+    WHERE sp.del = 'no'
+) ranked
+  ON ranked.participant_id = p.id
+LEFT JOIN (
+    SELECT DISTINCT CAST(pr.value AS UNSIGNED) AS participant_id
+    FROM property pr
+    JOIN event_participants ep3 ON ep3.id = pr.objectFK AND ep3.del = 'no'
+    JOIN event e3 ON e3.id = ep3.eventFK AND e3.del = 'no'
+    JOIN tournament_stage ts3 ON ts3.id = e3.tournament_stageFK AND ts3.del = 'no'
+    JOIN tournament t4 ON t4.id = ts3.tournamentFK AND t4.del = 'no'
+    JOIN tournament_template tt4 ON tt4.id = t4.tournament_templateFK AND tt4.del = 'no'
+         AND tt4.sportFK = 37
+    WHERE pr.object = 'event_participants'
+      AND pr.name = 'horseFK'
+      AND pr.del = 'no'
+      AND pr.value <> ''
+      AND pr.value <> '0'
+) mounted
+  ON mounted.participant_id = p.id
+WHERE op.object = 'sport'
+  AND op.objectFK = 37
+  AND op.del = 'no'
+  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
+  AND entered.participant_id IS NULL
+  AND listed.participant_id IS NULL
+  AND ranked.participant_id IS NULL
+  AND mounted.participant_id IS NULL
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT p.id) AS eligible_count,
+    1 AS sort_order
+FROM object_participants op
+JOIN participant p
+  ON p.id = op.participantFK
+ AND p.del = 'no'
+ AND p.type IN ('athlete', 'horse', 'team')
+WHERE op.object = 'sport'
+  AND op.objectFK = 37
+  AND op.del = 'no'
+  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
+
+ORDER BY sort_order, participant_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-069
+    -- Name - EVENT_PARTICIPANTS_DUPLICATE_ON_ONE_HORSE
+    -- What it does: Flags events where a rider is entered more than once without a separate horse for each entry.
+    'Participant_Duplicate_Not_Explained_By_Horse' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.offending_rider_count,
+    x.offending_entry_count,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds an event in which one rider holds more entries than the
+-- distinct horses those entries name, so at least two of the entries describe the same ride or
+-- name no horse at all.
+-- GLOBAL-DQ-055 reports a rider entered twice however the entries differ, and in this sport a
+-- rider commonly rides two horses in one class: measured 2026-08-18 that is 3977 of the 3998
+-- rider-and-event pairs it returns, across 1270 of its 1273 events. Entering twice is not the
+-- defect here; entering twice on one horse is.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(*) AS offending_rider_count,
+        SUM(g.entries) AS offending_entry_count
+    FROM (
+        SELECT
+            ep.eventFK AS event_id,
+            ep.participantFK AS participant_id,
+            COUNT(DISTINCT ep.id) AS entries,
+            COUNT(DISTINCT CASE WHEN pr.value IS NOT NULL AND pr.value <> '' AND pr.value <> '0'
+                                THEN pr.value END) AS distinct_horses
+        FROM event_participants ep
+        JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+             AND tt2.sportFK = 37
+        LEFT JOIN property pr
+          ON pr.object = 'event_participants'
+         AND pr.objectFK = ep.id
+         AND pr.name = 'horseFK'
+         AND pr.del = 'no'
+        WHERE ep.del = 'no'
+          AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+        GROUP BY
+            ep.eventFK,
+            ep.participantFK
+        HAVING
+            COUNT(DISTINCT ep.id) > 1
+        AND COUNT(DISTINCT CASE WHEN pr.value IS NOT NULL AND pr.value <> '' AND pr.value <> '0'
+                                THEN pr.value END) < COUNT(DISTINCT ep.id)
+    ) g
+    JOIN event e ON e.id = g.event_id AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    GROUP BY
+        e.id,
+        e.name,
+        e.startdate,
+        tt.name,
+        t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 37
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1 FROM event_participants ep4
+      WHERE ep4.eventFK = e.id AND ep4.del = 'no'
+  )
+
+ORDER BY sort_order, event_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-070
+    -- Name - EVENT_RESULTS_RANK_TIE_CONTRADICTED_BY_SCORE_WHERE_SCORED
+    -- What it does: Flags events where competitors share a place while their scores disagree.
+    'Rank_Tie_Contradicted_By_Score' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.contradicted_places,
+    x.contradicted_competitors,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds an event holding a place shared by competitors whose
+-- Score values differ, counted only where every competitor on that place actually carries a
+-- Score.
+-- GLOBAL-DQ-116 asks the same thing and cannot separate a contradiction from an absence. It
+-- reports RANK_TIE_SCORE_MISSING wherever a shared place has no Score to compare, and this
+-- sport writes Score on 2125 of its 5511 ranked events, so measured 2026-08-18 that class is
+-- 6226 of the 6308 rows it returns and says only that most events are not scored on 644.
+-- The 82 rows of the other class are the finding, and this reports the events holding them.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(*) AS contradicted_places,
+        SUM(g.holders) AS contradicted_competitors
+    FROM (
+        SELECT
+            ep.eventFK AS event_id,
+            rk.value AS rank_value,
+            COUNT(DISTINCT ep.id) AS holders,
+            COUNT(DISTINCT sc.value) AS distinct_scores
+        FROM event_participants ep
+        JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+             AND tt2.sportFK = 37
+        JOIN result rk
+          ON rk.event_participantsFK = ep.id
+         AND rk.result_typeFK = 100
+         AND rk.del = 'no'
+         AND rk.value IS NOT NULL
+         AND rk.value <> ''
+        JOIN result sc
+          ON sc.event_participantsFK = ep.id
+         AND sc.result_typeFK = 644
+         AND sc.del = 'no'
+         AND sc.value IS NOT NULL
+         AND sc.value <> ''
+        WHERE ep.del = 'no'
+          AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+        GROUP BY
+            ep.eventFK,
+            rk.value
+        HAVING
+            COUNT(DISTINCT ep.id) > 1
+        AND COUNT(DISTINCT sc.value) > 1
+    ) g
+    JOIN event e ON e.id = g.event_id AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    GROUP BY
+        e.id,
+        e.name,
+        e.startdate,
+        tt.name,
+        t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 37
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep5
+      JOIN result sc5
+        ON sc5.event_participantsFK = ep5.id
+       AND sc5.result_typeFK = 644
+       AND sc5.del = 'no'
+      WHERE ep5.eventFK = e.id
+        AND ep5.del = 'no'
+  )
+
+ORDER BY sort_order, event_id;
