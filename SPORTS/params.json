@@ -1494,6 +1494,24 @@
             "RESULT_SCORE_TYPE_ID": "644 Score, written as two concatenated marks in Grand Prix Freestyle",
             "ROUND_TYPE_LIST": "the 12 round types the sport contests; round_typeFK 0 is deliberately absent because it is the missing-round-type gap rather than a round the sport holds",
             "SCOPE_TYPE_LIST": "305 final_result, the sport's only scope container type and one it barely uses"
+        },
+        "_checkSignal": {
+            "GLOBAL-DQ-096": {
+                "signal": "Not applicable",
+                "reason": "the sport ranks a whole field rather than pairing two sides, so an event name has no participants to name and names the competition format instead - GP - Grand Prix, World Cup Table A. Every event in the sport is reported. SPORTS/Equestrian.md records the model as Listing under DATABASE.md DB-SEM-015."
+            },
+            "GLOBAL-DQ-083": {
+                "signal": "Not applicable",
+                "reason": "a Listing sport enters its whole field in one event, so the participant count varies with entries and is never two by design; 5455 of the 5471 events reported are MORE_THAN_TWO. SPORTS/Equestrian.md records the model."
+            },
+            "GLOBAL-DQ-113": {
+                "signal": "Not applicable",
+                "reason": "every Comp.Rank here holds an athlete and the horse it rode, bound by statistic_data11 field 1276 Pair, so a mixed participant type is the storage rather than a defect. SPORTS/Equestrian.md Statistics records the mechanism."
+            },
+            "GLOBAL-DQ-030": {
+                "signal": "Not applicable",
+                "reason": "the template looks for every Comp.Rank participant in event_participants, and the horse is never one: the participation names it through the horseFK reference property, so the template reports every horse in the sport. Equestrian-DQ-061 asks the same question with each type looked for on its own path."
+            }
         }
     }
 }
