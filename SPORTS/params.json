@@ -608,6 +608,18 @@
             "GLOBAL-DQ-090": {
                 "signal": "Monitor",
                 "reason": "The check reads every event holding either of the mirrored score types and does not narrow to events that have been played, so its output is dominated by fixtures still to come - European Championship 2028 semi-finals carrying placeholder participants such as Winner SF 1, with a running score written and no final result yet. A mirrored pair that stopped being written for a finished match is the defect this check exists for and remains worth reading; the unplayed majority is the calendar. SPORTS/Soccer.md owns the reasoning."
+            },
+            "GLOBAL-DQ-066": {
+                "signal": "Sentinel",
+                "reason": "One of the three SPORTS/Soccer.md records under 'Checks whose eligible population is empty', measured 2026-08-05 and unchanged since. Its population is the Comp.Rank statistic whose Gender config reads mixed, and the config carries only male and female. Not a structural absence: mixed is a value of a populated column, and a value with no rows today is a data state rather than a missing layer - excluding the check on that basis would disable it for the day those rows arrive, which is the day it was written for."
+            },
+            "GLOBAL-DQ-067": {
+                "signal": "Sentinel",
+                "reason": "The lineup half of what GLOBAL-DQ-066 reads on the statistic layer, and empty for the same reason: its population is the event participant that is a team of gender mixed, and team participants here are only male and female. Recorded under 'Checks whose eligible population is empty' in SPORTS/Soccer.md, measured 2026-08-05."
+            },
+            "GLOBAL-DQ-098": {
+                "signal": "Sentinel",
+                "reason": "Its population is the athlete Comp.Rank row holding a numeric Rank, and this sport's squad lists carry no Rank row at all - so there is no ranking for the check to find shared places in. The third of the three SPORTS/Soccer.md records under 'Checks whose eligible population is empty', measured 2026-08-05. The scope is aimed correctly at a population that does not exist yet."
             }
         }
     },
