@@ -1587,6 +1587,30 @@
             "GLOBAL-DQ-014": {
                 "signal": "Sentinel",
                 "reason": "the scope is right and the population is empty today. The check compares a stage's gender against its template's and ignores mixed on either side, and measured 2026-08-18 every one of the sport's 3386 stages is mixed, so nothing is eligible. It is not structurally absent: tournament_stage.gender exists and is populated, and one template already carries a definite gender, so a stage written male or female tomorrow would be audited at once. Equestrian-DQ-072 reports the disagreement that exists today, which sits on the template side where this check cannot see it."
+            },
+            "GLOBAL-DQ-021": {
+                "signal": "Not applicable",
+                "reason": "the sport writes result type 644 Score on 2125 of its 5511 ranked events, so 665 of the 704 rows this returns are RANK_DUPLICATE_WITHOUT_VALUE and say only that the event was never scored on that field. Equestrian-DQ-092 asks the same of the scored events alone."
+            },
+            "GLOBAL-DQ-122": {
+                "signal": "Not applicable",
+                "reason": "3373 of the 3700 rows are DECIDING_VALUE_ABSENT_FROM_EVENT, where the event carries no Score at all, which is the sport writing its result elsewhere rather than a gap in a card. Equestrian-DQ-093 reports the 327 events that scored part of the field and not the rest."
+            },
+            "GLOBAL-DQ-040": {
+                "signal": "Not applicable",
+                "reason": "the sport keeps 630 Comp.Rank records against 915 tournaments, so 4602 of the 4649 rows are TOURNAMENT_HAS_NO_COMP_RANK and measure how much of the sport the ranking layer covers rather than a defect per final. Equestrian-DQ-094 reports the 47 finals whose tournament does keep a ranking and is missing from it."
+            },
+            "GLOBAL-DQ-037": {
+                "signal": "Monitor",
+                "reason": "most finals here are World Cup league legs, which rank a field without awarding a medal, so 2920 of the 2921 rows are No_Medals_At_All. The proportion is the finding; a single medalless final is not a defect."
+            },
+            "GLOBAL-DQ-038": {
+                "signal": "Monitor",
+                "reason": "the medal_related property sits on 2005 events in the whole sport, so 2997 of the 4978 medal-round events lack it. The proportion is the finding, and it should move as the property is filled."
+            },
+            "GLOBAL-DQ-019": {
+                "signal": "Out of client scope",
+                "reason": "it reads result type 101 Duration, which is one of the nine result types the client did not take on 2026-08-18. The sport stores it and fills it on 254 events, so the check would run and report a real population belonging to somebody else. It lifts unchanged if the boundary moves."
             }
         }
     }
