@@ -5595,6 +5595,43 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Equestrian 18.08.2026 15-47-56",
+                     "startedUtc":  "2026-08-18T13:47:55Z",
+                     "output":  "D:\\SQL\u0027s Output\\Equestrian 18.08.2026 15-47-56",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Equestrian-DQ-103",
+                                        "runKey":  "Equestrian-DQ-103",
+                                        "parameters":  "",
+                                        "name":  "EVENT_HORSE_RIDDEN_BY_MORE_THAN_ONE_RIDER",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  45,
+                                        "findings":  44,
+                                        "eligible":  4970,
+                                        "seconds":  2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-104",
+                                        "runKey":  "Equestrian-DQ-104",
+                                        "parameters":  "",
+                                        "name":  "EVENT_LINEUP_HORSE_RIDDEN_BY_MORE_THAN_ONE_MEMBER",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  456,
+                                        "seconds":  1.5,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "15DvzC1TLzhMB9bXeyy-2OUa0Xmfo0Mn84-isqYSs9cU"

@@ -1866,3 +1866,280 @@ FROM (
 ) cov
 
 ORDER BY sort_order, check_type, assignment_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-103
+    -- Name - EVENT_HORSE_RIDDEN_BY_MORE_THAN_ONE_RIDER
+    -- What it does: Flags events in which one horse is entered under more than one rider.
+    'Event_Horse_Ridden_By_More_Than_One_Rider' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.affected_horse_count,
+    x.horse_list,
+    x.sample_group,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A horse contests a class once and under one rider. A horse
+-- carrying two riders inside one event is therefore not a shape the sport can produce, whatever
+-- the discipline: the pair is the competitor, and two pairs cannot share the animal.
+-- Equestrian-DQ-069 owns the mirror defect, a rider entered twice without a second horse. This
+-- is the same rule read from the other side, and neither implies the other: a rider on two
+-- horses is normal here and a horse under two riders never is.
+-- Measured 2026-08-18 it returns 44 events holding 46 such horses - two events hold two, the
+-- rest one each - and every one of the 46 carries exactly two riders and never three. They are
+-- spread across all four disciplines, 20 Jumping, 18 Dressage, 5 Eventing and 3 on the legacy
+-- Show Jumping value, and across every year from 2004 to 2026. A defect that appears at the
+-- same low rate in every discipline and every season is not a format one discipline uses.
+-- Only a horse reference that resolves to an active participant is audited. A reference
+-- pointing nowhere is a different defect and Equestrian-DQ-099 owns it; counted here it would
+-- add 12 more that say nothing about who rode what.
+-- Three of the 46 are worth naming because they are not what they look like: the two riders
+-- carry the same name. A rider recorded twice splits one entry into two under one horse, so
+-- this check reaches the duplicate-participant question from a side no DUPLICATE template does.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(*) AS affected_horse_count,
+        GROUP_CONCAT(DISTINCT g.horse_name ORDER BY g.horse_name SEPARATOR ' / ') AS horse_list,
+        MIN(CONCAT('horse=', g.horse_name, ' riders=', g.rider_names)) AS sample_group
+    FROM (
+        SELECT
+            ep.eventFK AS event_id,
+            h.id AS horse_id,
+            h.name AS horse_name,
+            GROUP_CONCAT(DISTINCT p.name ORDER BY p.name SEPARATOR ' + ') AS rider_names
+        FROM event_participants ep
+        JOIN event e2
+          ON e2.id = ep.eventFK
+         AND e2.del = 'no'
+        JOIN tournament_stage ts2
+          ON ts2.id = e2.tournament_stageFK
+         AND ts2.del = 'no'
+        JOIN tournament t2
+          ON t2.id = ts2.tournamentFK
+         AND t2.del = 'no'
+        JOIN tournament_template tt2
+          ON tt2.id = t2.tournament_templateFK
+         AND tt2.del = 'no'
+         AND tt2.sportFK = 37
+        JOIN participant p
+          ON p.id = ep.participantFK
+         AND p.del = 'no'
+        JOIN property pr
+          ON pr.object = 'event_participants'
+         AND pr.objectFK = ep.id
+         AND pr.name = 'horseFK'
+         AND pr.del = 'no'
+         AND pr.value REGEXP '^[0-9]+$'
+        JOIN participant h
+          ON h.id = CAST(pr.value AS UNSIGNED)
+         AND h.del = 'no'
+        WHERE ep.del = 'no'
+          AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+        GROUP BY
+            ep.eventFK,
+            h.id,
+            h.name
+        HAVING
+            COUNT(DISTINCT ep.participantFK) > 1
+    ) g
+    JOIN event e
+      ON e.id = g.event_id
+     AND e.del = 'no'
+    JOIN tournament_stage ts
+      ON ts.id = e.tournament_stageFK
+     AND ts.del = 'no'
+    JOIN tournament t
+      ON t.id = ts.tournamentFK
+     AND t.del = 'no'
+    JOIN tournament_template tt
+      ON tt.id = t.tournament_templateFK
+     AND tt.del = 'no'
+    GROUP BY
+        e.id,
+        e.name,
+        e.startdate,
+        tt.name,
+        t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts
+  ON ts.id = e.tournament_stageFK
+ AND ts.del = 'no'
+JOIN tournament t
+  ON t.id = ts.tournamentFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 37
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep4
+      JOIN property pr4
+        ON pr4.object = 'event_participants'
+       AND pr4.objectFK = ep4.id
+       AND pr4.name = 'horseFK'
+       AND pr4.del = 'no'
+      WHERE ep4.eventFK = e.id
+        AND ep4.del = 'no'
+  )
+
+ORDER BY sort_order, event_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-104
+    -- Name - EVENT_LINEUP_HORSE_RIDDEN_BY_MORE_THAN_ONE_MEMBER
+    -- What it does: Flags events in which one horse is named by more than one lineup member.
+    'Lineup_Horse_Ridden_By_More_Than_One_Member' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.affected_horse_count,
+    x.horse_list,
+    x.sample_group,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: The lineup half of Equestrian-DQ-103, and a separate statement
+-- because the audited population is different: a lineup names the members of a team, so a horse
+-- shared here is shared inside one squad or between two squads of the same event, and the
+-- coverage denominator is the events that field teams rather than every event with a horse.
+-- A team fields pairs, not riders. Two members of a team, or two teams in one event, naming the
+-- same animal is the same impossibility the event layer reports and is reached by a different
+-- path, so neither statement finds the other's rows.
+-- Measured 2026-08-18 it returns 11 horse-and-event pairs across 8 events. The number is small
+-- because the layer is: 18145 lineup rows against 115243 participations.
+-- Only a horse reference that resolves to an active participant is audited; a reference
+-- pointing nowhere is Equestrian-DQ-101's defect, not this one.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(*) AS affected_horse_count,
+        GROUP_CONCAT(DISTINCT g.horse_name ORDER BY g.horse_name SEPARATOR ' / ') AS horse_list,
+        MIN(CONCAT('horse=', g.horse_name, ' riders=', g.rider_names)) AS sample_group
+    FROM (
+        SELECT
+            ep.eventFK AS event_id,
+            h.id AS horse_id,
+            h.name AS horse_name,
+            GROUP_CONCAT(DISTINCT p.name ORDER BY p.name SEPARATOR ' + ') AS rider_names
+        FROM lineup l
+        JOIN event_participants ep
+          ON ep.id = l.event_participantsFK
+         AND ep.del = 'no'
+        JOIN event e2
+          ON e2.id = ep.eventFK
+         AND e2.del = 'no'
+        JOIN tournament_stage ts2
+          ON ts2.id = e2.tournament_stageFK
+         AND ts2.del = 'no'
+        JOIN tournament t2
+          ON t2.id = ts2.tournamentFK
+         AND t2.del = 'no'
+        JOIN tournament_template tt2
+          ON tt2.id = t2.tournament_templateFK
+         AND tt2.del = 'no'
+         AND tt2.sportFK = 37
+        JOIN participant p
+          ON p.id = l.participantFK
+         AND p.del = 'no'
+        JOIN property pr
+          ON pr.object = 'lineup'
+         AND pr.objectFK = l.id
+         AND pr.name = 'horseFK'
+         AND pr.del = 'no'
+         AND pr.value REGEXP '^[0-9]+$'
+        JOIN participant h
+          ON h.id = CAST(pr.value AS UNSIGNED)
+         AND h.del = 'no'
+        WHERE l.del = 'no'
+          AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+        GROUP BY
+            ep.eventFK,
+            h.id,
+            h.name
+        HAVING
+            COUNT(DISTINCT l.participantFK) > 1
+    ) g
+    JOIN event e
+      ON e.id = g.event_id
+     AND e.del = 'no'
+    JOIN tournament_stage ts
+      ON ts.id = e.tournament_stageFK
+     AND ts.del = 'no'
+    JOIN tournament t
+      ON t.id = ts.tournamentFK
+     AND t.del = 'no'
+    JOIN tournament_template tt
+      ON tt.id = t.tournament_templateFK
+     AND tt.del = 'no'
+    GROUP BY
+        e.id,
+        e.name,
+        e.startdate,
+        tt.name,
+        t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts
+  ON ts.id = e.tournament_stageFK
+ AND ts.del = 'no'
+JOIN tournament t
+  ON t.id = ts.tournamentFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 37
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM lineup l4
+      JOIN event_participants ep4
+        ON ep4.id = l4.event_participantsFK
+       AND ep4.del = 'no'
+      WHERE ep4.eventFK = e.id
+        AND l4.del = 'no'
+  )
+
+ORDER BY sort_order, event_id;
