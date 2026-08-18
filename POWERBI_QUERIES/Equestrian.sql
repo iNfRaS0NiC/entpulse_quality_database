@@ -263,3 +263,156 @@ WHERE s.del = 'no'
   )
 
 ORDER BY sort_order, statistic_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-062
+    -- Name - COMP.RANK_PLACE_SHARED_BY_TWO_RIDES_WITHOUT_COMMENT
+    -- What it does: Flags Comp.Rank records where a minority of the field shares a place with no comment explaining it.
+    'Comp_Rank_Place_Shared_Without_Comment' AS check_type,
+    x.statistic_id,
+    s.name AS statistic_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    x.shared_places,
+    x.shared_pairs,
+    f.total_pairs,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a Comp.Rank holding a place occupied by two or more
+-- distinct Pair values where no participant on that place carries a Comment, and where the
+-- rides sitting on such places are under half the field.
+-- This is GLOBAL-DQ-095's question and neither half of it survives instantiation here. The
+-- template counts participant rows, so the rider and the horse of one ride read as two holders
+-- of one place and every ranking in the sport is reported - 341 of 420 measured 2026-08-18. It
+-- is therefore counted by Pair, which is what identifies a ride.
+-- The field share is the second half and it was measured rather than assumed. Uncommented
+-- shared places reach 90 to 100 per cent of the field in 40 rankings and under 20 per cent in
+-- 25, with 10 between; the naming does not separate the two, since 22 of the 40 do not call
+-- themselves team rankings. A shape reaching a whole field is a format by the discriminator
+-- POWERBI.md records for Golf-DQ-101, so the threshold agreed on 2026-08-18 is half the field:
+-- above it the ranking shares places by construction, below it the sharing is exceptional and
+-- is what this reports.
+FROM (
+    SELECT
+        g.statistic_id,
+        COUNT(*) AS shared_places,
+        SUM(g.pairs_on_place) AS shared_pairs
+    FROM (
+        SELECT
+            s2.id AS statistic_id,
+            rk.value AS rank_value,
+            COUNT(DISTINCT pr.value) AS pairs_on_place
+        FROM statistic s2
+        JOIN tournament t2
+          ON t2.id = s2.objectFK
+         AND t2.del = 'no'
+        JOIN tournament_template tt2
+          ON tt2.id = t2.tournament_templateFK
+         AND tt2.del = 'no'
+         AND tt2.sportFK = 37
+        JOIN statistic_participants11 sp
+          ON sp.statisticFK = s2.id
+         AND sp.del = 'no'
+        JOIN statistic_data11 rk
+          ON rk.statistic_participants11FK = sp.id
+         AND rk.statistic_data_typeFK = 1270
+         AND rk.del = 'no'
+        JOIN statistic_data11 pr
+          ON pr.statistic_participants11FK = sp.id
+         AND pr.statistic_data_typeFK = 1276
+         AND pr.del = 'no'
+        LEFT JOIN statistic_data11 cm
+          ON cm.statistic_participants11FK = sp.id
+         AND cm.statistic_data_typeFK = 1273
+         AND cm.del = 'no'
+         AND cm.value IS NOT NULL
+         AND cm.value <> ''
+        WHERE s2.del = 'no'
+          AND s2.statistic_typeFK = 11
+          AND s2.object_typeFK = 3
+          AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
+          AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+        GROUP BY
+            s2.id,
+            rk.value
+        HAVING
+            COUNT(DISTINCT pr.value) > 1
+        AND COUNT(DISTINCT cm.id) = 0
+    ) g
+    GROUP BY
+        g.statistic_id
+) x
+JOIN (
+    SELECT
+        sp8.statisticFK AS statistic_id,
+        COUNT(DISTINCT pr8.value) AS total_pairs
+    FROM statistic_participants11 sp8
+    JOIN statistic s8
+      ON s8.id = sp8.statisticFK
+     AND s8.del = 'no'
+     AND s8.statistic_typeFK = 11
+     AND s8.object_typeFK = 3
+    JOIN tournament t8
+      ON t8.id = s8.objectFK
+     AND t8.del = 'no'
+    JOIN tournament_template tt8
+      ON tt8.id = t8.tournament_templateFK
+     AND tt8.del = 'no'
+     AND tt8.sportFK = 37
+    JOIN statistic_data11 pr8
+      ON pr8.statistic_participants11FK = sp8.id
+     AND pr8.statistic_data_typeFK = 1276
+     AND pr8.del = 'no'
+    WHERE sp8.del = 'no'
+    GROUP BY
+        sp8.statisticFK
+) f
+  ON f.statistic_id = x.statistic_id
+ AND f.total_pairs > 0
+ AND x.shared_pairs * 100 / f.total_pairs < 50
+JOIN statistic s
+  ON s.id = x.statistic_id
+ AND s.del = 'no'
+JOIN tournament t
+  ON t.id = s.objectFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t
+  ON t.id = s.objectFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = 11
+  AND s.object_typeFK = 3
+  AND tt.sportFK = 37
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM statistic_participants11 sp9
+      JOIN statistic_data11 pr9
+        ON pr9.statistic_participants11FK = sp9.id
+       AND pr9.statistic_data_typeFK = 1276
+       AND pr9.del = 'no'
+      WHERE sp9.statisticFK = s.id
+        AND sp9.del = 'no'
+  )
+
+ORDER BY sort_order, statistic_id;
