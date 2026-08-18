@@ -305,8 +305,15 @@ A zero coverage count has three causes and the first two call for opposite respo
 | Cause | What it looks like | What to do |
 |---|---|---|
 | **Misdirected scope** | The statement anchors on the wrong type, shard, owner level or filter, so it audits objects the rule was never about | Correct the scope. The result proves nothing until you do |
-| **Sentinel** | The scope is exactly right and the population it audits is legitimately empty today | Nothing. Zero is the check's correct answer for now, and the check exists to stop being silent when the population appears |
+| **Sentinel** | The scope is exactly right and the population it audits is legitimately empty today | Record `Sentinel` in `SPORTS/params.json` `_checkSignal`, with what the empty population is and why it is expected to fill. Zero is the check's correct answer for now, and the check exists to stop being silent when the population appears |
 | **Not applicable** | The scope is exactly right and the population cannot arrive without the sport changing what it stores | Record the check as `Not applicable` in `SPORTS/params.json` with the evidence. The zero is still not clean data; the classification says which answer it is |
+
+**Recording the sentinel is not bookkeeping.** The run reads the signal to decide which
+`eligible_count = 0` questions have been answered, and a sport file cannot tell it anything —
+so a sentinel left unrecorded is re-asked on the `Decisions` tab of every run for ever. Eleven
+checks across five sports sat that way until 2026-08-17, most of them with the answer already
+written out in their sport file, some of them carrying `Monitor` and a reason beginning "this is
+a sentinel". `TOOLS/README.md` owns the signal vocabulary.
 
 The third was added by decision of 2026-08-11, with `Modern-Pentathlon` `GLOBAL-DQ-028`. It
 differs from a sentinel in what would have to happen for the population to appear. A sentinel

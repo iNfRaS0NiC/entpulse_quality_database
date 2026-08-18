@@ -1264,8 +1264,8 @@ bring the document up to date. The transport is separate on purpose — the merg
 permanent document can lose somebody's work, and a merge that needs a login to exercise is a
 merge nobody exercises.
 
-**Status is at `I`, `Check By` at `J`, `Comment` at `K`, and a check tab's own two are `E2`
-and `F2`. A run never writes any of them.** That is the whole protection, and it is a better
+**Status is at `I`, `Check By` at `J`, `Comment` at `K`, `Time Spent (minutes)` at `L`, and a
+check tab's own three are `E2`, `F2` and `G2`. A run never writes any of them.** That is the whole protection, and it is a better
 one than locking: Sheets has no lock to take, and two people editing at once is the normal
 case. The runner writes its own columns in two spans per row and steps over the reviewer's.
 The only exception is a row for a check the document has never held, where there is nothing
@@ -1304,9 +1304,39 @@ break. The end of the tab is a fact.
 
 ### What the board carries that the workbook does not
 
-`Overview` runs `A` to `V`, the workbook's twenty-one columns plus `Trends` at `V`.
+`Overview` runs `A` to `X`, the workbook's twenty-one columns plus three of its own:
+`Time Spent (minutes)` at `L`, `All findings` at `Q` and `Trends` at `X`.
 
-`Trends` is the last five finding counts for that check, this run last, each dated:
+`Time Spent (minutes)` is the reviewer's, for how long the check took to work through. Every
+check tab carries one too, at `G2`, and the two are deliberately not linked: how long the rows
+took and how long the board took to read about them are different numbers, and a mirror would
+force them to be one. `Comment` is mirrored because it is one piece of text about one check;
+this is not.
+
+`All findings` is what the statement returned. Every other column that counts findings —
+`Findings`, `Prev findings`, `Change`, `Verdict` and the `Trends` series — counts what is still
+**open**, with the rows the reviewers marked `No Issue / Change` taken out of it. A settled
+finding stays in the result for good, because the decision is a reading of the data rather than
+a change to it, so counting it forever made a finished check read as a busy one. `Rows` had that
+subtraction to itself until 2026-08-17, which is how a check could show 0 open rows beside a
+`Findings` of 40 and a verdict of `Above residual`.
+
+`Eligible` and `Prev eligible` are untouched by it. They count the population a finding came out
+of, and dismissing a finding does not shrink the population it was found in.
+
+The dismissal count is today's, and it comes off the historical points of the series as well,
+because no per-run figure was ever recorded to use instead. A reduced present against a raw past
+would draw a drop on the day the reviewers worked rather than the day the data changed. It also
+leaves `Change` alone, the same figure coming off both ends of it.
+
+`Change` and `Verdict` are coloured the way the series is: **bold green** where the check
+improved, **bold red** where it worsened, **bold black** where it did not move. `Change` compares
+to zero directly; `Verdict` holds a word, so its rule reads the `Change` cell on its own row. A
+row with no `Change` at all is left uncoloured rather than counted as level. The three colours
+come from the same map the trend uses — a green that drifted from the green beside it would be
+worse than no colour at all.
+
+`Trends` is the last five open counts for that check, this run last, each dated:
 `40 (18.07) → 12 (25.07) → 3 (01.08) → 1 (08.08)`. The separator is an arrow rather than `>`,
 which in a cell full of numbers reads as a comparison operator and makes `100 > 105` state
 something plainly false. The board compares against one run and the ledger holds them all;
@@ -1347,7 +1377,7 @@ at all did not honour the coverage contract, and the defect is in the check.
 Because the cell counts what is open, the colour follows the review rather than the run, and
 that is the point of it: a check whose findings have all been dismissed goes green, and a
 reviewer working down the board by colour stops being sent back to it. A check dismissed down to
-zero is the one case where the uncoloured zero is not a defect in the statement — `Findings`
+zero is the one case where the uncoloured zero is not a defect in the statement — `All findings`
 beside it says what the run actually returned.
 
 The cell is a link to the check's tab and a number at the same time, which is why the count
@@ -1378,17 +1408,43 @@ Seeding uses the same vocabulary: an informational check opens on `Monitor Only`
 came back with its `COVERAGE` row alone over a real population opens on `Clean`, and everything
 else — including every failure — opens on `Not reviewed`.
 
-Three columns ship hidden. `Signal` and `Signal reason` at `L` and `M` are the runner's own
+Six columns ship hidden. `Signal` and `Signal reason` at `M` and `N` are the runner's own
 classification, settled before the run and unchanged by reading it. `Parameters` at `C` is
 empty for every check of a sport that takes none and identical for every check of one that
 does, which is a column of repetition sitting between `CheckID` and `Check Name` — unhide it
-on a chained sport, where it is what tells two runs of the same statement apart. Nothing is
-dropped: unhiding brings back every value, and all three travel in `_summary.csv`.
+on a chained sport, where it is what tells two runs of the same statement apart. `Eligible`,
+`Prev findings` and `Prev eligible` at `R:T` joined them on 2026-08-17 at the reviewers'
+asking: all three are context for a number rather than the number, and `Change` and `Verdict`
+already answer which way a check moved. Nothing is dropped: unhiding brings back every value,
+and all six travel in `_summary.csv`.
 
-Hiding happens once, on the run that creates `Overview`. Somebody who unhides a column has
-decided something, and putting it back every week is the same defect as overwriting a comment.
-The cost of that rule is that a document created before a column joined the list does not gain
-it on its own.
+**A full sport pass states the whole row: the six are closed and every other column the board
+writes is opened.** Hiding used to happen once, on the run that created `Overview`, and used
+only to add — so a board hid whatever it had ever hidden, and its layout became a function of
+its own history rather than of `Sheets.ps1`. One run on 2026-08-17 proved that three different
+ways: BMX came out with the six, Cycling with four of them, and Triathlon with twelve, hiding
+`Expected`, `Findings`, `Change`, `Verdict`, `Last run` and `Trends` — the columns a reviewer
+opens the board to read. A column inserted in the middle of the row carries its neighbour's
+hidden flag and shifts everybody else's along, and nothing ever put any of it back.
+
+The cost is stated rather than hidden, and it runs both ways: a column somebody opened closes
+again on the next full pass, and one they closed opens on it. A partial run touches neither, so
+re-running one check after a reported fix does not repaint a board somebody is reading.
+
+**A board written before a column existed has room made for it rather than its rows rewritten.**
+The run compares the header it finds against the column list it writes and inserts what has been
+added since, before any value is sent, so what is already in the row is pushed right along with
+it. A row the run does not rewrite — a check that has stopped running — lands back under its own
+headings, and one it does write goes into the layout the insertion just made. Only insertion is
+migrated: a column removed or moved would mean deleting or reordering cells holding somebody's
+data, so the whole migration is abandoned rather than half applied.
+
+A check tab is migrated differently, by placing its two identity rows by name. `insertDimension`
+takes the whole column, and on a check tab rows 1 and 2 are the identity while row 5 down is the
+result — the first version of this pushed a column through every result table on the board.
+Nothing moved and the tables were rebuilt at their proper width immediately, but Sheets had
+already named the column it briefly saw, and 107 tabs came back reading `Column 11` beside their
+result headers.
 
 A check tab is `A` to `O`: the identity, then `Comment` and `Check By`, then the same
 comparison block the board carries, then `Category` and `Parameters`. `Signal` and `Signal
