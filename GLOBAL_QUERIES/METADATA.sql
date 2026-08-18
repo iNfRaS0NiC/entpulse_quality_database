@@ -1,7 +1,7 @@
 SELECT
     -- CheckID - GLOBAL-DISCOVERY-011
     -- Name - PROPERTY_USAGE_BY_OWNER
-    -- What it does: Lists active property types and names used by known hierarchy and participant owners in the selected sport.
+    -- What it does: Lists active property types and names used by known hierarchy, event-participation and participant owners in the selected sport.
     x.owner_object,
     x.property_type,
     x.property_name,
@@ -20,6 +20,36 @@ FROM (
     JOIN event e
       ON pr.object = 'event'
      AND e.id = pr.objectFK
+     AND e.del = 'no'
+    JOIN tournament_stage ts
+      ON ts.id = e.tournament_stageFK
+     AND ts.del = 'no'
+    JOIN tournament t
+      ON t.id = ts.tournamentFK
+     AND t.del = 'no'
+    JOIN tournament_template tt
+      ON tt.id = t.tournament_templateFK
+     AND tt.del = 'no'
+    WHERE pr.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+
+    UNION ALL
+
+    SELECT
+        'event_participants',
+        pr.id,
+        pr.objectFK,
+        pr.type,
+        pr.name,
+        pr.value
+    FROM property pr
+    JOIN event_participants ep
+      ON pr.object = 'event_participants'
+     AND ep.id = pr.objectFK
+     AND ep.del = 'no'
+    JOIN event e
+      ON e.id = ep.eventFK
      AND e.del = 'no'
     JOIN tournament_stage ts
       ON ts.id = e.tournament_stageFK

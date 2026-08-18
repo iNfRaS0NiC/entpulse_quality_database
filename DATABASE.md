@@ -720,6 +720,29 @@ in the inspected data. The confirmed Set path is the direct FK from Subset.
 Allowed/mapped values and values currently used by events are separate inventories.
 The behavior attached to a concrete status detail is sport-specific until confirmed.
 
+### Reference-typed properties
+
+A `property` row can carry a reference to another object instead of a literal value. The
+type names the target and the value holds its primary key: `type = 'ref:participant'` means
+`value` is a `participant.id`, resolved by whoever reads it rather than by the database.
+
+`event_participants` is a property owner in its own right, alongside the owners listed
+above, and reference-typed properties are the reason it matters — this is where a sport
+stores the second participant an event participation involves when the row itself can hold
+only one.
+
+Two things follow, and a check has to work with both:
+
+- **Nothing enforces the reference.** The value is text in a generic table, so it can be
+  absent, empty, `0`, a participant that no longer exists, or a participant of the wrong
+  type. All five shapes occur in real data and they are different defects with different
+  causes; a statement testing only for presence reports the first and misses the others.
+- **The name belongs to the sport, the mechanism does not.** Measured 2026-08-18:
+  Equestrian binds a rider to a horse as `horseFK`, while Artistic Gymnastics and Triathlon
+  bind a competitor to a club as `organizationFK`, all three on `event_participants`. One
+  mechanism, three sports, two vocabularies — so a sport file records which names its sport
+  uses and this section records only that the mechanism exists.
+
 <!-- MANUAL PASTE ZONE: DATABASE REFERENCE MECHANISMS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---
