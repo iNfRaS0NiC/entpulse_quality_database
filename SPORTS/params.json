@@ -1511,6 +1511,18 @@
             "GLOBAL-DQ-030": {
                 "signal": "Not applicable",
                 "reason": "the template looks for every Comp.Rank participant in event_participants, and the horse is never one: the participation names it through the horseFK reference property, so the template reports every horse in the sport. Equestrian-DQ-061 asks the same question with each type looked for on its own path."
+            },
+            "GLOBAL-DQ-043": {
+                "signal": "Monitor",
+                "reason": "the sport contests men and women in one field, so a mixed stage is one open to both rather than one requiring both, and a national team is picked on merit. Measured 2026-08-18: 920 all-male and 1005 all-female lineups against 2819 holding both, spread evenly across 24 templates and every year from 2004 to 2026. The proportion is the finding; a single single-gender team is not a defect. One finding of the other class, a lineup declared single-gender that holds the other gender, is real and is named in SPORTS/Equestrian.md."
+            },
+            "GLOBAL-DQ-066": {
+                "signal": "Monitor",
+                "reason": "the Comp.Rank half of the same fact, and the sharpest form of it: every one of the 44 team rankings the sport holds is reported, because no rule here requires a team's genders to balance. The proportion is the finding."
+            },
+            "GLOBAL-DQ-067": {
+                "signal": "Monitor",
+                "reason": "asserts that a lineup holding both genders holds them in equal number, which the sport does not require: 2040 of its 2818 mixed lineups are uneven. The proportion is the finding, and a shift in it would be worth reading."
             }
         }
     }
