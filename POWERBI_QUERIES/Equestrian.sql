@@ -2143,3 +2143,219 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, event_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-105
+    -- Name - EVENT_LINEUP_COMPOSED_OF_THE_WRONG_PARTICIPANT_TYPES
+    -- What it does: Flags lineup rows whose parent participation is not a team or whose member is not an athlete.
+    CASE
+        WHEN pp.type <> 'team' AND lp.type <> 'athlete' THEN 'Lineup_Parent_And_Member_Both_Wrong_Type'
+        WHEN pp.type <> 'team' THEN 'Lineup_Parent_Participation_Not_A_Team'
+        ELSE 'Lineup_Member_Not_An_Athlete'
+    END AS check_type,
+    l.id AS lineup_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    pp.name AS parent_name,
+    pp.type AS parent_type,
+    lp.name AS member_name,
+    lp.type AS member_type,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A lineup here has one shape and only one. Its parent event
+-- participation is a team, and every member of it is an athlete who brings a horse of their
+-- own through the horseFK reference. That is what makes a team in this sport a set of pairs
+-- rather than a set of people, and ../SPORTS/Equestrian.md records it.
+-- The rule holds without exception today: measured 2026-08-18, none of the sport's 18145
+-- lineup rows sits under a participation that is not a team, and none names a member that is
+-- not an athlete. Zero is the whole point. The columns exist, they are populated, and one
+-- lineup type is in use, so a horse written straight into a lineup or a lineup hung under an
+-- individual entry would be audited the moment it appeared. This check is the guard on a shape
+-- nothing else in the package asserts: Equestrian-DQ-030 asks whether a team has a lineup at
+-- all, -054 whether a member repeats, -058 whether the squads are the same size and -065 how
+-- the genders balance. None of them asks who is allowed inside.
+-- A member that is a horse would be reported as Lineup_Member_Not_An_Athlete, and that is the
+-- failure this is really written for: the horse belongs in the reference property, never in the
+-- member column, and the two are one edit apart in any loader.
+-- Coverage is 18144 rather than 18145 because both participants must resolve for a row to be
+-- audited at all, and one lineup row names a participant that is soft-deleted. That row is
+-- outside this statement's question rather than a finding it missed: whether a participation
+-- may reference a deleted participant is Equestrian-DQ-055's, and the two branches here count
+-- the same population so the contract holds.
+FROM lineup l
+JOIN event_participants ep
+  ON ep.id = l.event_participantsFK
+ AND ep.del = 'no'
+JOIN event e
+  ON e.id = ep.eventFK
+ AND e.del = 'no'
+JOIN tournament_stage ts
+  ON ts.id = e.tournament_stageFK
+ AND ts.del = 'no'
+JOIN tournament t
+  ON t.id = ts.tournamentFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+ AND tt.sportFK = 37
+JOIN participant pp
+  ON pp.id = ep.participantFK
+ AND pp.del = 'no'
+JOIN participant lp
+  ON lp.id = l.participantFK
+ AND lp.del = 'no'
+WHERE l.del = 'no'
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  AND (pp.type <> 'team' OR lp.type <> 'athlete')
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT l.id) AS eligible_count,
+    1 AS sort_order
+FROM lineup l
+JOIN event_participants ep
+  ON ep.id = l.event_participantsFK
+ AND ep.del = 'no'
+JOIN event e
+  ON e.id = ep.eventFK
+ AND e.del = 'no'
+JOIN tournament_stage ts
+  ON ts.id = e.tournament_stageFK
+ AND ts.del = 'no'
+JOIN tournament t
+  ON t.id = ts.tournamentFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+ AND tt.sportFK = 37
+JOIN participant pp
+  ON pp.id = ep.participantFK
+ AND pp.del = 'no'
+JOIN participant lp
+  ON lp.id = l.participantFK
+ AND lp.del = 'no'
+WHERE l.del = 'no'
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+
+ORDER BY sort_order, check_type, lineup_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-106
+    -- Name - COMP.RANK_TEAM_FIELD_NOT_NAMING_A_TEAM
+    -- What it does: Flags Comp.Rank rows whose Team data field does not resolve to an active participant of type team.
+    CASE
+        WHEN sd.value NOT REGEXP '^[0-9]+$' THEN 'Comp_Rank_Team_Reference_Not_Numeric'
+        WHEN tp.id IS NULL THEN 'Comp_Rank_Team_Reference_Dangling'
+        ELSE 'Comp_Rank_Team_Reference_Not_A_Team'
+    END AS check_type,
+    sp.id AS participant_row_id,
+    s.id AS statistic_id,
+    s.name AS statistic_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    p.name AS participant_name,
+    p.type AS participant_type,
+    sd.value AS team_reference,
+    tp.type AS referenced_type,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Data field 1429 Team holds a participant.id, not a name and not
+-- a squad number, so it is a reference like any other and it can fail like any other. The
+-- database does not resolve it: whoever reads it does, and nothing stops the value being a
+-- number that answers to nobody, or to somebody who is not a team.
+-- ../SPORTS/Equestrian.md records the field as carrying a participant.id and this is the
+-- statement that holds it to that. Measured 2026-08-18 every one of the rows carrying a Team
+-- value resolves to an active team, so it returns nothing today, which is what a guard on a
+-- reference is supposed to do until the day it does not.
+-- The three classes separate three different causes, in the order they can be told apart: a
+-- value that is not a number at all was never a reference; a number nobody answers to is a
+-- deleted or never-loaded team; and a number answering to an athlete or a horse is the wrong
+-- column read into the right one.
+-- Equestrian-DQ-098 asks a different question of the same field - whether the rider and the
+-- horse of one Pair name the same team - and found 20 that do not. That check compares two
+-- values and cannot tell whether either is a team; this one never compares and only asks what
+-- the value points at. Neither covers the other.
+FROM statistic_participants11 sp
+JOIN statistic s
+  ON s.id = sp.statisticFK
+ AND s.del = 'no'
+ AND s.statistic_typeFK = 11
+ AND s.object_typeFK = 3
+JOIN tournament t
+  ON t.id = s.objectFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+ AND tt.sportFK = 37
+JOIN participant p
+  ON p.id = sp.participantFK
+ AND p.del = 'no'
+JOIN statistic_data11 sd
+  ON sd.statistic_participants11FK = sp.id
+ AND sd.statistic_data_typeFK = 1429
+ AND sd.del = 'no'
+ AND sd.value IS NOT NULL
+ AND sd.value <> ''
+LEFT JOIN participant tp
+  ON sd.value REGEXP '^[0-9]+$'
+ AND tp.id = CAST(sd.value AS UNSIGNED)
+ AND tp.del = 'no'
+WHERE sp.del = 'no'
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND (
+        sd.value NOT REGEXP '^[0-9]+$'
+     OR tp.id IS NULL
+     OR tp.type <> 'team'
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sp.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic_participants11 sp
+JOIN statistic s
+  ON s.id = sp.statisticFK
+ AND s.del = 'no'
+ AND s.statistic_typeFK = 11
+ AND s.object_typeFK = 3
+JOIN tournament t
+  ON t.id = s.objectFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+ AND tt.sportFK = 37
+JOIN statistic_data11 sd
+  ON sd.statistic_participants11FK = sp.id
+ AND sd.statistic_data_typeFK = 1429
+ AND sd.del = 'no'
+ AND sd.value IS NOT NULL
+ AND sd.value <> ''
+WHERE sp.del = 'no'
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, check_type, participant_row_id;
