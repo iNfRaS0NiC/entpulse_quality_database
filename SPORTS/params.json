@@ -1544,6 +1544,14 @@
                 "signal": "Not applicable",
                 "reason": "the sport ranks a whole field rather than pairing two sides, so an event name has no participants to name and names the competition format instead - GP - Grand Prix, World Cup Table A. Every event in the sport is reported. SPORTS/Equestrian.md records the model as Listing under DATABASE.md DB-SEM-015."
             },
+            "GLOBAL-DQ-095": {
+                "signal": "Not applicable",
+                "reason": "the template reads a shared Comp.Rank place against the team size, and a place here is held by a ride rather than by a participant row: a rider and the horse it rode are two rows and one competitor, bound by field 1276 Pair, so every shared place is reported at twice its real width. Equestrian-DQ-062 counts rides instead and returns 30 against the template's 341."
+            },
+            "GLOBAL-DQ-103": {
+                "signal": "Not applicable",
+                "reason": "the template flags a participant appearing more than once in one Comp.Rank, which in this sport is the storage rather than a defect: a rider entered on two horses holds two rows by design. Equestrian-DQ-060 asserts instead that a participant's rows and its distinct 1276 Pair values must be equal in number, and returns 8 against the template's 76."
+            },
             "GLOBAL-DQ-083": {
                 "signal": "Not applicable",
                 "reason": "a Listing sport enters its whole field in one event, so the participant count varies with entries and is never two by design; 5455 of the 5471 events reported are MORE_THAN_TWO. SPORTS/Equestrian.md records the model."

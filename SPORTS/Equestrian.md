@@ -103,6 +103,41 @@ its parent event participant is always a `team`, and its members are always `ath
 member carries its own `horseFK`, so the lineup is a list of pairs rather than a list of
 people, which is the structure the sport actually competes in.
 
+**Where the `horseFK` failures sit decides what they are.** Measured 2026-08-18 against the
+field each defective participation sits in:
+
+| Failure | Participations | Events | Reach | Years |
+|---|---:|---:|---|---|
+| reference points at a participant that does not exist | 272 | 242 | part of the field | 2005-2026 |
+| present but empty or `0` | 183 | 105 | part of the field | 2005-2026 |
+| property absent entirely | 227 | 7 | **whole field** | 2004-2016 |
+| present but empty or `0` | 39 | 2 | **whole field** | 2008-2011 |
+| points at a participant that is not a horse | 15 | 1 | **whole field** | 2026 |
+
+The first two classes sit beside riders whose horse resolves, and each is one rider's defect.
+The last three take an entire field at once and are **ten events to load again rather than
+281 rows to correct one by one** - seven with no horse layer written at all, two holding
+nothing usable, and one from 2026 whose whole field points at participants that are not
+horses. The distinction is not visible in a count and is why the two are recorded apart.
+
+**Horse gender is written in two vocabularies at once, and they are two spellings of one
+fact.** The registry holds `gelding` on 7197 horses, `male` on 7923, `mare` on 3077,
+`female` on 3182, `stallion` on 2719 and `undefined` on 1474.
+
+Measured 2026-08-18, this is not an era: both vocabularies run unbroken from 2004 to 2026,
+and since 2020 the horse vocabulary carries 26099 rides against the person vocabulary's
+11409. A statement asserting the horse vocabulary would therefore report 45 percent of the
+register for ever, which is why none is written.
+
+What settles their relation is the duplicate records. Of the 315 horse pairs proved to be one
+animal by riding under one rider in one tournament, **106 carry the horse vocabulary on one
+side and the person vocabulary on the other** - `Absolut` is `gelding` on one record and
+`male` on the other, `Active Walero` `undefined` against `gelding` - and 41 more pair the
+person vocabulary against `undefined`. Where two records are provably one horse, the two
+vocabularies describe the same animal, so `male` and `female` are the coarser spelling rather
+than a distinct meaning. Whether that is by design is a question for whoever loads the data;
+it is recorded here as measured, not as decided.
+
 <!-- MANUAL PASTE ZONE: 37 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types
@@ -240,6 +275,29 @@ describes. The relation is what this sport means; the property is not read.
 Every stage gender in the discipline matrix is `mixed`; the sport contests men and women in
 one field, which is why no gender-split check has an eligible population here.
 
+**Only four of those thirteen values name a discipline.** Read whole on 2026-08-18, the
+column holds two generations. The modern block is `424 Eventing`, `425 Dressage`,
+`426 Jumping` and `428 Driving`, and it is the one the sport's separation rests on. Beside it
+runs an older block, and none of its values is a fifth discipline:
+
+| Legacy value | id | What it actually names |
+|---|---:|---|
+| Show Jumping | 69 | a second name for `426 Jumping` |
+| Dressage Grand Prix | 71 | a dressage **test** |
+| Dressage Grand Prix Freestyle | 70 | a dressage test |
+| Dressage Grand Prix Special | 75 | a dressage test |
+| 3Day Event Dressage | 73 | a **phase** inside eventing |
+| 3Day Event Jumping | 74 | a phase inside eventing |
+| 3Day Event Cross Country | 72 | a phase inside eventing |
+| Cross Country | 402 | a phase inside eventing |
+| Cross Country Fences | 347 | a phase inside eventing, finer still |
+
+A test and a phase are real things and they belong somewhere; they do not belong in the
+column that tells one sub-sport from another. **370 events and 31 Comp.Rank records carry
+one**, against 5675 and 434 in total, so the four cover 93 percent of each layer and the
+separation silently fails for the rest. Anything reading the four to place an object cannot
+place those 401.
+
 <!-- MANUAL PASTE ZONE: 37 GENERIC RELATIONS AND DISCIPLINES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Statistics
@@ -299,6 +357,33 @@ composes as follows, measured 2026-08-18 with IOC templates excluded:
 
 Team participant rows carry no `Pair` value at all, which is correct: a team classification
 row is not a ride.
+
+**The two rows of a Pair are a mirror, and the exceptions are countable.** A rider and the
+horse it rode are two `statistic_participants11` rows and one competitor, so the sport writes
+the ride's result into both. Measured 2026-08-18 over every Pair holding exactly one rider and
+one horse:
+
+| Data field | Pairs agreeing | Pairs contradicting | Only one side carries it |
+|---|---:|---:|---:|
+| Rank | 10741 | 0 | 0 |
+| Team | 1507 | **20** | 0 |
+| Comment | 1400 | 0 | 0 |
+| Medal | 1275 | **2** | 0 |
+| Penalties | 583 | 0 | 0 |
+| Score | 345 | 0 | 0 |
+| Time | 156 | 0 | 0 |
+| Points | 149 | 0 | 0 |
+| Percentage | 108 | 0 | 0 |
+| Jump Off Penalties | 12 | 0 | 0 |
+| Jump Off Time | 12 | 0 | 0 |
+
+**Not once does one side hold a value the other lacks.** Eleven fields, 10741 pairs, and the
+only disagreements are 20 Pairs whose rider and horse are entered on different teams and 2
+whose rider and horse hold different medals. The mirror is therefore a confirmed property of
+the storage rather than an assumption about it.
+
+`1429 Team` holds a `participant.id` like any other reference, and every value carrying one
+resolves to an active team.
 
 <!-- MANUAL PASTE ZONE: 37 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -436,13 +521,47 @@ unmeasured amount. And **no check exists for this condition in any sport**: the 
 never two records that are one being. Building it would be a GLOBAL promotion of
 `GLOBAL-DISCOVERY-033`, not an instantiation of an existing template.
 
+**All three storage layers name the same horse for the same ride.** The comparison against the
+event layer above left the lineup layer unchecked; it was measured on 2026-08-18 and the
+answer is unambiguous once the two layers are asked about **one ride** rather than one
+tournament.
+
+Read at tournament level, every rider-and-horse pair a lineup names against the Comp.Rank
+pairs of the same tournament:
+
+| Comparison | Lineup pairs | Tournaments |
+|---|---:|---:|
+| both layers name the same horse | 1715 | 33 |
+| rider paired in Comp.Rank with another horse only | 9 | 5 |
+| rider absent from that tournament's Comp.Rank | 130 | 5 |
+| tournament holds no Comp.Rank pair at all | 12208 | 189 |
+
+Read at ride level - the lineup of the very event a Comp.Rank names in its
+`statistic_config 1471 Event id`:
+
+| Comparison | Lineup rides | Statistics |
+|---|---:|---:|
+| both layers name the same horse | **1782** | 42 |
+| the two layers name different horses | **0** | - |
+| rider in the lineup carries no Pair in that Comp.Rank | 1490 | 35 |
+
+**Zero disagreements out of 1782.** The nine that differ at tournament level were read one by
+one and every one is a rider on more than one horse across the tournament, several carrying
+both horses inside the lineup layer itself. This is the same explanation the event-layer
+comparison already required, and it closes the question that section left open.
+
+The largest number in the first table is not a disagreement either: **189 tournaments hold
+lineups and no Comp.Rank pair at all**, 12208 rides. That measures how much of the sport the
+ranking layer covers, and it belongs beside the 630 Comp.Rank records against 915 tournaments
+already recorded above.
+
 <!-- MANUAL PASTE ZONE: 37 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
 
-1. **Do `1276 Pair` and the lineup `horseFK` name the same horse for the same ride?** The
-   comparison run on 2026-08-18 was Comp.Rank against the **event** layer, not against the
-   **lineup** layer, so the third pairing has not been checked against the other two. It is
-   recorded as unmeasured rather than as agreeing.
+None open. The one this file carried - whether `1276 Pair` and the lineup `horseFK` name the
+same horse for the same ride - was measured on 2026-08-18 and answered: they do, on all 1782
+rides where both layers speak, with no exception. **Confirmed sport-specific storage
+semantics** above holds the measurement and the two readings that make it mean something.
 
 <!-- MANUAL PASTE ZONE: 37 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
