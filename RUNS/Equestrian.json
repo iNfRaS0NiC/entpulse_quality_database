@@ -5669,6 +5669,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Equestrian 18.08.2026 16-35-51",
+                     "startedUtc":  "2026-08-18T14:35:43Z",
+                     "output":  "D:\\SQL\u0027s Output\\Equestrian 18.08.2026 16-35-51",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Equestrian-DQ-107",
+                                        "runKey":  "Equestrian-DQ-107",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_RECORDED_TWICE_UNDER_ONE_RIDE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  574,
+                                        "findings":  573,
+                                        "eligible":  37607,
+                                        "seconds":  7.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "15DvzC1TLzhMB9bXeyy-2OUa0Xmfo0Mn84-isqYSs9cU"

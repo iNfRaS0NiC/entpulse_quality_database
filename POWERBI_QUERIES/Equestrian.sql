@@ -2359,3 +2359,280 @@ WHERE sp.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, check_type, participant_row_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-107
+    -- Name - PARTICIPANT_RECORDED_TWICE_UNDER_ONE_RIDE
+    -- What it does: Flags a horse or a rider held as two participant records, proved by the two records meeting inside one ride rather than by their names alone.
+    'Horse_Recorded_Twice_Under_One_Rider' AS check_type,
+    ha.id AS participant_id,
+    ha.name AS participant_name,
+    ha.type AS participant_type,
+    ha.gender,
+    ha.countryFK AS country_id,
+    GROUP_CONCAT(DISTINCT CONCAT(hb.id, ' ', hb.name) ORDER BY hb.id SEPARATOR ' | ') AS twin_records,
+    GROUP_CONCAT(DISTINCT rp.name ORDER BY rp.name SEPARATOR ' | ') AS shared_with,
+    COUNT(DISTINCT g.tournament_id) AS tournaments,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: The name alone never proves a duplicate, and in this sport it
+-- proves less than usual: horse names carry a stable or a sponsor at the front, so Castle Forbes
+-- Libertina and Castle Forbes Cosma share three words and are two animals. What proves it here
+-- is the ride. One rider, inside one tournament, cannot be mounted on two different horses that
+-- carry the same name, so two records meeting under one rider is the evidence and the name only
+-- says which two to compare.
+-- Measured 2026-08-18, 713 pairs of horse records share their first word under one rider in one
+-- tournament. Of those, 258 carry an identical name and 40 have one name extending the other -
+-- Clooney and Clooney 51, Charmeur and Charmeur 344, Bacardi and Bacardi Old - and the other
+-- 415 share only that first word and are the stable prefixes, which is why the first word alone
+-- is not the condition. So 298 pairs are reported and 415 are not, and the split was read
+-- before it was written rather than chosen by a threshold.
+-- The rider class is the same evidence with the roles swapped: two rider records of one name
+-- entered on one horse in one event. It returns one duplicated rider, met in three separate
+-- events, which Equestrian-DQ-103 already reaches from the other side where it looks like a
+-- horse carrying two riders.
+-- Together the two classes report 573 records: 571 horses standing in 315 distinct pairs, and
+-- the 2 rider records. A record appears once however many pairs it belongs to, so the row count
+-- is records to merge rather than comparisons to read.
+-- One thing the output says that no count does. Of the 315 horse pairs, 106 carry the horse
+-- gender vocabulary on one side and the person vocabulary on the other - Absolut is gelding on
+-- one record and male on the other, Active Walero undefined against gelding - and a further 41
+-- pair person against undefined. Where the two records are provably one animal, the two
+-- vocabularies are two spellings of one fact rather than two meanings. ../SPORTS/Equestrian.md
+-- records the vocabulary split; this is the evidence that it is a split and not a distinction.
+-- GLOBAL-DISCOVERY-033 groups a sport's people by name and is discovery, not a check: it reads
+-- athletes only, so the horse register - 25571 rows and the largest of the sport's three roles -
+-- is outside it entirely. Every DUPLICATE template in GLOBAL_DQ asserts one participant recorded
+-- twice in one place; this asserts two records that are one being, which is not the same
+-- statement and cannot be reached by parameterising one.
+-- A pair whose names differ past the first word is not reported even when it is real: Caramia 34
+-- and Caramia FRH are one mare and this statement misses her, because a rule loose enough to
+-- catch that shape also catches the 415. The limit is named here rather than left to be found.
+FROM (
+    SELECT
+        r1.tournament_id,
+        r1.rider_id,
+        r1.horse_id AS horse_a,
+        r2.horse_id AS horse_b
+    FROM (
+        SELECT DISTINCT
+               ts.tournamentFK AS tournament_id,
+               ep.participantFK AS rider_id,
+               h.id AS horse_id,
+               LOWER(TRIM(h.name)) AS horse_name,
+               LOWER(SUBSTRING_INDEX(TRIM(h.name), ' ', 1)) AS stem
+        FROM event_participants ep
+        JOIN property pr
+          ON pr.object = 'event_participants'
+         AND pr.objectFK = ep.id
+         AND pr.name = 'horseFK'
+         AND pr.del = 'no'
+         AND pr.value REGEXP '^[0-9]+$'
+        JOIN participant h
+          ON h.id = CAST(pr.value AS UNSIGNED)
+         AND h.del = 'no'
+         AND h.type = 'horse'
+        JOIN event e
+          ON e.id = ep.eventFK
+         AND e.del = 'no'
+        JOIN tournament_stage ts
+          ON ts.id = e.tournament_stageFK
+         AND ts.del = 'no'
+        JOIN tournament t
+          ON t.id = ts.tournamentFK
+         AND t.del = 'no'
+        JOIN tournament_template tt
+          ON tt.id = t.tournament_templateFK
+         AND tt.del = 'no'
+         AND tt.sportFK = 37
+        WHERE ep.del = 'no'
+          AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t.tournament_templateFK = <tournament_template_id>
+    ) r1
+    JOIN (
+        SELECT DISTINCT
+               ts.tournamentFK AS tournament_id,
+               ep.participantFK AS rider_id,
+               h.id AS horse_id,
+               LOWER(TRIM(h.name)) AS horse_name,
+               LOWER(SUBSTRING_INDEX(TRIM(h.name), ' ', 1)) AS stem
+        FROM event_participants ep
+        JOIN property pr
+          ON pr.object = 'event_participants'
+         AND pr.objectFK = ep.id
+         AND pr.name = 'horseFK'
+         AND pr.del = 'no'
+         AND pr.value REGEXP '^[0-9]+$'
+        JOIN participant h
+          ON h.id = CAST(pr.value AS UNSIGNED)
+         AND h.del = 'no'
+         AND h.type = 'horse'
+        JOIN event e
+          ON e.id = ep.eventFK
+         AND e.del = 'no'
+        JOIN tournament_stage ts
+          ON ts.id = e.tournament_stageFK
+         AND ts.del = 'no'
+        JOIN tournament t
+          ON t.id = ts.tournamentFK
+         AND t.del = 'no'
+        JOIN tournament_template tt
+          ON tt.id = t.tournament_templateFK
+         AND tt.del = 'no'
+         AND tt.sportFK = 37
+        WHERE ep.del = 'no'
+          AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t.tournament_templateFK = <tournament_template_id>
+    ) r2
+      ON r2.tournament_id = r1.tournament_id
+     AND r2.rider_id = r1.rider_id
+     AND r2.stem = r1.stem
+     AND r2.horse_id <> r1.horse_id
+     AND (
+            r2.horse_name = r1.horse_name
+         OR r2.horse_name LIKE CONCAT(r1.horse_name, ' %')
+         OR r1.horse_name LIKE CONCAT(r2.horse_name, ' %')
+     )
+) g
+JOIN participant ha
+  ON ha.id = g.horse_a
+ AND ha.del = 'no'
+JOIN participant hb
+  ON hb.id = g.horse_b
+ AND hb.del = 'no'
+JOIN participant rp
+  ON rp.id = g.rider_id
+ AND rp.del = 'no'
+GROUP BY
+    ha.id,
+    ha.name,
+    ha.type,
+    ha.gender,
+    ha.countryFK
+
+UNION ALL
+
+SELECT
+    'Rider_Recorded_Twice_On_One_Horse' AS check_type,
+    pa.id,
+    pa.name,
+    pa.type,
+    pa.gender,
+    pa.countryFK,
+    GROUP_CONCAT(DISTINCT CONCAT(pb.id, ' ', pb.name) ORDER BY pb.id SEPARATOR ' | '),
+    GROUP_CONCAT(DISTINCT hz.name ORDER BY hz.name SEPARATOR ' | '),
+    COUNT(DISTINCT k.event_id),
+    NULL,
+    0
+FROM (
+    SELECT
+        q1.event_id,
+        q1.horse_id,
+        q1.rider_id AS rider_a,
+        q2.rider_id AS rider_b
+    FROM (
+        SELECT DISTINCT
+               ep.eventFK AS event_id,
+               CAST(pr.value AS UNSIGNED) AS horse_id,
+               ep.participantFK AS rider_id,
+               LOWER(TRIM(p.name)) AS rider_name
+        FROM event_participants ep
+        JOIN property pr
+          ON pr.object = 'event_participants'
+         AND pr.objectFK = ep.id
+         AND pr.name = 'horseFK'
+         AND pr.del = 'no'
+         AND pr.value REGEXP '^[0-9]+$'
+        JOIN participant p
+          ON p.id = ep.participantFK
+         AND p.del = 'no'
+        JOIN event e
+          ON e.id = ep.eventFK
+         AND e.del = 'no'
+        JOIN tournament_stage ts
+          ON ts.id = e.tournament_stageFK
+         AND ts.del = 'no'
+        JOIN tournament t
+          ON t.id = ts.tournamentFK
+         AND t.del = 'no'
+        JOIN tournament_template tt
+          ON tt.id = t.tournament_templateFK
+         AND tt.del = 'no'
+         AND tt.sportFK = 37
+        WHERE ep.del = 'no'
+          AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t.tournament_templateFK = <tournament_template_id>
+    ) q1
+    JOIN (
+        SELECT DISTINCT
+               ep.eventFK AS event_id,
+               CAST(pr.value AS UNSIGNED) AS horse_id,
+               ep.participantFK AS rider_id,
+               LOWER(TRIM(p.name)) AS rider_name
+        FROM event_participants ep
+        JOIN property pr
+          ON pr.object = 'event_participants'
+         AND pr.objectFK = ep.id
+         AND pr.name = 'horseFK'
+         AND pr.del = 'no'
+         AND pr.value REGEXP '^[0-9]+$'
+        JOIN participant p
+          ON p.id = ep.participantFK
+         AND p.del = 'no'
+        JOIN event e
+          ON e.id = ep.eventFK
+         AND e.del = 'no'
+        JOIN tournament_stage ts
+          ON ts.id = e.tournament_stageFK
+         AND ts.del = 'no'
+        JOIN tournament t
+          ON t.id = ts.tournamentFK
+         AND t.del = 'no'
+        JOIN tournament_template tt
+          ON tt.id = t.tournament_templateFK
+         AND tt.del = 'no'
+         AND tt.sportFK = 37
+        WHERE ep.del = 'no'
+          AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          -- AND t.tournament_templateFK = <tournament_template_id>
+    ) q2
+      ON q2.event_id = q1.event_id
+     AND q2.horse_id = q1.horse_id
+     AND q2.rider_name = q1.rider_name
+     AND q2.rider_id <> q1.rider_id
+) k
+JOIN participant pa
+  ON pa.id = k.rider_a
+ AND pa.del = 'no'
+JOIN participant pb
+  ON pb.id = k.rider_b
+ AND pb.del = 'no'
+JOIN participant hz
+  ON hz.id = k.horse_id
+ AND hz.del = 'no'
+GROUP BY
+    pa.id,
+    pa.name,
+    pa.type,
+    pa.gender,
+    pa.countryFK
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT p.id) AS eligible_count,
+    1 AS sort_order
+FROM object_participants op
+JOIN participant p
+  ON p.id = op.participantFK
+ AND p.del = 'no'
+ AND p.type IN ('athlete', 'horse')
+WHERE op.object = 'sport'
+  AND op.objectFK = 37
+  AND op.del = 'no'
+
+ORDER BY sort_order, check_type, participant_name;
