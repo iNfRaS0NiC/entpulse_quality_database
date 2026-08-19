@@ -1074,6 +1074,7 @@ SELECT
     x.stage_genders,
     x.entry_count,
     x.example_event_id,
+    x.events_entered,
     NULL AS eligible_count
 -- What it does, stated in full: Finds participants whose stored gender contradicts a stage
 -- they were entered in, naming how many entries repeat the contradiction and which stage
@@ -1093,7 +1094,18 @@ FROM (
         GROUP_CONCAT(DISTINCT LOWER(TRIM(ts.gender))
                      ORDER BY LOWER(TRIM(ts.gender)) SEPARATOR ', ') AS stage_genders,
         COUNT(DISTINCT ep.id) AS entry_count,
-        MIN(e.id) AS example_event_id
+        MIN(e.id) AS example_event_id,
+        -- Every event the contradiction reaches, asked for by the reviewers on
+        -- 2026-08-19: one example told them the participant was wrong and nothing
+        -- about how far it went. example_event_id stays because a reviewer's note is
+        -- keyed on the columns whose names end in _id, and dropping it would unhook
+        -- every note already written against these rows.
+        -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the
+        -- server's group_concat_max_len without saying so, and entry_count is what the
+        -- row asserts. No DISTINCT, so the list is as long as entry_count and an event
+        -- entered twice says so.
+        GROUP_CONCAT(CONCAT(DATE(e.startdate), ' ', e.id)
+                     ORDER BY e.startdate, e.id SEPARATOR ' | ') AS events_entered
     FROM event_participants ep
     JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
     JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
@@ -1124,7 +1136,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT p.id) AS eligible_count
 FROM event_participants ep
 JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
