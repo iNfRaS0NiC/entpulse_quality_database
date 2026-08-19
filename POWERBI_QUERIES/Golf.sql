@@ -752,6 +752,15 @@ FROM (
         x.score_values AS scores_held
     FROM (
         SELECT
+            xx.*,
+            -- What the rest of this load did with the same shape. A template and a season is
+            -- one import written by one hand, and the question a halved match with no word
+            -- raises is only answerable against it.
+            SUM(CASE WHEN xx.all_square > 0 AND xx.sides_draw = 2 THEN 1 ELSE 0 END)
+                OVER (PARTITION BY xx.template_name, YEAR(xx.event_startdate))
+                AS halves_written_in_this_load
+        FROM (
+        SELECT
             p.event_id,
             p.event_name,
             p.event_startdate,
@@ -848,11 +857,13 @@ FROM (
             ) q
         ) p
         GROUP BY p.event_id, p.event_name, p.event_startdate, p.template_name, p.any_results
+        ) xx
     ) x
     -- A halved match is the sport working: draw on both sides, no winner, no loser. It is
     -- excluded here rather than classified, because a check that reports 486 correct halves
     -- teaches its reader to skip the column they were meant to read.
-    WHERE x.sides_seen <> 2
+    WHERE (
+          x.sides_seen <> 2
        OR x.rows_total NOT IN (2, 4)
        OR x.sides_uneven > 0
        OR x.unknown_words > 0
@@ -862,6 +873,36 @@ FROM (
        OR (x.all_square > 0 AND x.sides_draw = 0)
        OR (x.sides_draw = 2 AND x.decided_scores > 0)
        OR x.malformed_holes > 0
+    )
+    -- And a halved match whose load never writes the word is not reported at all. Measured
+    -- 2026-08-19 over the 114 template-seasons holding a halved match: 69 of them write draw on
+    -- both sides every time, 40 never write it once, and only 5 do both. LPGA Tour 2022 is
+    -- nineteen halves and no word, European Tour and PGA Tour 2021 is eighteen, Ryder Cup 2006
+    -- is seven - a convention of the import rather than a row somebody forgot, which is the
+    -- discriminator ../POWERBI.md records for Golf-DQ-101. Reporting them made this class 185
+    -- events, of which about 21 were the sport contradicting itself and the rest were the sport
+    -- being consistent.
+    -- The condition is the load and not the sport, because the sport has no single rule here:
+    -- both conventions are in use and neither is wrong on its own. What is wrong is a load that
+    -- writes the word for one halved match and not for the next, and that is what survives.
+    -- The other two classes the reviewers questioned on the same day are deliberately unchanged:
+    -- the four three-competitor play-offs still report as PARTICIPANT_ROWS_DO_NOT_FORM_TWO_SIDES
+    -- and the thirteen team matches whose two sides hold the same points total still report as
+    -- DRAW_WITH_A_DECIDING_SCORE. Both were measured and both are false positives; neither was
+    -- approved for change.
+    AND NOT (
+            x.sides_seen = 2
+        AND x.rows_total IN (2, 4)
+        AND x.sides_uneven = 0
+        AND x.unknown_words = 0
+        AND x.sides_mixed = 0
+        AND x.sides_won = 0
+        AND x.sides_draw = 0
+        AND x.any_results > 0
+        AND x.all_square > 0
+        AND x.decided_scores = 0
+        AND x.halves_written_in_this_load = 0
+    )
 ) z
 
 UNION ALL
