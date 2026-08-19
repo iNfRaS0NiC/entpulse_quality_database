@@ -100,6 +100,35 @@ The other two paths were re-measured the same day and are genuinely absent: the 
 `lineup` rows, and the `1429` Team data field is declared for shard 11 and unused. The number was
 the one path nobody had read.
 
+**The sport keeps a separate participant record for a national women's team, and
+`Golf-DQ-075`'s 18 team findings are entries that missed it rather than a gender field that is
+wrong.** Two naming styles are in use for the same thing - `Belgium Female`, `France Female`
+beside `England (f)`, `Germany (f)` - and 28 of them exist. Measured 2026-08-19, the European
+Girls' Team Championship holds 1068 entries on those records across 534 events from 2004 to
+2025, and 54 entries on the plain country record across 27 events, none later than 2010. That is
+two per event exactly, and four of the events were read one by one: both sides of every match
+carry the plain record. So these are 27 whole matches imported against the men's records in a
+run that stopped fifteen years ago, and the record to move them onto already exists. Nothing has
+to be created and no gender field should be edited - editing one would break the 48 to 76
+correct men's entries each of those records also carries.
+
+The three athlete findings are three different things and only one of them is a defect of the
+kind the check names:
+
+- **Maksymilian Saluda** holds 3 entries, all in the European Boys' Team Championship, and none
+  that agree with the stored gender. The participant's gender is simply wrong. One field.
+- **Joanne Mills** holds 87 entries that agree and 4 in `PGA Tour 1`. On 2006-08-03 she holds
+  two entries on the same day, one in `PGA Tour 1` and one in `Ladies European Tour and LPGA
+  Tour 1`, and nobody plays two tours in a day. Her four `PGA Tour 1` scores read 5, 0, -4 and
+  144, and 144 is a 36-hole total rather than a figure against par. These are another
+  competitor's results carried on her id.
+- **Michelle Wie West** holds 299 entries that agree and 1 in `PGA Tour 1` on 2008-07-31, which
+  is correct. The weeks either side were read: there is no same-day entry anywhere else, and she
+  entered that men's event on an exemption. **A woman entering a men's event is a legitimate
+  shape in this sport and the database stores nothing that separates it from a misassigned
+  entry**, so this row is a false positive `GLOBAL-DQ-123` cannot be taught to avoid. It is one
+  row in 21 and the check stays `Actionable`; the row is read and dismissed.
+
 <!-- MANUAL PASTE ZONE: 3 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types
