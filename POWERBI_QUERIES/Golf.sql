@@ -2962,6 +2962,7 @@ SELECT
     d.event_name,
     d.event_startdate,
     d.template_name,
+    d.round_type,
     d.score_value AS match_play_score,
     d.thru_num AS holes_played_recorded,
     COALESCE(d.expected_thru, 18) AS holes_played_expected,
@@ -3000,6 +3001,30 @@ SELECT
 -- 3&2 with 13 - and it is 139 against 2797 that agree exactly, so the arithmetic is the rule and
 -- the disagreement is the exception.
 --
+-- Two populations the arithmetic cannot be asked about at all, both found by the reviewers on
+-- 2026-08-19 and both excluded here rather than reported.
+--
+-- A sudden-death play-off plays until somebody wins a hole, so 1up after one hole is the result
+-- and not a match that stopped early. The round type says so - round_typeFK 305, Playoff - and
+-- 31 events carried it, every one of them on the distance branch. Lauren Coughlin against Lucy
+-- Li is the shape: one hole played, 1up, won and lost written on the two cards, nothing wrong
+-- with any of it.
+--
+-- A match somebody walked out of did not go the distance either. WD and WO are written in the
+-- Match Play Score field of the card that left - 20 and 27 events hold one - while the other
+-- card carries the margin, so the event still entered through the surviving score and was
+-- judged as though both had played on. Two of the findings were that. The COVERAGE note below
+-- already said these are outside the statement; it was only true where no other card carried a
+-- notation the arithmetic reads.
+--
+-- Both exclusions reach the eligible population as well as the findings, because an event this
+-- statement cannot judge is not an event it found clean. 278 findings over 4686 events become
+-- 245 over 4640.
+--
+-- The round type travels as a column at the reviewers' asking, so an event that should have been
+-- excluded and was not can be seen without opening anything. Only the name; the id would have
+-- ended in _id and moved the key a reviewer's row-level notes are held by.
+--
 -- The distance branch carries one thing this project has not settled, and it is left visible
 -- rather than resolved by assertion. 60 of its 139 events read exactly 6 holes played beside a
 -- final margin, on European Tour 1 across 2010, 2017, 2018, 2019 and 2022, in clusters of a
@@ -3016,6 +3041,7 @@ FROM (
         c.event_name,
         c.event_startdate,
         c.template_name,
+        c.round_type,
         c.score_value,
         c.thru_num,
         c.expected_thru
@@ -3025,6 +3051,7 @@ FROM (
             b.event_name,
             b.event_startdate,
             b.template_name,
+            b.round_type,
             b.score_value,
             b.thru_num,
             CASE WHEN b.score_value REGEXP '^[0-9]+&[0-9]+$'
@@ -3038,6 +3065,9 @@ FROM (
                 e.name AS event_name,
                 e.startdate AS event_startdate,
                 tt.name AS template_name,
+                rt.name AS round_type,
+                SUM(CASE WHEN UPPER(REPLACE(REPLACE(TRIM(ms.value), '/', ''), '&', '')) IN ('WD', 'WO')
+                         THEN 1 ELSE 0 END) AS abandoned_cards,
                 MAX(CASE WHEN TRIM(pr.value) REGEXP '^[0-9]+$'
                          THEN CAST(TRIM(pr.value) AS SIGNED) END) AS thru_num,
                 MAX(CASE WHEN TRIM(ms.value) REGEXP '^[0-9]+&[0-9]+$'
@@ -3051,6 +3081,7 @@ FROM (
                  AND tt.sportFK = 3
             JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id
                  AND od.del = 'no' AND od.disciplineFK = 630
+            LEFT JOIN round_type rt ON rt.id = e.round_typeFK
             JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
             LEFT JOIN result ms ON ms.event_participantsFK = ep.id AND ms.result_typeFK = 39
                  AND ms.del = 'no' AND TRIM(ms.value) <> ''
@@ -3062,10 +3093,12 @@ FROM (
               -- AND t.tournament_templateFK = <tournament_template_id>
               -- AND e.startdate >= '<from_datetime>'
               -- AND e.startdate <  '<to_datetime>'
-            GROUP BY e.id, e.name, e.startdate, tt.name
+            GROUP BY e.id, e.name, e.startdate, tt.name, rt.name
         ) b
         WHERE b.thru_num IS NOT NULL
           AND b.score_value IS NOT NULL
+          AND b.abandoned_cards = 0
+          AND (b.round_type IS NULL OR b.round_type <> 'Playoff')
     ) c
     WHERE (c.expected_thru IS NOT NULL AND c.thru_num <> c.expected_thru)
        OR (c.expected_thru IS NULL AND c.thru_num < 18)
@@ -3075,7 +3108,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT y.event_id) AS eligible_count,
     1 AS sort_order
 -- Every finished Match Play event that answers both halves of the question: a numeric
@@ -3094,8 +3127,18 @@ FROM (
     JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
          AND pr.name = 'current_hole' AND pr.del = 'no'
          AND TRIM(pr.value) REGEXP '^[0-9]+$'
+    LEFT JOIN round_type rtc ON rtc.id = e.round_typeFK
     WHERE e.del = 'no'
       AND e.status_type = 'finished'
+      AND (rtc.name IS NULL OR rtc.name <> 'Playoff')
+      AND NOT EXISTS (
+          SELECT 1
+          FROM event_participants epw
+          JOIN result msw ON msw.event_participantsFK = epw.id AND msw.result_typeFK = 39
+               AND msw.del = 'no'
+               AND UPPER(REPLACE(REPLACE(TRIM(msw.value), '/', ''), '&', '')) IN ('WD', 'WO')
+          WHERE epw.eventFK = e.id AND epw.del = 'no'
+      )
       AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
