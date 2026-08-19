@@ -285,6 +285,7 @@ SELECT
     END AS check_type,
     g.event_id,
     g.event_name,
+    g.event_startdate,
     g.stage_name,
     g.template_name,
     g.event_year,
@@ -331,6 +332,7 @@ SELECT
 FROM (
     SELECT a.event_id,
            MIN(a.event_name)    AS event_name,
+           MIN(a.event_startdate) AS event_startdate,
            MIN(a.stage_name)    AS stage_name,
            MIN(a.template_name) AS template_name,
            MIN(a.event_year)    AS event_year,
@@ -344,7 +346,8 @@ FROM (
                ORDER BY (a.points_value = 0), (b.points_value - a.points_value) DESC SEPARATOR ' || '), ' || ', 1) AS worst_example
     FROM (
         SELECT ts.name AS stage_name, ts.gender AS stage_gender, tt.name AS template_name,
-               e.id AS event_id, e.name AS event_name, YEAR(e.startdate) AS event_year,
+               e.id AS event_id, e.name AS event_name, e.startdate AS event_startdate,
+               YEAR(e.startdate) AS event_year,
                ep.participantFK AS participant_id, p.name AS participant_name,
                CAST(rr.value AS SIGNED) AS rank_value,
                CAST(rs.value AS SIGNED) AS points_value
@@ -392,7 +395,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(*) AS eligible_count,
     1 AS sort_order
 FROM (
@@ -491,6 +494,7 @@ SELECT
     END AS check_type,
     g.event_id,
     g.event_name,
+    g.event_startdate,
     g.stage_name,
     g.template_name,
     g.event_year,
@@ -520,6 +524,7 @@ SELECT
 FROM (
     SELECT z.event_id,
            MIN(z.event_name)    AS event_name,
+           MIN(z.event_startdate) AS event_startdate,
            MIN(z.stage_name)    AS stage_name,
            MIN(z.template_name) AS template_name,
            MIN(z.event_year)    AS event_year,
@@ -529,7 +534,8 @@ FROM (
                      ORDER BY z.participant_name SEPARATOR ', '), 1, 150) AS examples
     FROM (
         SELECT ts.name AS stage_name, tt.name AS template_name,
-               e.id AS event_id, e.name AS event_name, YEAR(e.startdate) AS event_year,
+               e.id AS event_id, e.name AS event_name, e.startdate AS event_startdate,
+               YEAR(e.startdate) AS event_year,
                ep.participantFK AS participant_id, p.name AS participant_name,
                MAX(CASE WHEN TRIM(rs.value) = '0' THEN 1 ELSE 0 END) AS scored_zero,
                MAX(CASE WHEN rc.id IS NOT NULL AND TRIM(rc.value) <> '' THEN 1 ELSE 0 END) AS has_comment
@@ -555,7 +561,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM tournament_template tt

@@ -1325,6 +1325,7 @@ SELECT
     END AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.template_name,
     x.tournament_name,
     x.stage_name,
@@ -1336,6 +1337,7 @@ FROM (
     SELECT
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         tt.name AS template_name,
         t.name AS tournament_name,
         ts.name AS stage_name,
@@ -1389,7 +1391,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -1478,6 +1480,7 @@ SELECT
     'FINAL_PARTICIPANT_NOT_IN_COMP.RANK' AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.template_name,
     x.tournament_name,
     x.field_size,
@@ -1493,6 +1496,7 @@ FROM (
     SELECT
         y.event_id,
         y.event_name,
+        y.event_startdate,
         y.template_name,
         y.tournament_name,
         COUNT(*) AS field_size,
@@ -1515,6 +1519,7 @@ FROM (
         SELECT
             e.id AS event_id,
             e.name AS event_name,
+            e.startdate AS event_startdate,
             tt.name AS template_name,
             t.name AS tournament_name,
             p.name AS participant_name,
@@ -1566,9 +1571,9 @@ FROM (
           -- AND e.id BETWEEN <from_event_id> AND <to_event_id>
         -- One row per competitor, whatever how many statistics cover the event: a competitor
         -- listed by any of them is not missing.
-        GROUP BY e.id, e.name, tt.name, t.name, ep.id, p.name
+        GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ep.id, p.name
     ) y
-    GROUP BY y.event_id, y.event_name, y.template_name, y.tournament_name
+    GROUP BY y.event_id, y.event_name, y.event_startdate, y.template_name, y.tournament_name
 ) x
 WHERE x.missing_count > 0
 
@@ -1576,7 +1581,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'

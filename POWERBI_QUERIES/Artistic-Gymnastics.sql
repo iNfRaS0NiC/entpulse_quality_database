@@ -783,6 +783,7 @@ SELECT
     'RANK_ORDER_CONTRADICTS_SCORE' AS check_type,
     w.event_id,
     w.event_name,
+    w.event_startdate,
     w.discipline_name,
     w.stage_gender,
     w.event_year,
@@ -837,7 +838,8 @@ FROM (
            LAG(b.rank_value)       OVER (PARTITION BY b.event_id, b.comment_group ORDER BY b.rank_value, b.participant_id) AS prev_rank,
            LAG(b.participant_name) OVER (PARTITION BY b.event_id, b.comment_group ORDER BY b.rank_value, b.participant_id) AS prev_name
     FROM (
-        SELECT e.id AS event_id, e.name AS event_name, d.name AS discipline_name,
+        SELECT e.id AS event_id, e.name AS event_name, e.startdate AS event_startdate,
+               d.name AS discipline_name,
                ts.gender AS stage_gender, YEAR(e.startdate) AS event_year,
                tt.name AS template_name, t.name AS tournament_name,
                ep.participantFK AS participant_id, p.name AS participant_name,
@@ -875,7 +877,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(*) AS eligible_count,
     1 AS sort_order
 FROM (

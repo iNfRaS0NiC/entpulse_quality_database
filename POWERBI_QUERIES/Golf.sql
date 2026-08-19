@@ -156,6 +156,7 @@ SELECT
     z.check_type,
     z.event_id,
     z.event_name,
+    z.event_startdate,
     z.affected_count,
     z.rank_not_integer_count,
     z.rank_over_max_count,
@@ -207,6 +208,7 @@ FROM (
         END AS check_type,
         y.event_id,
         y.event_name,
+        y.event_startdate,
         COUNT(*) AS affected_count,
         SUM(CASE WHEN y.verdict = 'RANK_NOT_INTEGER' THEN 1 ELSE 0 END) AS rank_not_integer_count,
         SUM(CASE WHEN y.verdict = 'RANK_OVER_MAX' THEN 1 ELSE 0 END) AS rank_over_max_count,
@@ -242,6 +244,7 @@ SELECT
     END AS verdict,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.participant_name,
     x.r_rank_value AS rank_value
 FROM (
@@ -249,6 +252,7 @@ FROM (
         ep.id AS event_participants_id,
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         p.name AS participant_name,
         (
             SELECT r1.value
@@ -330,14 +334,14 @@ WHERE
         AND x.r_comment_value IS NULL
         AND (x.r_made_cut IS NULL OR LOWER(TRIM(x.r_made_cut)) <> 'no'))
     ) y
-    GROUP BY y.event_id, y.event_name
+    GROUP BY y.event_id, y.event_name, y.event_startdate
 ) z
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep
@@ -1358,6 +1362,7 @@ SELECT
     'COMP.RANK_OMITS_COMPETITORS_WHO_PLAYED' AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.template_name,
     x.tournament_name,
     x.field_size,
@@ -1382,6 +1387,7 @@ FROM (
     SELECT
         f.event_id,
         f.event_name,
+        f.event_startdate,
         f.template_name,
         f.tournament_name,
         COUNT(DISTINCT f.participant_id) AS field_size,
@@ -1393,6 +1399,7 @@ FROM (
         SELECT
             e.id AS event_id,
             e.name AS event_name,
+            e.startdate AS event_startdate,
             tt.name AS template_name,
             t.name AS tournament_name,
             p.id AS participant_id,
@@ -1447,7 +1454,7 @@ FROM (
     ) c
       ON c.event_id = f.event_id
      AND c.participant_id = f.participant_id
-    GROUP BY f.event_id, f.event_name, f.template_name, f.tournament_name
+    GROUP BY f.event_id, f.event_name, f.event_startdate, f.template_name, f.tournament_name
 ) x
 WHERE x.missing_count > 0
 
@@ -1455,7 +1462,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event e
@@ -1495,6 +1502,7 @@ SELECT
     END AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.tournament_stage_name,
     x.offending_row_count,
     x.sample_row,
@@ -1526,6 +1534,7 @@ FROM (
     SELECT
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         ts.name AS tournament_stage_name,
         COUNT(*) AS offending_row_count,
         SUM(CASE WHEN ep.id IS NULL THEN 1 ELSE 0 END) AS participant_row_missing_count,
@@ -1548,14 +1557,14 @@ FROM (
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
       AND (ep.id IS NULL OR ep.eventFK <> es.eventFK)
-    GROUP BY e.id, e.name, ts.name
+    GROUP BY e.id, e.name, e.startdate, ts.name
 ) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM scope_result sr
@@ -1673,6 +1682,7 @@ SELECT
     END AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.tournament_stage_name,
     x.offending_row_count,
     x.sample_row,
@@ -1699,6 +1709,7 @@ FROM (
     SELECT
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         ts.name AS tournament_stage_name,
         COUNT(*) AS offending_row_count,
         SUM(CASE WHEN l.id IS NULL THEN 1 ELSE 0 END) AS lineup_row_missing_count,
@@ -1722,14 +1733,14 @@ FROM (
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
       AND (l.id IS NULL OR ep.id IS NULL OR ep.eventFK <> es.eventFK)
-    GROUP BY e.id, e.name, ts.name
+    GROUP BY e.id, e.name, e.startdate, ts.name
 ) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM lineup_scope_result lsr
@@ -1759,6 +1770,7 @@ SELECT
     END AS check_type,
     d.event_id,
     d.event_name,
+    d.event_startdate,
     d.stage_id AS tournament_stage_id,
     d.stage_name AS tournament_stage_name,
     d.tournament_name,
@@ -1824,6 +1836,7 @@ FROM (
     SELECT
         b.event_id,
         b.event_name,
+        b.event_startdate,
         b.stage_id,
         b.stage_name,
         b.tournament_name,
@@ -1837,6 +1850,7 @@ FROM (
         SELECT
             a.event_id,
             a.event_name,
+            a.event_startdate,
             a.stage_id,
             a.stage_name,
             a.tournament_name,
@@ -1853,6 +1867,7 @@ FROM (
                 ep.id AS ep_id,
                 e.id AS event_id,
                 e.name AS event_name,
+                e.startdate AS event_startdate,
                 ts.id AS stage_id,
                 ts.name AS stage_name,
                 t.name AS tournament_name,
@@ -1882,7 +1897,7 @@ FROM (
               -- AND t.tournament_templateFK = <tournament_template_id>
               -- AND e.startdate >= '<from_datetime>'
               -- AND e.startdate <  '<to_datetime>'
-            GROUP BY ep.id, e.id, e.name, ts.id, ts.name, t.name, tt.name
+            GROUP BY ep.id, e.id, e.name, e.startdate, ts.id, ts.name, t.name, tt.name
         ) a
         JOIN (
             SELECT objectFK AS stage_id, MAX(value) AS par_value
@@ -1894,7 +1909,7 @@ FROM (
           AND a.par_total IS NOT NULL
     ) b
     WHERE b.implied_par IS NOT NULL
-    GROUP BY b.event_id, b.event_name, b.stage_id, b.stage_name, b.tournament_name,
+    GROUP BY b.event_id, b.event_name, b.event_startdate, b.stage_id, b.stage_name, b.tournament_name,
              b.template_name, b.stage_par, b.implied_par
 ) d
 WHERE d.rn = 1
@@ -1904,7 +1919,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 -- The same population reached without aggregating it. An event is eligible when its stage
@@ -1949,6 +1964,7 @@ SELECT
     'CARD_TOTAL_PAR_CONTRADICTS_ITS_OWN_ROUNDS' AS check_type,
     w.event_id,
     w.event_name,
+    w.event_startdate,
     w.season,
     w.participant_name,
     w.field_par AS the_field_par,
@@ -2027,6 +2043,7 @@ FROM (
     SELECT
         f.event_id,
         f.event_name,
+        f.event_startdate,
         f.season,
         f.participant_name,
         f.n_rounds,
@@ -2041,6 +2058,7 @@ FROM (
         SELECT
             v.event_id,
             v.event_name,
+            v.event_startdate,
             v.season,
             v.participant_name,
             v.n_rounds,
@@ -2056,6 +2074,7 @@ FROM (
             SELECT
                 b.event_id,
                 b.event_name,
+                b.event_startdate,
                 b.season,
                 b.participant_name,
                 b.n_rounds,
@@ -2068,6 +2087,7 @@ FROM (
                 SELECT
                     a.event_id,
                     a.event_name,
+                    a.event_startdate,
                     a.season,
                     a.participant_name,
                     a.n_rounds,
@@ -2085,6 +2105,7 @@ FROM (
                         ep.id AS ep_id,
                         e.id AS event_id,
                         e.name AS event_name,
+                        e.startdate AS event_startdate,
                         t.name AS season,
                         p.name AS participant_name,
                         ts.id AS stage_id,
@@ -2117,7 +2138,7 @@ FROM (
                       -- AND t.tournament_templateFK = <tournament_template_id>
                       -- AND e.startdate >= '<from_datetime>'
                       -- AND e.startdate <  '<to_datetime>'
-                    GROUP BY ep.id, e.id, e.name, t.name, p.name, ts.id
+                    GROUP BY ep.id, e.id, e.name, e.startdate, t.name, p.name, ts.id
                 ) a
                 JOIN (
                     SELECT objectFK AS stage_id, MAX(value) AS par_value
@@ -2139,7 +2160,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count,
     1 AS sort_order
 -- Every card the arithmetic can be asked about: a competitor holding at least one numeric round
@@ -2389,6 +2410,7 @@ SELECT
          ELSE 'MISSED_CUT_CARD_HOLDS_A_ROUND_PLAYED_AFTER_THE_CUT' END AS check_type,
     b.event_id,
     b.event_name,
+    b.event_startdate,
     b.season,
     b.participant_name,
     b.made_cut AS made_cut_recorded,
@@ -2440,6 +2462,7 @@ FROM (
     SELECT
         a.event_id,
         a.event_name,
+        a.event_startdate,
         a.season,
         a.participant_name,
         a.made_cut,
@@ -2455,6 +2478,7 @@ FROM (
         SELECT
             e.id AS event_id,
             e.name AS event_name,
+            e.startdate AS event_startdate,
             t.name AS season,
             p.name AS participant_name,
             MAX(CASE WHEN r.result_typeFK = 38 THEN LOWER(TRIM(r.value)) END) AS made_cut,
@@ -2478,7 +2502,7 @@ FROM (
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
-        GROUP BY ep.id, e.id, e.name, t.name, p.name
+        GROUP BY ep.id, e.id, e.name, e.startdate, t.name, p.name
     ) a
 ) b
 WHERE (
@@ -2493,7 +2517,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count,
     1 AS sort_order
 -- Every card either branch can speak about: a competitor carrying a cut flag, or carrying the
@@ -2531,6 +2555,7 @@ SELECT
     'RANK_CONTRADICTS_THE_TOTAL_PAR_IT_IS_BUILT_ON' AS check_type,
     d.event_id,
     d.event_name,
+    d.event_startdate,
     d.season,
     d.participant_name,
     d.rank_value AS rank_recorded,
@@ -2578,6 +2603,7 @@ FROM (
     SELECT
         c.event_id,
         c.event_name,
+        c.event_startdate,
         c.season,
         c.participant_name,
         c.rank_value,
@@ -2590,6 +2616,7 @@ FROM (
         SELECT
             b.event_id,
             b.event_name,
+            b.event_startdate,
             b.season,
             b.participant_name,
             b.rank_value,
@@ -2602,6 +2629,7 @@ FROM (
             SELECT
                 e.id AS event_id,
                 e.name AS event_name,
+                e.startdate AS event_startdate,
                 t.name AS season,
                 p.name AS participant_name,
                 MAX(CASE WHEN r.result_typeFK = 104 THEN LOWER(TRIM(r.value)) END) AS comment_value,
@@ -2629,7 +2657,7 @@ FROM (
               -- AND t.tournament_templateFK = <tournament_template_id>
               -- AND e.startdate >= '<from_datetime>'
               -- AND e.startdate <  '<to_datetime>'
-            GROUP BY ep.id, e.id, e.name, t.name, p.name
+            GROUP BY ep.id, e.id, e.name, e.startdate, t.name, p.name
             HAVING rank_value IS NOT NULL
                AND par_total IS NOT NULL
                AND n_rounds > 0
@@ -2645,7 +2673,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count,
     1 AS sort_order
 -- Every card the comparison can be made on: a competitor holding a numeric rank, a numeric Total
@@ -2698,6 +2726,7 @@ SELECT
          ELSE 'WINNER_DOES_NOT_HOLD_THE_BEST_TOTAL_PAR' END AS check_type,
     d.event_id,
     d.event_name,
+    d.event_startdate,
     d.season,
     d.template_name,
     d.leader_par AS total_par_of_the_first_place,
@@ -2739,6 +2768,7 @@ FROM (
     SELECT
         b.event_id,
         b.event_name,
+        b.event_startdate,
         b.season,
         b.template_name,
         COUNT(*) AS cards_read,
@@ -2749,6 +2779,7 @@ FROM (
         SELECT
             e.id AS event_id,
             e.name AS event_name,
+            e.startdate AS event_startdate,
             t.name AS season,
             tt.name AS template_name,
             MAX(CASE WHEN r.result_typeFK = 104 THEN LOWER(TRIM(r.value)) END) AS comment_value,
@@ -2775,14 +2806,14 @@ FROM (
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
-        GROUP BY ep.id, e.id, e.name, t.name, tt.name
+        GROUP BY ep.id, e.id, e.name, e.startdate, t.name, tt.name
         HAVING rank_value IS NOT NULL
            AND par_total IS NOT NULL
            AND n_rounds > 0
            AND (comment_value IS NULL
                 OR comment_value NOT IN ('wd', 'dq', 'rtd', 'dns', 'nr', 'n/r', 'mdf', 'mc'))
     ) b
-    GROUP BY b.event_id, b.event_name, b.season, b.template_name
+    GROUP BY b.event_id, b.event_name, b.event_startdate, b.season, b.template_name
 ) d
 WHERE d.leader_par IS NOT NULL
   AND d.leader_par <> d.best_par
@@ -2791,7 +2822,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 -- Every event the question can be put to: one holding at least one card written into first place
@@ -2830,6 +2861,7 @@ SELECT
     'A_ROUND_IS_SKIPPED_IN_THE_ROUND_SEQUENCE' AS check_type,
     b.event_id,
     b.event_name,
+    b.event_startdate,
     b.season,
     b.template_name,
     GROUP_CONCAT(DISTINCT NULLIF(b.gap_kind, '') ORDER BY b.gap_kind SEPARATOR ' / ') AS gaps_found,
@@ -2874,6 +2906,7 @@ FROM (
     SELECT
         a.event_id,
         a.event_name,
+        a.event_startdate,
         a.season,
         a.template_name,
         a.participant_name,
@@ -2886,6 +2919,7 @@ FROM (
         SELECT
             e.id AS event_id,
             e.name AS event_name,
+            e.startdate AS event_startdate,
             t.name AS season,
             tt.name AS template_name,
             p.name AS participant_name,
@@ -2912,17 +2946,17 @@ FROM (
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
-        GROUP BY ep.id, e.id, e.name, t.name, tt.name, p.name
+        GROUP BY ep.id, e.id, e.name, e.startdate, t.name, tt.name, p.name
     ) a
 ) b
-GROUP BY b.event_id, b.event_name, b.season, b.template_name
+GROUP BY b.event_id, b.event_name, b.event_startdate, b.season, b.template_name
 HAVING cards_affected > 0
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 -- Every event holding at least one round actually played by somebody. An event storing no round
@@ -2958,6 +2992,7 @@ SELECT
     'PRIZE_MONEY_CONTRADICTS_THE_FINISHING_ORDER' AS check_type,
     d.event_id,
     d.event_name,
+    d.event_startdate,
     d.season,
     d.template_name,
     d.participant_name,
@@ -3002,6 +3037,7 @@ FROM (
     SELECT
         c.event_id,
         c.event_name,
+        c.event_startdate,
         c.season,
         c.template_name,
         c.participant_name,
@@ -3014,6 +3050,7 @@ FROM (
         SELECT
             b.event_id,
             b.event_name,
+            b.event_startdate,
             b.season,
             b.template_name,
             b.participant_name,
@@ -3025,6 +3062,7 @@ FROM (
             SELECT
                 e.id AS event_id,
                 e.name AS event_name,
+                e.startdate AS event_startdate,
                 t.name AS season,
                 tt.name AS template_name,
                 p.name AS participant_name,
@@ -3049,7 +3087,7 @@ FROM (
               -- AND t.tournament_templateFK = <tournament_template_id>
               -- AND e.startdate >= '<from_datetime>'
               -- AND e.startdate <  '<to_datetime>'
-            GROUP BY ep.id, e.id, e.name, t.name, tt.name, p.name
+            GROUP BY ep.id, e.id, e.name, e.startdate, t.name, tt.name, p.name
             HAVING rank_value IS NOT NULL AND prize > 0
         ) b
     ) c
@@ -3060,7 +3098,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count,
     1 AS sort_order
 -- Every card carrying both a finishing place and money actually paid, which is what the comparison

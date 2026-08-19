@@ -402,6 +402,7 @@ SELECT
     x.event_participants_id,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.stage_name,
     x.stage_gender,
     x.participant_type,
@@ -423,6 +424,7 @@ FROM (
         ep.id AS event_participants_id,
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         ts.name AS stage_name,
         LOWER(TRIM(ts.gender)) AS stage_gender,
         p.name AS participant_name,
@@ -448,7 +450,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
-    GROUP BY ep.id, e.id, e.name, ts.name, ts.gender, p.name, p.type, p.gender
+    GROUP BY ep.id, e.id, e.name, e.startdate, ts.name, ts.gender, p.name, p.type, p.gender
 ) x
 WHERE
     (x.participant_type = 'team' AND x.participant_gender = 'mixed'
@@ -462,7 +464,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count
 FROM event_participants ep
 JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
@@ -493,6 +495,7 @@ SELECT
     END AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.tournament_template_name,
     x.team_count,
     x.teams_with_lineup,
@@ -505,6 +508,7 @@ FROM (
     SELECT
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         tt.name AS tournament_template_name,
         COUNT(DISTINCT ep.id) AS team_count,
         COUNT(DISTINCT CASE WHEN l.id IS NOT NULL THEN ep.id END) AS teams_with_lineup,
@@ -524,7 +528,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
-    GROUP BY e.id, e.name, tt.name
+    GROUP BY e.id, e.name, e.startdate, tt.name
 ) x
 WHERE x.teams_with_lineup < x.team_count
 
@@ -532,7 +536,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event_participants ep
 JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
@@ -559,6 +563,7 @@ SELECT
     x.event_participants_id,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.stage_name,
     x.participant_name,
     x.lineup_rows,
@@ -574,6 +579,7 @@ FROM (
         ep.id AS event_participants_id,
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         ts.name AS stage_name,
         p.name AS participant_name,
         COUNT(l.id) AS lineup_rows,
@@ -596,7 +602,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
-    GROUP BY ep.id, e.id, e.name, ts.name, p.name
+    GROUP BY ep.id, e.id, e.name, e.startdate, ts.name, p.name
 ) x
 WHERE x.lineup_male > 0
   AND x.lineup_female > 0
@@ -606,7 +612,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT y.event_participants_id) AS eligible_count
 FROM (
     SELECT
@@ -646,6 +652,7 @@ SELECT
     END AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.stage_name,
     x.tournament_template_name,
     x.teams_measured,
@@ -660,6 +667,7 @@ FROM (
     SELECT
         b.event_id,
         b.event_name,
+        b.event_startdate,
         b.stage_name,
         b.tournament_template_name,
         COUNT(*) AS teams_measured,
@@ -671,6 +679,7 @@ FROM (
         SELECT
             e.id AS event_id,
             e.name AS event_name,
+            e.startdate AS event_startdate,
             ts.name AS stage_name,
             tt.name AS tournament_template_name,
             p.name AS participant_name,
@@ -688,9 +697,9 @@ FROM (
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
-        GROUP BY ep.id, e.id, e.name, ts.name, tt.name, p.name
+        GROUP BY ep.id, e.id, e.name, e.startdate, ts.name, tt.name, p.name
     ) b
-    GROUP BY b.event_id, b.event_name, b.stage_name, b.tournament_template_name
+    GROUP BY b.event_id, b.event_name, b.event_startdate, b.stage_name, b.tournament_template_name
 ) x
 WHERE x.teams_measured > 1
   AND x.max_size > x.min_size
@@ -699,7 +708,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT y.event_id) AS eligible_count,
     1 AS sort_order
 FROM (
@@ -876,6 +885,7 @@ SELECT
     END AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.tournament_stage_name,
     x.offending_row_count,
     x.offending_types,
@@ -892,6 +902,7 @@ FROM (
     SELECT
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         ts.name AS tournament_stage_name,
         COUNT(*) AS offending_row_count,
         SUM(CASE WHEN p.id IS NULL THEN 1 ELSE 0 END) AS reference_missing_count,
@@ -909,14 +920,14 @@ FROM (
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
       AND (p.id IS NULL OR p.type NOT IN ({{EVENT_PARTICIPANT_TYPE_LIST}}))
-    GROUP BY e.id, e.name, ts.name
+    GROUP BY e.id, e.name, e.startdate, ts.name
 ) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep
@@ -945,6 +956,7 @@ SELECT
     END AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.tournament_stage_name,
     x.affected_athletes,
     x.affected_athlete_detail,
@@ -968,6 +980,7 @@ FROM (
     SELECT
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         ts.name AS tournament_stage_name,
         COUNT(*) AS affected_athletes,
         MAX(ga.teams_holding) AS max_teams_holding,
@@ -1015,14 +1028,14 @@ FROM (
     ) ga
     JOIN event e ON e.id = ga.event_id AND e.del = 'no'
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-    GROUP BY e.id, e.name, ts.name
+    GROUP BY e.id, e.name, e.startdate, ts.name
 ) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event e

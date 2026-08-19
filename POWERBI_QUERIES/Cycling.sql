@@ -289,6 +289,7 @@ SELECT
     'RANK_OUTLIER_ABOVE_FIELD_SIZE' AS check_type,
     z.event_id,
     z.event_name,
+    z.event_startdate,
     z.template_name,
     -- The edition, carried from GLOBAL-DQ-020 where it was added on 2026-08-17. It matters more
     -- here than anywhere else the template runs: this sport names its events Stage 4, which is
@@ -316,6 +317,7 @@ FROM (
     SELECT
         y.event_id,
         y.event_name,
+        y.event_startdate,
         y.template_name,
         y.tournament_name,
         MAX(y.participant_count) AS participant_count,
@@ -329,6 +331,7 @@ FROM (
         x.event_participants_id,
         x.event_id,
         x.event_name,
+        x.event_startdate,
         x.template_name,
         x.tournament_name,
         x.participant_name,
@@ -340,6 +343,7 @@ FROM (
             ep.id AS event_participants_id,
             e.id AS event_id,
             e.name AS event_name,
+            e.startdate AS event_startdate,
             tt.name AS template_name,
             t.name AS tournament_name,
             p.name AS participant_name,
@@ -396,14 +400,14 @@ FROM (
     ) y
     WHERE y.next_lower_rank IS NULL
        OR y.rank_value > y.next_lower_rank + 1
-    GROUP BY y.event_id, y.event_name, y.template_name, y.tournament_name
+    GROUP BY y.event_id, y.event_name, y.event_startdate, y.template_name, y.tournament_name
 ) z
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep
@@ -436,6 +440,7 @@ SELECT
     'FINAL_PARTICIPANT_NOT_IN_COMP.RANK' AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.template_name,
     x.tournament_name,
     x.field_size,
@@ -455,6 +460,7 @@ FROM (
     SELECT
         y.event_id,
         y.event_name,
+        y.event_startdate,
         y.template_name,
         y.tournament_name,
         COUNT(*) AS field_size,
@@ -465,6 +471,7 @@ FROM (
         SELECT
             e.id AS event_id,
             e.name AS event_name,
+            e.startdate AS event_startdate,
             tt.name AS template_name,
             t.name AS tournament_name,
             p.name AS participant_name,
@@ -513,9 +520,9 @@ FROM (
           AND t.tournament_templateFK NOT IN (10350, 10351, 10352, 10353, 12652, 12653, 12654, 12655, 12656, 12657, 12658)
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.id BETWEEN <from_event_id> AND <to_event_id>
-        GROUP BY e.id, e.name, tt.name, t.name, ep.id, p.name
+        GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ep.id, p.name
     ) y
-    GROUP BY y.event_id, y.event_name, y.template_name, y.tournament_name
+    GROUP BY y.event_id, y.event_name, y.event_startdate, y.template_name, y.tournament_name
 ) x
 WHERE x.missing_count > 0
 
@@ -523,7 +530,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -802,6 +809,7 @@ SELECT
     END AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.tournament_stage_name,
     x.template_name,
     x.field_size,
@@ -846,6 +854,7 @@ FROM (
     SELECT
         y.event_id,
         MAX(y.event_name) AS event_name,
+        MAX(y.event_startdate) AS event_startdate,
         MAX(y.tournament_stage_name) AS tournament_stage_name,
         MAX(y.template_name) AS template_name,
         COUNT(DISTINCT y.ep_id) AS field_size,
@@ -863,6 +872,7 @@ FROM (
             g.ep_id,
             g.event_id,
             g.event_name,
+            g.event_startdate,
             g.tournament_stage_name,
             g.template_name,
             g.participant_name,
@@ -882,6 +892,7 @@ FROM (
                 ep.id AS ep_id,
                 e.id AS event_id,
                 e.name AS event_name,
+                e.startdate AS event_startdate,
                 ts.name AS tournament_stage_name,
                 tt.name AS template_name,
                 p.name AS participant_name,
@@ -904,7 +915,7 @@ FROM (
               -- AND t.tournament_templateFK = <tournament_template_id>
               -- AND e.startdate >= '<from_datetime>'
               -- AND e.startdate <  '<to_datetime>'
-            GROUP BY ep.id, e.id, e.name, ts.name, tt.name, p.name
+            GROUP BY ep.id, e.id, e.name, e.startdate, ts.name, tt.name, p.name
         ) g
     ) y
     GROUP BY y.event_id
@@ -915,7 +926,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 -- Coverage counts the finished events that hold at least one entered rider, which is the
@@ -1048,6 +1059,7 @@ SELECT
     x.check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.template_name,
     x.tournament_stage_name,
     x.offending_rows,
@@ -1075,6 +1087,7 @@ FROM (
         g.check_type,
         g.event_id,
         MAX(g.event_name) AS event_name,
+        MAX(g.event_startdate) AS event_startdate,
         MAX(g.template_name) AS template_name,
         MAX(g.tournament_stage_name) AS tournament_stage_name,
         COUNT(*) AS offending_rows,
@@ -1088,6 +1101,7 @@ FROM (
             END AS check_type,
             e.id AS event_id,
             e.name AS event_name,
+            e.startdate AS event_startdate,
             tt.name AS template_name,
             ts.name AS tournament_stage_name,
             CONCAT(esd.name, ' = ', COALESCE(esd.value, '')) AS offending_value
@@ -1119,6 +1133,7 @@ FROM (
         'CHECKPOINT_MORE_THAN_ONE_FINISH_LINE' AS check_type,
         f.event_id,
         MAX(f.event_name),
+        MAX(f.event_startdate),
         MAX(f.template_name),
         MAX(f.tournament_stage_name),
         COUNT(*) AS offending_rows,
@@ -1127,6 +1142,7 @@ FROM (
         SELECT
             e.id AS event_id,
             e.name AS event_name,
+            e.startdate AS event_startdate,
             tt.name AS template_name,
             ts.name AS tournament_stage_name
         FROM event_scope es
@@ -1149,7 +1165,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT es.eventFK) AS eligible_count
 FROM event_scope es
 JOIN event e ON e.id = es.eventFK AND e.del = 'no'
@@ -1172,6 +1188,7 @@ SELECT
     'SPLIT_STAGE_HALF_WITHOUT_SIBLING' AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.template_name,
     x.tournament_stage_id,
     x.tournament_stage_name,
@@ -1196,6 +1213,7 @@ FROM (
         tt.name AS template_name,
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         CAST(SUBSTRING(e.name, 7) AS UNSIGNED) AS stage_number,
         LOWER(SUBSTRING(REGEXP_REPLACE(e.name, '^Stage [0-9]+', ''), 1, 1)) AS half_letter
     FROM event e
@@ -1228,7 +1246,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -1250,6 +1268,7 @@ SELECT
     'RIDER_OVER_THE_AGE_CLASS_CEILING' AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.template_name,
     x.tournament_stage_name,
     x.age_class_name,
@@ -1284,6 +1303,7 @@ FROM (
     SELECT
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         tt.name AS template_name,
         ts.name AS tournament_stage_name,
         ac.name AS age_class_name,
@@ -1311,13 +1331,13 @@ FROM (
 ) x
 WHERE (x.age_class_name = 'JUNIOR' AND x.age_in_the_year > 22)
    OR (x.age_class_name = 'YOUTH'  AND x.age_in_the_year > 18)
-GROUP BY x.event_id, x.event_name, x.template_name, x.tournament_stage_name, x.age_class_name
+GROUP BY x.event_id, x.event_name, x.event_startdate, x.template_name, x.tournament_stage_name, x.age_class_name
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM object_relation orr
 JOIN tournament_age_class ac ON ac.id = orr.rel_objectFK

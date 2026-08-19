@@ -5,6 +5,7 @@ SELECT
     'EVENT_DISCIPLINE_NOT_MATCHING_NAME' AS check_type,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     CASE x.expected_discipline_id
         WHEN 144 THEN 'Standard Distance'
         WHEN 799 THEN 'Sprint Distance'
@@ -33,6 +34,7 @@ FROM (
     SELECT
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         tt.name AS template_name,
         t.name AS tournament_name,
         ts.name AS stage_name,
@@ -75,7 +77,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT c.event_id) AS eligible_count,
     1 AS sort_order
 FROM (
@@ -127,6 +129,7 @@ SELECT
     x.event_participants_id,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.participant_name,
     CASE x.discipline_id
         WHEN 144 THEN 'Standard Distance'
@@ -152,6 +155,7 @@ FROM (
         b.event_participants_id,
         b.event_id,
         b.event_name,
+        b.event_startdate,
         b.participant_name,
         b.template_name,
         b.discipline_id,
@@ -179,6 +183,7 @@ FROM (
             ep.id AS event_participants_id,
             e.id AS event_id,
             e.name AS event_name,
+            e.startdate AS event_startdate,
             p.name AS participant_name,
             tt.name AS template_name,
             TRIM(rr.value) AS rank_value,
@@ -267,7 +272,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep
@@ -305,6 +310,7 @@ SELECT
     x.event_participants_id,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.participant_name,
     x.violating_value_count,
     x.violating_values,
@@ -320,6 +326,7 @@ FROM (
         ep.id AS event_participants_id,
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         p.name AS participant_name,
         tt.name AS tournament_template_name,
         COUNT(DISTINCT r.id) AS violating_value_count,
@@ -357,14 +364,14 @@ FROM (
             TRIM(r.value) NOT REGEXP '^\\+?([0-9]+:[0-5][0-9]:[0-5][0-9]|[0-9]+:[0-5][0-9]|[0-9]+)\\.[0-9]+$'
          OR (r.result_typeFK = 557 AND TRIM(r.value) LIKE '+%')
           )
-    GROUP BY ep.id, e.id, e.name, p.name, tt.name
+    GROUP BY ep.id, e.id, e.name, e.startdate, p.name, tt.name
 ) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep
@@ -400,6 +407,7 @@ SELECT
     x.event_participants_id,
     x.event_id,
     x.event_name,
+    x.event_startdate,
     x.tournament_stage_name,
     x.lineup_size,
     NULL AS eligible_count,
@@ -419,6 +427,7 @@ FROM (
         ep.id AS event_participants_id,
         e.id AS event_id,
         e.name AS event_name,
+        e.startdate AS event_startdate,
         ts.name AS tournament_stage_name,
         COUNT(DISTINCT l.participantFK) AS lineup_size
     FROM event_participants ep
@@ -438,7 +447,7 @@ FROM (
           WHERE od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
             AND od.disciplineFK = 800
       )
-    GROUP BY ep.id, e.id, e.name, ts.name
+    GROUP BY ep.id, e.id, e.name, e.startdate, ts.name
     HAVING COUNT(DISTINCT l.participantFK) <> 4
 ) x
 
@@ -446,7 +455,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep
