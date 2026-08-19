@@ -1413,27 +1413,40 @@ FROM (
         JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
         JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
         JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        -- The covering events, resolved once for the sport instead of asked per
+        -- (event, competitor) pair. As a correlated EXISTS this ran 347267 times, once for
+        -- every pair below, and each run was a FIND_IN_SET scan no index can serve: measured
+        -- 2026-08-19 it cost 152 of the statement's seconds and took the whole check past the
+        -- gateway's 180-second ceiling, where it had returned in 34 seconds that morning. As a
+        -- join the same set costs 2.9 seconds and holds the identical 347267 pairs over the
+        -- identical 3055 events. It is the shape the covering set below already used; this
+        -- side had been left behind.
+        JOIN (
+            SELECT DISTINCT eg.id AS event_id
+            FROM statistic_config scg
+            JOIN statistic sg ON sg.id = scg.statisticFK AND sg.del = 'no'
+                 AND sg.statistic_typeFK = 11 AND sg.object_typeFK = 3
+            JOIN tournament tg ON tg.id = sg.objectFK AND tg.del = 'no'
+            JOIN tournament_template ttg ON ttg.id = tg.tournament_templateFK AND ttg.del = 'no'
+                 AND ttg.sportFK = 3
+            JOIN tournament_stage tsg ON tsg.tournamentFK = tg.id AND tsg.del = 'no'
+            JOIN event eg ON eg.tournament_stageFK = tsg.id AND eg.del = 'no'
+                 AND FIND_IN_SET(eg.id, scg.value) > 0
+            WHERE scg.statistic_data_typeFK = 1471
+              AND scg.del = 'no'
+              -- An event covered only by an empty statistic omits everyone, which is
+              -- GLOBAL-DQ-010 reported once rather than this reported per competitor.
+              AND EXISTS (
+                  SELECT 1 FROM statistic_participants11 spg
+                  WHERE spg.statisticFK = sg.id AND spg.del = 'no'
+              )
+        ) cov ON cov.event_id = e.id
         WHERE e.del = 'no'
           AND tt.sportFK = 3
           AND e.round_typeFK IN (225)
           AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
           AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
           -- AND t.tournament_templateFK = <tournament_template_id>
-          AND EXISTS (
-              SELECT 1
-              FROM statistic_config scg
-              JOIN statistic sg ON sg.id = scg.statisticFK AND sg.del = 'no'
-                   AND sg.statistic_typeFK = 11 AND sg.object_typeFK = 3
-                   AND sg.objectFK = t.id
-              WHERE scg.statistic_data_typeFK = 1471 AND scg.del = 'no'
-                AND FIND_IN_SET(e.id, scg.value) > 0
-                -- An event covered only by an empty statistic omits everyone, which is
-                -- GLOBAL-DQ-010 reported once rather than this reported per competitor.
-                AND EXISTS (
-                    SELECT 1 FROM statistic_participants11 spg
-                    WHERE spg.statisticFK = sg.id AND spg.del = 'no'
-                )
-          )
     ) f
     LEFT JOIN (
         -- Who the covering statistics rank, as one set for the whole sport.
@@ -1472,6 +1485,28 @@ FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN (
+    -- The same covering events the finding branch joins, and for the same reason: as a
+    -- correlated EXISTS this branch cost 106.7 seconds on 2026-08-19 and as a join it costs
+    -- 2.4, over the identical 3055 events. Both branches must read one scope, so both are
+    -- written the one way.
+    SELECT DISTINCT eg.id AS event_id
+    FROM statistic_config scg
+    JOIN statistic sg ON sg.id = scg.statisticFK AND sg.del = 'no'
+         AND sg.statistic_typeFK = 11 AND sg.object_typeFK = 3
+    JOIN tournament tg ON tg.id = sg.objectFK AND tg.del = 'no'
+    JOIN tournament_template ttg ON ttg.id = tg.tournament_templateFK AND ttg.del = 'no'
+         AND ttg.sportFK = 3
+    JOIN tournament_stage tsg ON tsg.tournamentFK = tg.id AND tsg.del = 'no'
+    JOIN event eg ON eg.tournament_stageFK = tsg.id AND eg.del = 'no'
+         AND FIND_IN_SET(eg.id, scg.value) > 0
+    WHERE scg.statistic_data_typeFK = 1471
+      AND scg.del = 'no'
+      AND EXISTS (
+          SELECT 1 FROM statistic_participants11 spg
+          WHERE spg.statisticFK = sg.id AND spg.del = 'no'
+      )
+) cov ON cov.event_id = e.id
 JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = 3
@@ -1479,19 +1514,6 @@ WHERE e.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
   -- AND t.tournament_templateFK = <tournament_template_id>
-  AND EXISTS (
-      SELECT 1
-      FROM statistic_config scg
-      JOIN statistic sg ON sg.id = scg.statisticFK AND sg.del = 'no'
-           AND sg.statistic_typeFK = 11 AND sg.object_typeFK = 3
-           AND sg.objectFK = t.id
-      WHERE scg.statistic_data_typeFK = 1471 AND scg.del = 'no'
-        AND FIND_IN_SET(e.id, scg.value) > 0
-        AND EXISTS (
-            SELECT 1 FROM statistic_participants11 spg
-            WHERE spg.statisticFK = sg.id AND spg.del = 'no'
-        )
-  )
 
 ORDER BY sort_order, missing_count DESC, event_id;
 -- ==============================================================================
