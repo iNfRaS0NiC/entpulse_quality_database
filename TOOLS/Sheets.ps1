@@ -139,7 +139,7 @@ $SheetsCellBudgetWarning = 8000000
 # work through and how long it took to read the board about it are two different numbers, and
 # a mirror would force them to be one - so each side holds its own and nothing links them.
 $SheetsOverviewColumns = @(
-    'Sport', 'CheckID', 'Parameters', 'Check Name', 'Priority', 'Category', 'What it does',
+    'Sport', 'CheckID', 'Object', 'Check Name', 'Priority', 'Category', 'What it does',
     'Rows', 'Status', 'Check By', 'Comment', 'Time Spent (minutes)', 'Signal', 'Signal reason',
     'Expected', 'Findings', 'All findings', 'Eligible', 'Prev findings', 'Prev eligible',
     'Change', 'Verdict', 'Last run', 'Trends')
@@ -195,10 +195,14 @@ $SheetsCheckTabReviewerColumns = @(
         ForEach-Object { [array]::IndexOf($SheetsCheckTabColumns, $_) + 1 })
 
 # Columns Overview ships hidden. Signal and Signal reason are the runner's classification,
-# settled before the run and unchanged by reading it. Parameters is empty for every check of
-# a sport that takes none and identical for every check of one that does, so it is a column
-# of repetition next to the two things a reviewer navigates by. All three stay in the sheet
-# and in _summary.csv; unhiding brings back every value.
+# settled before the run and unchanged by reading it. Both stay in the sheet and in
+# _summary.csv; unhiding brings back every value.
+#
+# Parameters used to sit here and no longer exists on the board. It was empty for every check
+# of a sport that takes none and identical for every check of one that does, so it was a
+# column of repetition beside the two things a reviewer navigates by - and column C is the
+# one place on the board worth spending on. Object took it on 2026-08-19 at the reviewers'
+# asking, and Object is not hidden: it is what says which layer to repair first.
 #
 # Hidden on the run that creates Overview and on every run that covers the whole sport.
 # Contiguous runs are hidden together and gaps are not bridged, so hiding C does not take D
@@ -214,7 +218,7 @@ $SheetsCheckTabReviewerColumns = @(
 # these were the literal 3, 12 and 13 until a column arrived to the left of Signal, and a
 # literal here would have hidden Signal reason and Expected instead.
 $SheetsOverviewHiddenColumns = @(
-    @('Parameters', 'Signal', 'Signal reason', 'Eligible', 'Prev findings', 'Prev eligible') |
+    @('Signal', 'Signal reason', 'Eligible', 'Prev findings', 'Prev eligible') |
         ForEach-Object { [array]::IndexOf($SheetsOverviewColumns, $_) + 1 })
 
 # How Overview colours its Rows column, and what each band means.
@@ -802,6 +806,43 @@ function New-SheetsGidLink {
     return '=HYPERLINK("{0}",{1})' -f $target, $label
 }
 
+# What the board's Object column says, from the value POWERBI_REGISTRY.md records.
+#
+# The registry distinguishes a check on an event from one on that event's results, and a check
+# on a Comp.Rank from one on its results. That distinction is real and it stays where it is
+# written; it is not what the board is navigated by. A reviewer working through a sport needs
+# to know which layer to repair first, because a Comp.Rank is generated from the events beneath
+# it and fixing the ranking before the events is work that gets undone. Six words answer that
+# and nine do not, so the board collapses the pairs and the registry keeps them.
+#
+# A value nobody has mapped is passed through rather than blanked. The column is visible and a
+# word that looks out of place is a question somebody asks; an empty cell is one nobody sees.
+$SheetsBoardObject = @{
+    'EVENT'               = 'Event'
+    'EVENT_RESULTS'       = 'Event'
+    'COMP.RANK'           = 'Comp Rank'
+    'COMP.RANK_RESULTS'   = 'Comp Rank'
+    'TOURNAMENT_STAGE'    = 'Stage'
+    'TOURNAMENT'          = 'Tournament'
+    'TEMPLATE'            = 'Template'
+    'TOURNAMENT_TEMPLATE' = 'Template'
+    'PARTICIPANT'         = 'Participant'
+}
+
+function ConvertTo-SheetsObjectName {
+    # One registry Object as the board says it. Empty in, empty out: a discovery statement and
+    # a template run by hand have no registry row and so no object, and inventing one for them
+    # would put a word on the board that nothing authored.
+    param([string]$Value)
+
+    $text = [string]$Value
+    if ([string]::IsNullOrWhiteSpace($text)) { return '' }
+
+    $key = $text.Trim().ToUpperInvariant()
+    if ($SheetsBoardObject.ContainsKey($key)) { return $SheetsBoardObject[$key] }
+    return $text.Trim()
+}
+
 function New-SheetsOverviewRow {
     # One Overview row in column order, from the summary entry the run already built. The
     # reviewer's three columns are placed as $null: the planner writes around them on a row
@@ -811,7 +852,7 @@ function New-SheetsOverviewRow {
     return @(
         [string]$Entry.Sport
         [string]$Entry.CheckId
-        [string]$Entry.Parameters
+        (ConvertTo-SheetsObjectName -Value ([string]$Entry.Object))
         [string]$Entry.Name
         [string]$Entry.Priority
         [string]$Entry.Category

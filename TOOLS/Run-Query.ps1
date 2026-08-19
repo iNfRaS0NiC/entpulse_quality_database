@@ -17,9 +17,11 @@
     file carry check_id and check_name as their first two columns.
 
     -Format xlsx collects a whole batch into a single workbook instead. Its first tab,
-    Overview, lists Sport, CheckID, Check Name, What it does, Rows and the Status, Check By and
-    Comment fields for every check, with each row count linking to its tab. Signal and Signal
-    reason follow, hidden. The check tabs are named after the "-- Name -" header, abbreviated to
+    Overview, lists Sport, CheckID, Object, Check Name, What it does, Rows and the Status,
+    Check By and Comment fields for every check, with each row count linking to its tab. Object
+    is the layer the check audits, in the six words POWERBI.md collapses the registry's Object
+    column to, and it is what says which layer to repair first. Signal and Signal reason follow,
+    hidden. The check tabs are named after the "-- Name -" header, abbreviated to
     fit Excel's 31-character limit, and there the identity sits above the data rather than on
     every row: row 1 the labels, row 2 the CheckID, the name, the statement that ran as a single
     line and what the check asserts, with empty Comment and Check By cells for the reviewer, row
@@ -507,6 +509,7 @@ function Select-RegistryChecks {
             Sql      = $statement.Sql
             Template = $(if ($wanted -eq $row.CheckId) { '' } else { $wanted })
             Category = $row.Category
+            Object   = $row.Object
         }
     }
     return $jobs
@@ -843,6 +846,7 @@ function Select-RunAllChecks {
             Sql          = $statement.Sql
             Template     = $(if ($wanted -eq $row.CheckId) { '' } else { $wanted })
             Category     = $row.Category
+            Object       = $row.Object
             Signal       = $(if ($signal) { $signal.Signal } else { 'Actionable' })
             SignalReason = $(if ($signal) { $signal.Reason } else { '' })
         }
@@ -1176,6 +1180,7 @@ function New-ChainedJob {
         RunKey       = ('{0} [{1}]' -f $Job.CheckId, $parameters)
         Parameters   = $parameters
         Category     = $(if ($Job.PSObject.Properties.Name -contains 'Category') { [string]$Job.Category } else { '' })
+        Object       = $(if ($Job.PSObject.Properties.Name -contains 'Object') { [string]$Job.Object } else { '' })
         Signal       = $(if ($Job.PSObject.Properties.Name -contains 'Signal' -and $Job.Signal) { [string]$Job.Signal } else { 'Informational' })
         SignalReason = $(if ($Job.PSObject.Properties.Name -contains 'SignalReason' -and $Job.SignalReason) { [string]$Job.SignalReason } else { $DiscoverySignalReason })
     }
@@ -3139,6 +3144,14 @@ function New-RunSummaryRow {
         $category = [string]$Job.Category
     }
 
+    # The audited object, on the same terms as the category: authored against the CheckID in
+    # POWERBI_REGISTRY.md and not derivable from the statement, so a run outside the registry
+    # leaves it empty rather than reading a layer out of the SQL.
+    $object = ''
+    if ($Job.PSObject.Properties.Name -contains 'Object') {
+        $object = [string]$Job.Object
+    }
+
     # A pattern summary is the one statement outside the registry whose family is knowable
     # without anybody authoring it: PATTERNS.sql holds nothing else. Taken from the file rather
     # than from a list of CheckIDs, for the reason -WithPatterns selects them that way - a
@@ -3224,6 +3237,7 @@ function New-RunSummaryRow {
         Status      = $Status
         Priority    = Get-CheckPriority -Category $category
         Category    = $category
+        Object      = $object
         Signal      = $signal
         SignalReason = $reason
         Expected     = $expected
@@ -3989,12 +4003,15 @@ function Save-RunWorkbook {
         $eligible = $(if ($eligibleOf.ContainsKey($runKey)) { $eligibleOf[$runKey] } else { $null })
         $seededStatus = Get-SeededStatus -Signal $signalValue -Rows $rowsCell -Ran $ran -Eligible $eligible
 
-        # Parameters sits beside the CheckID because it is part of what was run, not a result:
-        # three rows carrying GLOBAL-DISCOVERY-019 differ in nothing else.
+        # Object sits beside the CheckID because it is what the board is worked through by: a
+        # Comp.Rank is generated from the events beneath it, so repairing the ranking before
+        # the events is work that gets undone, and the check name does not say which layer it
+        # reads. Taken from POWERBI_REGISTRY.md and collapsed to the six words the reviewers
+        # asked for on 2026-08-19; the registry keeps its finer nine.
         $overviewRows += [pscustomobject]@{
             'Sport'         = Get-SportFromCheckId -CheckId $entry.CheckId
             'CheckID'       = $entry.CheckId
-            'Parameters'    = $(if ($entry.PSObject.Properties.Name -contains 'Parameters') { [string]$entry.Parameters } else { '' })
+            'Object'        = (ConvertTo-SheetsObjectName -Value ([string]$entry.Object))
             'Check Name'    = $entry.Name
             'Priority'      = [string]$entry.Priority
             'Category'      = [string]$entry.Category
@@ -4029,8 +4046,8 @@ function Save-RunWorkbook {
             'Verdict'       = [string]$entry.Verdict
             'Last run'      = [string]$entry.PrevRunId
         }
-        # Rows carries the jump to the tab, so its column moves with it - H since Parameters
-        # was inserted at C.
+        # Rows carries the jump to the tab, so its column moves with it - H, because a third
+        # column sits at C before Check Name.
         if ($ran -and $tabOf.ContainsKey($runKey)) {
             $links += [pscustomobject]@{
                 Ref    = "H$overviewRow"
@@ -4279,7 +4296,7 @@ if ($Info) {
     Write-Line '-Format csv' 'CSV, with check_id and check_name columns'
     Write-Line '-Format json' 'JSON, with check_id and check_name fields'
     Write-Line '-Format xlsx' 'one .xlsx, tabs named after each check, Overview first'
-    Write-Host '  Overview lists Sport, CheckID, Parameters, Check Name, What it does, Rows' -ForegroundColor DarkGray
+    Write-Host '  Overview lists Sport, CheckID, Object, Check Name, What it does, Rows' -ForegroundColor DarkGray
     Write-Host '  and the Status, Check By and Comment fields, with Signal and Signal reason' -ForegroundColor DarkGray
     Write-Host '  hidden behind them, and N:U carrying Expected, Findings, Eligible, the same' -ForegroundColor DarkGray
     Write-Host '  two from the previous run, Change, Verdict and Last run.' -ForegroundColor DarkGray

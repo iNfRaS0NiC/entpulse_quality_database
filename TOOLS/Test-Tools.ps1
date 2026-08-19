@@ -1374,7 +1374,7 @@ Test-That 'flat run summary writes Signal and SignalReason columns' {
     # beside Rows because they are what make two runs comparable: Rows counts the COVERAGE row
     # in with the findings, and says nothing about the population they came out of.
     $expected = '"CheckId","RunKey","Parameters","Name","What","Rows","Findings","Eligible",' +
-        '"Seconds","Status","Priority","Category","Signal","SignalReason",' +
+        '"Seconds","Status","Priority","Category","Object","Signal","SignalReason",' +
         '"Expected","ExpectedResidual","ExpectedReason",' +
         '"Verdict","Change","PrevFindings","PrevEligible","PrevRunId","Trend"'
     Assert-Equal $expected $header 'summary column order'
@@ -1501,7 +1501,7 @@ Test-That 'workbook carries the Check By column and the outcome statuses' {
 
     Assert-True ($xml -match '>Check By<') 'Overview should name the Check By column'
     Assert-True ($xml -match 'r="J1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit in Overview column J'
-    Assert-True ($xml -match 'r="C1"[^>]*><is><t[^>]*>Parameters<') 'Parameters should sit beside the CheckID it qualifies'
+    Assert-True ($xml -match 'r="C1"[^>]*><is><t[^>]*>Object<') 'Object should sit beside the CheckID, which is what the board is worked through by'
     Assert-True ($xml -match 'r="E1"[^>]*><is><t[^>]*>Priority<') 'Priority should sit beside Check Name'
     Assert-True ($xml -match 'r="F1"[^>]*><is><t[^>]*>Category<') 'Category should follow Priority'
     # One vocabulary for the workbook and the live board, taken from $SheetsStatusBands so
@@ -3093,21 +3093,51 @@ Test-That 'the SQL tab holds every statement, each linking back to its results' 
     Assert-Equal 2 (@($c2 | Select-Object -Unique)).Count 'and the two forward links differ'
 }
 
+Test-That 'every Object the registry records has a word on the board' {
+    # The collapse is nine values into six, and it is only useful while it is total. A value
+    # nobody mapped falls through as itself, which is the safe failure - the board shows
+    # EVENT_RESULTS in a column of Event and Comp Rank, and somebody asks - but it is still a
+    # gap, and this is where it is meant to be caught rather than on a reviewer's screen.
+    $path = Join-Path $RealRepoRoot 'POWERBI_REGISTRY.md'
+    $objects = @{}
+    foreach ($line in @([IO.File]::ReadAllText($path) -split "`n")) {
+        if ($line -notmatch '^\| \S+-DQ-\d+ \|') { continue }
+        $cells = @(($line.Trim() -replace '^\|', '' -replace '\|\s*$', '') -split '\|' |
+            ForEach-Object { $_.Trim() })
+        if ($cells.Count -ne 8) { continue }
+        $objects[$cells[4]] = $true
+    }
+
+    Assert-True ($objects.Count -gt 0) 'the registry should hold at least one Object value'
+    foreach ($value in @($objects.Keys)) {
+        Assert-True ($SheetsBoardObject.ContainsKey($value.ToUpperInvariant())) `
+            "the board has no word for the registry Object '$value'"
+    }
+
+    # And the other way: a word the board offers that no check carries is a mapping nobody
+    # needs, kept in step by hand and wrong the first time somebody trusts it.
+    foreach ($word in @($SheetsBoardObject.Values | Sort-Object -Unique)) {
+        Assert-True ($word -in @('Participant', 'Event', 'Comp Rank', 'Tournament', 'Stage', 'Template')) `
+            "the board collapses to six words and '$word' is not one of them"
+    }
+}
+
 Test-That 'the hidden columns are hidden on a new board and on every full sport pass' {
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
 
     # One operation per contiguous run. Collapsing the set to its lowest and highest would
-    # hide C through the last of them and take Check Name, Rows and Status with it.
+    # bridge the gap between them and take Expected, Findings and Verdict with it.
+    # Two runs and not three since 2026-08-19: C was Parameters and hidden, and is now Object,
+    # which is the column a reviewer picks the next layer of work from.
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
     $ops = @($fresh.Operations | Where-Object { $_.Kind -eq 'HideColumns' })
     $hide = @($ops | Where-Object { $_.Hidden })
-    Assert-Equal 3 $hide.Count 'hidden when Overview is created, and the gaps are not bridged'
-    Assert-Equal 3 $hide[0].From 'Parameters at C'
-    Assert-Equal 3 $hide[0].To 'and only C'
-    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Signal') + 1) $hide[1].From 'from Signal'
-    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Signal reason') + 1) $hide[1].To 'to Signal reason'
-    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Eligible') + 1) $hide[2].From 'from Eligible'
-    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Prev eligible') + 1) $hide[2].To 'to Prev eligible'
+    Assert-Equal 2 $hide.Count 'hidden when Overview is created, and the gaps are not bridged'
+    Assert-True ($SheetsOverviewHiddenColumns -notcontains 3) 'Object at C is never hidden'
+    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Signal') + 1) $hide[0].From 'from Signal'
+    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Signal reason') + 1) $hide[0].To 'to Signal reason'
+    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Eligible') + 1) $hide[1].From 'from Eligible'
+    Assert-Equal ([array]::IndexOf($SheetsOverviewColumns, 'Prev eligible') + 1) $hide[1].To 'to Prev eligible'
 
     # And every other column is opened, not left as it was found. Hiding alone made a board's
     # layout a function of its own history: three documents went through one run on 2026-08-17
@@ -3139,7 +3169,7 @@ Test-That 'the hidden columns are hidden on a new board and on every full sport 
     # accepts the cost: a column unhidden between two full passes closes again on the next.
     $onComplete = @((New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
                 -OutputFolder 'x' -Complete).Operations | Where-Object { $_.Kind -eq 'HideColumns' })
-    Assert-Equal 3 @($onComplete | Where-Object { $_.Hidden }).Count 'a complete one closes them again'
+    Assert-Equal 2 @($onComplete | Where-Object { $_.Hidden }).Count 'a complete one closes them again'
     Assert-True (@($onComplete | Where-Object { -not $_.Hidden }).Count -gt 0) `
         'and opens everything else, so the layout comes from this file and not from the board'
 }

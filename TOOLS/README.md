@@ -794,9 +794,9 @@ Google Drive and open as Sheets.
 
 `Overview` is the first tab:
 
-| Sport | CheckID | Parameters | Check Name | Priority | Category | What it does | Rows | Status | Check By | Comment | Signal | Signal reason |
+| Sport | CheckID | Object | Check Name | Priority | Category | What it does | Rows | Status | Check By | Comment | Signal | Signal reason |
 |---|---|---|---|---|---|---|---:|---|---|---|---|---|
-| BMX | BMX-DQ-001 | | PARTICIPANT_MISSING_DATE_OF_BIRTH | 3 Missing value | MISSING_VALUES | Finds active participants of the selected types that … | 1064 | Not reviewed | | `='PARTICIPANT_MISSING…'!G2` | Monitor | Population-wide absence … |
+| BMX | BMX-DQ-001 | Participant | PARTICIPANT_MISSING_DATE_OF_BIRTH | 3 Missing value | MISSING_VALUES | Finds active participants of the selected types that … | 1064 | Not reviewed | | `='PARTICIPANT_MISSING…'!G2` | Monitor | Population-wide absence … |
 
 `Comment` at K is the one computed cell in the workbook: a formula reading `G2` on the check
 tab that row links to. The comment is therefore written once, on the tab, beside the rows
@@ -821,10 +821,19 @@ They are the runner's own classification, settled before the run and unchanged b
 it, so the reviewer opens on the columns that are theirs to work through. Nothing is
 dropped: unhiding L:M brings back every value, and both still travel in `_summary.csv`.
 
-`Parameters` is empty for almost every row and fills only under `-Chain`, where one statement
-runs once per value it was fed. Those runs share a CheckID by design — the CheckID identifies
-the statement, not the execution — so `Parameters` is what tells them apart, and it is also
-where a `SKIPPED` row records the values the chain did not pursue.
+`Object` is the layer the check audits, and it is what says which layer to repair first: a
+Comp.Rank is generated from the events beneath it, so repairing the ranking before the events
+is work that gets undone, and a check name does not say which of the two it reads. It holds one
+of six words — `Participant`, `Event`, `Comp Rank`, `Tournament`, `Stage`, `Template` — taken
+from the `Object` column of `POWERBI_REGISTRY.md` and collapsed to them. `POWERBI.md` owns both
+the registry vocabulary and the collapse; the registry keeps the finer distinction between a
+check on an event and one on that event's results, and the board does not carry it.
+
+Column `C` held `Parameters` until 2026-08-19, hidden. It was empty for every check of a sport
+that takes none and identical for every check of one that does, and the reviewers asked for the
+column back. `Parameters` still travels in `_summary.csv` and on each check tab, where it is
+what tells two chained runs of one statement apart and where a `SKIPPED` row records the values
+the chain did not pursue.
 
 ### Decisions
 
@@ -992,7 +1001,7 @@ Unlike the Overview, a check tab leaves the signal fields visible — there are 
 them on a row that is already about one check.
 
 `SQL Used` stays at C on a check tab, because C2 is where the jump to the statement lives.
-That is why `Parameters` is appended at K here while it sits at C on the Overview: inserting
+That is why `Parameters` is appended at K here rather than sitting near the front: inserting
 it would have taken the statement link with it. On the Overview, `Rows` links from column H,
 the `Status` dropdown binds to I, `Comment` computes at K, and the hidden signal pair is L:M.
 A change to these positions is a change to three places at once — the row builder, the
@@ -1408,15 +1417,13 @@ Seeding uses the same vocabulary: an informational check opens on `Monitor Only`
 came back with its `COVERAGE` row alone over a real population opens on `Clean`, and everything
 else — including every failure — opens on `Not reviewed`.
 
-Six columns ship hidden. `Signal` and `Signal reason` at `M` and `N` are the runner's own
-classification, settled before the run and unchanged by reading it. `Parameters` at `C` is
-empty for every check of a sport that takes none and identical for every check of one that
-does, which is a column of repetition sitting between `CheckID` and `Check Name` — unhide it
-on a chained sport, where it is what tells two runs of the same statement apart. `Eligible`,
+Five columns ship hidden. `Signal` and `Signal reason` at `M` and `N` are the runner's own
+classification, settled before the run and unchanged by reading it. `Object` at `C` is not
+among them: it is the column the board is worked through by. `Eligible`,
 `Prev findings` and `Prev eligible` at `R:T` joined them on 2026-08-17 at the reviewers'
 asking: all three are context for a number rather than the number, and `Change` and `Verdict`
 already answer which way a check moved. Nothing is dropped: unhiding brings back every value,
-and all six travel in `_summary.csv`.
+and all five travel in `_summary.csv`.
 
 **A full sport pass states the whole row: the six are closed and every other column the board
 writes is opened.** Hiding used to happen once, on the run that created `Overview`, and used

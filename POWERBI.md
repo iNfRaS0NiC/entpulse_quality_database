@@ -553,6 +553,34 @@ parameters. `GLOBAL_DQ/README.md` owns the qualification rule and the promotion 
 `Category` identifies the DQ problem family. `Object` identifies the canonical object or
 logical storage layer. `Name` must match the SQL identity header exactly.
 
+### Object, and the six words the board says it in
+
+`Object` is authored against the CheckID and is not derivable from the statement. It takes one
+of nine values, and the live board collapses them to six:
+
+| Registry `Object` | On the board |
+|---|---|
+| `PARTICIPANT` | Participant |
+| `EVENT`, `EVENT_RESULTS` | Event |
+| `COMP.RANK`, `COMP.RANK_RESULTS` | Comp Rank |
+| `TOURNAMENT` | Tournament |
+| `TOURNAMENT_STAGE` | Stage |
+| `TEMPLATE`, `TOURNAMENT_TEMPLATE` | Template |
+
+The collapse exists because the board answers a different question from the registry. A
+reviewer working a sport needs to know **which layer to repair first**, and the order is not a
+preference: a Comp.Rank is generated from the events beneath it, so repairing the ranking
+before the events is work that gets undone. Six words answer that and nine do not — the split
+between a check on an event and one on that event's results is a distinction inside one layer,
+not between two. Asked for on 2026-08-19, when the board's column `C` stopped being
+`Parameters` and became `Object`.
+
+The registry keeps all nine. Nothing is lost by the collapse, because nothing reads the board
+for the finer value; `_summary.csv` carries what the run recorded and this file carries the
+authored vocabulary. A value not in the table above reaches the board as itself rather than
+blank, so a word that looks out of place is a question somebody asks — and `TOOLS/Test-Tools.ps1`
+fails a registry `Object` that no board word covers.
+
 ### Category and the priority it implies
 
 Every category belongs to one of four bands, and the band says what a reviewer works
