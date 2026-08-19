@@ -133,12 +133,18 @@ SELECT
     'Rank_Invalid_Or_Missing' AS check_type,
     s.id AS statistic_id,
     s.name AS statistic_name,
+    cfg.value AS ranking_start_date,
     tt.name AS template_name,
     t.name AS tournament_name,
     COUNT(DISTINCT sp.id) AS violating_record_count,
     NULL AS eligible_count
 -- What it does, stated in full: Finds Comp.Rank holding a participant whose Rank is not a
 -- positive integer, or is missing with no Comment to explain it.
+-- The date the ranking declares for itself travels with the row, at the reviewers' asking on
+-- 2026-08-19. A Comp.Rank covers a whole tournament rather than one contest, so it has no event
+-- start date to carry; what it has is its own configured start, and without it a finding names a
+-- season and nothing narrower. Left joined, so a ranking that never set one is still reported
+-- and says so by holding nothing there.
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -147,6 +153,10 @@ LEFT JOIN statistic_data{{SHARD_ID}} sd
   ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
  AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
  AND sd.del = 'no'
+LEFT JOIN statistic_config cfg
+  ON cfg.statisticFK = s.id
+ AND cfg.statistic_data_typeFK = {{CONFIG_START_DATE_TYPE_ID}}
+ AND cfg.del = 'no'
 WHERE s.del = 'no'
   AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
   AND s.object_typeFK = 3
@@ -177,13 +187,13 @@ WHERE s.del = 'no'
           AND TRIM(sd.value) NOT REGEXP '^[1-9][0-9]*$'
       )
   )
-GROUP BY s.id, s.name, tt.name, t.name
+GROUP BY s.id, s.name, cfg.value, tt.name, t.name
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT s.id) AS eligible_count
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'

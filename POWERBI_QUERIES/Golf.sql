@@ -2183,17 +2183,23 @@ SELECT
     -- CheckID - Golf-DQ-102
     -- Name - EVENT_RESULTS_CUT_FLAG_CONTRADICTS_THE_36_HOLE_ORDER
     -- What it does: Finds a card whose cut flag does not fit where its 36-hole total sits.
-    CASE WHEN c.made_cut = 'no' THEN 'MISSED_CUT_CARD_BEATS_THE_CUT_LINE'
+    CASE WHEN MAX(c.made_cut) = 'no' THEN 'MISSED_CUT_CARD_BEATS_THE_CUT_LINE'
          ELSE 'MADE_CUT_CARD_TRAILS_THE_BEST_MISSED_CARD' END AS check_type,
     c.event_id,
     c.event_name,
+    c.event_startdate,
     c.season,
-    c.participant_name,
-    c.made_cut AS made_cut_recorded,
-    c.total36 AS thirty_six_hole_total,
-    c.cut_line_yes AS worst_total_that_made_the_cut,
-    c.best_missed AS best_total_that_missed,
-    CASE WHEN c.made_cut = 'no' THEN c.n_no_better ELSE c.n_yes_worse END AS cards_on_this_side,
+    COUNT(*) AS cards_on_the_wrong_side,
+    -- No ORDER BY inside the concatenation: MySQL resolves one against this SELECT's own output
+    -- columns, and folding the row to the event took participant_name out of them. The order is
+    -- carried by the value instead - the total is left-padded so it sorts as a number - and the
+    -- reviewer's row-level notes do not depend on it, since a finding is keyed on check_type and
+    -- the columns whose names end in _id.
+    GROUP_CONCAT(CONCAT(LPAD(c.total36, 4, '0'), ' ', c.participant_name)
+                 SEPARATOR ' | ') AS affected_participants,
+    MAX(c.cut_line_yes) AS worst_total_that_made_the_cut,
+    MAX(c.best_missed) AS best_total_that_missed,
+    MAX(CASE WHEN c.made_cut = 'no' THEN c.n_no_better ELSE c.n_yes_worse END) AS cards_on_this_side,
     NULL AS eligible_count,
     0 AS sort_order
 -- What it does, stated in full: The cut divides the field by score, so after 36 holes nobody who
@@ -2227,6 +2233,14 @@ SELECT
 -- events, and two of them reached this statement as a 36-hole total of 0 that would have been
 -- reported against the cut flag instead of against itself.
 --
+-- One row per event, not one per card, from 2026-08-19 at the reviewers' asking. The finding was
+-- already an event's - the cut line is read off the whole field and the smaller side is what the
+-- statement reports - but the row grain said otherwise and repeated the event id up to three
+-- times. Measured the same day, 25 rows stood for 18 events, and no event holds both classes, so
+-- folding them loses nothing and the cards travel as a named column instead of as extra rows.
+-- The event's start date travels with it for the same reason it now does everywhere a finding
+-- names an event: a season alone does not place a tournament in time.
+--
 -- Measured 2026-08-14 inside the client boundary: 48 events hold one to three cards on the
 -- smaller side, 43 findings on the missed-cut side and 14 on the made-cut side, for 57 in all,
 -- over 342070 cards the question can be asked about. Fifteen further events hold four or more;
@@ -2237,6 +2251,7 @@ FROM (
     SELECT
         b.event_id,
         b.event_name,
+        b.event_startdate,
         b.season,
         b.participant_name,
         b.made_cut,
@@ -2252,6 +2267,7 @@ FROM (
         SELECT
             a.event_id,
             a.event_name,
+            a.event_startdate,
             a.season,
             a.participant_name,
             a.made_cut,
@@ -2266,6 +2282,7 @@ FROM (
             SELECT
                 e.id AS event_id,
                 e.name AS event_name,
+                e.startdate AS event_startdate,
                 t.name AS season,
                 p.name AS participant_name,
                 MAX(CASE WHEN r.result_typeFK = 38 THEN LOWER(TRIM(r.value)) END) AS made_cut,
@@ -2293,7 +2310,7 @@ FROM (
               -- AND t.tournament_templateFK = <tournament_template_id>
               -- AND e.startdate >= '<from_datetime>'
               -- AND e.startdate <  '<to_datetime>'
-            GROUP BY ep.id, e.id, e.name, t.name, p.name
+            GROUP BY ep.id, e.id, e.name, e.startdate, t.name, p.name
             HAVING n36 = 2
                AND made_cut IN ('yes', 'no')
                AND (comment_value IS NULL
@@ -2308,6 +2325,11 @@ WHERE c.late_after_cut = 0
      OR (c.made_cut = 'yes' AND c.total36 > c.best_missed
          AND c.n_yes_worse <  c.n_no_better AND c.n_yes_worse BETWEEN 1 AND 3)
       )
+GROUP BY
+    c.event_id,
+    c.event_name,
+    c.event_startdate,
+    c.season
 
 UNION ALL
 
@@ -2356,7 +2378,7 @@ WHERE ep.del = 'no'
         AND LOWER(TRIM(r4.value)) IN ('wd', 'dq', 'rtd', 'dns', 'nr', 'n/r', 'mdf', 'mc')
   )
 
-ORDER BY sort_order, event_id, participant_name;
+ORDER BY sort_order, event_startdate DESC, event_id;
 -- ==============================================================================
 SELECT
     -- CheckID - Golf-DQ-103
