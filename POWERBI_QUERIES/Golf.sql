@@ -2267,9 +2267,25 @@ SELECT
 -- flag reaches one. The mdf branch needs no such guard, because no format makes mdf mean
 -- anything other than what it means.
 --
+-- Counting the cards is not enough on its own, and the reviewers found where it fails: an event
+-- that cuts after 54 holes and sends only one, two or three players home has a whole missed-cut
+-- group holding a third round, and the count reads that group as three individual mistakes.
+-- Measured 2026-08-19, that is 26 events and 30 cards out of the 166 this branch reported. The
+-- second condition asks the question the count was standing in for - whether anybody in the
+-- event's missed-cut group went home after two rounds - so the format is recognised at any field
+-- size, down to a group of one.
+--
+-- What the count still decides, and what it therefore still lets through: 87 events where some of
+-- the missed-cut group holds a third round and the rest do not, 3541 cards, each event carrying
+-- more than three of them. Those are the sport contradicting itself inside one event and they are
+-- not reported here, because lifting the count is a separate decision against the 200-row gate
+-- rather than a repair of this one. Measured 2026-08-19 and recorded so the number is not
+-- rediscovered as a surprise.
+--
 -- Measured 2026-08-14 inside the client boundary, 284 findings over 350235 cards. 166 of them
--- are cards flagged as having missed the cut while holding a later round, one to three per event;
--- the events holding more are the 54-hole cuts and are outside the statement. 118 are mdf cards,
+-- were cards flagged as having missed the cut while holding a later round, one to three per
+-- event, and 136 remain after the 54-hole cuts with small groups were separated out on
+-- 2026-08-19; the events holding more are outside the statement. 118 are mdf cards,
 -- and the sport itself settles those: of 1547 mdf cards inside the boundary, 1429 carry the flag
 -- yes and 118 carry no, the second group concentrated in 14 events rather than scattered. A
 -- twelve-to-one majority is the convention, so the minority is the defect and not a second
@@ -2287,7 +2303,10 @@ FROM (
         a.late_rounds,
         SUM(CASE WHEN a.made_cut = 'no' AND a.late_rounds > 0
                   AND (a.comment_value IS NULL OR a.comment_value <> 'mdf')
-                 THEN 1 ELSE 0 END) OVER (PARTITION BY a.event_id) AS cards_like_this_here
+                 THEN 1 ELSE 0 END) OVER (PARTITION BY a.event_id) AS cards_like_this_here,
+        SUM(CASE WHEN a.made_cut = 'no'
+                  AND (a.comment_value IS NULL OR a.comment_value <> 'mdf')
+                 THEN 1 ELSE 0 END) OVER (PARTITION BY a.event_id) AS missed_cut_cards_here
     FROM (
         SELECT
             e.id AS event_id,
@@ -2321,7 +2340,8 @@ FROM (
 WHERE (
         (b.made_cut = 'no' AND b.late_rounds > 0
          AND (b.comment_value IS NULL OR b.comment_value <> 'mdf')
-         AND b.cards_like_this_here BETWEEN 1 AND 3)
+         AND b.cards_like_this_here BETWEEN 1 AND 3
+         AND b.cards_like_this_here < b.missed_cut_cards_here)
      OR (b.comment_value = 'mdf' AND (b.made_cut IS NULL OR b.made_cut <> 'yes'))
       )
 
