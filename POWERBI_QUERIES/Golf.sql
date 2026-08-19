@@ -174,6 +174,24 @@ SELECT
 -- of its own: 351143 of them carry yes or no over 3201 Stroke Play events. The global template
 -- knows only the Comment, so it read 23071 ordinary weekends off as findings; honouring Made
 -- cut = no leaves 841. This is why the check is written here rather than instantiated.
+-- The ceiling on a rank is the largest field the sport has ever entered, read out of the data
+-- rather than written here. It was the literal 250 until 2026-08-19, and the reviewers found
+-- what that cost: British Boys Amateur Championship enters 252 players, so its 251st and 252nd
+-- places were reported as impossible. Measured the same day, 252 is the largest field in the
+-- sport - 8 events sit between 250 and 259 and 3308 are under 200 - so a rank above it is one no
+-- golf tournament here has ever had a player for. Written as a subquery so a larger field
+-- arriving next season raises the ceiling with it instead of turning the whole tournament into
+-- findings.
+--
+-- Two things this deliberately does not do. It does not compare the rank against its own event's
+-- entry count, which was tried first and is wrong: a great many events store only part of their
+-- field, so British Masters holds 70 competitors and ranks running to 146, and that reading took
+-- the check from 27 findings to 365. And it does not therefore judge British Boys Amateur 2018,
+-- which entered 251 and stored a 252nd place - one missing participant record reads exactly like
+-- one wrong rank, and nothing here can tell them apart.
+--
+-- What the ceiling is actually for is untouched by any of it: 999 and 9999 sit in fields of 12
+-- to 168, and no plausible ceiling puts them inside.
 -- One row per event. The residue concentrates - 841 rows stand for 107 events and one holds 87
 -- of them - so the event is the object and the counts travel as named columns. Where an event
 -- holds more than one verdict the row carries the invalid stored value, because a rank of 999
@@ -200,7 +218,25 @@ FROM (
 SELECT
     CASE
         WHEN r_rank_value IS NOT NULL AND r_rank_value NOT REGEXP '^[1-9][0-9]*$' THEN 'RANK_NOT_INTEGER'
-        WHEN r_rank_value IS NOT NULL AND r_rank_value REGEXP '^[1-9][0-9]*$' AND CAST(r_rank_value AS UNSIGNED) > 250 THEN 'RANK_OVER_MAX'
+        WHEN r_rank_value IS NOT NULL AND r_rank_value REGEXP '^[1-9][0-9]*$'
+             AND CAST(r_rank_value AS UNSIGNED) > (
+                SELECT MAX(f.entered)
+                FROM (
+                    SELECT COUNT(DISTINCT epf.id) AS entered
+                    FROM event ef
+                    JOIN tournament_stage tsf ON tsf.id = ef.tournament_stageFK AND tsf.del = 'no'
+                    JOIN tournament tf ON tf.id = tsf.tournamentFK AND tf.del = 'no'
+                    JOIN tournament_template ttf ON ttf.id = tf.tournament_templateFK
+                         AND ttf.del = 'no' AND ttf.sportFK = 3
+                    JOIN object_discipline odf ON odf.object_typeFK = 5 AND odf.objectFK = ef.id
+                         AND odf.del = 'no' AND odf.disciplineFK = 629
+                    JOIN event_participants epf ON epf.eventFK = ef.id AND epf.del = 'no'
+                    WHERE ef.del = 'no'
+                      AND ef.status_type = 'finished'
+                      AND tf.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+                    GROUP BY ef.id
+                ) f
+            ) THEN 'RANK_OVER_MAX'
         WHEN r_rank_value IS NULL AND r_comment_value IS NULL AND x.has_any_result = 0 THEN 'NO_RESULT_OF_ANY_TYPE'
         WHEN r_rank_value IS NULL AND r_comment_value IS NULL THEN 'RANK_AND_COMMENT_MISSING_OTHER_RESULT_PRESENT'
     END AS verdict,
@@ -271,7 +307,25 @@ FROM (
 ) x
 WHERE
     (x.r_rank_value IS NOT NULL AND x.r_rank_value NOT REGEXP '^[1-9][0-9]*$')
-    OR (x.r_rank_value IS NOT NULL AND x.r_rank_value REGEXP '^[1-9][0-9]*$' AND CAST(x.r_rank_value AS UNSIGNED) > 250)
+    OR (x.r_rank_value IS NOT NULL AND x.r_rank_value REGEXP '^[1-9][0-9]*$'
+        AND CAST(x.r_rank_value AS UNSIGNED) > (
+                SELECT MAX(f.entered)
+                FROM (
+                    SELECT COUNT(DISTINCT epf.id) AS entered
+                    FROM event ef
+                    JOIN tournament_stage tsf ON tsf.id = ef.tournament_stageFK AND tsf.del = 'no'
+                    JOIN tournament tf ON tf.id = tsf.tournamentFK AND tf.del = 'no'
+                    JOIN tournament_template ttf ON ttf.id = tf.tournament_templateFK
+                         AND ttf.del = 'no' AND ttf.sportFK = 3
+                    JOIN object_discipline odf ON odf.object_typeFK = 5 AND odf.objectFK = ef.id
+                         AND odf.del = 'no' AND odf.disciplineFK = 629
+                    JOIN event_participants epf ON epf.eventFK = ef.id AND epf.del = 'no'
+                    WHERE ef.del = 'no'
+                      AND ef.status_type = 'finished'
+                      AND tf.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
+                    GROUP BY ef.id
+                ) f
+            ))
     OR (x.r_rank_value IS NULL
         AND x.r_comment_value IS NULL
         AND (x.r_made_cut IS NULL OR LOWER(TRIM(x.r_made_cut)) <> 'no'))
@@ -1044,17 +1098,70 @@ SELECT
     tt.name AS template_name,
     t.name AS tournament_name,
     COUNT(DISTINCT sp.id) AS participant_count,
-    COUNT(DISTINCT CASE WHEN CAST(sd.value AS UNSIGNED) > 250 THEN sp.id END) AS affected_count,
-    MAX(CASE WHEN CAST(sd.value AS UNSIGNED) > 250 THEN CAST(sd.value AS UNSIGNED) END) AS highest_rank,
-    GROUP_CONCAT(CASE WHEN CAST(sd.value AS UNSIGNED) > 250
+    COUNT(DISTINCT CASE WHEN CAST(sd.value AS UNSIGNED) > (
+                    SELECT MAX(g.held)
+                    FROM (
+                        SELECT COUNT(DISTINCT spg.id) AS held
+                        FROM statistic sg
+                        JOIN tournament tg ON tg.id = sg.objectFK AND tg.del = 'no'
+                        JOIN tournament_template ttg ON ttg.id = tg.tournament_templateFK
+                             AND ttg.del = 'no' AND ttg.sportFK = 3
+                        JOIN statistic_participants11 spg ON spg.statisticFK = sg.id AND spg.del = 'no'
+                        WHERE sg.del = 'no'
+                          AND sg.statistic_typeFK = 11
+                          AND sg.object_typeFK = 3
+                          AND (ttg.name IS NULL OR ttg.name NOT LIKE '%(IOC)%')
+                        GROUP BY sg.id
+                    ) g
+                ) THEN sp.id END) AS affected_count,
+    MAX(CASE WHEN CAST(sd.value AS UNSIGNED) > (
+                    SELECT MAX(g.held)
+                    FROM (
+                        SELECT COUNT(DISTINCT spg.id) AS held
+                        FROM statistic sg
+                        JOIN tournament tg ON tg.id = sg.objectFK AND tg.del = 'no'
+                        JOIN tournament_template ttg ON ttg.id = tg.tournament_templateFK
+                             AND ttg.del = 'no' AND ttg.sportFK = 3
+                        JOIN statistic_participants11 spg ON spg.statisticFK = sg.id AND spg.del = 'no'
+                        WHERE sg.del = 'no'
+                          AND sg.statistic_typeFK = 11
+                          AND sg.object_typeFK = 3
+                          AND (ttg.name IS NULL OR ttg.name NOT LIKE '%(IOC)%')
+                        GROUP BY sg.id
+                    ) g
+                ) THEN CAST(sd.value AS UNSIGNED) END) AS highest_rank,
+    GROUP_CONCAT(CASE WHEN CAST(sd.value AS UNSIGNED) > (
+                    SELECT MAX(g.held)
+                    FROM (
+                        SELECT COUNT(DISTINCT spg.id) AS held
+                        FROM statistic sg
+                        JOIN tournament tg ON tg.id = sg.objectFK AND tg.del = 'no'
+                        JOIN tournament_template ttg ON ttg.id = tg.tournament_templateFK
+                             AND ttg.del = 'no' AND ttg.sportFK = 3
+                        JOIN statistic_participants11 spg ON spg.statisticFK = sg.id AND spg.del = 'no'
+                        WHERE sg.del = 'no'
+                          AND sg.statistic_typeFK = 11
+                          AND sg.object_typeFK = 3
+                          AND (ttg.name IS NULL OR ttg.name NOT LIKE '%(IOC)%')
+                        GROUP BY sg.id
+                    ) g
+                )
                       THEN CONCAT(p.name, ' #', sd.value) END
                  ORDER BY CAST(sd.value AS UNSIGNED) SEPARATOR ' | ') AS affected_participants,
     NULL AS eligible_count,
     0 AS sort_order
--- 250 is RANK_MAX_PLAUSIBLE for golf, the largest field the sport puts on a course, and the
--- data leaves no doubt where the line falls: Comp.Rank ranks run to 164 and then jump to 999
--- and 9999. Those two are markers written into the rank itself rather than places anybody
+-- The ceiling is the largest ranking the sport keeps, read out of the data rather than written
+-- here. It was the literal 250 until 2026-08-19, on the reasoning that no golf field is larger -
+-- and the reviewers found the player that reasoning cost. Measured the same day: 252 is the
+-- largest Comp.Rank in the sport, 8 records sit between 250 and 259 and 3337 are under 200, so
+-- British Boys Amateur Championship 2019 was reported for holding a 252nd place in a ranking of
+-- 252 people. Written as a subquery so a larger field next season raises the ceiling with it.
+--
+-- What the ceiling is for is untouched: Comp.Rank ranks otherwise run to 164 and then jump to
+-- 999 and 9999. Those two are markers written into the rank itself rather than places anybody
 -- finished in, and a marker in a numeric field is read as a number by everything downstream.
+-- Golf-DQ-087 carries the same correction on the event result layer, for the same reason and
+-- from the same measurement.
 --
 -- GLOBAL-DQ-036 asks the same question of the event result layer and does not reach here:
 -- `result` and `statistic_data11` are separate layers and a value corrected in one stays
@@ -1080,7 +1187,22 @@ WHERE s.del = 'no'
   AND t.tournament_templateFK NOT IN (432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649)
   -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY s.id, tt.name, t.name
-HAVING COUNT(DISTINCT CASE WHEN CAST(sd.value AS UNSIGNED) > 250 THEN sp.id END) > 0
+HAVING COUNT(DISTINCT CASE WHEN CAST(sd.value AS UNSIGNED) > (
+                    SELECT MAX(g.held)
+                    FROM (
+                        SELECT COUNT(DISTINCT spg.id) AS held
+                        FROM statistic sg
+                        JOIN tournament tg ON tg.id = sg.objectFK AND tg.del = 'no'
+                        JOIN tournament_template ttg ON ttg.id = tg.tournament_templateFK
+                             AND ttg.del = 'no' AND ttg.sportFK = 3
+                        JOIN statistic_participants11 spg ON spg.statisticFK = sg.id AND spg.del = 'no'
+                        WHERE sg.del = 'no'
+                          AND sg.statistic_typeFK = 11
+                          AND sg.object_typeFK = 3
+                          AND (ttg.name IS NULL OR ttg.name NOT LIKE '%(IOC)%')
+                        GROUP BY sg.id
+                    ) g
+                ) THEN sp.id END) > 0
 
 
 UNION ALL
