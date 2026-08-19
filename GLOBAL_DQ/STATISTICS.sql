@@ -2788,6 +2788,27 @@ SELECT
 -- contradiction. Without that condition the check reports the convention and buries the
 -- defect inside it - and a whole second sequence of places, which is what a statistic
 -- holding two competitions at once looks like, is exactly what the condition finds.
+-- Where the Team field assigns nobody, the team size is read out of the ranking itself. Added
+-- 2026-08-19 after the reviewers asked why Golf's pairs tournaments were reported: Golf assigns
+-- a Team zero times across 3371 Comp.Rank records and 360910 participant rows, so every place a
+-- pair holds looked like a place held twice. Zurich Classic of New Orleans 2024 is the shape -
+-- McIlroy and Lowry at 1, Ramey and Trainer at 2, Hubbard and Brehm at 3, four teams at 4, two
+-- at 8, one at 10 - which is flawless read as teams and contradicts itself on every line read as
+-- people.
+-- The candidate is how many hold the lowest place, and it is taken only if the whole sequence
+-- then holds together: every stored place divisible by it, and the next place stored exactly
+-- where that many entries leave it. That is what stops an ordinary tie of two from being read as
+-- a pair - a ranking holding any place with a single holder fails the test at once, because half
+-- an entry never lands on a stored place. The authored field still wins wherever it says
+-- anything; this reads nothing where it does.
+-- Measured across the six sports running this template. Of the 3204 Golf rankings holding a
+-- shared place, 2317 hold together read as people, 872 hold together neither way and are the
+-- contradictions this reports, and 15 hold together only read as pairs - every one of the 15 a
+-- real pairs tournament: Zurich Classic, Dow Great Lakes Bay Invitational, Dow Championship,
+-- Grant Thornton Invitational, ISPS Handa Melbourne World Cup of Golf. Two more rankings leave
+-- Curling and three leave Modern Pentathlon, and those five are Winter Youth Olympics Mixed and
+-- Youth Summer Olympics Team-Relay Mix, which say what they are in their own names. Artistic
+-- Gymnastics, BMX and Ice Hockey do not move at all.
 -- Every subquery carries the sport filter rather than inheriting it from the outer join,
 -- because the participant and data shards are shared by every sport and a subquery without
 -- it scans all of them.
@@ -2806,7 +2827,9 @@ FROM (
             r.statistic_id,
             r.rank_value,
             r.holder_count,
-            h.holders_per_place
+            GREATEST(h.holders_per_place,
+                CASE WHEN h.holders_per_place = 1 THEN COALESCE(hk.implied_team_size, 1) ELSE 1 END)
+                AS holders_per_place
         FROM (
             SELECT
                 sp.statisticFK AS statistic_id,
@@ -2872,6 +2895,64 @@ FROM (
               AND tty.sportFK = {{SPORT_ID}}
             GROUP BY sy.id
         ) h ON h.statistic_id = r.statistic_id
+        -- The team size the ranking itself implies, read only where the Team field assigns
+        -- nothing at all. The candidate is how many hold the lowest place, and it is accepted
+        -- only if the whole sequence then holds together: every stored place divisible by it,
+        -- and the next place stored exactly where that many entries would leave it. A ranking
+        -- holding any place with a single holder fails at once, which is what stops an ordinary
+        -- tie of two from being read as a pair.
+        LEFT JOIN (
+            SELECT
+                k.statistic_id,
+                MAX(k.candidate) AS implied_team_size
+            FROM (
+                SELECT
+                    seq.statistic_id,
+                    seq.candidate,
+                    SUM(CASE WHEN MOD(seq.holder_count, seq.candidate) <> 0
+                              OR (seq.next_rank IS NOT NULL
+                                  AND seq.next_rank <> seq.rank_value + seq.holder_count / seq.candidate)
+                             THEN 1 ELSE 0 END) AS breaks
+                FROM (
+                    SELECT
+                        g5.statistic_id,
+                        g5.rank_value,
+                        g5.holder_count,
+                        LEAD(g5.rank_value) OVER (
+                            PARTITION BY g5.statistic_id ORDER BY g5.rank_value) AS next_rank,
+                        FIRST_VALUE(g5.holder_count) OVER (
+                            PARTITION BY g5.statistic_id ORDER BY g5.rank_value
+                            ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING) AS candidate
+                    FROM (
+                        SELECT
+                            sp5.statisticFK AS statistic_id,
+                            CAST(TRIM(sd5.value) AS SIGNED) AS rank_value,
+                            COUNT(DISTINCT sp5.id) AS holder_count
+                        FROM statistic s5
+                        JOIN tournament t5 ON t5.id = s5.objectFK AND t5.del = 'no'
+                        JOIN tournament_template tt5 ON tt5.id = t5.tournament_templateFK
+                             AND tt5.del = 'no'
+                        JOIN statistic_participants{{SHARD_ID}} sp5 ON sp5.statisticFK = s5.id
+                             AND sp5.del = 'no'
+                        JOIN statistic_data{{SHARD_ID}} sd5
+                             ON sd5.statistic_participants{{SHARD_ID}}FK = sp5.id
+                             AND sd5.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+                             AND sd5.del = 'no'
+                             AND sd5.value IS NOT NULL
+                             AND TRIM(sd5.value) REGEXP '^[1-9][0-9]*$'
+                        WHERE s5.del = 'no'
+                          AND s5.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+                          AND s5.object_typeFK = 3
+                          AND tt5.sportFK = {{SPORT_ID}}
+                        GROUP BY sp5.statisticFK, CAST(TRIM(sd5.value) AS SIGNED)
+                    ) g5
+                ) seq
+                WHERE seq.candidate > 1
+                GROUP BY seq.statistic_id, seq.candidate
+                HAVING breaks = 0
+            ) k
+            GROUP BY k.statistic_id
+        ) hk ON hk.statistic_id = r.statistic_id
         JOIN (
             SELECT DISTINCT
                 sp4.statisticFK AS statistic_id,
@@ -2891,8 +2972,11 @@ FROM (
               AND ttw.sportFK = {{SPORT_ID}}
         ) allr ON allr.statistic_id = r.statistic_id
               AND allr.rank_value > r.rank_value
-              AND allr.rank_value < r.rank_value + (r.holder_count DIV h.holders_per_place)
-        WHERE r.holder_count > h.holders_per_place
+              AND allr.rank_value < r.rank_value
+                  + (r.holder_count DIV GREATEST(h.holders_per_place,
+                        CASE WHEN h.holders_per_place = 1 THEN COALESCE(hk.implied_team_size, 1) ELSE 1 END))
+        WHERE r.holder_count > GREATEST(h.holders_per_place,
+                  CASE WHEN h.holders_per_place = 1 THEN COALESCE(hk.implied_team_size, 1) ELSE 1 END)
     ) v
     JOIN statistic s ON s.id = v.statistic_id AND s.del = 'no'
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'

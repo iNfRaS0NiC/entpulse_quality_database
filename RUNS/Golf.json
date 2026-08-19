@@ -11647,6 +11647,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-19T10:48:12Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\4b646611-ed3b-4f13-b43d-cfd2462c2f2e\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-092",
+                                        "runKey":  "Golf-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MATCH_PLAY_OUTCOME_INCOHERENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  1442,
+                                        "findings":  1441,
+                                        "eligible":  12959,
+                                        "seconds":  3.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"
