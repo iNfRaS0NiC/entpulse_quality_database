@@ -1864,6 +1864,38 @@ SELECT
 -- yet; they are deliberately outside this statement rather than silently absent from it, and none
 -- of them is audited here.
 --
+-- Two things a round field can hold that are not a round, both found by the reviewers on
+-- 2026-08-19 and both fixed here rather than by a threshold.
+--
+-- A zero is not a round of nought strokes, it is a round nobody played: 3699 of them across 157
+-- events, and a card reading 68, 71, 0, 0 is a competitor who missed the cut after two rounds.
+-- Counting the zeros made that card four rounds against two rounds of strokes, so the arithmetic
+-- could not hold and 39 cards were reported for having missed a cut. A round now counts only if
+-- it is a positive whole number.
+--
+-- Some events store the score against par in the round fields instead of the strokes. There are
+-- 1193 negative values across 29 events, and 28 of those events hold no stroke count at all -
+-- Barracuda Championship, Reno-Tahoe Open, Blue Label Challenge, The International - which are
+-- Modified Stableford, where a competitor collects points rather than strokes. ANZ Championship
+-- 2004 is the same shape without the name: Steve Webster reads 14, 13, 12, -2 and his Total Par
+-- is 37, which is their sum. The subtraction this statement performs has no meaning on any of
+-- them.
+--
+-- The test for it is the course par rather than a number chosen here. A field playing strokes
+-- always contains somebody who took at least par on a round; a field collecting points never
+-- reaches it, because the totals are single digits against a par of seventy. So an event where
+-- no card's best round reaches the par its stage records is not audited, and rounds_are_strokes_here
+-- carries that decision from the event down to the card. The sport's own populations say the same
+-- thing without the test: 1643476 round values sit between 60 and 99 across 4825 events, and
+-- below 60 there are fewer than 8000 across at most 112.
+--
+-- Both changes together took this class from 574 findings to 528. What moved is not only the
+-- subtraction: 16 cards became visible that the zeros had been hiding, because an event whose
+-- cards were all zero-inflated exceeded the at-most-three rule and was dropped whole. Those
+-- events are now auditable and only their outliers surface. Eight of the sixteen are off by one
+-- or two strokes in events this statement already names as multi-course formats, and they have
+-- not been read one by one.
+--
 -- The par the field agrees on is the same construction Golf-DQ-100 uses, and it is built here
 -- with window functions rather than a second pass: each distinct implied par is counted within
 -- its event, and the first one under a descending vote is taken. A card whose difference does not
@@ -1880,6 +1912,7 @@ FROM (
         f.par_total,
         f.implied_par,
         f.field_par,
+        f.rounds_are_strokes_here,
         SUM(CASE WHEN f.implied_par IS NULL OR f.implied_par <> f.field_par THEN 1 ELSE 0 END)
             OVER (PARTITION BY f.event_id) AS cards_wrong_here
     FROM (
@@ -1892,6 +1925,7 @@ FROM (
             v.sum_rounds,
             v.par_total,
             v.implied_par,
+            v.rounds_are_strokes_here,
             FIRST_VALUE(v.implied_par) OVER (
                 PARTITION BY v.event_id
                 ORDER BY v.votes DESC, v.implied_par
@@ -1906,6 +1940,7 @@ FROM (
                 b.sum_rounds,
                 b.par_total,
                 b.implied_par,
+                b.rounds_are_strokes_here,
                 COUNT(b.implied_par) OVER (PARTITION BY b.event_id, b.implied_par) AS votes
             FROM (
                 SELECT
@@ -1916,6 +1951,8 @@ FROM (
                     a.n_rounds,
                     a.sum_rounds,
                     a.par_total,
+                    MAX(CASE WHEN a.best_round >= CAST(pp.par_value AS SIGNED) THEN 1 ELSE 0 END)
+                        OVER (PARTITION BY a.event_id) AS rounds_are_strokes_here,
                     CASE WHEN MOD(a.par_total - (a.sum_rounds - CAST(pp.par_value AS SIGNED) * a.n_rounds), a.n_rounds) = 0
                          THEN CAST(CAST(pp.par_value AS SIGNED)
                                    - (a.par_total - (a.sum_rounds - CAST(pp.par_value AS SIGNED) * a.n_rounds)) / a.n_rounds
@@ -1930,11 +1967,14 @@ FROM (
                         p.name AS participant_name,
                         ts.id AS stage_id,
                         SUM(CASE WHEN r.result_typeFK IN (31, 32, 33, 34, 35)
-                                  AND TRIM(r.value) REGEXP '^[0-9]+$'
+                                  AND TRIM(r.value) REGEXP '^[1-9][0-9]*$'
                                  THEN CAST(TRIM(r.value) AS SIGNED) ELSE 0 END) AS sum_rounds,
                         SUM(CASE WHEN r.result_typeFK IN (31, 32, 33, 34, 35)
-                                  AND TRIM(r.value) REGEXP '^[0-9]+$'
+                                  AND TRIM(r.value) REGEXP '^[1-9][0-9]*$'
                                  THEN 1 ELSE 0 END) AS n_rounds,
+                        MAX(CASE WHEN r.result_typeFK IN (31, 32, 33, 34, 35)
+                                  AND TRIM(r.value) REGEXP '^[1-9][0-9]*$'
+                                 THEN CAST(TRIM(r.value) AS SIGNED) END) AS best_round,
                         MAX(CASE WHEN r.result_typeFK = 36
                                   AND TRIM(r.value) REGEXP '^[+-]?[0-9]+$'
                                  THEN CAST(REPLACE(TRIM(r.value), '+', '') AS SIGNED) END) AS par_total
@@ -1971,6 +2011,7 @@ FROM (
 ) w
 WHERE (w.implied_par IS NULL OR w.implied_par <> w.field_par)
   AND w.cards_wrong_here BETWEEN 1 AND 3
+  AND w.rounds_are_strokes_here = 1
 
 UNION ALL
 
