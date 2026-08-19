@@ -417,6 +417,8 @@ SELECT
     -- What it does: Finds event names that break a text-hygiene rule, allowing the unspaced hyphen between the two team names.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS event_name,
+    MIN(x.object_startdate) AS earliest_event_startdate,
+    MAX(x.object_startdate) AS latest_event_startdate,
     x.violation_types,
     COUNT(DISTINCT x.object_id) AS affected_object_count,
     MIN(x.object_id) AS sample_object_id,
@@ -446,6 +448,7 @@ FROM (
     SELECT
         e.id AS object_id,
         e.name AS object_name,
+        e.startdate AS object_startdate,
         (CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin) AS name_bin,
         tt.name AS template_name,
         ts.name AS stage_name,
@@ -486,7 +489,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event e

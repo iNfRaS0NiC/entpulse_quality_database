@@ -1374,7 +1374,8 @@ SELECT
     -- A convenience for the reader, not the finding: GROUP_CONCAT truncates at the server's
     -- group_concat_max_len without saying so, and riders is what the row asserts.
     GROUP_CONCAT(DISTINCT CONCAT(x.participant_name, ' placed ', x.rank_value,
-                                 ' but ', x.comment_value, ' on event ', x.event_id)
+                                 ' but ', x.comment_value, ' on event ', x.event_id,
+                                 ' of ', DATE(x.event_startdate))
                  ORDER BY x.participant_name SEPARATOR ' | ') AS contradicted_riders,
     NULL AS eligible_count
 -- What it does, stated in full: A rider who abandons is out of the classification - that is what
@@ -1401,7 +1402,8 @@ FROM (
         p.name AS participant_name,
         TRIM(rk.value) AS rank_value,
         UPPER(TRIM(cm.value)) AS comment_value,
-        e2.id AS event_id
+        e2.id AS event_id,
+        e2.startdate AS event_startdate
     FROM statistic s
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'

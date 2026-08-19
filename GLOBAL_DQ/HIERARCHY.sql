@@ -964,6 +964,8 @@ SELECT
     -- What it does: Finds event names that break a text-hygiene rule.
     'Name_Format_Invalid' AS check_type,
     MIN(x.object_name) AS event_name,
+    MIN(x.object_startdate) AS earliest_event_startdate,
+    MAX(x.object_startdate) AS latest_event_startdate,
     x.violation_types,
     COUNT(DISTINCT x.object_id) AS affected_object_count,
     MIN(x.object_id) AS sample_object_id,
@@ -978,6 +980,7 @@ FROM (
     SELECT
         e.id AS object_id,
         e.name AS object_name,
+        e.startdate AS object_startdate,
         -- The grouping key is binary: under the column's case-insensitive collation two
         -- spellings that differ only in case would collapse into one group, which is the
         -- distinction GLOBAL-DQ-050 exists to report.
@@ -1025,7 +1028,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT (CONVERT(e.name USING utf8mb4) COLLATE utf8mb4_bin)) AS eligible_count,
     1 AS sort_order
     FROM event e

@@ -3041,6 +3041,7 @@ SELECT
     END AS check_type,
     x.event_id,
     ev.name AS event_name,
+    ev.startdate AS event_startdate,
     tsn.name AS tournament_stage_name,
     x.unreadable_count + x.non_monotonic_count AS offending_count,
     COALESCE(x.sample_unreadable, x.sample_non_monotonic) AS sample_offence,
@@ -3225,7 +3226,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 -- Coverage deliberately counts the whole format-audit population, not only events that
