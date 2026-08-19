@@ -937,6 +937,7 @@ SELECT
     'Mixed_Doubles_Stage_Gender_Invalid' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
+    e.startdate AS event_startdate,
     COALESCE(ts.gender, 'none') AS stage_gender_found,
     ts.name AS tournament_stage_name,
     tt.name AS template_name,
@@ -972,7 +973,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event e

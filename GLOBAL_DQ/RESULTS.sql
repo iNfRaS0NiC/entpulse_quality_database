@@ -5,6 +5,7 @@ SELECT
     'Missing_Results_For_Finished' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
+    e.startdate AS event_startdate,
     tt.name AS template_name,
     t.name AS tournament_name,
     ts.name AS stage_name,
@@ -40,7 +41,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -801,6 +802,7 @@ SELECT
     'Unexpected_Medal_For_Non_Medal_Round' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
+    e.startdate AS event_startdate,
     tt.name AS template_name,
     t.name AS tournament_name,
     ts.name AS stage_name,
@@ -838,7 +840,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -957,6 +959,7 @@ SELECT
     'Unexpected_Results_For_Not_Started' AS check_type,
     e.id AS event_id,
     e.name AS event_name,
+    e.startdate AS event_startdate,
     tt.name AS template_name,
     t.name AS tournament_name,
     ts.name AS stage_name,
@@ -991,7 +994,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
