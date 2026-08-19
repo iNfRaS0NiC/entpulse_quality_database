@@ -186,6 +186,31 @@ is neither `NULL` nor empty, so `TRIM()` does not remove it and a naive blank te
 populated. `GLOBAL-DQ-069 EVENT_RESULTS_VALUE_BLANK` already replaces that byte sequence
 explicitly and classifies it `BLANK_INVISIBLE_CHARACTER`, so the shape needs no new check.
 
+**66312 ranked participations carry no measure at all, and neither does the field they sit in.**
+Measured 2026-08-19 across 2867 events, none of which holds a single value in any of the eight
+result types that measure a ride - `644 Score`, `312 Errors`, `101 Duration`, `102 Points`,
+`6 Running Score`, `515 Jump Off Penalties`, `516 Jump Off Time`, `545 Penalties`. The place is
+stored and nothing that produced it is:
+
+| Discipline | Ranked participations | Events |
+|---|---:|---:|
+| Jumping | 55513 | 2302 |
+| Dressage | 6290 | 368 |
+| Eventing | 4400 | 191 |
+| Driving | 79 | 4 |
+| Show Jumping | 30 | 2 |
+
+**This is the format and not a gap**, by the discriminator `../POWERBI.md` records for
+`Golf-DQ-101`: the shape reaches the entire field of every one of those events rather than part
+of it. Jumping is five sixths of it - the sport loaded with a place and nothing else - and the
+last row is the same discipline under its second name, which
+`Generic relations and disciplines` above documents.
+
+`Equestrian-DQ-109 EVENT_RANKED_PARTICIPATION_HOLDING_NO_MEASURE_WHERE_THE_FIELD_IS_MEASURED`
+therefore reports none of these. It reports only a card sitting in a field whose other members
+are measured, where the event itself proves a measure was available and this one did not get
+it.
+
 <!-- MANUAL PASTE ZONE: 37 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
@@ -461,6 +486,17 @@ first and are samples. Event names are competition formats rather than round des
 names carry the league and the venue
 (`FEI Dressage World Cup North American League Wellington`).
 
+**5062 of the sport's 5694 events start at exactly `14:00:00`** - 88.9%, measured 2026-08-19.
+The remaining 632 spread across 126 further times, the next commonest being `12:00:00` with 88
+and `15:00:00` with 42. **No event carries midnight**, which is what an unset time usually looks
+like, so the column is not empty: it is filled with one value.
+
+**Nothing may be reasoned from an event's time of day.** A check comparing two events' start
+times, ordering rounds inside a day, or reading the gap between them would be reading a default
+in nine cases out of ten and would report the sport rather than a defect. The date is usable and
+the time is not. It is recorded here because the column looks populated, and its shape gives a
+later reader no way to see otherwise.
+
 <!-- MANUAL PASTE ZONE: 37 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
@@ -554,6 +590,47 @@ The largest number in the first table is not a disagreement either: **189 tourna
 lineups and no Comp.Rank pair at all**, 12208 rides. That measures how much of the sport the
 ranking layer covers, and it belongs beside the 630 Comp.Rank records against 915 tournaments
 already recorded above.
+
+**`644 Score` runs in opposite directions in the two disciplines that use it.** Measured
+2026-08-19 by comparing, inside one event, every ordered pair of participations where one holds
+a better rank than the other:
+
+| Discipline | Compared pairs | Better rank holds the higher score | Better rank holds the lower score | Events |
+|---|---:|---:|---:|---:|
+| Dressage | 278204 | 276127 | 1826 | 1991 |
+| Eventing | 56782 | 0 | 56698 | 93 |
+| Jumping | 829 | 291 | 537 | 4 |
+
+Dressage is a mark and higher wins. Eventing is a penalty total and lower wins, with **not one
+pair out of 56782 going the other way**. The two are one column, and nothing in the row says
+which rule applies - only the discipline of the event tells them apart. **Any statement reading
+`644 Score` as good-or-bad must branch on the discipline first**, and `../GLOBAL_DQ/README.md`
+holds no template that does; that is why no GLOBAL check asserts an ordering here.
+
+**The 1826 Dressage pairs that break the rule are not a check, and will not be one.** Decided
+2026-08-19. They sit in 39 events between 2007 and 2025, and what ordered those fields is not in
+the database: a Freestyle carries two marks in one field, a final can be ordered by an earlier
+round, a total can be carried in from outside the event. The candidate was written, run, read
+and withdrawn because the input it would audit is inconsistent and the question is outside what
+the client asks today. It is recorded so the next reader who measures the same 1826 knows they
+were seen and why nothing came of them, instead of starting the question over.
+
+**The Jumping row founds no rule at all** - 4 events, split 291 against 537. Jumping is scored
+on faults and time in `312 Errors` and `101 Duration`, so what a `644 Score` means on those four
+cards is not established. Four events is too small a population to conclude from and it is left
+as an observation, not carried into any check.
+
+**Template names stop at 50 characters, and that is the storage rather than the titles.**
+Measured 2026-08-19: 87 templates, the longest name exactly 50, four sitting on it and nine more
+between 45 and 49. Two of the four end mid-word - `11248 FEI Jumping World Cup Northern Central
+European Le` and `11249` the Southern one beside it, each missing the rest of `League` - while
+`11266` and `11267`, the two North America leagues, reach 50 and end on a complete word.
+
+A clipped name travels into every report, every board tab and every join anybody makes on it,
+and nothing downstream can tell a cut name from a short one.
+`Equestrian-DQ-110 TEMPLATE_NAME_STOPPED_AT_THE_STORAGE_CEILING` reads the ceiling out of the
+data rather than carrying 50 as a constant, so it keeps working if the column is widened instead
+of going silently blind on the day that happens.
 
 <!-- MANUAL PASTE ZONE: 37 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
