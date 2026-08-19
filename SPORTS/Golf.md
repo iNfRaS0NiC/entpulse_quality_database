@@ -738,6 +738,29 @@ numbered rounds `1`…`4` occur twice over under two different id runs. A statem
 `1 no round` by a further 79. The first is unmapped, the second is a named round type meaning
 the absence of one; they are different states and are not interchangeable.
 
+**Golf stores the knockout flag on the wrong side of that pair for every elimination round it
+uses, and `Golf-DQ-059` and `Golf-DQ-066` are one finding read at two grains rather than two
+findings.** Measured 2026-08-19: eight round types are wrong and 6000 events sit on them -
+`176 Quarter Finals` (3535), `178 Semi Finals` (927), `188 1/32` (621), `185 1/16` (384),
+`184 1/8` (336), `304 Playoff` (140) and `186 Small Final` (29) all carry `knockout = no` where
+the name is an elimination round, and `9 Final` carries `yes` where this sport's Final is a
+stroke-play round nobody leaves. The `event_count` column of the eight summary rows sums to
+exactly the 6000 the detail reports, and neither statement names a round type the other misses.
+
+The two are a summary and its detail, not a duplicate. `Golf-DQ-059` reports one row per round
+type, which is where the defect lives and where the decision is made; `Golf-DQ-066` reports one
+row per event, which is where it is repaired, because `round_type` is shared by every sport and
+its flag cannot be corrected without moving rounds in sports nobody here has looked at. What is
+changed is the events, onto the id `correct_round_type_id` names - and that id is the other half
+of each pair this section already records: `176`→`3`, `178`→`2`, `188`→`6`, `185`→`5`,
+`184`→`4`, `304`→`305`, `186`→`19`, `9`→`173`.
+
+Both stay `Actionable`. Every row names something correctable and the statement hands over the
+id to correct it to, so the population is meant to reach zero; `Monitor` would say the opposite,
+and saying it of either row would tell a reviewer to stop driving down 6000 events that have a
+known fix. Read `Golf-DQ-059` first - eight rows carry the whole decision - and pull
+`Golf-DQ-066` as the worklist once the decision is made.
+
 <!-- MANUAL PASTE ZONE: 3 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Scope
