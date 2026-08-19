@@ -3120,12 +3120,16 @@ FROM (
             THEN 1 ELSE 0
         END) AS non_monotonic_count,
         MIN(CASE WHEN w.seconds IS NULL
-            THEN CONCAT('rank ', w.rank_value, ' = ', w.effective_raw)
+            THEN CONCAT('rank ', w.rank_value, ' = ', w.effective_raw,
+                        CASE WHEN w.raw_length > 16
+                             THEN CONCAT(' [cut from ', w.raw_length, ' chars]') ELSE '' END)
         END) AS sample_unreadable,
         MIN(CASE
             WHEN w.seconds IS NOT NULL AND w.best_seconds_behind IS NOT NULL
              AND w.best_seconds_behind < w.seconds
             THEN CONCAT('rank ', w.rank_value, ' = ', w.effective_raw,
+                        CASE WHEN w.raw_length > 16
+                             THEN CONCAT(' [cut from ', w.raw_length, ' chars]') ELSE '' END,
                         ', beaten by ', w.best_seconds_behind, 's recorded further back')
         END) AS sample_non_monotonic
     FROM (
@@ -3139,6 +3143,7 @@ FROM (
             v.event_id,
             v.rank_value,
             v.effective_raw,
+            v.raw_length,
             v.seconds,
             MIN(v.seconds) OVER (
                 PARTITION BY v.event_id, v.is_gap
@@ -3157,7 +3162,21 @@ FROM (
             SELECT
                 g.event_id,
                 g.rank_value,
-                g.effective_raw,
+                -- The copy the window sorts, capped, and the true length beside it. The
+                -- window below sorts every ranked participation of the sport - 1134095 of
+                -- them in Cycling - and a sort reserves the column's declared width per
+                -- row, not the width of the value. Measured 2026-08-19 that one string
+                -- took the window layer from 75.4 seconds to 162.0 and the statement past
+                -- the gateway's 180-second ceiling. It is only ever displayed: seconds and
+                -- is_gap are parsed from g.effective_raw in full just below, so no count
+                -- and no comparison reads the capped copy.
+                -- The cap is not silent. raw_length carries what the value really measured
+                -- and the samples say so when it exceeds 16, because an unreadable value is
+                -- exactly the case a reviewer needs to see whole. Nothing is cut today -
+                -- the unreadable values reach 6 characters in Cycling and 10 in BMX, and
+                -- Triathlon holds none - and the day one does, the finding will say it.
+                CAST(g.effective_raw AS CHAR(16)) AS effective_raw,
+                CHAR_LENGTH(g.effective_raw) AS raw_length,
                 CASE WHEN g.effective_raw LIKE '+%' THEN 1 ELSE 0 END AS is_gap,
                 CASE
                     WHEN TRIM(LEADING '+' FROM g.effective_raw)
