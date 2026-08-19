@@ -363,6 +363,7 @@ SELECT
     z.check_type,
     z.event_id,
     z.event_name,
+    z.event_startdate,
     z.template_name,
     z.affected_count,
     z.tie_count,
@@ -406,6 +407,11 @@ SELECT
 -- event is WITHOUT_VALUE; any value present at all makes it VALUES_DISAGREE, and
 -- without_value_count keeps the first kind visible on an event holding both. Measured on Golf:
 -- no event mixes them - 111 disagree, 15 hold nothing - so the fold loses nothing there.
+-- The event's start date travels with the row at the reviewers' asking, 2026-08-19. A shared
+-- rank is read against the season it was entered in - an import from 2003 and one from last
+-- month are repaired by different people - and the date was a click into the tab away, on every
+-- row, every week. It identifies nothing, so the notes a reviewer has already left stay keyed
+-- to check_type and event_id and none of them is displaced by its arrival.
 FROM (
 SELECT
     CASE
@@ -415,6 +421,7 @@ SELECT
     END AS check_type,
     y.event_id,
     y.event_name,
+    y.event_startdate,
     y.template_name,
     COUNT(*) AS affected_count,
     COUNT(DISTINCT y.rank_value) AS tie_count,
@@ -426,6 +433,7 @@ FROM (
 SELECT
     e.id AS event_id,
     e.name AS event_name,
+    e.startdate AS event_startdate,
     tt.name AS template_name,
     p.name AS participant_name,
     CAST(r.value AS UNSIGNED) AS rank_value,
@@ -543,14 +551,14 @@ WHERE ep.del = 'no'
         AND TRIM(rc.value) <> ''
   )
 ) y
-GROUP BY y.event_id, y.event_name, y.template_name
+GROUP BY y.event_id, y.event_name, y.event_startdate, y.template_name
 ) z
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep
