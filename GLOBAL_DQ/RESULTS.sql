@@ -67,6 +67,7 @@ SELECT
     ep.id AS event_participants_id,
     e.id AS event_id,
     e.name AS event_name,
+    e.startdate AS event_startdate,
     p.name AS participant_name,
     r.value AS medal_value,
     NULL AS eligible_count
@@ -93,7 +94,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
@@ -3341,6 +3342,7 @@ SELECT
     ep.id AS event_participants_id,
     e.id AS event_id,
     e.name AS event_name,
+    e.startdate AS event_startdate,
     tt.name AS template_name,
     p.name AS participant_name,
     CAST(r.value AS UNSIGNED) AS rank_value,
@@ -3429,6 +3431,7 @@ SELECT
     ep.id AS event_participants_id,
     e.id AS event_id,
     e.name AS event_name,
+    e.startdate AS event_startdate,
     tt.name AS template_name,
     p.name AS participant_name,
     CAST(r.value AS UNSIGNED) AS rank_value,
@@ -3513,7 +3516,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep

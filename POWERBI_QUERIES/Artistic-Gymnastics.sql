@@ -464,6 +464,7 @@ SELECT
     ep.id AS event_participants_id,
     e.id AS event_id,
     e.name AS event_name,
+    e.startdate AS event_startdate,
     d.name AS discipline_name,
     p.name AS participant_name,
     TRIM(cmt.value) AS comment_value,
@@ -508,7 +509,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count,
     1 AS sort_order
 FROM result cmt
@@ -539,6 +540,7 @@ SELECT
     ep.id AS event_participants_id,
     e.id AS event_id,
     e.name AS event_name,
+    e.startdate AS event_startdate,
     d.name AS discipline_name,
     p.name AS participant_name,
     TRIM(cmt.value) AS comment_value,
@@ -585,7 +587,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count,
     1 AS sort_order
 FROM result cmt
@@ -614,6 +616,7 @@ SELECT
     ep.id AS event_participants_id,
     e.id AS event_id,
     e.name AS event_name,
+    e.startdate AS event_startdate,
     d.id AS discipline_id,
     d.name AS discipline_name,
     p.name AS participant_name,
@@ -656,7 +659,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count,
     1 AS sort_order
 FROM result cmt
