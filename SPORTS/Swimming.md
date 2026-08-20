@@ -22,7 +22,11 @@ correction is required.
 are to be generated from its event results *after* those results are corrected, so reading
 the statistic layer now would document a layer that is about to be rebuilt. The Statistics
 area below is `Not checked`, never `Not applicable` - the structure exists and
-`GLOBAL-DISCOVERY-012` and `-013` both reach `object_typeFK = 83` for this sport.
+`GLOBAL-DISCOVERY-012` and `-013` both reach `object_typeFK = 83` for this sport. Three facts
+about it were measured on 2026-08-20 by direct statement rather than by the catalogue - the
+type, the owner level and the participant shard - because two participant checks cannot be
+hydrated without them. The Statistics section states exactly what that covers and what it
+does not.
 
 Detail statements were run only for values chosen to answer a question: `GLOBAL-DISCOVERY-019`
 for round type 0, and `GLOBAL-DISCOVERY-027` for Duration `-#.#`, `DNS` and `#` and for
@@ -156,6 +160,24 @@ same split between a signed gap in `4 duration` and an absolute time in
 `296 duration_full_time`. The checkpoint distance labels are free text and are not written to
 one convention: `1.5KM`, `1200M` and `1200m` all occur.
 
+**No DQ check reads this layer, by decision of 2026-08-20.** Five `GLOBAL-DQ` templates audit
+the scope layer, and all five read it as *periods of a score* - a segment of the contest that
+every participant plays and that scores, summing to the total on the result row.
+`GLOBAL-DQ-085` sum against total, `086` period value against an approved vocabulary, `089`
+extra period against detailed status, `091` period stored for every participant, `092` sentinel
+position. Swimming stores none of that: a checkpoint is a distance marker carrying a cumulative
+time, `scope_result` holds `1 rank`, `3 comment`, `4 duration` and `296 duration_full_time`
+rather than a score, and there is no extra-period container among `101`-`105` and `305`. All
+five are `Not applicable`, each with its reason in `SPORTS/params.json` `_checkSignal`.
+
+`GLOBAL-DQ-091` is the one worth naming here, because it is the one that nearly applies. Its
+question - is the same checkpoint recorded for every swimmer in the race - is a real question
+about a split layer, and it was raised and rejected rather than passed over. What it reads to
+ask it is `SCOPE_PERIOD_DATA_TYPE_LIST`, and this sport has no per-period score to put there.
+A check that would need a different structure to run is not the same check, so this one is
+classified out and the question stays open for whoever wants to ask it of the split layer
+directly.
+
 <!-- MANUAL PASTE ZONE: 46 SCOPES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Properties
@@ -183,8 +205,22 @@ the sport's registered athletes carry no such property at all, which is the real
 hold plausible dates, 22402 of them from 1980 onward and 985 between 1930 and 1979. The single
 value beginning `1900` is one row and not a placeholder convention - an earlier reading of this
 file said otherwise and was wrong. The range's other end is the defect worth naming: the highest
-value stored is a date a few months old, and a swimmer born then has not competed. Whether the
-property is required for this sport has not been decided.
+value stored is a date a few months old, and a swimmer born then has not competed.
+
+Both halves are now reported. `Swimming-DQ-061` asks whether the property is there and returns
+12811 athletes of 36199; `Swimming-DQ-064` asks whether the value it holds can be true, by
+checking it against the date of an event the athlete actually swam, and returns 48. The two
+were separated on purpose: an absent birth date and an impossible one are different repairs and
+the second cannot be found by looking at the property alone.
+
+**`status` is the registry's second opinion, and one value has no definition.** The property
+resolves to `active`, `retired` or `dead`, and `object_participants.active` says the same thing
+in one flag. Measured 2026-08-20 they agree on 36073 athletes and disagree on 11, which
+`Swimming-DQ-065` reports. Two shapes sit beside that and are deliberately not in it: 123
+athletes carry no `status` at all, which is an absence rather than a contradiction; and one
+athlete carries `status = unattached`, which is a vocabulary of one. Nothing in the database
+says what `unattached` asserts or which value of the flag it should agree with, so it is
+recorded here and left unreported rather than guessed at.
 
 <!-- MANUAL PASTE ZONE: 46 PROPERTIES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -229,9 +265,25 @@ written both ways.
 
 That is a signature rather than a source: nothing in the database names an ingestion path, but
 one convention writes a distance-first name together with the older discipline id, and another
-writes a distance-last name together with the current one. The 88 events holding a
-distance-first name with a current id are the interesting residue - one of the two was
-corrected there and the other was not.
+writes a distance-last name together with the current one. The events where the two halves
+disagree are the interesting residue - one of them was corrected there and the other was not.
+
+`Swimming-DQ-066` measures that residue and carries the `Monitor` signal, because neither
+spelling has been declared wrong and driving the count to zero would mean renaming events to a
+convention nobody has chosen. Reading distance-first literally, as a name beginning with a
+digit, it returns 92 of 2272 relay events: 91 on a current id written distance-first and 1 on an
+older id written distance-last. The relay ids are the whole of its scope. `351` and `362` are
+excluded although they are the current twins of `468` and `479`, because they are written both
+ways and neither spelling is the error there - including them was tried on 2026-08-20 and took
+the output to 2438 rows, nearly all of them individual events named the ordinary way.
+
+**A different disagreement runs beside it, and that one is a defect.** The stroke is also named
+twice - in the event's name and in the discipline attached to it - and on 64 events the two name
+different strokes. Forty-two are a `Backstroke` discipline under an event named `Breaststroke`;
+four disagree on the distance as well. `Swimming-DQ-063` reports them and projects both sides,
+because nothing in the record says which of the two is the wrong one. It is not
+`GLOBAL-DQ-109`: that template compares the discipline id stored on the event property against
+the same id in `object_discipline`, and passes an event whose name contradicts both.
 
 **Three pairs of ids carry the same discipline under one name or two:**
 
@@ -260,12 +312,32 @@ sport's statistic rows even though the statistic layer itself was not read.
 
 | statistic_typeFK | Owner type | Participant shard | Data shard | Fields/config | Evidence |
 |---:|---:|---:|---:|---|---|
+| 11 Comp.Rank | 3 tournament | `statistic_participants11` | Not checked | Not checked | Measured directly 2026-08-20 for the reach path of `GLOBAL-DQ-007` and `GLOBAL-DQ-009`; 841 records, 7179 people, none of them unreachable by the other three paths |
 
-**Deliberately unread.** No statistic type, owner level or shard is recorded for this sport,
-because the discovery statements that establish them were not run. The area is `Not checked`.
-It is not `Not applicable`: `GLOBAL-DISCOVERY-012` and `-013` both reach `object_typeFK = 83`
-under this sport, so the layer exists and holds rows today. Nothing here may be inferred from
-that; the statements must be run before anything is written.
+**Deliberately unread, with one narrow exception.** The discovery statements that establish
+this area were not run, so the area stays `Not checked`. It is not `Not applicable`:
+`GLOBAL-DISCOVERY-012` and `-013` both reach `object_typeFK = 83` under this sport, so the
+layer exists and holds rows today.
+
+The exception is the row in the table above, and it covers three facts and no others. On
+2026-08-20 the type, the owner level and the participant shard were measured directly, because
+`GLOBAL-DQ-007` and `GLOBAL-DQ-009` reach a person through the Comp.Rank shard as one of four
+paths and cannot be hydrated without them: **841** tournament-owned records at
+`statistic_typeFK = 11`, holding **7179** people in `statistic_participants11`.
+
+The branch does opposite work in the two checks, and the difference is worth stating because
+it was nearly recorded wrong. In `GLOBAL-DQ-007` it only widens the population reached, and it
+widens it by nobody: every one of the 7179 is also an event participant, a lineup member or a
+sport registrant. In `GLOBAL-DQ-009` it is an *exclusion* path, and there it decides the
+answer - **1781** athletes are kept out of the findings solely because a Comp.Rank row reaches
+them, so the check reports 976 athletes rather than 2757. Reading the layer as irrelevant to
+both would have tripled that check's output against a population that has competed.
+
+The data shard, the config and every field remain unmeasured, and the 841 records are *not*
+documented as this sport's Comp.Rank usage: they are the layer that is to be rebuilt from the
+corrected event results. Their count is a fact about what exists, never a description of what
+it should contain. Nothing further may be inferred from the three facts recorded here; the
+discovery statements must be run before anything else is written.
 
 <!-- MANUAL PASTE ZONE: 46 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -388,26 +460,35 @@ resolves to `SENIOR`, `JUNIOR` or `YOUTH`.
    2025, so it is not a legacy import; and it carries its own naming convention, so it is one
    habit rather than two. What the database cannot say is whose habit it is. Until that is
    answered, a Comp.Rank grouping by `disciplineFK` will split one competition's relay across
-   two rankings from one edition to the next.
+   two rankings from one edition to the next. `Swimming-DQ-066` now measures how large that
+   split will be; it does not answer the question.
 2. **Should `468` and `479` be folded into `351` and `362`, and `374` and `557` into one?**
    The first two belong to question 1 and would be resolved with it. The third is independent:
    one discipline entered twice in 2025, and merging it is a decision about the catalogue rather
    than about this sport.
-3. **Are the 88 events holding a distance-first name with a current discipline id a stalled
+3. **Are the events holding a distance-first name with a current discipline id a stalled
    correction?** They are the only place the two halves of the signature disagree, which is what
-   a half-finished cleanup would look like.
+   a half-finished cleanup would look like. There are 91 of them under the literal reading, and
+   `Swimming-DQ-066` keeps the count visible so the answer can be read off whether it moves.
 4. **Are `?` and `R?` meant to be resolved, or left standing?** What they mark is settled and
    the Reference values section records it. What is not settled is whether a qualification the
    record has left open since 2007 is ever expected to close.
-5. **Is `date_of_birth` required for this sport's athletes, and what bounds a plausible one?**
-   12811 registered athletes carry none, and the highest value stored is a date so recent that
-   no swimmer holding it can have competed.
-6. **Is the registry's `active` flag meant to agree with the participant's `status` property?**
-   Two athletes are flagged active and carry `status = dead`. Two rows are not a population, but
-   the rule they break has never been stated.
-7. **Should the sport carry 3739 active athlete profiles that have never entered an event?**
-   Half of them hold no birth date either. Entry lists imported ahead of a competition would look
-   exactly like this, and so would a registry nobody prunes.
+5. ~~**Is `date_of_birth` required for this sport's athletes, and what bounds a plausible one?**~~
+   Answered on 2026-08-20 and both halves are now checks. Required: yes, and `Swimming-DQ-061`
+   reports the 12811 athletes carrying none. Bounded: not by a birth year, which would report
+   real thirteen-year-olds, but by the athlete's age at an event they actually swam.
+   `Swimming-DQ-064` cuts below eight and above seventy and returns 48.
+6. ~~**Is the registry's `active` flag meant to agree with the participant's `status` property?**~~
+   Answered yes on 2026-08-20 and stated as `Swimming-DQ-065`, which returns 11 - nine flagged
+   active while retired and two while dead. What the answer did not settle is `unattached`,
+   carried by one athlete and defined nowhere; the Properties section records it and no check
+   reads it.
+7. ~~**Should the sport carry 3739 active athlete profiles that have never entered an event?**~~
+   Withdrawn on 2026-08-20: the count was reading a normal shape as a defect. Remeasured, 3865
+   active athletes hold no `event_participants` row of their own and **1626 of them are relay
+   swimmers reached through a lineup**, which is how this sport enters a relay leg and is not a
+   missing participation at all. What remains of the question is already `Swimming-DQ-062`, and
+   the 976 athletes it reports are the population that was actually being asked about.
 8. **The whole Comp.Rank layer**, unread by design and to be opened once event results are
    corrected.
 
