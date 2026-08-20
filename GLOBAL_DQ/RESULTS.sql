@@ -4244,3 +4244,103 @@ WHERE ep.del = 'no'
   AND TRIM(r.value) <> ''
 
 ORDER BY sort_order, affected_count DESC, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-126
+    -- Name - EVENT_RESULTS_FINAL_SCORE_ON_UNFINISHED_EVENT
+    -- What it does: Flags events that never finished yet carry a final score.
+    CASE
+        WHEN x.status_type = 'cancelled' THEN 'CANCELLED_EVENT_HOLDS_A_FINAL_SCORE'
+        WHEN x.status_type = 'interrupted' THEN 'INTERRUPTED_EVENT_HOLDS_A_FINAL_SCORE'
+        ELSE 'UNFINISHED_EVENT_HOLDS_A_FINAL_SCORE'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.stage_name,
+    x.status_type,
+    x.status_descFK,
+    x.status_desc_name,
+    x.holders,
+    x.scores_held,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds events whose status says the contest did not finish and
+-- which nonetheless carry the result type the sport decides its outcome by.
+-- The invariant is one sentence: a final score is what a finished contest produces, so an
+-- event that did not finish cannot have one. What it is *not* is an assertion that an
+-- unfinished event holds no result at all. Measured on Ice Hockey 2026-08-20, all 3938 of its
+-- cancelled events carry `1 Ordinary time`, `6 Running score` and `51 Period 1`, while only 212
+-- also carry Period 2 - which is a faithful record of a match abandoned part way through, not a
+-- defect. Only 160 of them hold `4 Final Result`, and those are the rows this check is for.
+-- Not-started events are deliberately out of scope. GLOBAL-DQ-047 already asserts that an event
+-- in a not-started status carries no result whatever, which is the stronger statement and the
+-- one that owns them; restating it here would report the same row twice under two CheckIDs.
+-- Every other unfinished status is this check's, so a sport gaining a new one is inside it
+-- without anybody editing a list.
+-- The audited object is the event. A final score written where there should be none is written
+-- for both sides at once, so counted per participant the same defect would be reported twice -
+-- the same reason GLOBAL-DQ-090 gives for grouping to the event. `holders` and `scores_held`
+-- carry the detail as named secondary columns.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.name AS stage_name,
+        e.status_type,
+        e.status_descFK,
+        sd.name AS status_desc_name,
+        COUNT(DISTINCT ep.id) AS holders,
+        SUBSTRING(GROUP_CONCAT(
+            CONCAT(p.name, ' (', r.value, ')') ORDER BY p.name SEPARATOR ' | '), 1, 200) AS scores_held
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN status_desc sd ON sd.id = e.status_descFK
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                 AND r.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+                 AND r.value IS NOT NULL
+                 AND TRIM(r.value) <> ''
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND e.status_type NOT IN ('finished', 'notstarted')
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ts.name,
+             e.status_type, e.status_descFK, sd.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type NOT IN ('finished', 'notstarted')
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC;

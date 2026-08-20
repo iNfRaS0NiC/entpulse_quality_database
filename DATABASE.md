@@ -167,6 +167,14 @@ Observed values are not exhaustive enums. Previously observed participant types 
 Previously observed gender/category values include `male`, `female`, `mixed`,
 `undefined`, `mare`, `stallion` and `gelding`.
 
+**A status of `cancelled` does not mean no result was ever written.** Measured on Ice Hockey
+2026-08-20, every one of its 3938 cancelled events carries the ordinary-time score, the running
+score and a first period, and a couple of hundred carry a second and third - a match abandoned
+part way, recorded as far as it got. What such an event must not carry is the result type the
+sport decides its outcome by, and `GLOBAL-DQ-126` is the check that says so. Reading any result
+on a cancelled event as a defect reports the sport's normal practice; reading none of them
+misses the ones that were awarded a final score they never played for.
+
 **`participant.type` is the person's role now, not the role they held at any event they appear
 in.** There is one row per person and one type on it, so a player who later becomes a coach is
 typed `coach` and reads that way in every record going back twenty years. Measured 2026-08-20

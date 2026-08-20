@@ -241,6 +241,23 @@ everywhere would report the reach of the incident layer instead. Five incident t
 and the type id is the only safe discriminator, because `11 Penalty shootout missed` carries the
 `goal` code as well: the check counts `7`, `8`, `12`, `21` and `22`.
 
+**A cancelled match still records how far it got, and that is not a defect.** Measured
+2026-08-20 sport-wide, all **3938** cancelled events carry `1 Ordinary time`, `6 Running score`
+and `51 Period 1`; only 212 also carry Period 2 and 211 Period 3. That is the shape of a game
+abandoned part way through, written down faithfully. A check reading it as "an event that did
+not happen holds a result" would report all 3938 and be wrong about every one, which is why
+`GLOBAL-DQ-090` now asks its question only of finished events.
+
+**What is a defect is `4 Final Result` on such an event**, because a final result is what a
+finished contest produces. Sport-wide that is 160 events; inside the client's boundary and
+after the 2004 cutoff it is **four**, and they are one story: Czechia U20 - Canada U20,
+USA U20 - Slovakia U20, Austria U20 - Finland U20 and Russia U20 - Switzerland U20, all played
+on 27 December 2021 in the U-20 World Championship that was abandoned to COVID.
+`Ice-Hockey-DQ-113` reports them, on `GLOBAL-DQ-126` written for exactly this.
+
+The two shapes are easy to confuse and the difference is the whole point: `Ordinary time` on a
+cancelled match says the match started, `Final Result` says it ended.
+
 <!-- MANUAL PASTE ZONE: 5 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
