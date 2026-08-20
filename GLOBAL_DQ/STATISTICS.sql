@@ -19,6 +19,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND NOT EXISTS (
       SELECT 1
@@ -42,6 +43,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -86,6 +88,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND (
       NOT EXISTS (
@@ -121,6 +124,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -163,6 +167,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND (
       -- A Rank that is absent or empty is explained by a Comment naming the status the
@@ -205,6 +210,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -230,6 +236,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND NOT EXISTS (
       SELECT 1
@@ -255,6 +262,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -281,6 +289,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND (
       NOT EXISTS (
@@ -316,6 +325,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -368,6 +378,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
 ) x
@@ -394,6 +405,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM statistic_config sc3
@@ -465,6 +477,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
       AND EXISTS (
           SELECT 1 FROM statistic_config sc3
@@ -497,6 +510,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM statistic_config sc3
@@ -615,6 +629,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
 ) x
@@ -641,6 +656,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -683,6 +699,7 @@ WHERE sd.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND LOWER(TRIM(sd.value)) NOT IN ('gold', 'silver', 'bronze')
 
@@ -706,6 +723,7 @@ WHERE sd.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -750,6 +768,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND TRIM(rk.value) <> ''
   AND TRIM(td.value) <> ''
@@ -778,6 +797,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND TRIM(rk.value) <> ''
   AND TRIM(td.value) <> ''
@@ -819,6 +839,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 GROUP BY s.id, s.name, tt.name, t.name
 HAVING deprecated_duration_participant_count > 0
@@ -838,6 +859,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -879,6 +901,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND s.id BETWEEN <from_statistic_id> AND <to_statistic_id>
   AND NOT EXISTS (
@@ -919,6 +942,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND s.id BETWEEN <from_statistic_id> AND <to_statistic_id>
 ;
@@ -998,6 +1022,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND s.id BETWEEN <from_statistic_id> AND <to_statistic_id>
     GROUP BY s.id, tt.name, t.name
@@ -1044,6 +1069,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND s.id BETWEEN <from_statistic_id> AND <to_statistic_id>
 ;
@@ -1089,6 +1115,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
 ) y
@@ -1110,6 +1137,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -1176,6 +1204,7 @@ FROM (
           AND tt.sportFK = {{SPORT_ID}}
           AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t.tournament_templateFK = <tournament_template_id>
     ) y
     GROUP BY y.statistic_id, y.statistic_name, y.template_name, y.tournament_name
@@ -1198,6 +1227,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -1259,6 +1289,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND (
       s.name IS NULL OR TRIM(s.name) = ''
@@ -1309,6 +1340,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -1383,6 +1415,7 @@ FROM (
       AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
 ) x
 WHERE x.referencing_statistics = 0
@@ -1402,6 +1435,7 @@ WHERE e.del = 'no'
   AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -1444,6 +1478,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND orr.round_typeFK NOT IN ({{MEDAL_ROUND_TYPE_LIST}})
 
@@ -1468,6 +1503,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -1552,6 +1588,7 @@ FROM (
             WHERE scx.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
               AND scx.del = 'no'
               AND tx.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(tx.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(tx.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
               -- AND tx.tournament_templateFK = <tournament_template_id>
               AND EXISTS (
                   SELECT 1
@@ -1567,6 +1604,7 @@ FROM (
           AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
           AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.id BETWEEN <from_event_id> AND <to_event_id>
         -- One row per competitor, whatever how many statistics cover the event: a competitor
@@ -1593,6 +1631,7 @@ WHERE e.del = 'no'
   AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.id BETWEEN <from_event_id> AND <to_event_id>
   -- The same map the findings branch joins, so both halves read one population. Built once
@@ -1613,6 +1652,7 @@ WHERE e.del = 'no'
       WHERE scx.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
         AND scx.del = 'no'
         AND tx.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+        AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(tx.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(tx.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
         -- AND tx.tournament_templateFK = <tournament_template_id>
         AND EXISTS (
             SELECT 1
@@ -1686,6 +1726,7 @@ FROM (
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND sg.value IN ('male','female','mixed')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY st.id, st.name, tt.name, t.name
 ) elig
@@ -1724,6 +1765,7 @@ FROM (
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND sg.value IN ('male','female','mixed')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY st.id, st.name, tt.name, t.name
 ) elig
@@ -1793,6 +1835,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
       AND EXISTS (
           SELECT 1 FROM object_discipline od
@@ -1825,6 +1868,7 @@ WHERE sp.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM object_discipline od
@@ -1898,6 +1942,7 @@ FROM (
       AND s.name IS NOT NULL
       AND TRIM(s.name) <> ''
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
 ) x
 WHERE x.violation_types <> ''
@@ -1921,6 +1966,7 @@ WHERE s.del = 'no'
   AND s.name IS NOT NULL
   AND TRIM(s.name) <> ''
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, violation_types, statistic_name;
@@ -1985,6 +2031,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
 ) x
 WHERE LOWER(TRIM(x.comment_value)) NOT IN ({{DATA_COMMENT_VALUE_LIST}})
@@ -2013,6 +2060,7 @@ WHERE sd.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -2060,6 +2108,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY st.id, st.name, tt.name, t.name, sp.id, sd.statistic_data_typeFK
     HAVING COUNT(*) > 1
@@ -2085,6 +2134,7 @@ WHERE sd.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -2174,6 +2224,7 @@ FROM (
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND p.type = 'athlete'
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY sp.id
 ) x
@@ -2257,6 +2308,7 @@ FROM (
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND p.type = 'athlete'
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY sp.id
 ) y
@@ -2324,6 +2376,7 @@ FROM (
           AND tt.sportFK = {{SPORT_ID}}
           AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t.tournament_templateFK = <tournament_template_id>
         GROUP BY s.id, s.name, tt.name, t.name, tp.id, tp.name
     ) g
@@ -2354,6 +2407,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -2430,6 +2484,7 @@ FROM (
           AND tt.sportFK = {{SPORT_ID}}
           AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t.tournament_templateFK = <tournament_template_id>
         GROUP BY s.id, s.name, tt.name, t.name, sg.value, tp.id, tp.name
     ) g
@@ -2463,6 +2518,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -2520,6 +2576,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- NULL and '' are one state in DATABASE.md, the active empty row, which is how this
       -- layer records that a field does not apply to a participant - a Comp.Rank field set
@@ -2550,6 +2607,7 @@ WHERE sd.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, blank_data_count DESC;
@@ -2610,6 +2668,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
 ) x
 -- A value outside gold, silver and bronze resolves to no expected rank and is left to
@@ -2637,6 +2696,7 @@ WHERE sm.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -2721,6 +2781,7 @@ FROM (
           AND tt.sportFK = {{SPORT_ID}}
           AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t.tournament_templateFK = <tournament_template_id>
           AND sd.value IS NOT NULL
           AND TRIM(sd.value) <> ''
@@ -2760,6 +2821,7 @@ WHERE sd.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND sd.value IS NOT NULL
   AND TRIM(sd.value) <> ''
@@ -2865,6 +2927,7 @@ FROM (
               AND ttx.sportFK = {{SPORT_ID}}
               AND (ttx.name IS NULL OR ttx.name NOT LIKE '%(IOC)%')
               AND tx.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(tx.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(tx.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
               -- AND tx.tournament_templateFK = <tournament_template_id>
               AND NOT EXISTS (
                   SELECT 1
@@ -3021,6 +3084,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order;
@@ -3096,6 +3160,7 @@ FROM (
           AND ttx.sportFK = {{SPORT_ID}}
           AND (ttx.name IS NULL OR ttx.name NOT LIKE '%(IOC)%')
           AND tx.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(tx.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(tx.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND tx.tournament_templateFK = <tournament_template_id>
         GROUP BY sp.statisticFK, CAST(TRIM(sd.value) AS SIGNED)
         HAVING COUNT(DISTINCT sp.id) > 1
@@ -3123,6 +3188,7 @@ FROM (
           AND tty.sportFK = {{SPORT_ID}}
           AND (tty.name IS NULL OR tty.name NOT LIKE '%(IOC)%')
           AND ty.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(ty.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(ty.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND ty.tournament_templateFK = <tournament_template_id>
         GROUP BY sy.id, sy.name, tty.name, ty.name
         HAVING COUNT(DISTINCT CASE WHEN sdt.value IS NOT NULL AND TRIM(sdt.value) <> ''
@@ -3156,6 +3222,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, shared_place_count DESC;
@@ -3207,6 +3274,7 @@ WHERE sd.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND sd.value IS NOT NULL
   AND TRIM(sd.value) <> ''
@@ -3236,6 +3304,7 @@ WHERE sd.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND sd.value IS NOT NULL
   AND TRIM(sd.value) <> ''
@@ -3302,6 +3371,7 @@ FROM (
       AND tt.sportFK = {{SPORT_ID}}
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
       AND EXISTS (
           SELECT 1
@@ -3339,6 +3409,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -3442,6 +3513,7 @@ FROM (
           AND tt.sportFK = {{SPORT_ID}}
           AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t.tournament_templateFK = <tournament_template_id>
         GROUP BY sc.id, s.id, s.name, s.objectFK, tt.name, t.name,
                  TRIM(sc.value), e.id, ts.tournamentFK
@@ -3472,6 +3544,7 @@ WHERE sc.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_id;
@@ -3519,6 +3592,7 @@ FROM (
         WHERE sp.del = 'no'
           AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
           AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY sp.statisticFK, sp.participantFK
         HAVING COUNT(*) > 1
@@ -3545,6 +3619,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM statistic_participants{{SHARD_ID}} sp2
@@ -3609,6 +3684,7 @@ FROM (
               {{CONFIG_START_DATE_TYPE_ID}}, {{CONFIG_END_DATE_TYPE_ID}}, {{CONFIG_GENDER_TYPE_ID}})
           AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
           AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY sc.statisticFK, sc.statistic_data_typeFK
         HAVING COUNT(*) > 1
@@ -3635,6 +3711,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM statistic_config sc2
@@ -3771,6 +3848,7 @@ FROM (
       AND s.object_typeFK = 3
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
     HAVING MAX(CASE WHEN od.disciplineFK = ode.disciplineFK THEN 1 ELSE 0 END) = 0
@@ -3792,6 +3870,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM object_discipline od2
@@ -3852,6 +3931,7 @@ FROM (
       AND s.object_typeFK = 3
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
     HAVING COUNT(DISTINCT p.type) > 1
@@ -3875,6 +3955,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_id;
@@ -3924,6 +4005,7 @@ WHERE sp.del = 'no'
   AND s.object_typeFK = 3
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND (p.id IS NULL OR p.del <> 'no')
 
@@ -3944,6 +4026,7 @@ WHERE sp.del = 'no'
   AND s.object_typeFK = 3
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_participants_id;
@@ -4011,6 +4094,7 @@ FROM (
           AND tt.sportFK = {{SPORT_ID}}
           AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t.tournament_templateFK = <tournament_template_id>
         GROUP BY s.id, s.name, tt.name, t.name, sd.statistic_data_typeFK
         HAVING shape_count > 1
@@ -4039,6 +4123,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 ;
 
@@ -4103,6 +4188,7 @@ FROM (
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND tt.id NOT IN ({{MEDAL_TEMPLATE_ID_LIST}})
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
       AND sd.value IS NOT NULL
       AND TRIM(sd.value) <> ''
@@ -4126,6 +4212,7 @@ WHERE s.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND tt.id NOT IN ({{MEDAL_TEMPLATE_ID_LIST}})
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, medal_holder_count DESC, statistic_id;

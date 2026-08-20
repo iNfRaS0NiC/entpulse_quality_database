@@ -95,6 +95,7 @@ FROM (
                      AND r.value REGEXP '^[1-9][0-9]*$'
                 WHERE ep.del = 'no'
                   AND t2.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+                  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
                   -- AND t2.tournament_templateFK = <tournament_template_id>
                   -- AND e2.startdate >= '<from_datetime>'
                   -- AND e2.startdate <  '<to_datetime>'
@@ -126,6 +127,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
      AND tt.sportFK = 46
 WHERE e.del = 'no'
   AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -202,6 +204,7 @@ FROM (
     JOIN discipline d ON d.id = od.disciplineFK
     WHERE e.del = 'no'
       AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -228,6 +231,7 @@ FROM (
     JOIN discipline d ON d.id = od.disciplineFK
     WHERE e.del = 'no'
       AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -306,6 +310,7 @@ FROM (
          AND tt.sportFK = 46
     WHERE op.object = 'sport' AND op.objectFK = 46 AND op.del = 'no'
       AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -335,6 +340,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
      AND tt.sportFK = 46
 WHERE op.object = 'sport' AND op.objectFK = 46 AND op.del = 'no'
   AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -482,6 +488,7 @@ FROM (
     JOIN discipline d ON d.id = od.disciplineFK
     WHERE e.del = 'no'
       AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -505,6 +512,7 @@ JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.
      AND od.disciplineFK IN (56, 57, 58, 468, 479, 365, 366, 367)
 WHERE e.del = 'no'
   AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'

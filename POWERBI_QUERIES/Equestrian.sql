@@ -62,6 +62,7 @@ FROM (
         WHERE sp.del = 'no'
           AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
           AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY
             sp.statisticFK,
@@ -106,6 +107,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = 37
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -209,6 +211,7 @@ FROM (
           AND s2.object_typeFK = 3
           AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
           AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t2.tournament_templateFK = <tournament_template_id>
           AND ((p.type = 'athlete' AND rider.participant_id IS NULL)
             OR (p.type = 'horse'   AND mount.participant_id IS NULL))
@@ -254,6 +257,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = 37
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -334,6 +338,7 @@ FROM (
           AND s2.object_typeFK = 3
           AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
           AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY
             s2.id,
@@ -403,6 +408,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = 37
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -467,6 +473,7 @@ FROM (
     WHERE ts.del = 'no'
       AND tt.sportFK = 37
       AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
       -- AND t.tournament_templateFK = <tournament_template_id>
       AND ts.startdate IS NOT NULL
       AND ts.enddate IS NOT NULL
@@ -500,6 +507,7 @@ JOIN tournament_template tt
 WHERE ts.del = 'no'
   AND tt.sportFK = 37
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND ts.startdate IS NOT NULL
   AND ts.enddate IS NOT NULL
@@ -673,6 +681,7 @@ FROM (
          AND pr.del = 'no'
         WHERE ep.del = 'no'
           AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY
             ep.eventFK,
@@ -708,6 +717,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = 37
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1 FROM event_participants ep4
@@ -775,6 +785,7 @@ FROM (
          AND sc.value <> ''
         WHERE ep.del = 'no'
           AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY
             ep.eventFK,
@@ -809,6 +820,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = 37
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -859,6 +871,7 @@ WHERE tt.del = 'no'
   AND TRIM(tt.gender) <> ''
   AND LOWER(TRIM(tt.gender)) <> 'mixed'
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND NOT EXISTS (
       SELECT 1
@@ -895,6 +908,7 @@ WHERE tt.del = 'no'
   AND TRIM(tt.gender) <> ''
   AND LOWER(TRIM(tt.gender)) <> 'mixed'
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, tournament_template_id;
@@ -975,6 +989,7 @@ FROM (
          AND cm.value <> ''
         WHERE ep.del = 'no'
           AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY
             ep.eventFK,
@@ -1006,6 +1021,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = 37
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -1069,6 +1085,7 @@ FROM (
      AND sc.value <> ''
     WHERE ep.del = 'no'
       AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY
         e.id, e.name, e.startdate, tt.name, t.name
@@ -1091,6 +1108,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = 37
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -1138,6 +1156,7 @@ WHERE e.del = 'no'
   AND tt.sportFK = 37
   AND e.round_typeFK IN (9, 173)
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -1181,6 +1200,7 @@ WHERE e.del = 'no'
   AND tt.sportFK = 37
   AND e.round_typeFK IN (9, 173)
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -1277,6 +1297,7 @@ FROM (
           AND s2.object_typeFK = 3
           AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
           AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY
             s2.id,
@@ -1326,6 +1347,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = 37
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -1436,6 +1458,7 @@ FROM (
      AND h.del = 'no'
     WHERE ep.del = 'no'
       AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       AND (
@@ -1476,6 +1499,7 @@ JOIN participant p
  AND p.type = 'athlete'
 WHERE ep.del = 'no'
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
 
@@ -1551,6 +1575,7 @@ FROM (
           AND s2.object_typeFK = 3
           AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
           AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY
             s2.id,
@@ -1595,6 +1620,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = 37
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -1681,6 +1707,7 @@ LEFT JOIN participant h
  AND h.del = 'no'
 WHERE l.del = 'no'
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   AND (
@@ -1719,6 +1746,7 @@ JOIN tournament_template tt
  AND tt.sportFK = 37
 WHERE l.del = 'no'
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
 
@@ -1781,6 +1809,7 @@ WHERE e.del = 'no'
   AND od.disciplineFK NOT IN (424, 425, 426, 428)
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 UNION ALL
@@ -1816,6 +1845,7 @@ WHERE s.del = 'no'
   AND od2.disciplineFK NOT IN (424, 425, 426, 428)
   AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
   AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t2.tournament_templateFK = <tournament_template_id>
 
 UNION ALL
@@ -1845,6 +1875,7 @@ FROM (
     WHERE e3.del = 'no'
       AND (tt3.name IS NULL OR tt3.name NOT LIKE '%(IOC)%')
       AND t3.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
       -- AND t3.tournament_templateFK = <tournament_template_id>
 
     UNION ALL
@@ -1867,6 +1898,7 @@ FROM (
       AND s4.object_typeFK = 3
       AND (tt4.name IS NULL OR tt4.name NOT LIKE '%(IOC)%')
       AND t4.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t4.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t4.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
       -- AND t4.tournament_templateFK = <tournament_template_id>
 ) cov
 
@@ -1950,6 +1982,7 @@ FROM (
          AND h.del = 'no'
         WHERE ep.del = 'no'
           AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY
             ep.eventFK,
@@ -1998,6 +2031,7 @@ JOIN tournament_template tt
 WHERE e.del = 'no'
   AND tt.sportFK = 37
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -2088,6 +2122,7 @@ FROM (
          AND h.del = 'no'
         WHERE l.del = 'no'
           AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY
             ep.eventFK,
@@ -2136,6 +2171,7 @@ JOIN tournament_template tt
 WHERE e.del = 'no'
   AND tt.sportFK = 37
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -2217,6 +2253,7 @@ JOIN participant lp
  AND lp.del = 'no'
 WHERE l.del = 'no'
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   AND (pp.type <> 'team' OR lp.type <> 'athlete')
@@ -2253,6 +2290,7 @@ JOIN participant lp
  AND lp.del = 'no'
 WHERE l.del = 'no'
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
 
@@ -2325,6 +2363,7 @@ LEFT JOIN participant tp
 WHERE sp.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND (
         sd.value NOT REGEXP '^[0-9]+$'
@@ -2361,6 +2400,7 @@ JOIN statistic_data11 sd
 WHERE sp.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, check_type, participant_row_id;
@@ -2454,6 +2494,7 @@ FROM (
          AND tt.sportFK = 37
         WHERE ep.del = 'no'
           AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t.tournament_templateFK = <tournament_template_id>
     ) r1
     JOIN (
@@ -2489,6 +2530,7 @@ FROM (
          AND tt.sportFK = 37
         WHERE ep.del = 'no'
           AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t.tournament_templateFK = <tournament_template_id>
     ) r2
       ON r2.tournament_id = r1.tournament_id
@@ -2568,6 +2610,7 @@ FROM (
          AND tt.sportFK = 37
         WHERE ep.del = 'no'
           AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t.tournament_templateFK = <tournament_template_id>
     ) q1
     JOIN (
@@ -2601,6 +2644,7 @@ FROM (
          AND tt.sportFK = 37
         WHERE ep.del = 'no'
           AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t.tournament_templateFK = <tournament_template_id>
     ) q2
       ON q2.event_id = q1.event_id
@@ -2724,6 +2768,7 @@ FROM (
           AND s2.object_typeFK = 3
           AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
           AND t2.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t2.tournament_templateFK = <tournament_template_id>
         GROUP BY
             s2.id,
@@ -2778,6 +2823,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = 37
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND EXISTS (
       SELECT 1
@@ -2897,6 +2943,7 @@ FROM (
          AND TRIM(REPLACE(m.value, 0xC2A0, '')) <> ''
         WHERE ep3.del = 'no'
           AND t3.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
           -- AND t3.tournament_templateFK = <tournament_template_id>
         GROUP BY
             ep3.id
@@ -2904,6 +2951,7 @@ FROM (
       ON mv.participation_id = ep.id
     WHERE ep.del = 'no'
       AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
 ) f
@@ -2938,6 +2986,7 @@ JOIN tournament_template tt
  AND tt.sportFK = 37
 WHERE ep.del = 'no'
   AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
 

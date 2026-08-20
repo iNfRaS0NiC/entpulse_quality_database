@@ -411,6 +411,42 @@ Rules:
 - **a statement with no template relation carries neither**, and audits the sport whole. Say so
   in the sport file rather than leaving the reader to notice.
 
+### The boundary has a second half: the season
+
+The client buys a set of competitions **and** a stretch of time, and the template list is only
+the first of the two. UK Sport's scope begins at the 2004 season, decided 2026-08-20, so a
+tournament whose season ended earlier is out of client scope exactly as a template the client
+does not take is. The condition goes in the same place, on the same alias:
+
+```sql
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+```
+
+**The season is read from the name, and that is not a shortcut.** `tournament` carries no date
+column at all - `id`, `name`, `tournament_templateFK`, `enetSeasonID`, `n`, `locked`, `ut`,
+`del` and nothing else - so a date filter would have to reach the stages, and the stage dates
+are missing on precisely the rows it would need to catch. Measured 2026-08-20: Curling holds
+477 undated tournaments of 793 and Modern Pentathlon 285 of 847, and a filter on the earliest
+stage date excluded **0** of Triathlon's 60 pre-2004 seasons against 60 excluded by name. Every
+tournament name in every documented sport carries a year.
+
+A season written `YYYY/YYYY` is dated by its **last** year, so `2003/2004` is inside a 2004
+boundary and `2002/2003` is not. 133 tournaments turn on that and the choice was made rather
+than inherited. Twenty Soccer tournaments are named `2004 Fall` and `2005 Spring` and the
+expression reads them correctly, which is why it is not the shorter `RIGHT(name, 4)`.
+
+What it removes is uneven and worth knowing before a count is read as a repair: 1510
+tournaments of 18983 leave scope, but only six sports lose an event with them - Soccer 62144,
+Ice Hockey 12978, Curling 399, Golf 152, Cycling 33, Equestrian 3. For Swimming, BMX, Artistic
+Gymnastics, Modern Pentathlon and Triathlon the pre-2004 tournaments hold no events at all,
+which is the same fact that makes the stage-date route useless.
+
+Five checks audit a template rather than a tournament and carry no season condition, because a
+template is not a season: `GLOBAL-DQ-001`, `-013`, `-079`, `-081` and `-106`. Whether each of
+them should read the boundary through its tournaments is a separate question and is open.
+
 `TOOLS/Test-Package.ps1` fails a statement that filters a template without excluding the
 boundary, and a sport statement whose written-out ids have drifted from `SPORTS/params.json`.
 

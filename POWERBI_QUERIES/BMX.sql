@@ -44,6 +44,7 @@ JOIN result rk ON rk.event_participantsFK = ep.id AND rk.result_typeFK = 100 AND
 JOIN result dur ON dur.event_participantsFK = ep.id AND dur.result_typeFK = 101 AND dur.del = 'no'
 WHERE ep.del = 'no'
   AND tt.sportFK = 58
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND TRIM(rk.value) <> ''
   AND TRIM(dur.value) <> ''
@@ -69,6 +70,7 @@ JOIN result rk ON rk.event_participantsFK = ep.id AND rk.result_typeFK = 100 AND
 JOIN result dur ON dur.event_participantsFK = ep.id AND dur.result_typeFK = 101 AND dur.del = 'no'
 WHERE ep.del = 'no'
   AND tt.sportFK = 58
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND TRIM(rk.value) <> ''
   AND TRIM(dur.value) <> ''

@@ -1,6 +1,7 @@
 {
     "BMX": {
         "SPORT_ID": 58,
+        "CLIENT_FROM_SEASON": 2004,
         "PRECISION_RESULT_TYPE_LIST": "101, 102, 557",
         "PRECISION_DATA_TYPE_LIST": "1272",
         "EVENT_PARTICIPANT_TYPE_LIST": "'athlete'",
@@ -49,6 +50,7 @@
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
         "_names": {
             "SPORT_ID": "58 BMX",
+            "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
             "PRECISION_RESULT_TYPE_LIST": "101 Duration, 102 Points, 557 Full-time duration",
             "PRECISION_DATA_TYPE_LIST": "1272 Duration",
@@ -111,6 +113,7 @@
     },
     "Triathlon": {
         "SPORT_ID": 50,
+        "CLIENT_FROM_SEASON": 2004,
         "PRECISION_RESULT_TYPE_LIST": "101, 557",
         "PRECISION_DATA_TYPE_LIST": "1426",
         "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
@@ -158,6 +161,7 @@
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
         "_names": {
             "SPORT_ID": "50 Triathlon",
+            "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
             "PRECISION_RESULT_TYPE_LIST": "101 Duration, 557 Full-time duration",
             "PRECISION_DATA_TYPE_LIST": "1426 Time",
@@ -224,6 +228,7 @@
     },
     "Curling": {
         "SPORT_ID": 10,
+        "CLIENT_FROM_SEASON": 2004,
         "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
         "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach'",
         "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
@@ -266,6 +271,7 @@
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
         "_names": {
             "SPORT_ID": "10 Curling",
+            "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
             "DATA_RANK_TYPE_ID": "1270 Rank",
             "DATA_COMMENT_TYPE_ID": "1273 Comment",
@@ -332,6 +338,7 @@
     },
     "Artistic-Gymnastics": {
         "SPORT_ID": 40,
+        "CLIENT_FROM_SEASON": 2004,
         "PRECISION_RESULT_TYPE_LIST": "102",
         "PRECISION_DATA_TYPE_LIST": "1271",
         "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
@@ -376,6 +383,7 @@
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
         "_names": {
             "SPORT_ID": "40 Artistic Gymnastics",
+            "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
             "PRECISION_RESULT_TYPE_LIST": "102 Points",
             "PRECISION_DATA_TYPE_LIST": "1271 Points",
@@ -461,6 +469,7 @@
     },
     "Soccer": {
         "SPORT_ID": 1,
+        "CLIENT_FROM_SEASON": 2004,
         "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
         "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
         "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
@@ -496,6 +505,7 @@
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
         "_names": {
             "SPORT_ID": "1 Soccer",
+            "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
             "DATA_RANK_TYPE_ID": "1270 Rank",
             "DATA_MEDAL_TYPE_ID": "1277 Medal",
@@ -625,6 +635,7 @@
     },
     "Modern-Pentathlon": {
         "SPORT_ID": 42,
+        "CLIENT_FROM_SEASON": 2004,
         "PRECISION_RESULT_TYPE_LIST": "102",
         "PRECISION_DATA_TYPE_LIST": "1271",
         "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
@@ -671,6 +682,7 @@
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
         "_names": {
             "SPORT_ID": "42 Modern Pentathlon",
+            "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: this sport is taken whole",
             "PRECISION_RESULT_TYPE_LIST": "102 Points",
             "PRECISION_DATA_TYPE_LIST": "1271 Points",
@@ -759,6 +771,7 @@
     },
     "Golf": {
         "SPORT_ID": 3,
+        "CLIENT_FROM_SEASON": 2004,
         "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
         "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
         "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
@@ -781,6 +794,7 @@
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649",
         "_names": {
             "SPORT_ID": "3 Golf",
+            "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "432 Ryder Cup 1, 435 Solheim Cup 1 (male, deleted), 438 Solheim Cup 1, 9142 Solheim Cup (deleted), 9201 PGA Tour of Australasia 1, 9418 Champions Tour 1, 9633 Korn Ferry Tour, 9645 Walker Cup 1, 9691 Asian Tour 1, 9692 Challenge Tour 1, 9693 Sunshine Tour 1, 9831 GolfSixes, 9932 Mixed, 10305 LIV Golf, 10333 GolfSixes alt test (deleted), 10334 GolfSixes test kris (deleted), 10341 Presidents Cup, 11528 Eisenhower Trophy, 11529 Espirito Santo Trophy, 12649 TEST",
             "DATA_RANK_TYPE_ID": "1270 Rank",
             "DATA_MEDAL_TYPE_ID": "1277 Medal",
@@ -960,6 +974,7 @@
     },
     "Ice-Hockey": {
         "SPORT_ID": 5,
+        "CLIENT_FROM_SEASON": 2004,
         "IN_SCOPE_TEMPLATE_ID_LIST": "31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285",
         "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
         "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach', 'official'",
@@ -1157,6 +1172,7 @@
     },
     "Cycling": {
         "SPORT_ID": 30,
+        "CLIENT_FROM_SEASON": 2004,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "10350, 10351, 10352, 10353, 12652, 12653, 12654, 12655, 12656, 12657, 12658",
         "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
         "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
@@ -1182,6 +1198,8 @@
         "FINAL_ROUND_TYPE_LIST": "173",
         "_names": {
             "SPORT_ID": "30 Cycling",
+            "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
+            "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: the client takes this sport whole, all 51 templates",
             "REGISTRY_PARTICIPANT_TYPE_LIST": "athlete and team. coach is deliberately left out - the sport registers 98 of them and no check here audits a coach, decided 2026-08-16. It is also the only type the registry holds that none of GLOBAL-DQ-009's three participation paths can reach, since a coach is entered on no event, the sport writes no lineup, and no coach appears in a Comp.Rank",
             "STATISTIC_TYPE_ID": "11 Competition Stats, called Comp.Rank in this project",
@@ -1452,6 +1470,7 @@
     },
     "Equestrian": {
         "SPORT_ID": 37,
+        "CLIENT_FROM_SEASON": 2004,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "12779, 12780, 12781, 12785, 12787",
         "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
         "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'horse', 'team'",
@@ -1518,6 +1537,7 @@
         },
         "_names": {
             "SPORT_ID": "37 Equestrian",
+            "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "the five (IOC) templates, none of which holds a stage or an event: 12779 FEI World Equestrian Games Jumping (IOC), 12780 FEI World Cup Final (IOC), 12781 FEI Eventing World Championships (IOC), 12785 FEI Dressage World Championships (IOC), 12787 FEI Jumping World Championships (IOC)",
             "EVENT_PARTICIPANT_TYPE_LIST": "athlete and team; the horse is never an event participant and is reached through the horseFK reference property",
             "REGISTRY_PARTICIPANT_TYPE_LIST": "athlete, horse and team; horses are the largest of the three in the sport registry",
@@ -1624,6 +1644,7 @@
     },
     "Swimming": {
         "SPORT_ID": 46,
+        "CLIENT_FROM_SEASON": 2004,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "10470, 12788, 12791, 12792, 12797, 12799",
         "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
         "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
@@ -1659,6 +1680,7 @@
         "STALE_NOT_STARTED_DAYS": 2,
         "_names": {
             "SPORT_ID": "46 Swimming, enet code sw",
+            "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "the five (IOC) templates, none of which holds a stage or an event - 12788 World Championships Long Course (IOC) mixed, 12791 the same name male, 12797 the same name female, 12792 Open Water World Championships (IOC), 12799 Marathon Swim World Series (IOC) - plus 10470 Open Water World Championships, which is not an IOC template and does hold 2 stages and 7 events; it was excluded by decision on 2026-08-20, and open water itself stays in scope because Marathon 10 km and the other open-water disciplines are contested under five further templates",
             "EVENT_PARTICIPANT_TYPE_LIST": "athlete and team; athletes swim individual events and teams swim relays",
             "REGISTRY_PARTICIPANT_TYPE_LIST": "athlete and team, the only two roles the sport registry holds",
