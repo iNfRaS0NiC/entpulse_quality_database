@@ -3763,6 +3763,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND tt.id NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(COALESCE(t3.name, t4.name), '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(COALESCE(t3.name, t4.name), '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND tt.id = <tournament_template_id>
   AND s.object_typeFK <> {{STATISTIC_OWNER_TYPE_ID}}
 
@@ -3784,6 +3785,7 @@ WHERE s.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND tt.id NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(COALESCE(t3.name, t4.name), '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(COALESCE(t3.name, t4.name), '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND tt.id = <tournament_template_id>
 
 ORDER BY sort_order, statistic_id;

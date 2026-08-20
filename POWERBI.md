@@ -443,9 +443,26 @@ Ice Hockey 12978, Curling 399, Golf 152, Cycling 33, Equestrian 3. For Swimming,
 Gymnastics, Modern Pentathlon and Triathlon the pre-2004 tournaments hold no events at all,
 which is the same fact that makes the stage-date route useless.
 
-Five checks audit a template rather than a tournament and carry no season condition, because a
-template is not a season: `GLOBAL-DQ-001`, `-013`, `-079`, `-081` and `-106`. Whether each of
-them should read the boundary through its tournaments is a separate question and is open.
+Five checks filter on the template rather than on a tournament, and they do not all want the
+same answer, because the question is what the check asserts about - not which table it joins.
+
+`GLOBAL-DQ-013` and `-079` audit the template's own fields, its name and its relations. A
+template is not a season and carries none, so neither takes the condition.
+
+`GLOBAL-DQ-081` and `-106` do reach a tournament and both take it. `-081` measures the gaps in
+a template's series, and without the boundary it counts breaks in years the client did not buy
+and cannot repair; it reads the season off `t.name` in each of its six subqueries. `-106` finds
+a Comp.Rank on the wrong owner level and reaches its tournament through
+`COALESCE(t3.name, t4.name)`, because the owner may be a stage - a ranking hanging off a
+pre-2004 tournament is outside the boundary whichever level it hangs from.
+
+`GLOBAL-DQ-001` is the one still open. It asserts two things at once - that a template has
+tournaments, and that those tournaments have stages - and the boundary lands differently on
+each. Filtering both would report a template whose every season predates 2004 as having no
+tournaments, which is not a defect and not repairable; filtering neither leaves the stage half
+auditing seasons nobody bought. Seven templates across the eleven documented sports turn on it
+- Cycling 4, Soccer 2, Equestrian 1 - and none of the eleven holds a template with no
+tournaments at all.
 
 `TOOLS/Test-Package.ps1` fails a statement that filters a template without excluding the
 boundary, and a sport statement whose written-out ids have drifted from `SPORTS/params.json`.

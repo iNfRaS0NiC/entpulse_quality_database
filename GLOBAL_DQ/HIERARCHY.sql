@@ -1869,6 +1869,7 @@ FROM (
               AND tt.sportFK = {{SPORT_ID}}
               AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
               AND tt.id NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
               -- AND tt.id = <tournament_template_id>
             GROUP BY tt.id, tt.name, YEAR(ts.startdate)
             ) a
@@ -1885,6 +1886,7 @@ FROM (
               AND tt.sportFK = {{SPORT_ID}}
               AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
               AND tt.id NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
               -- AND tt.id = <tournament_template_id>
             GROUP BY tt.id, tt.name, YEAR(ts.startdate)
             ) b ON b.template_id = a.template_id AND b.y > a.y
@@ -1940,6 +1942,7 @@ JOIN (
               AND tt.sportFK = {{SPORT_ID}}
               AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
               AND tt.id NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
               -- AND tt.id = <tournament_template_id>
             GROUP BY tt.id, tt.name, YEAR(ts.startdate)
             ) a
@@ -1956,6 +1959,7 @@ JOIN (
               AND tt.sportFK = {{SPORT_ID}}
               AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
               AND tt.id NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
               -- AND tt.id = <tournament_template_id>
             GROUP BY tt.id, tt.name, YEAR(ts.startdate)
             ) b ON b.template_id = a.template_id AND b.y > a.y
@@ -1979,6 +1983,7 @@ JOIN (
               AND tt.sportFK = {{SPORT_ID}}
               AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
               AND tt.id NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
               -- AND tt.id = <tournament_template_id>
             GROUP BY tt.id, tt.name, YEAR(ts.startdate)
     ) e
@@ -2012,6 +2017,7 @@ FROM (
               AND tt.sportFK = {{SPORT_ID}}
               AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
               AND tt.id NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
               -- AND tt.id = <tournament_template_id>
             GROUP BY tt.id, tt.name, YEAR(ts.startdate)
     ) e2
