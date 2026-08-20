@@ -854,11 +854,11 @@ ORDER BY sort_order, event_startdate DESC;
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-083
-    -- Name - EVENT_PARTICIPANT_COUNT_NOT_TWO
-    -- What it does: Flags head-to-head events that do not have exactly two participants.
+    -- Name - EVENT_PARTICIPANT_COUNT_NOT_A_FIELD_THE_SPORT_ENTERS
+    -- What it does: Flags head-to-head events holding a number of participants the sport never fields.
     CASE
         WHEN x.participant_count < 2 THEN 'FEWER_THAN_TWO_PARTICIPANTS'
-        ELSE 'MORE_THAN_TWO_PARTICIPANTS'
+        ELSE 'PARTICIPANT_COUNT_NOT_A_FIELD_THE_SPORT_ENTERS'
     END AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -871,8 +871,20 @@ SELECT
     x.participants,
     NULL AS eligible_count,
     0 AS sort_order
--- What it does, stated in full: Finds head-to-head events holding participants but not
--- exactly two, separating fewer than the pair from more.
+-- What it does, stated in full: Finds head-to-head events holding a number of participants
+-- that the sport does not field, separating a contest with fewer than two sides from one whose
+-- field size is simply not one the sport enters.
+-- **Two is not the only right answer, and this asserted it was until 2026-08-20.** A doubles
+-- sport enters the four players rather than two pairs: measured that day, Badminton holds 48072
+-- events with four participants against 40951 with two, so more of its events are doubles than
+-- singles, and Table Tennis holds 7788 against 55314. Asserting exactly two would have reported
+-- every one of them. The legitimate sizes are named in EVENT_PARTICIPANT_COUNT_LIST, which for a
+-- sport that only ever fields a pair is simply 2 and leaves the check exactly as it was.
+-- What survives the widening is what the check was always for. Badminton keeps 12 events on
+-- three participants and Table Tennis 31 on one, 6 on three and 3 on six - a missing opponent
+-- or an entry made twice, in a sport that fields neither of those numbers.
+-- Fewer than two is kept as its own branch because it is true in any sport whatever the list
+-- says: a contest needs two sides before it needs the right number of them.
 -- Who they are is projected beside how many, because the two failures read completely
 -- differently and the count alone cannot tell them apart. One participant means the opponent
 -- was never entered and the row says which side is present; three or more usually means one
@@ -902,7 +914,7 @@ JOIN (
     WHERE ep.del = 'no'
       AND tt2.sportFK = {{SPORT_ID}}
     GROUP BY ep.eventFK
-    HAVING COUNT(*) <> 2
+    HAVING COUNT(*) NOT IN ({{EVENT_PARTICIPANT_COUNT_LIST}})
 ) x ON x.event_id = e.id
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
