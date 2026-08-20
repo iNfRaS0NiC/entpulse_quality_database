@@ -1016,6 +1016,10 @@
         "MEDAL_TEMPLATE_ID_LIST": "31, 32, 33, 308, 328, 546, 10083, 10560, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285",
         "DATA_TIME_TYPE_ID": "1426",
         "_checkSignal": {
+            "GLOBAL-DQ-040": {
+                "signal": "Not applicable",
+                "reason": "the template separates three cases and this sport can answer only one of them. It reads the Event id config to learn which events a Comp.Rank covers, and Ice Hockey almost never writes that field: measured 2026-08-20 after the 2004 boundary, 209 of its 219 rows are COMP.RANK_EVENT_SCOPE_UNDETERMINABLE over 133 tournaments, which is 95 per cent of the output saying the question cannot be answered. Golf, which fills the field, returns none of that case in 430 rows, so the template is sound and the practice is what differs. Ice-Hockey-DQ-111 asks the same question over the tournaments that do declare a scope, and Ice-Hockey-DQ-086, the plain instantiation, is Deprecated. The 133 tournaments declaring nothing are a finding in their own right and SPORTS/Ice-Hockey.md records them as one."
+            },
             "GLOBAL-DQ-009": {
                 "signal": "Not applicable",
                 "reason": "The template asserts three participation paths and this sport has a fourth: refereeFK is a ref:participant property on 270 events, so 160 of the 224 officials it reported on 2026-08-14 do referee a match and are not unattached. Its athlete population is a separate problem - 15201 registered athletes appear nowhere in the database, in this sport or any other, and 15187 carry both a date of birth and a country, so they are a question about where the profiles came from rather than a list anybody works through; only 552 sit in a duplicate-name group, so merging will not clear them. Ice-Hockey-DQ-088 reads all four paths, audits the non-athlete registry and reports 329 of 2098."

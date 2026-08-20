@@ -1677,3 +1677,132 @@ WHERE s.del = 'no'
   )
 
 ORDER BY sort_order, template_name, tournament_name;
+-- ==============================================================================
+SELECT
+    -- CheckID - Ice-Hockey-DQ-111
+    -- Name - EVENT_FINAL_WITHOUT_COMP.RANK_WHERE_THE_SCOPE_CAN_BE_READ
+    -- What it does: Finds Final events no Comp.Rank lists, over the tournaments whose Comp.Rank actually declares which events it covers.
+    CASE
+        WHEN x.tournament_statistics = 0 THEN 'TOURNAMENT_HAS_NO_COMP_RANK'
+        ELSE 'FINAL_EVENT_NOT_IN_ANY_COMP_RANK'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_id,
+    x.tournament_name,
+    x.stage_name,
+    NULL AS eligible_count
+-- What it does, stated in full: This is GLOBAL-DQ-040 asked only where it can be answered.
+-- That template reads the Event id config - statistic_data_typeFK 1471, the comma-separated
+-- list naming the events a Comp.Rank covers - and separates three cases: the tournament has no
+-- Comp.Rank, its Comp.Rank declares no event scope at all, or the scope is declared and this
+-- Final is not in it. The middle one is not a defect in the ranking. It says the question
+-- cannot be answered, because the field that would answer it is empty.
+-- This sport almost never writes that field. Measured 2026-08-20 after the client's 2004
+-- boundary, GLOBAL-DQ-040 returns 219 rows of 249 and 209 of them are that middle case, spread
+-- over 133 tournaments. Ninety-five per cent of the output says "I do not know", and the two
+-- rows that say something are buried in it. Golf, which fills the field, returns none of that
+-- case at all: 0 of 430. So this is Ice Hockey's practice rather than a fault in the template,
+-- and the template is left alone for the six sports it serves correctly.
+-- What this statement does instead is take the undeterminable tournaments out of the
+-- population rather than out of the findings. POWERBI.md's coverage contract asks that
+-- eligible_count count what the check could audit, and a Final whose tournament declares no
+-- scope was never auditable. It drops from 249 events to 40, and reports 10.
+-- The empty field is not thereby forgiven. It is a finding of its own - 133 tournaments whose
+-- rankings say nothing about what they cover - and SPORTS/Ice-Hockey.md records it as one, to
+-- be handed over rather than counted here 209 times.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.id AS tournament_id,
+        t.name AS tournament_name,
+        ts.name AS stage_name,
+        (
+            SELECT COUNT(DISTINCT s.id)
+            FROM statistic s
+            JOIN statistic_config sc ON sc.statisticFK = s.id
+                 AND sc.statistic_data_typeFK = 1471
+                 AND sc.del = 'no'
+            WHERE s.del = 'no'
+              AND s.statistic_typeFK = 11
+              AND s.object_typeFK = 3
+              AND s.objectFK = t.id
+              -- The value enumerates events; equality against the whole string would see only
+              -- the first, so an event named second in a list read as unreferenced.
+              AND FIND_IN_SET(e.id, sc.value) > 0
+        ) AS referencing_statistics,
+        (
+            SELECT COUNT(*)
+            FROM statistic s2
+            WHERE s2.del = 'no'
+              AND s2.statistic_typeFK = 11
+              AND s2.object_typeFK = 3
+              AND s2.objectFK = t.id
+        ) AS tournament_statistics,
+        (
+            SELECT COUNT(DISTINCT s3.id)
+            FROM statistic s3
+            JOIN statistic_config sc3 ON sc3.statisticFK = s3.id
+                 AND sc3.statistic_data_typeFK = 1471
+                 AND sc3.del = 'no'
+            WHERE s3.del = 'no'
+              AND s3.statistic_typeFK = 11
+              AND s3.object_typeFK = 3
+              AND s3.objectFK = t.id
+        ) AS statistics_with_event_config
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE e.del = 'no'
+      AND tt.sportFK = 5
+      AND e.round_typeFK IN (9)
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+) x
+WHERE x.referencing_statistics = 0
+  -- A tournament holding rankings that declare no scope is not audited here, because nothing
+  -- it holds could answer the question. One holding no ranking at all still is: that defect is
+  -- visible without the field.
+  AND (x.tournament_statistics = 0 OR x.statistics_with_event_config > 0)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 5
+  AND e.round_typeFK IN (9)
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND (
+      NOT EXISTS (
+          SELECT 1 FROM statistic s4
+          WHERE s4.del = 'no' AND s4.statistic_typeFK = 11
+            AND s4.object_typeFK = 3 AND s4.objectFK = t.id
+      )
+      OR EXISTS (
+          SELECT 1
+          FROM statistic s5
+          JOIN statistic_config sc5 ON sc5.statisticFK = s5.id
+               AND sc5.statistic_data_typeFK = 1471 AND sc5.del = 'no'
+          WHERE s5.del = 'no' AND s5.statistic_typeFK = 11
+            AND s5.object_typeFK = 3 AND s5.objectFK = t.id
+      )
+  )
+;

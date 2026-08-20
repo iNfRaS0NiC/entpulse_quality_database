@@ -590,6 +590,23 @@ Config: `1463 Start date` and `1464 End date` on 837 statistics each, `1470 Gend
 `1471 Event id` on 33. So **40 statistics carry no gender and 67 carry no dates**, against a
 population of 904.
 
+**The `Event id` config is almost never written, and that is a finding on its own.**
+`statistic_data_typeFK = 1471` holds the comma-separated list of events a Comp.Rank covers -
+the only machine-readable statement of what a ranking is a ranking *of*. Measured 2026-08-20,
+inside the client's 2004 boundary, **133 tournaments** hold a Comp.Rank that declares no scope
+at all, against 30 statistics that do declare one.
+
+Nothing is wrong with those rankings. A reader can see that a final standings covers the final;
+the database cannot say so. What it costs is every question of the form "which events produced
+this ranking", and `GLOBAL-DQ-040` is one of them: 209 of its 219 rows for this sport are that
+template reporting it cannot answer, which is why the template is `Not applicable` here and
+`Ice-Hockey-DQ-111` asks the answerable part instead. Golf writes the field and returns none of
+that case in 430 rows, so this is practice rather than schema.
+
+It is recorded here rather than reported 209 times because the audited object is the tournament
+and not the final: 133 repairs, not 209 rows. Handing it over is a decision nobody has taken
+yet.
+
 <!-- MANUAL PASTE ZONE: 5 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values

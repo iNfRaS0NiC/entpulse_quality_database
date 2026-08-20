@@ -1359,18 +1359,24 @@ SELECT
     x.event_name,
     x.event_startdate,
     x.template_name,
+    x.tournament_id,
     x.tournament_name,
     x.stage_name,
     NULL AS eligible_count
 -- What it does, stated in full: Finds Final-round events that no Comp.Rank under their own
 -- tournament names through its Event id config, separating a tournament holding none at all
 -- from one whose Comp.Rank declares no event scope.
+-- The tournament id is projected beside its name because the name is a season and repeats
+-- across editions - `World Championship 1` names one row per year - so a reader counting
+-- distinct names cannot tell how many tournaments the output actually describes, and a
+-- hundred rows on one name reads the same as a hundred names. Added 2026-08-20.
 FROM (
     SELECT
         e.id AS event_id,
         e.name AS event_name,
         e.startdate AS event_startdate,
         tt.name AS template_name,
+        t.id AS tournament_id,
         t.name AS tournament_name,
         ts.name AS stage_name,
         (
@@ -1424,7 +1430,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
