@@ -313,6 +313,7 @@ sport's statistic rows even though the statistic layer itself was not read.
 | statistic_typeFK | Owner type | Participant shard | Data shard | Fields/config | Evidence |
 |---:|---:|---:|---:|---|---|
 | 11 Comp.Rank | 3 tournament | `statistic_participants11` | Not checked | Not checked | Measured directly 2026-08-20 for the reach path of `GLOBAL-DQ-007` and `GLOBAL-DQ-009`; 841 records, 7179 people, none of them unreachable by the other three paths |
+| 11 Comp.Rank | 4 tournament_stage | Not checked | Not checked | Not checked | 200 records, measured 2026-08-20. Out of the client's scope by decision of that day, not absent |
 
 **Deliberately unread, with one narrow exception.** The discovery statements that establish
 this area were not run, so the area stays `Not checked`. It is not `Not applicable`:
@@ -332,6 +333,16 @@ sport registrant. In `GLOBAL-DQ-009` it is an *exclusion* path, and there it dec
 answer - **1781** athletes are kept out of the findings solely because a Comp.Rank row reaches
 them, so the check reports 976 athletes rather than 2757. Reading the layer as irrelevant to
 both would have tripled that check's output against a population that has competed.
+
+**The owner level is a decision, not the busier count.** The sport writes Comp.Rank at two
+levels and both hold real records: 841 owned by a tournament and 200 owned by a
+tournament_stage, all of them statistic type 11. A run that picks for itself takes the busier
+pair and reports the other as an alternative it did not pursue, which is a row count standing in
+for a documented fact. The answer is `3 tournament`, decided on 2026-08-20: UK Sport's scope is
+the tournament level and the stage-owned 200 are **out of client scope rather than absent**. The
+distinction matters the day the Comp.Rank layer is opened - a check returning nothing across
+those 200 is not reporting clean data, it is reporting a population somebody else is buying.
+`SPORTS/params.json` carries it as `STATISTIC_OWNER_TYPE_ID` so no later run asks again.
 
 The data shard, the config and every field remain unmeasured, and the 841 records are *not*
 documented as this sport's Comp.Rank usage: they are the layer that is to be rebuilt from the
