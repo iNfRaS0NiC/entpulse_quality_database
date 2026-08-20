@@ -636,9 +636,26 @@ of going silently blind on the day that happens.
 
 ## Open questions
 
-None open. The one this file carried - whether `1276 Pair` and the lineup `horseFK` name the
-same horse for the same ride - was measured on 2026-08-18 and answered: they do, on all 1782
-rides where both layers speak, with no exception. **Confirmed sport-specific storage
-semantics** above holds the measurement and the two readings that make it mean something.
+**What a `644 Score` means on a Jumping card, and whether it runs in either direction.**
+Jumping is scored on faults and time, in `312 Errors` and `101 Duration`, and four of its events
+carry a `644 Score` beside them. Measured 2026-08-19, the 829 ordered pairs inside those four
+split 291 against 537: the better rank holds the higher score about as often as the lower one,
+which founds no direction at all where Dressage founds one on 278204 pairs and Eventing on
+56782 without a single exception. **Confirmed sport-specific storage semantics** above holds the
+measurement and the decision it produced - the observation was left standing and carried into no
+check.
+
+This is recorded as open rather than closed because nothing about it was settled; it was only
+too small to read. Four events cannot show a direction whichever way they fall, so the question
+is not answerable today and no amount of re-reading these four will change that. What would
+change it is the population: if `644 Score` spreads to enough Jumping events for a direction to
+appear, the question is worth asking again, and the answer decides whether a check can read the
+column in this discipline at all. Until then no statement reads `644 Score` in Jumping, and none
+should - a rule taken from four events would be asserted over the whole discipline.
+
+The one this file previously carried is answered. Whether `1276 Pair` and the lineup `horseFK`
+name the same horse for the same ride was measured on 2026-08-18: they do, on all 1782 rides
+where both layers speak, with no exception. **Confirmed sport-specific storage semantics** above
+holds the measurement and the two readings that make it mean something.
 
 <!-- MANUAL PASTE ZONE: 37 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
