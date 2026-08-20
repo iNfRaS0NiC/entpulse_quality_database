@@ -1004,9 +1004,15 @@ event id: `412`, `135`, `455`, `622`, `794`, `988` and `1353` are football match
 2000. A join on such a value attaches one sport's ranking to another sport's fixture rather than
 failing, which is the more dangerous half and the smaller one at thirteen.
 
-Freestyle Skiing holds 49 values at the limit. No other sport on the server holds one. Golf runs
-`Golf-DQ-098` against it; correcting the values without widening the column would truncate them
-again on the next write.
+Freestyle Skiing holds 49 values at the limit, and 64 three days later. No other sport on the
+server holds one. Correcting the values without widening the column would truncate them again on
+the next write, which is why this is a schema fact rather than a correctable one.
+
+**Nothing in the package reports it.** `Golf-DQ-098` did, and was deprecated on 2026-08-20 by
+decision: the defect cannot be repaired from here, so a check that reports 167 rows on every run
+until somebody else widens a column was judged not worth the space on the board. What that costs
+is recorded with the deprecation in `SPORTS/Golf.md`, and the short version is that the 154
+values cut on a comma are invisible to every other statement here.
 
 ### `DB-SEM-012` — One round name exists as a knockout and a non-knockout round type
 

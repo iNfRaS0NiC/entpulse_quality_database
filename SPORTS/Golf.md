@@ -445,8 +445,9 @@ Women's Open under Ladies European Tour, is inside it and holds 36 of them. `Gol
 that one and audits exactly one event.
 
 A cross-sport reference that resolves rather than failing is the same shape as the truncated
-Event id in `Golf-DQ-098`, in a different layer. Both succeed at attaching one sport's value to
-another sport's fixture, which is what makes them worse than a broken reference.
+Event id list, in a different layer. Both succeed at attaching one sport's value to another
+sport's fixture, which is what makes them worse than a broken reference. `Golf-DQ-098` reported
+the other layer until it was deprecated on 2026-08-20.
 
 <!-- MANUAL PASTE ZONE: 3 SCOPES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -625,9 +626,9 @@ Asking it once instead, as two sets subtracted from one another, takes 39.
 **167 Comp.Rank statistics have a truncated Event id list, and 154 of them look intact.**
 Measured 2026-08-14. The column stops at 255 characters and the sport's values pile up against
 that number rather than approaching it: 167 sit at exactly 255, five at 239, one at 231, and
-nothing at all between 240 and 254. `DATABASE.md` `DB-SEM-011` owns the fact; `Golf-DQ-098`
-reports it and separates the two shapes, because they are found differently and repaired the
-same way.
+nothing at all between 240 and 254. `DATABASE.md` `DB-SEM-011` owns the fact. `Golf-DQ-098`
+reported it and separated the two shapes, because they are found differently and repaired the
+same way; it was deprecated on 2026-08-20 and nothing reports it now.
 
 The thirteen with six-digit event ids are cut inside a number. 255 characters hold 36 of them
 and three characters of the 37th, so the value ends in a fragment - `412`, `135`, `455`, `622`,
@@ -669,19 +670,29 @@ stage holds exactly 32 events, its stored list holds exactly 32, and all 32 reso
 seven-digit ids plus thirty-one commas come to exactly 255 characters, so **that value reached the
 limit by arithmetic rather than by being cut**, and there is nothing to repair in it. From the
 stored value alone a list cut at 255 cannot be told from one that is 255 characters long on its
-own, so `Golf-DQ-098` reports 167 where 166 are real. Seven further rankings gain only two events
+own, so `Golf-DQ-098` reported 167 where 166 were real. Seven further rankings gain only two events
 each — `The Presidents Cup` 2005, 2007 and 2009, `The Queens` 2015 and 2017, `International Crown`
 2016 and `European Boys' Team Championship Flight C` 2010 — and those are genuine, their stages
 holding 34 or 35 against the 32 stored. `output/Golf-DQ-098-rebuild.sql` carries the query and its
 own reading notes.
 
-**What `Golf-DQ-098` is worth after the repair, so that nobody removes it as an empty check.**
-Once the column is widened and the 167 rewritten it returns zero, and at that point it is the
-only thing in the package that can see the column narrow again. `Golf-DQ-057` cannot take over:
-measured 2026-08-17, it reports **13 of the 13** cut inside a number and **0 of the 154** cut on a
-comma, because those resolve perfectly. That asymmetry is also a trap in the order of repair -
-fixing the thirteen visible fragments alone takes `Golf-DQ-057` to nearly zero and makes the
-defect look settled while 154 stand untouched.
+**`Golf-DQ-098` was deprecated on 2026-08-20, and this records what that costs rather than
+justifying it.** The decision was that the defect cannot be repaired from this side - widening the
+column is somebody else's change - so a check reporting 167 rows on every run until that happens
+was not worth the space on the board. The evidence above was gathered and stays; only the check
+that reported it is gone.
+
+What is given up is specific. `Golf-DQ-057` does not take over: measured 2026-08-17, it reports
+**13 of the 13** cut inside a number and **0 of the 154** cut on a comma, because those resolve
+perfectly. So the 154 are now invisible to the whole package. That asymmetry is also a trap in
+the order of repair - fixing the thirteen visible fragments alone takes `Golf-DQ-057` to nearly
+zero and makes the defect look settled while 154 stand untouched.
+
+The second loss is forward-looking. Once the column is widened and the values rewritten the check
+would have returned zero, and it was the only thing here that could have seen the column narrow
+again. Nothing watches that now. `output/golf_event_id_list_truncated_for_IT.sql` carries the
+three statements the defect was handed to IT with, and re-running them by hand is what replaces
+the check until the schema changes.
 
 **It is not promoted to a GLOBAL template, and the reason is a measurement rather than a
 judgement about how general the defect is.** Measured across every sport on the server
