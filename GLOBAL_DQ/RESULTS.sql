@@ -2268,6 +2268,7 @@ SELECT
     x.template_name,
     x.tournament_name,
     x.status_descFK,
+    x.status_desc_name,
     x.field_size,
     x.affected_count,
 -- What it does, stated in full: Finds events whose participants' two mirrored score types
@@ -2289,13 +2290,26 @@ FROM (
         y.template_name,
         y.tournament_name,
         y.status_descFK,
+        y.status_desc_name,
         MAX(y.field_size) AS field_size,
         COUNT(*) AS affected_count,
         GROUP_CONCAT(y.participant_label ORDER BY y.participant_label SEPARATOR ', ')
             AS affected_participants
     FROM (
         -- One row per participant whose pair disagrees, grouped to the event below. The event
-        -- is the audited object: in a head-to-head sport a score the import never wrote is
+        -- **Only an event that was played.** Two mirrored scores can only disagree about a result
+-- there was, so the invariant means nothing on a match that never happened - and measured
+-- 2026-08-20, 203 of Ice Hockey's 208 findings were exactly that: 173 cancelled and 30 not
+-- started, every one of them PRIMARY_SCORE_MISSING, against 5 on finished events which were
+-- all genuine. status_type = 'finished' covers Finished, Finished OT and Finished AP alike, so
+-- narrowing on it keeps every real finding and drops every artefact; the coverage is narrowed
+-- with it, because a population the check cannot judge does not belong in eligible_count.
+-- A result left behind on a match that did not happen is a defect of its own and not this one.
+-- GLOBAL-DQ-047 is the check that asserts it, through NOT_STARTED_DESC_LIST, and a sport whose
+-- cancelled events hold scores belongs in that list rather than in this check's output.
+-- The status is named as well as numbered, because status_descFK 106 says nothing to a reader
+-- and 'Cancelled' says everything.
+-- is the audited object: in a head-to-head sport a score the import never wrote is
         -- missing on both sides at once, so reported per participant the same defect counted
         -- twice - measured on Curling, 29 of 30 events reported exactly two rows. The three
         -- states stay separate check_types because they are repaired differently, so an event
@@ -2312,6 +2326,7 @@ FROM (
             tt.name AS template_name,
             t.name AS tournament_name,
             e.status_descFK,
+            sd.name AS status_desc_name,
             (
                 SELECT COUNT(DISTINCT ep2.id)
                 FROM event_participants ep2
@@ -2325,6 +2340,7 @@ FROM (
         JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
         JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
         JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        LEFT JOIN status_desc sd ON sd.id = e.status_descFK
         -- Both joins are left outer, because one of the pair being absent is the finding rather
         -- than a reason to drop the row: an absent result row and a differing value are separate
         -- storage states (DB-SEM-002) and they are repaired differently.
@@ -2334,6 +2350,7 @@ FROM (
                                   AND r_mirror.result_typeFK = {{RESULT_MIRROR_SCORE_TYPE_ID}}
         WHERE ep.del = 'no'
           AND tt.sportFK = {{SPORT_ID}}
+          AND e.status_type = 'finished'
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
           AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t.tournament_templateFK = <tournament_template_id>
@@ -2347,14 +2364,14 @@ FROM (
           )
     ) y
     GROUP BY y.check_type, y.event_id, y.event_name, y.event_startdate,
-             y.template_name, y.tournament_name, y.status_descFK
+             y.template_name, y.tournament_name, y.status_descFK, y.status_desc_name
 ) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep
@@ -2366,6 +2383,7 @@ JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
              AND r.result_typeFK IN ({{RESULT_FINAL_SCORE_TYPE_ID}}, {{RESULT_MIRROR_SCORE_TYPE_ID}})
 WHERE ep.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
