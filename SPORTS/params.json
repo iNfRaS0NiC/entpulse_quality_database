@@ -1653,6 +1653,7 @@
         "SERIES_SKIP_YEARS": "2020",
         "ELIMINATION_ROUND_NAME_LIST": "'heats', 'heats summary', 'fastest heats', 'slowest heats', 'semi finals', 'quarter finals', '1/8', 'swim-off', 'preliminary'",
         "GROUP_ROUND_NAME_LIST": "'final', 'finals summary', 'after heats'",
+        "STALE_NOT_STARTED_DAYS": 2,
         "_names": {
             "SPORT_ID": "46 Swimming, enet code sw",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "the five (IOC) templates, none of which holds a stage or an event - 12788 World Championships Long Course (IOC) mixed, 12791 the same name male, 12797 the same name female, 12792 Open Water World Championships (IOC), 12799 Marathon Swim World Series (IOC) - plus 10470 Open Water World Championships, which is not an IOC template and does hold 2 stages and 7 events; it was excluded by decision on 2026-08-20, and open water itself stays in scope because Marathon 10 km and the other open-water disciplines are contested under five further templates",
@@ -1683,7 +1684,8 @@
             "SERIES_MIN_YEARS": "3, the repository's usual threshold for a series long enough that a break in it means something",
             "SERIES_SKIP_YEARS": "2020, the year the sport is known not to have run. It holds 96 events against roughly 2400 in each neighbouring year, so without naming it every annual series reports a break it did not have",
             "ELIMINATION_ROUND_NAME_LIST": "the rounds a swimmer can go out of: heats and their three subdivisions - heats summary, fastest heats, slowest heats - plus semi finals, quarter finals, 1/8, swim-off and preliminary. The heats summary is listed deliberately: it is the aggregated ranking across all heats and is where qualification is actually decided, which the Q, R and ? markers sitting on it confirm",
-            "GROUP_ROUND_NAME_LIST": "the rounds nobody leaves: final, finals summary and after heats. A final is terminal, so no entry goes out of it, and the other two are aggregate views rather than swum rounds. The four round types named with a bare number - 1, 3, 10 and 11 - are in neither list on purpose: the template leaves an unjudged name silent rather than assuming it"
+            "GROUP_ROUND_NAME_LIST": "the rounds nobody leaves: final, finals summary and after heats. A final is terminal, so no entry goes out of it, and the other two are aggregate views rather than swum rounds. The four round types named with a bare number - 1, 3, 10 and 11 - are in neither list on purpose: the template leaves an unjudged name silent rather than assuming it",
+            "STALE_NOT_STARTED_DAYS": "2, the value GLOBAL_DQ/README.md fixes for every sport by the decision of 2026-08-06. It measures how long a not-started status went unmaintained after the event's own date, which is a property of the feed rather than of the sport, so it is not a per-sport judgement"
         },
         "_notApplicable": {
             "SCOPE_TYPE_ID": "the sport writes its split-time layer only on distance and open-water events - 125 containers against 45602 finished events - and GLOBAL-DQ-107 asserts a container on every finished event, with SCOPE_TYPE_ID as its only parameter and no way to name the disciplines that legitimately carry one. Declaring a value here would report the sport's normal state 45477 times."
