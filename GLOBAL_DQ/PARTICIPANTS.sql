@@ -418,6 +418,8 @@ SELECT
     x.participant_gender,
     x.lineup_male,
     x.lineup_female,
+    x.offending_members,
+    x.non_competing_members,
     NULL AS eligible_count
 -- What it does, stated in full: Finds event participants whose own lineup contradicts their
 -- gender: a mixed team whose lineup misses a gender, or a single-gender team holding the
@@ -427,6 +429,15 @@ SELECT
 -- object here. The contradiction between a participant's stored gender and the stage it was
 -- entered in is not: that is one column on one participant record, repeated once per entry,
 -- and it moved to GLOBAL-DQ-123 on 2026-08-12.
+-- **Only the people who compete are counted.** A lineup holds more than the team: Ice Hockey
+-- enters coaches through lineup type 10, and a women's team with a male coach is not a women's
+-- team holding a man. Until 2026-08-20 this counted every lineup row by gender, and measured
+-- that day all 320 of Ice Hockey's findings were that and nothing else - not one survived when
+-- the count was restricted to athletes. A check whose entire output is one legitimate practice
+-- is not reporting a defect, it is reporting the practice.
+-- The types that count are PERSON_PARTICIPANT_TYPE_LIST, which every documented sport declares
+-- as 'athlete'. The rest are still projected, in non_competing_members, because an exemption
+-- nobody can see is indistinguishable from a check that stopped looking.
 FROM (
     SELECT
         ep.id AS event_participants_id,
@@ -438,9 +449,25 @@ FROM (
         p.name AS participant_name,
         p.type AS participant_type,
         LOWER(TRIM(p.gender)) AS participant_gender,
-        COUNT(l.id) AS lineup_rows,
-        SUM(CASE WHEN LOWER(TRIM(lp.gender)) = 'male' THEN 1 ELSE 0 END) AS lineup_male,
-        SUM(CASE WHEN LOWER(TRIM(lp.gender)) = 'female' THEN 1 ELSE 0 END) AS lineup_female
+        COUNT(CASE WHEN lp.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}}) THEN l.id END) AS lineup_rows,
+        SUM(CASE WHEN lp.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
+                  AND LOWER(TRIM(lp.gender)) = 'male' THEN 1 ELSE 0 END) AS lineup_male,
+        SUM(CASE WHEN lp.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
+                  AND LOWER(TRIM(lp.gender)) = 'female' THEN 1 ELSE 0 END) AS lineup_female,
+        -- Who they are, so the row is read without a second query. Empty for a mixed team
+        -- missing a gender, where the finding is an absence and the counts are what say so.
+        SUBSTRING(GROUP_CONCAT(DISTINCT CASE
+            WHEN lp.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
+             AND LOWER(TRIM(p.gender)) IN ('male', 'female')
+             AND LOWER(TRIM(lp.gender)) IN ('male', 'female')
+             AND LOWER(TRIM(lp.gender)) <> LOWER(TRIM(p.gender))
+            THEN CONCAT(lp.name, ' (', lp.id, ', ', LOWER(TRIM(lp.gender)), ')')
+        END SEPARATOR ' | '), 1, 300) AS offending_members,
+        -- And who was deliberately not counted, so the exemption is visible rather than silent.
+        SUBSTRING(GROUP_CONCAT(DISTINCT CASE
+            WHEN lp.id IS NOT NULL AND lp.type NOT IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
+            THEN CONCAT(lp.name, ' (', lp.type, ')')
+        END SEPARATOR ' | '), 1, 200) AS non_competing_members
     FROM event_participants ep
     JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
     JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
@@ -473,7 +500,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count
 FROM event_participants ep
 JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
