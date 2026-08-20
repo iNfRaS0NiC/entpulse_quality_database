@@ -2580,7 +2580,8 @@ SELECT
     x.template_name,
     x.tournament_name,
     x.stage_name,
-    x.round_typeFK,
+    x.round_typeFK AS round_type_id,
+    x.round_type_name,
     x.gold_count,
     x.silver_count,
     x.bronze_count,
@@ -2607,6 +2608,7 @@ FROM (
         t.name AS tournament_name,
         ts.name AS stage_name,
         e.round_typeFK,
+        rt.name AS round_type_name,
         CASE WHEN e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}}) THEN 1 ELSE 0 END AS is_final,
         COUNT(DISTINCT ep.id) AS participant_count,
         SUM(CASE WHEN LOWER(TRIM(r.value)) = 'gold' THEN 1 ELSE 0 END) AS gold_count,
@@ -2618,6 +2620,7 @@ FROM (
     JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
     JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK AND rt.del = 'no'
     LEFT JOIN result r
       ON r.event_participantsFK = ep.id
      AND r.del = 'no'
@@ -2630,7 +2633,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
-    GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ts.name, e.round_typeFK
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ts.name, e.round_typeFK, rt.name
 ) x
 WHERE (x.is_final = 1 AND NOT (x.gold_count = 1 AND x.silver_count = 1 AND x.bronze_count = 0))
    OR (x.is_final = 0 AND NOT (x.bronze_count = 1 AND x.gold_count = 0 AND x.silver_count = 0))
@@ -2639,7 +2642,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event e
@@ -3688,6 +3691,7 @@ SELECT
     END AS check_type,
     x.event_id,
     x.event_name,
+    x.template_name,
     x.tournament_stage_name,
     x.startdate,
     x.breaks,
@@ -3717,6 +3721,7 @@ FROM (
     SELECT
         b.event_id,
         e.name AS event_name,
+        tt.name AS template_name,
         ts.name AS tournament_stage_name,
         e.startdate,
         COUNT(*) AS breaks,
@@ -3775,14 +3780,16 @@ FROM (
     ) b
     JOIN event e ON e.id = b.event_id AND e.del = 'no'
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-    GROUP BY b.event_id, e.name, ts.name, e.startdate
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    GROUP BY b.event_id, e.name, tt.name, ts.name, e.startdate
 ) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event e

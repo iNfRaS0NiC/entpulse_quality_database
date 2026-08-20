@@ -9,6 +9,7 @@ SELECT
     END AS check_type,
     x.event_id,
     x.event_name,
+    x.template_name,
     x.tournament_stage_name,
     x.startdate,
     x.breaks,
@@ -41,6 +42,7 @@ FROM (
     SELECT
         b.event_id,
         e.name AS event_name,
+        tt.name AS template_name,
         ts.name AS tournament_stage_name,
         e.startdate,
         COUNT(*) AS breaks,
@@ -105,14 +107,16 @@ FROM (
     ) b
     JOIN event e ON e.id = b.event_id AND e.del = 'no'
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-    GROUP BY b.event_id, e.name, ts.name, e.startdate
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    GROUP BY b.event_id, e.name, tt.name, ts.name, e.startdate
 ) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event e

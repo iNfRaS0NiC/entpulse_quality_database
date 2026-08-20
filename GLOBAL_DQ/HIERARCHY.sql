@@ -823,16 +823,24 @@ SELECT
     e.id AS event_id,
     e.name AS event_name,
     e.startdate AS event_startdate,
+    e.round_typeFK AS round_type_id,
+    rt.name AS round_type_name,
     tt.name AS template_name,
     t.name AS tournament_name,
     ts.name AS stage_name,
     NULL AS eligible_count
 -- What it does, stated in full: Finds finished events on a medal round type carrying no
 -- medal_related property set to yes.
+-- The round is projected by id and by name together. A sport whose medal list holds more than
+-- one round cannot act on the finding without knowing which round it landed on, and the id
+-- alone does not say: several sports carry two round_type rows under one name, so a bare
+-- number is a decision made blind. The join is a LEFT JOIN because a dangling round_typeFK is
+-- GLOBAL-DQ-006's finding, not this one's, and must not silently drop a row from this audit.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+LEFT JOIN round_type rt ON rt.id = e.round_typeFK AND rt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.round_typeFK IN ({{MEDAL_ROUND_TYPE_LIST}})
@@ -855,7 +863,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
