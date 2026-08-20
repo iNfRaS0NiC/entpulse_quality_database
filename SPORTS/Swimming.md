@@ -81,11 +81,23 @@ and teams swim relays; a relay's swimmers are reached through the lineup rather 
 the event participation. Team participations exist in all three genders, athlete
 participations in two.
 
-**The registry is wider than the event layer.** `object_participants` for `object = 'sport'`,
-`objectFK = 46` holds two roles, `athlete` and `team`, each in both active and inactive
-states. Measured 2026-08-20, the registry knows about four thousand more athletes than any
-event participation reaches. That gap is a population, not a defect, and what it means has
-not been established.
+**The registry is wider than the event layer, and the surplus is three populations rather than
+one.** `object_participants` for `object = 'sport'`, `objectFK = 46` holds two roles, `athlete`
+and `team`, each in both active and inactive states. Measured 2026-08-20, 4383 registered
+athletes have never appeared in an event, and the registry's own two fields separate them:
+
+| Registry flag | `status` property | Athletes | What it looks like |
+|---|---|---:|---|
+| active | `active` | 3739 | profiles the sport carries but has never entered; 2490 of them hold no birth date either |
+| inactive | `retired` | 512 | swimmers kept for history whose competitions are not in the data |
+| active | none | 123 | the status property is simply absent |
+| inactive | `dead` | 6 | consistent with the flag |
+| **active** | **`dead`** | **2** | the flag and the property contradict each other |
+
+The first two are populations rather than defects and neither needs correcting. The last row is
+a contradiction between two fields that describe the same thing, and it raises a structural
+question the sport file cannot answer on its own: whether the registry's `active` flag is meant
+to agree with the participant's `status` property at all.
 
 **Lineups are the relay's swimmers.** One lineup type is in use, `14 Starter`, its parent
 event participant is always a `team`, and its members are always `athlete`. Members carry
@@ -166,9 +178,13 @@ therefore stored twice, once as a property string on the event and once as
 **The event's `discipline` property duplicates the `object_discipline` relation.** Both are
 written on nearly every event, and they are two independent statements of the same fact.
 
-**`date_of_birth` reaches only part of the athlete registry**, and its earliest value is
-`1900-01-02`, which is a placeholder rather than a birth date. Whether the property is
-required for this sport has not been decided.
+**`date_of_birth` reaches only part of the athlete registry.** Measured 2026-08-20, 12811 of
+the sport's registered athletes carry no such property at all, which is the real gap; the rest
+hold plausible dates, 22402 of them from 1980 onward and 985 between 1930 and 1979. The single
+value beginning `1900` is one row and not a placeholder convention - an earlier reading of this
+file said otherwise and was wrong. The range's other end is the defect worth naming: the highest
+value stored is a date a few months old, and a swimmer born then has not competed. Whether the
+property is required for this sport has not been decided.
 
 <!-- MANUAL PASTE ZONE: 46 PROPERTIES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -193,20 +209,43 @@ across 373, 282 and 386 stages holding each relay, none holds both spellings of 
 stage does mix is an old relay beside current individual disciplines, which is why the two
 vocabularies appear together at template level and never inside one relay.
 
-Which editions take the older ids is not readable from the database. They are a minority
-throughout - between one and ten stages a year against nine to thirty-one - they recur rather
-than stop, the most recent being 2025, and they concentrate in a small set of competitions:
-`World Junior Championships` most often, then `Swimming World Cup` and `World Championships`
-in both courses. That pattern is consistent with certain editions arriving by a different
-route, but the route itself is outside the database and nothing here establishes it.
+They are a minority throughout - between one and ten stages a year against nine to thirty-one -
+they recur rather than stop, the most recent being 2025, and they concentrate in a small set of
+competitions: `World Junior Championships` most often, then `Swimming World Cup` and
+`World Championships` in both courses.
+
+**The older ids do not travel alone: they carry their own way of naming the event.** The sport
+writes a relay two ways, `Freestyle 4 x 100m` and `4x100m Freestyle Relay`, and measured
+2026-08-20 the correspondence is nearly total in one direction:
+
+| Discipline id | Event named `4x100m … Relay` | Event named `Freestyle 4 x 100m` |
+|---|---:|---:|
+| old, 56/57/58 | **306** | 1 |
+| current, 365/366/367 | 88 | 1750 |
+
+The same signature marks two of the duplicate pairs below. All 65 events on `468` and both on
+`479` put the distance first in the name, while their higher-volume twins `351` and `362` are
+written both ways.
+
+That is a signature rather than a source: nothing in the database names an ingestion path, but
+one convention writes a distance-first name together with the older discipline id, and another
+writes a distance-last name together with the current one. The 88 events holding a
+distance-first name with a current id are the interesting residue - one of the two was
+corrected there and the other was not.
 
 **Three pairs of ids carry the same discipline under one name or two:**
 
 | Pair | Name | How they differ |
 |---|---|---|
-| 351 and 468 | `Freestyle 800m` | Identical name; 468 occurs in three templates, all male |
-| 362 and 479 | `Freestyle 50m` | Identical name; 479 occurs in one template in one year |
+| 351 and 468 | `Freestyle 800m` | Identical name; 468 occurs in three templates, all male, and every one of its events is named distance-first |
+| 362 and 479 | `Freestyle 50m` | Identical name; 479 occurs in one template in one year, both events named distance-first |
 | 374 and 557 | `Knockout Sprint 3 km` / `3km Knockout Sprint` | Same discipline, two spellings, different templates, both introduced in 2025 |
+
+The first two pairs belong to the naming signature described above and are the same story as the
+relays. The third is not: both ids are new in 2025, both name their events the same way, and
+they differ only in which templates use them - `374` under `World Championships Long Course` and
+`557` under `Marathon Swim World Series` and `Open Water World Championships`. That reads as one
+discipline entered into the catalogue twice within a single season.
 
 **`object_discipline` also holds `disciplineFK = 0`**, which resolves to no `discipline` row.
 It is a missing reference rather than a discipline the sport contests.
@@ -259,6 +298,18 @@ time, and a check treating `R` as an absent result reports three and a half thou
 rows - which `GLOBAL-DQ-052` did until the marker was measured out of the sport's no-result
 list.
 
+**`?` and `R?` are the provisional forms of those two statuses.** They sit on qualifying rounds
+only, like the statuses they qualify, and both carry a rank and a real time. On a heats summary
+`?` is written at place eight and nowhere else - all 37 of them, on the last place that reaches
+the final - so it marks a qualification the record never settled, and the sport's `Swim-Off`
+round is where such a place is normally decided. `R?` sits where `R` sits, places nine to
+seventeen averaging 10.5 against `R`'s 10.0, so it marks an unsettled reserve.
+
+Both are deliberately left out of the sport's comment vocabulary and are reported by
+`Swimming-DQ-039`. Knowing what a marker was written for is not the same as knowing it was
+meant to stay: `?` has been written since 2007, and a record that still says the question is
+open eighteen years later is unfinished rather than valid.
+
 Several markers have more than one live spelling - `Disq.`, `DSQ`, `DSQ*`, `DISQ` and `DQ`;
 `DNS` and `dns.`; `NC`, `N.C.` and `Nc.`. A statement matching a marker literally will match
 one spelling and miss the rest.
@@ -297,18 +348,29 @@ is stored as text.
 
 ## Confirmed sport-specific storage semantics
 
-**`101 Duration` and `557 Full-time duration` are not two names for one measurement.**
-Full-time duration holds the participant's own total time and never anything else - no sign,
-no text, three time shapes and nothing more. Duration holds the *gap to the leader*, written
-with an explicit sign, for most of its values - and holds an absolute time for a large
-minority of them, in the same field, with no marker separating the two. Reading `101` as a
-time is wrong for most rows; reading it as a gap is wrong for the rest. Which one a row holds
-can only be told from the value's own shape.
+**`101 Duration` holds two different measurements, and the participant's own rank says which.**
+The convention was measured on 2026-08-20 and the sport keeps it closely:
 
-Duration also holds values that are neither: negative gaps, a bare integer with no decimal
-part, and at least one purely textual token. Each was drilled into on 2026-08-20 and each is
-spread across templates and years rather than confined to one import, except the textual token
-which is a single row.
+| Rank | What `101` holds | Measured |
+|---|---|---|
+| 1 | the winner's own time, **the identical string** stored in `557` | 41491 participations over 41203 events |
+| 2 and below | the gap to the winner, written with an explicit `+` | 373217 participations over 41146 events |
+
+So the field is not ambiguous and a reader is not left to guess from the value's shape: the
+rank is the marker, and the sign confirms it. `557 Full-time duration` carries the absolute
+time for every place, with no sign and no text, which is what makes it the field to read when
+a time is wanted.
+
+The consequence for a check is that `101` may not simply be read as a time or simply as a gap.
+An event's leader is expected to hold the same value in both fields, and everyone behind is
+expected to hold a signed gap in one and a time in the other.
+
+Four shapes depart from that, all small and each a different repair. A time sits in `101` with
+no `557` beside it at all, which is where the time exists in one field only; 96 participations
+carry an unsigned value below first place; eight winners carry a signed gap as though they were
+behind somebody; and two participations below first place hold a value identical to their
+`557`. Each was drilled into on 2026-08-20 and each is spread across templates and years rather
+than confined to one import.
 
 **A stage's country is stored directly and is almost always `International`.** Every stage
 carries `tournament_stage.countryFK`; the host-country object relation and the city link are
@@ -320,25 +382,33 @@ resolves to `SENIOR`, `JUNIOR` or `YOUTH`.
 
 ## Open questions
 
-1. **Why do certain editions take the older relay ids?** The question is narrower than it
-   first looked: the choice is made per edition and held consistently within it, so it is not
-   an error made event by event, and it is still being made in 2025, so it is not a legacy
-   import either. What decides it is not visible from inside the database. Until it is
+1. **What writes a distance-first event name together with an older discipline id?** The
+   question has narrowed twice. The choice is made per edition of a competition and held
+   consistently within it, so it is not an error made event by event; it is still being made in
+   2025, so it is not a legacy import; and it carries its own naming convention, so it is one
+   habit rather than two. What the database cannot say is whose habit it is. Until that is
    answered, a Comp.Rank grouping by `disciplineFK` will split one competition's relay across
    two rankings from one edition to the next.
-2. **Should 351/468, 362/479 and 374/557 be merged?** Each pair is the same discipline under
-   two ids; 374 and 557 are also two spellings of one name.
-3. **Is `101 Duration` meant to hold an absolute time at all**, or is every absolute value in
-   it a row that belongs in `557`?
-4. **What do the comment markers `?` and `R?` mean?** `R` itself is settled - it is the
-   reserve, and the Reference values section records the measurement - which makes `R?` read
-   plausibly as an uncertain reserve, but that is a reading and not a measurement. Both are
-   written mostly in the last two seasons, so whatever produces them is running now.
-5. **Is `date_of_birth` required for this sport's athletes**, and is `1900-01-02` a sentinel
-   the sport uses deliberately?
-6. **What is the registry's surplus of athletes over event participants?** Retired swimmers,
-   duplicate people, or imports that never reached an event - not established.
-7. **The whole Comp.Rank layer**, unread by design and to be opened once event results are
+2. **Should `468` and `479` be folded into `351` and `362`, and `374` and `557` into one?**
+   The first two belong to question 1 and would be resolved with it. The third is independent:
+   one discipline entered twice in 2025, and merging it is a decision about the catalogue rather
+   than about this sport.
+3. **Are the 88 events holding a distance-first name with a current discipline id a stalled
+   correction?** They are the only place the two halves of the signature disagree, which is what
+   a half-finished cleanup would look like.
+4. **Are `?` and `R?` meant to be resolved, or left standing?** What they mark is settled and
+   the Reference values section records it. What is not settled is whether a qualification the
+   record has left open since 2007 is ever expected to close.
+5. **Is `date_of_birth` required for this sport's athletes, and what bounds a plausible one?**
+   12811 registered athletes carry none, and the highest value stored is a date so recent that
+   no swimmer holding it can have competed.
+6. **Is the registry's `active` flag meant to agree with the participant's `status` property?**
+   Two athletes are flagged active and carry `status = dead`. Two rows are not a population, but
+   the rule they break has never been stated.
+7. **Should the sport carry 3739 active athlete profiles that have never entered an event?**
+   Half of them hold no birth date either. Entry lists imported ahead of a competition would look
+   exactly like this, and so would a registry nobody prunes.
+8. **The whole Comp.Rank layer**, unread by design and to be opened once event results are
    corrected.
 
 <!-- MANUAL PASTE ZONE: 46 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
