@@ -607,6 +607,34 @@ It is recorded here rather than reported 209 times because the audited object is
 and not the final: 133 repairs, not 209 rows. Handing it over is a decision nobody has taken
 yet.
 
+**The sport writes three kinds of Comp.Rank and only one of them awards a medal.** Nothing in
+the structure separates them: measured 2026-08-20, a group table and a tournament's medal table
+carry the same three config fields - Start date, End date, Gender - and reach the same
+`object_relation` target types 33, 43 and 151. The **name** is the only thing that differs, and
+the sport writes it consistently:
+
+| Name shape | What it is | Awards medals |
+|---|---|---|
+| `Competition Stats Group A` | the table for one group of one stage | no |
+| `... - Competition Rank (Athletes)` | a squad list, one row per player | no |
+| `Winter Olympics Male 2010 - Competition Rank` | the tournament's own standings | yes |
+
+That is why `GLOBAL-DQ-026` is `Not applicable` here. Run plainly inside the 2004 boundary it
+returned 295 of 557, and 292 of those were the first two kinds behaving correctly - 210
+`No_Medals_At_All` and 82 `Medal_Set_Unreadable_Without_Rank`. Three rows said something.
+`Ice-Hockey-DQ-112` narrows twice, by `MEDAL_TEMPLATE_ID_LIST` and by the name, and returns
+**4 of 189**. Golf met the same wall at 3286 of 3491 and answered it the same way.
+
+Two of the four are the same defect a decade apart - Winter Olympics 2010 and Asian Winter
+Games 2011, each holding two golds against one first place and no bronze at all. The other two
+are World Championship 2 rankings from 2009 and 2011 that hold three places and no medal of any
+kind.
+
+**What the narrowing gives up is worth naming.** A group table holding a medal, or a squad list
+holding one, is a real defect and `Ice-Hockey-DQ-112` cannot see it. `GLOBAL-DQ-125` asserts the
+other half - no medal outside the medal templates - and the two are only coherent while they
+read the same list.
+
 <!-- MANUAL PASTE ZONE: 5 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values

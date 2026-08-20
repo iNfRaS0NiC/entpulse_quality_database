@@ -4705,6 +4705,35 @@ Test-That 'a sport that names what the client takes must not write the complemen
         "the statements should be reported as not keeping to the inclusion; output was:`n$($run.Text)"
 }
 
+Test-That 'a check narrowed to the sport medal templates is accepted beside the boundary' {
+    # A check auditing medals audits the competitions that award them, which is a subset of
+    # what the client takes. Golf narrows GLOBAL-DQ-026 that way and Ice Hockey follows it, so
+    # a statement keeping to MEDAL_TEMPLATE_ID_LIST is not drift. Only that one list is allowed
+    # beside the boundary, and it is compared as strictly: a subset nobody declared is the same
+    # defect as a widened one, arriving from the other side.
+    $root = Copy-RepositoryFixture -Name 'medal-narrowing-accepted'
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 0 $run.ExitCode "a repository narrowing to its own medal list must pass; output was:`n$($run.Text)"
+}
+
+Test-That 'a template list that is neither the boundary nor the medal list is reported' {
+    # The rule this whole section exists for. A statement quietly keeping to some other set of
+    # templates audits a population nobody chose, and it looks identical to a correct one until
+    # the ids are compared.
+    $root = Copy-RepositoryFixture -Name 'medal-narrowing-drifted'
+    $path = Join-Path $root 'POWERBI_QUERIES\Ice-Hockey.sql'
+    if (Test-Path $path) {
+        $text = [IO.File]::ReadAllText($path)
+        $text = $text.Replace('AND tt.id IN (31, 32, 33,', 'AND tt.id IN (31, 32, 99999, 33,')
+        [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+
+        $run = Invoke-PackageValidator -Root $root
+        Assert-Equal 1 $run.ExitCode 'validator exit code'
+        Assert-True ($run.Text -match 'MEDAL_TEMPLATE_ID_LIST is') `
+            "a drifted list should name both lists it failed to match; output was:`n$($run.Text)"
+    }
+}
+
 Test-That 'the client boundary is derived only when the sport asked for it' {
     # No inclusion declared, nothing to compute, and above all no database call: a sport that
     # names the exclusion has its value already and the run must not reach the network to

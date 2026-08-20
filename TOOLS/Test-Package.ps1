@@ -63,6 +63,7 @@ $ClientScopeKey = 'OUT_OF_SCOPE_TEMPLATE_ID_LIST'
 # choose, so a sport declaring the inclusion writes an inclusion into its own SQL, and writing
 # the complement there instead would put the wrong default back where nobody would look for it.
 $InScopeKey = 'IN_SCOPE_TEMPLATE_ID_LIST'
+$MedalTemplateKey = 'MEDAL_TEMPLATE_ID_LIST'
 
 # The commented run-time filter, in the two alias forms POWERBI.md allows. Declared here as the
 # validator's own copy rather than imported: Run-Query.ps1 activates it and this only counts it,
@@ -677,6 +678,7 @@ $scopeFindings = @()
 # rule is about the SQL and runs with it.
 $boundaryOf = @{}
 $inScopeOf = @{}
+$medalOf = @{}
 $boundarySource = Join-Path $RepoRoot 'SPORTS/params.json'
 if (Test-Path -LiteralPath $boundarySource) {
     $parsed = Get-Content -LiteralPath $boundarySource -Raw -Encoding UTF8 | ConvertFrom-Json
@@ -684,6 +686,7 @@ if (Test-Path -LiteralPath $boundarySource) {
         if ($sportProperty.Name.StartsWith('_')) { continue }
         $boundaryOf[$sportProperty.Name] = [string]$sportProperty.Value.$ClientScopeKey
         $inScopeOf[$sportProperty.Name] = [string]$sportProperty.Value.$InScopeKey
+        $medalOf[$sportProperty.Name] = [string]$sportProperty.Value.$MedalTemplateKey
     }
 }
 
@@ -734,11 +737,25 @@ foreach ($s in $statements) {
             "$slug declares $InScopeKey, so every branch that can reach a template keeps to it"
         }
         $wantedIn = @($inScope -split ',' | ForEach-Object { $_.Trim() } | Sort-Object)
+
+        # A second list the same statement may legitimately keep to. A check auditing medals
+        # audits the competitions that award them, which is a subset of what the client takes -
+        # Golf narrows GLOBAL-DQ-026 that way and Ice Hockey follows it. Only this one list is
+        # allowed beside the boundary, and it is compared just as strictly: a subset that is
+        # anybody's guess rather than the sport's own declaration is the same defect as a
+        # widened one, arriving from the other side.
+        $medal = [string]$medalOf[$slug]
+        $wantedMedal = @()
+        if (-not [string]::IsNullOrWhiteSpace($medal)) {
+            $wantedMedal = @($medal -split ',' | ForEach-Object { $_.Trim() } | Sort-Object)
+        }
+
         foreach ($listed in $included) {
             $held = @($listed.Groups[1].Value -split ',' | ForEach-Object { $_.Trim() } | Sort-Object)
-            if (($held -join ',') -ne ($wantedIn -join ',')) {
-                $scopeFindings += "${where}: keeps to ($($listed.Groups[1].Value)) but SPORTS/params.json $InScopeKey for $slug is ($inScope)"
-            }
+            if (($held -join ',') -eq ($wantedIn -join ',')) { continue }
+            if ($wantedMedal.Count -gt 0 -and ($held -join ',') -eq ($wantedMedal -join ',')) { continue }
+            $scopeFindings += "${where}: keeps to ($($listed.Groups[1].Value)) but SPORTS/params.json $InScopeKey for $slug is ($inScope)" +
+                $(if ($wantedMedal.Count -gt 0) { " and $MedalTemplateKey is ($medal)" } else { '' })
         }
         continue
     }

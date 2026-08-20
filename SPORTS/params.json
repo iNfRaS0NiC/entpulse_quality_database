@@ -1016,6 +1016,10 @@
         "MEDAL_TEMPLATE_ID_LIST": "31, 32, 33, 308, 328, 546, 10083, 10560, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285",
         "DATA_TIME_TYPE_ID": "1426",
         "_checkSignal": {
+            "GLOBAL-DQ-026": {
+                "signal": "Not applicable",
+                "reason": "the template audits every Comp.Rank the sport holds, and this sport holds three kinds of which only one awards a medal. Measured 2026-08-20 inside the 2004 boundary it returned 295 of 557, and 292 of those were two branches describing correct data - 210 No_Medals_At_All on group-stage tables and 82 Medal_Set_Unreadable_Without_Rank on squad lists. Three rows said something. Golf met the same wall at 3286 of 3491 and narrowed in its own file for the same reason: six other sports run the template correctly and it must not be taken from them. Ice-Hockey-DQ-112 is that narrowing - by MEDAL_TEMPLATE_ID_LIST and by the ranking name - and Ice-Hockey-DQ-083, the plain instantiation, is Deprecated."
+            },
             "GLOBAL-DQ-040": {
                 "signal": "Not applicable",
                 "reason": "the template separates three cases and this sport can answer only one of them. It reads the Event id config to learn which events a Comp.Rank covers, and Ice Hockey almost never writes that field: measured 2026-08-20 after the 2004 boundary, 209 of its 219 rows are COMP.RANK_EVENT_SCOPE_UNDETERMINABLE over 133 tournaments, which is 95 per cent of the output saying the question cannot be answered. Golf, which fills the field, returns none of that case in 430 rows, so the template is sound and the practice is what differs. Ice-Hockey-DQ-111 asks the same question over the tournaments that do declare a scope, and Ice-Hockey-DQ-086, the plain instantiation, is Deprecated. The 133 tournaments declaring nothing are a finding in their own right and SPORTS/Ice-Hockey.md records them as one."
