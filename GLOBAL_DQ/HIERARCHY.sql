@@ -15,12 +15,33 @@ SELECT
     NULL AS eligible_count
 -- What it does, stated in full: Finds tournament templates with no tournaments, or with
 -- tournaments but no stages under any of them.
+-- The client's season boundary lands on one half of that and not the other, because the halves
+-- assert different things. A template holding no tournament at all is broken in any era, so
+-- that branch reads every tournament and takes no season condition. A template whose
+-- tournaments hold no stage is only a defect for the seasons the client bought, so that branch
+-- keeps to them.
+-- Between the two sits a template whose every season predates the boundary. It is neither
+-- broken nor auditable - it is out of client scope - so it leaves the population instead of
+-- being reported as empty. Seven templates across the eleven documented sports sit there,
+-- measured 2026-08-20: Cycling 4, Soccer 2, Equestrian 1. Filtering both halves would have put
+-- all seven on a board forever with nothing anybody could do about them.
 FROM tournament_template tt
 WHERE tt.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND tt.id NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND tt.id = <tournament_template_id>
+  AND (
+      NOT EXISTS (
+          SELECT 1 FROM tournament t1
+          WHERE t1.tournament_templateFK = tt.id AND t1.del = 'no'
+      )
+      OR EXISTS (
+          SELECT 1 FROM tournament t1
+          WHERE t1.tournament_templateFK = tt.id AND t1.del = 'no'
+            AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t1.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t1.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      )
+  )
   AND (
       NOT EXISTS (
           SELECT 1 FROM tournament t2
@@ -31,6 +52,7 @@ WHERE tt.del = 'no'
           FROM tournament t3
           JOIN tournament_stage ts3 ON ts3.tournamentFK = t3.id AND ts3.del = 'no'
           WHERE t3.tournament_templateFK = tt.id AND t3.del = 'no'
+            AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       )
   )
 
@@ -46,6 +68,17 @@ WHERE tt.del = 'no'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND tt.id NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   -- AND tt.id = <tournament_template_id>
+  AND (
+      NOT EXISTS (
+          SELECT 1 FROM tournament t1
+          WHERE t1.tournament_templateFK = tt.id AND t1.del = 'no'
+      )
+      OR EXISTS (
+          SELECT 1 FROM tournament t1
+          WHERE t1.tournament_templateFK = tt.id AND t1.del = 'no'
+            AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t1.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t1.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      )
+  )
 ;
 
 

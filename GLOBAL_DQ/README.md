@@ -163,7 +163,7 @@ The `Description` column mirrors each statement's `-- What it does:` comment.
 
 | CheckID | Name | File | Description | Mandatory parameters | Applicability/prerequisite | Category |
 |---|---|---|---|---|---|---|
-| GLOBAL-DQ-001 | TEMPLATE_NO_TOURNAMENTS_OR_STAGES | `HIERARCHY.sql` | Flags tournament templates with no tournaments, or whose tournaments contain no stages. | `SPORT_ID`, `OUT_OF_SCOPE_TEMPLATE_ID_LIST` | Any sport with active templates | NO_RELATED_RECORDS |
+| GLOBAL-DQ-001 | TEMPLATE_NO_TOURNAMENTS_OR_STAGES | `HIERARCHY.sql` | Flags tournament templates with no tournaments, or whose tournaments contain no stages. | `SPORT_ID`, `OUT_OF_SCOPE_TEMPLATE_ID_LIST`, `CLIENT_FROM_SEASON` | Any sport with active templates | NO_RELATED_RECORDS |
 | GLOBAL-DQ-002 | TOURNAMENT_STAGE_MISSING_AGE_CLASS | `HIERARCHY.sql` | Flags tournament stages that have no age-class relation. | `SPORT_ID`, `OUT_OF_SCOPE_TEMPLATE_ID_LIST`, `CLIENT_FROM_SEASON` | Sport whose stages are expected to carry an age class (`object_relation 4 -> 151`) | MISSING_VALUES |
 | GLOBAL-DQ-003 | TOURNAMENT_STAGE_NO_EVENTS | `HIERARCHY.sql` | Flags tournament stages that have no events. | `SPORT_ID`, `OUT_OF_SCOPE_TEMPLATE_ID_LIST`, `CLIENT_FROM_SEASON` | Any sport with active stages | NO_RELATED_RECORDS |
 | GLOBAL-DQ-004 | TOURNAMENT_STAGE_DATE_RANGE_MISMATCH | `HIERARCHY.sql` | Flags stages whose dates do not match the first and last event dates inside the stage. | `SPORT_ID`, `OUT_OF_SCOPE_TEMPLATE_ID_LIST`, `CLIENT_FROM_SEASON` | Sport whose stage date range is expected to bound its events | DATE_RANGE_MISMATCH |
