@@ -22,6 +22,7 @@ mechanisms from `DATABASE.md`.
 | 5 | Ice-Hockey | H2H (team) | `SPORTS/Ice-Hockey.md` | In progress | 2026-08-15 | Ice Hockey |
 | 30 | Cycling | Listing (individual and team) | `SPORTS/Cycling.md` | In progress | 2026-08-17 | Cycling |
 | 37 | Equestrian | Listing (individual and team) | `SPORTS/Equestrian.md` | In progress | 2026-08-18 | Equestrian |
+| 46 | Swimming | Listing (individual and team) | `SPORTS/Swimming.md` | In progress | 2026-08-20 | Swimming |
 
 <!-- MANUAL PASTE ZONE: SPORT INDEX — insert approved additions immediately before this marker; do not move or delete it. -->
 

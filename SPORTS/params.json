@@ -1621,5 +1621,37 @@
                 "reason": "it reads result type 101 Duration, which is one of the nine result types the client did not take on 2026-08-18. The sport stores it and fills it on 254 events, so the check would run and report a real population belonging to somebody else. It lifts unchanged if the boundary moves."
             }
         }
+    },
+    "Swimming": {
+        "SPORT_ID": 46,
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "10470, 12788, 12791, 12792, 12797, 12799",
+        "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_DURATION_TYPE_ID": 101,
+        "RESULT_COMMENT_TYPE_ID": 104,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "RESULT_FULL_TIME_TYPE_ID": 557,
+        "INTEGER_RESULT_TYPE_LIST": "100",
+        "ROUND_TYPE_LIST": "2, 9, 38, 89, 91, 98, 99, 173, 176, 178, 184, 202, 204, 223, 224, 253, 320, 323, 325, 326, 327, 328, 329",
+        "SCOPE_TYPE_LIST": "101, 102, 103, 104, 105, 305",
+        "NOT_STARTED_DESC_LIST": "1",
+        "_names": {
+            "SPORT_ID": "46 Swimming, enet code sw",
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "the five (IOC) templates, none of which holds a stage or an event - 12788 World Championships Long Course (IOC) mixed, 12791 the same name male, 12797 the same name female, 12792 Open Water World Championships (IOC), 12799 Marathon Swim World Series (IOC) - plus 10470 Open Water World Championships, which is not an IOC template and does hold 2 stages and 7 events; it was excluded by decision on 2026-08-20, and open water itself stays in scope because Marathon 10 km and the other open-water disciplines are contested under five further templates",
+            "EVENT_PARTICIPANT_TYPE_LIST": "athlete and team; athletes swim individual events and teams swim relays",
+            "REGISTRY_PARTICIPANT_TYPE_LIST": "athlete and team, the only two roles the sport registry holds",
+            "PERSON_PARTICIPANT_TYPE_LIST": "athlete only, the sport's natural persons",
+            "RESULT_RANK_TYPE_ID": "100 Rank, a bare integer with one value shape across the whole sport",
+            "RESULT_DURATION_TYPE_ID": "101 Duration, which holds a signed gap to the leader for most rows and an absolute time for a large minority, in the same field and with no marker separating them",
+            "RESULT_COMMENT_TYPE_ID": "104 Comment, open text carrying qualification, record and non-finish markers in several live spellings each",
+            "RESULT_MEDAL_TYPE_ID": "501 Medal, holding gold, silver and bronze only",
+            "RESULT_FULL_TIME_TYPE_ID": "557 Full-time duration, the participant's own total time; unlike 101 it holds no sign and no text",
+            "INTEGER_RESULT_TYPE_LIST": "100 Rank, the sport's only result type whose values are whole numbers by construction",
+            "ROUND_TYPE_LIST": "the 23 round types the sport contests: 2 and 178 Semi Finals, 9 and 173 Final, 38 '1', 89 '1', 91 '3', 98 '10', 99 '11', 176 Quarter Finals, 184 '1/8', 202 After Heats, 204 and 320 Heats, 223 and 224 Swim-Off, 253 Preliminary, 323 Finals Summary, 325 and 326 Slowest Heats, 327 and 328 Fastest Heats, 329 Heats Summary. Six names are each carried by two ids, so the list cannot be rebuilt from names. round_typeFK 0 is deliberately absent: it resolves to no round_type row and is the missing-round-type gap rather than a round the sport holds",
+            "SCOPE_TYPE_LIST": "101 checkpoint1, 102 checkpoint2, 103 checkpoint3, 104 checkpoint4, 105 checkpoint5 and 305 final_result - the split-time layer, carried only by distance and open-water events",
+            "NOT_STARTED_DESC_LIST": "1 Not started, the only not-started status description the sport uses"
+        }
     }
 }
