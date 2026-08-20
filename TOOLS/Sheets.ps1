@@ -1872,6 +1872,7 @@ function New-SheetsMergePlan {
     $sqlOf = @{}
     $sqlTitleOf = @{}
     $sqlWasRow = @{}
+    $sqlWarning = ''
     foreach ($block in @($(if ($Existing) { $Existing.SqlBlocks } else { @() }))) {
         if (-not $block -or -not $block.CheckId) { continue }
         $sqlOrder += [string]$block.CheckId
@@ -2329,13 +2330,52 @@ function New-SheetsMergePlan {
     $sqlRowOf = @{}
     foreach ($key in $sqlOrder) {
         $sqlRowOf[$key] = $sqlLines.Count + 1
-        $sqlLines += , @('')
-        foreach ($line in @($sqlOf[$key])) { $sqlLines += , @([string]$line) }
+        $sqlLines += , @('', '')
+        foreach ($line in @($sqlOf[$key])) { $sqlLines += , @([string]$line, '') }
+    }
+
+    # Padded out to whatever the tab already held, and written over it without a clear first.
+    #
+    # The clear used to be its own request, sent in the phase before the values. Every other
+    # thing this run clears it can also regenerate - an Overview row, a check tab's results -
+    # so a run that stops between the two phases loses nothing that is not about to be sent
+    # again. This tab is the exception: the statements of the checks the run did not hold exist
+    # nowhere but here, and they reach the merge by being read back off it. Clearing first put
+    # them in a window where a cancelled run, or a write that was refused, left the tab empty -
+    # and the next narrow run then read no blocks, merged against nothing, and wrote its own
+    # single statement over a catalogue. That is not a hypothetical: Golf lost 105 statements
+    # to it on 2026-08-20 and the loss looked exactly like correct behaviour.
+    # Overwriting in place cannot open that window. If the write never lands, what stands is
+    # the previous column, entire.
+    $sqlFloor = $(if ($Existing -and $Existing.PSObject.Properties.Name -contains 'SqlRowCount') {
+            [int]$Existing.SqlRowCount
+        }
+        else { 0 })
+    while ($sqlLines.Count -lt $sqlFloor) { $sqlLines += , @('', '') }
+
+    # The other way the same catalogue can be lost: not a write that failed, but a read that
+    # came back empty. Overwriting in place is no protection there - a run that believes the
+    # tab held nothing writes its own statement over rows 1 to n and blanks the rest, which is
+    # the same outcome by a different route.
+    #
+    # A tab carrying rows that yield no block is not an empty tab. It is a tab this run could
+    # not read, and the honest response is to leave it exactly as it stands and say so. The
+    # cost of skipping is that a statement changed this run is not refreshed until the next
+    # one; the cost of not skipping is every other statement on the board.
+    $sqlBlocksRead = @($(if ($Existing) { $Existing.SqlBlocks } else { @() })).Count
+    $sqlUnreadable = ($sqlFloor -gt 0 -and $sqlBlocksRead -eq 0)
+    if ($sqlUnreadable) {
+        $sqlLines = @()
+        $sqlWarning = ("The SQL tab holds {0:n0} rows that parse as no statement at all. " +
+            'It has been left untouched rather than rewritten from this run alone - run the ' +
+            "sport's whole catalogue to rebuild it.") -f $sqlFloor
     }
 
     # Every heading, not only this run's. The label is a link back to the check's own tab, and
     # for a check this run did not hold that tab is whatever the document already calls it.
-    foreach ($key in $sqlOrder) {
+    # Skipped entirely when the tab could not be read: the rows these point at are the rows the
+    # rewrite would have made, and the rewrite is not happening.
+    foreach ($key in $(if ($sqlUnreadable) { @() } else { $sqlOrder })) {
         $target = $(if ($sqlTitleOf.ContainsKey($key)) { $sqlTitleOf[$key] }
             elseif ($tabOf.ContainsKey($key)) { $tabOf[$key] } else { '' })
         $sqlBackLinks += [pscustomobject]@{
@@ -2346,8 +2386,9 @@ function New-SheetsMergePlan {
 
     # C2 on each check tab, pointing at its block. Written for a check this run held, and for
     # one it did not whose block moved - a link to a row that now holds somebody else's SQL is
-    # worse than a stale count, because it looks right.
-    foreach ($key in $sqlOrder) {
+    # worse than a stale count, because it looks right. Which is exactly why an unreadable tab
+    # writes none of them: every row number here would be a guess at a tab nobody rewrote.
+    foreach ($key in $(if ($sqlUnreadable) { @() } else { $sqlOrder })) {
         $moved = (-not $sqlWasRow.ContainsKey($key)) -or ($sqlWasRow[$key] -ne $sqlRowOf[$key])
         $mine = $sqlTitleOf.ContainsKey($key)
         if (-not $moved -and -not $mine) { continue }
@@ -2385,11 +2426,10 @@ function New-SheetsMergePlan {
             $usedTitles[$SheetsSqlTabName] = $true
         }
 
-        $plan += [pscustomobject]@{ Kind = 'Clear'; Sheet = $SheetsSqlTabName; Range = 'A1:B' }
         $plan += [pscustomobject]@{
             Kind   = 'Write'
             Sheet  = $SheetsSqlTabName
-            Range  = (New-SheetsRange -FromColumn 1 -FromRow 1 -ToColumn 1 -ToRow $sqlLines.Count)
+            Range  = (New-SheetsRange -FromColumn 1 -FromRow 1 -ToColumn 2 -ToRow $sqlLines.Count)
             Values = $sqlLines
         }
         $cells += $sqlLines.Count
@@ -2516,6 +2556,7 @@ function New-SheetsMergePlan {
     # a check from the document, tighten a scope or split the sport, and none of those is the
     # runner's to choose silently.
     $warning = ''
+    if ($sqlWarning) { $warning = $sqlWarning }
     if ($cells -gt $SheetsCellBudgetWarning) {
         $warning = ('This run writes {0:n0} cells. Google caps a spreadsheet at 10 000 000, ' +
             'and Sheets is slow well below that.') -f $cells
@@ -2893,6 +2934,7 @@ function Read-SheetState {
     $checkTabHeaderOf = @{}
     $checkTabIdentityOf = @{}
     $sqlBlocks = @()
+    $sqlRowCount = 0
     $resultHeaderOf = @{}
     $reviewNotesOf = @{}
     $reviewLog = @()
@@ -2961,6 +3003,9 @@ function Read-SheetState {
                 if ($current) { $current.Lines += $text }
             }
             if ($current) { $sqlBlocks += $current }
+            # How far the tab's content reached, so the rewrite can blank whatever it does not
+            # cover instead of clearing the tab first. See the write side for why that matters.
+            $sqlRowCount = $lines.Count
         }
 
         # Whatever has already been logged, so this run appends to it rather than over it. Read
@@ -3041,6 +3086,7 @@ function Read-SheetState {
         ReviewNotesOf     = $reviewNotesOf
         ReviewLog         = $reviewLog
         SqlBlocks         = $sqlBlocks
+        SqlRowCount       = $sqlRowCount
         ConditionalFormatsOf = $formatsOf
     }
 }

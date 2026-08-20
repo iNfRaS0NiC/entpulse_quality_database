@@ -1305,6 +1305,28 @@ after a reported fix. The rows such a run leaves alone keep the last full run's 
 is what they are. A *skipped* check is unaffected either way: it has a summary row of its own
 and reports `SKIPPED`.
 
+**The `SQL` tab is the one thing a run must never clear.** Every other range the merge clears
+holds rows the run can produce again — an Overview row, a check tab's results — so a run that
+stops between clearing and writing loses nothing that is not about to be sent anyway. The `SQL`
+tab is the opposite: it carries one block per check, and for every check the run did not hold,
+that block exists nowhere but on the tab itself. It reaches the merge by being read back off
+it.
+
+Clearing it first put those statements in a window. A run cancelled inside that window, or one
+whose write was refused, left the tab empty — and the next narrow run then read no blocks,
+merged against nothing, and wrote its single statement over the catalogue, which is behaviour
+indistinguishable from working correctly. Golf lost 105 statements to it on 2026-08-20. The
+merge itself was already right and had been since 2026-08-10; what was wrong was that it was
+handed an empty tab and believed it.
+
+So the column is overwritten in place, padded with blank rows out to whatever the tab already
+reached, in a single write. A write that never lands leaves the previous column entire. And
+because overwriting in place is no protection against a *read* that came back empty, a tab
+holding rows that parse as no block at all is left untouched and reported: rows that yield no
+statement mean a tab this run could not read, not an empty one. Recovering from either is the
+same thing — run the sport's whole catalogue once and every block is rebuilt from the
+repository.
+
 A check tab is also cleared to its end before it is written, rather than to a depth this code
 believes it has. Forty rows last run and three this one would otherwise leave thirty-seven
 stale rows under the three new ones, which reads as forty findings — and a remembered depth is

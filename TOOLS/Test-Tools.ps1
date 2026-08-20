@@ -2284,6 +2284,114 @@ Test-That 'a check the document has never held is appended, seeded status and al
     Assert-Equal 'No issue' $appended[0].Values[0][8] 'the seeded status goes in on a new row'
 }
 
+function New-SqlTabFixture {
+    # A board carrying three statements, in the shape Read-SheetState hands to the merge.
+    param([int]$RowCount = 12)
+
+    return [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-001' = 6; 'Fixtureball-DQ-002' = 7; 'Fixtureball-DQ-003' = 8 }
+        TabOf = @{ 'Fixtureball-DQ-001' = 'TAB_ONE'; 'Fixtureball-DQ-002' = 'TAB_TWO'; 'Fixtureball-DQ-003' = 'TAB_THREE' }
+        ResultRowsOf = @{}
+        SqlRowCount = $RowCount
+        SqlBlocks = @(
+            [pscustomobject]@{ CheckId = 'Fixtureball-DQ-001'; Row = 1; Lines = @('SELECT one', 'FROM a', '') }
+            [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Row = 5; Lines = @('SELECT old', 'FROM b', '') }
+            [pscustomobject]@{ CheckId = 'Fixtureball-DQ-003'; Row = 9; Lines = @('SELECT three', 'FROM c', '') }
+        )
+    }
+}
+
+function New-SqlNarrowRun {
+    # One check collected, the second of the three the board holds.
+    param([string]$CheckId = 'Fixtureball-DQ-002')
+
+    return @([pscustomobject]@{
+            Job  = [pscustomobject]@{
+                CheckId = $CheckId; Name = "NAME_$CheckId"; Sql = "SELECT new`nFROM b"
+                What = 'a thing'; Category = 'MISSING_VALUES'; Parameters = ''
+                Signal = 'Actionable'; SignalReason = ''
+            }
+            Rows = @([pscustomobject]@{ check_type = 'X'; thing_id = 1 })
+        })
+}
+
+Test-That 'a narrow run never clears the SQL tab before it rewrites it' {
+    # The clear used to be its own request in the phase before the values. Between the two the
+    # tab held nothing, and the statements of every check the run did not hold exist nowhere
+    # else - they reach the merge by being read back off this tab. A cancelled run left it
+    # empty and the next narrow run wrote its single statement over the catalogue. Golf lost
+    # 105 of them that way on 2026-08-20.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $plan = New-SheetsMergePlan -Summary $summary -Collected (New-SqlNarrowRun) `
+        -Existing (New-SqlTabFixture) -OutputFolder 'x'
+
+    $clears = @($plan.Operations | Where-Object { $_.Kind -eq 'Clear' -and $_.Sheet -eq 'SQL' })
+    Assert-Equal 0 $clears.Count 'the SQL tab is overwritten in place, never cleared first'
+}
+
+Test-That 'a narrow run keeps every statement it did not run' {
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $plan = New-SheetsMergePlan -Summary $summary -Collected (New-SqlNarrowRun) `
+        -Existing (New-SqlTabFixture) -OutputFolder 'x'
+
+    $bulk = @($plan.Operations | Where-Object {
+            $_.Sheet -eq 'SQL' -and $_.Kind -eq 'Write' -and @($_.Values).Count -gt 3
+        })
+    Assert-Equal 1 $bulk.Count 'one write carries the whole column'
+
+    $column = @(@($bulk[0].Values) | ForEach-Object { [string]@($_)[0] })
+    Assert-True ($column -contains 'SELECT one') 'the statement before this run survives'
+    Assert-True ($column -contains 'SELECT three') 'the statement after this run survives'
+    Assert-True ($column -contains 'SELECT new') "this run's own statement replaces its old one"
+    Assert-True ($column -notcontains 'SELECT old') 'and the one it replaces is gone'
+}
+
+Test-That 'the rewrite blanks whatever the old column held beyond it' {
+    # Without the clear, a column that shrinks would leave the tail of the previous one
+    # standing - a block with no heading, which reads as part of whatever precedes it.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $plan = New-SheetsMergePlan -Summary $summary -Collected (New-SqlNarrowRun) `
+        -Existing (New-SqlTabFixture -RowCount 400) -OutputFolder 'x'
+
+    $bulk = @($plan.Operations | Where-Object {
+            $_.Sheet -eq 'SQL' -and $_.Kind -eq 'Write' -and @($_.Values).Count -gt 3
+        })
+    Assert-True (@($bulk[0].Values).Count -ge 400 ) 'the write reaches as far as the old content did'
+    $tail = [string]@(@($bulk[0].Values)[399])[0]
+    Assert-Equal '' $tail 'and the rows past the new content are blanked'
+}
+
+Test-That 'a SQL tab that parses as no statement at all is left alone' {
+    # The other route to the same loss. Overwriting in place is no protection against a read
+    # that came back empty: the run would believe the tab held nothing and blank it just the
+    # same. Rows that yield no block mean a tab this run could not read, not an empty one.
+    $existing = New-SqlTabFixture
+    $existing.SqlBlocks = @()
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $plan = New-SheetsMergePlan -Summary $summary -Collected (New-SqlNarrowRun) -Existing $existing -OutputFolder 'x'
+
+    $touched = @($plan.Operations | Where-Object { $_.Sheet -eq 'SQL' })
+    Assert-Equal 0 $touched.Count 'nothing is sent to the SQL tab'
+    Assert-True ($plan.Warning -like '*left untouched*') 'and the run says so rather than failing quietly'
+}
+
+Test-That 'an empty SQL tab is still written, because empty is not unreadable' {
+    # The guard above must not stop a board getting its first statement. A tab with no rows
+    # yields no block for the honest reason.
+    $existing = New-SqlTabFixture
+    $existing.SqlBlocks = @()
+    $existing.SqlRowCount = 0
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $plan = New-SheetsMergePlan -Summary $summary -Collected (New-SqlNarrowRun) -Existing $existing -OutputFolder 'x'
+
+    $bulk = @($plan.Operations | Where-Object {
+            $_.Sheet -eq 'SQL' -and $_.Kind -eq 'Write' -and @($_.Values).Count -gt 3
+        })
+    Assert-Equal 1 $bulk.Count 'the statement is written'
+    Assert-Equal '' $plan.Warning 'and nothing is warned about'
+}
+
 Test-That 'a withdrawn check is retired by any run, not only by a complete one' {
     # Deprecation is a row in the registry rather than an inference from what the run
     # produced, so unlike "Not in this run" it does not wait for -Complete. The run below
