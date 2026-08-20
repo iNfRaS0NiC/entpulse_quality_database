@@ -3940,13 +3940,29 @@ SELECT
 -- without naming which kinds are legitimate, which is what keeps it global: the sport's own
 -- participant vocabulary is GLOBAL-DQ-104's business, and a sport fielding both teams and
 -- individuals is normal - what is not normal is one statistic holding both.
+-- **A person is a person whichever role they hold now.** This counted participant.type
+-- literally until 2026-08-20, and that field holds a person's *current* role rather than the
+-- one they had at the event: 446 people typed coach appear in Ice Hockey's rankings and 406 of
+-- them also occupy a playing lineup slot. Martin St. Louis, Daniel Alfredsson and Manny
+-- Malhotra are typed coach and hold World Championship medals they won as players. All 60 of
+-- the sport's findings were that and nothing else - not one was a team ranked against an
+-- individual, which is what the check is for.
+-- The person types are PERSON_ROLE_TYPE_LIST, which is neither of the two lists that already
+-- existed: PERSON_PARTICIPANT_TYPE_LIST names who competes and a coach does not, while
+-- REGISTRY_PARTICIPANT_TYPE_LIST includes team and, for Equestrian, horse. Collapsing the
+-- person types leaves team against athlete and horse against athlete exactly where they were.
 FROM (
     SELECT
         s.id AS statistic_id,
         s.name AS statistic_name,
         tt.name AS template_name,
         t.name AS tournament_name,
-        COUNT(DISTINCT p.type) AS distinct_types,
+        -- Every person type counts as one kind. participant.type carries a person's current
+        -- role, not the role they held at the event, so a squad ranked in 2004 whose players
+        -- have since become coaches reads as two kinds and is one. The types actually stored
+        -- are still projected below, so nothing is hidden - only the count is corrected.
+        COUNT(DISTINCT CASE WHEN p.type IN ({{PERSON_ROLE_TYPE_LIST}})
+                            THEN 'person' ELSE p.type END) AS distinct_types,
         SUBSTRING(GROUP_CONCAT(DISTINCT p.type ORDER BY p.type SEPARATOR ', '), 1, 60) AS types_held
     FROM statistic s
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
@@ -3962,7 +3978,8 @@ FROM (
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, tt.name, t.name
-    HAVING COUNT(DISTINCT p.type) > 1
+    HAVING COUNT(DISTINCT CASE WHEN p.type IN ({{PERSON_ROLE_TYPE_LIST}})
+                               THEN 'person' ELSE p.type END) > 1
 ) x
 
 UNION ALL

@@ -167,6 +167,20 @@ Observed values are not exhaustive enums. Previously observed participant types 
 Previously observed gender/category values include `male`, `female`, `mixed`,
 `undefined`, `mare`, `stallion` and `gelding`.
 
+**`participant.type` is the person's role now, not the role they held at any event they appear
+in.** There is one row per person and one type on it, so a player who later becomes a coach is
+typed `coach` and reads that way in every record going back twenty years. Measured 2026-08-20
+on Ice Hockey: **446** people typed `coach` appear in Comp.Rank rankings and **406 of them also
+occupy a playing lineup slot**. Martin St. Louis, Daniel Alfredsson and Manny Malhotra are
+typed `coach` and hold World Championship medals they won as players.
+
+Nothing in the schema records the role at the time. A statement that reads the type as though
+it described the appearance will therefore be wrong about history, and wrong in one direction
+only: never about who took part, always about what they were called. `GLOBAL-DQ-113` counted
+types across a ranking and read every such squad as a ranking mixing two kinds of competitor -
+all 72 of Ice Hockey's findings and all 27 of Soccer's - which is why it now collapses the
+person types through `PERSON_ROLE_TYPE_LIST`.
+
 <!-- MANUAL PASTE ZONE: DATABASE CORE STRUCTURE — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---
