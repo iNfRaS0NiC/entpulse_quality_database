@@ -184,10 +184,21 @@ from event results will group by discipline.
 | Current | 348-374, plus 468, 479, 557, 642 | The distance abbreviated | `Freestyle 50m`, `Medley 4 x 100m` |
 
 The older vocabulary is **not** a closed historical import. Measured 2026-08-20, it is written
-from 2004 to 2026 in the same templates that write the current one: `World Junior
-Championships` male carries both `57 Medley 4 x 100 metres` and `367 Medley 4 x 100m`. The
-relay disciplines hold most of the older vocabulary's weight; the individual ones appear in
-ones and twos.
+from 2004 to 2025, and the relay disciplines hold nearly all of its weight - 307 relay events
+against 1898 on the current ids - while its individual disciplines appear in ones and twos.
+
+**The split is per edition of a competition, not per event.** No stage mixes the two relay
+vocabularies: a stage tagging its relays `56`, `57` and `58` tags all of them that way, and
+across 373, 282 and 386 stages holding each relay, none holds both spellings of it. What a
+stage does mix is an old relay beside current individual disciplines, which is why the two
+vocabularies appear together at template level and never inside one relay.
+
+Which editions take the older ids is not readable from the database. They are a minority
+throughout - between one and ten stages a year against nine to thirty-one - they recur rather
+than stop, the most recent being 2025, and they concentrate in a small set of competitions:
+`World Junior Championships` most often, then `Swimming World Cup` and `World Championships`
+in both courses. That pattern is consistent with certain editions arriving by a different
+route, but the route itself is outside the database and nothing here establishes it.
 
 **Three pairs of ids carry the same discipline under one name or two:**
 
@@ -230,11 +241,23 @@ that; the statements must be run before anything is written.
 **Result comments.** The `104 Comment` vocabulary is open text and holds well over a hundred
 distinct normalized forms. Its structure is worth recording even though its values are not:
 
-- qualification markers, `Q` by far the largest, with `q`, `QA`, `QB`, `QFA`, `QFB`, `QSO`;
+- qualification markers, `Q` by far the largest, with `q`, `QA`, `QB`, `QFA`, `QFB`, `QSO`,
+  and `R` for the reserve;
 - record markers, `WR`, `CR`, `OR`, `NR`, `ER`, `GR`, `AM`, `AS`, `AF`, `OC`, `WJ`, `EJ`,
   `MR`, `WJR`, `MNR`, `CGR`, `AR`, and an `=` prefix meaning the record was equalled;
-- non-finish markers, `DNS`, `DNF`, `R`, `Disq.`, `WD`, `NC`, `Retired`, `OTL`;
+- non-finish markers, `DNS`, `DNF`, `Disq.`, `WD`, `NC`, `Retired`, `OTL`;
 - combinations of the above, joined by `/`, `,`, a space or `-` with no single convention.
+
+**`R` is a qualification status, not a non-finish marker**, and reading it as one is the
+mistake the data punishes. It is written only on qualifying rounds - heats, heats summaries,
+semi-finals, swim-offs - and never on a Final. Against `Q` in the same events, measured
+2026-08-20: on a heats summary, where the ranking is the true overall order, `Q` holds places
+one to sixteen and averages 4.9 while `R` holds nine to eighteen and averages exactly 10.0;
+on a swim-off `q` averages place 1.0 and `R` averages 1.9. `Q` takes the final, `R` takes the
+reserve places behind it. The swimmer swam, so the row correctly carries a rank and a real
+time, and a check treating `R` as an absent result reports three and a half thousand correct
+rows - which `GLOBAL-DQ-052` did until the marker was measured out of the sport's no-result
+list.
 
 Several markers have more than one live spelling - `Disq.`, `DSQ`, `DSQ*`, `DISQ` and `DQ`;
 `DNS` and `dns.`; `NC`, `N.C.` and `Nc.`. A statement matching a marker literally will match
@@ -297,15 +320,20 @@ resolves to `SENIOR`, `JUNIOR` or `YOUTH`.
 
 ## Open questions
 
-1. **Are the two discipline vocabularies one editorial split or one defect?** Both are written
-   today by the same templates. If they are a defect, a Comp.Rank generated before they are
-   reconciled will split every affected relay into two rankings.
+1. **Why do certain editions take the older relay ids?** The question is narrower than it
+   first looked: the choice is made per edition and held consistently within it, so it is not
+   an error made event by event, and it is still being made in 2025, so it is not a legacy
+   import either. What decides it is not visible from inside the database. Until it is
+   answered, a Comp.Rank grouping by `disciplineFK` will split one competition's relay across
+   two rankings from one edition to the next.
 2. **Should 351/468, 362/479 and 374/557 be merged?** Each pair is the same discipline under
    two ids; 374 and 557 are also two spellings of one name.
 3. **Is `101 Duration` meant to hold an absolute time at all**, or is every absolute value in
    it a row that belongs in `557`?
-4. **What do the comment markers `?` and `R?` mean?** `R?` is written mostly in the last two
-   seasons, so whatever produces it is running now.
+4. **What do the comment markers `?` and `R?` mean?** `R` itself is settled - it is the
+   reserve, and the Reference values section records the measurement - which makes `R?` read
+   plausibly as an uncertain reserve, but that is a reading and not a measurement. Both are
+   written mostly in the last two seasons, so whatever produces them is running now.
 5. **Is `date_of_birth` required for this sport's athletes**, and is `1900-01-02` a sentinel
    the sport uses deliberately?
 6. **What is the registry's surplus of athletes over event participants?** Retired swimmers,
