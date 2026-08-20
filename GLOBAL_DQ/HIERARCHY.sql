@@ -143,8 +143,22 @@ SELECT
     'No_Events' AS check_type,
     ts.id AS tournament_stage_id,
     ts.name AS tournament_stage_name,
+    tt.name AS template_name,
+    t.name AS season,
+    ts.startdate AS stage_startdate,
+    sc.value AS status_comment,
     NULL AS eligible_count
 -- What it does, stated in full: Finds tournament stages holding no events.
+-- Four columns beside the stage's own id and name, because an empty stage is not read the same
+-- way twice and the id alone cannot tell them apart. The season says whether the stage is a
+-- future one that has not been drawn yet - a 2027 stage holding no event is a calendar entry,
+-- not a defect - and the template says which competition it belongs to. StatusComment is the
+-- only place a cancellation is recorded: `tournament_stage` has no status column at all, its
+-- columns being id, name, tournamentFK, gender, countryFK, enetID, startdate, enddate, n,
+-- locked, ut and del, so a stage that was called off carries the word in a property or nowhere.
+-- Measured on Ice Hockey 2026-08-20, nine of its empty stages read `Cancelled` there.
+-- All four are read through a LEFT JOIN or from a column that is always present, so a sport
+-- writing no such property loses nothing but sees an empty cell.
 FROM tournament_stage ts
 JOIN tournament t
   ON t.id = ts.tournamentFK
@@ -152,6 +166,11 @@ JOIN tournament t
 JOIN tournament_template tt
   ON tt.id = t.tournament_templateFK
  AND tt.del = 'no'
+LEFT JOIN property sc
+  ON sc.object = 'tournament_stage'
+ AND sc.objectFK = ts.id
+ AND sc.name = 'StatusComment'
+ AND sc.del = 'no'
 WHERE ts.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
@@ -168,6 +187,10 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
     NULL,
     NULL,
     COUNT(DISTINCT ts.id) AS eligible_count

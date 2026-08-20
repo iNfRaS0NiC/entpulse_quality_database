@@ -352,7 +352,9 @@ SELECT
     x.config_start_date,
     x.config_end_date,
     x.earliest_stage_startdate,
+    x.earliest_stage_id,
     x.latest_stage_enddate,
+    x.latest_stage_id,
     NULL AS eligible_count
 -- What it does, stated in full: Finds Comp.Rank whose configured date interval is inverted,
 -- or is not contained within the stage dates of its own tournament, separating an inverted
@@ -367,7 +369,14 @@ FROM (
         (SELECT MIN(sc1.value) FROM statistic_config sc1 WHERE sc1.statisticFK = s.id AND sc1.statistic_data_typeFK = {{CONFIG_START_DATE_TYPE_ID}} AND sc1.del = 'no') AS config_start_date,
         (SELECT MAX(sc2.value) FROM statistic_config sc2 WHERE sc2.statisticFK = s.id AND sc2.statistic_data_typeFK = {{CONFIG_END_DATE_TYPE_ID}} AND sc2.del = 'no') AS config_end_date,
         MIN(ts.startdate) AS earliest_stage_startdate,
-        MAX(ts.enddate) AS latest_stage_enddate
+        -- The stage that holds each bound, not just the date. A reader checking one of these
+        -- rows has a Comp.Rank id and two dates and no way to reach the stage the date came
+        -- from except by listing every stage of the tournament and comparing by eye; a
+        -- tournament runs a dozen. The id is the shortest route from the finding to the row
+        -- that has to be looked at. Added 2026-08-20.
+        SUBSTRING_INDEX(GROUP_CONCAT(ts.id ORDER BY ts.startdate ASC), ',', 1) AS earliest_stage_id,
+        MAX(ts.enddate) AS latest_stage_enddate,
+        SUBSTRING_INDEX(GROUP_CONCAT(ts.id ORDER BY ts.enddate DESC), ',', 1) AS latest_stage_id
     FROM statistic s
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -393,7 +402,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT s.id) AS eligible_count
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
@@ -3568,7 +3577,7 @@ SELECT
     x.tournament_name,
     x.affected_participant_count,
     x.duplicated_row_count,
-    x.sample_group,
+    x.duplicated_participants,
     NULL AS eligible_count,
     0 AS sort_order
 -- What it does, stated in full: Finds Comp.Rank holding the same participant twice, so one
@@ -3577,6 +3586,13 @@ SELECT
 -- type, so it sees several data rows hanging off one participant row. This sees one
 -- participant holding two participant rows in the same ranking, which that grouping cannot
 -- reach: each of the two rows can carry a perfectly well-formed single set of data.
+-- The duplicated competitors are named, not sampled. This column held
+-- MIN(CONCAT('participant=', id, ' rows=', n)) until 2026-08-20, which gave a reader one id
+-- out of however many and no name at all, so checking a row meant looking up a number
+-- before the work could even start. It now lists every duplicated competitor with the name
+-- beside the id and how many rows each holds, heaviest first. GROUP_CONCAT truncates at the
+-- server's limit without saying so, which is why affected_participant_count is the number
+-- the row asserts and this column is the convenience.
 FROM (
     SELECT
         s.id AS statistic_id,
@@ -3585,7 +3601,10 @@ FROM (
         t.name AS tournament_name,
         COUNT(*) AS affected_participant_count,
         SUM(g.row_count) AS duplicated_row_count,
-        MIN(CONCAT('participant=', g.participantFK, ' rows=', g.row_count)) AS sample_group
+        SUBSTRING(GROUP_CONCAT(
+            CONCAT(COALESCE(p.name, CONCAT('participant ', g.participantFK)),
+                   ' (', g.participantFK, ') x', g.row_count)
+            ORDER BY g.row_count DESC, p.name SEPARATOR ' | '), 1, 300) AS duplicated_participants
     FROM (
         SELECT sp.statisticFK, sp.participantFK, COUNT(*) AS row_count
         FROM statistic_participants{{SHARD_ID}} sp
@@ -3603,6 +3622,7 @@ FROM (
         GROUP BY sp.statisticFK, sp.participantFK
         HAVING COUNT(*) > 1
     ) g
+    LEFT JOIN participant p ON p.id = g.participantFK AND p.del = 'no'
     JOIN statistic s ON s.id = g.statisticFK AND s.del = 'no'
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'

@@ -2731,7 +2731,8 @@ SELECT
     m.participant_name,
     m.template_name,
     m.tournament_name,
-    m.round_typeFK,
+    m.round_typeFK AS round_type_id,
+    m.round_type_name,
     m.own_score,
     m.opponent_score,
     m.expected_medal,
@@ -2747,6 +2748,10 @@ SELECT
 -- GLOBAL-DQ-084 is the check that names a tie. The medal is read through an aggregate so a
 -- participant carrying two Medal rows still produces one row here; that duplication is
 -- GLOBAL-DQ-059 and is not restated.
+-- The round type is projected as a name beside its id, because the id alone tells a reader
+-- nothing about whether the row is a final or a bronze match, and that is the first thing
+-- they need in order to judge which medal the score should have produced. Added 2026-08-20
+-- with the same change to GLOBAL-DQ-038 and -093.
 FROM (
     SELECT
         ep.id AS event_participants_id,
@@ -2757,6 +2762,7 @@ FROM (
         tt.name AS template_name,
         t.name AS tournament_name,
         e.round_typeFK,
+        rt.name AS round_type_name,
         CAST(TRIM(rs.value) AS SIGNED) AS own_score,
         CASE WHEN CAST(TRIM(rs.value) AS SIGNED) = sc.max_score
              THEN sc.min_score ELSE sc.max_score END AS opponent_score,
@@ -2782,6 +2788,7 @@ FROM (
     JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
     JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK AND rt.del = 'no'
     JOIN result rs ON rs.event_participantsFK = ep.id AND rs.del = 'no'
                   AND rs.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
                   AND rs.value IS NOT NULL
@@ -2824,7 +2831,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT ep.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep

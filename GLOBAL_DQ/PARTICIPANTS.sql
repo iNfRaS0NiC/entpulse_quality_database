@@ -841,10 +841,17 @@ SELECT
     ts.name AS stage_name,
     e.status_type,
     x.participant_count,
+    x.participants,
     NULL AS eligible_count,
     0 AS sort_order
 -- What it does, stated in full: Finds head-to-head events holding participants but not
 -- exactly two, separating fewer than the pair from more.
+-- Who they are is projected beside how many, because the two failures read completely
+-- differently and the count alone cannot tell them apart. One participant means the opponent
+-- was never entered and the row says which side is present; three or more usually means one
+-- side was entered twice, and seeing the same name twice in the list is the whole diagnosis.
+-- The name carries its participant id and its type - a type the sport does not field is
+-- GLOBAL-DQ-104's finding rather than this one's, but it shows here first. Added 2026-08-20.
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -852,8 +859,15 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 -- The count is aggregated inside the sport's own hierarchy rather than over the whole
 -- event_participants table, so the statement stays scoped the way WORKFLOW.md requires.
 JOIN (
-    SELECT ep.eventFK AS event_id, COUNT(*) AS participant_count
+    SELECT
+        ep.eventFK AS event_id,
+        COUNT(*) AS participant_count,
+        SUBSTRING(GROUP_CONCAT(
+            CONCAT(COALESCE(p.name, CONCAT('participant ', ep.participantFK)),
+                   ' (', ep.participantFK, ', ', COALESCE(p.type, 'unresolved'), ')')
+            ORDER BY p.name SEPARATOR ' | '), 1, 300) AS participants
     FROM event_participants ep
+    LEFT JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
     JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
     JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
     JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
@@ -875,7 +889,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event e
