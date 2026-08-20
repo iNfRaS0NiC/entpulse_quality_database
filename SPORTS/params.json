@@ -1637,6 +1637,20 @@
         "ROUND_TYPE_LIST": "2, 9, 38, 89, 91, 98, 99, 173, 176, 178, 184, 202, 204, 223, 224, 253, 320, 323, 325, 326, 327, 328, 329",
         "SCOPE_TYPE_LIST": "101, 102, 103, 104, 105, 305",
         "NOT_STARTED_DESC_LIST": "1",
+        "MEDAL_ROUND_TYPE_LIST": "9, 173",
+        "FINAL_ROUND_TYPE_LIST": "9, 173",
+        "RANK_MAX_PLAUSIBLE": 200,
+        "TIMED_DISCIPLINE_LIST": "38, 39, 40, 43, 44, 45, 46, 49, 51, 54, 55, 56, 57, 58, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 468, 479, 557, 642",
+        "FULL_TIME_TOLERANCE_SECONDS": "0.01",
+        "PRECISION_RESULT_TYPE_LIST": "101, 557",
+        "RESULT_TIE_VALUE_TYPE_LIST": "557, 101",
+        "RESULT_COMMENT_VALUE_LIST": "'=WR/ER/CR', 'AF', 'AM', 'AM/=CR', 'AM/CR', 'AM/WJ', 'AR', 'AS', 'CGR', 'CR', 'CR/AF', 'CR/AM', 'CR/AS', 'CR/ER', 'CR/OC', 'CR/WJ', 'DNF', 'DNS', 'Disq.', 'EJ', 'EJ-CR', 'ER', 'ER/CR', 'EYOF', 'GR', 'GR NR', 'GR/AF', 'MNR', 'MR', 'NC', 'NR', 'OC', 'OR', 'OR/=OC', 'OR/ER', 'OR/OC', 'OTL', 'Q', 'Q EYOF', 'Q/ =WJ', 'Q/=OR', 'Q/AF', 'Q/AM', 'Q/AS', 'Q/CR/AM', 'Q/CR/ER', 'Q/EJ', 'Q/ER', 'Q/NR', 'Q/OC', 'Q/OR', 'Q/OR/AF', 'Q/OR/ER', 'Q/WJ/EJ', 'Q/WJ/ER/EJ/CR', 'Q/WJ/OC', 'Q/WR', 'Q/WR/ER/CR', 'Q/WR/OR', 'Q/WR/WJ', 'Q/WR/WJ/ER', 'QA', 'QA CR', 'QB', 'QFA', 'QFB', 'QSO', 'R', 'R/=OC', 'R/OC', 'Retired', 'WD', 'WJ', 'WJ-EJ-CR', 'WJ/EJ', 'WJ/EJ/CR', 'WJ/ER', 'WJ/R', 'WJR', 'WR', 'WR/ER/CR', 'WR/OR', 'WR/WJ', 'WR/WJ/ER', 'WR/WJ/ER/EJ/CR', 'q CR', 'q/=CR', 'q/CR', 'q/ER/CR', 'q/WJ', 'q/WJ/EJ/CR'",
+        "RESULT_COMMENT_NO_RESULT_LIST": "'DNS', 'DNF', 'Disq.', 'WD', 'NC', 'Retired', 'OTL'",
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 0,
+        "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+        "SERIES_MIN_YEARS": 3,
+        "SERIES_SKIP_YEARS": "2020",
         "_names": {
             "SPORT_ID": "46 Swimming, enet code sw",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "the five (IOC) templates, none of which holds a stage or an event - 12788 World Championships Long Course (IOC) mixed, 12791 the same name male, 12797 the same name female, 12792 Open Water World Championships (IOC), 12799 Marathon Swim World Series (IOC) - plus 10470 Open Water World Championships, which is not an IOC template and does hold 2 stages and 7 events; it was excluded by decision on 2026-08-20, and open water itself stays in scope because Marathon 10 km and the other open-water disciplines are contested under five further templates",
@@ -1651,7 +1665,90 @@
             "INTEGER_RESULT_TYPE_LIST": "100 Rank, the sport's only result type whose values are whole numbers by construction",
             "ROUND_TYPE_LIST": "the 23 round types the sport contests: 2 and 178 Semi Finals, 9 and 173 Final, 38 '1', 89 '1', 91 '3', 98 '10', 99 '11', 176 Quarter Finals, 184 '1/8', 202 After Heats, 204 and 320 Heats, 223 and 224 Swim-Off, 253 Preliminary, 323 Finals Summary, 325 and 326 Slowest Heats, 327 and 328 Fastest Heats, 329 Heats Summary. Six names are each carried by two ids, so the list cannot be rebuilt from names. round_typeFK 0 is deliberately absent: it resolves to no round_type row and is the missing-round-type gap rather than a round the sport holds",
             "SCOPE_TYPE_LIST": "101 checkpoint1, 102 checkpoint2, 103 checkpoint3, 104 checkpoint4, 105 checkpoint5 and 305 final_result - the split-time layer, carried only by distance and open-water events",
-            "NOT_STARTED_DESC_LIST": "1 Not started, the only not-started status description the sport uses"
+            "NOT_STARTED_DESC_LIST": "1 Not started, the only not-started status description the sport uses",
+            "MEDAL_ROUND_TYPE_LIST": "9 Final and 173 Final, the only two rounds carrying a 501 Medal result; measured 2026-08-20 over 11383 medalled events, and every other round returned zero. 323 Finals Summary awards none despite its name",
+            "FINAL_ROUND_TYPE_LIST": "9 Final and 173 Final, the same two: this sport awards its whole medal set inside the one Final rather than deciding bronze in its own match",
+            "RANK_MAX_PLAUSIBLE": "200, chosen 2026-08-20 with the largest legitimate field at 133 participants and the highest stored rank at 127; nothing in the sport reaches 150",
+            "TIMED_DISCIPLINE_LIST": "all 45 disciplines the sport contests, in both its live vocabularies - the spelled-out 38-58 and the abbreviated 348-374 plus 468, 479, 557 and 642. Swimming judges nothing: every discipline is resolved on the clock, so none is left out",
+            "FULL_TIME_TOLERANCE_SECONDS": "0.01, matching the precision the sport actually swims to. 557 Full-time duration is written with three decimal places throughout, and the repository's usual 1 second would be wider than most winning margins",
+            "PRECISION_RESULT_TYPE_LIST": "101 Duration and 557 Full-time duration. 557 is uniformly three decimal places; 101 is not, holding 3, 2, 1, 0 and 4 places at once, which is what the check is here to report",
+            "RESULT_TIE_VALUE_TYPE_LIST": "557 Full-time duration and 101 Duration, the two quantities a place is settled from. 101 reaches 442950 of 444109 ranked participations and 557 reaches 414814, so naming both leaves almost no place unaccounted for",
+            "RESULT_COMMENT_VALUE_LIST": "the normalized vocabulary agreed 2026-08-20: 91 forms of the 130 the sport currently stores. It holds the canonical spelling of each marker and the compound comments as written, and deliberately excludes the duplicate spellings - DSQ, DSQ*, DISQ and DQ beside Disq.; dns. and dns dec. beside DNS; N.C. and Nc. beside NC - the unexplained ? and R?, the leaked #NAME?, and the eight forms whose own text contains a comma, which a comma-separated parameter cannot carry. Those exclusions are the point: the check reports them so the notation can be settled",
+            "RESULT_COMMENT_NO_RESULT_LIST": "DNS, DNF, Disq., WD, NC, Retired and OTL. R was measured out of this list on 2026-08-20: 3464 of its 3492 participations carry both a rank and a real swim time, so whatever R marks in this sport, it is not the absence of a result. The list is a subset of the value list because TOOLS/Test-Package.ps1 requires that; the rejected variant spellings are caught by the value list instead",
+            "DUPLICATE_KEY_INCLUDES_EVENT_NAME": "1: this sport names an event after its discipline and distance, never after the competitors, so the name carries real information about which event it is",
+            "DUPLICATE_KEY_USES_CALENDAR_DAY": "0: the sport runs the same field several times a day. Measured 2026-08-20, one stage holds up to 20 identically named events on a single day, so a calendar-day key would report the entire heat structure as duplicates",
+            "PLACEHOLDER_COUNTRY_LIST": "International, Unknown and Undefined. Only International occurs, on 166 stages, and GLOBAL-DQ-034 already excludes it from the test on the stage's own country; the other two are named so they are caught if they ever arrive",
+            "SERIES_MIN_YEARS": "3, the repository's usual threshold for a series long enough that a break in it means something",
+            "SERIES_SKIP_YEARS": "2020, the year the sport is known not to have run. It holds 96 events against roughly 2400 in each neighbouring year, so without naming it every annual series reports a break it did not have"
+        },
+        "_notApplicable": {
+            "SCOPE_TYPE_ID": "the sport writes its split-time layer only on distance and open-water events - 125 containers against 45602 finished events - and GLOBAL-DQ-107 asserts a container on every finished event, with SCOPE_TYPE_ID as its only parameter and no way to name the disciplines that legitimately carry one. Declaring a value here would report the sport's normal state 45477 times."
+        },
+        "_checkSignal": {
+            "GLOBAL-DQ-119": {
+                "signal": "Not applicable",
+                "reason": "the sport runs a B final for the swimmers placed ninth to sixteenth in the heats, and that event legitimately ranks its field 9 to 16. This template's start-at-one branch reports every one of them: measured 2026-08-20 it returns 281 events and 191 of those are correct B finals, 68 per cent of its output. Swimming-DQ-046 asserts the same sequence rule with that one branch exempted for a B final and returns the real breaks instead. Semi Final B is not exempt there, because parallel semi-finals each rank from one."
+            },
+            "GLOBAL-DQ-076": {
+                "signal": "Not applicable",
+                "reason": "the template needs a result type carrying a measured quantity that is not a time. This sport has one numeric result type, 100 Rank, and it counts in whole units, so GLOBAL-DQ-124 asserts it on tighter terms. 101 Duration and 557 Full-time duration are clock-notated and the template's own applicability requires them to be left out, which leaves nothing to name."
+            },
+            "GLOBAL-DQ-082": {
+                "signal": "Not applicable",
+                "reason": "it asks whether an event's discipline agrees with its stage's, and requires a stage that groups a single discipline. A swimming stage is a whole championship programme: one stage holds every stroke and distance the meet contests, so the check would report the sport's entire population. GLOBAL-DQ-109 asks the answerable version of the question here, comparing the two places the discipline is stored on the same event."
+            },
+            "GLOBAL-DQ-084": {
+                "signal": "Not applicable",
+                "reason": "head-to-head only. The sport is Listing per DATABASE.md DB-SEM-015 and stores no deciding score at all, so there is no pair of scores that could be tied."
+            },
+            "GLOBAL-DQ-087": {
+                "signal": "Not applicable",
+                "reason": "the sport writes no Winner event property. The field is resolved by result type 100 Rank instead, and the template cannot be instantiated until a Winner exists to read."
+            },
+            "GLOBAL-DQ-088": {
+                "signal": "Not applicable",
+                "reason": "head-to-head only, and it needs both a Winner property and a single deciding numeric score. Swimming stores neither."
+            },
+            "GLOBAL-DQ-090": {
+                "signal": "Not applicable",
+                "reason": "it needs one figure stored in two result types so the pair is a duplicate by design. The sport's five result types are Rank, Duration, Comment, Medal and Full-time duration, and no two of them hold the same figure."
+            },
+            "GLOBAL-DQ-093": {
+                "signal": "Not applicable",
+                "reason": "head-to-head only, for a sport deciding bronze in its own match. Swimming awards its whole medal set inside the one Final, which is what GLOBAL-DQ-037 asserts and this sport instantiates instead."
+            },
+            "GLOBAL-DQ-094": {
+                "signal": "Not applicable",
+                "reason": "head-to-head only, and it reads the place from a pair of scores. There is no deciding score here and the place is already carried by 100 Rank."
+            },
+            "GLOBAL-DQ-096": {
+                "signal": "Not applicable",
+                "reason": "head-to-head only by the competition model, as the template states as a rule. A Listing sport names its events after the discipline and distance, so there are no participants in the name to look for; the sport's own event names are 100m Freestyle and Freestyle 4 x 100m."
+            },
+            "GLOBAL-DQ-108": {
+                "signal": "Not applicable",
+                "reason": "it tightens GLOBAL-DQ-076 on a deciding score that counts scoring units. The sport stores no score of any kind."
+            },
+            "GLOBAL-DQ-114": {
+                "signal": "Not applicable",
+                "reason": "it needs a deciding score and a mirror of it. Swimming stores neither, so there is no pair for one half to be missing from."
+            },
+            "GLOBAL-DQ-116": {
+                "signal": "Not applicable",
+                "reason": "superseded by GLOBAL-DQ-021 and not to be instantiated by any sport, as the template records. GLOBAL-DQ-021 now asks the same question over RESULT_TIE_VALUE_TYPE_LIST, which this sport declares as 557 and 101."
+            },
+            "GLOBAL-DQ-117": {
+                "signal": "Not applicable",
+                "reason": "a sport instantiates this or GLOBAL-DQ-052, never both. This one settles the placing from a stored scalar score and Swimming settles it from a time, so GLOBAL-DQ-052 is the one that can run here and is the stronger test of the two on a timed sport."
+            },
+            "GLOBAL-DQ-107": {
+                "signal": "Not applicable",
+                "reason": "it asserts a scope container on every finished event, and this sport stores splits only for distance and open-water swims. The template takes one SCOPE_TYPE_ID and cannot be told which disciplines are expected to carry one, so instantiating it would report 45477 events that are behaving exactly as the sport intends. SPORTS/Swimming.md records the layer as real but marginal."
+            },
+            "GLOBAL-DQ-074": {
+                "signal": "Sentinel",
+                "reason": "the sport attaches no venue to any event or stage, so all 46379 events are reported and the finding is that fact rather than a list to work through. venue_object is the only mechanism DATABASE.md recognises for it, and Swimming fills none of it. Numbered deliberately on 2026-08-20 with the row count known: the alternative was to declare it not applicable, which would have switched the check off for the day venues start being written."
+            }
         }
     }
 }
