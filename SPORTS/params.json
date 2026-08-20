@@ -1651,6 +1651,8 @@
         "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
         "SERIES_MIN_YEARS": 3,
         "SERIES_SKIP_YEARS": "2020",
+        "ELIMINATION_ROUND_NAME_LIST": "'heats', 'heats summary', 'fastest heats', 'slowest heats', 'semi finals', 'quarter finals', '1/8', 'swim-off', 'preliminary'",
+        "GROUP_ROUND_NAME_LIST": "'final', 'finals summary', 'after heats'",
         "_names": {
             "SPORT_ID": "46 Swimming, enet code sw",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "the five (IOC) templates, none of which holds a stage or an event - 12788 World Championships Long Course (IOC) mixed, 12791 the same name male, 12797 the same name female, 12792 Open Water World Championships (IOC), 12799 Marathon Swim World Series (IOC) - plus 10470 Open Water World Championships, which is not an IOC template and does hold 2 stages and 7 events; it was excluded by decision on 2026-08-20, and open water itself stays in scope because Marathon 10 km and the other open-water disciplines are contested under five further templates",
@@ -1679,12 +1681,18 @@
             "DUPLICATE_KEY_USES_CALENDAR_DAY": "0: the sport runs the same field several times a day. Measured 2026-08-20, one stage holds up to 20 identically named events on a single day, so a calendar-day key would report the entire heat structure as duplicates",
             "PLACEHOLDER_COUNTRY_LIST": "International, Unknown and Undefined. Only International occurs, on 166 stages, and GLOBAL-DQ-034 already excludes it from the test on the stage's own country; the other two are named so they are caught if they ever arrive",
             "SERIES_MIN_YEARS": "3, the repository's usual threshold for a series long enough that a break in it means something",
-            "SERIES_SKIP_YEARS": "2020, the year the sport is known not to have run. It holds 96 events against roughly 2400 in each neighbouring year, so without naming it every annual series reports a break it did not have"
+            "SERIES_SKIP_YEARS": "2020, the year the sport is known not to have run. It holds 96 events against roughly 2400 in each neighbouring year, so without naming it every annual series reports a break it did not have",
+            "ELIMINATION_ROUND_NAME_LIST": "the rounds a swimmer can go out of: heats and their three subdivisions - heats summary, fastest heats, slowest heats - plus semi finals, quarter finals, 1/8, swim-off and preliminary. The heats summary is listed deliberately: it is the aggregated ranking across all heats and is where qualification is actually decided, which the Q, R and ? markers sitting on it confirm",
+            "GROUP_ROUND_NAME_LIST": "the rounds nobody leaves: final, finals summary and after heats. A final is terminal, so no entry goes out of it, and the other two are aggregate views rather than swum rounds. The four round types named with a bare number - 1, 3, 10 and 11 - are in neither list on purpose: the template leaves an unjudged name silent rather than assuming it"
         },
         "_notApplicable": {
             "SCOPE_TYPE_ID": "the sport writes its split-time layer only on distance and open-water events - 125 containers against 45602 finished events - and GLOBAL-DQ-107 asserts a container on every finished event, with SCOPE_TYPE_ID as its only parameter and no way to name the disciplines that legitimately carry one. Declaring a value here would report the sport's normal state 45477 times."
         },
         "_checkSignal": {
+            "GLOBAL-DQ-083": {
+                "signal": "Not applicable",
+                "reason": "head-to-head only per DATABASE.md DB-SEM-015, where an event is a contest between exactly two entries. Swimming is Listing: measured 2026-08-20 its field runs from 1 to 133 participants and averages 10.36, so 44806 of its 45188 events hold more than two and the check would report the sport. SPORTS/Swimming.md records the model and the measurement behind it."
+            },
             "GLOBAL-DQ-119": {
                 "signal": "Not applicable",
                 "reason": "the sport runs a B final for the swimmers placed ninth to sixteenth in the heats, and that event legitimately ranks its field 9 to 16. This template's start-at-one branch reports every one of them: measured 2026-08-20 it returns 281 events and 191 of those are correct B finals, 68 per cent of its output. Swimming-DQ-046 asserts the same sequence rule with that one branch exempted for a B final and returns the real breaks instead. Semi Final B is not exempt there, because parallel semi-finals each rank from one."
