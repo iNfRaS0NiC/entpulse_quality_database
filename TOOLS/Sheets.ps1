@@ -252,12 +252,32 @@ $SheetsRowsBands = @(
 # question while looking perfectly reasonable in its own cell.
 #
 # The order is the order the dropdown offers, which is roughly the order a check moves
-# through: unseen, judged harmless, judged worth watching, being looked at, dealt with,
-# handed on. Colour carries the same reading at a glance, and is why each carries a
-# background rather than only a text colour - a chip is what the reviewer sees, not a word.
+# through: unseen, judged harmless, judged worth watching, being looked at, paused, dealt with,
+# handed on, handed elsewhere, put aside. Colour carries the same reading at a glance, and is
+# why each carries a background rather than only a text colour - a chip is what the reviewer
+# sees, not a word.
+#
+# Three were added on 2026-08-21 and each says something the six could not. On Hold is a review
+# that started and stopped, which Reviewing claimed was still moving. Other Team is the second
+# direction a check can be handed in - IT Fix was the only one, and a check somebody else owns
+# was reaching the board as either that or Not reviewed. Skipped is a deliberate decision not to
+# work a check now, which nothing said before: leaving it Not reviewed made a settled decision
+# look like an untouched row.
+#
+# Their colours are chosen against the reading groups rather than one by one. IT Fix and Other
+# Team are two ambers because they mean the same kind of thing and differ only in who received
+# it - the same reason Clean and Completed are two greens. On Hold is orange, the attention
+# family, beside the red of Not reviewed and not in it. Skipped is teal rather than the third
+# green it was first asked to be: Clean and Completed are already green, and three green chips
+# in a column of ten would cost the glance the colour exists to give.
+#
+# Skipped is also the one word here that means something else elsewhere on the same row. The
+# runner writes SKIPPED into the Rows cell for a statement it did not execute, and this is a
+# person saying they executed it and put it aside. Two columns, one word, two meanings, decided
+# knowingly on 2026-08-21 because it is the word the reviewers use.
 #
 # The last of them is not a stage of review but the end of one, and grey because a chip saying
-# "nothing to do here" should not compete with the six that ask for something. It is also the
+# "nothing to do here" should not compete with the nine that ask for something. It is also the
 # one value in this column the runner writes rather than a person, and it writes it only when
 # POWERBI_REGISTRY.md says Deprecated. Without it the retirement left a row saying Deprecated in
 # Signal and Verdict while Status still read Not reviewed - a row asking to be reviewed and
@@ -274,8 +294,11 @@ $SheetsStatusBands = @(
     [pscustomobject]@{ Value = 'Clean'; Background = '#E6F4EA'; Colour = '#137333' }
     [pscustomobject]@{ Value = 'Monitor Only'; Background = '#F3E8FD'; Colour = '#7627BB' }
     [pscustomobject]@{ Value = 'Reviewing'; Background = '#E8F0FE'; Colour = '#1967D2' }
+    [pscustomobject]@{ Value = 'On Hold'; Background = '#FEEFE3'; Colour = '#E8710A' }
     [pscustomobject]@{ Value = 'Completed'; Background = '#CEEAD6'; Colour = '#0B6B3A' }
     [pscustomobject]@{ Value = 'IT Fix'; Background = '#FEF7E0'; Colour = '#B06000' }
+    [pscustomobject]@{ Value = 'Other Team'; Background = '#FEEFC3'; Colour = '#7A4F01' }
+    [pscustomobject]@{ Value = 'Skipped'; Background = '#E0F2F1'; Colour = '#00796B' }
     [pscustomobject]@{ Value = $SheetsRetiredStatus; Background = '#F1F3F4'; Colour = '#5F6368' }
 )
 

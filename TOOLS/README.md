@@ -1004,12 +1004,12 @@ The subtraction uses the same match that puts the notes back beside their findin
 once, read by both — so a note whose finding is no longer in the result is logged rather than
 subtracted. `Sheets.ps1` `$SheetsRowReviewDismissed` owns the value.
 
-`Status` is a manual tracking field, and its dropdown offers the same six words the live
-document does — one list, `$SheetsStatusBands` in `TOOLS/Sheets.ps1`, read by both:
+`Status` is a manual tracking field, and its dropdown offers the same nine words the live
+document does - one list, `$SheetsStatusBands` in `TOOLS/Sheets.ps1`, read by both:
 
 | Open | Closed |
 |---|---|
-| `Not reviewed`, `Reviewing` | `Clean`, `Monitor Only`, `Completed`, `IT Fix` |
+| `Not reviewed`, `Reviewing`, `On Hold`, `IT Fix`, `Other Team` | `Clean`, `Monitor Only`, `Completed`, `Skipped` |
 
 `Monitor Only` is the reviewer's counterpart to the `Informational` signal: the check ran, it
 was read, and there was never anything in it to act on.
@@ -1511,11 +1511,29 @@ adds on `Rows` will not survive the next run; on any other column it is theirs a
 alone.
 
 `Status` is a closed vocabulary rather than free text, offered as a coloured dropdown down the
-whole column: **Not reviewed**, **Clean**, **Monitor Only**, **Reviewing**, **Completed**,
-**IT Fix**. The list is `$SheetsStatusBands` in `TOOLS/Sheets.ps1`, and the workbook's dropdown
-reads the same constant, because a workbook and a board that disagree about the words are how
-the column came to hold nine spellings of five ideas across six boards. Validation is strict, so
-a seventh word is refused rather than flagged.
+whole column: **Not reviewed**, **Clean**, **Monitor Only**, **Reviewing**, **On Hold**,
+**Completed**, **IT Fix**, **Other Team**, **Skipped**. The list is `$SheetsStatusBands` in
+`TOOLS/Sheets.ps1`, and the workbook's dropdown reads the same constant, because a workbook and a
+board that disagree about the words are how the column came to hold nine spellings of five ideas
+across six boards. Validation is strict, so an undeclared word is refused rather than flagged.
+
+**Three were added on 2026-08-21**, each saying something the original six could not. `On Hold`
+is a review that started and stopped, which `Reviewing` claimed was still moving. `Other Team` is
+the second direction a check can be handed in: `IT Fix` was the only one, so a check somebody
+else owns reached the board as either that or `Not reviewed`. `Skipped` is a deliberate decision
+not to work a check now - leaving it `Not reviewed` made a settled decision look like an
+untouched row.
+
+Their colours answer the reading groups rather than each other. `IT Fix` and `Other Team` are two
+ambers because they mean the same kind of thing and differ only in who received it, the same
+reason `Clean` and `Completed` are two greens. `On Hold` is orange, beside the red of
+`Not reviewed` and not in it. `Skipped` is teal rather than the third green it was first asked to
+be: three green chips in a column of ten would cost the glance the colour exists to give.
+
+`Skipped` is also the one word here that means something else elsewhere on the same row. The
+runner writes `SKIPPED` into the `Rows` cell for a statement it did not execute, and this is a
+person saying they executed it and put it aside. Two columns, one word, two meanings, and it was
+decided knowingly because it is the word the reviewers use.
 
 A superseded spelling still on a board is renamed on the next run — `No issue` and `No Changes`
 to `Clean`, `No action needed` to `Monitor Only`, `Fixed` to `Completed`, `For IT` and

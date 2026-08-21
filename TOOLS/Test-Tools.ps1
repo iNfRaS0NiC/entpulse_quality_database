@@ -1510,7 +1510,7 @@ Test-That 'workbook carries the Check By column and the outcome statuses' {
     Assert-True ($xml -match 'r="F1"[^>]*><is><t[^>]*>Category<') 'Category should follow Priority'
     # One vocabulary for the workbook and the live board, taken from $SheetsStatusBands so
     # the two cannot drift; the column held nine spellings of five ideas when they could.
-    Assert-True ($xml -match '"Not reviewed,Clean,Monitor Only,Reviewing,Completed,IT Fix,Deprecated"') 'the dropdown should offer the outcome statuses'
+    Assert-True ($xml -match '"Not reviewed,Clean,Monitor Only,Reviewing,On Hold,Completed,IT Fix,Other Team,Skipped,Deprecated"') 'the dropdown should offer the outcome statuses'
     Assert-True ($xml -match '>Clean<') 'a check returning only its COVERAGE row should open as Clean'
     Assert-True ($detailXml -match 'r="H1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit after Comment on a check tab'
     # An empty manual field writes no cell at all, so the reviewer types into a blank.
@@ -3358,7 +3358,12 @@ Test-That 'the Rows colour bands are rewritten every run, over that column only'
     # counting from zero would have the second one delete a rule the first had already shifted.
     Assert-Equal 1 $statusRule.Count 'and Status at I gets its own'
     Assert-Equal '3' (@($statusRule[0].Drop) -join ' ') 'replacing only the rules that cover Status'
-    Assert-Equal 7 @($statusRule[0].Rules).Count 'one band per status the vocabulary allows'
+    # Counted from the vocabulary rather than written down. The number was 7 until three
+    # statuses were added on 2026-08-21, and a literal here fails on the count instead of on
+    # the behaviour the case is about - which is that every declared status gets a band and
+    # none is left without one.
+    Assert-Equal $SheetsStatusBands.Count @($statusRule[0].Rules).Count `
+        'one band per status the vocabulary allows'
     Assert-Equal 'TEXT_EQ' $statusRule[0].Rules[0].Type 'matched on the word, not on a number'
     Assert-True ([bool]$statusRule[0].Rules[0].Background) 'and filled, because what it wants to look like is a chip'
 
@@ -4301,7 +4306,7 @@ Test-That 'Status is a closed vocabulary, and a superseded spelling is renamed t
     $validation = @($plan.Operations | Where-Object { $_.Kind -eq 'Validation' })
     Assert-Equal 1 $validation.Count 'the Status column carries a dropdown'
     Assert-Equal 9 $validation[0].Column 'at I'
-    Assert-Equal 'Not reviewed Clean Monitor Only Reviewing Completed IT Fix Deprecated' (@($validation[0].Values) -join ' ') `
+    Assert-Equal 'Not reviewed Clean Monitor Only Reviewing On Hold Completed IT Fix Other Team Skipped Deprecated' (@($validation[0].Values) -join ' ') `
         'offering exactly the declared outcomes'
 
     # I7 and nothing else. This is the one place the runner writes into a reviewer's column,
