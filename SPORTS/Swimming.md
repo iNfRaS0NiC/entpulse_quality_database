@@ -442,6 +442,25 @@ its tournament's year rather than by its own name. `Swimming World Cup` is the e
 stages are named `Swimming World Cup <year> - <city>`, which is the only place the leg's city
 is stored as text.
 
+**A heats summary is recorded two ways, and the two never overlap.** Round type
+`329 Heats Summary` carries 4095 events and not one of them says so in its name; 578 events say
+`Heats Summary` in the name and carry `38`, one of the two round types named with the bare
+number `1`. Each convention is self-consistent, and they run side by side across 22 templates
+from 2006 to 2025, so neither is the wrong one. `Swimming-DQ-072` deliberately excludes the five
+bare-number round types for that reason - a bare number denies nothing - and reads only an event
+whose round type is one the sport actually names.
+
+**`38` is also how the sport records an event whose round is simply not known.** 10940 events
+carry it with no round word in their name either, so neither field says anything. That is an
+absence rather than a contradiction, and it is not judged anywhere: `SPORTS/params.json` records
+that the bare-number types are kept out of `ELIMINATION_ROUND_NAME_LIST` and
+`GROUP_ROUND_NAME_LIST` on purpose, because the template leaves an unjudged name silent rather
+than assuming it.
+
+**A name may legitimately carry two round words.** `Breaststroke 50m Swim-Off Semi Final` is the
+swim-off that decides a place in the semi-final, and its round type `223 Swim-Off` is right. A
+name is contradicted only when not one of the round words it carries matches the type.
+
 <!-- MANUAL PASTE ZONE: 46 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics

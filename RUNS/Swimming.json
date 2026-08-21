@@ -1197,6 +1197,50 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-21T06:35:36Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\f8d2a2c4-0fdf-4588-a6ce-d5046c6ebda2\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-072",
+                                        "runKey":  "Swimming-DQ-072",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_CONTRADICTS_DISCIPLINE_DISTANCE_OR_ROUND_TYPE",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  38,
+                                        "findings":  37,
+                                        "eligible":  43595,
+                                        "seconds":  2.1,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-21T06:36:24Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\f8d2a2c4-0fdf-4588-a6ce-d5046c6ebda2\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-072",
+                                        "runKey":  "Swimming-DQ-072",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_CONTRADICTS_DISCIPLINE_DISTANCE_OR_ROUND_TYPE",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  37,
+                                        "findings":  36,
+                                        "eligible":  43595,
+                                        "seconds":  2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g"

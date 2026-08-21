@@ -750,3 +750,186 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_id;
+
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Swimming-DQ-072
+    -- Name - EVENT_NAME_CONTRADICTS_DISCIPLINE_DISTANCE_OR_ROUND_TYPE
+    -- What it does: Finds events whose own name says a distance or a round that the setting attached to the event denies.
+    x.check_type,
+    x.event_id,
+    x.event_name,
+    x.name_says,
+    x.setting_says,
+    x.corroborating_time,
+    x.template_name,
+    x.startdate,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: An event is described twice - once in the text of its own name,
+-- once in a setting hung off it - and this reports where the two descriptions cannot both be
+-- true. Two settings are read, and they are one check because the repair is the same act: decide
+-- which of the two fields was written wrongly and correct that one.
+-- **The distance.** Swimming-DQ-063 already compares the stroke in the name against the stroke
+-- in the discipline and stops there, so an event named Individual Medley 400m carrying
+-- 353 Indv. Medley 200m agrees on every letter it tests and is passed. Swimming-DQ-069 reaches
+-- the same rows only when the mismatch also makes the time impossible, and it usually does not:
+-- 4:46.620 is an ordinary 400 metre medley and an unremarkable-looking 200. Between the two
+-- checks the distance was never asserted.
+-- What makes this one decidable rather than merely inconsistent is the third field. The winning
+-- time is stored independently of both the name and the discipline, so it can be read as a
+-- witness, and it travels with every finding as `corroborating_time` for that reason. Measured
+-- 2026-08-21, all 33 events agree with the name and contradict the discipline - 2:31.680 under
+-- a name saying Breaststroke 200m and a discipline saying 100m, 50.060 under Freestyle 100m and
+-- a discipline saying 1500 metres. The statement still reports the pair rather than naming the
+-- guilty half, because the direction is a measurement of today and not an invariant, and the
+-- day an event name is wrong is the day a check that assumed otherwise goes quiet.
+-- Seven of the 33 are one shape: Individual Medley 400m carrying 353 Indv. Medley 200m instead
+-- of 364, across five templates and twenty years. That is the two discipline vocabularies
+-- SPORTS/Swimming.md describes, failing in the gap between them.
+-- Relays are left out on both sides. A relay distance is a product of two numbers written
+-- several ways in each vocabulary, and reading it here would repeat Swimming-DQ-066 badly.
+-- **The round.** The same idea against `round_type`, and deliberately much narrower. Only an
+-- event whose round type is one the sport actually names is read: the five types named with a
+-- bare number - 38 and 89 both '1', 91 '3', 98 '10', 99 '11' - are excluded, because a bare
+-- number denies nothing. That exclusion is what separates 3 findings from 581, and the 578 it
+-- removes are not defects. Measured 2026-08-21, round type 329 Heats Summary carries 4095 events
+-- and not one of them says so in its name, while 578 events say Heats Summary in the name and
+-- carry the bare 38. Those are two live conventions, each self-consistent, spread over 22
+-- templates from 2006 to 2025 - the same shape Swimming-DQ-066 records as Monitor for the
+-- naming vocabularies, and driving it to zero would mean re-typing 578 events to a convention
+-- nobody has declared. What survives the exclusion, measured the same day, is 3 events named
+-- Heats Summary and typed 173 Final - two fields that both mean something, saying the opposite.
+-- A bare Final is not read as a round word, because Final B and Semi Finals both contain it and
+-- neither contradicts anything.
+FROM (
+    SELECT
+        'NAME_DISTANCE_CONTRADICTS_DISCIPLINE' AS check_type,
+        y.event_id,
+        y.event_name,
+        CONCAT(y.name_distance, ' m from the event name') AS name_says,
+        CONCAT(y.discipline_id, ' ', y.discipline_name) AS setting_says,
+        y.corroborating_time,
+        y.template_name,
+        y.startdate
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            e.startdate,
+            tt.name AS template_name,
+            d.id AS discipline_id,
+            d.name AS discipline_name,
+            CAST(REGEXP_SUBSTR(e.name, '[0-9]+') AS UNSIGNED) AS name_distance,
+            CAST(REGEXP_SUBSTR(d.name, '[0-9]+', 1, 1) AS UNSIGNED) AS discipline_distance,
+            (SELECT MIN(r.value) FROM event_participants ep2
+             JOIN result r ON r.event_participantsFK = ep2.id AND r.result_typeFK = 557 AND r.del = 'no'
+             WHERE ep2.eventFK = e.id AND ep2.del = 'no') AS corroborating_time
+        FROM event e
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+             AND tt.sportFK = 46
+        JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+        JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+             AND d.name REGEXP '[0-9]'
+             AND d.name NOT LIKE '%km%'
+             AND d.name NOT LIKE '% x %'
+        WHERE e.del = 'no'
+          AND e.name REGEXP '[0-9]'
+          AND e.name NOT LIKE '%x%'
+          AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+    ) y
+    WHERE y.name_distance > 0
+      AND y.discipline_distance > 0
+      AND y.name_distance <> y.discipline_distance
+
+    UNION ALL
+
+    SELECT
+        'NAME_ROUND_CONTRADICTS_ROUND_TYPE' AS check_type,
+        e.id AS event_id,
+        e.name AS event_name,
+        CASE
+            WHEN e.name LIKE '%Heats Summary%'  THEN 'Heats Summary from the event name'
+            WHEN e.name LIKE '%Finals Summary%' THEN 'Finals Summary from the event name'
+            WHEN e.name LIKE '%Semi Final%'     THEN 'Semi Finals from the event name'
+            WHEN e.name LIKE '%Swim-Off%'       THEN 'Swim-Off from the event name'
+            ELSE 'Heats from the event name'
+        END AS name_says,
+        CONCAT(e.round_typeFK, ' ', rt.name) AS setting_says,
+        NULL AS corroborating_time,
+        tt.name AS template_name,
+        e.startdate
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 46
+    JOIN round_type rt ON rt.id = e.round_typeFK
+    WHERE e.del = 'no'
+      AND e.round_typeFK NOT IN (38, 89, 91, 98, 99)
+      AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      AND (
+            e.name LIKE '%Heats Summary%'
+         OR e.name LIKE '%Finals Summary%'
+         OR e.name LIKE '%Semi Final%'
+         OR e.name LIKE '%Swim-Off%'
+         OR e.name LIKE '%Heats%'
+          )
+      -- A name is only contradicted when NOT ONE of the round words it carries matches the type.
+      -- An event named Breaststroke 50m Swim-Off Semi Final carries two of them and is correct:
+      -- it is the swim-off that decides a place in the semi-final, and its round type says
+      -- Swim-Off. Tested word by word this reads as a Semi Finals event typed Swim-Off and is
+      -- reported, which it was on 2026-08-21 before this was written the other way round.
+      AND NOT (
+            (e.name LIKE '%Heats Summary%'  AND rt.name = 'Heats Summary')
+         OR (e.name LIKE '%Finals Summary%' AND rt.name = 'Finals Summary')
+         OR (e.name LIKE '%Semi Final%'     AND rt.name = 'Semi Finals')
+         OR (e.name LIKE '%Swim-Off%'       AND rt.name = 'Swim-Off')
+         OR (e.name LIKE '%Heats%'          AND rt.name IN ('Heats', 'Fastest Heats',
+                                                            'Slowest Heats', 'Heats Summary'))
+          )
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 46
+LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+WHERE e.del = 'no'
+  AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND (
+        (e.name REGEXP '[0-9]' AND e.name NOT LIKE '%x%'
+         AND EXISTS (
+             SELECT 1 FROM object_discipline od2
+             JOIN discipline d2 ON d2.id = od2.disciplineFK AND d2.del = 'no'
+                  AND d2.name REGEXP '[0-9]' AND d2.name NOT LIKE '%km%' AND d2.name NOT LIKE '% x %'
+             WHERE od2.object_typeFK = 5 AND od2.objectFK = e.id AND od2.del = 'no'))
+     OR (e.round_typeFK NOT IN (38, 89, 91, 98, 99)
+         AND (e.name LIKE '%Heats%' OR e.name LIKE '%Summary%'
+              OR e.name LIKE '%Semi Final%' OR e.name LIKE '%Swim-Off%'))
+      )
+
+ORDER BY sort_order, check_type, event_id;
