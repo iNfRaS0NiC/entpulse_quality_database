@@ -485,12 +485,28 @@ The consequence for a check is that `101` may not simply be read as a time or si
 An event's leader is expected to hold the same value in both fields, and everyone behind is
 expected to hold a signed gap in one and a time in the other.
 
-Four shapes depart from that, all small and each a different repair. A time sits in `101` with
-no `557` beside it at all, which is where the time exists in one field only; 96 participations
-carry an unsigned value below first place; eight winners carry a signed gap as though they were
-behind somebody; and two participations below first place hold a value identical to their
-`557`. Each was drilled into on 2026-08-20 and each is spread across templates and years rather
-than confined to one import.
+**Five shapes depart from that, and they are not one size.** Each is a different repair, and
+each is spread across templates and years rather than confined to one import. The counts below
+are a measurement of 2026-08-21 over the client's scope, classified so that no participation
+falls into two of them, and they move as colleagues correct the data - the shapes are the claim,
+the numbers are the day's reading of it:
+
+| Shape | Participations | Events | Templates | Seasons |
+|---|---|---|---|---|
+| A time in `101` with no `557` beside it at all - the time exists in one field only | 28136 | 2628 | 22 | 2006-2024 |
+| An unsigned value below first place | 25 | 11 | 7 | 2004-2014 |
+| A winner carrying a signed gap, as though behind somebody | 8 | 8 | 6 | 2013-2026 |
+| A participation below first place holding a value identical to its `557` | 2 | 1 | 1 | 2006 |
+| A negative gap below first place | 71 | 31 | 17 | 2006-2023 |
+
+The first of them is two orders of magnitude larger than the other four together, and this
+paragraph called all of them small until 2026-08-21. It also gave 96 for the second, which was
+25 when it was read again. Both are the reason the reading date is now written beside the
+figures: a count in a sport file describes the day it was taken and nothing else, and
+`SPORTS/params.json` `_expected` is where a count that should hold still is recorded.
+
+The fifth shape was not named here at all before 2026-08-21. `Swimming-DQ-012` reports it
+together with the second, since neither is a plus-prefixed gap.
 
 **A stage's country is stored directly and is almost always `International`.** Every stage
 carries `tournament_stage.countryFK`; the host-country object relation and the city link are
