@@ -1430,3 +1430,113 @@ WHERE ep.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, without_organization DESC, tournament_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-132
+    -- Name - EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR
+    -- What it does: Finds organizations whose country is not the country of the competitors entered under them.
+    CASE
+        WHEN x.organization_name = x.competitor_country
+            THEN 'ORGANIZATION_NAMED_FOR_THE_COMPETITOR_COUNTRY'
+        ELSE 'ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR'
+    END AS check_type,
+    x.organization_id,
+    x.organization_name,
+    x.organization_country,
+    x.competitor_country,
+    x.competitors,
+    x.participations,
+    x.sample_competitors,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A competitor entered under an organization is normally entered
+-- under their own country's, and this reports where the two countries disagree.
+-- The organization is the `organizationFK` property `GLOBAL-DQ-130` asserts the presence of;
+-- this asks whether the one that is there is the right one. The two are deliberately separate:
+-- a sport can fill the field everywhere and still fill it wrongly, and a sport that fills none
+-- of it has nothing for this to read - its eligible population is 0 and that is a sentinel, not
+-- clean data.
+-- **Its signal is Monitor and it expects a non-zero count forever.** Some of what it returns is
+-- correct by construction and will never be corrected: measured 2026-08-21, a Russian gymnast is
+-- entered under `Individual Neutral Athletes`, whose country is `International`, and that is
+-- exactly how a neutral athlete is supposed to be recorded. A refugee team is the same shape.
+-- The check is worth having anyway because agreement is overwhelmingly the rule - 303791
+-- participations of 303892 agree, which is 99.97 per cent - so the exceptions are few enough to
+-- be read one at a time rather than counted.
+-- **The audited object is the organization together with the competitor country**, not the
+-- participation and not the competitor. One disagreement is one decision however many people it
+-- caught, and the difference is large: measured 2026-08-21 the same three decisions cover 101
+-- participations and 17 competitors. `competitors`, `participations` and `sample_competitors`
+-- carry the detail as named secondary columns.
+-- The two branches separate two quite different repairs, and the split was worth making because
+-- one of them is not about the competitor at all. Where the organization's own name is the
+-- competitor's country, the two are the same place held under two `country` rows: 15 of the 17
+-- competitors measured are `Chinese Taipei` gymnasts entered under an organization named
+-- `Chinese Taipei` whose country is `Taiwan`. That is one reference-layer correction, and
+-- reading it as fifteen misfiled athletes would send somebody to the wrong table. Where the
+-- names differ it is a competitor question - a federation change, a neutral entry, or an error.
+-- An organization reference that does not resolve to a live participant drops out of both
+-- branches rather than being reported here, because an unresolvable reference is a different
+-- defect and `GLOBAL-DQ-104` is where the sport's participant references are judged.
+FROM (
+    SELECT
+        org.id AS organization_id,
+        org.name AS organization_name,
+        oc.name AS organization_country,
+        pc.name AS competitor_country,
+        COUNT(DISTINCT ep.participantFK) AS competitors,
+        COUNT(*) AS participations,
+        SUBSTRING(GROUP_CONCAT(DISTINCT pt.name ORDER BY pt.name SEPARATOR ', '), 1, 200) AS sample_competitors
+    FROM property og
+    JOIN event_participants ep ON ep.id = og.objectFK AND ep.del = 'no'
+    JOIN participant pt ON pt.id = ep.participantFK AND pt.del = 'no'
+    JOIN participant org ON org.id = CAST(og.value AS UNSIGNED) AND org.del = 'no'
+    JOIN country oc ON oc.id = org.countryFK
+    JOIN country pc ON pc.id = pt.countryFK
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE og.object = 'event_participants'
+      AND og.name = 'organizationFK'
+      AND og.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND org.countryFK <> pt.countryFK
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY org.id, org.name, oc.name, pc.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT CONCAT(org.id, '#', pt.countryFK)) AS eligible_count,
+    1 AS sort_order
+FROM property og
+JOIN event_participants ep ON ep.id = og.objectFK AND ep.del = 'no'
+JOIN participant pt ON pt.id = ep.participantFK AND pt.del = 'no'
+JOIN participant org ON org.id = CAST(og.value AS UNSIGNED) AND org.del = 'no'
+JOIN country oc ON oc.id = org.countryFK
+JOIN country pc ON pc.id = pt.countryFK
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE og.object = 'event_participants'
+  AND og.name = 'organizationFK'
+  AND og.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, participations DESC, organization_id;
