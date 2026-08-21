@@ -2747,6 +2747,16 @@ SELECT
 -- `33 World Championship 1` male with `10083` female. Using mixed to mean "covers both genders
 -- separately" overloads the word that elsewhere means "contested by both together", and reading
 -- one as the other is the mistake this branch exists to stop.
+-- **Golf settles it against itself, which is why the repair is not in doubt here.** The sport
+-- already models the same shape both ways, inside one list of medal templates, measured
+-- 2026-08-21: `9600 Summer Olympics` male and `9601 Summer Olympics` female are two templates,
+-- `10537` and `10538 Pacific Games` are two, `11507 British Boys Amateur Championship` and
+-- `11524 British Girls Amateur Championship` are two, `11526 European Boys' Team Championship`
+-- and `11525 European Girls' Team Championship` are two - and the four reported here are the
+-- same kind of Games entered as one. So the correction is to split them, and it is the sport's
+-- own established practice rather than a convention imposed from outside. `9779 European
+-- Championships 1` shows the other side of the line intact: mixed, holding a genuinely mixed
+-- stage, and correctly left alone.
 -- **The audited object is the template**, and that is the reason the check reads the way it
 -- does. A template's gender is one setting, so one wrong setting is one repair however many
 -- stages sit under it: measured 2026-08-21 the six templates reported cover 149 stages, and

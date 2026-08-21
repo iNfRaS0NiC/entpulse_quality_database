@@ -1127,6 +1127,39 @@ The two that run past their year are Tokyo, whose Games kept the name `2020` and
 filtering them out, because a filter would also hide the next tournament that genuinely runs
 into the following year.
 
+**The sport carries two conventions for a competition contested by both genders, and one of
+them is wrong.** Measured 2026-08-21 over the client's medal templates. The established practice
+is a pair of templates, one per gender: `9600 Summer Olympics` male beside `9601` female,
+`10537 Pacific Games` male beside `10538` female, `11507 British Boys Amateur Championship`
+beside `11524 British Girls Amateur Championship`, `11526 European Boys' Team Championship`
+beside `11525 European Girls' Team Championship`. That is also how every other sport in the
+package models it - Ice Hockey pairs `31 Winter Olympics` female with `32` male.
+
+Four templates do it the other way, as one template declared `mixed` holding a male stage set
+and a female one:
+
+| Template | Tournaments | Stages | Stage genders |
+|---|---:|---:|---|
+| `10328 Asian Games` | 7 | 10 | 5 male, 5 female |
+| `10327 Pan American Games` | 3 | 6 | 3 male, 3 female |
+| `11532 Southeast Asian Games` | 3 | 6 | 3 male, 3 female |
+| `11498 Summer Youth Olympics` | 2 | 4 | 2 male, 2 female |
+
+Not one of the four holds a single mixed stage, and the stage names say plainly what they are -
+`Men's Individual` and `Women's Individual`, sitting side by side in the same tournament.
+**`mixed` in this database means competitors of both genders together**, which is what
+`9779 European Championships 1` uses it for, correctly, on a genuinely mixed stage. Using it to
+mean "covers both genders separately" is a second reading of the same word, and the two cannot
+both be true of one column.
+
+`Golf-DQ-112` reports the four, on `GLOBAL-DQ-133`. **The correction is to split each into a
+male and a female template**, confirmed 2026-08-21, and it is the sport's own practice rather
+than a convention imposed from outside - the Olympics and the Pacific Games are already stored
+that way. That makes the repair larger than a one-word edit, since it moves tournaments and
+stages onto new templates, so it is a finding for the provider rather than something derivable
+here. A fifth template of the same shape, `9831 GolfSixes`, sits outside the client's boundary
+and is therefore not reported; it is recorded so nobody re-measures it.
+
 <!-- MANUAL PASTE ZONE: 3 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
