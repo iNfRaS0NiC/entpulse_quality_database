@@ -142,7 +142,7 @@ $SheetsOverviewColumns = @(
     'Sport', 'CheckID', 'Object', 'Check Name', 'Priority', 'Category', 'What it does',
     'Rows', 'Status', 'Check By', 'Comment', 'Time Spent (minutes)', 'Signal', 'Signal reason',
     'Expected', 'Findings', 'All findings', 'Eligible', 'Prev findings', 'Prev eligible',
-    'Change', 'Verdict', 'Last run', 'Trends')
+    'Change', 'Verdict', 'Last run', 'Trends', 'Data types')
 
 # Row 1 of a check tab. Without it D2 and E2 hold "1 Structure" and "NO_RELATED_RECORDS" over
 # nothing, and a reader has to go back to Overview to learn what they are.
@@ -358,6 +358,13 @@ $SheetsTimeSpentColumnWidth = 150
 # that measures at the sheet's own size. The column exists to be read across, so sizing it to
 # anything less makes it a cell somebody has to click into to use.
 $SheetsTrendsColumnWidth = 900
+
+# Wide enough for a few types with their names, not for the longest list on the board.
+# Ice-Hockey-DQ-104 reads seven of them and renders at about 110 characters, which nothing
+# short of the Trends width would hold; sizing for that would push every other column off a
+# screen for the sake of one row. This fits three or four - '4 Final Result, 6 Running score'
+# - which is what most checks carry, and the rest is one click away like any other cell.
+$SheetsDataTypesColumnWidth = 260
 
 # A result column is sized from its own header, and the header row wraps.
 #
@@ -880,6 +887,10 @@ function New-SheetsOverviewRow {
         [string]$Entry.Verdict
         [string]$Entry.PrevRunId
         [string]$Entry.Trend
+        # Last, and outside the Signal-to-Trends span the planner writes as one block, because
+        # it is the only column here that describes the statement rather than what the run
+        # returned. See TOOLS/README.md "Narrowing a run to one kind of stored value".
+        [string]$Entry.DataTypes
     )
 }
 
@@ -1262,12 +1273,14 @@ function New-SheetsMergePlan {
         FromRow = 0; ToRow = $null; FromCol = 0; ToCol = $width; Align = 'CENTER'
     }
 
-    # The two columns the default width does not fit: one a heading nobody can read at eleven
-    # characters, the other a series meant to be read across. Set on every run rather than at
-    # creation, because a board that already exists is the one that needs them.
+    # The three columns the default width does not fit: a heading nobody can read at eleven
+    # characters, a series meant to be read across, and a list of types meant to be scanned.
+    # Set on every run rather than at creation, because a board that already exists is the one
+    # that needs them.
     foreach ($sized in @(
             @{ Name = 'Time Spent (minutes)'; Width = $SheetsTimeSpentColumnWidth }
-            @{ Name = 'Trends'; Width = $SheetsTrendsColumnWidth })) {
+            @{ Name = 'Trends'; Width = $SheetsTrendsColumnWidth }
+            @{ Name = 'Data types'; Width = $SheetsDataTypesColumnWidth })) {
         $at = [array]::IndexOf($SheetsOverviewColumns, [string]$sized.Name)
         if ($at -lt 0) { continue }
         $plan += [pscustomobject]@{
@@ -1696,12 +1709,17 @@ function New-SheetsMergePlan {
             }
         }
 
-        # Signal through Trends in one span: twelve columns that all belong to the run, none of
-        # them the reviewer's, and contiguous so it is one write rather than twelve. Built by
-        # walking the column list rather than by position, so All findings arriving in the
-        # middle of it was cleared by the default arm without this needing to know.
+        # Signal to the end of the board in one span: every column after the reviewer's own
+        # belongs to the run, and they are contiguous, so it is one write rather than twelve.
+        # Built by walking the column list rather than by position, so All findings arriving in
+        # the middle of it was cleared by the default arm without this needing to know.
+        #
+        # The end is the last column and not a column named here. Naming Trends was the one
+        # positional assumption left in this block, and Data types arriving after it in August
+        # 2026 made the span stop one short - the retirement wrote every marker correctly and
+        # left a withdrawn check showing the data types of the run that dropped it.
         $from = [array]::IndexOf($SheetsOverviewColumns, 'Signal') + 1
-        $to = [array]::IndexOf($SheetsOverviewColumns, 'Trends') + 1
+        $to = $SheetsOverviewColumns.Count
         $values = @()
         foreach ($column in $SheetsOverviewColumns[($from - 1)..($to - 1)]) {
             $values += switch ($column) {

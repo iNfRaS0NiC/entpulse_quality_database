@@ -1373,8 +1373,12 @@ Test-That 'flat run summary writes Signal and SignalReason columns' {
     # and these two are what tell one execution of it from the next. Findings and Eligible sit
     # beside Rows because they are what make two runs comparable: Rows counts the COVERAGE row
     # in with the findings, and says nothing about the population they came out of.
+    # DataTypes follows Object because the three answer the same kind of question about the
+    # check rather than about what it returned - which family, which layer, which stored
+    # values - and the first two are read off the registry while the third is read off the
+    # statement itself.
     $expected = '"CheckId","RunKey","Parameters","Name","What","Rows","Findings","Eligible",' +
-        '"Seconds","Status","Priority","Category","Object","Signal","SignalReason",' +
+        '"Seconds","Status","Priority","Category","Object","DataTypes","Signal","SignalReason",' +
         '"Expected","ExpectedResidual","ExpectedReason",' +
         '"Verdict","Change","PrevFindings","PrevEligible","PrevRunId","Trend"'
     Assert-Equal $expected $header 'summary column order'
@@ -2481,7 +2485,7 @@ Test-That 'the Overview header is rewritten every run, so a new column gets a na
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
     $header = @($fresh.Operations | Where-Object { $_.Range -eq ('A1:{0}1' -f (OverviewLastColumn)) })
     Assert-Equal 1 $header.Count 'an empty document gets its header'
-    Assert-Equal 'Trends' $header[0].Values[0][($SheetsOverviewColumns.Count - 1)] 'out to the last column the board writes'
+    Assert-Equal 'Data types' $header[0].Values[0][($SheetsOverviewColumns.Count - 1)] 'out to the last column the board writes'
 
     $existing = [pscustomobject]@{
         HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}; TabOf = @{}

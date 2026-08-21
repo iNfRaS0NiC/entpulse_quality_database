@@ -153,6 +153,7 @@ the account in use. The summary:
 | `-Format table\|csv\|json\|xlsx` | Output shape |
 | `-DryRun` | Print the SQL, or the batch selection, and send nothing |
 | `-TemplateIds 44,50,65` | Narrow the run to these tournament templates |
+| `-DataType rank` / `-DataType 100` | Narrow the run to the checks that read a stored value type |
 | `-WithoutRegistryBranch` | Drop the optional sport-registry branch where a statement marks one |
 | `-Sql "SELECT ..."` / `-File .\q.sql` | Ad-hoc statement |
 | `-TestRun` | A run that leaves no trace: results written under `TEST …`, nothing recorded |
@@ -262,6 +263,56 @@ what it is: sport-wide.
 
 Narrowing happens after `{{...}}` expansion, so a filter may sit beside a placeholder in the
 same `WHERE` clause. Applying the flag twice is a no-op: the second pass finds no marker left.
+
+### Narrowing a run to one kind of stored value
+
+Defects arrive in families. A provider correcting every bad `Rank` in the database corrects it
+across the event layer and the ranking layer at once, and what has to be re-run afterwards is
+every check that reads a `Rank` - which is not a category, not a sport and not a template, and
+until this flag existed could only be found by opening each statement.
+
+```powershell
+.\TOOLS\Run-Query.ps1 -Sport Golf -RunAll -DataType rank
+.\TOOLS\Run-Query.ps1 -Sport Golf -RunAll -DataType 100
+.\TOOLS\Run-Query.ps1 -Sport Golf -RunAll -DataType rank,comment
+```
+
+**A name matches every layer that stores it and a number matches one type exactly.** Measured
+on Golf on 2026-08-21, `-DataType rank` selects 22 checks - both `100 Rank` on an event result
+and `1270 Rank` in a Comp.Rank - while `-DataType 100` selects 11. The name is usually what a
+repair looks like; the number is for when only one layer was touched.
+
+The vocabulary is the database's own, from `result_type`, `statistic_data_type`,
+`scope_data_type` and `scope_type`. It is not invented here and it is not a list to maintain:
+run any check and read its **Data types** column for the words that sport actually uses.
+
+**What a check reads is derived from its own rendered SQL, not authored against its CheckID.**
+A GLOBAL template names its types through declared parameters and a sport statement carries the
+numbers directly, but after expansion both are plain numbers in the same columns, so one parser
+answers for all of them. Nothing has to be kept in step by hand and nothing can drift: a
+statement that starts reading a new field says so at the next run.
+
+**It reports reading, not asserting.** A check joining `104 Comment` only to exclude the rows
+that carry one reads the comment and asserts something about the rank, and it is listed under
+both - correctly, because correcting the comments changes which rows it returns. That is the
+question a re-run asks. Where the difference matters to a reader, a statement may name the
+narrower answer itself with a line in its prose block:
+
+```sql
+-- Audits: 100
+```
+
+No statement carries one today. The mechanism exists so the first check whose derived list
+misleads somebody can be corrected beside the assertion it describes, rather than in a table
+somewhere else.
+
+`round_typeFK` and `incident_typeFK` are outside the vocabulary on purpose. A round is
+structure rather than a stored value repaired field by field, and a sport's `ROUND_TYPE_LIST`
+would put twenty-six ids into a column meant to be read at a glance.
+
+A check reading none of the named types is reported as skipped and counted, not listed: under
+`-DataType` that is normally most of a sport's catalogue, and a hundred lines saying so would
+bury the few that ran.
 
 ### Dropping the registry branch
 
@@ -815,6 +866,16 @@ Columns N to U hold the comparison with the run before this one — `Expected`, 
 run before this one returned" for what each verdict means and why the block sits after `M`
 rather than beside `Rows`. `Trends` is on the live document only; the workbook is a snapshot
 of one run and a series belongs where the series is maintained.
+
+`Data types` is last, and holds the stored values the statement read — `100 Rank, 104 Comment`
+— so a reviewer can see what a check touches without opening it, and filter the board to one
+defect family when the provider corrects one. It is derived from the rendered SQL rather than
+authored anywhere, so it cannot drift from the statement; `-DataType` selects a run by the same
+values, and "Narrowing a run to one kind of stored value" owns the rule. Its position is
+mechanical rather than a judgement about importance: `H`, `I`, `K` and `L:M` are pinned by
+letter in the row builder, the validation range and `Test-Tools.ps1` at once, so a column
+inserted before them would break the row-count link, the `Status` dropdown and the `Comment`
+mirror together. Last is the only position that costs nothing.
 
 `Signal` and `Signal reason` are columns L and M, and the workbook ships with both hidden.
 They are the runner's own classification, settled before the run and unchanged by reading

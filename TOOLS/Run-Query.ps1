@@ -134,6 +134,15 @@ param(
     # wide, because a silently unnarrowed result would be read as the narrow one.
     [int[]]$TemplateIds,
 
+    # Narrows the run to the checks that read a given stored value: -DataType rank, or
+    # -DataType 100 for one exact type id. A name matches every layer storing it, so `rank`
+    # takes both 100 Rank on an event result and 1270 Rank in a Comp.Rank, which is what a
+    # repair actually looks like. Several may be named at once. What each check reads is
+    # derived from its own rendered SQL, so the selection cannot fall out of step with the
+    # statements; a check reading none of the named types is reported as skipped rather than
+    # silently dropped, so a run that matched nothing says so.
+    [string[]]$DataType,
+
     # Drops the sport-registry branch from a statement that marks one as optional, so the
     # audited people are only those the three participation paths reach. The registry has no
     # template relation and so survives -TemplateIds untouched; without this a narrowed run of
@@ -1946,6 +1955,173 @@ $RideAlongDiscovery = @{
     'GLOBAL-DISCOVERY-033' = 'DUPLICATE_RECORD'
 }
 
+# --------------------------------------------------------------------------------------
+# Which stored values a check reads
+#
+# The vocabulary is the one the people repairing the data work in: 100 Rank, 101 Duration,
+# 104 Comment, 1277 Medal. Colleagues correct one defect family at a time and then have to
+# re-run everything the corrected field reaches, and until this existed the only way to find
+# those checks was to open every statement and read it.
+#
+# **Derived from the rendered SQL rather than authored against the CheckID**, and that is what
+# keeps it honest. A GLOBAL template names its types through declared parameters and a sport
+# statement carries the numbers directly - the package forbids parameters there - but after
+# expansion both are plain numbers in the same columns, so one parser answers for all 261
+# statements and nothing can drift out of step with the statement it describes. A hand-kept
+# column over 1147 registry rows would say whatever it said when it was last edited.
+#
+# `round_typeFK` and `incident_typeFK` are deliberately outside the vocabulary. A round is
+# structure rather than a stored value nobody repairs field by field, and `ROUND_TYPE_LIST`
+# would put twenty-six ids into a column meant to be read at a glance.
+# --------------------------------------------------------------------------------------
+
+$DataTypeColumns = [ordered]@{
+    'result_typeFK'         = @{ Layer = 'result'; Table = 'result_type' }
+    'statistic_data_typeFK' = @{ Layer = 'data'; Table = 'statistic_data_type' }
+    'scope_data_typeFK'     = @{ Layer = 'scope_data'; Table = 'scope_data_type' }
+    'scope_typeFK'          = @{ Layer = 'scope'; Table = 'scope_type' }
+}
+
+function Remove-SqlComment {
+    # Comment text is prose about the check and names types by number as it explains them -
+    # "104 Comment holds the vocabulary" - so parsing it would report what a statement talks
+    # about rather than what it reads. The commented template and date filters live there too,
+    # and an inactive filter is not something the check touches.
+    param([string]$Sql)
+
+    return [regex]::Replace($Sql, '(?m)--.*$', '')
+}
+
+function Get-StatementDataType {
+    # The (layer, id) pairs one rendered statement reads, in the order the columns are declared
+    # above and by ascending id inside each.
+    #
+    # `NOT IN` counts as reading. A type excluded from a scope still decides which rows come
+    # back, so correcting it changes the finding - which is exactly what somebody re-running
+    # after a repair needs to know. The narrower question, what the check asserts rather than
+    # what it reads, is the `-- Audits:` line below.
+    param([string]$Sql)
+
+    $bare = Remove-SqlComment -Sql $Sql
+    $found = [ordered]@{}
+
+    foreach ($column in $DataTypeColumns.Keys) {
+        $layer = $DataTypeColumns[$column].Layer
+        # A digit has to follow, so `r.result_typeFK = r2.result_typeFK` in a self-join is not
+        # read as a type reference - it names the column twice and no value at all.
+        $pattern = [regex]::Escape($column) + '\s*(?:=\s*|(?:NOT\s+)?IN\s*\(\s*)([0-9][0-9,\s]*)'
+        foreach ($match in [regex]::Matches($bare, $pattern, 'IgnoreCase')) {
+            foreach ($id in [regex]::Matches($match.Groups[1].Value, '\d+')) {
+                $key = '{0}|{1}' -f $layer, $id.Value
+                if (-not $found.Contains($key)) {
+                    $found[$key] = [pscustomobject]@{ Layer = $layer; Id = [int]$id.Value }
+                }
+            }
+        }
+    }
+
+    return , @($found.Values)
+}
+
+function Get-StatementAuditedTypes {
+    # The optional hand-written corrective, for the statement whose assertion is narrower than
+    # its scope: a check reading 104 Comment only to exclude the rows that have one, while what
+    # it asserts is about 100 Rank, reads both and audits one.
+    #
+    # It is a line in the prose block rather than a fourth identity comment, because the
+    # identity header is exactly three lines and TOOLS/Test-Package.ps1 fails a fourth:
+    #
+    #     -- Audits: 100, 101
+    #
+    # Nothing carries one today. The mechanism exists so that the first statement whose derived
+    # list misleads a reader can be corrected in the statement itself, beside the assertion it
+    # describes, rather than in a table somewhere else.
+    param([string]$Sql)
+
+    $match = [regex]::Match($Sql, '(?m)^\s*--\s*Audits:\s*(.+)$')
+    if (-not $match.Success) { return @() }
+
+    return @([regex]::Matches($match.Groups[1].Value, '\d+') | ForEach-Object { [int]$_.Value })
+}
+
+function Resolve-DataTypeName {
+    # One query for every id the whole run needs. The names live in four small reference tables
+    # and asking per statement would be a hundred round trips to fill one column.
+    param($Refs)
+
+    $names = @{}
+    $refs = @($Refs)
+    if ($refs.Count -eq 0) { return $names }
+
+    $branches = @()
+    foreach ($column in $DataTypeColumns.Keys) {
+        $layer = $DataTypeColumns[$column].Layer
+        $ids = @($refs | Where-Object { $_.Layer -eq $layer } | ForEach-Object { $_.Id } | Sort-Object -Unique)
+        if ($ids.Count -eq 0) { continue }
+        $branches += "SELECT '$layer' AS layer, id, name FROM $($DataTypeColumns[$column].Table) WHERE id IN ($($ids -join ', '))"
+    }
+    if ($branches.Count -eq 0) { return $names }
+
+    Confirm-RunnerSession
+
+    try {
+        $rows = Get-ResultRows -Content (Invoke-SqlWithRetry -Statement ($branches -join "`nUNION ALL`n")).Content
+    }
+    catch {
+        # A column is not worth failing a run for. An unnamed id still identifies the type and
+        # still selects the check, so the run carries the numbers and says so once.
+        Write-Host "  could not name the data types ($($_.Exception.Message))" -ForegroundColor DarkGray
+        return $names
+    }
+
+    foreach ($row in @($rows)) {
+        $names[('{0}|{1}' -f [string]$row.layer, [string]$row.id)] = [string]$row.name
+    }
+    return $names
+}
+
+function Format-DataTypeList {
+    # What the board shows: the id with the name it carries, because neither alone is enough.
+    # A reader who knows the sport reads 101 and a reader who does not reads Duration, and the
+    # two Rank fields - 100 in the event layer and 1270 in the ranking - are told apart only by
+    # the number.
+    param($Refs, [hashtable]$Names)
+
+    $refs = @($Refs)
+    if ($refs.Count -eq 0) { return '' }
+
+    $parts = @()
+    foreach ($ref in $refs) {
+        $key = '{0}|{1}' -f $ref.Layer, $ref.Id
+        $name = $(if ($Names -and $Names.ContainsKey($key)) { $Names[$key] } else { '' })
+        $parts += $(if ($name) { '{0} {1}' -f $ref.Id, $name } else { [string]$ref.Id })
+    }
+    return ($parts -join ', ')
+}
+
+function Test-DataTypeMatch {
+    # Whether a check reads what the user named. A number matches that id exactly; anything
+    # else matches the type's name, so `-DataType rank` selects both 100 Rank and 1270 Rank
+    # and `-DataType 100` selects only the event one. Matching by name is what the repair
+    # actually looks like - a defect family is corrected across every layer that stores it.
+    param($Refs, [hashtable]$Names, [string[]]$Wanted)
+
+    foreach ($want in @($Wanted)) {
+        $token = $want.Trim()
+        if (-not $token) { continue }
+
+        foreach ($ref in @($Refs)) {
+            if ($token -match '^\d+$') {
+                if ([int]$token -eq $ref.Id) { return $true }
+                continue
+            }
+            $key = '{0}|{1}' -f $ref.Layer, $ref.Id
+            if ($Names -and $Names.ContainsKey($key) -and $Names[$key] -like "*$token*") { return $true }
+        }
+    }
+    return $false
+}
+
 function Get-SportFileParameters {
     # Values a sport has already had confirmed and recorded. These outrank discovery: the
     # file holds documented evidence, discovery holds a heuristic (the busiest type/owner
@@ -3152,6 +3328,14 @@ function New-RunSummaryRow {
         $object = [string]$Job.Object
     }
 
+    # The stored values the statement reads, unlike the two above derived from the SQL itself
+    # rather than authored against the CheckID - so an ad-hoc statement and a direct template
+    # run carry it too, where category and object are blank because nobody filed them.
+    $dataTypes = ''
+    if ($Job.PSObject.Properties.Name -contains 'DataTypes') {
+        $dataTypes = [string]$Job.DataTypes
+    }
+
     # A pattern summary is the one statement outside the registry whose family is knowable
     # without anybody authoring it: PATTERNS.sql holds nothing else. Taken from the file rather
     # than from a list of CheckIDs, for the reason -WithPatterns selects them that way - a
@@ -3238,6 +3422,7 @@ function New-RunSummaryRow {
         Priority    = Get-CheckPriority -Category $category
         Category    = $category
         Object      = $object
+        DataTypes   = $dataTypes
         Signal      = $signal
         SignalReason = $reason
         Expected     = $expected
@@ -3617,6 +3802,10 @@ function New-LedgerCheckEntry {
         parameters = [string]$Entry.Parameters
         name       = [string]$Entry.Name
         category   = [string]$Entry.Category
+        # Recorded per run rather than looked up later, because it is a property of the
+        # statement as it was sent: a check whose scope is widened next month read something
+        # different today, and the ledger is the only place that can still say what.
+        dataTypes  = [string]$Entry.DataTypes
         signal     = [string]$Entry.Signal
         expected   = [string]$Entry.Expected
         verdict    = [string]$Entry.Verdict
@@ -4045,6 +4234,12 @@ function Save-RunWorkbook {
             'Change'        = $entry.Change
             'Verdict'       = [string]$entry.Verdict
             'Last run'      = [string]$entry.PrevRunId
+            # Appended, not placed where it would be read first, and the reason is mechanical:
+            # H, I, K and L:M are pinned by letter in this builder, in the validation sqref
+            # below and in Test-Tools.ps1, so a column inserted anywhere before them breaks the
+            # row-count link, the Status dropdown and the Comment mirror at once. Last is the
+            # only position that costs nothing, and a reviewer filters on it wherever it sits.
+            'Data types'    = [string]$entry.DataTypes
         }
         # Rows carries the jump to the tab, so its column moves with it - H, because a third
         # column sits at C before Check Name.
@@ -4465,7 +4660,12 @@ else {
     throw 'Nothing to run. Pass a CheckID, -File, -Sql or -RunAll with -Sport. Use -ListChecks to list registered CheckIDs.'
 }
 
-if ($MaxChecks -gt 0 -and $jobs.Count -gt $MaxChecks) {
+# Deferred under -DataType, and applied after that narrowing instead. The cap trims the matched
+# set, and under -DataType the matched set is not what runs: capping first takes an arbitrary
+# ten of a hundred and then filters those, which on Ice Hockey left nothing at all and read as
+# "no statement reads rank" when twenty-two of them do. -TemplateIds does not have this problem
+# because it narrows the scope of each statement rather than choosing between statements.
+if ($MaxChecks -gt 0 -and $DataType.Count -eq 0 -and $jobs.Count -gt $MaxChecks) {
     Write-Host "Matched $($jobs.Count) checks, running the first $MaxChecks." -ForegroundColor DarkGray
     $jobs = $jobs[0..($MaxChecks - 1)]
 }
@@ -4684,6 +4884,55 @@ foreach ($job in $jobs) {
     $runnable += $job
 }
 
+# Read after expansion and after narrowing, so what is recorded is what was actually sent. A
+# template filter changes the scope but not the stored values a statement reads, and a run
+# reporting the types of an unexpanded statement would be reporting the placeholders.
+foreach ($job in $runnable) {
+    $job | Add-Member -NotePropertyName 'DataTypeRefs' -NotePropertyValue (Get-StatementDataType -Sql $job.Sql) -Force
+    $job | Add-Member -NotePropertyName 'AuditedTypeIds' -NotePropertyValue (Get-StatementAuditedTypes -Sql $job.Sql) -Force
+}
+
+# One naming pass for the whole batch. Skipped under -DryRun, which sends nothing and must go
+# on sending nothing - unless -DataType named a type by name, where the names are what the
+# selection is made against and the run cannot answer without them.
+$dataTypeNames = @{}
+if ($runnable.Count -gt 0 -and (-not $DryRun -or $DataType.Count -gt 0)) {
+    $allRefs = @($runnable | ForEach-Object { @($_.DataTypeRefs) })
+    $dataTypeNames = Resolve-DataTypeName -Refs $allRefs
+}
+
+foreach ($job in $runnable) {
+    $job | Add-Member -NotePropertyName 'DataTypes' `
+        -NotePropertyValue (Format-DataTypeList -Refs $job.DataTypeRefs -Names $dataTypeNames) -Force
+}
+
+if ($DataType.Count -gt 0) {
+    $selected = @()
+    foreach ($job in $runnable) {
+        if (Test-DataTypeMatch -Refs $job.DataTypeRefs -Names $dataTypeNames -Wanted $DataType) {
+            $selected += $job
+            continue
+        }
+        # Reported rather than dropped, for the reason every other narrowing here is reported:
+        # a batch that quietly shrank is read as a batch that ran.
+        $skipped += [pscustomobject]@{
+            Job     = $job
+            Missing = ''
+            Kind    = 'NOT_THIS_DATA_TYPE'
+            Reason  = $(if ($job.DataTypes) { "reads $($job.DataTypes)" } else { 'reads no stored value type' })
+        }
+    }
+    $runnable = $selected
+    Write-Host ("Narrowed to -DataType {0}: {1} check(s) read it." -f ($DataType -join ', '), $runnable.Count) -ForegroundColor DarkGray
+
+    # The cap the matched set did not get, now that the set it should cap is known.
+    if ($MaxChecks -gt 0 -and $runnable.Count -gt $MaxChecks) {
+        Write-Host "  running the first $MaxChecks of them." -ForegroundColor DarkGray
+        $runnable = $runnable[0..($MaxChecks - 1)]
+    }
+    Write-Host ''
+}
+
 if ($skipped.Count -gt 0) {
     $impossible = @($skipped | Where-Object { $_.Kind -eq 'NOT_APPLICABLE' })
     $unnarrowable = @($skipped | Where-Object { $_.Kind -eq 'NO_TEMPLATE_FILTER' })
@@ -4703,6 +4952,12 @@ if ($skipped.Count -gt 0) {
         Write-Host "  needs a value selected from a summary result ($($unselected.Count)):" -ForegroundColor DarkGray
         $unselected | ForEach-Object { "    {0}  needs {1}" -f $_.Job.CheckId, $_.Missing } | Write-Host -ForegroundColor DarkGray
     }
+    # Counted, not listed. Under -DataType this is normally most of the sport's catalogue, and
+    # a hundred lines saying a check reads something else would bury the three that were run.
+    $otherType = @($skipped | Where-Object { $_.Kind -eq 'NOT_THIS_DATA_TYPE' })
+    if ($otherType.Count -gt 0) {
+        Write-Host "  reads none of the -DataType values ($($otherType.Count))" -ForegroundColor DarkGray
+    }
     Write-Host ''
 }
 
@@ -4712,6 +4967,11 @@ if ($registryTrimmed.Count -gt 0) {
 }
 
 if ($runnable.Count -eq 0) {
+    if ($DataType.Count -gt 0) {
+        throw ("No matched statement reads $($DataType -join ', '). Name a type id, or a name as " +
+            "the database spells it - run one check and read its Data types column for the " +
+            "vocabulary this sport actually uses.")
+    }
     throw ("Nothing left to run: every matched statement is either not applicable to this sport, " +
         "carries no template filter for -TemplateIds to activate, or needs a value that must be " +
         "selected from a summary result.")
