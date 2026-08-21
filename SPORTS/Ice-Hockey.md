@@ -200,7 +200,7 @@ Those five are all from 27 and 29 December 2021, games of the `World Championshi
 that was abandoned: `Czechia U20-Canada U20` 3-6, `USA U20-Slovakia U20` 3-2,
 `Austria U20-Finland U20` 1-7, `Russia U20-Switzerland U20` 4-2 and
 `Finland U20-Czechia U20` 1-0. They are matches that were played and then annulled, which is the
-world rather than the database. `Ice-Hockey-DQ-019` reports 20 of 20 and touches none of the
+world rather than the database. `Ice-Hockey-DQ-019` reports 30 of 30 and touches none of the
 cancelled ones, so the rule needs no new check.
 
 The three `190 Finished after awarded win` events carry a result on both sides and the values are
@@ -506,7 +506,7 @@ That answers what the layer holds, and it turns out to hold two things:
 The 445 are standings — the participant is the team, so no affiliation is written and none
 should be. The other 301 are player leaderboards, named `Competition Stats (athletes)` and
 `Competition Stats Group A (athletes)`, where every row is a person and the Team field says
-which side they played for. `GLOBAL-DQ-098` asserts exactly this and reports 0 of 219 as
+which side they played for. `GLOBAL-DQ-098` asserts exactly this and reports 0 of 142 as
 `Ice-Hockey-DQ-076`, which is the correct outcome now that the two shapes are known apart.
 
 **So most of the sport's medals are on players, not on teams.** 9531 of the 10386 `1277 Medal`
@@ -525,8 +525,8 @@ a tournament holds one Comp.Rank ranking its teams and one ranking its players, 
 player one the `1429 Team` field is filled and names a team. That is the rule, and the two
 halves are asserted separately because their audited objects differ.
 
-`Ice-Hockey-DQ-102` asks it of the tournament and reports 126 of 359 - 77 that hold the team
-ranking and no player ranking, and 49 that hold neither. Only a tournament that staged at least
+`Ice-Hockey-DQ-102` asks it of the tournament and reports 119 of 275 - 75 that hold the team
+ranking and no player ranking, and 44 that hold neither. Only a tournament that staged at least
 one match is eligible: **55 tournaments in the boundary hold no event at all** - 36 with a team
 ranking and 19 with none - and a tournament that was never played cannot be asked for a ranking
 of it. Those 55 are already reported elsewhere and need nothing new: 51 of them carry no stage
@@ -861,9 +861,9 @@ the check: decided 2026-08-14 to instantiate it whole as `Ice-Hockey-DQ-090`. Th
 part of it that can shrink first.
 
 The Comp.Rank equivalent is a different shape and is instantiated on its own terms.
-`GLOBAL-DQ-035` reports 560 of 757 as `Ice-Hockey-DQ-091`, spread across four fields rather than
-concentrated in one - 322 missing a city, 288 holding a placeholder country, 102 missing the
-gender, 63 missing the country - and 197 statistics are clean. The sport does fill these fields
+`GLOBAL-DQ-035` reports 426 of 557 as `Ice-Hockey-DQ-091`, spread across four fields rather than
+concentrated in one - 274 holding a placeholder country, 223 missing a city, 59 missing the
+gender, 52 missing the country - and 131 statistics are clean. The sport does fill these fields
 somewhere, which is what makes this a work list where the stage check is a habit.
 
 `PLACEHOLDER_COUNTRY_LIST` is `'International', 'Unknown', 'Undefined'`. The first two exist -
@@ -871,21 +871,28 @@ somewhere, which is what makes this a work list where the stage check is a habit
 `Undefined` never matches, which the template's prerequisite allows.
 
 **The schedule breaks are mostly the twentieth century, and the parameter cannot say so.**
-`GLOBAL-DQ-081` reports 12 of 23 templates as `Ice-Hockey-DQ-098`, and the largest is
-`33 World Championship 1` with seven: `1920 -> 1924` and `1924 -> 1928`, when the championship
-was the Olympic tournament and nothing else; `1939 -> 1947`, the war; and `1979 -> 1981`,
-`1983 -> 1985`, `1987 -> 1989`, the three Olympic years in which no separate world championship
-was held. `10083`, the women's championship, contributes nine because it ran every second year
-until 1997 and every year after, so its own rhythm changed under it. `11076` and `11077` report
-`2011 -> 2017` and `2017 -> 2025` because the Asian Winter Games moved twice.
+`GLOBAL-DQ-081` reports 11 of 23 templates as `Ice-Hockey-DQ-098`. **The twentieth century is no
+longer among them**, and that is the client's 2004 boundary rather than a repair: the gaps this
+paragraph used to name - `1920 -> 1924`, the war years `1939 -> 1947`, the Olympic years in
+which no separate world championship was held - are outside what UK Sport takes and the check
+no longer reaches them. Remeasured 2026-08-21.
+What is left is recent and mostly one competition. The two `Winter Olympics Qualification`
+templates carry 12 and 8 skipped editions between 2004 and 2025, which is a four-yearly
+qualification measured against a yearly rhythm the check reads off its own editions. Then
+`Challenge Cup of Asia` with 6 and 3, `World Championship 1` with 4 - `2005 -> 2007`,
+`2009 -> 2011`, `2013 -> 2015` - and `World Championship 2` with 2, one of which is
+`2019 -> 2022` and is COVID. `11076` and `11077` still report `2011 -> 2017` and
+`2017 -> 2025` because the Asian Winter Games moved twice, and both show 0 editions skipped
+because the check reads their rhythm as four-yearly and the moves fit it.
 
 `SERIES_SKIP_YEARS` cannot suppress any of these, and the reason is structural rather than a
 matter of listing more years: the template discounts a skipped year only if some tournament in
-the sport ran in it, and 1940 to 1946 hold no event anywhere in ice hockey. The parameter is
-recorded as `1940, 1941, 1942, 1943, 1944, 1945, 1946, 2020` for the record of what is known,
-and only `2020` can do any work. Decided 2026-08-14 to instantiate the check anyway: 12 rows
-each carrying a `break_detail` is a list a person reads once, and the alternative is not knowing
-when an import stops arriving.
+the sport ran in it, and 1940 to 1946 hold no event anywhere in ice hockey. Since the 2004
+boundary those seven years are out of the check's reach as well, so the parameter's war years
+are now a record of what is known rather than anything the check could use; `2020` is the only
+value that can still do work and the only one inside the boundary. Decided 2026-08-14 to
+instantiate the check anyway: 11 rows each carrying a `break_detail` is a list a person reads
+once, and the alternative is not knowing when an import stops arriving.
 
 **`MEDAL_TEMPLATE_ID_LIST` holds 21 of the 25 templates in the boundary.** Nineteen award medals
 and hold them today; `308` and `10849`, the men's and women's `World Championship 2`, are added
@@ -893,7 +900,7 @@ by judgement because a divisional championship awards its own gold, silver and b
 not any are stored. The four left out are `313` and `10568`, `Euro Hockey Tour 1`, a seasonal
 series with a winner rather than a podium, and `10501` and `10720`,
 `Winter Olympics Qualification`, which hands out places. `GLOBAL-DQ-125` runs as
-`Ice-Hockey-DQ-100` and reports 0 of 139 eligible.
+`Ice-Hockey-DQ-100` and reports 0 of 124 eligible.
 
 Five more templates were instantiated on the same day and report nothing at all:
 `Ice-Hockey-DQ-094` over the two Comp.Rank Comment values, `Ice-Hockey-DQ-095` over 9616 events

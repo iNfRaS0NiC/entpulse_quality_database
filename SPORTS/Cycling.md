@@ -38,11 +38,19 @@ on 2026-08-17 and written into `OUT_OF_SCOPE_TEMPLATE_ID_LIST`:
   and, again, no stage and no event. The client's window is 2004 to 2025, so these editions were
   never going to be filled here.
 
-**The boundary removes 317 empty tournaments and not one event.** That is why it changes nothing
-below the tournament: measured 2026-08-17, `Cycling-DQ-004 TOURNAMENT_NO_STAGES` falls from 142
-findings of 554 tournaments to **6 of 418**, `Cycling-DQ-020 TEMPLATE_NO_TOURNAMENTS_OR_STAGES`
-from 8 of 44 to 4 of 40, and `Cycling-DQ-058` from 42 of 44 to 38 of 40. Every check reading an
-event, a result or a statistic returns exactly what it returned before.
+**The template boundary removes 317 empty tournaments and not one event.** That is why it
+changed nothing below the tournament: measured 2026-08-17,
+`Cycling-DQ-004 TOURNAMENT_NO_STAGES` fell from 142 findings of 554 tournaments to 6 of 418,
+`Cycling-DQ-020 TEMPLATE_NO_TOURNAMENTS_OR_STAGES` from 8 of 44 to 4 of 40, and
+`Cycling-DQ-058` from 42 of 44 to 38 of 40.
+
+**The client's season boundary is the second half and it does reach an event, though barely.**
+From 2026-08-20 the scope also starts at the 2004 season, which takes a further 280 tournaments
+off this sport - more than any sport but Soccer - and with them **33 events**. Remeasured
+2026-08-21, `Cycling-DQ-004` reads **5 of 412** while `-020` and `-058` are unmoved at 4 of 40
+and 38 of 40. The 33 events are why the sentence above says *template* boundary: taken together
+the two boundaries no longer leave the event layer untouched, and a check reading an event
+returns what it returned before only to within those 33.
 
 **The six that remain are a work list rather than noise, and each one is named.** `2002` under
 `484 World Championship 1`, which is a year before the window; `2024` under both
@@ -835,7 +843,7 @@ So a team placed 41st in a 25-team event is correctly placed, and the field it w
 the other 50. These six events are every event in the sport whose name ends in ` teams`.
 
 `Cycling-DQ-018` is `GLOBAL-DQ-020` with that one shape excluded and everything else carried
-unchanged, and reports **16 of 9602** against the template's 22 of 9608. The 16 are two further
+unchanged, and reports **16 of 9582** against the template's 22 of 9608, remeasured 2026-08-21. The 16 are two further
 things, and the row's `ranks_held` separates them:
 
 - **Twelve are an incomplete import rather than a wrong place.** Nine are `World Championship
@@ -941,7 +949,8 @@ entries and 13 Comp.Rank placings. It was read before being numbered because it 
 200-row gate.
 
 **95 per cent of events carry no venue, and `Cycling-DQ-067` is `Monitor` for that reason.**
-`GLOBAL-DQ-074` reports 10034 of 10578, on the event and on its stage together. This was
+`GLOBAL-DQ-074` reports 10002 of 10546, on the event and on its stage together, remeasured
+2026-08-21. This was
 deliberately not called a structural absence: **544 events do carry a venue**, so the storage
 exists and is used. A road race runs between two towns rather than at a ground, so most of the
 population has nothing to record. What the check is kept for is the direction of the number.
@@ -1074,23 +1083,23 @@ The ranking layer writes a narrower set and is declared separately: `DNF` 28951 
 sits beside them as an annotation on 15 rows. **`Disqualified` holds a rank on 34 of its 116**,
 which is the Comp.Rank face of the same defect the event layer shows on 1247.
 
-`Cycling-DQ-077` carries `GLOBAL-DQ-052` and reports **1488 of 114436**: 1421
-`COMMENT_NO_RESULT_WITH_RANK` - the 1247 `Disqualified` above plus 103 `DNF`, 47 `HD`, 20 `DNS`,
-3 `DSQ` and 2 `OTL` - 43 `COMMENT_INVALID_VALUE`, 23 with a time and 1 with a medal.
-`Cycling-DQ-078` carries `GLOBAL-DQ-057` on the ranking layer and reports **57 of 30656**: 41
-with a rank, 15 invalid values and 1 with a time.
+`Cycling-DQ-077` carries `GLOBAL-DQ-052` and reports **1459 of 114372**, remeasured 2026-08-21:
+1421 `COMMENT_NO_RESULT_WITH_RANK` - 1246 `Disqualified` plus 103 `DNF`, 47 `HD`, 20 `DNS`,
+3 `DSQ` and 2 `OTL` - 19 `COMMENT_INVALID_VALUE`, 18 with a time and 1 with a medal.
+`Cycling-DQ-078` carries `GLOBAL-DQ-057` on the ranking layer and reports **42 of 30656**:
+41 with a rank and 1 with a time.
 
 **Eight further templates were unblocked by three parameter decisions** and are carried whole:
 
 | Check | Carries | Findings / eligible | What the rows hold |
 |---|---|---|---|
 | `Cycling-DQ-073` | `GLOBAL-DQ-021` EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT | 38 / 9612 | a shared place whose times disagree. The worst is `Stage 11` of a Grand Tour with **164 riders all on place 2** |
-| `Cycling-DQ-074` | `GLOBAL-DQ-038` EVENT_SETTINGS_MISSING_MEDAL_RELATED | 16 / 592 | Olympic road races and time trials carrying no `medal_related` property |
-| `Cycling-DQ-075` and `-079` | `GLOBAL-DQ-039` and `-073` | 1 / 9021 each | the same event seen twice: `4119091 Race`, `World Championship RR` 2011, awarding a medal on round type `38` which is stage 1 |
+| `Cycling-DQ-074` | `GLOBAL-DQ-038` EVENT_SETTINGS_MISSING_MEDAL_RELATED | 16 / 588 | Olympic road races and time trials carrying no `medal_related` property |
+| `Cycling-DQ-075` and `-079` | `GLOBAL-DQ-039` and `-073` | 1 / 9001 each | the same event seen twice: `4119091 Race`, `World Championship RR` 2011, awarding a medal on round type `38` which is stage 1 |
 | `Cycling-DQ-076` | `GLOBAL-DQ-041` | 0 / 1395 | |
-| `Cycling-DQ-080` | `GLOBAL-DQ-076` | 0 / 9613 | |
+| `Cycling-DQ-080` | `GLOBAL-DQ-076` | 0 / 9589 | |
 | `Cycling-DQ-081` | `GLOBAL-DQ-077` | 0 / 1736 | |
-| `Cycling-DQ-082` | `GLOBAL-DQ-122` EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE | 4 / 9612 | three events rank a whole field with no time at all - `Oceania Championships` 2011 twice and `African Championships` 2005 - and `Ronde van Drenthe` 2015 has 40 of 106 ranked riders without one |
+| `Cycling-DQ-082` | `GLOBAL-DQ-122` EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE | 4 / 9588 | three events rank a whole field with no time at all - `Oceania Championships` 2011 twice and `African Championships` 2005 - and `Ronde van Drenthe` 2015 has 40 of 106 ranked riders without one |
 
 The three parameters those rest on: `MEDAL_ROUND_TYPE_LIST` is `173 Final` alone, since a stage
 of a tour awards nothing; `NUMERIC_RESULT_TYPE_LIST` is `100 Rank`, `102 Points` and
@@ -1153,7 +1162,7 @@ real populations - `Cycling-DQ-086` (`GLOBAL-DQ-047`, 168 not-started events), `
 (`GLOBAL-DQ-062`, 10578), `-091` (`GLOBAL-DQ-102`, 1067), `-092` (`GLOBAL-DQ-120`, 9600), `-093`
 (`GLOBAL-DQ-121`, 1730) and `-094` (`GLOBAL-DQ-124`, 9613). Two hold findings:
 
-- **`Cycling-DQ-088`** carries `GLOBAL-DQ-061` and reports **1 of 9781**: `Classic Grand Besancon
+- **`Cycling-DQ-088`** carries `GLOBAL-DQ-061` and reports **1 of 9749**: `Classic Grand Besancon
   Doubs`, due 16 April 2021, still standing `Postponed` **1948 days later**.
 - **`Cycling-DQ-090`** carries `GLOBAL-DQ-081` and reports **14 templates of 29** whose editions
   skip years. All are annual championships: `Asian Championship` jumps 2004 to 2011 and 2019 to

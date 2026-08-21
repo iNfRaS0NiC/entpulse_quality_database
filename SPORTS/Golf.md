@@ -921,21 +921,27 @@ sports that run it and declare no medal-template list, so the narrowing lives in
 `GLOBAL-DQ-125` asserts no medal outside the thirteen, `Golf-DQ-085` audits the medal set inside
 them, and they are only coherent while they read the same list.
 
-It reports 192 of 251, and the composition is what makes it readable where 3286 of 3491 was not:
+It reports 152 of 251, remeasured 2026-08-21 after the client's 2004 boundary was applied, and
+the composition is what makes it readable where 3286 of 3491 was not:
 
 | What it found | Rows |
 |---|---:|
-| `Medal_Set_Unreadable_Without_Rank` - no Rank to compare the medals with | 101 |
-| `No_Medals_At_All` - a medal template awarding none | 87 |
-| `Medal_Missing_For_Shared_Place` | 2 |
-| `Duplicate_Bronze` | 1 |
-| `Podium_Truncated_Below_Medal` | 1 |
+| `No_Medals_At_All` - a medal template awarding none | 111 |
+| `Medal_Set_Unreadable_Without_Rank` - no Rank to compare the medals with | 32 |
+| `Medal_Missing_For_Shared_Place` | 5 |
+| `Duplicate_Bronze` | 2 |
+| `Duplicate_Gold_With_Silver_Present` | 1 |
+| `Duplicate_Silver_With_Bronze_Present` | 1 |
 
-The 87 are the reverse direction of the rule, arriving without a check being written for it: 83
-sit under `11526 European Boys' Team Championship` and `11525 European Girls' Team Championship`
-counted together with the two British championships, which is the same five-template gap named
-above seen from the other side. The 101 belong to `Golf-DQ-001` and are not restated here. Four
-rows are medal-set defects in the sense the check was written for.
+The two large branches changed places, and it is worth saying why rather than only that they
+did. The boundary took 6 tournaments off the sport, but `Medal_Set_Unreadable_Without_Rank` fell
+from 101 to 32 while `No_Medals_At_All` rose from 87 to 111 - so what moved is not only which
+statistics are audited but which branch each falls into, the two being decided in order and the
+missing Rank tested first. The 111 are the reverse direction of the rule, arriving without a
+check being written for it, and they still sit mostly under `11526 European Boys' Team
+Championship` and `11525 European Girls' Team Championship`, which is the same five-template gap
+named above seen from the other side. The 32 belong to `Golf-DQ-001` and are not restated here.
+Nine rows are medal-set defects in the sense the check was written for, against four before.
 
 **Test data is inside the scope, not beside it.** Because no template is excluded,
 `12649 TEST` and its 899 event participants are part of every sport-wide count a Golf check will
@@ -1087,7 +1093,7 @@ Two shapes are therefore deliberately not defects here: a stage ending after its
 which is a stroke-play tournament's whole span, and a stage starting up to two days before its
 first match, which 88 of the 251 match-play stages do because the stage is dated by the
 tournament's window rather than by the matches inside it. `Golf-DQ-090` asserts what is left —
-a stage that cannot contain what it holds — and returns 3 of 3727.
+a stage that cannot contain what it holds — and returns 1 of 3588, remeasured 2026-08-21.
 
 **A Match Play outcome is two words and a notation, and until 2026-08-13 nothing read it.**
 `4 Final Result` holds `won` on 11075 rows, `lost` on 11077 and `draw` on 1130 - two per halved
@@ -1098,8 +1104,8 @@ match, which is the sport working - and `0` on 4 rows, which is not a word it us
 
 That is why `GLOBAL-DQ-094` cannot be instantiated here: it reads the placing off a pair of
 numeric scores, and neither of these fields is one. `Golf-DQ-092` asks the question in the
-sport's own vocabulary and reports 1376 of 10848 two-sided matches. **1293 of them are a match
-scored in `39` with no winner named in `4`**, arriving about 63 to a template-season — the size
+sport's own vocabulary and reports 1192 of 12975 two-sided matches, remeasured 2026-08-21.
+**1151 of them are a match scored in `39` with no winner named in `4`**, arriving about 63 to a template-season — the size
 of a 64-player bracket, so what is missing is the verdict on whole draws rather than scattered
 rows. The rest are sharp and few: 60 scores reading `X&Y` where `X` is not the larger, which is
 impossible; 13 halved matches carrying a deciding score; 2 events where `4` holds a number; and
