@@ -20636,6 +20636,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-21T11:05:30Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\f8d2a2c4-0fdf-4588-a6ce-d5046c6ebda2\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-130",
+                                        "runKey":  "GLOBAL-DQ-130",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  42,
+                                        "findings":  41,
+                                        "eligible":  428,
+                                        "seconds":  3.8,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"

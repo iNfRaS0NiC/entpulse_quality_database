@@ -1328,3 +1328,105 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_startdate DESC, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-130
+    -- Name - EVENT_PARTICIPANT_ORGANIZATION_MISSING
+    -- What it does: Finds tournaments whose event participants carry no organization, either none of them at all or only some.
+    CASE
+        WHEN x.with_organization = 0 THEN 'TOURNAMENT_CARRIES_NO_ORGANIZATION_AT_ALL'
+        ELSE 'TOURNAMENT_ORGANIZATION_PARTLY_FILLED'
+    END AS check_type,
+    x.tournament_id,
+    x.tournament_name,
+    x.template_name,
+    x.participations,
+    x.with_organization,
+    x.without_organization,
+    x.first_event_date,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Every competitor entered into an event is supposed to carry the
+-- organization it competes for, and this finds where none does.
+-- The organization is a reference-typed property on `event_participants` - `name` is
+-- `organizationFK`, `type` is `ref:participant` and `value` holds a `participant.id`, the
+-- mechanism DATABASE.md describes under "Reference-typed properties". The name is not
+-- parameterised because there is nothing to choose between: measured 2026-08-21 across the whole
+-- database, 24 sports carry such a property and every one of them spells it `organizationFK`,
+-- with no second spelling anywhere. A sport that ever adopts another spelling reads here as
+-- carrying none, which is the safe direction for this check to fail in.
+-- **An unfilled organization is a defect, not an inapplicable check.** Most sports fill none of
+-- it, and that is what this exists to report rather than a reason to switch it off. The
+-- structure is present everywhere the property table is, and Artistic Gymnastics and Triathlon
+-- fill it, so nothing about any other sport makes the rule inapplicable there. Recording an
+-- empty population as `Not applicable` or `Monitor` would disable the check for exactly the
+-- sports it was written for. Measured 2026-08-21 over the eleven documented sports inside the
+-- client boundary: about 7.4 million participations of 7.75 million carry no organization, and
+-- seven of the eleven carry not one.
+-- The value shape is not tested and does not need to be. Where the property exists it always
+-- holds something - 0 of the 319 000 rows in the database are empty, blank or zero - so the
+-- defect is the absent row and nothing else. Whether the id it holds resolves to a live
+-- participant of the right type is `GLOBAL-DQ-104`'s kind of question and is left there.
+-- **The audited object is the tournament**, decided 2026-08-21 and not the participation the
+-- rule is stated about. A feed either supplies the organization for a competition or it does
+-- not, so the correction is made a tournament at a time; reported per participation the same
+-- missing feed field would be counted four million times in Soccer alone, which the
+-- audited-object rule exists to prevent. `participations`, `with_organization` and
+-- `without_organization` carry the proportion as named secondary columns.
+-- The two branches want different work and are separated for that reason. A tournament carrying
+-- none at all is a feed that never sent the field. A tournament carrying some is a feed that
+-- sends it and dropped part of the field, which is the harder defect to see and the one nobody
+-- would find by looking at a sport total: Artistic Gymnastics and Triathlon are the only two
+-- sports where it occurs, and they are also the only two where the total looks healthy.
+FROM (
+    SELECT
+        t.id AS tournament_id,
+        t.name AS tournament_name,
+        tt.name AS template_name,
+        COUNT(*) AS participations,
+        SUM(CASE WHEN og.id IS NOT NULL THEN 1 ELSE 0 END) AS with_organization,
+        SUM(CASE WHEN og.id IS NULL THEN 1 ELSE 0 END) AS without_organization,
+        MIN(e.startdate) AS first_event_date
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN property og ON og.object = 'event_participants'
+                         AND og.objectFK = ep.id
+                         AND og.name = 'organizationFK'
+                         AND og.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY t.id, t.name, tt.name
+    HAVING SUM(CASE WHEN og.id IS NULL THEN 1 ELSE 0 END) > 0
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT t.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, without_organization DESC, tournament_id;

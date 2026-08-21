@@ -4261,3 +4261,94 @@ WHERE s.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, medal_holder_count DESC, statistic_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-131
+    -- Name - COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING
+    -- What it does: Finds tournaments whose Comp.Rank participants carry no Organization value, either none of them at all or only some.
+    CASE
+        WHEN x.with_organization = 0 THEN 'TOURNAMENT_COMP.RANK_CARRIES_NO_ORGANIZATION_AT_ALL'
+        ELSE 'TOURNAMENT_COMP.RANK_ORGANIZATION_PARTLY_FILLED'
+    END AS check_type,
+    x.tournament_id,
+    x.tournament_name,
+    x.template_name,
+    x.statistics,
+    x.ranked_participants,
+    x.with_organization,
+    x.without_organization,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: The same rule as GLOBAL-DQ-130 asked of the Comp.Rank layer, and
+-- a separate statement because the storage has nothing in common with it. The event layer keeps
+-- the organization as a reference-typed `property` row hanging off `event_participants`; the
+-- statistic layer keeps it as an ordinary data field, `statistic_data_type` 1465 Organization,
+-- declared for statistic type 11 and holding a participant id. One rule, two mechanisms, two
+-- CheckIDs - and a sport can fill either without the other.
+-- **An unfilled Organization is a defect, not an inapplicable check**, for the reason
+-- GLOBAL-DQ-130 states at length: the field is declared for the statistic type, Artistic
+-- Gymnastics and Triathlon fill it, and reading an empty population as `Not applicable` would
+-- switch the check off for the sports it exists to catch. Measured 2026-08-21 over the eleven
+-- documented sports, about 908 000 ranked participations of 1.15 million carry no Organization,
+-- and nine of the eleven carry not one.
+-- **The audited object is the tournament**, matching GLOBAL-DQ-130 and departing from the usual
+-- convention of this file, which audits the statistic. The departure is deliberate: what is
+-- missing here is a feed field for a whole competition, and one tournament's rankings are one
+-- feed however many statistics it holds - Golf averages roughly eight per tournament, so the
+-- statistic as the object would report the same absent field eight times over. `statistics`,
+-- `ranked_participants`, `with_organization` and `without_organization` carry the detail as
+-- named secondary columns.
+-- Tournament-owned statistics only, and IOC-purpose templates excluded in both branches, as
+-- every statistic statement in this file does.
+FROM (
+    SELECT
+        t.id AS tournament_id,
+        t.name AS tournament_name,
+        tt.name AS template_name,
+        COUNT(DISTINCT s.id) AS statistics,
+        COUNT(*) AS ranked_participants,
+        SUM(CASE WHEN og.id IS NOT NULL THEN 1 ELSE 0 END) AS with_organization,
+        SUM(CASE WHEN og.id IS NULL THEN 1 ELSE 0 END) AS without_organization
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = {{SPORT_ID}}
+    JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    LEFT JOIN statistic_data{{SHARD_ID}} og
+           ON og.statistic_participants{{SHARD_ID}}FK = sp.id
+          AND og.statistic_data_typeFK = {{DATA_ORGANIZATION_TYPE_ID}}
+          AND og.del = 'no'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY t.id, t.name, tt.name
+    HAVING SUM(CASE WHEN og.id IS NULL THEN 1 ELSE 0 END) > 0
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT t.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, without_organization DESC, tournament_id;
