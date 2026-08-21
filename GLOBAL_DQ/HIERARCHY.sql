@@ -2707,58 +2707,72 @@ ORDER BY sort_order, event_startdate DESC;
 
 SELECT
     -- CheckID - GLOBAL-DQ-133
-    -- Name - TEMPLATE_GENDER_NOT_REFLECTED_IN_ANY_STAGE
-    -- What it does: Finds templates declaring a definite gender that none of their own stages carries.
-    'Template_Gender_Not_Reflected_In_Any_Stage' AS check_type,
+    -- Name - TEMPLATE_GENDER_NOT_REFLECTED_IN_ITS_STAGES
+    -- What it does: Flags templates whose declared gender is contradicted by the stages beneath them, in either direction.
+    CASE
+        WHEN LOWER(TRIM(tt.gender)) = 'mixed'
+            THEN 'Template_Mixed_But_Not_Every_Stage_Is'
+        ELSE 'Template_Gender_Not_Reflected_In_Any_Stage'
+    END AS check_type,
     tt.id AS tournament_template_id,
     tt.name AS template_name,
     tt.gender AS template_gender,
     GROUP_CONCAT(DISTINCT ts.gender ORDER BY ts.gender SEPARATOR ', ') AS stage_genders_found,
     COUNT(DISTINCT ts.id) AS stage_count,
+    SUM(CASE WHEN LOWER(TRIM(ts.gender)) <> LOWER(TRIM(tt.gender)) OR ts.gender IS NULL THEN 1 ELSE 0 END) AS stages_not_matching,
     COUNT(DISTINCT t.id) AS tournament_count,
     NULL AS eligible_count,
     0 AS sort_order
--- What it does, stated in full: Finds a template whose gender is a definite one - not mixed and
--- not empty - where no stage beneath it carries that gender.
--- **It is the inverse of `GLOBAL-DQ-014` and exists because that check cannot see this case.**
--- `GLOBAL-DQ-014` compares a stage against its template and ignores mixed on either side, so a
--- template declaring male whose every stage is mixed passes it silently: each comparison is
--- skipped, one at a time, and nothing is left to report. Read from the template instead, the
--- same data says plainly that a declared gender is contradicted by the whole population beneath
--- it. The two are not redundant and neither replaces the other - `GLOBAL-DQ-014` catches the odd
--- stage inside a correctly declared template, this catches the declaration itself.
--- **The audited object is the template**, and it is the reason the check reads the way it does.
--- A template's gender is one setting, so one wrong setting is one repair however many stages sit
--- under it: measured 2026-08-21, the single template this reports covers 108 stages, and
--- reported per stage the same one-word correction would arrive as 108 findings. `stage_count`,
--- `tournament_count` and `stage_genders_found` carry the exposure as named secondary columns.
+-- What it does, stated in full: A template declares a gender and the stages beneath it carry
+-- one each. This reads the two against each other from the template's side and reports where
+-- the declaration is not what the stages say, which is two different contradictions.
+-- **It is the inverse of `GLOBAL-DQ-014` and exists because that check cannot see either of
+-- them.** `GLOBAL-DQ-014` compares one stage against its template and skips mixed on either
+-- side, so a template declaring male whose every stage is mixed passes it silently - each
+-- comparison is skipped, one at a time, and nothing is left to report. Read from the template
+-- instead, the same rows say plainly that a declaration is contradicted by the whole population
+-- beneath it. The two are not redundant: `GLOBAL-DQ-014` catches the odd stage inside a
+-- correctly declared template, this catches the declaration itself.
+-- **`mixed` means competitors of both genders together, and it means that at every level.** A
+-- template declared mixed is therefore expected to hold mixed stages and nothing else, which is
+-- what the database does: measured 2026-08-21 across the eleven documented sports, 173 of the
+-- 178 mixed templates carry only mixed stages - Curling's `11418 European Mixed Championships`
+-- and `11395 World Mixed Championships`, all 227 stages of Equestrian's `10853 FEI Jumping World
+-- Cup Western European League`, and so on. The five exceptions are all in Golf and not one of
+-- them holds a single mixed stage: `10328 Asian Games` carries 5 male stages and 5 female,
+-- `10327 Pan American Games` 3 and 3, `11532 Southeast Asian Games` 3 and 3, `11498 Summer Youth
+-- Olympics` 2 and 2, and `9831 GolfSixes` 15 male and no female. A men's event and a women's
+-- event are two competitions and belong under two templates, which is how every other sport in
+-- the package models them - Ice Hockey pairs `31 Winter Olympics` female with `32` male and
+-- `33 World Championship 1` male with `10083` female. Using mixed to mean "covers both genders
+-- separately" overloads the word that elsewhere means "contested by both together", and reading
+-- one as the other is the mistake this branch exists to stop.
+-- **The audited object is the template**, and that is the reason the check reads the way it
+-- does. A template's gender is one setting, so one wrong setting is one repair however many
+-- stages sit under it: measured 2026-08-21 the six templates reported cover 149 stages, and
+-- reported per stage the same six one-word corrections would arrive as 149 findings.
+-- `stage_count`, `stages_not_matching`, `stage_genders_found` and `tournament_count` carry the
+-- exposure as named secondary columns.
 -- **Which side is wrong is not asserted.** A template declaring male over mixed stages is either
 -- a template set to the wrong gender or a population of stages mislabelled, and the database
 -- cannot say which; what is asserted is that the two disagree, which is a thing somebody has to
--- look at either way. Where the entrants settle it they are worth reading: the one template
--- reported on 2026-08-21 is `11379 FEI Jumping World Cup New Zealand League`, declared male,
--- whose events hold 44 male and 74 female entrants - so there the template is the wrong side,
--- since equestrian sport is contested by both genders together.
--- A template declared mixed is deliberately outside the population rather than inside it and
--- clean. Mixed is a declaration that both genders occur, which any stage gender satisfies, so
--- there is no contradiction available to find; the sports that hold such templates hold them
--- correctly - Asian Games, Pan American Games, Southeast Asian Games and Summer Youth Olympics
--- in Golf each carry one male stage set and one female, measured 2026-08-21.
--- **A single finding today is the whole point of promoting it.** Measured 2026-08-21 over the
--- eleven documented sports, this reports exactly one template and ten of the eleven sports
--- return nothing. It was written for Equestrian on 2026-08-18 as `Equestrian-DQ-072` and made
--- global on 2026-08-21 after the profiling that motivated it: the mixed exclusion in
--- `GLOBAL-DQ-014` hides 182 stages across the documented sports, and reading them one by one
--- showed three of the four shapes already covered - genuinely mixed events correctly labelled,
--- the same template's other stages already reported by `GLOBAL-DQ-014`, and women entered in
--- male stages already reported by `GLOBAL-DQ-123`. This is the fourth shape and the only one
--- nothing else could see. The rule holds in every sport that declares a gender on a template and
--- on a stage, which is all of them, so it is instantiated everywhere rather than where it fires.
--- The client boundary is applied inside the `NOT EXISTS` as well as outside it, so a template is
--- judged on the stages the client's window actually contains. Without that, a template that ran
--- male stages before the cutoff and mixed ones ever since would read as reflected by a season
--- nobody is looking at. Measured 2026-08-21 the two readings return the same single row here,
--- and the filtered one is the one that stays true as the window moves.
+-- look at either way. Where the entrants settle it they are worth reading: `11379 FEI Jumping
+-- World Cup New Zealand League` is declared male and its events hold 44 male and 74 female
+-- entrants, so there the template is the wrong side, since equestrian sport is contested by both
+-- genders together. In Golf's four Games templates it is the template that is wrong in the other
+-- direction - the stages correctly say Men's Individual and Women's Individual, and it is the
+-- one template covering both that should be two.
+-- Promoted from `Equestrian-DQ-072` on 2026-08-21 after profiling the 182 stages the mixed
+-- exclusion in `GLOBAL-DQ-014` hides across the documented sports. Three of the four shapes
+-- found there are already covered elsewhere - genuinely mixed events correctly labelled, the
+-- same template's other stages reported by `GLOBAL-DQ-014`, and women entered in male stages
+-- reported by `GLOBAL-DQ-123` - and the fourth is the first branch here. The mixed branch was
+-- added the same day, after the first version excluded mixed templates outright on the argument
+-- that mixed is satisfied by any stage gender. That argument holds for one stage and fails for a
+-- template: a declaration nothing beneath it carries is contradicted whatever the word is.
+-- The client boundary is applied to the stages the template is judged on, so a template that ran
+-- male stages before the cutoff and mixed ones ever since is read on the window the client
+-- actually asked for rather than on a season nobody is looking at.
 FROM tournament_template tt
 JOIN tournament t
   ON t.tournament_templateFK = tt.id
@@ -2770,31 +2784,32 @@ WHERE tt.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND tt.gender IS NOT NULL
   AND TRIM(tt.gender) <> ''
-  AND LOWER(TRIM(tt.gender)) <> 'mixed'
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
-  AND NOT EXISTS (
-      SELECT 1
-      FROM tournament_stage ts2
-      JOIN tournament t2
-        ON t2.id = ts2.tournamentFK
-       AND t2.del = 'no'
-      WHERE t2.tournament_templateFK = tt.id
-        AND ts2.del = 'no'
-        AND LOWER(TRIM(ts2.gender)) = LOWER(TRIM(tt.gender))
-        AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
-  )
 GROUP BY
     tt.id,
     tt.name,
     tt.gender
+-- The two branches are mutually exclusive because `tt.gender` decides which applies, so a
+-- template is reported once and under one check_type. A mixed template is judged on every stage
+-- and a definite one on whether any stage agrees at all - deliberately not the same test, since
+-- a male template legitimately holds mixed stages for a mixed event inside a men's competition,
+-- and a mixed template holding a single-gender stage has no such reading.
+HAVING (
+        LOWER(TRIM(tt.gender)) = 'mixed'
+    AND SUM(CASE WHEN LOWER(TRIM(ts.gender)) = 'mixed' THEN 1 ELSE 0 END) < COUNT(DISTINCT ts.id)
+       )
+    OR (
+        LOWER(TRIM(tt.gender)) <> 'mixed'
+    AND SUM(CASE WHEN LOWER(TRIM(ts.gender)) = LOWER(TRIM(tt.gender)) THEN 1 ELSE 0 END) = 0
+       )
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT tt.id) AS eligible_count,
     1 AS sort_order
 FROM tournament_template tt
@@ -2808,7 +2823,6 @@ WHERE tt.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND tt.gender IS NOT NULL
   AND TRIM(tt.gender) <> ''
-  AND LOWER(TRIM(tt.gender)) <> 'mixed'
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
