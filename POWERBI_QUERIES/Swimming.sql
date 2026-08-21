@@ -518,3 +518,235 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_id;
+
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Swimming-DQ-069
+    -- Name - EVENT_RESULTS_FULL_TIME_IMPOSSIBLE_FOR_DISTANCE
+    -- What it does: Finds events whose stored Full time is faster than the distance in the discipline name allows anyone to swim.
+    CASE
+        WHEN y.leg_like = y.offending_participations
+            THEN 'FULL_TIME_MATCHES_A_SINGLE_RELAY_LEG'
+        WHEN y.leg_like > 0
+            THEN 'FULL_TIME_BELOW_FLOOR_SOME_MATCHING_A_RELAY_LEG'
+        ELSE 'FULL_TIME_BELOW_PHYSICAL_FLOOR'
+    END AS check_type,
+    y.event_id,
+    y.event_name,
+    y.discipline_id,
+    y.discipline_name,
+    y.metres,
+    y.template_name,
+    y.startdate,
+    y.offending_participations,
+    y.values_held,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Asks whether the time stored against a swimmer could have been
+-- swum over the distance the event was contested at. Nothing in the package asks it. Every
+-- other reading of 557 Full-time duration is relative - Swimming-DQ-040 compares one swimmer
+-- with another, Swimming-DQ-041 compares a time with the leader plus the gap - and a whole
+-- field can be internally consistent and still impossible. A 200 metre swim stored as 54.200
+-- and ranked first is invisible to all of them, because there is nothing above it to contradict.
+-- There is no global template for this and there cannot usefully be one: the invariant needs the
+-- distance, and this sport is one of the few carrying it in the discipline name. GLOBAL-DQ-045
+-- goes as far as a global rule can, asserting that the time is present, readable and not zero.
+-- The floor is fifteen seconds per fifty metres, and it is deliberately far below anything a
+-- human has done - the world record for 50 metres freestyle is a little over twenty seconds, so
+-- the floor sits roughly a third under the fastest swim ever recorded and cannot be reached by a
+-- correct row. It is not a performance test and must not be tightened into one: a stricter floor
+-- would need the stroke, the gender and the pool length, and would start reporting slow swimmers
+-- instead of wrong records.
+-- The distance is read from the discipline rather than the event name, because the event name is
+-- the half of the pair the sport is inconsistent about - Swimming-DQ-063 and Swimming-DQ-066 both
+-- exist because of it. Open water is excluded: its disciplines are named in kilometres and its
+-- times are recorded far more coarsely. Mixed Relay carries no distance at all and is silent here.
+-- A relay leg is separated from the rest because it is a different repair. Where the stored
+-- value would be a plausible time for one leg it is the leg time written into the team field,
+-- and where it would not it is a wrong record: measured 2026-08-21, Medley 4 x 100m holds
+-- 1:00.430 and Freestyle 4 x 200m holds 2:01.020, both single legs, while Backstroke 200m holds
+-- 1.000 and 2.000, which are not times at all.
+-- Measured 2026-08-21: 47 events, 41143 eligible.
+-- Some of what it returns is the discipline being wrong rather than the time. Event 5229168 is
+-- named Freestyle 100m and carries discipline 43 Freestyle 1500 metres, and a 100 metre swim is
+-- of course impossible over 1500. The statement reports the pair as inconsistent and does not
+-- choose which half to correct, which is the honest thing for it to do; Swimming-DQ-063 names
+-- the same events from the other side, comparing the stroke in the name against the discipline,
+-- so a reviewer holding both rows can see which of the two is wrong.
+-- The audited object is the event. A field imported at the wrong distance is one correction
+-- however many swimmers it caught - Freestyle 1500 metres holds ten in a single event -
+-- and offending_participations and values_held carry the detail as named secondary columns.
+FROM (
+    SELECT
+        x.event_id,
+        x.event_name,
+        x.discipline_id,
+        x.discipline_name,
+        x.metres,
+        x.template_name,
+        x.startdate,
+        COUNT(*) AS offending_participations,
+        SUM(CASE WHEN x.leg_metres < x.metres
+                  AND x.stored_seconds >= (x.leg_metres / 50) * 15
+                 THEN 1 ELSE 0 END) AS leg_like,
+        SUBSTRING(GROUP_CONCAT(DISTINCT CONCAT(x.participant_name, ' (', x.stored_value, ')')
+            ORDER BY x.participant_name SEPARATOR ' | '), 1, 200) AS values_held
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            e.startdate,
+            tt.name AS template_name,
+            d.id AS discipline_id,
+            d.name AS discipline_name,
+            p.name AS participant_name,
+            ft.value AS stored_value,
+            CASE WHEN d.name LIKE '% x %'
+                 THEN CAST(REGEXP_SUBSTR(d.name, '[0-9]+', 1, 1) AS UNSIGNED)
+                      * CAST(REGEXP_SUBSTR(d.name, '[0-9]+', 1, 2) AS UNSIGNED)
+                 ELSE CAST(REGEXP_SUBSTR(d.name, '[0-9]+', 1, 1) AS UNSIGNED) END AS metres,
+            CASE WHEN d.name LIKE '% x %'
+                 THEN CAST(REGEXP_SUBSTR(d.name, '[0-9]+', 1, 2) AS UNSIGNED)
+                 ELSE CAST(REGEXP_SUBSTR(d.name, '[0-9]+', 1, 1) AS UNSIGNED) END AS leg_metres,
+            CASE LENGTH(ft.value) - LENGTH(REPLACE(ft.value, ':', ''))
+                 WHEN 0 THEN CAST(ft.value AS DECIMAL(14,3))
+                 WHEN 1 THEN CAST(SUBSTRING_INDEX(ft.value, ':', 1) AS DECIMAL(14,3)) * 60
+                           + CAST(SUBSTRING_INDEX(ft.value, ':', -1) AS DECIMAL(14,3))
+                 ELSE CAST(SUBSTRING_INDEX(ft.value, ':', 1) AS DECIMAL(14,3)) * 3600
+                           + CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(ft.value, ':', 2), ':', -1) AS DECIMAL(14,3)) * 60
+                           + CAST(SUBSTRING_INDEX(ft.value, ':', -1) AS DECIMAL(14,3)) END AS stored_seconds
+        FROM event e
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+             AND tt.sportFK = 46
+        JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+        JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+             AND d.name REGEXP '[0-9]'
+             AND d.name NOT LIKE '%km%'
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN result ft ON ft.event_participantsFK = ep.id AND ft.del = 'no'
+             AND ft.result_typeFK = 557
+             AND ft.value REGEXP '^[0-9]+(:[0-9]{1,2})*(\\.[0-9]+)?$'
+        WHERE e.del = 'no'
+          AND e.status_type = 'finished'
+          AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+    ) x
+    WHERE x.metres > 0
+      AND x.stored_seconds > 0
+      AND x.stored_seconds < (x.metres / 50) * 15
+    GROUP BY x.event_id, x.event_name, x.discipline_id, x.discipline_name,
+             x.metres, x.template_name, x.startdate
+) y
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 46
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+     AND d.name REGEXP '[0-9]'
+     AND d.name NOT LIKE '%km%'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result ft ON ft.event_participantsFK = ep.id AND ft.del = 'no'
+     AND ft.result_typeFK = 557
+     AND ft.value REGEXP '^[0-9]+(:[0-9]{1,2})*(\\.[0-9]+)?$'
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, offending_participations DESC, event_id;
+
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Swimming-DQ-070
+    -- Name - EVENT_DISCIPLINE_CONTRADICTS_TEMPLATE_COURSE
+    -- What it does: Finds events contesting a short-course-only discipline under a template whose name says the pool is fifty metres.
+    'Short_Course_Discipline_Under_Long_Course_Template' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    d.id AS discipline_id,
+    d.name AS discipline_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    e.startdate,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Three of the sport disciplines are contested only in a
+-- twenty-five metre pool - 368 Medley 4 x 50m, 369 Indv. Medley 100m and 370 Freestyle 4 x 50m.
+-- None of them is swum at a long-course championship, so an event holding one under a template
+-- whose name says Long Course is either the wrong discipline or the wrong tournament.
+-- Two separate facts have to be present for this to be readable, and they are the reason it is a
+-- sport statement rather than a global template. The distance comes from the discipline name,
+-- which this sport carries and most do not, and the pool length comes from the template name,
+-- which no column holds anywhere. The discipline gives the length of the race; it never gives
+-- the length of the pool, and only the two together say anything.
+-- The empirical side of the classification, measured 2026-08-21: under a template that names its
+-- course at all, these three disciplines appear 573 times and every one of them is Short Course.
+-- Not one appears under Long Course, which is what the check asserts and what it currently
+-- returns nothing against. That is clean data and not a sentinel - the eligible population is
+-- 573 and not 0, so the check is reading a real population and finding it correct today.
+-- The mirror direction is deliberately not asserted. Open water appears 26 times under World
+-- Championships Long Course, and that is not a defect: the long-course World Championships is
+-- the championship the open-water events are held at, so the template name describes the meet
+-- rather than the pool those races were swum in. Reporting them would be reporting the sport
+-- calendar. The 1057 events under Swimming World Cup and the other templates that name no
+-- course are outside the population for the same reason - there is no course to contradict.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 46
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+     AND od.disciplineFK IN (368, 369, 370)
+JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+WHERE e.del = 'no'
+  AND tt.name LIKE '%Long Course%'
+  AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 46
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+     AND od.disciplineFK IN (368, 369, 370)
+WHERE e.del = 'no'
+  AND (tt.name LIKE '%Long Course%' OR tt.name LIKE '%Short Course%')
+  AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_id;

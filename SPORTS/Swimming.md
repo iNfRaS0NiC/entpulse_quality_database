@@ -306,6 +306,21 @@ It is a missing reference rather than a discipline the sport contests.
 83 to types 33, 151, 152 and 153. Type 83 is `statistic`: the relation layer reaches this
 sport's statistic rows even though the statistic layer itself was not read.
 
+**The pool length is stored nowhere but the template name.** No column, property or relation
+carries it. `Short Course` and `Long Course` appear in the name of the template, and a template
+that does not say which is not readable at all - `Swimming World Cup` names no course and holds
+over a thousand events. The discipline gives the length of the *race* and never the length of
+the pool, so neither half says anything on its own.
+
+**Three disciplines are contested only in a twenty-five metre pool** - `368 Medley 4 x 50m`,
+`369 Indv. Medley 100m` and `370 Freestyle 4 x 50m`. Under a template that names its course they
+appear exclusively under `Short Course`, confirmed 2026-08-21. `Swimming-DQ-070` asserts that.
+
+**Open water is contested under a pool-named template and this is not a defect.** The long-course
+World Championships is the meet the open-water races are held at, so its name describes the
+championship rather than the water those races were swum in. The mirror of `Swimming-DQ-070` is
+deliberately not asserted for that reason.
+
 <!-- MANUAL PASTE ZONE: 46 GENERIC RELATIONS AND DISCIPLINES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Statistics

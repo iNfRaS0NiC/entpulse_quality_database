@@ -4344,3 +4344,229 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_startdate DESC;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-127
+    -- Name - EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK
+    -- What it does: Finds finished events where competitors holding the same deciding value were given different Ranks.
+    'Tied_Value_Without_Shared_Rank' AS check_type,
+    g.event_id,
+    g.event_name,
+    g.event_startdate,
+    g.template_name,
+    g.tournament_name,
+    COUNT(*) AS tied_groups,
+    SUM(g.group_size) AS affected_participants,
+    SUBSTRING(GROUP_CONCAT(
+        CONCAT('type ', g.result_type, ' = ', g.shared_value, ' -> ranks ', g.ranks_held)
+        ORDER BY g.shared_value SEPARATOR ' | '), 1, 200) AS tied_values,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds an event where two competitors hold an identical value in
+-- the field the place is decided from and were nonetheless given different places.
+-- This is GLOBAL-DQ-021 read in the opposite direction, and the two are not the same question.
+-- That one starts from a shared Rank and asks whether the deciding values justify it. This one
+-- starts from a shared deciding value and asks why the Rank was not shared. A defect of this
+-- shape is invisible to GLOBAL-DQ-021 by construction: no place is duplicated, so it has
+-- nothing to look at, and the Rank sequence runs 1, 2, 3 without a gap, so GLOBAL-DQ-119 and
+-- its sport-authored narrowings have nothing to look at either. Every check in the package
+-- reads the sequence or the duplicate; none reads the value that produced them.
+-- The deciding field is RESULT_TIE_VALUE_TYPE_LIST, the same parameter GLOBAL-DQ-021 uses and
+-- for the same reason: it is the sport's own statement of what a place is settled from. Each
+-- declared field is judged on its own, because a tie is a tie inside one quantity and two
+-- competitors agreeing on a time while disagreeing on a score is not one.
+-- A sport writing its leader/gap convention in a declared field is not disturbed by it. The
+-- leader carries an absolute time and everyone behind carries a signed gap, so two rows tie in
+-- that field only when they carry the same gap, which is exactly when they tie.
+-- Confirmed non-finishers are excluded through RESULT_COMMENT_NO_RESULT_LIST, as they are in
+-- GLOBAL-DQ-111: a field of competitors who did not finish shares no place because none of them
+-- has one.
+-- The audited object is the event. A tie ranked apart is one editorial decision about one race
+-- however many competitors it caught, and an event may hold several; `tied_groups`,
+-- `affected_participants` and `tied_values` carry the detail as named secondary columns.
+-- Measured on Swimming 2026-08-21: 337 tied groups over 288 events and 735 participations.
+-- Four competitors sharing 24.320 in event 5210387 were ranked 2, 3, 4 and 5.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        tv.result_typeFK AS result_type,
+        tv.value AS shared_value,
+        COUNT(DISTINCT ep.id) AS group_size,
+        SUBSTRING(GROUP_CONCAT(DISTINCT rk.value
+            ORDER BY CAST(rk.value AS UNSIGNED) SEPARATOR ', '), 1, 60) AS ranks_held
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN result rk ON rk.event_participantsFK = ep.id AND rk.del = 'no'
+                  AND rk.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+                  AND rk.value REGEXP '^[0-9]+$'
+    JOIN result tv ON tv.event_participantsFK = ep.id AND tv.del = 'no'
+                  AND tv.result_typeFK IN ({{RESULT_TIE_VALUE_TYPE_LIST}})
+                  AND tv.value IS NOT NULL
+                  AND TRIM(tv.value) <> ''
+    LEFT JOIN result cm ON cm.event_participantsFK = ep.id AND cm.del = 'no'
+                       AND cm.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND e.status_type = 'finished'
+      AND (cm.value IS NULL OR TRIM(cm.value) NOT IN ({{RESULT_COMMENT_NO_RESULT_LIST}}))
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name, tv.result_typeFK, tv.value
+    HAVING COUNT(DISTINCT rk.value) > 1
+) g
+GROUP BY g.event_id, g.event_name, g.event_startdate, g.template_name, g.tournament_name
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result rk ON rk.event_participantsFK = ep.id AND rk.del = 'no'
+              AND rk.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+              AND rk.value REGEXP '^[0-9]+$'
+JOIN result tv ON tv.event_participantsFK = ep.id AND tv.del = 'no'
+              AND tv.result_typeFK IN ({{RESULT_TIE_VALUE_TYPE_LIST}})
+              AND tv.value IS NOT NULL
+              AND TRIM(tv.value) <> ''
+LEFT JOIN result cm ON cm.event_participantsFK = ep.id AND cm.del = 'no'
+                   AND cm.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  AND (cm.value IS NULL OR TRIM(cm.value) NOT IN ({{RESULT_COMMENT_NO_RESULT_LIST}}))
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, affected_participants DESC, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-128
+    -- Name - EVENT_RESULTS_CLOCK_VALUE_COMPONENT_OUT_OF_RANGE
+    -- What it does: Flags results written in clock notation whose minute or second component is 60 or more.
+    CASE
+        WHEN x.seconds_out_of_range > 0 AND x.minutes_out_of_range > 0
+            THEN 'CLOCK_MINUTES_AND_SECONDS_OUT_OF_RANGE'
+        WHEN x.seconds_out_of_range > 0
+            THEN 'CLOCK_SECONDS_COMPONENT_OUT_OF_RANGE'
+        ELSE 'CLOCK_MINUTES_COMPONENT_OUT_OF_RANGE'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.offending_values,
+    x.values_held,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a value written as a clock - hours, minutes, seconds
+-- separated by colons - in which a component that cannot reach sixty does.
+-- Every other check in the package that reads a duration parses it first. GLOBAL-DQ-056 turns
+-- the notation into a number and compares the arithmetic, GLOBAL-DQ-111 turns it into a number
+-- and compares the order, and both are silent about a component out of range because the
+-- notation still parses: 4:99.02 reads cleanly as 339.02 seconds, and 4:39.02 - the value it
+-- was almost certainly meant to be - reads as 279.02. Nothing downstream can tell the two
+-- apart, which is why the shape has to be asserted on its own rather than inferred from a
+-- result that looks wrong.
+-- Only components after the first are tested. The leading one is unbounded by construction: a
+-- 1500 metre swim at 15:03 and a road stage at 4:21:07 are both ordinary, and a sport writing
+-- minutes without an hours field has no ceiling on them at all. Where three components are
+-- present the middle one is minutes and is tested; where two are present the leading one is
+-- minutes and is not.
+-- A leading sign is left alone. It belongs to the first component and to the leader/gap
+-- convention, and whether it is correct is GLOBAL-DQ-019's question, not this one.
+-- CLOCK_RESULT_TYPE_LIST names the result types the sport writes in clock notation, which is
+-- not the same set as PRECISION_RESULT_TYPE_LIST - that one names the fields whose decimal
+-- scale is fixed by convention, and a judged score belongs there and not here. A sport storing
+-- no clock value at all is not applicable rather than clean.
+-- The audited object is the event. A separator entered wrongly is entered that way for a whole
+-- field at once: measured 2026-08-21, Cycling holds 79 such values in 3 events, all of the form
+-- +10:76 and +0:08:71 where a decimal point was written as a colon, and reported per value the
+-- same import would be counted 79 times. Swimming holds one, 4:99.02. `offending_values` and
+-- `values_held` carry the detail as named secondary columns.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(*) AS offending_values,
+        SUM(CASE WHEN CAST(SUBSTRING_INDEX(r.value, ':', -1) AS DECIMAL(12,3)) >= 60
+                 THEN 1 ELSE 0 END) AS seconds_out_of_range,
+        SUM(CASE WHEN LENGTH(r.value) - LENGTH(REPLACE(r.value, ':', '')) = 2
+                  AND CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(r.value, ':', 2), ':', -1) AS DECIMAL(12,3)) >= 60
+                 THEN 1 ELSE 0 END) AS minutes_out_of_range,
+        SUBSTRING(GROUP_CONCAT(DISTINCT CONCAT('type ', r.result_typeFK, ' = ', r.value)
+            ORDER BY CONCAT('type ', r.result_typeFK, ' = ', r.value) SEPARATOR ' | '), 1, 200) AS values_held
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                 AND r.result_typeFK IN ({{CLOCK_RESULT_TYPE_LIST}})
+                 AND r.value REGEXP '^[+-]?[0-9]+(:[0-9]{1,3}){1,2}(\.[0-9]+)?$'
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      AND (
+            CAST(SUBSTRING_INDEX(r.value, ':', -1) AS DECIMAL(12,3)) >= 60
+            OR (LENGTH(r.value) - LENGTH(REPLACE(r.value, ':', '')) = 2
+                AND CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(r.value, ':', 2), ':', -1) AS DECIMAL(12,3)) >= 60)
+          )
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+             AND r.result_typeFK IN ({{CLOCK_RESULT_TYPE_LIST}})
+             AND r.value REGEXP '^[+-]?[0-9]+(:[0-9]{1,3}){1,2}(\.[0-9]+)?$'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, offending_values DESC, event_id;

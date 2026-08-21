@@ -998,6 +998,161 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "21.08.2026 08-12-58",
+                     "startedUtc":  "2026-08-21T06:12:58Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-069",
+                                        "runKey":  "Swimming-DQ-069",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_FULL_TIME_IMPOSSIBLE_FOR_DISTANCE",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  48,
+                                        "findings":  47,
+                                        "eligible":  41143,
+                                        "seconds":  13,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "21.08.2026 08-14-04",
+                     "startedUtc":  "2026-08-21T06:14:04Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-070",
+                                        "runKey":  "Swimming-DQ-070",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DISCIPLINE_CONTRADICTS_TEMPLATE_COURSE",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  573,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "21.08.2026 08-14-28",
+                     "startedUtc":  "2026-08-21T06:14:28Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-127",
+                                        "runKey":  "GLOBAL-DQ-127",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  300,
+                                        "findings":  299,
+                                        "eligible":  43825,
+                                        "seconds":  37.6,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "21.08.2026 08-15-15",
+                     "startedUtc":  "2026-08-21T06:15:15Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-128",
+                                        "runKey":  "GLOBAL-DQ-128",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_CLOCK_VALUE_COMPONENT_OUT_OF_RANGE",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  29597,
+                                        "seconds":  19,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "verify",
+                     "startedUtc":  "2026-08-21T06:19:12Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\f8d2a2c4-0fdf-4588-a6ce-d5046c6ebda2\\scratchpad\\verify",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-067",
+                                        "runKey":  "Swimming-DQ-067",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  300,
+                                        "findings":  299,
+                                        "eligible":  43825,
+                                        "seconds":  36.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-068",
+                                        "runKey":  "Swimming-DQ-068",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_CLOCK_VALUE_COMPONENT_OUT_OF_RANGE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  29597,
+                                        "seconds":  18.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-069",
+                                        "runKey":  "Swimming-DQ-069",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_FULL_TIME_IMPOSSIBLE_FOR_DISTANCE",
+                                        "category":  "WRONG_RESULTS",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  48,
+                                        "findings":  47,
+                                        "eligible":  41143,
+                                        "seconds":  11.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-070",
+                                        "runKey":  "Swimming-DQ-070",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DISCIPLINE_CONTRADICTS_TEMPLATE_COURSE",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  573,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g"
