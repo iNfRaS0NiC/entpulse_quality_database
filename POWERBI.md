@@ -757,4 +757,23 @@ No PowerBI update required.
 
 Only stable questions explicitly raised during authorized PowerBI work belong here.
 
+1. **Should the organization/country comparison be asked of the Comp.Rank layer too?**
+   `GLOBAL-DQ-132` compares an organization's country with the competitor's on the event layer,
+   reading the `organizationFK` property on `event_participants`. The statistic layer holds the
+   same fact through a different mechanism - `statistic_data_type` 1465 Organization, which
+   `GLOBAL-DQ-131` already reads for presence - and the organizations it points at carry a
+   country in exactly the same way, so the comparison is answerable there. It was measured,
+   proposed and deliberately not written on 2026-08-21: it would be a third organization CheckID
+   per sport, and the event-layer pair was judged enough for now. Raise it again when the two
+   presence checks start coming back clean, because until an organization is stored there is
+   nothing to compare.
+
+2. **Lineup members have no organization field at all.** Every athlete, team, lineup member and
+   Comp.Rank participant is supposed to carry an organization, and three of those four have
+   somewhere to keep it. The lineup does not: measured 2026-08-21, `property` rows with owner
+   `lineup` number zero, as do `participant`, `event`, `tournament` and `tournament_stage` -
+   `event_participants` is the only owner in the database that carries an `organizationFK`. This
+   is a request against the schema rather than a check that can be written, and it is recorded
+   here so it is not mistaken for one.
+
 <!-- MANUAL PASTE ZONE: POWERBI OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
