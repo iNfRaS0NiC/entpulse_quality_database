@@ -286,6 +286,33 @@ The vocabulary is the database's own, from `result_type`, `statistic_data_type`,
 `scope_data_type` and `scope_type`. It is not invented here and it is not a list to maintain:
 run any check and read its **Data types** column for the words that sport actually uses.
 
+**The types are grouped by the layer that stores them**, because the layer is what tells one
+type from another when the name repeats:
+
+```text
+Comp.Rank: 1270 Rank, 1273 Comment; Setting: 1463 Start date
+Result: 100 Rank, 501 Medal
+Scope: 322 period1, 323 period2, 324 period3; Scope field: 162 goals
+```
+
+`Result` is `result_type`, `Scope` is `scope_type`, `Scope field` is `scope_data_type`, and the
+last two are the pair that needs saying: **`statistic_data_type` is one catalogue read by two
+different owners.** `statistic_dataN.statistic_data_typeFK` types a value belonging to one ranked
+participant — `Comp.Rank` here — and `statistic_config.statistic_data_typeFK` types a setting
+belonging to the whole ranking, shown as `Setting`. The column name is the same in both, so only
+the table that owns the reference separates them, and the two are repaired in entirely different
+ways: a rank is corrected row by row, a start date is one field on the statistic. `DATABASE.md`
+draws the distinction under `statistic_config`, and until 2026-08-21 this column flattened it.
+
+`Comp.Rank` is the right label for `statistic_dataN` because this package audits statistic type
+11 and nothing else — `SPORTS/params.json` records `STATISTIC_TYPE_ID` as 11 for all eleven
+sports. A package auditing a second statistic type would have to name that layer from the type
+rather than assume it.
+
+Types keep the order the statement reads them in rather than being sorted, inside each layer.
+The order says something: `Ice-Hockey-DQ-112` lists `1277 Medal` before `1270 Rank` because it
+starts from the medal and reaches the rank, and sorting would lose that.
+
 **What a check reads is derived from its own rendered SQL, not authored against its CheckID.**
 A GLOBAL template names its types through declared parameters and a sport statement carries the
 numbers directly, but after expansion both are plain numbers in the same columns, so one parser
@@ -867,9 +894,10 @@ run before this one returned" for what each verdict means and why the block sits
 rather than beside `Rows`. `Trends` is on the live document only; the workbook is a snapshot
 of one run and a series belongs where the series is maintained.
 
-`Data types` is last, and holds the stored values the statement read — `100 Rank, 104 Comment`
-— so a reviewer can see what a check touches without opening it, and filter the board to one
-defect family when the provider corrects one. It is derived from the rendered SQL rather than
+`Data types` is last, and holds the stored values the statement read, grouped by the layer that
+stores them — `Comp.Rank: 1270 Rank, 1273 Comment; Setting: 1463 Start date` — so a reviewer can
+see what a check touches without opening it, and filter the board to one defect family when the
+provider corrects one. It is derived from the rendered SQL rather than
 authored anywhere, so it cannot drift from the statement; `-DataType` selects a run by the same
 values, and "Narrowing a run to one kind of stored value" owns the rule. Its position is
 mechanical rather than a judgement about importance: `H`, `I`, `K` and `L:M` are pinned by

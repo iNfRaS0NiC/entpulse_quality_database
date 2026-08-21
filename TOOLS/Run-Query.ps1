@@ -1975,11 +1975,34 @@ $RideAlongDiscovery = @{
 # would put twenty-six ids into a column meant to be read at a glance.
 # --------------------------------------------------------------------------------------
 
-$DataTypeColumns = [ordered]@{
-    'result_typeFK'         = @{ Layer = 'result'; Table = 'result_type' }
-    'statistic_data_typeFK' = @{ Layer = 'data'; Table = 'statistic_data_type' }
-    'scope_data_typeFK'     = @{ Layer = 'scope_data'; Table = 'scope_data_type' }
-    'scope_typeFK'          = @{ Layer = 'scope'; Table = 'scope_type' }
+# The layers a stored value can live in, in the order the board prints them, with the reference
+# table each is named from.
+#
+# **`statistic_data_type` is one catalogue read by two different owners**, and the column name
+# cannot tell them apart: `statistic_dataN.statistic_data_typeFK` types a value belonging to one
+# ranked participant, `statistic_config.statistic_data_typeFK` types a setting belonging to the
+# whole ranking, and both are spelled the same. Flattened into one list they read as fields of
+# one kind - `1270 Rank, 1463 Start date, 1273 Comment` looks like three of the same thing and is
+# two participant values and one setting of the statistic, repaired in completely different
+# ways. DATABASE.md draws the distinction under "statistic_config"; the board now keeps it.
+#
+# `Comp.Rank` is the right label for `statistic_dataN` here because this package audits statistic
+# type 11 and nothing else - SPORTS/params.json records `STATISTIC_TYPE_ID` as 11 for all eleven
+# sports. A package that ever audited a second statistic type would have to name the layer from
+# the type rather than assume it.
+$DataTypeLayers = [ordered]@{
+    'result'     = @{ Label = 'Result'; Table = 'result_type' }
+    'data'       = @{ Label = 'Comp.Rank'; Table = 'statistic_data_type' }
+    'config'     = @{ Label = 'Setting'; Table = 'statistic_data_type' }
+    'scope'      = @{ Label = 'Scope'; Table = 'scope_type' }
+    'scope_data' = @{ Label = 'Scope field'; Table = 'scope_data_type' }
+}
+
+# The type columns whose owning table is settled by the column name alone.
+$DataTypeSimpleColumns = [ordered]@{
+    'result_typeFK'     = 'result'
+    'scope_data_typeFK' = 'scope_data'
+    'scope_typeFK'      = 'scope'
 }
 
 function Remove-SqlComment {
@@ -1993,8 +2016,10 @@ function Remove-SqlComment {
 }
 
 function Get-StatementDataType {
-    # The (layer, id) pairs one rendered statement reads, in the order the columns are declared
-    # above and by ascending id inside each.
+    # The (layer, id) pairs one rendered statement reads, grouped by layer in the order above
+    # and kept in the order the statement reads them inside each. The reading order is worth
+    # keeping: GLOBAL-DQ-101 reaches the rank through the medal, and a list starting at Medal
+    # says something a sorted one does not.
     #
     # `NOT IN` counts as reading. A type excluded from a scope still decides which rows come
     # back, so correcting it changes the finding - which is exactly what somebody re-running
@@ -2005,22 +2030,49 @@ function Get-StatementDataType {
     $bare = Remove-SqlComment -Sql $Sql
     $found = [ordered]@{}
 
-    foreach ($column in $DataTypeColumns.Keys) {
-        $layer = $DataTypeColumns[$column].Layer
-        # A digit has to follow, so `r.result_typeFK = r2.result_typeFK` in a self-join is not
-        # read as a type reference - it names the column twice and no value at all.
-        $pattern = [regex]::Escape($column) + '\s*(?:=\s*|(?:NOT\s+)?IN\s*\(\s*)([0-9][0-9,\s]*)'
-        foreach ($match in [regex]::Matches($bare, $pattern, 'IgnoreCase')) {
-            foreach ($id in [regex]::Matches($match.Groups[1].Value, '\d+')) {
-                $key = '{0}|{1}' -f $layer, $id.Value
-                if (-not $found.Contains($key)) {
-                    $found[$key] = [pscustomobject]@{ Layer = $layer; Id = [int]$id.Value }
-                }
+    function Add-Ref {
+        param([string]$Layer, [string]$Digits)
+
+        foreach ($id in [regex]::Matches($Digits, '\d+')) {
+            $key = '{0}|{1}' -f $Layer, $id.Value
+            if (-not $found.Contains($key)) {
+                $found[$key] = [pscustomobject]@{ Layer = $Layer; Id = [int]$id.Value }
             }
         }
     }
 
-    return , @($found.Values)
+    # A digit has to follow, so `r.result_typeFK = r2.result_typeFK` in a self-join is not read
+    # as a type reference - it names the column twice and no value at all. The lookbehind stops
+    # a longer column name matching a shorter one inside it while still allowing the `sd.` an
+    # alias puts in front.
+    foreach ($column in $DataTypeSimpleColumns.Keys) {
+        $pattern = '(?<![A-Za-z0-9_])' + [regex]::Escape($column) + '\s*(?:=\s*|(?:NOT\s+)?IN\s*\(\s*)([0-9][0-9,\s]*)'
+        foreach ($match in [regex]::Matches($bare, $pattern, 'IgnoreCase')) {
+            Add-Ref -Layer $DataTypeSimpleColumns[$column] -Digits $match.Groups[1].Value
+        }
+    }
+
+    # Which alias owns which table, so a `statistic_data_typeFK` reference can be attributed.
+    # Measured across the package on 2026-08-21: all 145 such references carry an alias and
+    # every alias binds to one of these two, none to neither. An unbound alias would still be
+    # read as a participant field, which is the commoner of the two and the safer guess.
+    $configAlias = @{}
+    foreach ($match in [regex]::Matches($bare, 'statistic_config\s+(\w+)', 'IgnoreCase')) {
+        $configAlias[$match.Groups[1].Value] = $true
+    }
+
+    $pattern = '(?:(\w+)\.)?statistic_data_typeFK\s*(?:=\s*|(?:NOT\s+)?IN\s*\(\s*)([0-9][0-9,\s]*)'
+    foreach ($match in [regex]::Matches($bare, $pattern, 'IgnoreCase')) {
+        $alias = $match.Groups[1].Value
+        $layer = $(if ($alias -and $configAlias.ContainsKey($alias)) { 'config' } else { 'data' })
+        Add-Ref -Layer $layer -Digits $match.Groups[2].Value
+    }
+
+    $ordered = @()
+    foreach ($layer in $DataTypeLayers.Keys) {
+        $ordered += @($found.Values | Where-Object { $_.Layer -eq $layer })
+    }
+    return , $ordered
 }
 
 function Get-StatementAuditedTypes {
@@ -2046,7 +2098,9 @@ function Get-StatementAuditedTypes {
 
 function Resolve-DataTypeName {
     # One query for every id the whole run needs. The names live in four small reference tables
-    # and asking per statement would be a hundred round trips to fill one column.
+    # and asking per statement would be a hundred round trips to fill one column. Comp.Rank and
+    # Setting share `statistic_data_type` and are asked for separately, because the ids differ
+    # and a branch each is cheaper to build than a union of them here.
     param($Refs)
 
     $names = @{}
@@ -2054,11 +2108,10 @@ function Resolve-DataTypeName {
     if ($refs.Count -eq 0) { return $names }
 
     $branches = @()
-    foreach ($column in $DataTypeColumns.Keys) {
-        $layer = $DataTypeColumns[$column].Layer
+    foreach ($layer in $DataTypeLayers.Keys) {
         $ids = @($refs | Where-Object { $_.Layer -eq $layer } | ForEach-Object { $_.Id } | Sort-Object -Unique)
         if ($ids.Count -eq 0) { continue }
-        $branches += "SELECT '$layer' AS layer, id, name FROM $($DataTypeColumns[$column].Table) WHERE id IN ($($ids -join ', '))"
+        $branches += "SELECT '$layer' AS layer, id, name FROM $($DataTypeLayers[$layer].Table) WHERE id IN ($($ids -join ', '))"
     }
     if ($branches.Count -eq 0) { return $names }
 
@@ -2081,22 +2134,35 @@ function Resolve-DataTypeName {
 }
 
 function Format-DataTypeList {
-    # What the board shows: the id with the name it carries, because neither alone is enough.
-    # A reader who knows the sport reads 101 and a reader who does not reads Duration, and the
-    # two Rank fields - 100 in the event layer and 1270 in the ranking - are told apart only by
-    # the number.
+    # What the board shows: each layer named, then its types as id with the name it carries.
+    # Neither half of a type is enough alone - a reader who knows the sport reads 101 and a
+    # reader who does not reads Duration - and the layer is what tells 100 Rank on an event
+    # result from 1270 Rank in a ranking without anybody having to know the id ranges.
     param($Refs, [hashtable]$Names)
 
     $refs = @($Refs)
     if ($refs.Count -eq 0) { return '' }
 
-    $parts = @()
-    foreach ($ref in $refs) {
-        $key = '{0}|{1}' -f $ref.Layer, $ref.Id
-        $name = $(if ($Names -and $Names.ContainsKey($key)) { $Names[$key] } else { '' })
-        $parts += $(if ($name) { '{0} {1}' -f $ref.Id, $name } else { [string]$ref.Id })
+    $groups = @()
+    foreach ($layer in $DataTypeLayers.Keys) {
+        $inLayer = @($refs | Where-Object { $_.Layer -eq $layer })
+        if ($inLayer.Count -eq 0) { continue }
+
+        $parts = @()
+        foreach ($ref in $inLayer) {
+            $key = '{0}|{1}' -f $ref.Layer, $ref.Id
+            $name = $(if ($Names -and $Names.ContainsKey($key)) { $Names[$key] } else { '' })
+            $parts += $(if ($name) { '{0} {1}' -f $ref.Id, $name } else { [string]$ref.Id })
+        }
+        $groups += '{0}: {1}' -f $DataTypeLayers[$layer].Label, ($parts -join ', ')
     }
-    return ($parts -join ', ')
+    # A semicolon between layers and a comma inside one, and the separator has to be ASCII.
+    # TOOLS/Test-Package.ps1 forbids a BOM on any file in the package, and Windows PowerShell
+    # 5.1 reads a BOM-less .ps1 as ANSI rather than UTF-8 - so a middle dot written here as
+    # UTF-8 is parsed as two Windows-1252 characters and reaches the board as 'A-circumflex
+    # middle dot', in the file's bytes and not only on screen. Every other script in TOOLS is
+    # pure ASCII and this is why; the convention was there before this line and undocumented.
+    return ($groups -join '; ')
 }
 
 function Test-DataTypeMatch {
@@ -2104,6 +2170,12 @@ function Test-DataTypeMatch {
     # else matches the type's name, so `-DataType rank` selects both 100 Rank and 1270 Rank
     # and `-DataType 100` selects only the event one. Matching by name is what the repair
     # actually looks like - a defect family is corrected across every layer that stores it.
+    #
+    # DATABASE.md says a field type must be matched by id and never by name, and this does not
+    # break that rule: the names compared here are the names of ids a statement already reads,
+    # resolved from those ids, and no id is ever looked up by name from the catalogue. The rule
+    # exists because names repeat - measured 2026-08-21, `Rank` is declared under nine ids, of
+    # which eight belong to statistic type 6 and no statement in this package touches one.
     param($Refs, [hashtable]$Names, [string[]]$Wanted)
 
     foreach ($want in @($Wanted)) {
