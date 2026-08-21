@@ -933,3 +933,96 @@ WHERE e.del = 'no'
       )
 
 ORDER BY sort_order, check_type, event_id;
+
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Swimming-DQ-073
+    -- Name - EVENT_ROUND_RECORDED_IN_NAME_NOT_IN_ROUND_TYPE
+    -- What it does: Measures how many events state their round only in their own name, leaving the round type at one of the five bare numbers.
+    'Round_Recorded_In_Name_Not_In_Round_Type' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    CASE
+        WHEN e.name LIKE '%Heats Summary%'  THEN 'Heats Summary'
+        WHEN e.name LIKE '%Heat Summary%'   THEN 'Heat Summary (singular)'
+        WHEN e.name LIKE '%Heat summary%'   THEN 'Heat summary (lower case)'
+        WHEN e.name LIKE '%Finals Summary%' THEN 'Finals Summary'
+        WHEN e.name LIKE '%Fastest Heats%'  THEN 'Fastest Heats'
+        WHEN e.name LIKE '%Slowest Heats%'  THEN 'Slowest Heats'
+        WHEN e.name LIKE '%Slow Heats%'     THEN 'Slow Heats'
+        WHEN e.name LIKE '%Semi Final%'     THEN 'Semi Finals'
+        WHEN e.name LIKE '%Swim-Off%'       THEN 'Swim-Off'
+        WHEN e.name LIKE '%Preliminary%'    THEN 'Preliminary'
+        ELSE 'Heats'
+    END AS name_says,
+    CONCAT(e.round_typeFK, ' named "', rt.name, '"') AS round_type_says,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    e.startdate,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: This one does not find a wrong record, and its signal is
+-- Monitor for the same reason Swimming-DQ-066's is. The proportion is the finding and no single
+-- row is a defect.
+-- The sport states an event's round in one of two places and never in both. Measured 2026-08-21,
+-- round type 329 Heats Summary carries 4095 events and not one of them says so in its name;
+-- another 593 events say it in their name and leave the round type at 38 or 89, both of which
+-- are named with the bare number 1 and therefore say nothing. Each half is self-consistent, and
+-- the second runs across 22 templates from 2006 to 2025, so neither is the wrong one and there
+-- is nothing here to correct. A reviewer driving this to zero would be re-typing 593 events to a
+-- convention nobody has declared - which is why Swimming-DQ-072 excludes the bare-number round
+-- types outright and reports only the three events where two meaningful fields contradict.
+-- What the residue is worth is that it marks where one of the two halves was filled in and the
+-- other was left, so it is the shortest description available of how far the round vocabulary
+-- got. The spelling is part of that description and is projected rather than normalised: the
+-- second convention writes Heats Summary, Heat Summary, Heat summary and Slow Heats, four
+-- spellings of two rounds across two templates, which is what an unmanaged field looks like.
+-- The eligible population is every event that states its round at all - through a round type the
+-- sport actually names, or through a round word in its own name. The 10940 events carrying the
+-- bare 38 with no round word in their name either are deliberately outside it: those state their
+-- round nowhere, which is an absence rather than a choice between two conventions, and
+-- SPORTS/params.json records that the bare-number types are left unjudged on purpose.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 46
+JOIN round_type rt ON rt.id = e.round_typeFK
+WHERE e.del = 'no'
+  AND e.round_typeFK IN (38, 89, 91, 98, 99)
+  AND (e.name LIKE '%Heats%' OR e.name LIKE '%Heat Summary%' OR e.name LIKE '%Heat summary%'
+       OR e.name LIKE '%Summary%' OR e.name LIKE '%Semi Final%'
+       OR e.name LIKE '%Swim-Off%' OR e.name LIKE '%Preliminary%')
+  AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 46
+WHERE e.del = 'no'
+  AND (
+        e.round_typeFK NOT IN (38, 89, 91, 98, 99)
+     OR e.name LIKE '%Heats%' OR e.name LIKE '%Heat Summary%' OR e.name LIKE '%Heat summary%'
+     OR e.name LIKE '%Summary%' OR e.name LIKE '%Semi Final%'
+     OR e.name LIKE '%Swim-Off%' OR e.name LIKE '%Preliminary%'
+      )
+  AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, name_says, event_id;

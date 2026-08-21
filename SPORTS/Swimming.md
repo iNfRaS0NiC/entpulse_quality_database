@@ -448,7 +448,10 @@ is stored as text.
 number `1`. Each convention is self-consistent, and they run side by side across 22 templates
 from 2006 to 2025, so neither is the wrong one. `Swimming-DQ-072` deliberately excludes the five
 bare-number round types for that reason - a bare number denies nothing - and reads only an event
-whose round type is one the sport actually names.
+whose round type is one the sport actually names. `Swimming-DQ-073` measures the second
+convention instead of correcting it, as a `Monitor`: the proportion is the finding, and the
+spelling travels with it, because that half of the vocabulary writes `Heats Summary`,
+`Heat Summary`, `Heat summary` and `Slow Heats` for two rounds across two templates.
 
 **`38` is also how the sport records an event whose round is simply not known.** 10940 events
 carry it with no round word in their name either, so neither field says anything. That is an

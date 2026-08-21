@@ -1241,6 +1241,28 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "21.08.2026 08-44-41",
+                     "startedUtc":  "2026-08-21T06:44:41Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-073",
+                                        "runKey":  "Swimming-DQ-073",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_RECORDED_IN_NAME_NOT_IN_ROUND_TYPE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "New",
+                                        "rows":  594,
+                                        "findings":  593,
+                                        "eligible":  35408,
+                                        "seconds":  1.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g"
