@@ -1236,3 +1236,95 @@ WHERE ep.del = 'no'
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 ;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-129
+    -- Name - EVENT_PARTICIPANT_TYPE_MIXED
+    -- What it does: Flags events that enter participants of more than one kind, such as a team against an individual.
+    'Event_Participant_Type_Mixed' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.types_held,
+    x.distinct_types,
+    x.field_size,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds an event whose field holds competitors of more than one
+-- kind, so one contest is between a team and an individual.
+-- This is GLOBAL-DQ-113 asked one layer down. That one reads the Comp.Rank statistic and asks
+-- whether one place sequence ranks teams against individuals; this one reads the event and asks
+-- whether one race did. The two are not each other: a sport can rank correctly and field wrongly,
+-- and the statistic layer does not exist for every sport that holds events. Nothing else asks it -
+-- GLOBAL-DQ-104 asks whether a participant type belongs to the sport vocabulary at all, which is
+-- a different question and passes an event that mixes two legitimate types.
+-- Asked without naming which kinds are legitimate, which is what keeps it global. A sport
+-- fielding both teams and individuals is entirely normal - Swimming swims relays and individual
+-- events under one template - and what is not normal is one event holding both.
+-- **A person is a person whichever role they hold now.** The person types are collapsed through
+-- PERSON_ROLE_TYPE_LIST for the reason GLOBAL-DQ-113 records at length: participant.type carries
+-- a person's *current* role and not the one they held at the event, so a squad entered in 2004
+-- whose players have since become coaches reads as two kinds and is one. Collapsing them leaves
+-- team against athlete, and horse against athlete, exactly where they were. The types actually
+-- stored are still projected, so nothing is hidden - only the count is corrected.
+-- The audited object is the event, and field_size travels with it because the two shapes want
+-- different repairs: one stray entry in a field of eight is a wrong participant, and a field
+-- evenly split is a whole event entered at the wrong level.
+-- Measured 2026-08-21 over the seven documented sports that field more than one kind at all:
+-- Cycling holds 14 events, every one of them a team beside an athlete, and Golf, Equestrian,
+-- Swimming, Triathlon, Artistic Gymnastics and Modern Pentathlon hold none.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(DISTINCT ep.id) AS field_size,
+        COUNT(DISTINCT CASE WHEN p.type IN ({{PERSON_ROLE_TYPE_LIST}})
+                            THEN 'person' ELSE p.type END) AS distinct_types,
+        SUBSTRING(GROUP_CONCAT(DISTINCT p.type ORDER BY p.type SEPARATOR ', '), 1, 60) AS types_held
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name
+    HAVING COUNT(DISTINCT CASE WHEN p.type IN ({{PERSON_ROLE_TYPE_LIST}})
+                               THEN 'person' ELSE p.type END) > 1
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate DESC, event_id;

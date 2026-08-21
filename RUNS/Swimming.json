@@ -1153,6 +1153,50 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "21.08.2026 08-23-23",
+                     "startedUtc":  "2026-08-21T06:23:23Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-129",
+                                        "runKey":  "GLOBAL-DQ-129",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_TYPE_MIXED",
+                                        "category":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  45188,
+                                        "seconds":  5.7,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "21.08.2026 08-27-05",
+                     "startedUtc":  "2026-08-21T06:27:05Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-071",
+                                        "runKey":  "Swimming-DQ-071",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_TYPE_MIXED",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  45188,
+                                        "seconds":  5.5,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g"
