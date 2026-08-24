@@ -8007,6 +8007,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-40-15",
+                     "startedUtc":  "2026-08-24T17:40:15Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-050",
+                                        "runKey":  "Speed-Skating-DQ-050",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  10,
+                                        "findings":  9,
+                                        "eligible":  912,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1CNFGr9KzNTGUtKJMn8vALWxHkL3x97JRtABs541iDPM"

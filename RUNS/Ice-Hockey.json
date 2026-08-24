@@ -10035,6 +10035,52 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-37-44",
+                     "startedUtc":  "2026-08-24T17:37:44Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-021",
+                                        "runKey":  "Ice-Hockey-DQ-021",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  10,
+                                        "findings":  9,
+                                        "eligible":  150,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-39-50",
+                     "startedUtc":  "2026-08-24T17:39:50Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-021",
+                                        "runKey":  "Ice-Hockey-DQ-021",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  19,
+                                        "findings":  18,
+                                        "eligible":  1036,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1Vy0mfddOI9cWkWEpeM7oA12BTDuvUB-nevFZwQANn94"

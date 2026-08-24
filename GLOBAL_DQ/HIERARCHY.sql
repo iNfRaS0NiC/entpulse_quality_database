@@ -1137,29 +1137,51 @@ ORDER BY sort_order, violation_types, event_name;
 SELECT
     -- CheckID - GLOBAL-DQ-050
     -- Name - TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT
-    -- What it does: Finds stage names that differ from another only by case or spacing.
+    -- What it does: Finds stages whose name differs from a more common spelling of the same name only by case or spacing.
     CASE
         WHEN v.occurrence_count = v.dominant_count THEN 'NAME_CASE_NO_DOMINANT_SPELLING'
         ELSE 'NAME_CASE_MINORITY_SPELLING'
     END AS check_type,
-    v.stage_name,
+    st.tournament_stage_id,
+    st.stage_name,
     v.dominant_spelling,
+    st.tournament_id,
+    st.tournament_name,
+    st.template_name,
+    st.stage_startdate,
     v.occurrence_count,
     v.dominant_count,
     v.variant_count,
-    v.sample_tournament_stage_id,
-    v.sample_template_name,
     NULL AS eligible_count,
     0 AS sort_order
--- What it does, stated in full: Finds tournament-stage name spellings that lose to a more
--- common spelling of the same name, identical but for case and spacing, with the dominant
--- spelling beside it.
+-- What it does, stated in full: Finds tournament stages whose name loses to a more common
+-- spelling of the same name, identical but for case and spacing, with the dominant spelling
+-- beside it.
+-- **The audited object is the stage, not the spelling.** Until 2026-08-24 this statement
+-- returned one row per losing spelling and named a single stage under `MIN(ts.id)`, which
+-- is the reason it is being changed: a spelling used on six stages arrived as one row
+-- carrying one id, and the other five were invisible to the person expected to repair them.
+-- Measured on that day, Ice Hockey's nine rows stood for eighteen stages and Soccer's 382
+-- for 1109, so roughly half of the work the check had found was not on the board. The
+-- spelling is a fact about the sport and the stage is the thing that gets renamed, so the
+-- stage is what a row is now. `occurrence_count`, `dominant_count` and `variant_count`
+-- keep the spelling-level picture as context on every row.
+-- The row also carries the tournament that owns the stage, by id and by name, because the
+-- name is where the season lives in this database and without it a stage cannot be found in
+-- the source system. The point is not decorative: Ice Hockey files two Winter Olympics
+-- tournaments per games, so `Olympic Games Final` under template `Winter Olympics` names
+-- eight different stages across four Olympiads, and only the tournament tells them apart.
+-- `stage_startdate` is carried for the same reason and answers the question directly where a
+-- tournament name is not a year.
+-- The dominant spelling is context, not a finding: the stages spelling it the common way are
+-- not reported, which is what keeps the correct name out of the list to review.
+-- Where two spellings occur equally often neither is dominant, no rename is implied by the
+-- counts alone, and the rows say so under their own `check_type` so the reviewer chooses.
 FROM (
     SELECT
+        a.name_normalized,
         a.stage_name,
         a.occurrence_count,
-        a.sample_tournament_stage_id,
-        a.sample_template_name,
         MAX(a.occurrence_count) OVER (PARTITION BY a.name_normalized) AS dominant_count,
         FIRST_VALUE(a.stage_name) OVER (
             PARTITION BY a.name_normalized ORDER BY a.occurrence_count DESC, a.stage_name
@@ -1175,9 +1197,7 @@ FROM (
         SELECT
             LOWER(REPLACE(TRIM(ts.name), ' ', '')) AS name_normalized,
             (CONVERT(ts.name USING utf8mb4) COLLATE utf8mb4_bin) AS stage_name,
-            COUNT(DISTINCT ts.id) AS occurrence_count,
-            MIN(ts.id) AS sample_tournament_stage_id,
-            MIN(tt.name) AS sample_template_name
+            COUNT(DISTINCT ts.id) AS occurrence_count
         FROM tournament_stage ts
         JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
         JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -1191,8 +1211,30 @@ FROM (
         GROUP BY name_normalized, stage_name
     ) a
 ) v
--- The dominant spelling is context, not a finding: reporting it would put the correct
--- name back among the rows to review, which is what this check was changed to stop.
+-- Back to the stages themselves. The join is on the binary spelling, so a stage spelt the
+-- dominant way is never dragged in beside one that is not.
+JOIN (
+    SELECT
+        ts.id AS tournament_stage_id,
+        (CONVERT(ts.name USING utf8mb4) COLLATE utf8mb4_bin) AS stage_name,
+        LOWER(REPLACE(TRIM(ts.name), ' ', '')) AS name_normalized,
+        t.id AS tournament_id,
+        t.name AS tournament_name,
+        tt.name AS template_name,
+        CAST(ts.startdate AS CHAR) AS stage_startdate
+    FROM tournament_stage ts
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE ts.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND ts.name IS NOT NULL
+      AND TRIM(ts.name) <> ''
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+) st
+  ON  st.name_normalized = v.name_normalized
+  AND st.stage_name = v.stage_name
 WHERE v.variant_count > 1
   AND v.spelling_rank > 1
 
@@ -1200,8 +1242,8 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT (CONVERT(ts.name USING utf8mb4) COLLATE utf8mb4_bin)) AS eligible_count,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ts.id) AS eligible_count,
     1 AS sort_order
 FROM tournament_stage ts
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -1214,7 +1256,7 @@ WHERE ts.del = 'no'
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 
-ORDER BY sort_order, dominant_spelling, stage_name;
+ORDER BY sort_order, dominant_spelling, stage_name, tournament_stage_id;
 
 
 -- ================================================================================

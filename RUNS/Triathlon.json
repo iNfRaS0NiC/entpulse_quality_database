@@ -20575,6 +20575,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-40-05",
+                     "startedUtc":  "2026-08-24T17:40:05Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-056",
+                                        "runKey":  "Triathlon-DQ-056",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3398,
+                                        "seconds":  0.6,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"

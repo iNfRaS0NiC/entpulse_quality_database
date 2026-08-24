@@ -22582,6 +22582,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-40-17",
+                     "startedUtc":  "2026-08-24T17:40:17Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-054",
+                                        "runKey":  "Artistic-Gymnastics-DQ-054",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  13,
+                                        "findings":  12,
+                                        "eligible":  860,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"

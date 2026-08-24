@@ -15437,6 +15437,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-40-09",
+                     "startedUtc":  "2026-08-24T17:40:09Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-047",
+                                        "runKey":  "Soccer-DQ-047",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  1110,
+                                        "findings":  1109,
+                                        "eligible":  24951,
+                                        "seconds":  1.5,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE"

@@ -21589,6 +21589,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-40-12",
+                     "startedUtc":  "2026-08-24T17:40:12Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-012",
+                                        "runKey":  "Cycling-DQ-012",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  41,
+                                        "findings":  40,
+                                        "eligible":  3497,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs"

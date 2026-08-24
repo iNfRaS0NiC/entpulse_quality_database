@@ -17562,6 +17562,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-40-19",
+                     "startedUtc":  "2026-08-24T17:40:19Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Equestrian-DQ-028",
+                                        "runKey":  "Equestrian-DQ-028",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3365,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "15DvzC1TLzhMB9bXeyy-2OUa0Xmfo0Mn84-isqYSs9cU"

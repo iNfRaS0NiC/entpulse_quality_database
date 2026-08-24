@@ -17683,6 +17683,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-40-14",
+                     "startedUtc":  "2026-08-24T17:40:14Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-036",
+                                        "runKey":  "Modern-Pentathlon-DQ-036",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  795,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1kWKqdBc2ZD1AYcMEzGUmZHzgjfEgnLyf8AfbCvkxuKs"

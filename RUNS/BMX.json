@@ -19269,6 +19269,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-40-07",
+                     "startedUtc":  "2026-08-24T17:40:07Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-050",
+                                        "runKey":  "BMX-DQ-050",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  528,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE"

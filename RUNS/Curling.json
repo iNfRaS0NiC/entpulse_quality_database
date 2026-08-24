@@ -21814,6 +21814,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-40-18",
+                     "startedUtc":  "2026-08-24T17:40:18Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Curling-DQ-038",
+                                        "runKey":  "Curling-DQ-038",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  623,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1zv6UoQOdEVR-SNJSakLy7xWVo1fh-jsL8Y-7mybcC3g"

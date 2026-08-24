@@ -3740,6 +3740,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-40-16",
+                     "startedUtc":  "2026-08-24T17:40:16Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-017",
+                                        "runKey":  "Swimming-DQ-017",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  816,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g"
