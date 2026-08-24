@@ -112,10 +112,6 @@
             "GLOBAL-DQ-098": {
                 "signal": "Not applicable",
                 "reason": "Structural: the check asserts the 1429 Team field where a statistic ranks teams, and BMX ranks no teams at any level - it is contested individually and its Comp.Rank statistics rank athletes. The eligible population is therefore permanently empty rather than empty today, which is the difference POWERBI.md draws between a misdirected scope and a sentinel: this is neither, it is a structure the sport does not have. BMX-DQ-078 keeps its row and its ID."
-            },
-            "GLOBAL-DQ-009": {
-                "signal": "Informational",
-                "reason": "The rows are athletes the sport registry knows who have not raced anywhere inside our coverage, which is a state of the registry rather than a defect in it: nobody can correct a row here, because the athlete is not wrong and the missing races are not ours to add. Recorded by decision of 2026-08-05. The signal is Informational rather than Monitor because Monitor still asks a human to sort real findings from legitimate ones, and here there are none of the first kind. It is per-sport, not a property of the template: the same output for a sport that registers only its own competitors would be registry litter worth clearing."
             }
         }
     },
@@ -239,6 +235,10 @@
             "GLOBAL-DQ-047": {
                 "signal": "Sentinel",
                 "reason": "The check reads not-started events that already hold a result, and the sport holds no not-started event at all: measured 2026-08-17, 3603 finished and 18 cancelled and nothing else. The scope is correct and the population is empty today rather than absent - SPORTS/Triathlon.md confirms notstarted/1 and notstarted/5 as combinations this sport uses, so events of the kind it audits have existed and will again with the calendar. Instantiated so it is already in place on the day one arrives carrying a result it should not have."
+            },
+            "GLOBAL-DQ-136": {
+                "signal": "Monitor",
+                "reason": "the same standing verdict GLOBAL-DQ-132 carries on the event layer, and for the same reason: part of what it returns is correct by construction and will never be corrected. A competitor ranked under a neutral or refugee organization is entered under a country that is not their own on purpose. Measured 2026-08-24, this sport returns 0 finding(s) of 160 eligible organization-and-country pairs, which is few enough to read one at a time rather than count. The audited object is the pair, so one row is one decision however many ranked competitors it gathered - and it gathers more here than on the event layer, because a Comp.Rank lists a relay athlete by athlete"
             }
         }
     },
@@ -247,7 +247,7 @@
         "CLIENT_FROM_SEASON": 2004,
         "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
         "EVENT_PARTICIPANT_COUNT_LIST": "2",
-        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
         "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
         "PERSON_ROLE_TYPE_LIST": "'athlete', 'coach'",
         "STATISTIC_TYPE_ID": 11,
@@ -288,6 +288,8 @@
         "GROUP_ROUND_NAME_LIST": "'preliminary', 'seeding'",
         "ROUND_TYPE_LIST": "2, 3, 4, 5, 9, 19, 22, 23, 24, 25, 26, 38, 39, 40, 41, 134, 136, 138, 152, 171, 172, 173, 176, 178, 179, 181, 184, 185, 227, 253, 262, 303, 304, 305",
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "SUPPORT_PARTICIPANT_TYPE_LIST": "'coach'",
+        "PARTICIPATION_PROPERTY_NAME_LIST": "'refereeFK'",
         "_names": {
             "DATA_ORGANIZATION_TYPE_ID": "1465 Organization, the statistic_data_type that holds the participant.id of the organization a ranked competitor represents. Declared for statistic type 11 and the only id of that name in the database, measured 2026-08-21. GLOBAL-DQ-131 reads it; the event layer keeps the same fact somewhere else entirely, as an organizationFK property on event_participants, which is why GLOBAL-DQ-130 is a separate statement and needs no parameter for it",
             "EVENT_PARTICIPANT_COUNT_LIST": "2: the field sizes this sport enters as event_participants rows. GLOBAL-DQ-083 asserted exactly two until 2026-08-20, which is right for a sport that only ever fields a pair and wrong for a doubles sport - Badminton enters the four players rather than two pairs, 48072 events against 40951 singles, and Table Tennis 7788 against 55314. This sport fields a pair and nothing else, so the value is 2 and the check reads exactly as it did",
@@ -315,7 +317,10 @@
             "MEDAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 138 bronze (knockout: yes), 173 Final (knockout: no), 181 bronze (knockout: no)",
             "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed",
             "BRONZE_ROUND_TYPE_LIST": "138 bronze (knockout: yes), 181 bronze (knockout: no)",
-            "ROUND_TYPE_LIST": "2 Semi Finals (knockout: yes), 3 Quarter Finals (knockout: yes), 4 1/8 (knockout: yes), 5 1/16 (knockout: yes), 9 Final (knockout: yes), 19 Small Final (knockout: yes), 22 5/6 (knockout: yes), 23 7/8 (knockout: yes), 24 9/10 (knockout: yes), 25 11/12 (knockout: yes), 26 5/8 (knockout: yes), 38 1 (knockout: no), 39 2 (knockout: no), 40 3 (knockout: no), 41 4 (knockout: no), 134 9/16 (knockout: yes), 136 9/12 (knockout: yes), 138 bronze (knockout: yes), 152 Qualifier (knockout: yes), 171 Preliminary (knockout: no), 172 Tie-breaker (knockout: yes), 173 Final (knockout: no), 176 Quarter Finals (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 181 bronze (knockout: no), 184 1/8 (knockout: no), 185 1/16 (knockout: no), 227 Relegation Phase (knockout: no), 253 Preliminary (knockout: yes), 262 5/8 (knockout: no), 303 9/12 (knockout: no), 304 Playoff (knockout: no), 305 Playoff (knockout: yes)"
+            "ROUND_TYPE_LIST": "2 Semi Finals (knockout: yes), 3 Quarter Finals (knockout: yes), 4 1/8 (knockout: yes), 5 1/16 (knockout: yes), 9 Final (knockout: yes), 19 Small Final (knockout: yes), 22 5/6 (knockout: yes), 23 7/8 (knockout: yes), 24 9/10 (knockout: yes), 25 11/12 (knockout: yes), 26 5/8 (knockout: yes), 38 1 (knockout: no), 39 2 (knockout: no), 40 3 (knockout: no), 41 4 (knockout: no), 134 9/16 (knockout: yes), 136 9/12 (knockout: yes), 138 bronze (knockout: yes), 152 Qualifier (knockout: yes), 171 Preliminary (knockout: no), 172 Tie-breaker (knockout: yes), 173 Final (knockout: no), 176 Quarter Finals (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 181 bronze (knockout: no), 184 1/8 (knockout: no), 185 1/16 (knockout: no), 227 Relegation Phase (knockout: no), 253 Preliminary (knockout: yes), 262 5/8 (knockout: no), 303 9/12 (knockout: no), 304 Playoff (knockout: no), 305 Playoff (knockout: yes)",
+            "SUPPORT_PARTICIPANT_TYPE_LIST": "coach alone. Measured 2026-08-24, this sport files 38 coaches and not one official, so the second type is left out rather than declared empty. Read by GLOBAL-DQ-135, and disjoint from REGISTRY_PARTICIPANT_TYPE_LIST, which holds athlete, team and coach - **coach must be removed from that list before GLOBAL-DQ-009 and GLOBAL-DQ-135 both run for this sport**, or every unattached coach reports twice",
+            "PARTICIPATION_PROPERTY_NAME_LIST": "the event properties that attach a person to the competition they worked, read by GLOBAL-DQ-135 as a fourth participation path beside event, lineup and Comp.Rank. Measured 2026-08-24: Soccer writes refereeFK on 99259 events reaching 1626 people, and without this path 3919 of its 3920 registered officials would report as unattached. It is a list of names rather than a switch, so a sport writing no such property declares the name anyway and stays inside the check - Curling has none, its join matches nothing, and every coach it has filed stays unattached, which is the correct reading there",
+            "REGISTRY_PARTICIPANT_TYPE_LIST": "athlete and team, the competitors this sport enters. coach was removed on 2026-08-24 when GLOBAL-DQ-135 was instantiated: that statement reads SUPPORT_PARTICIPANT_TYPE_LIST and the two lists must not intersect, or every unattached coach reports twice under two CheckIDs. The rows do not disappear, they move - all 38 registered coaches reach no participation of any kind, measured 2026-08-24, and they are reported by GLOBAL-DQ-135 from now on instead of by GLOBAL-DQ-009. Curling-DQ-009's count therefore falls by 38 without anything having been repaired, which is a change of owner and not a change of state"
         },
         "_notApplicable": {
             "RESULT_RANK_TYPE_ID": "no Rank result type; the score in Final Result and Running score carries the classification",
@@ -498,6 +503,10 @@
             "GLOBAL-DQ-107": {
                 "signal": "Not applicable",
                 "reason": "Structural: checkpoint1 and checkpoint2 are the two vaults a gymnast performs, so the scope layer belongs to the Vault apparatus rather than to the event level the check asserts. Nine of the sport's eleven disciplines contest a single exercise and have no second attempt for a container to hold, which is a property of the sport rather than of the current data. The layer is also outside DQ scope by explicit decision of 2026-08-04. SPORTS/Artistic-Gymnastics.md owns the reasoning."
+            },
+            "GLOBAL-DQ-136": {
+                "signal": "Monitor",
+                "reason": "the same standing verdict GLOBAL-DQ-132 carries on the event layer, and for the same reason: part of what it returns is correct by construction and will never be corrected. A competitor ranked under a neutral or refugee organization is entered under a country that is not their own on purpose. Measured 2026-08-24, this sport returns 9 finding(s) of 145 eligible organization-and-country pairs, which is few enough to read one at a time rather than count. The audited object is the pair, so one row is one decision however many ranked competitors it gathered - and it gathers more here than on the event layer, because a Comp.Rank lists a relay athlete by athlete"
             }
         }
     },
@@ -540,6 +549,8 @@
         "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 0,
         "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "SUPPORT_PARTICIPANT_TYPE_LIST": "'coach', 'official'",
+        "PARTICIPATION_PROPERTY_NAME_LIST": "'refereeFK'",
         "_names": {
             "DATA_ORGANIZATION_TYPE_ID": "1465 Organization, the statistic_data_type that holds the participant.id of the organization a ranked competitor represents. Declared for statistic type 11 and the only id of that name in the database, measured 2026-08-21. GLOBAL-DQ-131 reads it; the event layer keeps the same fact somewhere else entirely, as an organizationFK property on event_participants, which is why GLOBAL-DQ-130 is a separate statement and needs no parameter for it",
             "EVENT_PARTICIPANT_COUNT_LIST": "2: the field sizes this sport enters as event_participants rows. GLOBAL-DQ-083 asserted exactly two until 2026-08-20, which is right for a sport that only ever fields a pair and wrong for a doubles sport - Badminton enters the four players rather than two pairs, 48072 events against 40951 singles, and Table Tennis 7788 against 55314. This sport fields a pair and nothing else, so the value is 2 and the check reads exactly as it did",
@@ -563,7 +574,9 @@
             "BRONZE_ROUND_TYPE_LIST": "138 bronze (knockout: yes)",
             "MEDAL_ROUND_TYPE_LIST": "9 Final (knockout: yes), 138 bronze (knockout: yes)",
             "ROUND_TYPE_LIST": "2 Semi Finals (knockout: yes), 3 Quarter Finals (knockout: yes), 4 1/8 (knockout: yes), 5 1/16 (knockout: yes), 9 Final (knockout: yes), 22 5/6 (knockout: yes), 23 7/8 (knockout: yes), 24 9/10 (knockout: yes), 25 11/12 (knockout: yes), 26 5/8 (knockout: yes), 38 1 (knockout: no), 39 2 (knockout: no), 40 3 (knockout: no), 41 4 (knockout: no), 42 5 (knockout: no), 43 6 (knockout: no), 89 1 (knockout: yes), 138 bronze (knockout: yes), 305 Playoff (knockout: yes)",
-            "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed"
+            "NOT_STARTED_DESC_LIST": "1 Not started, 5 Postponed, 27 Not started, 34 Postponed, 35 Not started, 39 Postponed, 43 Not started, 44 Not started, 46 Postponed, 50 Postponed, 51 Not started, 55 Postponed, 61 Not started, 63 Not Started, 64 Postponed, 67 Postponed, 91 Postponed, 94 Not Started, 108 Not Started, 110 Postponed, 117 Not Started, 121 Postponed, 129 Not started, 133 Postponed, 144 Not Started, 146 Postponed",
+            "SUPPORT_PARTICIPANT_TYPE_LIST": "coach and official, the two types this sport files in its registry around the competition rather than in it - 12414 and 3920 respectively, measured 2026-08-24. Read by GLOBAL-DQ-135. It must not intersect REGISTRY_PARTICIPANT_TYPE_LIST, which holds athlete and team and is read by GLOBAL-DQ-009: the two statements would otherwise report every unattached team twice under two CheckIDs",
+            "PARTICIPATION_PROPERTY_NAME_LIST": "the event properties that attach a person to the competition they worked, read by GLOBAL-DQ-135 as a fourth participation path beside event, lineup and Comp.Rank. Measured 2026-08-24: Soccer writes refereeFK on 99259 events reaching 1626 people, and without this path 3919 of its 3920 registered officials would report as unattached. It is a list of names rather than a switch, so a sport writing no such property declares the name anyway and stays inside the check - Curling has none, its join matches nothing, and every coach it has filed stays unattached, which is the correct reading there"
         },
         "_notApplicable": {
             "RESULT_RANK_TYPE_ID": "no Rank result type; the sport is head to head and the pairing is the classification, so no place is stored on a result",
@@ -594,10 +607,6 @@
             "GLOBAL-DQ-132": {
                 "signal": "Monitor",
                 "reason": "some of what it returns is correct by construction and will never be corrected, so the count is expected to stay above zero however much is repaired. Measured 2026-08-21 on Artistic Gymnastics, one of its two findings is a Russian gymnast entered under Individual Neutral Athletes, whose country is International - which is exactly how a neutral athlete is recorded, and a refugee team is the same shape. The check is kept because agreement is overwhelmingly the rule, 303791 participations of 303892 across the two sports that fill the field, so the exceptions are few enough to read one at a time. A sport filling no organization at all has an eligible population of 0 here, which is a sentinel rather than clean data, and GLOBAL-DQ-130 is what reports the absence."
-            },
-            "GLOBAL-DQ-009": {
-                "signal": "Informational",
-                "reason": "135282 of 364192 registered athletes and 6140 of 29954 registered teams reach none of the three participation paths, and the rows are ordinary named people with a gender and a country, concentrated in the newest participant IDs - players the registry has taken on who have not yet appeared in a match this database covers. Nobody can correct such a row: the athlete is not wrong and the matches are not ours to add. Recorded by decision of 2026-08-05. REGISTRY_PARTICIPANT_TYPE_LIST is narrowed to athlete and team for the same decision: the registry also files coach and official, and the check reads only the event, lineup and Comp.Rank paths, so 3900 of the 3901 registered officials report for want of the ref:participant path this client does not use. Coaches are reachable - 1413 of 12844 report - and are left out only because the two audited types were the ones asked for. The narrowed list is this check's scope, not the registry's content, which SPORTS/Soccer.md records in full."
             },
             "GLOBAL-DQ-041": {
                 "signal": "Not applicable",
@@ -1029,6 +1038,10 @@
             "Golf-DQ-024": {
                 "signal": "Monitor",
                 "reason": "484 event participants carry a Comment saying they have no result while still holding one: 422 DQ, 51 RTD, 7 NR, 2 DNS, 2 N/R, of which 459 hold a Rank and 25 a score. The place a competitor occupied when the disqualification or retirement was recorded is kept beside it rather than removed, which is a storage habit of the sport rather than a contradiction to repair row by row. Decided 2026-08-14; the check stays because the same shape would report a genuine contradiction identically."
+            },
+            "GLOBAL-DQ-136": {
+                "signal": "Monitor",
+                "reason": "the same standing verdict GLOBAL-DQ-132 carries on the event layer, and for the same reason: part of what it returns is correct by construction and will never be corrected. A competitor ranked under a neutral or refugee organization is entered under a country that is not their own on purpose. Measured 2026-08-24, this sport returns 6 finding(s) of 99 eligible organization-and-country pairs, which is few enough to read one at a time rather than count. The audited object is the pair, so one row is one decision however many ranked competitors it gathered - and it gathers more here than on the event layer, because a Comp.Rank lists a relay athlete by athlete"
             }
         }
     },
@@ -1038,7 +1051,7 @@
         "IN_SCOPE_TEMPLATE_ID_LIST": "31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285",
         "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
         "EVENT_PARTICIPANT_COUNT_LIST": "2",
-        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach', 'official'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
         "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
         "PERSON_ROLE_TYPE_LIST": "'athlete', 'coach', 'official'",
         "STATISTIC_TYPE_ID": 11,
@@ -1078,13 +1091,15 @@
         "SERIES_SKIP_YEARS": "1940, 1941, 1942, 1943, 1944, 1945, 1946, 2020",
         "MEDAL_TEMPLATE_ID_LIST": "31, 32, 33, 308, 328, 546, 10083, 10560, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285",
         "DATA_TIME_TYPE_ID": "1426",
+        "SUPPORT_PARTICIPANT_TYPE_LIST": "'coach', 'official'",
+        "PARTICIPATION_PROPERTY_NAME_LIST": "'refereeFK'",
         "_names": {
             "SPORT_ID": "5 Ice Hockey, provider code ih",
             "CLIENT_FROM_SEASON": "2004, the package-wide client boundary. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent, and the season is read from tournament.name because the tournament row carries no date column at all. The cutoff removes more here than in any other sport in the package: 33 World Championship 1 runs from 1920 and 546 World Championship U-20 1 from 1977, so a boundary of 25 templates reaches back a century and the client asked for the last two decades of it",
             "IN_SCOPE_TEMPLATE_ID_LIST": "the client's 25 national-team templates, named 2026-08-21 with their gender: 31 Winter Olympics female and 32 male; 33 World Championship 1 male and 10083 female; 308 World Championship 2 male and 10849 female; 546 World Championship U-20 1 male; 10560 World Championship U18 1 male and 10738 female; 10501 Winter Olympics Qualification male and 10720 female; 313 Euro Hockey Tour 1 male and 10568 female; 328 World Cup of Hockey 1 male; 11076 Asian Winter Games male and 11077 female; 11091 Challenge Cup of Asia male and 11092 female; 11102 Winter Youth Olympic Games male and 11103 female; 11104 European Youth Olympic Festival male and 11105 female; 11044 Southeast Asian Games male and 11285 female; 11083 4 Nations Cup female. The boundary is declared as what it contains rather than as what it excludes, so the runner computes the other 87 templates at every run - the sport gained templates in 2016, 2018, 2020, 2022, 2025 and 2026, and under an exclusion list each new one would arrive inside the client's boundary with nobody deciding it. No club league is in scope, including 9694 Great Britain 1",
             "EVENT_PARTICIPANT_TYPE_LIST": "'team'. event_participants holds teams and nothing else - 135 male teams over 15226 participations and 96 female over 4380 inside the boundary. One athlete is entered as an event participant in the whole sport, Aleksandr Ossipov, participant 1356520, one participation in 2015, and the list states what the sport enters rather than what it happens to hold: that row is a structural contradiction for a check to report, not a second permitted type",
             "EVENT_PARTICIPANT_COUNT_LIST": "2, the field size of a hockey match. The sport is H2H (team) in SPORTS.md and every event is one team against one",
-            "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team', 'coach', 'official': the four types object_participants registers for this sport, all four sport-wide - 35956 active male athletes and 3406 female, 1352 male teams and 215 female, 282 male coaches and 5 female, 113 male officials and 32 female. official is inside the list and is not decoration: refereeFK is a ref:participant property on 270 events and is the sport's fourth path from an event to a person, which is why Ice-Hockey-DQ-088 reads it and reports 64 unused officials where GLOBAL-DQ-009 reported 224",
+            "REGISTRY_PARTICIPANT_TYPE_LIST": "athlete and team. coach and official were removed on 2026-08-24 when GLOBAL-DQ-135 was instantiated as Ice-Hockey-DQ-119: that statement reads SUPPORT_PARTICIPANT_TYPE_LIST and the two lists must not intersect. No check this sport instantiates reads this list today - GLOBAL-DQ-009 is Not applicable here - so the change moves nothing on a board; it keeps the declaration honest about which statement owns which types",
             "PERSON_PARTICIPANT_TYPE_LIST": "'athlete': who competes. The people are in the lineup rather than on the event, and the layer is fully populated - five lineup types in use, 14 Starter carrying 42620 male rows and 12194 female",
             "PERSON_ROLE_TYPE_LIST": "'athlete', 'coach', 'official': the participant types that denote a natural person, wider than PERSON_PARTICIPANT_TYPE_LIST, which names who competes, and narrower than REGISTRY_PARTICIPANT_TYPE_LIST, which includes team. GLOBAL-DQ-113 and GLOBAL-DQ-129 ask whether one ranking or one event mixes teams with individuals, and participant.type carries a person's CURRENT role rather than the one held at the event: 446 people typed coach appear in this sport's rankings and 406 of them also occupy a playing lineup slot, so a squad from 2004 reads as coach-and-athlete because its players have since become coaches. Collapsing the person types keeps that out of the findings and leaves team against athlete where it was",
             "STATISTIC_TYPE_ID": "11 Competition Stats, called Comp.Rank in this project",
@@ -1123,7 +1138,9 @@
             "SERIES_MIN_YEARS": "3, the package-wide value; the fewest editions that yield two intervals to compare",
             "SERIES_SKIP_YEARS": "1940 to 1946 and 2020, the years the sport did not run. The World Championship was not held through the Second World War and the 2020 edition was cancelled to COVID. The war years are named here and in no other sport in the package, because no other boundary reaches them: 33 World Championship 1 holds 101 editions from 1920",
             "MEDAL_TEMPLATE_ID_LIST": "21 of the 25 in-scope templates, every championship and Games in the boundary: 31 and 32 Winter Olympics, 33 and 10083 World Championship 1, 308 and 10849 World Championship 2, 546 World Championship U-20 1, 10560 and 10738 World Championship U18 1, 328 World Cup of Hockey 1, 11076 and 11077 Asian Winter Games, 11091 and 11092 Challenge Cup of Asia, 11102 and 11103 Winter Youth Olympic Games, 11104 and 11105 European Youth Olympic Festival, 11044 and 11285 Southeast Asian Games, 11083 4 Nations Cup. The four left out are the two Euro Hockey Tour templates, 313 male and 10568 female, and the two Winter Olympics Qualification templates, 10501 male and 10720 female: a standing tour and a qualifying round award no medal. A template awards medals by what it is rather than by what it currently stores",
-            "DATA_TIME_TYPE_ID": "1426 Time - declared although the sport writes not one row of it. Measured 2026-08-21 the Comp.Rank layer holds five data fields and this is not among them, which is right for a ranking decided on points and places rather than on the clock. It is recorded so that no reader has to establish twice what the id is"
+            "DATA_TIME_TYPE_ID": "1426 Time - declared although the sport writes not one row of it. Measured 2026-08-21 the Comp.Rank layer holds five data fields and this is not among them, which is right for a ranking decided on points and places rather than on the clock. It is recorded so that no reader has to establish twice what the id is",
+            "SUPPORT_PARTICIPANT_TYPE_LIST": "coach and official, read by GLOBAL-DQ-135. The sport files 289 coaches and 229 officials, measured 2026-08-24. They were removed from REGISTRY_PARTICIPANT_TYPE_LIST the same day so the two lists do not intersect, which is the rule GLOBAL-DQ-135 states; that list is read by GLOBAL-DQ-009, GLOBAL-DQ-052 and GLOBAL-DQ-117, none of which this sport instantiates",
+            "PARTICIPATION_PROPERTY_NAME_LIST": "refereeFK, the event property that attaches an official to the match they worked - written on 10479 events reaching 165 people, measured 2026-08-24. It is the fourth participation path and the reason GLOBAL-DQ-009 is Not applicable here: that template asserts three, and read by those alone two thirds of this sport's officials reported as unattached on 2026-08-14. GLOBAL-DQ-135 reads it and Ice-Hockey-DQ-088 no longer does, because a refereeFK names a person and can never reach the teams that statement was narrowed to"
         },
         "_checkSignal": {
             "GLOBAL-DQ-132": {
@@ -1286,9 +1303,9 @@
                 "signal": "Not applicable",
                 "reason": "Structural: the template asks whether a Rank stands without the value it was read from. There is no event Rank to stand, no tie-value field in a head-to-head sport, and no comment to excuse either."
             },
-            "Ice-Hockey-DQ-088": {
+            "GLOBAL-DQ-136": {
                 "signal": "Monitor",
-                "reason": "Real and population-wide: 329 of 2098 registered non-athletes - 136 teams, 129 coaches and 64 officials - are reached by no event, no lineup, no Comp.Rank and no refereeFK property, and a registry legitimately holds entries that were never used. No single row is a defect and none of them is worked through; what the number describes is how much of the sport's registry has never been entered anywhere, and a rise in it is the question rather than the rows themselves. Judged 2026-08-15 on the reviewed findings."
+                "reason": "the same standing verdict GLOBAL-DQ-132 carries on the event layer, and for the same reason: part of what it returns is correct by construction and will never be corrected. A competitor ranked under a neutral or refugee organization is entered under a country that is not their own on purpose. Measured 2026-08-24, this sport returns 14 finding(s) of 78 eligible organization-and-country pairs, which is few enough to read one at a time rather than count. The audited object is the pair, so one row is one decision however many ranked competitors it gathered - and it gathers more here than on the event layer, because a Comp.Rank lists a relay athlete by athlete"
             }
         }
     },

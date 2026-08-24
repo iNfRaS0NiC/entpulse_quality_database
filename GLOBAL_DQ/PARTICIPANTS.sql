@@ -1540,3 +1540,107 @@ WHERE og.object = 'event_participants'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, participations DESC, organization_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-135
+    -- Name - PARTICIPANT_COACH_OR_OFFICIAL_NO_PARTICIPATION_ANYWHERE
+    -- What it does: Flags registered coaches and officials that no event, lineup, Comp.Rank or event property reaches.
+    'REGISTERED_AND_NEVER_USED' AS check_type,
+    p.id AS participant_id,
+    p.name AS participant_name,
+    p.type AS participant_type,
+    c.name AS country_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds the people a sport registry files around a competition
+-- rather than in it - its coaches and its officials - that appear as no event participant, no
+-- lineup member, no Comp.Rank participant and on no event property naming a person.
+-- It is the companion of GLOBAL-DQ-009 and never its overlap. That template audits the
+-- competitors a sport declares in REGISTRY_PARTICIPANT_TYPE_LIST, which is where teams belong
+-- and where they stay; this one reads only the types in SUPPORT_PARTICIPANT_TYPE_LIST, and the
+-- two lists must not intersect. The separation is by construction rather than by agreement,
+-- for the reason GLOBAL-DQ-052 and GLOBAL-DQ-117 record: a sport carrying rows for two
+-- statements that read one population reports every finding twice under two CheckIDs, and
+-- nothing in the package can catch that once both rows are approved.
+-- The fourth path is why the template exists at all, and it is measured rather than assumed.
+-- GLOBAL-DQ-009 asserts three paths, and a sport attaching its officials to the match they
+-- worked through an event property has none of them: measured 2026-08-24, Soccer writes
+-- refereeFK on 99259 events reaching 1626 people, and Ice-Hockey on 10479 events reaching 165.
+-- Read by the three paths alone, 3919 of Soccer's 3920 registered officials report as
+-- unattached, and almost every one of those rows is false.
+-- PARTICIPATION_PROPERTY_NAME_LIST is a list of property names and not a switch, so a sport
+-- that writes no such property still declares the names the database uses and is inside the
+-- check rather than blocked by it. The join then matches nothing, every coach the sport has
+-- filed stays unattached, and that is the correct reading there rather than a fallback -
+-- Curling is the measured case, with no refereeFK anywhere and 38 of its 38 registered coaches
+-- reaching nothing. The alternative, a parameter a sport may record as not applicable, would
+-- lock that sport out of a check its data plainly needs, which is what happened to Cycling on
+-- GLOBAL-DQ-134.
+-- The audited object is the person, and the grouping is what makes that true rather than
+-- nearly true. A sport registry can file one participant more than once under the same sport:
+-- measured 2026-08-24 on Soccer, the ungrouped form returned 3830 rows for 3680 people, one of
+-- them three times over. Reported that way the same coach is three items of work, and the
+-- coverage branch - which has always counted distinct participants - would not agree with the
+-- findings it covers. The duplicate registry rows are a separate question and this statement
+-- does not assert anything about them.
+-- Sport-wide by construction. The registry has no template relation, so the client boundary
+-- cannot narrow it, and the participation paths are read sport-wide to match: a coach attached
+-- only in a competition the client does not take has still been used, and reporting them would
+-- be false. The property subquery joins the hierarchy solely to reach sportFK, which is what
+-- keeps it off a full scan of property.
+FROM object_participants op
+JOIN participant p ON p.id = op.participantFK AND p.del = 'no'
+LEFT JOIN country c ON c.id = p.countryFK
+LEFT JOIN (
+    SELECT DISTINCT TRIM(pr.value) AS pid
+    FROM property pr
+    JOIN event e ON e.id = pr.objectFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = {{SPORT_ID}}
+    WHERE pr.object = 'event'
+      AND pr.name IN ({{PARTICIPATION_PROPERTY_NAME_LIST}})
+      AND pr.del = 'no'
+      AND TRIM(COALESCE(pr.value, '')) <> ''
+) ref ON ref.pid = CAST(p.id AS CHAR)
+WHERE op.object = 'sport'
+  AND op.objectFK = {{SPORT_ID}}
+  AND op.del = 'no'
+  AND p.type IN ({{SUPPORT_PARTICIPANT_TYPE_LIST}})
+  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
+  AND ref.pid IS NULL
+  AND NOT EXISTS (
+      SELECT 1 FROM event_participants ep
+      WHERE ep.participantFK = p.id AND ep.del = 'no'
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM lineup l
+      WHERE l.participantFK = p.id AND l.del = 'no'
+  )
+  AND NOT EXISTS (
+      SELECT 1 FROM statistic_participants{{SHARD_ID}} sp
+      JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+           AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      WHERE sp.participantFK = p.id AND sp.del = 'no'
+  )
+GROUP BY p.id, p.name, p.type, c.name
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT op.participantFK) AS eligible_count,
+    1 AS sort_order
+FROM object_participants op
+JOIN participant p ON p.id = op.participantFK AND p.del = 'no'
+WHERE op.object = 'sport'
+  AND op.objectFK = {{SPORT_ID}}
+  AND op.del = 'no'
+  AND p.type IN ({{SUPPORT_PARTICIPANT_TYPE_LIST}})
+  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
+
+ORDER BY sort_order, participant_type, participant_id;

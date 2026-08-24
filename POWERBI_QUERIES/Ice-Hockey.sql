@@ -519,8 +519,8 @@ ORDER BY sort_order, event_name;
 -- ================================================================================
 SELECT
     -- CheckID - Ice-Hockey-DQ-088
-    -- Name - PARTICIPANT_TEAM_COACH_OR_OFFICIAL_NO_PARTICIPATION_ANYWHERE
-    -- What it does: Flags registered teams, coaches and officials that no event, lineup, Comp.Rank or referee link reaches.
+    -- Name - PARTICIPANT_TEAM_NO_PARTICIPATION_ANYWHERE
+    -- What it does: Flags registered teams that no event, lineup or Comp.Rank reaches.
     'REGISTERED_AND_NEVER_USED' AS check_type,
     p.id AS participant_id,
     p.name AS participant_name,
@@ -528,49 +528,45 @@ SELECT
     c.name AS country_name,
     NULL AS eligible_count,
     0 AS sort_order
--- What it does, stated in full: Finds participants the sport registry knows, other than
--- athletes, that appear as no event participant, no lineup member, no Comp.Rank participant and
--- on no event's refereeFK property.
--- Two departures from GLOBAL-DQ-009, and each is why this statement exists.
--- The referee path is the first. That template asserts three participation paths and this sport
--- has a fourth: refereeFK is a ref:participant property on 270 events, and it is how an official
--- is attached to the match they worked. Measured 2026-08-14, 160 of the 224 officials the
--- template reported as unattached referee an event, so two thirds of its officials were reported
--- for lacking a link the template does not read.
--- Athletes are the second. The template reported 15201 of them, and reading those rows found
--- something a check cannot act on: every one is entered nowhere in the database, in this sport or
--- any other, and 15187 carry both a date of birth and a country. Complete profiles never attached
--- to a match are a question about where they came from, not a list anybody works through, and
--- only 552 of them sit in a duplicate-name group so merging will not clear them either.
--- SPORTS/Ice-Hockey.md records the measurement and the question.
--- What is left is 329 rows and readable: 136 teams, 129 coaches and 64 officials.
+-- What it does, stated in full: Finds teams the sport registry knows that appear as no event
+-- participant, no lineup member and no Comp.Rank participant.
+-- Narrowed to teams on 2026-08-24. Until then it also audited coaches and officials, and it
+-- was the only statement in the package that did; GLOBAL-DQ-135 was promoted from it that day
+-- and now asks that question for every sport, so keeping both would report each unattached
+-- coach twice under two CheckIDs. What is left here is the part no template covers for this
+-- sport: GLOBAL-DQ-009 audits the registry a sport declares in REGISTRY_PARTICIPANT_TYPE_LIST
+-- and is Not applicable here, because that template asserts three participation paths while an
+-- official of this sport is attached through a fourth. Teams would otherwise be audited by
+-- nothing at all.
+-- The referee path went with the coaches and officials, because it cannot reach a team: an
+-- event's refereeFK names a person. It is read by GLOBAL-DQ-135 through
+-- PARTICIPATION_PROPERTY_NAME_LIST, which is where the measurement behind it now lives.
+-- The audited object is the team, and the grouping is what makes that true rather than nearly
+-- true: a sport registry can file one participant more than once under the same sport, and
+-- reported ungrouped the same team is two items of work while the coverage branch, which has
+-- always counted distinct participants, would not agree with the findings it covers. Measured
+-- on Soccer 2026-08-24, that shape returned 3830 rows for 3680 people. The duplicate registry
+-- rows are a separate question and this statement asserts nothing about them.
 -- Sport-wide by construction. The registry has no template relation, so the client boundary
 -- cannot narrow it, and the participation paths are read sport-wide to match: a team entered
 -- only in a league the client does not take has still been used, and reporting it would be
--- false. The referee subquery joins the hierarchy solely to reach sportFK, which is what keeps
--- it off a full scan of property.
+-- false.
+-- Its signal is Actionable, by decision of 2026-08-24, and it was Monitor until that day on the
+-- reasoning that a registry legitimately holds entries nobody ever entered and that no single
+-- row is therefore a defect. That reading is reversed for the whole no-participation family:
+-- GLOBAL-DQ-009 carries the same decision in its catalogue row, and what these statements
+-- report is to be cleared even where it does not look like work today. Leaving this one at
+-- Monitor would have split one question across two verdicts inside a single sport, with the
+-- teams watched and the coaches and officials worked, which is the shape a reader takes for an
+-- oversight.
 FROM object_participants op
 JOIN participant p ON p.id = op.participantFK AND p.del = 'no'
 LEFT JOIN country c ON c.id = p.countryFK
-LEFT JOIN (
-    SELECT DISTINCT TRIM(pr.value) AS pid
-    FROM property pr
-    JOIN event e ON e.id = pr.objectFK AND e.del = 'no'
-    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-         AND tt.sportFK = 5
-    WHERE pr.object = 'event'
-      AND pr.name = 'refereeFK'
-      AND pr.del = 'no'
-      AND TRIM(COALESCE(pr.value, '')) <> ''
-) ref ON ref.pid = CAST(p.id AS CHAR)
 WHERE op.object = 'sport'
   AND op.objectFK = 5
   AND op.del = 'no'
-  AND p.type IN ('team', 'coach', 'official')
+  AND p.type = 'team'
   -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
-  AND ref.pid IS NULL
   AND NOT EXISTS (
       SELECT 1 FROM event_participants ep
       WHERE ep.participantFK = p.id AND ep.del = 'no'
@@ -585,6 +581,7 @@ WHERE op.object = 'sport'
            AND s.statistic_typeFK = 11
       WHERE sp.participantFK = p.id AND sp.del = 'no'
   )
+GROUP BY p.id, p.name, p.type, c.name
 
 UNION ALL
 
@@ -598,7 +595,7 @@ JOIN participant p ON p.id = op.participantFK AND p.del = 'no'
 WHERE op.object = 'sport'
   AND op.objectFK = 5
   AND op.del = 'no'
-  AND p.type IN ('team', 'coach', 'official')
+  AND p.type = 'team'
   -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
 
 ORDER BY sort_order, participant_type, participant_name;

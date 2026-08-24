@@ -18288,6 +18288,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 17-29-43",
+                     "startedUtc":  "2026-08-24T15:29:43Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-136",
+                                        "runKey":  "GLOBAL-DQ-136",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  7,
+                                        "findings":  6,
+                                        "eligible":  99,
+                                        "seconds":  16.7,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"

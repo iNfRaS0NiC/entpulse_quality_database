@@ -9851,6 +9851,75 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 17-30-02",
+                     "startedUtc":  "2026-08-24T15:30:02Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-136",
+                                        "runKey":  "GLOBAL-DQ-136",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  15,
+                                        "findings":  14,
+                                        "eligible":  78,
+                                        "seconds":  13.8,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "24.08.2026 17-38-59",
+                     "startedUtc":  "2026-08-24T15:38:59Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-119",
+                                        "runKey":  "Ice-Hockey-DQ-119",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_COACH_OR_OFFICIAL_NO_PARTICIPATION_ANYWHERE",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  178,
+                                        "findings":  177,
+                                        "eligible":  518,
+                                        "seconds":  2.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "24.08.2026 17-39-03",
+                     "startedUtc":  "2026-08-24T15:39:03Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-088",
+                                        "runKey":  "Ice-Hockey-DQ-088",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_TEAM_NO_PARTICIPATION_ANYWHERE",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "Improved",
+                                        "rows":  137,
+                                        "findings":  136,
+                                        "eligible":  1583,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1Vy0mfddOI9cWkWEpeM7oA12BTDuvUB-nevFZwQANn94"

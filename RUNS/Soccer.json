@@ -15276,6 +15276,75 @@
                                         "status":  "SKIPPED: not narrowable - no template filter to activate; the audited population has no template relation"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 17-24-54",
+                     "startedUtc":  "2026-08-24T15:24:54Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-135",
+                                        "runKey":  "GLOBAL-DQ-135",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_COACH_OR_OFFICIAL_NO_PARTICIPATION_ANYWHERE",
+                                        "category":  "",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  3831,
+                                        "findings":  3830,
+                                        "eligible":  16334,
+                                        "seconds":  13.8,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "Temp",
+                     "startedUtc":  "2026-08-24T15:25:33Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-135",
+                                        "runKey":  "GLOBAL-DQ-135",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_COACH_OR_OFFICIAL_NO_PARTICIPATION_ANYWHERE",
+                                        "category":  "",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3831,
+                                        "findings":  3830,
+                                        "eligible":  16334,
+                                        "seconds":  12.9,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "24.08.2026 17-27-47",
+                     "startedUtc":  "2026-08-24T15:27:47Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-135",
+                                        "runKey":  "GLOBAL-DQ-135",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_COACH_OR_OFFICIAL_NO_PARTICIPATION_ANYWHERE",
+                                        "category":  "",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  3681,
+                                        "findings":  3680,
+                                        "eligible":  16334,
+                                        "seconds":  13.4,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE"

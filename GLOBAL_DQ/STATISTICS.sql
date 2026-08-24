@@ -4527,3 +4527,122 @@ WHERE s.del = 'no'
   )
 
 ORDER BY sort_order, statistic_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-136
+    -- Name - COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR
+    -- What it does: Finds Comp.Rank organizations whose country is not the country of the competitors ranked under them.
+    CASE
+        WHEN x.organization_name = x.competitor_country
+            THEN 'ORGANIZATION_NAMED_FOR_THE_COMPETITOR_COUNTRY'
+        ELSE 'ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR'
+    END AS check_type,
+    x.organization_id,
+    x.organization_name,
+    x.organization_country,
+    x.competitor_country,
+    x.template_name,
+    x.competitors,
+    x.ranked_participations,
+    x.sample_competitors,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A competitor ranked under an organization is normally ranked
+-- under their own country's, and this reports where the two countries disagree.
+-- It is the Comp.Rank counterpart of GLOBAL-DQ-132 and asks that template's question one layer
+-- up, where until 2026-08-24 nothing asked it. The two are the same rule over two mechanisms
+-- and a sport can fill either without the other, which is the same pairing GLOBAL-DQ-130 and
+-- GLOBAL-DQ-131 already record for the presence of the field: on the event layer the
+-- organization is the `organizationFK` property of a participation, here it is the
+-- Organization data type declared for the statistic type, holding a participant id.
+-- GLOBAL-DQ-131 asserts that the field is filled; this asks whether what is in it is right.
+-- A sport filling none of it has an eligible population of 0, which is a sentinel rather than
+-- clean data, and GLOBAL-DQ-131 is what reports the absence.
+-- **Its signal is Monitor and it expects a non-zero count forever**, for the reason
+-- GLOBAL-DQ-132 records: a neutral athlete ranked under `Individual Neutral Athletes`, whose
+-- country is `International`, is recorded exactly as it should be, and a refugee team is the
+-- same shape. It is worth having anyway because agreement is overwhelmingly the rule.
+-- **The audited object is the organization together with the competitor country**, not the
+-- ranked participation and not the competitor, exactly as in GLOBAL-DQ-132. One disagreement is
+-- one decision however many people it caught, and on this layer the difference is larger than on
+-- the event layer rather than smaller: a Comp.Rank lists a relay athlete by athlete where an
+-- event enters the team as one participant, so the same decision gathers more rows here.
+-- `competitors`, `ranked_participations` and `sample_competitors` carry the detail as named
+-- secondary columns.
+-- The two branches separate two quite different repairs, and the split is GLOBAL-DQ-132's:
+-- where the organization's own name is the competitor's country, the two are one place held
+-- under two `country` rows, which is a single reference-layer correction and not a crowd of
+-- misfiled competitors. Where the names differ it is a competitor question - a federation
+-- change, a neutral entry, or an error.
+-- An Organization value that does not resolve to a live participant drops out of both branches
+-- rather than being reported here, because an unresolvable reference is a different defect and
+-- GLOBAL-DQ-115 is where this layer's participant references are judged.
+-- Tournament-owned statistics only, template_name projected and IOC-purpose templates excluded
+-- in both branches, as every statistic statement in this file does.
+FROM (
+    SELECT
+        org.id AS organization_id,
+        org.name AS organization_name,
+        oc.name AS organization_country,
+        pc.name AS competitor_country,
+        tt.name AS template_name,
+        COUNT(DISTINCT sp.participantFK) AS competitors,
+        COUNT(*) AS ranked_participations,
+        SUBSTRING(GROUP_CONCAT(DISTINCT pt.name ORDER BY pt.name SEPARATOR ', '), 1, 200) AS sample_competitors
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = {{SPORT_ID}}
+    JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN statistic_data{{SHARD_ID}} og
+      ON og.statistic_participants{{SHARD_ID}}FK = sp.id
+     AND og.statistic_data_typeFK = {{DATA_ORGANIZATION_TYPE_ID}}
+     AND og.del = 'no'
+     AND og.value REGEXP '^[1-9][0-9]*$'
+    JOIN participant pt ON pt.id = sp.participantFK AND pt.del = 'no'
+    JOIN participant org ON org.id = CAST(og.value AS UNSIGNED) AND org.del = 'no'
+    JOIN country oc ON oc.id = org.countryFK
+    JOIN country pc ON pc.id = pt.countryFK
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND org.countryFK <> pt.countryFK
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY org.id, org.name, oc.name, pc.name, tt.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT CONCAT(org.id, '#', pt.countryFK)) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN statistic_data{{SHARD_ID}} og
+  ON og.statistic_participants{{SHARD_ID}}FK = sp.id
+ AND og.statistic_data_typeFK = {{DATA_ORGANIZATION_TYPE_ID}}
+ AND og.del = 'no'
+ AND og.value REGEXP '^[1-9][0-9]*$'
+JOIN participant pt ON pt.id = sp.participantFK AND pt.del = 'no'
+JOIN participant org ON org.id = CAST(og.value AS UNSIGNED) AND org.del = 'no'
+JOIN country oc ON oc.id = org.countryFK
+JOIN country pc ON pc.id = pt.countryFK
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, competitors DESC, organization_id;
