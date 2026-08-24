@@ -1325,7 +1325,6 @@
             "PERSON_ROLE_TYPE_LIST": "'athlete', 'coach': the participant types that denote a natural person, measured against the sport registry on 2026-08-20. Not PERSON_PARTICIPANT_TYPE_LIST, which names who competes - a coach is a person and does not compete - and not REGISTRY_PARTICIPANT_TYPE_LIST, which includes team and, for Equestrian, horse. GLOBAL-DQ-113 asks whether one ranking mixes teams with individuals, and participant.type carries a person's CURRENT role rather than the one held at the event: 446 people typed coach appear in Ice Hockey's rankings and 406 of them also occupy a playing lineup slot, so a squad from 2004 reads as coach-and-athlete because its players have since become coaches. Collapsing the person types keeps that out of the findings and leaves team against athlete, and horse against athlete, where they were",
             "SPORT_ID": "30 Cycling",
             "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
-            "CLIENT_FROM_SEASON": "2004 by decision of 2026-08-20. UK Sport's scope starts at the 2004 season, so a tournament whose season ended before it is out of client scope rather than absent. The season is read from tournament.name because the tournament row carries no date at all - its columns are id, name, tournament_templateFK, enetSeasonID, n, locked, ut, del - and the stage dates are missing on exactly the old rows a date filter would have to catch: Curling holds 477 undated tournaments of 793, Modern Pentathlon 285 of 847, and a filter on stage dates excluded 0 of Triathlon's 60 old seasons. Every tournament name in every documented sport carries a year, measured that day. A season written YYYY/YYYY is dated by its LAST year, so 2003/2004 stays in and 2002/2003 does not - 133 tournaments turn on that and the choice was made deliberately",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: the client takes this sport whole, all 51 templates",
             "REGISTRY_PARTICIPANT_TYPE_LIST": "athlete and team. coach is deliberately left out - the sport registers 98 of them and no check here audits a coach, decided 2026-08-16. It is also the only type the registry holds that none of GLOBAL-DQ-009's three participation paths can reach, since a coach is entered on no event, the sport writes no lineup, and no coach appears in a Comp.Rank",
             "STATISTIC_TYPE_ID": "11 Competition Stats, called Comp.Rank in this project",
@@ -1552,6 +1551,10 @@
             "Cycling-DQ-096": {
                 "signal": "Out of client scope",
                 "reason": "Out of client scope by the review's decision of 2026-08-17, answering the open question about scope type 0: the client does not need the scope layer for this sport at present. The structure is present and the check is correct - GLOBAL-DQ-102 reads 1067 events and reports none, and the sport variant Cycling-DQ-096 reads 1094 and reports 104 - so this is neither Not applicable nor Clean. It is a boundary the client drew, and it is reversible: the day the scope layer is wanted, both come back with nothing to rebuild. The checkpoint chain measured on 2026-08-16 runs checkpoint1 to checkpoint192 and the 104 findings are unreadable distances, remaining distances, finish markers and jersey groups, which is a real work list held rather than dropped."
+            },
+            "GLOBAL-DQ-134": {
+                "signal": "Blocked",
+                "reason": "the sport's rankings need this check and the template will not take them. It counts a place by its holders and reads DATA_TEAM_TYPE_ID to do so, which it declares mandatory as all six other templates reading that field declare it; this sport records 1429 Team as not applicable, measured by GLOBAL-DISCOVERY-031 on 2026-08-16 and confirmed 2026-08-24 at 0 of 1961 tournament-owned rankings. Blocked and not Not applicable, because what stops it is the parameter contract rather than the sport's structure: measured the same day, the sport holds 100 rankings with a place nobody holds and 28 with a tie that does not skip, against 151115 correct steps, so the convention is plainly skip-after-tie and the findings are plainly real. With no Team written every competitor is its own holder, which is the correct reading here, so relaxing the parameter to optional would open the check with no loss of meaning. That is a change to a GLOBAL template and is not made on this sport's account alone"
             }
         },
         "_notApplicable": {
@@ -1777,6 +1780,10 @@
             "GLOBAL-DQ-019": {
                 "signal": "Out of client scope",
                 "reason": "it reads result type 101 Duration, which is one of the nine result types the client did not take on 2026-08-18. The sport stores it and fills it on 254 events, so the check would run and report a real population belonging to somebody else. It lifts unchanged if the boundary moves."
+            },
+            "GLOBAL-DQ-134": {
+                "signal": "Not applicable",
+                "reason": "the template asserts a competition ranking that skips the places a tie consumes, and this sport does not store one on the Comp.Rank layer. Measured 2026-08-24 over every tournament-owned Comp.Rank the sport holds: 353 of its 424 rankings tie densely - a place shared by two is followed by the next number rather than the one after it - against 1474 correct steps and a single ranking with a missing place. A dense ranking is a different convention, not a broken one, so the check would report the sport's normal shape on five rankings in six. GLOBAL-DQ-119 stays instantiated on the event layer, where the sport does skip; the two layers differ and that difference is the finding here"
             }
         }
     },
@@ -1871,7 +1878,7 @@
                 "signal": "Monitor",
                 "reason": "the sport states an event round in one of two places and never in both, and neither is declared wrong. Round type 329 Heats Summary carries 4095 events and not one says so in its name; 593 say it in the name and leave the round type at 38 or 89, both named with the bare number 1, across 22 templates from 2006 to 2025. The proportion is the finding and no single row is a defect - driving it to zero would mean re-typing 593 events to a convention nobody has declared. It is kept because it measures how far the round vocabulary got, and because the spelling travels with it: the second convention writes Heats Summary, Heat Summary, Heat summary and Slow Heats. Swimming-DQ-072 excludes the bare-number round types outright for this reason and reports only where two meaningful fields contradict. Measured 2026-08-21."
             },
-  "Swimming-DQ-066": {
+            "Swimming-DQ-066": {
                 "signal": "Monitor",
                 "reason": "the two naming conventions are both live and neither is declared wrong. The proportion is the finding - measured 2026-08-20 with distance-first read as a name beginning with a digit, 373 against 1 on the older discipline ids and 1807 against 91 on the current ones - and a single row is not a defect. Driving it to zero would mean renaming events to a convention nobody has chosen. It is kept because it measures how far a half-finished cleanup got, and because a Comp.Rank grouped by disciplineFK will split one competition's relay across two rankings for exactly these events."
             },
@@ -1962,6 +1969,216 @@
             "GLOBAL-DQ-074": {
                 "signal": "Sentinel",
                 "reason": "the sport attaches no venue to any event or stage, so all 46379 events are reported and the finding is that fact rather than a list to work through. venue_object is the only mechanism DATABASE.md recognises for it, and Swimming fills none of it. Numbered deliberately on 2026-08-20 with the row count known: the alternative was to declare it not applicable, which would have switched the check off for the day venues start being written."
+            }
+        }
+    },
+    "Speed-Skating": {
+        "SPORT_ID": 19,
+        "CLIENT_FROM_SEASON": 2004,
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "PERSON_ROLE_TYPE_LIST": "'athlete'",
+        "STATISTIC_TYPE_ID": 11,
+        "STATISTIC_OWNER_TYPE_ID": 3,
+        "SHARD_ID": 11,
+        "DATA_ORGANIZATION_TYPE_ID": 1465,
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_DURATION_TYPE_ID": 101,
+        "RESULT_COMMENT_TYPE_ID": 104,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "RESULT_FULL_TIME_TYPE_ID": 557,
+        "INTEGER_RESULT_TYPE_LIST": "100, 408, 510",
+        "ROUND_TYPE_LIST": "171, 173, 176, 178, 179, 181, 182, 204",
+        "FINAL_ROUND_TYPE_LIST": "173",
+        "BRONZE_ROUND_TYPE_LIST": "181",
+        "MEDAL_ROUND_TYPE_LIST": "9, 173, 181, 265, 273",
+        "NOT_STARTED_DESC_LIST": "1",
+        "STALE_NOT_STARTED_DAYS": 2,
+        "SCOPE_TYPE_LIST": "101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 305",
+        "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+        "SERIES_MIN_YEARS": 3,
+        "SERIES_SKIP_YEARS": "0",
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 0,
+        "CONFIG_START_DATE_TYPE_ID": 1463,
+        "CONFIG_END_DATE_TYPE_ID": 1464,
+        "CONFIG_GENDER_TYPE_ID": 1470,
+        "ELIMINATION_ROUND_NAME_LIST": "'semi finals', 'quarter finals', 'qualifier', 'heats', 'preliminary'",
+        "GROUP_ROUND_NAME_LIST": "'final', 'after run 1', 'bronze'",
+        "CONFIG_EVENT_ID_TYPE_ID": 1471,
+        "SCOPE_TYPE_ID": 305,
+        "DATA_RANK_TYPE_ID": 1270,
+        "DATA_COMMENT_TYPE_ID": 1273,
+        "DATA_MEDAL_TYPE_ID": 1277,
+        "DATA_TIME_TYPE_ID": 1426,
+        "DATA_TIME_DIFFERENCE_TYPE_ID": 1427,
+        "DATA_TEAM_TYPE_ID": 1429,
+        "DATA_DEPRECATED_DURATION_TYPE_ID": 1272,
+        "NUMERIC_RESULT_TYPE_LIST": "100, 408, 510",
+        "NUMERIC_DATA_TYPE_LIST": "1270, 1271",
+        "PRECISION_RESULT_TYPE_LIST": "101, 102, 557",
+        "PRECISION_DATA_TYPE_LIST": "1272, 1426, 1427",
+        "CLOCK_RESULT_TYPE_LIST": "101, 557",
+        "RESULT_TIE_VALUE_TYPE_LIST": "557, 101",
+        "FULL_TIME_TOLERANCE_SECONDS": "0.001",
+        "RANK_MAX_PLAUSIBLE": 100,
+        "TIMED_DISCIPLINE_LIST": "135, 136, 137, 138, 139, 140, 141, 142, 143, 324, 325, 326, 327, 328, 329, 330, 331, 332, 333, 565",
+        "MEDAL_TEMPLATE_ID_LIST": "30, 103, 104, 9625, 10755, 10861, 10867, 10870, 10871, 10883, 10884, 10885, 10887, 10894, 10895, 10896, 10910, 10911, 10912, 10918, 11179, 12321, 12322, 12323, 12324, 12325, 12326, 12327, 12328, 12329, 12330, 12331, 12332, 12333, 12334, 12335, 12336, 12337, 12338, 12342, 12343, 12344, 12345, 12346, 12347, 12348, 12349, 12350, 12351, 12352, 12353, 12354, 12355, 12356, 12357, 12358, 12359",
+        "RESULT_COMMENT_VALUE_LIST": "'dnf', 'dns', 'disqualified', 'dq', 'disq.', 'wdr', 'withdrawn', 'no time', 'q', 'adv', 'wr', 'or', 'pb', 'tr', 'fa', 'fb', 'fc', 'fd', 'sf1', 'sf2', 'ff1', 'ff2', 'ff3', 'ff4', 'ff5', 'ff6', 'ff7', 'ff8', 'ff9', 'ff10', 'ff11', 'ff12', 'ff13', 'ff14', 'ff15', 'ff16', 'ff17', 'ff18', 'ff19', 'ff20', 'ff21', 'ff22', 'ff23', 'ff24', 'ff25', 'ff26', 'ff27', 'ff28', 'ff29', 'ff31', 'ff32', 'ff35', 'ff36'",
+        "RESULT_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'disqualified', 'dq', 'disq.', 'wdr', 'withdrawn', 'no time'",
+        "DATA_COMMENT_VALUE_LIST": "'dnf', 'dns', 'disqualified', 'dq', 'wd', 'dsq', 'disq.', 'wdr', 'withdrawn', 'no time', 'nr', 'wr', 'or', 'pb', 'sb', 'tr', 'ff1', 'ff2', 'ff3', 'ff4', 'ff5', 'ff6', 'ff7', 'ff8', 'ff9', 'ff10', 'ff11', 'ff12', 'ff13', 'ff14', 'ff15', 'ff16', 'ff17', 'ff18', 'ff19', 'ff20', 'ff21', 'ff22', 'ff23', 'ff24', 'ff25', 'ff26', 'ff27', 'ff28', 'ff29', 'ff31', 'ff32', 'ff35', 'ff36'",
+        "DATA_COMMENT_NO_RESULT_LIST": "'dnf', 'dns', 'disqualified', 'dq', 'wd', 'dsq', 'disq.', 'wdr', 'withdrawn', 'no time'",
+        "RESULT_FINAL_SCORE_TYPE_ID": 557,
+        "_names": {
+            "SPORT_ID": "19 Speed Skating, enet code sp. Short Track Speed Skating is a different sport, sport.id 15, and nothing recorded here was measured against it",
+            "CLIENT_FROM_SEASON": "2004, the same client boundary every documented sport carries by the decision of 2026-08-20. The season is read from tournament.name, and this sport's tournament names carry it in both forms the rule covers - a bare year, 2016, and a split season, 2009/2010, which is dated by its last year",
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0 nothing excluded: the client takes this sport whole, all 101 templates. The 26 (IOC) templates are not named here even though none of them holds a stage or an event, because unlike Equestrian's and Swimming's they are not empty: they carry 2301 of the sport's 9314 Comp.Rank statistics, measured 2026-08-22. Every statistics statement already excludes them by name under POWERBI.md's query contract, so listing them here would add nothing to the statistic scope and would instead exclude, from the event scope, templates that hold no events anyway",
+            "EVENT_PARTICIPANT_TYPE_LIST": "athlete and team; athletes skate the individual distances and teams skate Team Pursuit, Team Sprint, the relays and the Mixed Gender Relay",
+            "REGISTRY_PARTICIPANT_TYPE_LIST": "athlete and team, the only two roles the sport registry holds",
+            "PERSON_PARTICIPANT_TYPE_LIST": "athlete only, the sport's natural persons",
+            "PERSON_ROLE_TYPE_LIST": "athlete only. The registry holds no coach role for this sport, so the two lists coincide here and the distinction other sports need does not arise, measured 2026-08-22",
+            "STATISTIC_TYPE_ID": "11 Competition Stats, called Comp.Rank in this project. GLOBAL-DISCOVERY-015 returned exactly one type and owner pair for this sport, so nothing was chosen: there was no alternative to choose from",
+            "STATISTIC_OWNER_TYPE_ID": "3 tournament, the sport's only owner level. 9314 statistics, measured 2026-08-22. 2301 of them hang off a tournament whose template carries the (IOC) suffix, so a statement excluding IOC templates from a statistic scope drops roughly a quarter of the population deliberately, not as a formality",
+            "SHARD_ID": "11 statistic_participants11 and statistic_data11, confirmed on both by GLOBAL-DISCOVERY-016 and -017, 2026-08-22",
+            "DATA_ORGANIZATION_TYPE_ID": "1465 Organization, the statistic_data_type holding the participant.id of the organization a ranked competitor represents. It is used on 38 rows over 18 statistics, measured 2026-08-22, which is a data state and not a structural absence - the type exists and the shard holds it",
+            "RESULT_RANK_TYPE_ID": "100 Rank, a bare integer and the sport's finishing place; populated on 4721 of 5088 events",
+            "RESULT_DURATION_TYPE_ID": "101 Duration, which holds two different quantities in one column - a signed gap from the winner and an unsigned absolute time - and also carries the text values -, DQ and DNF. 557 is the unambiguous absolute time",
+            "RESULT_COMMENT_TYPE_ID": "104 Comment, free text carrying the qualification, record and non-finish markers; the sport writes no incidents, so this is where a disqualification is recorded",
+            "RESULT_MEDAL_TYPE_ID": "501 Medal, holding gold, silver and bronze only",
+            "RESULT_FULL_TIME_TYPE_ID": "557 Full-time duration, the skater's own total time for the distance, M:SS.hh or S.hh with no sign and no text",
+            "INTEGER_RESULT_TYPE_LIST": "100 Rank, 408 Startnumber and 510 Second points, the three result types whose values are bare integers, measured on GLOBAL-DISCOVERY-026 across every type the sport uses, 2026-08-22. 408 holds two rows reading DNF and one reading a decimal, which is why it is named here rather than assumed",
+            "ROUND_TYPE_LIST": "the eight round types the sport contests: 171 Preliminary, 173 Final, 176 Quarter Finals, 178 Semi Finals, 179 Qualifier, 181 bronze, 182 After Run 1, 204 Heats. round_typeFK 0 is deliberately absent: it resolves to no round_type row and is the missing-round-type gap rather than a round the sport holds. Its 17 events are one block of cancelled March 2023 events, not a scattered state",
+            "FINAL_ROUND_TYPE_LIST": "173 Final. Unlike the sports that award their whole medal set inside one final, this sport also has 181 bronze as a round of its own, so the final and the medal list are not the same list here",
+            "BRONZE_ROUND_TYPE_LIST": "181 bronze, on 12 events. The name is stored in lower case where every other round type name is capitalised",
+            "MEDAL_ROUND_TYPE_LIST": "9 Final, 173 Final, 181 bronze, 265 Final A and 273 Final B, corrected 2026-08-23 after being measured across both layers that carry a medal. An earlier reading took the event layer alone, where the sport uses 173, and missed that the Comp.Rank phase uses 9 Final on 14621 of its 14810 medalled participant rows - the knockout twin of 173 - with 265 Final A on 51 and 273 Final B on 24. GLOBAL-DQ-041 reads the phase, so the short list reported 14681 rows of 19619 against a rule that was simply pointed at the wrong ids. 182 After Run 1 is deliberately absent although it carries medals in both layers, 11 events and 1 Comp.Rank row: an intermediate standing is not a medal round, and those 12 rows are reported rather than excused. That reverses the choice made on 2026-08-22, when 182 was included to keep the 11 event rows out of the findings, and the reversal was decided with both counts in view",
+            "NOT_STARTED_DESC_LIST": "1 Not started, the only not-started status description the sport uses; it appears on 19 events",
+            "STALE_NOT_STARTED_DAYS": "2, the value GLOBAL_DQ/README.md fixes for every sport by the decision of 2026-08-06. It measures how long a not-started status went unmaintained after the event's own date, which is a property of the feed rather than of the sport, so it is not a per-sport judgement",
+            "SCOPE_TYPE_LIST": "101 checkpoint1 through 125 checkpoint25, and 305 final_result - the split-time layer. It is far larger here than in the other listing sports: scope_result holds 132459 rank values and 123051 duration values, measured 2026-08-22, more than the event result layer carries for the same quantities. The container count falls away with the checkpoint number because a checkpoint exists only where the distance has a lap for it",
+            "PLACEHOLDER_COUNTRY_LIST": "International, Unknown and Undefined. Only International occurs, on 8 stages, measured 2026-08-22; the other two are named so they are caught if they ever arrive",
+            "SERIES_MIN_YEARS": "3, the repository's usual threshold for a series long enough that a break in it means something",
+            "SERIES_SKIP_YEARS": "0, the neutral value: this sport has no year it is known not to have run. Measured 2026-08-22 over every season from 2000, 2020 holds 246 events and 2021 holds 237, against a 2004-2025 range of 128 to 296 - so unlike the summer sports it did not lose a year to 2020 and naming one would suppress a real break",
+            "DUPLICATE_KEY_INCLUDES_EVENT_NAME": "1: this sport names an event after its distance and discipline, never after the competitors, so the name carries real information about which event it is",
+            "DUPLICATE_KEY_USES_CALENDAR_DAY": "0: the sport runs the same field several times a day. Measured 2026-08-22, 121 stage-name-day groups hold two or more identically named events and the largest holds six, so a calendar-day key would report the pair and heat structure as duplicates",
+            "CONFIG_START_DATE_TYPE_ID": "1463 Start date, written on all 9258 statistic_config rows, measured 2026-08-22. Read by Speed-Skating-DQ-005 as one of the three settings that must be stored once and once only",
+            "CONFIG_END_DATE_TYPE_ID": "1464 End date, written on all 9258, measured 2026-08-22",
+            "CONFIG_GENDER_TYPE_ID": "1470 Gender, written on 4410 of 9258, measured 2026-08-22. The shortfall is not a scattered omission and is not what Speed-Skating-DQ-005 asks about: it tracks the statistic's naming generation, the long '<stage> <distance> <gender> - Competition Rank' form carrying the config row and the short '1000 m Male After Run 1' form mostly not. Whether the row is absent is a MISSING_VALUES question that has not been opened; this parameter only names the type so DQ-005 can ask whether a present one is stored twice",
+            "ELIMINATION_ROUND_NAME_LIST": "semi finals, quarter finals, qualifier, heats and preliminary - the round names after which entries go out, by decision of 2026-08-22. Read by Speed-Skating-DQ-001 and -010. The sport stores all eight of its round types with knockout = 'no', and seven of the eight names also exist under a knockout = 'yes' id, so the judgement decides how many of those pairs are reported: these five are, and they carry 325 events onto the wrong member of their pair. The event names corroborate the round type - 249 of the 325 are named 'Mass Start Semifinal 1' or '2' - so none of the count is the sport behaving normally, which is what the 200-row gate was read for that day",
+            "GROUP_ROUND_NAME_LIST": "final, after run 1 and bronze - the round names nobody leaves, by decision of 2026-08-22. 'bronze' sits here and not among the elimination rounds even though H2H sports store its counterpart 138 as knockout = 'yes': in this sport it is a race for third place that ends the competition rather than a match somebody loses their way out of. 'after run 1' is an intermediate standing, not a round with a cut. Putting a name in neither list leaves it unjudged, so the two lists together are the whole judgement Speed-Skating-DQ-001 and -010 rest on",
+            "CONFIG_EVENT_ID_TYPE_ID": "1471 Event id, the statistic_config field naming which events a ranking covers. Written on 4203 of the sport's 9258 statistics, measured 2026-08-22. DB-SEM-011 records that it holds a comma-separated list rather than one id. The shortfall is why Speed-Skating-DQ-018 returns 364 rows reading COMP.RANK_EVENT_SCOPE_UNDETERMINABLE: those tournaments hold Comp.Rank but no statistic under them names an event, so whether the Final is covered cannot be decided from the data rather than being decided against it",
+            "SCOPE_TYPE_ID": "305 final_result, by decision of 2026-08-23. The sport writes 26 scope containers - 101 checkpoint1 through 125 checkpoint25 and this one - and the client does not take the checkpoints: the intermediate splits are the sport's own machinery and only the final result is required, which is what makes a single container the right parameter here despite the layer being 25 deep. Read by Speed-Skating-DQ-025",
+            "DATA_RANK_TYPE_ID": "1270 Rank, on 9023 statistics and 180624 value rows, measured 2026-08-22",
+            "DATA_COMMENT_TYPE_ID": "1273 Comment, on 5314 statistics. 64463 of its 72306 rows hold the empty string rather than no row at all, measured 2026-08-22, so a presence test here must test for the empty string",
+            "DATA_MEDAL_TYPE_ID": "1277 Medal, on 6640 statistics. Like 1273 it is mostly the empty string - 57271 of 81409 rows - with gold, silver and bronze the only other values",
+            "DATA_TIME_TYPE_ID": "1426 Time, the absolute time on the Comp.Rank side, on 3971 statistics. Two of its values carry two colons, measured 2026-08-22",
+            "DATA_TIME_DIFFERENCE_TYPE_ID": "1427 Time Difference, the signed gap on the Comp.Rank side, on 4240 statistics. One value is corrupted, reading as the pattern 'e_difference  +#.#  t', measured 2026-08-22",
+            "DATA_TEAM_TYPE_ID": "1429 Team, holding a participant.id, on 611 statistics",
+            "DATA_DEPRECATED_DURATION_TYPE_ID": "1272 Duration, the older Comp.Rank duration field that 1426 and 1427 replaced. Still written on 300 statistics here, so it is deprecated rather than unused",
+            "NUMERIC_RESULT_TYPE_LIST": "100 Rank, 408 Startnumber and 510 Second points - the result types holding a plain number rather than clock notation. 101 and 557 are deliberately absent: they are times and belong to CLOCK_RESULT_TYPE_LIST. GLOBAL-DQ-076 reads this and will report the two Startnumber rows reading DNF that GLOBAL-DISCOVERY-026 found on 2026-08-22",
+            "NUMERIC_DATA_TYPE_LIST": "1270 Rank and 1271 Points, the Comp.Rank fields holding a plain number. 1426 and 1427 are times and 1429 holds a reference, so none of the three belongs here",
+            "PRECISION_RESULT_TYPE_LIST": "101 Duration, 102 Points and 557 Full-time duration - the result fields whose decimal scale is fixed by convention. Measured 2026-08-22: the sport writes to the thousandth, 89584 of 91992 values on 101 and 85385 of 86493 on 557, with the remainder at two decimals or one",
+            "PRECISION_DATA_TYPE_LIST": "1272 Duration, 1426 Time and 1427 Time Difference, the same convention one layer up",
+            "CLOCK_RESULT_TYPE_LIST": "101 Duration and 557 Full-time duration, the two fields written in clock notation, M:SS.hhh or S.hhh. The same two ids appear in PRECISION_RESULT_TYPE_LIST without the lists meaning the same thing: that one names the fields whose decimal scale is fixed, this one the fields read as a clock",
+            "RESULT_TIE_VALUE_TYPE_LIST": "557 Full-time duration first, then 101 Duration - the values that decide whether a shared rank is a real tie. 557 is the unambiguous absolute time and 101 holds a gap on most rows, so the order matters",
+            "FULL_TIME_TOLERANCE_SECONDS": "0.001, measured 2026-08-22 rather than assumed. The sport writes durations to the thousandth of a second on 97 per cent of its rows, which is finer than every other documented sport - the repository's usual value is 0.01 - so a hundredth-second tolerance would let a real arithmetic error pass",
+            "RANK_MAX_PLAUSIBLE": "100, by decision of 2026-08-23. Measured that day: the largest field the sport enters is 69 competitors and the highest rank stored anywhere is 67, so 100 leaves close to half again above both without accepting a value that is plainly wrong",
+            "TIMED_DISCIPLINE_LIST": "all 20 disciplines the sport contests, including 330 Mass Start, by decision of 2026-08-23. The decision was taken with the measurement in view and against the recommendation made that day, which was to exclude Mass Start: it is decided on points won at intermediate sprints rather than on elapsed time, and in 99 of its 455 events the winner does not hold the fastest time. Every other discipline returns between 0 and 5 such events out of hundreds - 500 Metres 5 of 372, Team Pursuit 4 of 319, three disciplines 1 each - so those 12 are defects while Mass Start's 99 are the format. The five checks reading this list (GLOBAL-DQ-045, -046, -054, -056 and -111) therefore carry Mass Start in their findings, and a reader of those boards needs this entry to know which rows are which",
+            "MEDAL_TEMPLATE_ID_LIST": "the 57 templates that award a medal, measured 2026-08-23 across both layers that can hold one. 34 of them carry a 501 Medal result on an event; the other 23 award only in the Comp.Rank layer, through 1277 Medal, and carry no event medal at all - the national championships of the Netherlands, Germany, Canada, the USA and Norway, plus 12331/12332 NM Single Distances and 12329/12330 NM Allround. An earlier reading of this list took the event layer alone and was wrong: GLOBAL-DQ-125 reads the Comp.Rank medal, so those 23 templates reported all 1380 of their medalled statistics as awarded outside a medal template. A national championship awards medals whether or not its event rows record them.",
+            "RESULT_COMMENT_VALUE_LIST": "53 of the 62 values the event layer's 104 Comment actually holds, measured 2026-08-24 and chosen by decision the same day. The template compares LOWER(TRIM(value)), so the list is written in lower case and matches whatever case the row carries. Nine measured values are deliberately left out so that GLOBAL-DQ-052 reports them, 49 rows in all: 'rw' on one row, which reads as 'wr' reversed; 'a' on 34 rows across 2 events, where the sport otherwise writes fa, fb, fc and fd for its divisions; 'w.o.' on 3 rows, a walkover being a head-to-head idea in a Listing sport; 'fall' on 5 rows, free text rather than a code; and the five compounds 'wr, or', 'q/or', 'or/sf1', 'or/fa' and 'dnf/fd', 1 to 2 rows each. The ff-series are flight markers and the record markers wr, or, pb and tr sit on real results, so all of them are vocabulary rather than defects. This layer's vocabulary is not the Comp.Rank layer's: it carries fa-fd, sf1, sf2, q and adv, which that one never writes, and lacks wd, dsq, nr and sb, which that one does - GLOBAL_DQ/README.md inventories the two separately for exactly this reason",
+            "RESULT_COMMENT_NO_RESULT_LIST": "the eight spellings on this layer that mean the competitor finished with no classified result. 'w.o.' and 'dnf/fd' are deliberately not here although both mean exactly that: the value list rejects them by the decision of 2026-08-24, and a value in one list but not the other would be reported invalid and honoured as a no-result marker by the same check, which Test-Package.ps1 refuses. The template's own note reads as though the no-result list may carry a spelling the value list rejects; the package's contract is the stricter of the two and governs. Their four rows are reported once, as COMMENT_INVALID_VALUE, which is the cleaner verdict. The record markers are absent for a different reason - measured 2026-08-24 on the Comp.Rank layer, 'nr' turned out to be a national record rather than 'no result', carrying a rank on all 8 of its rows and a medal on 5, so reading it as an absent result would have manufactured 8 defects",
+            "DATA_COMMENT_VALUE_LIST": "49 of the 52 values the Comp.Rank layer's 1273 Comment holds, measured 2026-08-24, on the same standard as the event layer. Left out are 'rw' on one row, which sits at rank 4 with a time and is neither a refusal nor a known marker, and the two compounds 'wr, or' and 'tr/sb'. The empty string is not in the list and does not need to be: the template excludes empty comments in its own WHERE clause, which matters here because 64463 of the layer's 72306 Comment rows hold the empty string rather than no row at all",
+            "DATA_COMMENT_NO_RESULT_LIST": "the ten spellings on this layer meaning no classified result, established by measurement rather than by reading the codes. Measured 2026-08-24, each of them carries a time on none or almost none of its rows - 'wd' 272 rows with 11 ranks and 0 times, 'dsq' 271 with 19 and 0, 'no time' 198 with 3 and 0 - which is what a refusal looks like, and the few rows that do carry a rank or a time are the contradictions GLOBAL-DQ-057 exists to report. 'nr' is excluded on the same measurement: all 8 of its rows hold a rank between 1 and 3 and 5 hold a medal, so it is a national record. 'wr', 'or', 'pb', 'sb' and 'tr' are excluded for the same reason",
+            "RESULT_FINAL_SCORE_TYPE_ID": "557 Full-time duration, by decision of 2026-08-24. The parameter is named for a score and this sport has none; what it names in the template is the result type the sport decides its outcome by, which here is elapsed time, carried on 4637 of the 4721 finished events measured that day. It is read by GLOBAL-DQ-126 alone in this sport: the other seven templates taking it - 084, 085, 088, 090, 094, 108 and 114 - are recorded Not applicable on structural grounds and none of them is instantiated. GLOBAL-DQ-126 has an eligible population of 348 cancelled events and returned 0 findings on the day it was approved, which is the invariant holding rather than a reason to drop it"
+        },
+        "_checkSignal": {
+            "GLOBAL-DQ-083": {
+                "signal": "Not applicable",
+                "reason": "the template's prerequisite is a competition model of H2H, where an event is a contest between exactly two entries and the check asks whether some event holds a number the sport never fields. This sport is Listing per DATABASE.md DB-SEM-015, measured 2026-08-22: an event's field takes 68 distinct sizes and every entry carries a rank against the whole field. There is no number of entries that is wrong here, so the question the check asks does not exist for this sport - a structural absence and not an empty population"
+            },
+            "GLOBAL-DQ-089": {
+                "signal": "Not applicable",
+                "reason": "the template reads whether an extra period was played from a scope column of its own and never from a count of scored periods. This sport's 26 scope containers are 101 checkpoint1 through 125 checkpoint25 and 305 final_result, measured 2026-08-22, and none of them is an extra period: a checkpoint is a lap marker on a race of fixed distance. The column the check reads does not exist here"
+            },
+            "GLOBAL-DQ-091": {
+                "signal": "Not applicable",
+                "reason": "the condition cannot be expressed through the declared parameters. The template takes one SCOPE_TYPE_ID and reads the periods as the data types inside it, which is Curling's shape: container 305 final_result holding 282 end_1 through 292 end_extra. This sport stores the opposite way round - the period is the container and the data type is the quantity. Measured 2026-08-22, the same five scope data types (1 rank, 2 points, 3 comment, 4 duration, 7 checkpoint_points_sprint) appear under 101 checkpoint1 and under 305 final_result alike, so no list of data types names this sport's periods and no single container holds them. The question the template asks is a real one for a 25-checkpoint split layer and stays open; what cannot be done is to ask it through these parameters"
+            },
+            "GLOBAL-DQ-132": {
+                "signal": "Monitor",
+                "reason": "the check runs and is expected to keep returning rows rather than reach zero, which is the template's own classification wherever it is instantiated. Read the coverage first here: the sport fills the organizationFK property on 8 event participations of the whole sport, measured 2026-08-22, and the eligible population is 2 organizations. That is a real population and not a sentinel - it is not 0 - but it is small enough that a finding count from it says nothing on its own. Whether the property is present at all is GLOBAL-DQ-130's question and belongs to MISSING_VALUES, which is not open"
+            },
+            "GLOBAL-DQ-030": {
+                "signal": "Monitor",
+                "reason": "the check is sound and its rare rows are worth having, but its count is not driven by what it asserts and will not fall to zero on its own. Measured 2026-08-23: it returns 2247 of 6717 statistics, and 2193 of the sport's 7013 non-IOC Comp.Rank records hang off a tournament that holds no event at all, so the ranked competitor cannot be an event participant there and every one of those statistics reports. That cause is already reported at the grain where it is repaired, by Speed-Skating-DQ-013 at the template and -021 at the tournament; roughly 54 statistics are left where the tournament does have events and a ranked competitor is still not among them, and those are the rows to read"
+            },
+            "GLOBAL-DQ-107": {
+                "signal": "Monitor",
+                "reason": "the scope layer begins in 2013 and the check cannot see that boundary. Measured 2026-08-23 over every finished event: no year from 2003 to 2012 carries a single 305 final_result container, one 2002 event does, and from 2013 onward coverage runs between 55 and 80 per cent. Of the 2940 findings roughly 1756 are events from before the layer was written at all and will not be filled in retrospect, leaving roughly 1155 from 2013 onward that are real gaps. CLIENT_FROM_SEASON is 2004 and is read by every other check in the sport, so it cannot be moved to 2013 for this one"
+            },
+            "GLOBAL-DQ-082": {
+                "signal": "Not applicable",
+                "reason": "the prerequisite is a tournament stage that groups a single discipline, and this sport's does not. Measured 2026-08-23: of 889 stages carrying events, 15 hold one discipline and the rest hold between 2 and 10 - a championship stage groups every distance of the meeting, 500m through 10000m plus Mass Start and the team races. The check reported 866 of 880, which is the sport's own structure and not a defect in it"
+            },
+            "GLOBAL-DQ-093": {
+                "signal": "Not applicable",
+                "reason": "the prerequisite is a head-to-head sport that decides bronze in its own match, so no single event holds the full medal set. This sport is Listing per DB-SEM-015 and awards its medals inside one event. The template's own note names the alternative: a sport awarding every medal in one event uses GLOBAL-DQ-037 instead, which is MISSING_VALUES and belongs to a category not yet opened. Measured 2026-08-23 the check reported 3832 of 3887"
+            },
+            "GLOBAL-DQ-096": {
+                "signal": "Not applicable",
+                "reason": "head-to-head sports only, by the competition model rather than by reading the names. This sport names an event after its distance - 500 Metres, Team Pursuit, Mass Start Semifinal 1 - and never after the competitors, so there is no participant in the name to look for. Measured 2026-08-23 it reported 4684 of 4684, the same shape the template records for Cycling at 9611 of 9611"
+            },
+            "GLOBAL-DQ-087": {
+                "signal": "Not applicable",
+                "reason": "structural: the sport writes no Winner event property. GLOBAL-DISCOVERY-011 measured every event property name it holds on 2026-08-22 - AllRound, checkpoints, checkpoint_details, discipline, ElapsedTime, Live, medal_related, ParticipantType, race_type, Round, Type - and none of them is a winner. Nor is one expected: a winner names one of two sides, and this sport lines a field of up to 69 up and ranks it, which is the same competition-model rule that classifies GLOBAL-DQ-083 and -096 out. The winner is resolved by result type 100 Rank instead. Cycling and Swimming, both Listing, are classified the same way and for the same reason; Ice Hockey's Blocked entry is the head-to-head case, where the property is expected and absent, and it does not apply here"
+            },
+            "GLOBAL-DQ-084": {
+                "signal": "Not applicable",
+                "reason": "the template's prerequisite is a competition model of H2H, where an event is a contest between two sides decided on a single numeric score. This sport is Listing per DATABASE.md DB-SEM-015 and stores none of the three things the check reads - no home and away sides, no Winner property, and no numeric score deciding a contest. The same structural ground closed 083, 087 and 093. What it asserts, that a two-sided contest ended level where the format admits no draw, cannot arise in a field of 68 distinct sizes"
+            },
+            "GLOBAL-DQ-088": {
+                "signal": "Not applicable",
+                "reason": "the template's prerequisite is a competition model of H2H, where an event is a contest between two sides decided on a single numeric score. This sport is Listing per DATABASE.md DB-SEM-015 and stores none of the three things the check reads - no home and away sides, no Winner property, and no numeric score deciding a contest. The same structural ground closed 083, 087 and 093. It reads event_participants.number 1 as the home side and 2 as the away side against a Winner property this sport never writes"
+            },
+            "GLOBAL-DQ-090": {
+                "signal": "Not applicable",
+                "reason": "the template needs two result types confirmed to hold one and the same figure, so that any disagreement between them is a defect. This sport stores no such pair. The only candidate is 101 Duration against 557 Full-time duration, and the template rules it out in as many words: two types holding related but distinct figures are not a mirrored pair. They are distinct here by design - 557 carries the absolute time and 101 carries a gap on most rows, which is the leader/gap convention the sport file records and GLOBAL-DQ-111 reads"
+            },
+            "GLOBAL-DQ-094": {
+                "signal": "Not applicable",
+                "reason": "the template's prerequisite is a competition model of H2H, where an event is a contest between two sides decided on a single numeric score. This sport is Listing per DATABASE.md DB-SEM-015 and stores none of the three things the check reads - no home and away sides, no Winner property, and no numeric score deciding a contest. The same structural ground closed 083, 087 and 093. It reads a place off the pair of scores in a medal match; this sport settles its medals from a Rank over the whole field, which is what Speed-Skating-DQ-052 asserts through GLOBAL-DQ-053"
+            },
+            "GLOBAL-DQ-108": {
+                "signal": "Not applicable",
+                "reason": "the template's prerequisite is a deciding result that counts scoring units, which makes a negative or fractional value wrong by definition. This sport decides on elapsed time, and a time is fractional by nature - measured 2026-08-22, 89584 of the 91992 values on 101 and 85385 of the 86493 on 557 are written to the thousandth of a second. Every finished event would be reported. GLOBAL-DQ-120 asks the question that does apply here, whether the decimal scale is consistent, and is instantiated as Speed-Skating-DQ-076"
+            },
+            "GLOBAL-DQ-114": {
+                "signal": "Not applicable",
+                "reason": "the template reads a mirror of the deciding score against the deciding score itself, and this sport stores no mirrored pair - the same finding recorded for GLOBAL-DQ-090, which the two share"
+            },
+            "GLOBAL-DQ-085": {
+                "signal": "Not applicable",
+                "reason": "the template sums the periods in one scope container and compares the total against the result row, and it excludes a checkpoint split in as many words. This sport's scope layer is exactly that: 101 checkpoint1 through 125 checkpoint25 and 305 final_result, measured 2026-08-22. A checkpoint is a cumulative split on a race of fixed distance, so the splits are not summands of the final time and adding them would produce a number that means nothing"
+            },
+            "GLOBAL-DQ-086": {
+                "signal": "Not applicable",
+                "reason": "the template reads the periods as the data types inside one scope container and needs a confirmed sentinel vocabulary for a period that was not played. This sport stores the opposite way round - the period is the container and the data type is the quantity, measured 2026-08-22, with the same five data types appearing under 101 checkpoint1 and under 305 final_result alike - so no list of data types names its periods. The same ground closed 091, and a race of fixed distance has no unplayed checkpoint to mark either"
+            },
+            "GLOBAL-DQ-092": {
+                "signal": "Not applicable",
+                "reason": "the same two parameters GLOBAL-DQ-086 needs and for the same reason: no list of data types names this sport's periods, and there is no sentinel whose position could be read. Where 086 asserts the sentinel's vocabulary this one asserts its place, and both questions require a shape the sport does not store"
+            },
+            "GLOBAL-DQ-116": {
+                "signal": "Not applicable",
+                "reason": "superseded by GLOBAL-DQ-021 and not to be instantiated by any sport, which the catalogue states in its own row. GLOBAL-DQ-021 now asks the same question over RESULT_TIE_VALUE_TYPE_LIST rather than one score field, so it reads a time as well as a score, and it is instantiated here as Speed-Skating-DQ-033. Recorded rather than left silent because a reader comparing the catalogue against this sport's rows would otherwise find a template with no verdict"
+            },
+            "GLOBAL-DQ-117": {
+                "signal": "Not applicable",
+                "reason": "the template and GLOBAL-DQ-052 read the same population and both emit COMMENT_INVALID_VALUE, so a sport carrying rows for both reports every unrecognised status twice under two CheckIDs. The catalogue makes the choice rather than leaving it to preference: a sport storing a time on its result keeps GLOBAL-DQ-052, whose time arm is the stronger test. This sport stores 557 Full-time duration on 4637 of 4721 finished events, so 052 is the one instantiated and this is the one closed"
+            },
+            "GLOBAL-DQ-111": {
+                "signal": "Monitor",
+                "reason": "the check is right and most of what it returns will never be corrected, because it reads a discipline the sport does not decide on time. Measured 2026-08-24: 482 findings of 4674 eligible events, and 421 of them are Mass Start in its four forms - 205 Mass Start, 82 and 81 in the two semifinals, 53 in the final. A mass start is settled on points won at intermediate sprints, so the winner routinely does not hold the fastest time and the check reports it every time. That follows from the decision of 2026-08-23 to keep 330 Mass Start in TIMED_DISCIPLINE_LIST, which was taken with this consequence stated; the recommendation that day was to exclude it. The rows worth reading are the other 61: 500 Metres 19, 100 Metres 16, Team Pursuit 11, 1000 Metres 4 and a tail across the rest, where a rank really is contradicted by the times"
             }
         }
     }

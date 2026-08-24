@@ -4352,3 +4352,178 @@ WHERE s.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, without_organization DESC, tournament_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-134
+    -- Name - COMP.RANK_RESULTS_RANK_SEQUENCE_BROKEN
+    -- What it does: Finds Comp.Rank sequences that do not run 1, 2, 3 with ties skipping the places they consume.
+    CASE
+        WHEN x.start_breaks > 0 THEN 'RANK_SEQUENCE_DOES_NOT_START_AT_ONE'
+        WHEN x.gaps > 0 THEN 'RANK_SEQUENCE_GAP'
+        ELSE 'RANK_SEQUENCE_TIE_DOES_NOT_SKIP'
+    END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.ranking_start_date,
+    x.template_name,
+    x.tournament_name,
+    x.breaks,
+    x.break_detail,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds Comp.Rank whose Rank sequence is not a standard
+-- competition ranking - a place nobody holds, a tie that does not consume the places it
+-- stands for, or a sequence that does not start at one - naming each break where the
+-- sequence actually breaks rather than every place it shifts afterwards, together with a
+-- coverage count of all eligible rankings holding at least one usable Rank.
+-- This is the Comp.Rank counterpart of GLOBAL-DQ-119 and asks the same question one layer
+-- up, where until 2026-08-24 nothing asked it at all. The gap it closes is not theoretical:
+-- Triathlon statistic 318568, World Cup - Ishigaki Female - Competition Rank, hands out
+-- places 1 to 46 with place 34 held by nobody, and every existing statement is silent on it.
+-- GLOBAL-DQ-012 is silent because the twelve unranked competitors there each carry a dnf,
+-- which that statement accepts as the explanation for a missing Rank and is right to accept;
+-- GLOBAL-DQ-031 is silent because the highest place, 46, is below the field of 57;
+-- GLOBAL-DQ-032 is silent because the ranking does hold Rank data; and GLOBAL-DQ-095 is
+-- silent because no place is duplicated. A missing place in the middle of a ranking is
+-- invisible to all four, which is what this statement is for.
+-- A break is reported where the sequence breaks, not at every place it displaces, for the
+-- reason GLOBAL-DQ-119 records in full: restating a single missing place once for every
+-- place after it turned five breaks into 212 rows on one measured event, and the object set
+-- is identical either way.
+-- Ties are what make the naive form of this question wrong rather than merely noisy. A
+-- standard ranking of 1, 2, 3, 3, 5 leaves place 4 held by nobody and is entirely correct,
+-- so comparing the count of distinct places against the highest one reports it as a defect:
+-- measured on Triathlon 2026-08-24, that form returns 235 rankings where this statement
+-- returns 18, and 217 of the 235 are the sport ranking correctly.
+-- The start-at-one branch is not redundant with the step branch: a sequence running 2, 3, 4
+-- has correct steps throughout and is invisible without it. Neither sport measured on
+-- 2026-08-24 holds one, which is a data state rather than a structural absence, so the
+-- branch stays.
+-- A place is counted by its holders, not by its rows, and this is the one thing the event
+-- layer never had to face. On the Comp.Rank layer a team's athletes each carry a row of their
+-- own holding the team's place, so counting rows reads a relay squad of three as three
+-- competitors tied on one place and then reports the ranking for not skipping two places it
+-- never consumed. Measured on Triathlon 2026-08-24: counting rows returned 122 findings, 104
+-- of them team rankings behaving correctly - statistic 319037 among them, whose places 1 to 5
+-- are each held by three athletes carrying one and the same Team value. Holders are counted
+-- the way GLOBAL-DQ-072 counts them, by the Team field where one is written and by the
+-- participant where none is. A place whose rows carry no Team at all is still counted per row,
+-- which is the honest reading: with the field empty nothing in the data says they are one
+-- team, and GLOBAL-DQ-064 is the statement that reports the empty field.
+-- The audited object is the ranking, not the competitor. A place nobody holds is one repair
+-- to one ranking, and breaks and break_detail carry the detail as named secondary columns.
+-- The date the ranking declares for itself travels with the row, as it does in GLOBAL-DQ-012
+-- and for the same reason: a Comp.Rank covers a whole tournament rather than one contest, so
+-- without its configured start a finding names a season and nothing narrower.
+FROM (
+    SELECT
+        b.statistic_id,
+        s.name AS statistic_name,
+        cfg.value AS ranking_start_date,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(*) AS breaks,
+        SUM(CASE WHEN b.break_kind = 'START' THEN 1 ELSE 0 END) AS start_breaks,
+        SUM(CASE WHEN b.break_kind = 'GAP' THEN 1 ELSE 0 END) AS gaps,
+        GROUP_CONCAT(b.break_text ORDER BY b.at_place SEPARATOR ' | ') AS break_detail
+    FROM (
+        SELECT
+            w.statistic_id,
+            w.rank_value AS at_place,
+            CASE
+                WHEN w.prev_rank IS NULL AND w.rank_value <> 1 THEN 'START'
+                WHEN w.next_rank > w.rank_value + w.places_taken THEN 'GAP'
+                ELSE 'TIE'
+            END AS break_kind,
+            CASE
+                WHEN w.prev_rank IS NULL AND w.rank_value <> 1
+                    THEN CONCAT('sequence starts at ', w.rank_value, ', expected 1')
+                ELSE CONCAT('place ', w.rank_value,
+                            CASE WHEN w.places_taken > 1
+                                 THEN CONCAT(' shared by ', w.places_taken) ELSE '' END,
+                            ' is followed by ', w.next_rank,
+                            ', expected ', w.rank_value + w.places_taken)
+            END AS break_text
+        FROM (
+            SELECT
+                ranked.statistic_id,
+                ranked.rank_value,
+                ranked.places_taken,
+                LAG(ranked.rank_value)  OVER (PARTITION BY ranked.statistic_id ORDER BY ranked.rank_value) AS prev_rank,
+                LEAD(ranked.rank_value) OVER (PARTITION BY ranked.statistic_id ORDER BY ranked.rank_value) AS next_rank
+            FROM (
+                SELECT
+                    s2.id AS statistic_id,
+                    CAST(sd.value AS UNSIGNED) AS rank_value,
+                    COUNT(DISTINCT COALESCE(TRIM(tmd.value), CONCAT('p', sp.id))) AS places_taken
+                FROM statistic s2
+                JOIN tournament t2 ON t2.id = s2.objectFK AND t2.del = 'no'
+                JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+                     AND tt2.sportFK = {{SPORT_ID}}
+                JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s2.id AND sp.del = 'no'
+                JOIN statistic_data{{SHARD_ID}} sd
+                  ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+                 AND sd.del = 'no'
+                 AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+                 AND sd.value REGEXP '^[1-9][0-9]*$'
+                LEFT JOIN statistic_data{{SHARD_ID}} tmd
+                  ON tmd.statistic_participants{{SHARD_ID}}FK = sp.id
+                 AND tmd.del = 'no'
+                 AND tmd.statistic_data_typeFK = {{DATA_TEAM_TYPE_ID}}
+                 AND tmd.value IS NOT NULL
+                 AND TRIM(tmd.value) <> ''
+                WHERE s2.del = 'no'
+                  AND s2.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+                  AND s2.object_typeFK = 3
+                  AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
+                  AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+                  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+                  -- AND t2.tournament_templateFK = <tournament_template_id>
+                GROUP BY s2.id, CAST(sd.value AS UNSIGNED)
+            ) ranked
+        ) w
+        WHERE (w.prev_rank IS NULL AND w.rank_value <> 1)
+           OR (w.next_rank IS NOT NULL AND w.next_rank <> w.rank_value + w.places_taken)
+    ) b
+    JOIN statistic s ON s.id = b.statistic_id AND s.del = 'no'
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN statistic_config cfg
+           ON cfg.statisticFK = s.id
+          AND cfg.statistic_data_typeFK = {{CONFIG_START_DATE_TYPE_ID}}
+          AND cfg.del = 'no'
+    GROUP BY b.statistic_id, s.name, cfg.value, tt.name, t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND EXISTS (
+      SELECT 1
+      FROM statistic_participants{{SHARD_ID}} sp3
+      JOIN statistic_data{{SHARD_ID}} sd3
+        ON sd3.statistic_participants{{SHARD_ID}}FK = sp3.id
+       AND sd3.del = 'no'
+       AND sd3.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+       AND sd3.value REGEXP '^[1-9][0-9]*$'
+      WHERE sp3.statisticFK = s.id AND sp3.del = 'no'
+  )
+
+ORDER BY sort_order, statistic_id;

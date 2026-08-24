@@ -22421,6 +22421,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Temp",
+                     "startedUtc":  "2026-08-24T11:36:02Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-110",
+                                        "runKey":  "Artistic-Gymnastics-DQ-110",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_SEQUENCE_BROKEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1429 Team; Setting: 1463 Start date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  15,
+                                        "findings":  14,
+                                        "eligible":  4230,
+                                        "seconds":  24.9,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"

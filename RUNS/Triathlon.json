@@ -20368,6 +20368,98 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 13-28-27",
+                     "startedUtc":  "2026-08-24T11:28:27Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-106",
+                                        "runKey":  "Triathlon-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_SEQUENCE_BROKEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank; Setting: 1463 Start date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  123,
+                                        "findings":  122,
+                                        "eligible":  3440,
+                                        "seconds":  42.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "Temp",
+                     "startedUtc":  "2026-08-24T11:30:05Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-106",
+                                        "runKey":  "Triathlon-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_SEQUENCE_BROKEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank; Setting: 1463 Start date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  123,
+                                        "findings":  122,
+                                        "eligible":  3440,
+                                        "seconds":  27.5,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "24.08.2026 13-33-11",
+                     "startedUtc":  "2026-08-24T11:33:11Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-106",
+                                        "runKey":  "Triathlon-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_SEQUENCE_BROKEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1429 Team; Setting: 1463 Start date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  51,
+                                        "findings":  50,
+                                        "eligible":  3440,
+                                        "seconds":  24.1,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "Temp",
+                     "startedUtc":  "2026-08-24T11:34:11Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-106",
+                                        "runKey":  "Triathlon-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_SEQUENCE_BROKEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1429 Team; Setting: 1463 Start date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  51,
+                                        "findings":  50,
+                                        "eligible":  3440,
+                                        "seconds":  24.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"
