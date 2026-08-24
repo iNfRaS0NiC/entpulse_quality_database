@@ -4570,3 +4570,153 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, offending_values DESC, event_id;
+
+
+-- ======================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-138
+    -- Name - EVENT_MEDAL_AWARDED_AND_DECLARED_ON_NON_MEDAL_ROUND
+    -- What it does: Finds events off a medal round that both declare themselves medal-related and hand out medals.
+    CASE
+        -- The round that decides the medal sits in the same stage and has already handed
+        -- it out. The medal on this event is therefore a second copy of one that exists,
+        -- which is what makes the pair of conditions worth reading together.
+        WHEN x.medals_on_deciding_round_in_stage > 0 THEN 'Medal_Already_Awarded_On_Deciding_Round'
+        -- No round in the stage decides a medal, so nothing here is a copy of anything.
+        -- Either the medal belongs on a round the stage does not hold, or the round type
+        -- of this event is the field that is wrong. The two are not separable from here
+        -- and the row says so rather than guessing.
+        ELSE 'Medal_Awarded_Where_No_Round_Decides_It'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.round_type_id,
+    x.round_type_name,
+    x.template_name,
+    x.tournament_name,
+    x.stage_name,
+    x.medals_on_this_event,
+    x.medals_on_deciding_round_in_stage,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds finished events whose round type is not one the sport
+-- awards medals on, and which nevertheless assert a medal twice over - once by carrying the
+-- `medal_related` event property set to yes, and once by carrying an actual Medal result of
+-- any colour on at least one entry.
+-- Each half of that is already a check of its own and neither is restated here.
+-- GLOBAL-DQ-073 EVENT_SETTINGS_UNEXPECTED_MEDAL_RELATED_FOR_NON_MEDAL_ROUND owns the property
+-- on its own, and GLOBAL-DQ-039 EVENT_RESULTS_UNEXPECTED_MEDAL_FOR_NON_MEDAL_ROUND owns the
+-- result on its own. What neither can see is the other, and that is the whole reason this
+-- statement exists: read separately the two findings suggest opposite repairs - clear the
+-- setting, or delete the results - and read together they say the event is behaving like a
+-- medal event in two independent places, so neither repair is obviously the right one.
+-- The tempting conclusion is that the round type is then the field in the wrong, since it is
+-- the one field neither existing check questions. Measured 2026-08-24 across all twelve
+-- documented sports, that conclusion is wrong in almost every case: of the 44 events in client
+-- scope meeting all three conditions, 43 sit in a stage whose medal round already carries its
+-- own medals. The round type is not mislabelled - the medal has been handed out twice inside
+-- one stage. `medals_on_deciding_round_in_stage` is what carries that distinction to the
+-- reader, and `check_type` names it, because a duplicate medal and an orphan medal are
+-- different repairs and a bare count cannot tell them apart.
+-- Those 44 events fall in five sports - 23 in Modern Pentathlon, 11 in Speed Skating, 8 in
+-- Equestrian, and one each in Cycling and Artistic Gymnastics - and the other seven documented
+-- sports return nothing at all. The shapes recur: five Olympic pentathlon legs each carrying
+-- three medals beside a final that carries three of its own, and Speed Skating sprint events
+-- on round type 182 `After Run 1`, an interim standing after the first of two runs.
+-- The audited object is the event, and the counts are of Medal results rather than of
+-- competitors, because a relay medal held by every member of a team is one medal handed out.
+-- Comp.Rank medals are not read here. A Comp.Rank medal hangs off the tournament ranking and
+-- not off an event, so it cannot participate in a condition about an event's round type;
+-- GLOBAL-DQ-041 COMP.RANK_RESULTS_MEDAL_ON_NON_MEDAL_ROUND_PHASE owns that side.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        e.round_typeFK AS round_type_id,
+        rt.name AS round_type_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.name AS stage_name,
+        (
+            SELECT COUNT(*)
+            FROM event_participants epa
+            JOIN result ra ON ra.event_participantsFK = epa.id
+               AND ra.del = 'no'
+               AND ra.result_typeFK = {{RESULT_MEDAL_TYPE_ID}}
+               AND ra.value IS NOT NULL
+               AND TRIM(ra.value) <> ''
+            WHERE epa.eventFK = e.id AND epa.del = 'no'
+        ) AS medals_on_this_event,
+        (
+            SELECT COUNT(*)
+            FROM event esib
+            JOIN event_participants epb ON epb.eventFK = esib.id AND epb.del = 'no'
+            JOIN result rb ON rb.event_participantsFK = epb.id
+               AND rb.del = 'no'
+               AND rb.result_typeFK = {{RESULT_MEDAL_TYPE_ID}}
+               AND rb.value IS NOT NULL
+               AND TRIM(rb.value) <> ''
+            WHERE esib.tournament_stageFK = e.tournament_stageFK
+              AND esib.del = 'no'
+              AND esib.id <> e.id
+              AND esib.round_typeFK IN ({{MEDAL_ROUND_TYPE_LIST}})
+        ) AS medals_on_deciding_round_in_stage
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (e.round_typeFK IS NULL OR e.round_typeFK NOT IN ({{MEDAL_ROUND_TYPE_LIST}}))
+      AND e.status_type = 'finished'
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      AND EXISTS (
+          SELECT 1
+          FROM property p
+          WHERE p.object = 'event'
+            AND p.objectFK = e.id
+            AND p.del = 'no'
+            AND LOWER(TRIM(p.name)) = 'medal_related'
+            AND LOWER(TRIM(p.value)) = 'yes'
+      )
+      AND EXISTS (
+          SELECT 1
+          FROM event_participants epc
+          JOIN result rc ON rc.event_participantsFK = epc.id
+             AND rc.del = 'no'
+             AND rc.result_typeFK = {{RESULT_MEDAL_TYPE_ID}}
+             AND rc.value IS NOT NULL
+             AND TRIM(rc.value) <> ''
+          WHERE epc.eventFK = e.id AND epc.del = 'no'
+      )
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (e.round_typeFK IS NULL OR e.round_typeFK NOT IN ({{MEDAL_ROUND_TYPE_LIST}}))
+  AND e.status_type = 'finished'
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, medals_on_this_event DESC, event_id;

@@ -1644,3 +1644,120 @@ WHERE op.object = 'sport'
   -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
 
 ORDER BY sort_order, participant_type, participant_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-137
+    -- Name - EVENT_PARTICIPANT_NUMBER_DUPLICATE_IN_EVENT
+    -- What it does: Flags events where one participant number is held by more than one entry.
+    'PARTICIPANT_NUMBER_HELD_BY_MORE_THAN_ONE_ENTRY' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.colliding_numbers,
+    x.entries_involved,
+    x.collision_detail,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds events in which two or more entries carry the same
+-- `event_participants.number`, whatever that column is used to mean in the sport.
+-- The invariant is one sentence and it does not depend on the meaning: a number that
+-- identifies one entry within its event cannot identify two. That is what makes the question
+-- global where the column's sense is not. In a head-to-head sport the number is the side -
+-- 1 the home side and 2 the away - and each is held once; in a listing sport it is the place,
+-- and each place a competitor holds is held by that competitor. Measured 2026-08-24 on
+-- Triathlon, the number equals the Rank result on 109158 of the 112386 rows carrying both,
+-- which is 97 per cent, so a repeated number there is a repeated place.
+-- **What it must not assert is agreement between the number and the Rank.** That reading is
+-- tempting on a listing sport and it is not global: Soccer, Ice Hockey and Curling write 1 and
+-- 2 in this column and have no ranked field for it to agree with, so a template asking that
+-- question would report their whole population. A sport wanting the stronger assertion records
+-- it separately rather than widening this one.
+-- The invariant is not theoretical and it is very nearly kept. Measured 2026-08-24 across all
+-- twelve documented sports, exactly two events inside the client scope break it, both in
+-- Triathlon and with one collision each; the other eleven sports return nothing at all.
+-- A check that reports two events out of a database this size is not thereby worth less: it is
+-- worth having precisely because the rule is otherwise universal, and a sport that begins to
+-- break it is telling you something about an import rather than about a competitor.
+-- Four more events break it before the client scope is applied, and they are worth recording
+-- because they are what the scope is for rather than what the check is for: all four sit in
+-- Golf's template 12649 `TEST`, are named `TEST - Scottish Open` and the like, and collide on
+-- 51 numbers across 102 entries, which is a whole field imported against the wrong key. The
+-- template is already declared out of client scope, so this statement is silent about them and
+-- should stay silent: reporting test data as a defect teaches a reader to distrust the board.
+-- The audited object is the event. One event holding three collisions is one repair, and those
+-- Golf events are why the difference matters - reported per entry they would be 102 rows.
+-- `colliding_numbers`, `entries_involved` and `collision_detail` carry the detail as named
+-- secondary columns, and the detail names the participants so a reader can see which entry is
+-- wrong without opening the event.
+-- Entries carrying no number are not compared. A missing number is a different question and
+-- this statement asserts nothing about it.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(*) AS colliding_numbers,
+        SUM(d.entries) AS entries_involved,
+        SUBSTRING(GROUP_CONCAT(d.detail ORDER BY d.number SEPARATOR ' | '), 1, 500) AS collision_detail
+    FROM (
+        SELECT
+            ep.eventFK AS event_id,
+            ep.number AS number,
+            COUNT(*) AS entries,
+            CONCAT('number ', ep.number, ' held by ',
+                   GROUP_CONCAT(p.name ORDER BY p.name SEPARATOR ', ')) AS detail
+        FROM event_participants ep
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+             AND tt2.sportFK = {{SPORT_ID}}
+        WHERE ep.del = 'no'
+          AND ep.number IS NOT NULL
+          AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+          -- AND e2.startdate >= '<from_datetime>'
+          -- AND e2.startdate <  '<to_datetime>'
+        GROUP BY ep.eventFK, ep.number
+        HAVING COUNT(*) > 1
+    ) d
+    JOIN event e ON e.id = d.event_id AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+WHERE e.del = 'no'
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep3
+      WHERE ep3.eventFK = e.id AND ep3.del = 'no' AND ep3.number IS NOT NULL
+  )
+
+ORDER BY sort_order, colliding_numbers DESC, event_id;
