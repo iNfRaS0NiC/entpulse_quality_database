@@ -15391,6 +15391,52 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-13-05",
+                     "startedUtc":  "2026-08-24T17:13:05Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-139",
+                                        "runKey":  "GLOBAL-DQ-139",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_YEAR_CLAIMED_BY_SPAN_AND_SINGLE_SEASON",
+                                        "category":  "",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  104,
+                                        "findings":  103,
+                                        "eligible":  891,
+                                        "seconds":  0.9,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-13-27",
+                     "startedUtc":  "2026-08-24T17:13:27Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-140",
+                                        "runKey":  "GLOBAL-DQ-140",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_EDITIONS_OVERLAP_IN_TIME",
+                                        "category":  "",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  38,
+                                        "findings":  37,
+                                        "eligible":  873,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE"

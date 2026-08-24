@@ -2838,3 +2838,262 @@ WHERE tt.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, stage_count DESC, tournament_template_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-139
+    -- Name - TEMPLATE_TOURNAMENT_YEAR_CLAIMED_BY_SPAN_AND_SINGLE_SEASON
+    -- What it does: Finds templates where one year is claimed both by a two-year season name and by a single-year one.
+    'Year_Claimed_By_Span_And_Single_Season' AS check_type,
+    x.template_id,
+    x.template_name,
+    (
+        SELECT COUNT(DISTINCT t9.id)
+        FROM tournament t9
+        WHERE t9.tournament_templateFK = x.template_id AND t9.del = 'no'
+    ) AS tournaments_in_template,
+    x.colliding_years,
+    x.first_colliding_year,
+    x.collision_detail,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds tournament templates holding two editions that lay
+-- claim to the same calendar year by their names, where one of the two names is a two-year
+-- season such as `2003/2004` and the other is a single year such as `2004`.
+-- A template is one recurring competition and its editions are its seasons, so a year belongs
+-- to one edition of it. The two naming forms are each fine on their own and the check says
+-- nothing against either: a season crossing the new year is written `2003/2004` and a season
+-- inside one is written `2004`. What cannot be true is both at once for the same year.
+-- Measured 2026-08-24 across the twelve documented sports, exactly two name forms exist in
+-- this database - `2003/2004` on 8149 tournaments and a single year on 12166 - with no
+-- two-digit span, no dash form and no tournament without a year, so the statement needs no
+-- branch for a shape that does not occur.
+-- **Two neighbouring spans sharing a year is not this defect and is not reported.** In a
+-- season-crossing series `2003/2004` and `2004/2005` share 2004 by construction, which is
+-- what the naming means, and a statement flagging it would report every properly named league
+-- in the database. The collision has to be between the two forms, which is why one side of
+-- the join is spans and the other is single years rather than both sides being everything.
+-- Nor is a clean change of calendar this defect: a series running `2003/2004` through
+-- `2005/2006` and then `2007`, `2008` onwards has switched its calendar and left no year
+-- claimed twice, and that shape is silent here.
+-- Measured on the same day, 124 templates in the twelve sports report - 107 of them Soccer,
+-- 8 Ice Hockey, 4 Equestrian, 2 Artistic Gymnastics, and one each in Curling, Speed Skating
+-- and Swimming. Soccer is where the signal needs reading rather than believing: a league that
+-- moved from a season-crossing calendar to a calendar year genuinely held both `2013/2014` and
+-- `2014`, and several countries file a half-season such as `2008 Fall` beside the whole
+-- `2008/2009`. Both are history rather than a defect, so a sport whose findings are of that
+-- kind records the signal its file decides on instead of a repair.
+-- The audited object is the template. One template is one decision about how its series is
+-- named, and `collision_detail` names both tournaments of every colliding year so the reader
+-- can see which edition is the odd one without opening the template.
+-- Editions absent from the series are GLOBAL-DQ-081's finding, a name contradicting its own
+-- dates is GLOBAL-DQ-080's, and a name breaking text hygiene is GLOBAL-DQ-078's. None of the
+-- three compares one edition's name with another's, which is what this one does.
+FROM (
+    SELECT
+        c.template_id,
+        MIN(c.template_name) AS template_name,
+        COUNT(*) AS colliding_years,
+        MIN(c.yr) AS first_colliding_year,
+        SUBSTRING(GROUP_CONCAT(CONCAT(c.yr, ': ', c.span_name, ' and ', c.single_name)
+            ORDER BY c.yr SEPARATOR ' | '), 1, 400) AS collision_detail
+    FROM (
+        SELECT
+            a.template_id,
+            a.template_name,
+            a.yr,
+            MIN(a.tournament_name) AS span_name,
+            MIN(b.tournament_name) AS single_name
+        FROM (
+            SELECT
+                tt.id AS template_id,
+                tt.name AS template_name,
+                t.name AS tournament_name,
+                CAST(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1) AS UNSIGNED) AS yr
+            FROM tournament t
+            JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                 AND tt.sportFK = {{SPORT_ID}}
+            WHERE t.del = 'no'
+              AND t.name REGEXP '(19|20)[0-9]{2}/(19|20)[0-9]{2}'
+              AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+              AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+              -- AND t.tournament_templateFK = <tournament_template_id>
+
+            UNION ALL
+
+            -- The second year the same span name claims. A span is one edition holding two
+            -- calendar years, so it is compared on both of them rather than on the one the
+            -- client boundary happens to read.
+            SELECT
+                tt.id,
+                tt.name,
+                t.name,
+                CAST(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2) AS UNSIGNED)
+            FROM tournament t
+            JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                 AND tt.sportFK = {{SPORT_ID}}
+            WHERE t.del = 'no'
+              AND t.name REGEXP '(19|20)[0-9]{2}/(19|20)[0-9]{2}'
+              AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+              AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+              -- AND t.tournament_templateFK = <tournament_template_id>
+        ) a
+        JOIN (
+            SELECT
+                tt.id AS template_id,
+                t.name AS tournament_name,
+                CAST(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1) AS UNSIGNED) AS yr
+            FROM tournament t
+            JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                 AND tt.sportFK = {{SPORT_ID}}
+            WHERE t.del = 'no'
+              AND t.name REGEXP '(19|20)[0-9]{2}'
+              AND t.name NOT REGEXP '(19|20)[0-9]{2}/(19|20)[0-9]{2}'
+              AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+              AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+              -- AND t.tournament_templateFK = <tournament_template_id>
+        ) b ON b.template_id = a.template_id AND b.yr = a.yr
+        GROUP BY a.template_id, a.template_name, a.yr
+    ) c
+    GROUP BY c.template_id
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT tt.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament_template tt
+JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+WHERE tt.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.name REGEXP '(19|20)[0-9]{2}'
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, colliding_years DESC, template_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-140
+    -- Name - TEMPLATE_TOURNAMENT_EDITIONS_OVERLAP_IN_TIME
+    -- What it does: Finds templates holding two editions whose stages run at the same time.
+    'Editions_Overlap_In_Time' AS check_type,
+    x.template_id,
+    x.template_name,
+    (
+        SELECT COUNT(DISTINCT t9.id)
+        FROM tournament t9
+        WHERE t9.tournament_templateFK = x.template_id AND t9.del = 'no'
+    ) AS tournaments_in_template,
+    x.overlapping_pairs,
+    x.overlap_detail,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds tournament templates two of whose tournaments cover the
+-- same days, measured from the stages each one holds rather than from what its name says.
+-- A template is one recurring competition and its tournaments are its editions, so they follow
+-- one another: an edition ends before the next begins. Two of them running at once means one
+-- of two things - either a single edition has been entered twice under different names, or a
+-- stage has been filed under the neighbouring edition and dragged its dates across.
+-- This is the companion of GLOBAL-DQ-139 and deliberately not the same question. 139 reads
+-- the names and asks whether two of them claim one year; this reads the days and asks whether
+-- two editions actually ran together. Neither subsumes the other and the gap between them is
+-- real in both directions. A template can be named consistently and still overlap, which 139
+-- cannot see. And an edition carrying no stage at all has no days to compare, so it is
+-- invisible here however wrong its name is - the Artistic Gymnastics World Cup Apparatus
+-- templates that started this pair of checks are exactly that case, their `2004/2005` and
+-- `2020/2021` holding no stage between them. A tournament with no stages at all is
+-- GLOBAL-DQ-063's finding and is not restated here.
+-- Measured 2026-08-24 across the twelve documented sports, 53 templates report: 38 in Soccer,
+-- 5 each in Equestrian and Ice Hockey, 3 in Golf, and one each in Cycling and Speed Skating.
+-- The audited object is the template, and `overlapping_pairs` counts the pairs rather than the
+-- tournaments, because one edition overlapping three others is three facts about one template
+-- and one repair to plan. `overlap_detail` names both editions of each pair with the days each
+-- one covers, so the reader can tell a duplicated edition from a stray stage without opening
+-- either.
+-- The comparison is inclusive at both ends: two editions sharing a single day overlap. An
+-- edition ending on the last minute of a year and the next starting in the new one do not.
+FROM (
+    SELECT
+        a.template_id,
+        MIN(a.template_name) AS template_name,
+        COUNT(*) AS overlapping_pairs,
+        SUBSTRING(GROUP_CONCAT(
+            CONCAT(a.tournament_name, ' ', DATE(a.first_day), '..', DATE(a.last_day),
+                   ' with ', b.tournament_name, ' ', DATE(b.first_day), '..', DATE(b.last_day))
+            ORDER BY a.first_day SEPARATOR ' | '), 1, 400) AS overlap_detail
+    FROM (
+        SELECT
+            tt.id AS template_id,
+            tt.name AS template_name,
+            t.id AS tournament_id,
+            t.name AS tournament_name,
+            MIN(ts.startdate) AS first_day,
+            MAX(ts.enddate) AS last_day
+        FROM tournament t
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+             AND tt.sportFK = {{SPORT_ID}}
+        JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+             AND ts.startdate IS NOT NULL AND ts.enddate IS NOT NULL
+        WHERE t.del = 'no'
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+        GROUP BY tt.id, tt.name, t.id, t.name
+    ) a
+    JOIN (
+        SELECT
+            tt.id AS template_id,
+            t.id AS tournament_id,
+            t.name AS tournament_name,
+            MIN(ts.startdate) AS first_day,
+            MAX(ts.enddate) AS last_day
+        FROM tournament t
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+             AND tt.sportFK = {{SPORT_ID}}
+        JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+             AND ts.startdate IS NOT NULL AND ts.enddate IS NOT NULL
+        WHERE t.del = 'no'
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+        GROUP BY tt.id, t.id, t.name
+    ) b
+      ON  b.template_id = a.template_id
+      AND b.tournament_id > a.tournament_id
+      AND a.first_day <= b.last_day
+      AND b.first_day <= a.last_day
+    GROUP BY a.template_id
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT tt.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament_template tt
+JOIN tournament t ON t.tournament_templateFK = tt.id AND t.del = 'no'
+JOIN tournament_stage ts ON ts.tournamentFK = t.id AND ts.del = 'no'
+     AND ts.startdate IS NOT NULL AND ts.enddate IS NOT NULL
+WHERE tt.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, overlapping_pairs DESC, template_id;

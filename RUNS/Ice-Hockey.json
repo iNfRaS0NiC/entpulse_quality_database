@@ -9966,6 +9966,75 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-13-01",
+                     "startedUtc":  "2026-08-24T17:13:01Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-139",
+                                        "runKey":  "GLOBAL-DQ-139",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_YEAR_CLAIMED_BY_SPAN_AND_SINGLE_SEASON",
+                                        "category":  "",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  25,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-13-24",
+                     "startedUtc":  "2026-08-24T17:13:24Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-140",
+                                        "runKey":  "GLOBAL-DQ-140",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_EDITIONS_OVERLAP_IN_TIME",
+                                        "category":  "",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  25,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "24.08.2026 19-25-53",
+                     "startedUtc":  "2026-08-24T17:25:53Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "GLOBAL-DQ-140",
+                                        "runKey":  "GLOBAL-DQ-140",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_EDITIONS_OVERLAP_IN_TIME",
+                                        "category":  "",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  25,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1Vy0mfddOI9cWkWEpeM7oA12BTDuvUB-nevFZwQANn94"
