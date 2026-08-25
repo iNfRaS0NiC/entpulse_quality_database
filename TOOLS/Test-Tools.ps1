@@ -3529,6 +3529,67 @@ Test-That 'a note follows its finding rather than the row it used to be on' {
     Assert-True ($carried.Dropped[0].Why -like '*no longer in the result*') 'and why it could not go back'
 }
 
+Test-That 'two findings sharing one key keep neither note, and both are reported' {
+    # Artistic-Gymnastics-DQ-111 returns two findings about organization 1611294 under two
+    # different templates. GLOBAL-DQ-136 projects template_name and no template_id, so the id key
+    # is check_type plus organization_id and both rows carry it.
+    #
+    # Until 2026-08-25 the first row won: both notes were written onto it, the second overwrote
+    # the first, the row below came back blank, and because the key had been found nothing
+    # reached the Review log. A reviewer's conclusion was erased without a trace.
+    $header = @('check_type', 'organization_id', 'organization_name', 'template_name')
+    $rows = @(
+        [pscustomobject]@{ check_type = 'ORG_CONTRADICTS'; organization_id = '1611294'
+            organization_name = 'Individual Neutral Athletes'; template_name = 'World Cup Apparatus'
+        }
+        [pscustomobject]@{ check_type = 'ORG_CONTRADICTS'; organization_id = '1611294'
+            organization_name = 'Individual Neutral Athletes'; template_name = 'World Junior Championships Artistic'
+        }
+    )
+    $shared = Get-SheetsFindingKey -Row @('ORG_CONTRADICTS', '1611294') -Columns @(0, 1)
+    $notes = @(
+        [pscustomobject]@{ Key = $shared; Review = 'no issue'; Note = 'neutral athlete, correct' }
+        [pscustomobject]@{ Key = $shared; Review = 'no issue'; Note = 'the junior one too' }
+    )
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal '' $carried.Review[0] 'no note is placed on the first of the two'
+    Assert-Equal '' $carried.Review[1] 'nor on the second'
+    Assert-Equal 2 @($carried.Dropped).Count 'both are reported rather than one overwriting the other'
+    Assert-Equal 'neutral athlete, correct' $carried.Dropped[0].Note 'the first keeps what it said'
+    Assert-Equal 'the junior one too' $carried.Dropped[1].Note 'and so does the second'
+    foreach ($lost in @($carried.Dropped)) {
+        Assert-True ($lost.Why -like '*more than one finding*') 'and the reason names the ambiguity'
+        Assert-True ($lost.Why -notlike '*no longer in the result*') 'not that the finding went away, because it did not'
+    }
+}
+
+Test-That 'an ambiguous key does not cost the notes of the findings around it' {
+    # The refusal is scoped to the keys that repeat. A check with one colliding pair among many
+    # rows must not lose every note it holds.
+    $header = @('check_type', 'organization_id', 'template_name')
+    $rows = @(
+        [pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'; template_name = 'World Cup' }
+        [pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'; template_name = 'World Juniors' }
+        [pscustomobject]@{ check_type = 'ORG'; organization_id = '2222222'; template_name = 'European Cup' }
+    )
+    $notes = @(
+        [pscustomobject]@{ Key = (Get-SheetsFindingKey -Row @('ORG', '1611294') -Columns @(0, 1))
+            Review = 'no issue'; Note = 'ambiguous'
+        }
+        [pscustomobject]@{ Key = (Get-SheetsFindingKey -Row @('ORG', '2222222') -Columns @(0, 1))
+            Review = 'in progress'; Note = 'being corrected'
+        }
+    )
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal '' $carried.Review[0] 'the colliding pair keeps nothing'
+    Assert-Equal '' $carried.Review[1] 'neither half of it'
+    Assert-Equal 'In Progress' $carried.Review[2] 'the finding with a key of its own is untouched'
+    Assert-Equal 'being corrected' $carried.Note[2] 'and keeps its note'
+    Assert-Equal 1 @($carried.Dropped).Count 'only the ambiguous one is logged'
+}
+
 Test-That 'a re-shaped check parks every note instead of matching them by luck' {
     # GLOBAL-DQ-030 went from one row per stray participant to one row per statistic on
     # 2026-08-11. Its 310 notes were keyed on a column the new result does not emit, and that

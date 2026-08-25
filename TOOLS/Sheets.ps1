@@ -775,15 +775,41 @@ function New-SheetsCarriedReview {
         return [pscustomobject]@{ Review = $review; Note = $note; Dropped = $dropped }
     }
 
+    # A key that two findings share is not a key, and the run has to say so rather than pick one.
+    #
+    # Before 2026-08-25 the first row won and every later note with that key was written over it:
+    # two notes landed on one row, the second overwrote the first, the rows below came back blank,
+    # and because the key had been found nothing reached the Review log. A reviewer's conclusion
+    # was erased without a trace, and the row returned reading as though nobody had looked at it.
+    # Measured on Artistic-Gymnastics-DQ-111, which returns two findings about organization
+    # 1611294 under two different templates: `GLOBAL-DQ-136` projects `template_name` and no
+    # `template_id`, so the id key is `check_type` plus `organization_id` and both rows carry it.
+    #
+    # The keys that repeat are collected first and their notes are logged rather than placed. Not
+    # widened to the whole row on the spot, because the widening would depend on the data: a run
+    # whose rows happen not to collide would narrow the key again and orphan every note the wide
+    # run had written. A key has to mean the same thing from one run to the next, so the shape
+    # stays fixed and the ambiguity is reported. The repair is to give the statement the id its
+    # name already implies, which is the rule DATABASE.md states for the database and this file
+    # depends on: an id travels with the name of the thing it identifies.
     $rowOfKey = @{}
+    $ambiguous = @{}
     for ($r = 0; $r -lt @($Rows).Count; $r++) {
         $values = @($Header | ForEach-Object { @($Rows)[$r].$_ })
         $key = Get-SheetsFindingKey -Row $values -Columns $now
-        if (-not $rowOfKey.ContainsKey($key)) { $rowOfKey[$key] = $r }
+        if ($rowOfKey.ContainsKey($key)) { $ambiguous[$key] = $true; continue }
+        $rowOfKey[$key] = $r
     }
 
     $dropped = @()
     foreach ($one in $held) {
+        if ($ambiguous.ContainsKey($one.Key)) {
+            $dropped += [pscustomobject]@{
+                Key = $one.Key; Review = $one.Review; Note = $one.Note
+                Why = 'more than one finding in this result carries this key, so the note cannot be told which of them it is about'
+            }
+            continue
+        }
         if ($rowOfKey.ContainsKey($one.Key)) {
             $at = $rowOfKey[$one.Key]
             $review[$at] = [string]$one.Review
