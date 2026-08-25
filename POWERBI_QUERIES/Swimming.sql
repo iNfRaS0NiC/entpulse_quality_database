@@ -1389,3 +1389,127 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, unhonoured_count DESC, event_startdate DESC, event_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Swimming-DQ-086
+    -- Name - EVENT_SETTINGS_DISCIPLINE_ON_SUPERSEDED_CATALOGUE
+    -- What it does: Finds events filed under the older of the two discipline catalogues the sport keeps for the same events.
+    CASE
+        -- Two states and two repairs. Where the sport also holds the same discipline under its
+        -- current name, the event has somewhere to be repointed and the row names it. Where it
+        -- does not, nobody can repoint anything and the catalogue decision has to be made first.
+        WHEN x.twin_discipline_id IS NOT NULL THEN 'Superseded_Discipline_With_A_Current_Twin'
+        ELSE 'Superseded_Discipline_With_No_Current_Twin'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.discipline_id,
+    x.discipline_name,
+    x.twin_discipline_id,
+    x.twin_discipline_name,
+    x.twin_events_in_same_template,
+    x.template_name,
+    x.tournament_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Swimming keeps two discipline catalogues for the same races.
+-- One names them `Freestyle 100 metres` and the other `Freestyle 100m`, and both are in use.
+-- This finds every event still filed under the first.
+-- **The two catalogues are not a legacy and a successor.** Measured 2026-08-25 the `metres`
+-- disciplines carry ids 38 to 62 and were last touched in December 2008; the `m` disciplines
+-- carry ids 348 to 374 and were last touched in 2025. That reads like an abandoned convention
+-- until the events are counted: 374 events sit on the `metres` ids, the earliest in 2004 and
+-- the latest in 2026, and they are still arriving. Twenty-five `metres` disciplines exist and
+-- twenty-three of them have an exact equivalent under the current names; fourteen carry events.
+-- **What makes it a defect rather than an untidy catalogue is that one template uses both.**
+-- Twenty-three template-and-discipline pairs hold events on each id at once. World
+-- Championships Long Course files 5 events on `56 Freestyle 4 x 100 metres` and 28 on
+-- `365 Freestyle 4 x 100m`; Commonwealth Games files 15 on `54 Individual Medley 200 metres`
+-- and 8 on `353 Indv. Medley 200m`, which is one competition split almost in half. Anything
+-- grouping by discipline - a Comp.Rank, a season table, a record list - sees two competitions
+-- where the meet ran one.
+-- **The twin is derived rather than listed**, so a discipline added to either catalogue is
+-- picked up without editing this statement. Two substitutions turn a `metres` name into its
+-- current form: ` metres` becomes `m`, and `Individual Medley` becomes `Indv. Medley`, which is
+-- the one place the two catalogues disagree on more than the unit. Measured 2026-08-25 that
+-- pairs twenty-three of the twenty-five; the two it does not pair are
+-- `59 Freestyle 100 metres handicap` and `60 Freestyle 50 metres handicap`, which have no
+-- equivalent because the sport no longer contests a handicap race, and neither holds an event.
+-- **The 200-row gate.** This returns 374 rows, and they were run and read before the CheckID
+-- was assigned. None of the 374 is the sport behaving normally: every one sits on a discipline
+-- the sport also keeps under a second id, and the template splits above are what settles it.
+-- The check does not say which catalogue is the right one. That is a decision for the people who
+-- own the catalogue, and if it goes the other way this statement is the one that gets inverted -
+-- but either way the events cannot stay on both.
+-- Not `GLOBAL-DQ-015`'s question: these references resolve, and they resolve to a discipline of
+-- this sport. Not `GLOBAL-DQ-082`'s either - that one asks whether a stage's events disagree
+-- with each other, and a stage filed entirely on the older catalogue agrees with itself.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        d.id AS discipline_id,
+        d.name AS discipline_name,
+        d2.id AS twin_discipline_id,
+        d2.name AS twin_discipline_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        -- How many events of the same meet are already on the current id. A number above zero is
+        -- the sharp case: one template, one discipline, two ids, and the competition split.
+        (SELECT COUNT(DISTINCT e2.id)
+           FROM event e2
+           JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+           JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+           JOIN object_discipline od2 ON od2.object_typeFK = 5 AND od2.objectFK = e2.id AND od2.del = 'no'
+          WHERE e2.del = 'no'
+            AND t2.tournament_templateFK = t.tournament_templateFK
+            AND od2.disciplineFK = d2.id
+        ) AS twin_events_in_same_template
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 46
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+    LEFT JOIN discipline d2
+           ON d2.sportFK = d.sportFK
+          AND d2.del = 'no'
+          AND d2.id <> d.id
+          AND d2.name = REPLACE(REPLACE(d.name, 'Individual Medley', 'Indv. Medley'), ' metres', 'm')
+    WHERE e.del = 'no'
+      AND d.name LIKE '% metres%'
+      AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+-- The eligible population is every event of the sport carrying a discipline at all. An event
+-- with no discipline cannot be on either catalogue, and is `GLOBAL-DQ-015`'s finding.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 46
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+WHERE e.del = 'no'
+  AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, twin_events_in_same_template DESC, event_startdate DESC, event_id;
