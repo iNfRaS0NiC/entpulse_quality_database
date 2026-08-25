@@ -1454,6 +1454,7 @@ SELECT
     x.organization_id,
     x.organization_name,
     x.organization_country,
+    x.competitor_country_id,
     x.competitor_country,
     x.competitors,
     x.participations,
@@ -1462,6 +1463,14 @@ SELECT
     0 AS sort_order
 -- What it does, stated in full: A competitor entered under an organization is normally entered
 -- under their own country's, and this reports where the two countries disagree.
+-- **The competitor country travels with its id**, added 2026-08-25, because the audited object
+-- is the organization together with that country and the name alone cannot key it. The live
+-- sheet ties a reviewer's note to a finding by the result's id columns, so a dimension carried
+-- only as a name is invisible to it: two findings about one organization under two countries
+-- read as one, and before `TOOLS/Sheets.ps1` learned to refuse that, the second reviewer's
+-- conclusion was written over the first without reaching the Review log. The repository rule is
+-- older than the sheet - an id travels with the name of the thing it identifies - and this is
+-- what it is for.
 -- The organization is the `organizationFK` property `GLOBAL-DQ-130` asserts the presence of;
 -- this asks whether the one that is there is the right one. The two are deliberately separate:
 -- a sport can fill the field everywhere and still fill it wrongly, and a sport that fills none
@@ -1494,6 +1503,7 @@ FROM (
         org.id AS organization_id,
         org.name AS organization_name,
         oc.name AS organization_country,
+        pc.id AS competitor_country_id,
         pc.name AS competitor_country,
         COUNT(DISTINCT ep.participantFK) AS competitors,
         COUNT(*) AS participations,
@@ -1518,14 +1528,14 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
-    GROUP BY org.id, org.name, oc.name, pc.name
+    GROUP BY org.id, org.name, oc.name, pc.id, pc.name
 ) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT CONCAT(org.id, '#', pt.countryFK)) AS eligible_count,
     1 AS sort_order
 FROM property og

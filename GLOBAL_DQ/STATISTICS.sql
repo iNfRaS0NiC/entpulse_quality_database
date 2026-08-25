@@ -4634,6 +4634,7 @@ SELECT
     x.organization_id,
     x.organization_name,
     x.organization_country,
+    x.competitor_country_id,
     x.competitor_country,
     x.template_name,
     x.competitors,
@@ -4643,6 +4644,25 @@ SELECT
     0 AS sort_order
 -- What it does, stated in full: A competitor ranked under an organization is normally ranked
 -- under their own country's, and this reports where the two countries disagree.
+-- **The competitor country travels with its id**, added 2026-08-25, because the audited object
+-- is the organization together with that country and the name alone cannot key it. The live
+-- sheet ties a reviewer's note to a finding by the result's id columns, so a dimension carried
+-- only as a name is invisible to it: two findings about one organization under two countries
+-- read as one, and before `TOOLS/Sheets.ps1` learned to refuse that, the second reviewer's
+-- conclusion was written over the first without reaching the Review log. The repository rule is
+-- older than the sheet - an id travels with the name of the thing it identifies - and this is
+-- what it is for.
+-- **`template_name` is in the GROUP BY and its id is deliberately not projected beside it.**
+-- That is not an oversight, it is an open question. The finding rows are one per organization,
+-- competitor country and template, while the COVERAGE branch counts one per organization and
+-- competitor country - so a finding is a finer thing than an eligible one, which the coverage
+-- contract does not allow. `GLOBAL-DQ-132`, the same rule on the event layer, groups by
+-- organization and competitor country alone and agrees with its own coverage. Adding a
+-- `template_id` would settle the key and entrench the finer unit; dropping `tt.name` from the
+-- GROUP BY and aggregating the templates would settle both and change what the check returns.
+-- Until that is decided the key stays ambiguous where one organization disagrees under two
+-- templates - measured 2026-08-25 on Artistic-Gymnastics-DQ-111, organization 1611294 - and
+-- `TOOLS/Sheets.ps1` reports those notes to the Review log rather than guessing.
 -- It is the Comp.Rank counterpart of GLOBAL-DQ-132 and asks that template's question one layer
 -- up, where until 2026-08-24 nothing asked it. The two are the same rule over two mechanisms
 -- and a sport can fill either without the other, which is the same pairing GLOBAL-DQ-130 and
@@ -4678,6 +4698,7 @@ FROM (
         org.id AS organization_id,
         org.name AS organization_name,
         oc.name AS organization_country,
+        pc.id AS competitor_country_id,
         pc.name AS competitor_country,
         tt.name AS template_name,
         COUNT(DISTINCT sp.participantFK) AS competitors,
@@ -4705,14 +4726,14 @@ FROM (
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
-    GROUP BY org.id, org.name, oc.name, pc.name, tt.name
+    GROUP BY org.id, org.name, oc.name, pc.id, pc.name, tt.name
 ) x
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT CONCAT(org.id, '#', pt.countryFK)) AS eligible_count,
     1 AS sort_order
 FROM statistic s
