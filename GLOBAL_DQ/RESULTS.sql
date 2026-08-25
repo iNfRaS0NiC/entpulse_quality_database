@@ -4720,3 +4720,132 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, medals_on_this_event DESC, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-141
+    -- Name - EVENT_RESULTS_DECIDING_VALUE_WITHOUT_RANK
+    -- What it does: Finds finished events that recorded the deciding value for their field and placed nobody.
+    'Deciding_Value_Without_Any_Rank' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.template_name,
+    x.tournament_name,
+    x.stage_name,
+    x.event_startdate,
+    x.round_type_id,
+    x.round_type_name,
+    x.field_size,
+    x.timed_participants,
+    x.excused_participants,
+    x.deciding_fields_used,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds finished events holding the value their sport ranks on
+-- for at least one competitor, and holding a place for none of them.
+-- It is the mirror of GLOBAL-DQ-122, which asks the same question from the other side: there
+-- the place is stored and the value it rests on is not, here the value is stored and no place
+-- was ever read off it. Neither subsumes the other and an event cannot appear in both, since
+-- GLOBAL-DQ-122 audits only competitors carrying a Rank and this one only events carrying
+-- none.
+-- **The audited object is the event, and that is the point of the check.** A competitor with
+-- no place is GLOBAL-DQ-036's row, and for part of this population it already has one. But a
+-- heat that timed eight swimmers and placed none of them is not eight repairs; it is one
+-- ranking that was never written, and it has to be written once, from the times the event
+-- already holds. Reported per competitor the same defect arrives as a list nobody can act on
+-- an entry at a time.
+-- It also reaches where GLOBAL-DQ-036 cannot. That check excuses a competitor holding a
+-- Comment, because a Comment is usually what explains a missing place. A qualification mark
+-- explains nothing of the kind: `Q` says the competitor went through to the next round, which
+-- is a statement about a place rather than a substitute for one. Measured on Swimming
+-- 2026-08-25, 2930 of the 9695 competitors in this population carry `Q` or `R` and are
+-- reported by nothing else at all.
+-- An event whose whole field did not race is not a finding: `excused_participants` counts the
+-- competitors whose Comment records that they did not finish, and an event holding no timed
+-- competitor at all never enters the scope, so a heat that was cancelled outright is
+-- GLOBAL-DQ-017's finding rather than this one's.
+-- `deciding_fields_used` names which of the sport's ranking fields the times were written to.
+-- It is carried because it is frequently the second half of the same repair: on Swimming every
+-- one of these events holds its times in `101 Duration` with `557 Full time` left empty, so
+-- writing the places also settles which field the time belongs in.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.name AS stage_name,
+        e.startdate AS event_startdate,
+        e.round_typeFK AS round_type_id,
+        COALESCE(rt.name, '(no round_type row)') AS round_type_name,
+        COUNT(DISTINCT ep.id) AS field_size,
+        COUNT(DISTINCT CASE WHEN rv.id IS NOT NULL THEN ep.id END) AS timed_participants,
+        COUNT(DISTINCT CASE WHEN rc.id IS NOT NULL THEN ep.id END) AS excused_participants,
+        -- Counted per competitor, so a duplicated result row cannot inflate a count and a
+        -- competitor holding two of the sport's ranking fields is still one competitor.
+        COUNT(DISTINCT CASE WHEN rr.id IS NOT NULL THEN ep.id END) AS ranked_participants,
+        GROUP_CONCAT(DISTINCT rv.result_typeFK ORDER BY rv.result_typeFK SEPARATOR ', ') AS deciding_fields_used
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    -- Any one of the sport's deciding fields makes the competitor auditable, which is the
+    -- reading GLOBAL-DQ-122 and GLOBAL-DQ-116 already give the list: a timed sport storing
+    -- both a duration and a full time has measured the competitor either way.
+    LEFT JOIN result rv ON rv.event_participantsFK = ep.id AND rv.del = 'no'
+     AND rv.result_typeFK IN ({{RESULT_TIE_VALUE_TYPE_LIST}})
+     AND rv.value IS NOT NULL
+     AND TRIM(rv.value) <> ''
+    LEFT JOIN result rr ON rr.event_participantsFK = ep.id AND rr.del = 'no'
+     AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+     AND rr.value IS NOT NULL
+     AND TRIM(rr.value) <> ''
+    LEFT JOIN result rc ON rc.event_participantsFK = ep.id AND rc.del = 'no'
+     AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+     AND LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND e.status_type = 'finished'
+      AND e.status_descFK = 6
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, tt.name, t.name, ts.name, e.startdate, e.round_typeFK, round_type_name
+) x
+WHERE x.timed_participants > 0
+  AND x.ranked_participants = 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+-- The eligible population is the finished events this check can read at all: one holding no
+-- deciding value for anybody has nothing to rank from, and is GLOBAL-DQ-017's question.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result rv ON rv.event_participantsFK = ep.id AND rv.del = 'no'
+ AND rv.result_typeFK IN ({{RESULT_TIE_VALUE_TYPE_LIST}})
+ AND rv.value IS NOT NULL
+ AND TRIM(rv.value) <> ''
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  AND e.status_descFK = 6
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, timed_participants DESC, event_startdate DESC;

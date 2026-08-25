@@ -5066,6 +5066,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "25.08.2026 12-19-41",
+                     "startedUtc":  "2026-08-25T10:19:41Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-082",
+                                        "runKey":  "Swimming-DQ-082",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_DECIDING_VALUE_WITHOUT_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 557 Full-time duration, 101 Duration, 100 Rank, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  1249,
+                                        "findings":  1248,
+                                        "eligible":  45075,
+                                        "seconds":  54,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g"
