@@ -550,41 +550,79 @@ WHERE ts.del = 'no'
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-015
-    -- Name - EVENT_SETTINGS_MISSING_DISCIPLINE
-    -- What it does: Flags events with no discipline relation.
-    'Missing_Discipline' AS check_type,
-    e.id AS event_id,
-    e.name AS event_name,
-    e.startdate AS event_startdate,
-    tt.name AS template_name,
-    t.name AS tournament_name,
-    ts.name AS stage_name,
+    -- Name - EVENT_SETTINGS_DISCIPLINE_MISSING_OR_UNRESOLVED
+    -- What it does: Flags events whose discipline cannot be read, either because no relation exists or because the one that does points at no discipline.
+    CASE
+        -- Two states, two repairs. A missing relation has to be created and the discipline
+        -- chosen; a relation pointing at nothing already names its event and its intent and
+        -- needs the reference corrected. Separated rather than merged, because a reviewer
+        -- filtering for one would otherwise be handed the other.
+        WHEN x.relation_rows = 0 THEN 'Missing_Discipline'
+        ELSE 'Discipline_Reference_Unresolved'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.stage_name,
+    x.unresolved_discipline_ids,
     NULL AS eligible_count
--- What it does, stated in full: Finds events with no discipline relation.
-FROM event e
-JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-WHERE e.del = 'no'
-  AND tt.sportFK = {{SPORT_ID}}
-  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
-  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
-  -- AND t.tournament_templateFK = <tournament_template_id>
-  -- AND e.startdate >= '<from_datetime>'
-  -- AND e.startdate <  '<to_datetime>'
-  AND NOT EXISTS (
-      SELECT 1
-      FROM object_discipline od
-      WHERE od.object_typeFK = 5
-        AND od.objectFK = e.id
-        AND od.del = 'no'
-  )
+-- What it does, stated in full: Finds events whose discipline cannot be read from
+-- object_discipline - either the relation is absent, or a relation exists whose
+-- disciplineFK selects no row in discipline.
+-- The second state was added on 2026-08-25 and is the reason this statement was rewritten.
+-- Until then the check asked only whether the relation existed, through a NOT EXISTS over
+-- object_discipline, and an event carrying `disciplineFK = 0` satisfied that test: the row
+-- is there, so the event passed, while the discipline it names does not exist and nothing
+-- downstream can resolve it. A missing relation and a relation pointing at nothing leave the
+-- event equally unreadable, and only the first of them was reported.
+-- Measured 2026-08-25 across the twelve documented sports, the second state occurs in one:
+-- Swimming holds six events on `disciplineFK = 0`, all in one competition inside five days
+-- of 2013, which makes it one import that did not write the reference rather than a habit.
+-- The other eleven sports gain nothing from this change, so no board moves but Swimming's.
+-- `unresolved_discipline_ids` carries the value the relation actually holds, because `0` and
+-- a plausible-looking id that has since been deleted are different stories and the row should
+-- not make the reviewer go and look.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.name AS stage_name,
+        COUNT(od.id) AS relation_rows,
+        COUNT(d.id) AS resolved_rows,
+        GROUP_CONCAT(DISTINCT CASE WHEN d.id IS NULL THEN od.disciplineFK END
+                     ORDER BY od.disciplineFK SEPARATOR ', ') AS unresolved_discipline_ids
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN object_discipline od
+           ON od.object_typeFK = 5
+          AND od.objectFK = e.id
+          AND od.del = 'no'
+    LEFT JOIN discipline d ON d.id = od.disciplineFK
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ts.name
+) x
+-- An event holding one readable discipline is settled, however many relations it carries.
+-- The finding is that not one of them resolves.
+WHERE x.resolved_rows = 0
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
