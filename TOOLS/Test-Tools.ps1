@@ -4317,6 +4317,19 @@ Test-That 'Status is a closed vocabulary, and a superseded spelling is renamed t
     Assert-Equal 'Clean' $renames[0].Values[0][0] 'under the word that now means it'
 }
 
+Test-That 'no superseded spelling is itself a status a reviewer can choose' {
+    # 'On hold' sat in the map from 2026-08-10, when the word did not exist in the dropdown. It
+    # was added as On Hold on 2026-08-21 and the map entry stayed, and because a PowerShell
+    # hashtable does not distinguish case, every run from then until 2026-08-25 renamed a
+    # reviewer's On Hold to Reviewing - undoing by hand the one distinction that status was
+    # added to make. The map may only rename a spelling the vocabulary does not offer; a key
+    # that is itself an outcome overwrites a conclusion instead of renaming one.
+    $offered = @($SheetsStatusBands | ForEach-Object { $_.Value })
+    $clashes = @($SheetsStatusLegacy.Keys | Where-Object { $offered -contains $_ })
+
+    Assert-Equal 0 $clashes.Count "superseded spellings that are also offered statuses: $($clashes -join ', ')"
+}
+
 Test-That 'the Rows cell holds a number, so it sorts and compares as one' {
     # Quoted, it is text: it sorts 1, 10, 2 and a band comparing against 100 never matches it.
     # An errored check has no count to hold and keeps its word, quoted.

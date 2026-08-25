@@ -322,8 +322,17 @@ $SheetsStatusLegacy = @{
     'Fixed'            = 'Completed'
     'For IT'           = 'IT Fix'
     'Reported to IT'   = 'IT Fix'
-    'On hold'          = 'Reviewing'
 }
+#
+# 'On hold' was in this map from 2026-08-10, when Status offered six outcomes and it was a
+# spelling reviewers reached for because the word they wanted did not exist. On 2026-08-21 it
+# became one: On Hold is a review that started and stopped, which is exactly what Reviewing
+# could not say. The map entry was not removed with it, and a PowerShell hashtable does not
+# distinguish case, so every run since renamed a reviewer's On Hold back to Reviewing and
+# undid the distinction the status was added to make. Removed 2026-08-25.
+# The rule the entry broke is the one this map exists under: a key here is a spelling of
+# something the vocabulary does not offer. A key that is itself a valid status does not rename
+# a conclusion, it overwrites one, and Test-Tools.ps1 now fails on any such key.
 
 # The tab holding every statement the run sent, and the name of the token a link to it uses.
 # A link needs the target tab's numeric id, which is not known until the tab has been created,
