@@ -1,5 +1,6 @@
 {
     "BMX": {
+        "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 58,
         "CLIENT_FROM_SEASON": 2004,
         "PRECISION_RESULT_TYPE_LIST": "101, 102, 557",
@@ -116,6 +117,7 @@
         }
     },
     "Triathlon": {
+        "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 50,
         "CLIENT_FROM_SEASON": 2004,
         "PRECISION_RESULT_TYPE_LIST": "101, 557",
@@ -243,6 +245,7 @@
         }
     },
     "Curling": {
+        "COMP_RANK_ENTRY_SIZE_LIST": "1, 2",
         "SPORT_ID": 10,
         "CLIENT_FROM_SEASON": 2004,
         "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
@@ -368,6 +371,7 @@
         }
     },
     "Artistic-Gymnastics": {
+        "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 40,
         "CLIENT_FROM_SEASON": 2004,
         "PRECISION_RESULT_TYPE_LIST": "102",
@@ -511,6 +515,7 @@
         }
     },
     "Soccer": {
+        "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 1,
         "CLIENT_FROM_SEASON": 2004,
         "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
@@ -604,10 +609,6 @@
             "RESULT_TIE_VALUE_TYPE_LIST": "the sport is head to head; the pairing settles the place, so no result field holds a quantity a place is read from"
         },
         "_checkSignal": {
-            "GLOBAL-DQ-139": {
-                "signal": "Informational",
-                "reason": "a Soccer league that changes its calendar genuinely holds both name forms for the year of the change, so a share of what this returns is history rather than a defect and will never be corrected. Measured 2026-08-24, 103 of the sport's 891 templates report: Argentina moved from a season-crossing calendar to a calendar year and really did hold both 2013/2014 and 2014, and Denmark and Bulgaria file a half-season such as 2008 Fall beside the whole 2008/2009. The check is kept rather than withdrawn because the mixing is the exception at 12 per cent of the sport's templates, and because the shape it names is a genuine defect elsewhere - Ice Hockey template 10501 Winter Olympics Qualification holds 2004/2005 and 2004 beginning on the same day, which is one edition entered twice. What Soccer needs from it is a reader deciding template by template, which is what the signal asks for. It is recorded as Informational rather than Monitor so the board carries the word: Informational is the only signal that seeds a Monitor Only status, and a reviewer meeting 103 findings with no such mark would read them as 103 repairs. GLOBAL-DQ-140 is the companion that reads the days rather than the names and carries no signal here."
-            },
             "GLOBAL-DQ-132": {
                 "signal": "Monitor",
                 "reason": "some of what it returns is correct by construction and will never be corrected, so the count is expected to stay above zero however much is repaired. Measured 2026-08-21 on Artistic Gymnastics, one of its two findings is a Russian gymnast entered under Individual Neutral Athletes, whose country is International - which is exactly how a neutral athlete is recorded, and a refugee team is the same shape. The check is kept because agreement is overwhelmingly the rule, 303791 participations of 303892 across the two sports that fill the field, so the exceptions are few enough to read one at a time. A sport filling no organization at all has an eligible population of 0 here, which is a sentinel rather than clean data, and GLOBAL-DQ-130 is what reports the absence."
@@ -691,6 +692,7 @@
         }
     },
     "Modern-Pentathlon": {
+        "COMP_RANK_ENTRY_SIZE_LIST": "1, 2",
         "SPORT_ID": 42,
         "CLIENT_FROM_SEASON": 2004,
         "PRECISION_RESULT_TYPE_LIST": "102",
@@ -835,6 +837,7 @@
         }
     },
     "Golf": {
+        "COMP_RANK_ENTRY_SIZE_LIST": "1, 2",
         "SPORT_ID": 3,
         "CLIENT_FROM_SEASON": 2004,
         "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
@@ -1050,6 +1053,7 @@
         }
     },
     "Ice-Hockey": {
+        "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 5,
         "CLIENT_FROM_SEASON": 2004,
         "IN_SCOPE_TEMPLATE_ID_LIST": "31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285",
@@ -1147,6 +1151,10 @@
             "PARTICIPATION_PROPERTY_NAME_LIST": "refereeFK, the event property that attaches an official to the match they worked - written on 10479 events reaching 165 people, measured 2026-08-24. It is the fourth participation path and the reason GLOBAL-DQ-009 is Not applicable here: that template asserts three, and read by those alone two thirds of this sport's officials reported as unattached on 2026-08-14. GLOBAL-DQ-135 reads it and Ice-Hockey-DQ-088 no longer does, because a refereeFK names a person and can never reach the teams that statement was narrowed to"
         },
         "_checkSignal": {
+            "GLOBAL-DQ-126": {
+                "signal": "Monitor",
+                "reason": "an event that never finished may legitimately carry a final score, decided 2026-08-24: a cancelled event whose results are otherwise normal is entirely in order, and the check has no way to tell such an event from one whose score was written by mistake. Monitor rather than Informational or a withdrawal because the cases genuinely differ and a person has to sort them - there is real work in the output, and Informational would open the tab already closed. Measured 2026-08-25, the template is instantiated in two sports and returns 4 findings of 177 eligible in Ice Hockey and 0 of 348 in Speed Skating, small enough to read one at a time. GLOBAL-DQ-126 keeps its CheckID and keeps running: what was wrong is the automatic reading of a finding as a defect, not the invariant."
+            },
             "GLOBAL-DQ-132": {
                 "signal": "Monitor",
                 "reason": "some of what it returns is correct by construction and will never be corrected, so the count is expected to stay above zero however much is repaired. Measured 2026-08-21 on Artistic Gymnastics, one of its two findings is a Russian gymnast entered under Individual Neutral Athletes, whose country is International - which is exactly how a neutral athlete is recorded, and a refugee team is the same shape. The check is kept because agreement is overwhelmingly the rule, 303791 participations of 303892 across the two sports that fill the field, so the exceptions are few enough to read one at a time. A sport filling no organization at all has an eligible population of 0 here, which is a sentinel rather than clean data, and GLOBAL-DQ-130 is what reports the absence."
@@ -1314,6 +1322,8 @@
         }
     },
     "Cycling": {
+        "DATA_TEAM_TYPE_ID": 1429,
+        "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 30,
         "CLIENT_FROM_SEASON": 2004,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "10350, 10351, 10352, 10353, 12652, 12653, 12654, 12655, 12656, 12657, 12658",
@@ -1572,14 +1582,9 @@
             "Cycling-DQ-096": {
                 "signal": "Out of client scope",
                 "reason": "Out of client scope by the review's decision of 2026-08-17, answering the open question about scope type 0: the client does not need the scope layer for this sport at present. The structure is present and the check is correct - GLOBAL-DQ-102 reads 1067 events and reports none, and the sport variant Cycling-DQ-096 reads 1094 and reports 104 - so this is neither Not applicable nor Clean. It is a boundary the client drew, and it is reversible: the day the scope layer is wanted, both come back with nothing to rebuild. The checkpoint chain measured on 2026-08-16 runs checkpoint1 to checkpoint192 and the 104 findings are unreadable distances, remaining distances, finish markers and jersey groups, which is a real work list held rather than dropped."
-            },
-            "GLOBAL-DQ-134": {
-                "signal": "Blocked",
-                "reason": "the sport's rankings need this check and the template will not take them. It counts a place by its holders and reads DATA_TEAM_TYPE_ID to do so, which it declares mandatory as all six other templates reading that field declare it; this sport records 1429 Team as not applicable, measured by GLOBAL-DISCOVERY-031 on 2026-08-16 and confirmed 2026-08-24 at 0 of 1961 tournament-owned rankings. Blocked and not Not applicable, because what stops it is the parameter contract rather than the sport's structure: measured the same day, the sport holds 100 rankings with a place nobody holds and 28 with a tie that does not skip, against 151115 correct steps, so the convention is plainly skip-after-tie and the findings are plainly real. With no Team written every competitor is its own holder, which is the correct reading here, so relaxing the parameter to optional would open the check with no loss of meaning. That is a change to a GLOBAL template and is not made on this sport's account alone"
             }
         },
         "_notApplicable": {
-            "DATA_TEAM_TYPE_ID": "1429 Team is declared for the statistic type and holds no value in this sport; GLOBAL-DISCOVERY-031 measured zero on 2026-08-16",
             "LINEUP_TYPE_LIST": "the sport writes no lineup at all: a road race enters each rider directly on the event, so there is no squad to name",
             "INCIDENT_TYPE_LIST": "the sport writes no incident at all: a road race records no discrete in-race event of the kind the table holds",
             "RESULT_FINAL_SCORE_TYPE_ID": "the sport records no score: GLOBAL-DISCOVERY-007 measured six result types sport-wide on 2026-08-16 - 100 Rank, 101 Duration, 104 Comment, 501 Medal, 102 Points, 222 Laps behind - and none of them decides an event by points",
@@ -1623,6 +1628,7 @@
         "SCOPE_TYPE_LIST": "101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 291, 292, 293, 294, 295, 296"
     },
     "Equestrian": {
+        "COMP_RANK_ENTRY_SIZE_LIST": "1, 2, 8",
         "SPORT_ID": 37,
         "CLIENT_FROM_SEASON": 2004,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "12779, 12780, 12781, 12785, 12787",
@@ -1801,14 +1807,11 @@
             "GLOBAL-DQ-019": {
                 "signal": "Out of client scope",
                 "reason": "it reads result type 101 Duration, which is one of the nine result types the client did not take on 2026-08-18. The sport stores it and fills it on 254 events, so the check would run and report a real population belonging to somebody else. It lifts unchanged if the boundary moves."
-            },
-            "GLOBAL-DQ-134": {
-                "signal": "Not applicable",
-                "reason": "the template asserts a competition ranking that skips the places a tie consumes, and this sport does not store one on the Comp.Rank layer. Measured 2026-08-24 over every tournament-owned Comp.Rank the sport holds: 353 of its 424 rankings tie densely - a place shared by two is followed by the next number rather than the one after it - against 1474 correct steps and a single ranking with a missing place. A dense ranking is a different convention, not a broken one, so the check would report the sport's normal shape on five rankings in six. GLOBAL-DQ-119 stays instantiated on the event layer, where the sport does skip; the two layers differ and that difference is the finding here"
             }
         }
     },
     "Swimming": {
+        "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 46,
         "CLIENT_FROM_SEASON": 2004,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "10470, 12788, 12791, 12792, 12797, 12799",
@@ -1994,6 +1997,7 @@
         }
     },
     "Speed-Skating": {
+        "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 19,
         "CLIENT_FROM_SEASON": 2004,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
@@ -2113,6 +2117,10 @@
             "RESULT_FINAL_SCORE_TYPE_ID": "557 Full-time duration, by decision of 2026-08-24. The parameter is named for a score and this sport has none; what it names in the template is the result type the sport decides its outcome by, which here is elapsed time, carried on 4637 of the 4721 finished events measured that day. It is read by GLOBAL-DQ-126 alone in this sport: the other seven templates taking it - 084, 085, 088, 090, 094, 108 and 114 - are recorded Not applicable on structural grounds and none of them is instantiated. GLOBAL-DQ-126 has an eligible population of 348 cancelled events and returned 0 findings on the day it was approved, which is the invariant holding rather than a reason to drop it"
         },
         "_checkSignal": {
+            "GLOBAL-DQ-126": {
+                "signal": "Monitor",
+                "reason": "an event that never finished may legitimately carry a final score, decided 2026-08-24: a cancelled event whose results are otherwise normal is entirely in order, and the check has no way to tell such an event from one whose score was written by mistake. Monitor rather than Informational or a withdrawal because the cases genuinely differ and a person has to sort them - there is real work in the output, and Informational would open the tab already closed. Measured 2026-08-25, the template is instantiated in two sports and returns 4 findings of 177 eligible in Ice Hockey and 0 of 348 in Speed Skating, small enough to read one at a time. GLOBAL-DQ-126 keeps its CheckID and keeps running: what was wrong is the automatic reading of a finding as a defect, not the invariant."
+            },
             "GLOBAL-DQ-083": {
                 "signal": "Not applicable",
                 "reason": "the template's prerequisite is a competition model of H2H, where an event is a contest between exactly two entries and the check asks whether some event holds a number the sport never fields. This sport is Listing per DATABASE.md DB-SEM-015, measured 2026-08-22: an event's field takes 68 distinct sizes and every entry carries a rank against the whole field. There is no number of entries that is wrong here, so the question the check asks does not exist for this sport - a structural absence and not an empty population"

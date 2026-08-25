@@ -4417,6 +4417,21 @@ SELECT
 -- The date the ranking declares for itself travels with the row, as it does in GLOBAL-DQ-012
 -- and for the same reason: a Comp.Rank covers a whole tournament rather than one contest, so
 -- without its configured start a finding names a season and nothing narrower.
+-- **A Comp.Rank whose name carries `(athletes)` is not read at all.** Such a ranking lists the
+-- members of each squad and gives every one of them the place their team finished in, so a
+-- squad of twenty holds rank 1 twenty times and the next team's members hold rank 2. That is
+-- the format working, not a sequence with nineteen places missing. The holder count already
+-- collapses them where the Team field is filled, which is why this was invisible until it was
+-- looked for: measured 2026-08-25 across the twelve documented sports, 52 athlete rankings
+-- reported 352 breaks purely because some of their participants carry no Team value and could
+-- not be collapsed - 250 of them in Triathlon alone, where 1540 of 5199 athlete rows have no
+-- Team. Filling that field would silence those, but it would not make the rankings worth
+-- reading here: an athlete ranking's places are its team ranking's places, so a real gap in it
+-- is a gap the team ranking already reports, and reporting it twice asks for one repair in two
+-- places. 3168 of the 3179 athlete rankings have a team twin under the same tournament, so
+-- excluding them costs coverage on eleven rankings and no invariant at all.
+-- What the exclusion does **not** do is check that an athlete ranking agrees with its twin.
+-- Nothing does today; `GLOBAL_DQ/README.md` records it as a candidate.
 FROM (
     SELECT
         b.statistic_id,
@@ -4434,19 +4449,55 @@ FROM (
             w.rank_value AS at_place,
             CASE
                 WHEN w.prev_rank IS NULL AND w.rank_value <> 1 THEN 'START'
-                WHEN w.next_rank > w.rank_value + w.places_taken THEN 'GAP'
+                WHEN w.next_rank > w.rank_value + (w.places_taken DIV w.entry_size) THEN 'GAP'
                 ELSE 'TIE'
             END AS break_kind,
             CASE
                 WHEN w.prev_rank IS NULL AND w.rank_value <> 1
                     THEN CONCAT('sequence starts at ', w.rank_value, ', expected 1')
                 ELSE CONCAT('place ', w.rank_value,
-                            CASE WHEN w.places_taken > 1
-                                 THEN CONCAT(' shared by ', w.places_taken) ELSE '' END,
+                            CASE WHEN (w.places_taken DIV w.entry_size) > 1
+                                 THEN CONCAT(' shared by ', w.places_taken DIV w.entry_size) ELSE '' END,
+                            CASE WHEN w.entry_size > 1
+                                 THEN CONCAT(' (entries of ', w.entry_size, ')') ELSE '' END,
                             ' is followed by ', w.next_rank,
-                            ', expected ', w.rank_value + w.places_taken)
+                            ', expected ', w.rank_value + (w.places_taken DIV w.entry_size))
             END AS break_text
         FROM (
+            SELECT
+                w1.statistic_id,
+                w1.rank_value,
+                w1.places_taken,
+                w1.prev_rank,
+                w1.next_rank,
+                -- The size of one entry, read from the ranking itself and accepted only if the
+                -- sport has declared it. A ranking whose every group divides its own step by one
+                -- constant is describing an entry of that many competitors: a rider and a horse
+                -- ranked as one, or a pair sharing a place in a team golf event. Where no single
+                -- constant fits, or the one that fits is not a size this sport enters, the entry
+                -- is one competitor and the strict rule applies unchanged.
+                CASE WHEN MIN(w1.divides)     OVER (PARTITION BY w1.statistic_id) = 1
+                      AND MIN(w1.entry_guess) OVER (PARTITION BY w1.statistic_id)
+                        = MAX(w1.entry_guess) OVER (PARTITION BY w1.statistic_id)
+                      AND MIN(w1.entry_guess) OVER (PARTITION BY w1.statistic_id)
+                            IN ({{COMP_RANK_ENTRY_SIZE_LIST}})
+                     THEN MIN(w1.entry_guess) OVER (PARTITION BY w1.statistic_id)
+                     ELSE 1 END AS entry_size
+            FROM (
+                SELECT
+                    w0.statistic_id,
+                    w0.rank_value,
+                    w0.places_taken,
+                    w0.prev_rank,
+                    w0.next_rank,
+                    CASE WHEN w0.next_rank - w0.rank_value > 0
+                          AND w0.places_taken MOD (w0.next_rank - w0.rank_value) = 0
+                         THEN w0.places_taken DIV (w0.next_rank - w0.rank_value) END AS entry_guess,
+                    CASE WHEN w0.next_rank IS NULL THEN 1
+                         WHEN w0.next_rank - w0.rank_value > 0
+                          AND w0.places_taken MOD (w0.next_rank - w0.rank_value) = 0 THEN 1
+                         ELSE 0 END AS divides
+                FROM (
             SELECT
                 ranked.statistic_id,
                 ranked.rank_value,
@@ -4478,14 +4529,17 @@ FROM (
                   AND s2.statistic_typeFK = {{STATISTIC_TYPE_ID}}
                   AND s2.object_typeFK = 3
                   AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
+                  AND LOWER(s2.name) NOT LIKE '%(athletes)%'
                   AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
                   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
                   -- AND t2.tournament_templateFK = <tournament_template_id>
                 GROUP BY s2.id, CAST(sd.value AS UNSIGNED)
             ) ranked
+                ) w0
+            ) w1
         ) w
         WHERE (w.prev_rank IS NULL AND w.rank_value <> 1)
-           OR (w.next_rank IS NOT NULL AND w.next_rank <> w.rank_value + w.places_taken)
+           OR (w.next_rank IS NOT NULL AND w.next_rank <> w.rank_value + (w.places_taken DIV w.entry_size))
     ) b
     JOIN statistic s ON s.id = b.statistic_id AND s.del = 'no'
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
@@ -4512,6 +4566,7 @@ WHERE s.del = 'no'
   AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
   AND s.object_typeFK = 3
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND LOWER(s.name) NOT LIKE '%(athletes)%'
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
