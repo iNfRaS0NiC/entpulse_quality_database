@@ -1761,3 +1761,178 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, colliding_numbers DESC, event_id;
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-142
+    -- Name - EVENT_PARTICIPANT_TYPE_CONTRADICTS_DISCIPLINE
+    -- What it does: Finds an event whose whole field is a kind of competitor its own discipline almost never fields.
+    'Participant_Type_Contradicts_Discipline' AS check_type,
+    w.event_id,
+    w.event_name,
+    w.event_startdate,
+    w.discipline_id,
+    w.discipline_name,
+    w.field_kind,
+    w.usual_kind,
+    w.field_size,
+    w.events_of_this_kind,
+    w.events_in_discipline,
+    w.types_held,
+    w.template_name,
+    w.tournament_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds an event whose field is entirely of one kind - all teams,
+-- or all people - where the discipline that event is filed under fields that kind in fewer than
+-- one event in a hundred.
+-- **This is the gap between the two participant-type checks already here.** GLOBAL-DQ-129 finds
+-- an event holding more than one kind, and GLOBAL-DQ-104 finds a kind outside the sport's own
+-- vocabulary. An event whose field is uniformly the wrong kind passes both: it is not mixed, and
+-- `team` is a type the sport uses. Found on 2026-08-25 through Swimming event 5225214, a
+-- `Freestyle 1500m` heat entered as twenty-three teams, which no check in the package reported.
+-- **Asked without naming which kind belongs to which discipline**, which is what keeps it
+-- global. A name-to-kind map has to be written per sport and is the parameter GLOBAL_DQ/README
+-- warns turns one template into a configuration exercise. The discipline's own events answer it
+-- instead: a 1500 metre freestyle is swum by people because the other 908 of them were.
+-- **The person types are collapsed through PERSON_ROLE_TYPE_LIST**, for the reason
+-- GLOBAL-DQ-113 records: participant.type carries a person's current role and not the one they
+-- held at the event, so a field of athletes who have since become coaches must not read as two
+-- kinds. The types actually stored travel in `types_held`, so nothing is hidden.
+-- An event holding more than one kind is not read at all. It is GLOBAL-DQ-129's finding, and it
+-- has no single kind to weigh against its discipline.
+-- **One in a hundred is a chosen cut and it is placed in a gap, not in the middle of a
+-- distribution.** Measured 2026-08-25 over the ten documented sports that carry disciplines on
+-- events, every discipline fielding more than one kind falls into two groups with an order of
+-- magnitude between them. The minority kind is either 0.11% and 0.16% of the discipline - and
+-- both of those are single events nobody would defend - or it is 1.64% and upward, and every
+-- one of those is a format the sport genuinely runs. Cycling files 158 team time trials under
+-- `628 Road Race` at 1.64%, Golf 1248 team match-play events under `630 Match Play` at 8.8%,
+-- and Modern Pentathlon and Equestrian run individual and team competitions under one
+-- discipline id throughout, from 6% to 50%. Reporting any of those would be noise, and the cut
+-- is drawn between 0.16 and 1.64 rather than at a number chosen first.
+-- **The threshold is also the floor.** At one per cent a discipline must hold at least a hundred
+-- events before any minority can qualify, so a discipline with four events and one oddity is
+-- never reported and needs no separate rule to protect it. That is deliberate and it costs
+-- something: Swimming's `373 Marathon 5 km` holds four individual events and one relay,
+-- event 4370481, and this check does not see it. Four events is not a population and 20% is not
+-- a minority; a rule loose enough to catch that one reports Modern Pentathlon entire.
+-- Measured 2026-08-25, findings over the ten sports: Swimming 1, Triathlon 2, and nothing in
+-- the other eight. Soccer and Ice Hockey carry a single discipline each and are not profiled -
+-- with one discipline the comparison is against the whole sport, which is a different question.
+FROM (
+    SELECT
+        y.event_id,
+        y.event_name,
+        y.event_startdate,
+        y.discipline_id,
+        y.discipline_name,
+        y.field_kind,
+        y.field_size,
+        y.types_held,
+        y.template_name,
+        y.tournament_name,
+        y.events_of_this_kind,
+        y.events_in_discipline,
+        -- The kind the discipline actually fields, named rather than left to elimination.
+        FIRST_VALUE(y.field_kind) OVER (
+            PARTITION BY y.discipline_id
+            ORDER BY y.events_of_this_kind DESC, y.field_kind
+        ) AS usual_kind
+    FROM (
+        SELECT
+            z.event_id,
+            z.event_name,
+            z.event_startdate,
+            z.discipline_id,
+            z.discipline_name,
+            z.field_kind,
+            z.field_size,
+            z.types_held,
+            z.template_name,
+            z.tournament_name,
+            COUNT(*) OVER (PARTITION BY z.discipline_id, z.field_kind) AS events_of_this_kind,
+            COUNT(*) OVER (PARTITION BY z.discipline_id) AS events_in_discipline
+        FROM (
+            SELECT
+                e.id AS event_id,
+                e.name AS event_name,
+                e.startdate AS event_startdate,
+                d.id AS discipline_id,
+                d.name AS discipline_name,
+                tt.name AS template_name,
+                t.name AS tournament_name,
+                COUNT(DISTINCT ep.id) AS field_size,
+                SUBSTRING(GROUP_CONCAT(DISTINCT p.type ORDER BY p.type SEPARATOR ', '), 1, 60) AS types_held,
+                CASE WHEN COUNT(DISTINCT CASE WHEN p.type IN ({{PERSON_ROLE_TYPE_LIST}})
+                                              THEN 'person' ELSE p.type END) > 1
+                     THEN 'mixed'
+                     ELSE MIN(CASE WHEN p.type IN ({{PERSON_ROLE_TYPE_LIST}})
+                                   THEN 'person' ELSE p.type END)
+                END AS field_kind
+            FROM event e
+            JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+            JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+            JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+            JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+            JOIN discipline d ON d.id = od.disciplineFK
+            JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+            JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+            WHERE e.del = 'no'
+              AND tt.sportFK = {{SPORT_ID}}
+              AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+              -- AND t.tournament_templateFK = <tournament_template_id>
+              -- AND e.startdate >= '<from_datetime>'
+              -- AND e.startdate <  '<to_datetime>'
+            GROUP BY e.id, e.name, e.startdate, d.id, d.name, tt.name, t.name
+            HAVING field_kind <> 'mixed'
+        ) z
+    ) y
+) w
+-- Fewer than one event in a hundred. Integer arithmetic rather than a percentage, so nothing
+-- turns on rounding at the boundary.
+WHERE w.events_of_this_kind * 100 < w.events_in_discipline
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT c.event_id) AS eligible_count,
+    1 AS sort_order
+-- The eligible population is every event the question can be asked of: one carrying a
+-- discipline and a field of a single kind. An event with no discipline has nothing to be
+-- weighed against and is GLOBAL-DQ-015's finding; one holding two kinds is GLOBAL-DQ-129's.
+-- An event carrying two disciplines is weighed against each of them and can return two rows,
+-- which is one row per thing that has to be decided rather than a duplicate; it counts once here.
+FROM (
+    SELECT
+        e.id AS event_id,
+        CASE WHEN COUNT(DISTINCT CASE WHEN p.type IN ({{PERSON_ROLE_TYPE_LIST}})
+                                      THEN 'person' ELSE p.type END) > 1
+             THEN 'mixed'
+             ELSE MIN(CASE WHEN p.type IN ({{PERSON_ROLE_TYPE_LIST}})
+                           THEN 'person' ELSE p.type END)
+        END AS field_kind
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    JOIN discipline d ON d.id = od.disciplineFK
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, d.id
+    HAVING field_kind <> 'mixed'
+) c
+
+ORDER BY sort_order, events_of_this_kind, event_startdate DESC, event_id;
