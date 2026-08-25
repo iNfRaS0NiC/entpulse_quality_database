@@ -445,7 +445,7 @@ SELECT
     0 AS sort_order
 -- What it does, stated in full: This one does not find a wrong record. The sport names the same
 -- discipline in two vocabularies at once - an older set spelling the distance out, 56 to 58 for
--- the relays with 468 and 479 as individual twins, and a current set abbreviating it, 365 to
+-- the relays, and a current set abbreviating it, 365 to
 -- 367 - and each vocabulary carries its own way of naming the event. The older
 -- ids put the distance first, 4x100m Freestyle Relay; the current ids put it last, Freestyle
 -- 4 x 100m. Distance-first is read literally, as a name beginning with a digit. Measured that
@@ -461,13 +461,27 @@ SELECT
 -- grouped by disciplineFK will split one competition's relay across two rankings from one
 -- edition to the next, because the edition and not the event chooses the vocabulary. Until that
 -- is settled this is the measurement of how large the split will be.
--- Only the eight discipline ids where the signature was confirmed are read, and the confirmation
--- is what limits them to the relays. 351 and 362, the current-vocabulary twins of 468 and 479,
--- are deliberately not among them: SPORTS/Swimming.md records that those two are written both
--- ways, so neither spelling is the wrong one there. Including them was tried and rejected on
--- 2026-08-20 - it took the output from 92 rows to 2438, because for an individual event
--- 800m Freestyle is simply how the sport writes the name and carries no vocabulary signal at
--- all. Every other discipline is silent here for the same reason.
+-- Only the six discipline ids where the signature was confirmed are read, and the confirmation
+-- is what limits them to the relays. 351 and 362 are deliberately not among them:
+-- SPORTS/Swimming.md records that those two are written both ways, so neither spelling is the
+-- wrong one there. Including them was tried and rejected on 2026-08-20 - it took the output from
+-- 92 rows to 2438, because for an individual event 800m Freestyle is simply how the sport writes
+-- the name and carries no vocabulary signal at all. Every other discipline is silent for the
+-- same reason.
+-- **468 and 479 were among the older ids until 2026-08-25 and should never have been.** They
+-- were read as the individual twins of the older vocabulary, which made this statement's premise
+-- wrong twice over: they are not Swimming disciplines at all - `discipline.sportFK` puts both on
+-- sport 135, Para Swimming - and they are individual, which is the one thing the paragraph above
+-- gives as the reason for reading nothing but relays. The 67 Swimming events pointing at them
+-- are a wrong reference rather than a naming habit, and `GLOBAL-DQ-015` reports them as
+-- `Discipline_Belongs_To_Another_Sport` since it was widened the same day.
+-- Removing them leaves the findings where they were, 92, and takes the eligible population from
+-- 2272 to 2205: those events were being counted as a population this question could be asked of,
+-- and it could not.
+-- What this does not do is widen the older set to the twenty-five disciplines the sport actually
+-- names the older way. That is a different check and a decision nobody has made -
+-- `Swimming-DQ-086` lists every event on those ids, and `SPORTS/Swimming.md` open question 1
+-- still asks whose habit the naming is.
 FROM (
     SELECT
         e.id AS event_id,
@@ -476,7 +490,7 @@ FROM (
         tt.name AS template_name,
         od.disciplineFK AS discipline_id,
         d.name AS discipline_name,
-        CASE WHEN od.disciplineFK IN (56, 57, 58, 468, 479) THEN 'older' ELSE 'current' END AS discipline_vocabulary,
+        CASE WHEN od.disciplineFK IN (56, 57, 58) THEN 'older' ELSE 'current' END AS discipline_vocabulary,
         CASE WHEN e.name REGEXP '^[0-9]' THEN 'distance-first' ELSE 'distance-last' END AS naming_convention
     FROM event e
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -484,7 +498,7 @@ FROM (
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
          AND tt.sportFK = 46
     JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
-         AND od.disciplineFK IN (56, 57, 58, 468, 479, 365, 366, 367)
+         AND od.disciplineFK IN (56, 57, 58, 365, 366, 367)
     JOIN discipline d ON d.id = od.disciplineFK
     WHERE e.del = 'no'
       AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
@@ -509,7 +523,7 @@ JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
      AND tt.sportFK = 46
 JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
-     AND od.disciplineFK IN (56, 57, 58, 468, 479, 365, 366, 367)
+     AND od.disciplineFK IN (56, 57, 58, 365, 366, 367)
 WHERE e.del = 'no'
   AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
