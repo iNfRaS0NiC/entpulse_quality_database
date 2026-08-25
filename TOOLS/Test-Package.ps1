@@ -334,6 +334,10 @@ function Get-Statements {
                 $nameMatch = [regex]::Match($block, '(?m)^\s*--\s*Name\s*-\s*(.+?)\s*$')
                 $whatMatch = [regex]::Match($block, '(?m)^\s*--\s*What it does:\s*(.+?)\s*$')
 
+                $sql = $block.Trim()
+                $masked = Get-MaskedSql -Sql $sql
+                $depthMap = Get-DepthMap -Masked $masked
+
                 $statements += [pscustomobject]@{
                     CheckId    = $(if ($idMatch.Success) { $idMatch.Groups[1].Value } else { '' })
                     Name       = $(if ($nameMatch.Success) { $nameMatch.Groups[1].Value } else { '' })
@@ -341,7 +345,15 @@ function Get-Statements {
                     File       = Get-RelativePath -Path $file.FullName
                     Directory  = $file.Directory.Name
                     Line       = $lineNumber
-                    Sql        = $block.Trim()
+                    Sql        = $sql
+                    # Masked once here rather than in each rule that needs it. Every character
+                    # of every statement passes through a PowerShell loop to get this, and two
+                    # rules were each doing it for themselves - the same 1.6 MB walked twice,
+                    # worth 11.4 seconds against 10.3 on the measurement above. The depth map
+                    # travels with it because nothing wants one without the other, and the Sql
+                    # the mask was built from is the one stored, so the two cannot drift apart.
+                    Masked     = $masked
+                    Depth      = $depthMap
                 }
             }
         }
@@ -404,12 +416,22 @@ Add-Result -Group 'Package' -Name 'Expected Project 2.0 files present' -Findings
 # -Include is silently ignored when -Recurse is combined with -LiteralPath, so the extension
 # filter has to be a predicate. output/ is excluded because it holds query result exports the
 # runner writes there by default, and .gitignore keeps them out of the repository.
+#
+# RUNS/ is excluded for a different reason, and it is the one that made this the slowest thing
+# the validator does. Those files are the run ledger, written by ConvertTo-Json and never by a
+# person, so they cannot carry a trailing space or lose a final newline, and no rule in this file
+# is about them. What they can do is grow: measured 2026-08-25 they were 13.3 MB of the 16.9 MB
+# this walk covered, one sport's ledger reaching 1.6 MB, and the walk alone cost 7.37 seconds
+# against 0.36 without them. On the whole validator, best of three alternating passes, that is
+# 17.3 seconds down to 11.4 - a third of the run spent reading files nothing here has an opinion
+# about, and rising with every run recorded.
 $textExtensions = @('.md', '.sql', '.ps1', '.json')
 $textFiles = @(Get-ChildItem -LiteralPath $RepoRoot -Recurse -File |
     Where-Object {
         $textExtensions -contains $_.Extension -and
         $_.FullName -notmatch '\\\.git\\' -and
         $_.FullName -notmatch '\\output\\' -and
+        $_.FullName -notmatch '\\RUNS\\' -and
         $_.Name -notlike '*.local.ps1'
     })
 
@@ -534,8 +556,8 @@ Set-Metric 'Duplicate active SQL CheckIDs' (@($byId | Where-Object { $_.Count -g
 
 $unionFindings = @()
 foreach ($s in $statements) {
-    $masked = Get-MaskedSql -Sql $s.Sql
-    $depth = Get-DepthMap -Masked $masked
+    $masked = $s.Masked
+    $depth = $s.Depth
     $splits = Get-TopLevelMatches -Masked $masked -Depth $depth -Pattern '\bUNION\s+ALL\b'
     if ($splits.Count -eq 0) { continue }
 
@@ -572,8 +594,8 @@ foreach ($s in ($dqStatements + $globalDq)) {
 
     # LIMIT is allowed inside a scalar subquery and nowhere else: at depth 0 it would
     # truncate finding rows or drop the COVERAGE row.
-    $masked = Get-MaskedSql -Sql $s.Sql
-    $depth = Get-DepthMap -Masked $masked
+    $masked = $s.Masked
+    $depth = $s.Depth
     foreach ($m in (Get-TopLevelMatches -Masked $masked -Depth $depth -Pattern '\bLIMIT\b')) {
         $line = ([regex]::Matches($s.Sql.Substring(0, $m.Index), "`n")).Count + 1
         $limitFindings += "${where}: LIMIT applied to the result at statement line $line"
