@@ -270,51 +270,88 @@ WHERE s.del = 'no'
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-023
-    -- Name - COMP.RANK_SETTINGS_MISSING_DISCIPLINE
-    -- What it does: Flags Comp.Rank records with no discipline relation or with a discipline that does not resolve.
-    'Missing_Discipline' AS check_type,
-    s.id AS statistic_id,
-    s.name AS statistic_name,
-    tt.name AS template_name,
-    t.name AS tournament_name,
+    -- Name - COMP.RANK_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN
+    -- What it does: Flags Comp.Rank records with no usable discipline - no relation at all, a relation pointing at no discipline, or one naming a discipline that belongs to another sport.
+    CASE
+        -- Three states and three repairs, separated for the reason GLOBAL-DQ-015 separates the
+        -- same three at the event layer: a reviewer filtering for one would otherwise be handed
+        -- the others. Until 2026-08-25 the first two were reported under one check_type and the
+        -- third was not reported at all.
+        WHEN x.relation_rows = 0 THEN 'Missing_Discipline'
+        WHEN x.resolved_rows = 0 THEN 'Discipline_Reference_Unresolved'
+        ELSE 'Discipline_Belongs_To_Another_Sport'
+    END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.unresolved_discipline_ids,
+    x.foreign_sport_disciplines,
     NULL AS eligible_count
--- What it does, stated in full: Finds Comp.Rank with no discipline relation, or one naming a
--- discipline that does not resolve.
-FROM statistic s
-JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-WHERE s.del = 'no'
-  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND s.object_typeFK = 3
-  AND tt.sportFK = {{SPORT_ID}}
-  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
-  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
-  -- AND t.tournament_templateFK = <tournament_template_id>
-  AND (
-      NOT EXISTS (
-          SELECT 1 FROM object_discipline od
-          WHERE od.object_typeFK = 83
-            AND od.objectFK = s.id
-            AND od.del = 'no'
-      )
-      OR EXISTS (
-          SELECT 1 FROM object_discipline od2
-          WHERE od2.object_typeFK = 83
-            AND od2.objectFK = s.id
-            AND od2.del = 'no'
-            AND NOT EXISTS (
-                SELECT 1 FROM discipline d
-                WHERE d.id = od2.disciplineFK AND d.del = 'no'
-            )
-      )
-  )
+-- What it does, stated in full: Finds Comp.Rank from which no discipline of this sport can be
+-- read - the relation is absent, or it exists and its disciplineFK selects no active row in
+-- discipline, or it selects a discipline whose sportFK is a different sport.
+-- This is GLOBAL-DQ-015 asked one layer down, and the two are independent: DATABASE.md records
+-- that event discipline and statistic discipline are separate relations, so a sport can carry a
+-- readable discipline on every event and an unreadable one on a ranking.
+-- **The third state is written for the invariant, not for the rows.** Measured 2026-08-25 over
+-- the twelve documented sports it returns nothing at all, where the same rule at the event layer
+-- returns 68 - Swimming reaching into Para Swimming's catalogue for 67 events and Equestrian
+-- into Mountain Bike's for one. That is worth knowing rather than worth omitting: a Comp.Rank
+-- reaches its discipline through a tournament that already fixes the sport, so a foreign
+-- reference here would mean something different from the same reference on an event, and the
+-- day one appears is the day somebody needs to be told. An empty result is a sentinel, not
+-- clean data proving the check unnecessary.
+-- `unresolved_discipline_ids` carries the value the relation actually holds, because `0` and a
+-- plausible-looking id that has since been deleted are different stories and the row should not
+-- make the reviewer go and look. `foreign_sport_disciplines` names the owning sport as well as
+-- the discipline, because the id alone cannot tell a reviewer whether the ranking or the
+-- reference is the thing to move.
+-- A discipline row carrying `del = 'yes'` does not resolve, which is the behaviour this check
+-- has always had and is deliberately kept: a ranking pointing at a retired discipline is as
+-- unreadable as one pointing at no discipline.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(od.id) AS relation_rows,
+        COUNT(d.id) AS resolved_rows,
+        COUNT(CASE WHEN d.sportFK = {{SPORT_ID}} THEN d.id END) AS own_sport_rows,
+        GROUP_CONCAT(DISTINCT CASE WHEN d.id IS NULL THEN od.disciplineFK END
+                     ORDER BY od.disciplineFK SEPARATOR ', ') AS unresolved_discipline_ids,
+        GROUP_CONCAT(DISTINCT CASE WHEN d.id IS NOT NULL AND d.sportFK <> {{SPORT_ID}}
+                                   THEN CONCAT(d.id, ' ', d.name, ' - sport ', d.sportFK, ' ', sp.name) END
+                     ORDER BY d.id SEPARATOR ' | ') AS foreign_sport_disciplines
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN object_discipline od
+           ON od.object_typeFK = 83
+          AND od.objectFK = s.id
+          AND od.del = 'no'
+    LEFT JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+    LEFT JOIN sport sp ON sp.id = d.sportFK
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY s.id, s.name, tt.name, t.name
+) x
+-- A ranking holding one readable discipline of its own sport is settled, however many relations
+-- it carries. The finding is that not one of them gets that far.
+WHERE x.own_sport_rows = 0
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT s.id) AS eligible_count
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
