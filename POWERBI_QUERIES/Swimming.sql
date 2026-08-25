@@ -1193,3 +1193,199 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, seconds_per_50m DESC, event_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Swimming-DQ-084
+    -- Name - EVENT_RESULTS_QUALIFICATION_NOT_HONOURED_BY_LATER_ROUND
+    -- What it does: Finds heats and semi-finals whose qualifiers do not appear in any later round of the same stage and discipline.
+    CASE
+        -- Two states and two repairs. Where later rounds were held, an entry is missing from
+        -- one of them; where the stage holds none at all for this discipline, the round
+        -- itself was never written and the qualifiers have nowhere to be. The second is
+        -- GLOBAL-DQ-063's shape seen from the results side, and separating it keeps a
+        -- reviewer from looking for a swimmer in an event that does not exist.
+        WHEN y.later_events_in_stage = 0 THEN 'Qualified_With_No_Later_Round_Held'
+        WHEN y.qualified_count > y.largest_later_field THEN 'More_Qualifiers_Than_A_Later_Round_Holds'
+        ELSE 'Qualifier_Absent_From_Every_Later_Round'
+    END AS check_type,
+    y.event_id,
+    y.event_name,
+    y.round_type_id,
+    y.round_type_name,
+    y.discipline_id,
+    y.discipline_name,
+    y.qualified_count,
+    y.unhonoured_count,
+    y.unhonoured_competitors,
+    y.later_events_in_stage,
+    y.largest_later_field,
+    y.template_name,
+    y.tournament_name,
+    y.stage_id,
+    y.event_startdate,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds finished heats and semi-finals holding a competitor
+-- whose Comment says they went through, where no later round of the same stage and the same
+-- discipline holds that competitor at all.
+-- `Q` is a claim about a place in the next round, and the record either bears it out or it
+-- does not. SPORTS/Swimming.md already establishes what the marker means and that `R` marks
+-- a reserve rather than a qualifier - which is why `R` is not read here. Nothing else in the
+-- package compares one round with the next; every other results check reads a single event.
+-- **The audited object is the event.** Measured 2026-08-25 the 954 competitors this finds
+-- live in 647 events of 11316 eligible, about one and a half each, and a heat whose
+-- qualifiers are missing is one entry list to repair rather than several unrelated ones.
+-- **A withdrawal reads the same way and the database does not appear to record one.** A
+-- swimmer may qualify and scratch, and nothing distinguishes that from an entry the record
+-- lost. The rate is what makes the finding readable rather than any single row: 577 of the
+-- sport's heats and 70 of its semi-finals, in a population of 11316. The check was written
+-- on the ruling that every heat and semi-final has its own placings and a `Q` must be
+-- followed, so the proportion is the finding and a row is a question rather than a verdict.
+-- `unhonoured_competitors` names them so the question can be asked of the right swimmer.
+-- A swim-off counts as a later round for both. `QSO` sends a competitor to one, and the
+-- sport's swim-off is where a place the heats left tied is decided, so a qualifier appearing
+-- there and nowhere else has been honoured.
+-- Heats Summary is not read. It is the merged view of the heats rather than a round of its
+-- own, so its qualifiers are the same people counted a second time.
+-- The three classes were measured on 2026-08-25 and are three different repairs.
+--   619 events, 770 competitors: a qualifier absent from rounds that had room for them.
+--     537 of the 647 events lose exactly one qualifier out of two to five, which is the
+--     shape a single withdrawal takes and equally the shape a lost entry takes; nothing in
+--     the record separates the two, which is why the rate carries the finding.
+--    24 events, 168 competitors: more qualifiers than the largest later round could hold -
+--     sixteen going through to one final of eight. No swimmer is missing here at all; the
+--     semi-final was never written, and `largest_later_field` is what tells this apart from
+--     the class above.
+--     4 events, 16 competitors: qualifiers with no later round of any kind.
+FROM (
+    SELECT
+        x.event_id,
+        x.event_name,
+        x.round_type_id,
+        x.round_type_name,
+        x.discipline_id,
+        x.discipline_name,
+        x.stage_id,
+        x.template_name,
+        x.tournament_name,
+        x.event_startdate,
+        x.later_events_in_stage,
+        x.largest_later_field,
+        COUNT(*) AS qualified_count,
+        SUM(CASE WHEN x.later_events_for_competitor = 0 THEN 1 ELSE 0 END) AS unhonoured_count,
+        SUBSTRING(GROUP_CONCAT(CASE WHEN x.later_events_for_competitor = 0 THEN x.participant_name END
+                               ORDER BY x.participant_name SEPARATOR ', '), 1, 300) AS unhonoured_competitors
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            e.round_typeFK AS round_type_id,
+            rt.name AS round_type_name,
+            d.id AS discipline_id,
+            d.name AS discipline_name,
+            ts.id AS stage_id,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            e.startdate AS event_startdate,
+            pa.name AS participant_name,
+            -- Does the stage hold any later round for this discipline at all
+            (SELECT COUNT(DISTINCT e2.id)
+               FROM event e2
+               JOIN object_discipline od2 ON od2.object_typeFK = 5 AND od2.objectFK = e2.id AND od2.del = 'no'
+              WHERE e2.del = 'no'
+                AND e2.tournament_stageFK = e.tournament_stageFK
+                AND od2.disciplineFK = od.disciplineFK
+                AND e2.id <> e.id
+                AND ( (e.round_typeFK IN (320, 204) AND e2.round_typeFK IN (178, 2, 173, 9, 223, 224))
+                   OR (e.round_typeFK IN (178, 2)   AND e2.round_typeFK IN (173, 9, 223, 224)) )
+            ) AS later_events_in_stage,
+            -- and how many competitors the biggest of them could take. The largest is used
+            -- rather than the sum, because a swimmer reaching the final swam the semi too
+            -- and adding the two fields would count them twice.
+            (SELECT COALESCE(MAX(f.field_size), 0) FROM (
+                SELECT COUNT(DISTINCT ep5.id) AS field_size
+                  FROM event e5
+                  JOIN object_discipline od5 ON od5.object_typeFK = 5 AND od5.objectFK = e5.id AND od5.del = 'no'
+                  JOIN event_participants ep5 ON ep5.eventFK = e5.id AND ep5.del = 'no'
+                 WHERE e5.del = 'no'
+                   AND e5.tournament_stageFK = e.tournament_stageFK
+                   AND od5.disciplineFK = od.disciplineFK
+                   AND e5.id <> e.id
+                   AND ( (e.round_typeFK IN (320, 204) AND e5.round_typeFK IN (178, 2, 173, 9, 223, 224))
+                      OR (e.round_typeFK IN (178, 2)   AND e5.round_typeFK IN (173, 9, 223, 224)) )
+                 GROUP BY e5.id
+            ) f) AS largest_later_field,
+            -- and does one of them hold this competitor
+            (SELECT COUNT(DISTINCT e3.id)
+               FROM event e3
+               JOIN object_discipline od3 ON od3.object_typeFK = 5 AND od3.objectFK = e3.id AND od3.del = 'no'
+               JOIN event_participants ep3 ON ep3.eventFK = e3.id AND ep3.del = 'no'
+              WHERE e3.del = 'no'
+                AND e3.tournament_stageFK = e.tournament_stageFK
+                AND od3.disciplineFK = od.disciplineFK
+                AND e3.id <> e.id
+                AND ep3.participantFK = ep.participantFK
+                AND ( (e.round_typeFK IN (320, 204) AND e3.round_typeFK IN (178, 2, 173, 9, 223, 224))
+                   OR (e.round_typeFK IN (178, 2)   AND e3.round_typeFK IN (173, 9, 223, 224)) )
+            ) AS later_events_for_competitor
+        FROM event e
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+             AND tt.sportFK = 46
+        JOIN round_type rt ON rt.id = e.round_typeFK
+        JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+        JOIN discipline d ON d.id = od.disciplineFK
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN participant pa ON pa.id = ep.participantFK
+        -- The qualification marker in every spelling the sport uses. The column collation
+        -- folds case, so this reads `Q`, `q/CR`, `QA`, `QFB` and `QSO` alike, and the sport's
+        -- vocabulary holds no comment beginning with Q that means anything else.
+        JOIN result cm ON cm.event_participantsFK = ep.id AND cm.del = 'no'
+                      AND cm.result_typeFK = 104
+                      AND cm.value LIKE 'Q%'
+        WHERE e.del = 'no'
+          AND e.status_type = 'finished'
+          AND e.round_typeFK IN (320, 204, 178, 2)
+          AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+    ) x
+    GROUP BY x.event_id, x.event_name, x.round_type_id, x.round_type_name,
+             x.discipline_id, x.discipline_name, x.stage_id, x.template_name,
+             x.tournament_name, x.event_startdate, x.later_events_in_stage, x.largest_later_field
+) y
+WHERE y.unhonoured_count > 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+-- The eligible population is every finished heat and semi-final holding at least one
+-- qualifier. An event nobody qualified from has no claim to test.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 46
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result cm ON cm.event_participantsFK = ep.id AND cm.del = 'no'
+              AND cm.result_typeFK = 104
+              AND cm.value LIKE 'Q%'
+WHERE e.del = 'no'
+  AND e.status_type = 'finished'
+  AND e.round_typeFK IN (320, 204, 178, 2)
+  AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, unhonoured_count DESC, event_startdate DESC, event_id;

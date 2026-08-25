@@ -5291,6 +5291,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "25.08.2026 13-22-00",
+                     "startedUtc":  "2026-08-25T11:22:00Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-084",
+                                        "runKey":  "Swimming-DQ-084",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_QUALIFICATION_NOT_HONOURED_BY_LATER_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  648,
+                                        "findings":  647,
+                                        "eligible":  11316,
+                                        "seconds":  45.2,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g"
