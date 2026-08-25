@@ -26373,6 +26373,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "25.08.2026 15-07-57",
+                     "startedUtc":  "2026-08-25T13:07:57Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-006",
+                                        "runKey":  "Artistic-Gymnastics-DQ-006",
+                                        "parameters":  "",
+                                        "name":  "EVENT_LINEUP_ATHLETE_ASSIGNED_MORE_THAN_ONCE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  284,
+                                        "seconds":  1.8,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"
