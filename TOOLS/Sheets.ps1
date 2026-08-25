@@ -294,6 +294,33 @@ $SheetsRetiredStatus = 'Deprecated'
 # treats it as "nobody has decided yet" and will write over it.
 $SheetsUnreviewedStatus = 'Not reviewed'
 
+# The two statuses that are claims about a state rather than about a check, and the word the run
+# writes when its own result refutes one.
+#
+# `Clean` says the check returns nothing. `Completed` says the findings were dealt with. Both are
+# answers to what a run found, and a later run can contradict either by simply returning rows -
+# which it did, silently, for as long as this column was the reviewer's alone. Colleagues cleared
+# a check, marked it Completed, and ten days later it came back with new findings under a green
+# chip nobody had reason to look at twice. A board is scanned and filtered by this column, so a
+# stale word there is not a cosmetic problem: it is work that has become invisible.
+#
+# The other eight say nothing a result can refute. `Monitor Only` expects a count forever.
+# `Reviewing`, `On Hold` and `Skipped` are where the reading got to. `IT Fix` and `Other Team`
+# are who is holding it. `Not reviewed` is the seed and `Deprecated` is the registry's. None of
+# them is touched here, and the count beside them moving means nothing about any of them.
+#
+# `Reopened` is written rather than `Not reviewed` because the two are different facts. Nobody
+# has looked is not the same as somebody looked, closed it, and it came back - and the second is
+# the one worth a reviewer's attention first. It sits after `Completed` because that is where it
+# happens in a check's life, and it is red because it belongs with `Not reviewed` in the reading:
+# both mean this row has not been answered as it now stands. The same argument the file already
+# makes for IT Fix and Other Team being two ambers.
+#
+# The run writes it and never writes it back. A check that returns to zero stays `Reopened` until
+# a person says otherwise: a run may contradict a conclusion, but forming one is not its to do.
+$SheetsReopenedStatus = 'Reopened'
+$SheetsStatusClosedByFinding = @('Clean', 'Completed')
+
 $SheetsStatusBands = @(
     [pscustomobject]@{ Value = 'Not reviewed'; Background = '#FCE8E6'; Colour = '#C5221F' }
     [pscustomobject]@{ Value = 'Clean'; Background = '#E6F4EA'; Colour = '#137333' }
@@ -301,6 +328,7 @@ $SheetsStatusBands = @(
     [pscustomobject]@{ Value = 'Reviewing'; Background = '#E8F0FE'; Colour = '#1967D2' }
     [pscustomobject]@{ Value = 'On Hold'; Background = '#FEEFE3'; Colour = '#E8710A' }
     [pscustomobject]@{ Value = 'Completed'; Background = '#CEEAD6'; Colour = '#0B6B3A' }
+    [pscustomobject]@{ Value = $SheetsReopenedStatus; Background = '#FAD2CF'; Colour = '#B31412' }
     [pscustomobject]@{ Value = 'IT Fix'; Background = '#FEF7E0'; Colour = '#B06000' }
     [pscustomobject]@{ Value = 'Other Team'; Background = '#FEEFC3'; Colour = '#7A4F01' }
     [pscustomobject]@{ Value = 'Skipped'; Background = '#E0F2F1'; Colour = '#00796B' }
@@ -1707,6 +1735,44 @@ function New-SheetsMergePlan {
                 -Column ([array]::IndexOf($SheetsOverviewColumns, 'Trends') + 1) `
                 -Text ([string]$open.Trend) -Runs $open.TrendRuns
             if ($rich) { $plan += $rich }
+
+            # A closed conclusion this run has just contradicted. Status is the reviewer's
+            # column and stays theirs; this is the second value the run may write into it, and
+            # like the first - the registry's Deprecated - it is narrow by construction. It fires
+            # only from `Clean` or `Completed`, only when the run returns open findings, and it
+            # never writes a closing word of its own. See $SheetsReopenedStatus.
+            #
+            # Open findings, not raw rows: a row the reviewers marked No Issue / Change is one
+            # they have already decided about and it stays in the result for good, so a check
+            # whose remaining rows are all dismissed is still finished and keeps its word.
+            #
+            # A superseded spelling is mapped first so the two rules agree within one run. Left
+            # unmapped, a cell reading `Fixed` would be renamed to `Completed` by the loop above
+            # and only reopened on the run after this one.
+            $statusNow = ''
+            if ($Existing -and $Existing.StatusOf -and $Existing.StatusOf.ContainsKey($runKey)) {
+                $statusNow = ([string]$Existing.StatusOf[$runKey]).Trim()
+            }
+            $statusMeans = $(if ($SheetsStatusLegacy.ContainsKey($statusNow)) {
+                    [string]$SheetsStatusLegacy[$statusNow]
+                } else { $statusNow })
+            $openNow = 0
+            if (($SheetsStatusClosedByFinding -contains $statusMeans) -and
+                [int]::TryParse([string]$open.Findings, [ref]$openNow) -and $openNow -gt 0) {
+                $statusColumn = [array]::IndexOf($SheetsOverviewColumns, 'Status') + 1
+                $plan += [pscustomobject]@{
+                    Kind   = 'Write'
+                    Sheet  = 'Overview'
+                    Range  = (New-SheetsRange -FromColumn $statusColumn -FromRow $row `
+                            -ToColumn $statusColumn -ToRow $row)
+                    Values = @(, @($SheetsReopenedStatus))
+                }
+                $cells += 1
+                $statusRenames += [pscustomobject]@{
+                    CheckId = $runKey; From = $statusNow; To = $SheetsReopenedStatus
+                    Why = ('it was {0} and this run returned {1} open finding(s)' -f $statusMeans, $openNow)
+                }
+            }
 
             $wanted = $(if ($Existing -and $Existing.EmptyCommentOf) { [bool]$Existing.EmptyCommentOf[$runKey] } else { $false })
             if ($wanted -and $titleOf.ContainsKey($runKey)) {

@@ -1510,7 +1510,7 @@ Test-That 'workbook carries the Check By column and the outcome statuses' {
     Assert-True ($xml -match 'r="F1"[^>]*><is><t[^>]*>Category<') 'Category should follow Priority'
     # One vocabulary for the workbook and the live board, taken from $SheetsStatusBands so
     # the two cannot drift; the column held nine spellings of five ideas when they could.
-    Assert-True ($xml -match '"Not reviewed,Clean,Monitor Only,Reviewing,On Hold,Completed,IT Fix,Other Team,Skipped,Deprecated"') 'the dropdown should offer the outcome statuses'
+    Assert-True ($xml -match '"Not reviewed,Clean,Monitor Only,Reviewing,On Hold,Completed,Reopened,IT Fix,Other Team,Skipped,Deprecated"') 'the dropdown should offer the outcome statuses'
     Assert-True ($xml -match '>Clean<') 'a check returning only its COVERAGE row should open as Clean'
     Assert-True ($detailXml -match 'r="H1"[^>]*><is><t[^>]*>Check By<') 'Check By should sit after Comment on a check tab'
     # An empty manual field writes no cell at all, so the reviewer types into a blank.
@@ -2240,6 +2240,84 @@ Test-That 'the reviewer columns split the row into the spans a run may write' {
     Assert-Equal 8 $spans[0].To 'and stops before Status'
     Assert-Equal 12 $spans[1].From 'second span resumes after Comment'
     Assert-Equal 22 $spans[1].To 'and runs to the last column'
+}
+
+Test-That 'a closed status the run has just contradicted is reopened' {
+    # Colleagues clear a check and mark it Completed. Ten days later it comes back with new
+    # findings, and until 2026-08-25 it came back under the green chip - work made invisible to
+    # a board that is scanned and filtered by this column.
+    foreach ($closed in $SheetsStatusClosedByFinding) {
+        $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-050' -Findings 4 -Eligible 900 -Verdict 'Regressed'))
+        $existing = [pscustomobject]@{
+            HasOverviewHeader = $true
+            OverviewRowOf = @{ 'Fixtureball-DQ-050' = 6 }
+            StatusOf = @{ 'Fixtureball-DQ-050' = $closed }
+            TabOf = @{}
+            ResultRowsOf = @{}
+        }
+        $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+        $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+        Assert-Equal 1 $status.Count "$closed is written over when the run returns findings"
+        Assert-Equal 'Reopened' $status[0].Values[0][0] 'with the word that says it came back'
+
+        $said = @($plan.StatusRenames | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-050' })
+        Assert-Equal 1 $said.Count 'and the run says so rather than changing the column quietly'
+        Assert-Equal $closed $said[0].From 'naming what it was'
+        Assert-True ($said[0].Why -like '*4 open finding*') 'and how many rows contradicted it'
+    }
+    Assert-True ($SheetsStatusBands.Value -contains 'Reopened') 'which the closed list has to offer'
+}
+
+Test-That 'a closed status stands while the check returns nothing' {
+    # The run may contradict a conclusion. Forming one is not its to do, so a check back at zero
+    # keeps whatever a person last said about it.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-051' -Findings 0 -Eligible 900 -Verdict 'Resolved'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-051' = 6 }
+        StatusOf = @{ 'Fixtureball-DQ-051' = 'Completed' }
+        TabOf = @{}
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+    Assert-Equal 0 $status.Count 'nothing is written into the reviewer''s column'
+}
+
+Test-That 'the eight statuses a result cannot contradict are left alone' {
+    # Monitor Only expects a count forever, IT Fix and Other Team say who is holding it, and
+    # Reviewing, On Hold and Skipped say where the reading got to. None of them is a claim about
+    # what the check returns, so findings coming back means nothing about any of them.
+    foreach ($kept in @('Monitor Only', 'Reviewing', 'On Hold', 'IT Fix', 'Other Team', 'Skipped',
+            'Not reviewed', 'Deprecated')) {
+        $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-052' -Findings 7 -Eligible 900 -Verdict 'Regressed'))
+        $existing = [pscustomobject]@{
+            HasOverviewHeader = $true
+            OverviewRowOf = @{ 'Fixtureball-DQ-052' = 6 }
+            StatusOf = @{ 'Fixtureball-DQ-052' = $kept }
+            TabOf = @{}
+            ResultRowsOf = @{}
+        }
+        $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+        $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+        Assert-Equal 0 $status.Count "$kept is none of the run's business"
+    }
+}
+
+Test-That 'a superseded spelling of a closed status is reopened in the same run' {
+    # Fixed is renamed to Completed by the loop that respells, and without the mapping here the
+    # cell would read Completed for a run before anybody noticed it had come back.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-053' -Findings 2 -Eligible 900 -Verdict 'Regressed'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-053' = 6 }
+        StatusOf = @{ 'Fixtureball-DQ-053' = 'Fixed' }
+        TabOf = @{}
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+    Assert-Equal 'Reopened' $status[-1].Values[0][0] 'the last word written into the cell'
 }
 
 Test-That 'a check the document already holds is updated in the row it occupies' {
@@ -4520,7 +4598,7 @@ Test-That 'Status is a closed vocabulary, and a superseded spelling is renamed t
     $validation = @($plan.Operations | Where-Object { $_.Kind -eq 'Validation' })
     Assert-Equal 1 $validation.Count 'the Status column carries a dropdown'
     Assert-Equal 9 $validation[0].Column 'at I'
-    Assert-Equal 'Not reviewed Clean Monitor Only Reviewing On Hold Completed IT Fix Other Team Skipped Deprecated' (@($validation[0].Values) -join ' ') `
+    Assert-Equal 'Not reviewed Clean Monitor Only Reviewing On Hold Completed Reopened IT Fix Other Team Skipped Deprecated' (@($validation[0].Values) -join ' ') `
         'offering exactly the declared outcomes'
 
     # I7 and nothing else. This is the one place the runner writes into a reviewer's column,

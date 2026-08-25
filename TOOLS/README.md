@@ -1004,12 +1004,12 @@ The subtraction uses the same match that puts the notes back beside their findin
 once, read by both — so a note whose finding is no longer in the result is logged rather than
 subtracted. `Sheets.ps1` `$SheetsRowReviewDismissed` owns the value.
 
-`Status` is a manual tracking field, and its dropdown offers the same nine words the live
+`Status` is a manual tracking field, and its dropdown offers the same eleven words the live
 document does - one list, `$SheetsStatusBands` in `TOOLS/Sheets.ps1`, read by both:
 
 | Open | Closed |
 |---|---|
-| `Not reviewed`, `Reviewing`, `On Hold`, `IT Fix`, `Other Team` | `Clean`, `Monitor Only`, `Completed`, `Skipped` |
+| `Not reviewed`, `Reviewing`, `On Hold`, `IT Fix`, `Other Team`, `Reopened` | `Clean`, `Monitor Only`, `Completed`, `Skipped` |
 
 `Monitor Only` is the reviewer's counterpart to the `Informational` signal: the check ran, it
 was read, and there was never anything in it to act on.
@@ -1512,7 +1512,7 @@ alone.
 
 `Status` is a closed vocabulary rather than free text, offered as a coloured dropdown down the
 whole column: **Not reviewed**, **Clean**, **Monitor Only**, **Reviewing**, **On Hold**,
-**Completed**, **IT Fix**, **Other Team**, **Skipped**. The list is `$SheetsStatusBands` in
+**Completed**, **Reopened**, **IT Fix**, **Other Team**, **Skipped**. The list is `$SheetsStatusBands` in
 `TOOLS/Sheets.ps1`, and the workbook's dropdown reads the same constant, because a workbook and a
 board that disagree about the words are how the column came to hold nine spellings of five ideas
 across six boards. Validation is strict, so an undeclared word is refused rather than flagged.
@@ -1537,10 +1537,46 @@ decided knowingly because it is the word the reviewers use.
 
 A superseded spelling still on a board is renamed on the next run — `No issue` and `No Changes`
 to `Clean`, `No action needed` to `Monitor Only`, `Fixed` to `Completed`, `For IT` and
-`Reported to IT` to `IT Fix`, and the observed typo `Monitor Olnly` to `Monitor Only`. That is
-the single case in which the runner writes into a reviewer's column, and it is narrow on
-purpose: the map is a closed list of synonyms, so it renames a conclusion and never forms one.
-A word nobody declared is left exactly as typed.
+`Reported to IT` to `IT Fix`, and the observed typo `Monitor Olnly` to `Monitor Only`. The map is
+a closed list of synonyms, so it renames a conclusion and never forms one. A word nobody declared
+is left exactly as typed.
+
+### `Reopened`, and the three cases in which the runner writes a Status
+
+`Status` is the reviewer's column and the runner writes around it. Three exceptions, each narrow
+by construction and each reported by the run rather than made quietly - `-RunAll` prints every
+write into the column and every one it declined to make.
+
+The first is the rename above. The second is `Deprecated`, which the registry owns, written only
+onto a cell nobody has answered.
+
+The third is **`Reopened`, added 2026-08-25**, and it exists because two of the words are claims
+about a state rather than about a check. `Clean` says the check returns nothing; `Completed` says
+the findings were dealt with. A later run contradicts either by simply returning rows, and until
+this existed it did so silently: colleagues cleared a check, marked it `Completed`, and ten days
+later it came back with new findings under a green chip nobody had reason to look at twice. A
+board is scanned and filtered by this column, so a stale word in it is not cosmetic - it is work
+that has become invisible.
+
+So a run that finds `Clean` or `Completed` on a check its own result contradicts writes
+`Reopened` over it, and names the check, the word it replaced and the count that refuted it.
+
+| | |
+|---|---|
+| What triggers it | the cell reads `Clean` or `Completed`, or a superseded spelling of either, **and** the run returns open findings |
+| What counts | `Findings` after dismissals, not raw rows — a check whose remaining rows are all marked `No Issue / Change` is still finished and keeps its word |
+| The other eight | untouched. `Monitor Only` expects a count forever, `Reviewing`, `On Hold` and `Skipped` say where the reading got to, `IT Fix` and `Other Team` say who is holding it, `Not reviewed` is the seed and `Deprecated` is the registry's. None is a claim a result can contradict |
+| Going the other way | never. A check that returns to zero keeps whatever a person last said about it: a run may contradict a conclusion, but forming one is not its to do |
+
+`Reopened` rather than `Not reviewed` because the two are different facts. Nobody has looked is
+not the same as somebody looked, closed it, and it came back - and the second is the one worth a
+reviewer's attention first. It is red for the same reason `IT Fix` and `Other Team` are two
+ambers: it belongs with `Not reviewed` in the reading, because both mean this row has not been
+answered as it now stands.
+
+**The first run after a board adopts it will reopen everything that had already gone stale**,
+which on a long-lived board is the accumulated debt arriving at once rather than anything going
+wrong.
 
 Seeding uses the same vocabulary: an informational check opens on `Monitor Only`, a check that
 came back with its `COVERAGE` row alone over a real population opens on `Clean`, and everything
