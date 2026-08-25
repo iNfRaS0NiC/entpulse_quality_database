@@ -625,10 +625,15 @@ sport. The winner is what makes the test structural: everyone behind was slower 
    answered, a Comp.Rank grouping by `disciplineFK` will split one competition's relay across
    two rankings from one edition to the next. `Swimming-DQ-066` now measures how large that
    split will be; it does not answer the question.
-2. **Should `468` and `479` be folded into `351` and `362`, and `374` and `557` into one?**
-   The first two belong to question 1 and would be resolved with it. The third is independent:
-   one discipline entered twice in 2025, and merging it is a decision about the catalogue rather
-   than about this sport.
+2. ~~**Should `468` and `479` be folded into `351` and `362`, and `374` and `557` into one?**~~
+   Withdrawn on 2026-08-25, because the question could not be asked of those four together.
+   `468` and `479` are not Swimming disciplines: `discipline.sportFK` puts both on sport 135,
+   Para Swimming. Sixty-seven Swimming events point at them, all ordinary races carrying no para
+   classification in their names, so nothing is folded anywhere - the reference is wrong and
+   `Swimming-DQ-008` reports it as `Discipline_Belongs_To_Another_Sport` since `GLOBAL-DQ-015`
+   was widened the same day. `Swimming-DQ-066` had read the two as the older vocabulary's
+   individual twins and no longer does. `374` and `557` are a real question and are asked as
+   question 10.
 3. **Are the events holding a distance-first name with a current discipline id a stalled
    correction?** They are the only place the two halves of the signature disagree, which is what
    a half-finished cleanup would look like. There are 91 of them under the literal reading, and
@@ -662,5 +667,15 @@ sport. The winner is what makes the test structural: everyone behind was slower 
    answer decides whether that check is a repair list or a proportion to watch. Until it is
    answered the check runs on the ruling that a `Q` must be followed, which is the stricter
    reading and the one that keeps the lost entries visible.
+
+10. **Should `374 Knockout Sprint 3 km` and `557 3km Knockout Sprint` be one discipline?**
+    The independent half of question 2, asked on its own since 2026-08-25. Both ids are new in
+    2025 and both name their events the same way; what separates them is which competition uses
+    each. `374` carries 16 events in scope under World Championships Long Course and `557` carries
+    8 under the Marathon Swim World Series, with a further 7 under Open Water World Championships
+    outside the client scope. That reads as one discipline entered twice within a single season,
+    and merging it is a decision about the catalogue rather than about this sport. No check can
+    see it: the names differ by more than a convention, so no rule pairs them without a person
+    deciding they mean the same thing.
 
 <!-- MANUAL PASTE ZONE: 46 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
