@@ -5268,6 +5268,29 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "25.08.2026 13-13-35",
+                     "startedUtc":  "2026-08-25T11:13:35Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-083",
+                                        "runKey":  "Swimming-DQ-083",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_WINNING_TIME_TOO_SLOW_FOR_DISTANCE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  29,
+                                        "findings":  28,
+                                        "eligible":  41142,
+                                        "seconds":  14.4,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g"

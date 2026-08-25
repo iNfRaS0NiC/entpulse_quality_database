@@ -1026,3 +1026,170 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, name_says, event_id;
+
+-- ==============================================================================
+SELECT
+    -- CheckID - Swimming-DQ-083
+    -- Name - EVENT_RESULTS_WINNING_TIME_TOO_SLOW_FOR_DISTANCE
+    -- What it does: Finds events won in a time nobody could take over the distance the discipline names.
+    'Winning_Time_Too_Slow_For_Distance' AS check_type,
+    y.event_id,
+    y.event_name,
+    y.discipline_id,
+    y.discipline_name,
+    y.metres,
+    y.winning_time,
+    y.seconds_per_50m,
+    y.shortest_distance_that_fits,
+    y.field_size,
+    y.template_name,
+    y.tournament_name,
+    y.event_startdate,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Asks whether the event's *winner* could have taken that long
+-- over the distance the discipline names. It is the ceiling `Swimming-DQ-069` deliberately
+-- does not have: that check has a floor of fifteen seconds per fifty metres and nothing above,
+-- so a time too fast for the distance is reported and a time too slow for it is not.
+-- **The winner is read rather than the field, and that is what makes it safe.** A slow
+-- swimmer is one row in a normal event and no business of a data-quality check; a slow
+-- *winner* means every competitor behind was slower still, which no correct record of an
+-- elite meet produces. Measured 2026-08-25, the events this returns are not slow fields at
+-- all - almost every one is a field swimming a different distance from the one the discipline
+-- names, and the time matches a distance one step up: `Butterfly 50m` won in 2:13.700 is a
+-- 200, `Freestyle 200m` won in 7:52.440 is an 800, `Indv. Medley 200m` won in 4:55.370 is a
+-- 400, `Freestyle 4 x 50m` won in 3:03.540 is a 4 x 100. Not all of them are: `Breaststroke
+-- 200m` won in 4:20.340 is roughly double the distance too, and the sport contests no 400
+-- metre breaststroke, so that one is a wrong time rather than a wrong discipline. The row
+-- reports the disagreement and does not choose which half to correct.
+-- Reading the whole field instead would report the same events plus every slow swimmer in
+-- the sport, which is the failure `Swimming-DQ-069` warns against in writing.
+-- The ceiling is forty-five seconds per fifty metres, three times that check's floor. It is
+-- not a performance test: the slowest ordinary swim in the sport sits under it by a wide
+-- margin - 41114 events of the 41142 that hold a winning time are under it - and the twenty
+-- eight above it are separated from the rest by a clear gap rather than a chosen cut.
+-- `shortest_distance_that_fits` is the distance the winning time would need before it became
+-- a plausible swim, at that same ceiling. It is a floor and never an estimate of the real
+-- distance - the ceiling is a very slow pace, so the figure sits well under whatever was
+-- actually swum - but it is the column that names the repair: an event labelled 50 metres
+-- whose winning time needs at least 149 is not a 50 metre event, and the statement says so
+-- without having to guess a discipline id.
+-- The rows deliberately carry one check_type and not two. A split on whether that floor
+-- reaches twice the labelled distance was written and removed on 2026-08-25: because the
+-- floor is computed at the ceiling pace it understates every case, so `Indv. Medley 200m`
+-- won in 4:55.370 - a 400 metre time - reported a floor of 329 and landed in the weaker
+-- class beside the strong ones. A distinction that misfiles the obvious cases is worse than
+-- none, and `seconds_per_50m` already lets a reviewer sort by severity.
+-- Open water is out of scope, matched on the km in its name exactly as `Swimming-DQ-069`
+-- matches it. Its disciplines are named in kilometres, and its knockout format contests
+-- three different distances under one name - 1500 metres, 1000 and a 500 metre final - so
+-- a pace read against the 3 km would be wrong for all three. `642 Mixed Relay` carries no
+-- distance at all and is excluded by the same digit test that finds the others theirs.
+-- A winning time of zero is excluded and is `GLOBAL-DQ-045`'s finding, which tests for it.
+FROM (
+    SELECT
+        x.event_id,
+        x.event_name,
+        x.discipline_id,
+        x.discipline_name,
+        x.metres,
+        x.winning_time,
+        x.field_size,
+        x.template_name,
+        x.tournament_name,
+        x.event_startdate,
+        ROUND(x.winner_seconds / (x.metres / 50), 1) AS seconds_per_50m,
+        CEIL(x.winner_seconds / 45 * 50) AS shortest_distance_that_fits
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            d.id AS discipline_id,
+            d.name AS discipline_name,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            e.startdate AS event_startdate,
+            (SELECT COUNT(*) FROM event_participants epx WHERE epx.eventFK = e.id AND epx.del = 'no') AS field_size,
+            -- The distance the discipline names. A relay multiplies its two figures; an
+            -- individual event takes the first. The same parsing Swimming-DQ-069 uses, and
+            -- for the same reason: the event name is the half of the pair this sport is
+            -- inconsistent about, so the discipline is what the time is read against.
+            CASE WHEN d.name LIKE '% x %'
+                 THEN CAST(REGEXP_SUBSTR(d.name, '[0-9]+', 1, 1) AS UNSIGNED)
+                      * CAST(REGEXP_SUBSTR(d.name, '[0-9]+', 1, 2) AS UNSIGNED)
+                 ELSE CAST(REGEXP_SUBSTR(d.name, '[0-9]+', 1, 1) AS UNSIGNED) END AS metres,
+            MIN(ft.value) AS winning_time,
+            MIN(CASE LENGTH(ft.value) - LENGTH(REPLACE(ft.value, ':', ''))
+                     WHEN 0 THEN CAST(ft.value AS DECIMAL(14,3))
+                     WHEN 1 THEN CAST(SUBSTRING_INDEX(ft.value, ':', 1) AS DECIMAL(14,3)) * 60
+                               + CAST(SUBSTRING_INDEX(ft.value, ':', -1) AS DECIMAL(14,3))
+                     ELSE CAST(SUBSTRING_INDEX(ft.value, ':', 1) AS DECIMAL(14,3)) * 3600
+                               + CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(ft.value, ':', 2), ':', -1) AS DECIMAL(14,3)) * 60
+                               + CAST(SUBSTRING_INDEX(ft.value, ':', -1) AS DECIMAL(14,3)) END) AS winner_seconds
+        FROM event e
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+        JOIN discipline d ON d.id = od.disciplineFK
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN result rk ON rk.event_participantsFK = ep.id AND rk.del = 'no'
+                      AND rk.result_typeFK = 100
+                      AND TRIM(rk.value) = '1'
+        JOIN result ft ON ft.event_participantsFK = ep.id AND ft.del = 'no'
+                      AND ft.result_typeFK = 557
+                      AND ft.value IS NOT NULL
+                      AND TRIM(ft.value) <> ''
+                      AND ft.value <> '0.000'
+        WHERE e.del = 'no'
+          AND tt.sportFK = 46
+          AND e.status_type = 'finished'
+          AND d.name NOT LIKE '%km%'
+          AND d.name REGEXP '[0-9]'
+          AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+        GROUP BY e.id, e.name, d.id, d.name, tt.name, t.name, e.startdate, metres
+    ) x
+    WHERE x.metres > 0
+) y
+WHERE y.seconds_per_50m >= 45
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+-- The eligible population is every pool event this can be asked of: one that names a
+-- distance and holds a winning time to read against it.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN discipline d ON d.id = od.disciplineFK
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result rk ON rk.event_participantsFK = ep.id AND rk.del = 'no'
+              AND rk.result_typeFK = 100
+              AND TRIM(rk.value) = '1'
+JOIN result ft ON ft.event_participantsFK = ep.id AND ft.del = 'no'
+              AND ft.result_typeFK = 557
+              AND ft.value IS NOT NULL
+              AND TRIM(ft.value) <> ''
+              AND ft.value <> '0.000'
+WHERE e.del = 'no'
+  AND tt.sportFK = 46
+  AND e.status_type = 'finished'
+  AND d.name NOT LIKE '%km%'
+  AND d.name REGEXP '[0-9]'
+  AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, seconds_per_50m DESC, event_id;
