@@ -3590,6 +3590,87 @@ Test-That 'an ambiguous key does not cost the notes of the findings around it' {
     Assert-Equal 1 @($carried.Dropped).Count 'only the ambiguous one is logged'
 }
 
+Test-That 'Fixed does not survive onto a finding that reads differently' {
+    # Fixed says what was found is not there any more. A row that stays under the same key and
+    # comes back holding a different reading refutes that, and a green cell against a finding
+    # nobody has looked at is worse than an empty one.
+    $header = @('check_type', 'organization_id', 'organization_country', 'competitors')
+    $rows = @([pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'
+            organization_country = 'Ukraine'; competitors = '4'
+        })
+    $notes = @([pscustomobject]@{
+            Key = (Get-SheetsFindingKey -Row @('ORG', '1611294') -Columns @(0, 1))
+            Review = 'Fixed'; Note = 'IT corrected the country'
+            Fingerprint = (Get-SheetsRowFingerprint -Values @('ORG', '1611294', 'International', '4'))
+        })
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal '' $carried.Review[0] 'the new reading comes back unreviewed'
+    Assert-Equal 1 @($carried.Dropped).Count 'and the old conclusion is logged rather than lost'
+    Assert-Equal 'IT corrected the country' $carried.Dropped[0].Note 'with what the reviewer wrote'
+    Assert-True ($carried.Dropped[0].Why -like '*reading differently*') 'saying why it could not stand'
+}
+
+Test-That 'Fixed stands while the row has not moved' {
+    # The repair was reported and has not landed yet. Clearing the mark every run until it does
+    # would ask the reviewer the same question until they stopped answering.
+    $header = @('check_type', 'organization_id', 'organization_country', 'competitors')
+    $values = @('ORG', '1611294', 'International', '4')
+    $rows = @([pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'
+            organization_country = 'International'; competitors = '4'
+        })
+    $notes = @([pscustomobject]@{
+            Key = (Get-SheetsFindingKey -Row @('ORG', '1611294') -Columns @(0, 1))
+            Review = 'Fixed'; Note = 'raised with IT'
+            Fingerprint = (Get-SheetsRowFingerprint -Values $values)
+        })
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal 'Fixed' $carried.Review[0] 'the mark stays against the row it was made about'
+    Assert-Equal 'raised with IT' $carried.Note[0] 'and so does the note'
+    Assert-Equal 0 @($carried.Dropped).Count 'nothing is logged'
+}
+
+Test-That 'the other two conclusions are about the object and outlive its numbers' {
+    # A reviewer who has decided a neutral entry is correct must not be asked again because one
+    # more competitor was ranked under it.
+    $header = @('check_type', 'organization_id', 'organization_country', 'competitors')
+    $rows = @(
+        [pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'
+            organization_country = 'International'; competitors = '9'
+        }
+        [pscustomobject]@{ check_type = 'ORG'; organization_id = '2222222'
+            organization_country = 'International'; competitors = '3'
+        }
+    )
+    $notes = @(
+        [pscustomobject]@{ Key = (Get-SheetsFindingKey -Row @('ORG', '1611294') -Columns @(0, 1))
+            Review = 'no issue'; Note = 'neutral athletes'; Fingerprint = ''
+        }
+        [pscustomobject]@{ Key = (Get-SheetsFindingKey -Row @('ORG', '2222222') -Columns @(0, 1))
+            Review = 'in progress'; Note = 'with the federation'; Fingerprint = ''
+        }
+    )
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal 'No Issue / Change' $carried.Review[0] 'a dismissal survives the count moving'
+    Assert-Equal 'In Progress' $carried.Review[1] 'and so does open work'
+    Assert-Equal 0 @($carried.Dropped).Count 'neither is logged'
+}
+
+Test-That 'a number that came back formatted differently is the same reading' {
+    # The cells are read as Sheets rendered them, and 4 written by a run can come back 4.0.
+    # A difference of formatting is not a difference of finding.
+    Assert-Equal (Get-SheetsRowFingerprint -Values @('ORG', '4')) `
+        (Get-SheetsRowFingerprint -Values @('ORG', '4.0')) 'four is four'
+    Assert-Equal (Get-SheetsRowFingerprint -Values @('ORG', ' 4 ')) `
+        (Get-SheetsRowFingerprint -Values @('ORG', '4')) 'and whitespace is not a change either'
+    Assert-True ((Get-SheetsRowFingerprint -Values @('ORG', '4')) -ne
+        (Get-SheetsRowFingerprint -Values @('ORG', '5'))) 'but five is not four'
+    Assert-True ((Get-SheetsRowFingerprint -Values @('ORG', 'International')) -ne
+        (Get-SheetsRowFingerprint -Values @('ORG', 'Ukraine'))) 'and text is compared as text'
+}
+
 Test-That 'a re-shaped check parks every note instead of matching them by luck' {
     # GLOBAL-DQ-030 went from one row per stray participant to one row per statistic on
     # 2026-08-11. Its 310 notes were keyed on a column the new result does not emit, and that

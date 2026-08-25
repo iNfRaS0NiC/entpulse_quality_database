@@ -473,9 +473,11 @@ $SheetsRowReviewBands = @(
 # The one of the three that closes a finding without changing the data, and the reason Overview
 # needs to know about it at all.
 #
-# The other two settle themselves. A row marked Fixed leaves the result the next time the check
-# runs, because the thing it described is no longer there - the count falls on its own and needs
-# no help. A row marked In Progress is still open work and belongs in the count for exactly as
+# The other two settle themselves. A row marked Fixed usually leaves the result the next time the
+# check runs, because the thing it described is no longer there - the count falls on its own and
+# needs no help. Usually, not always, and the exception cost a reviewer's conclusion until
+# 2026-08-25: see $SheetsRowReviewCarriedOnPayload for what happens when the row stays and reads
+# differently. A row marked In Progress is still open work and belongs in the count for exactly as
 # long as it says so. No Issue / Change is different in kind: the reviewer has decided the row is
 # the sport rather than a defect, so the row stays in the result for good, and Overview's Rows
 # goes on reporting work that nobody is ever going to do. On Golf-DQ-048 that was 251 of 283.
@@ -484,6 +486,26 @@ $SheetsRowReviewBands = @(
 # Change are untouched: they are the run's own measurement of the database, and a reviewer's
 # conclusion is not allowed to edit what a statement returned. The tab still holds every row.
 $SheetsRowReviewDismissed = 'No Issue / Change'
+
+# The one of the three that is about a state rather than about an object, and the only one that
+# a changed row invalidates.
+#
+# `No Issue / Change` and `In Progress` are judgements about the thing the finding is about: this
+# organization is a neutral entry, this stage is being corrected. The counts beside them moving
+# does not touch either conclusion, and clearing them would ask the reviewer the same question
+# every run until they stopped answering.
+#
+# `Fixed` says something different: that what was found is not there any more. The comment above
+# used to assume the row would leave the result on its own and need no help, and that assumption
+# does not hold. A row can leave and another take its place under the same key within one run,
+# and a row can stay and hold a different reading - a country corrected from one wrong value to
+# another. Either way the conclusion was reached about a reading nobody is looking at any more,
+# and a green cell against a finding nobody has seen is worse than an empty one.
+#
+# So `Fixed` is carried over only against an identical row, and where the row differs the note
+# goes to the Review log saying so. That log then answers a question nothing else can: which
+# repairs were reported done and came back changed.
+$SheetsRowReviewCarriedOnPayload = 'Fixed'
 
 # What each spelling written before the list existed meant. Applied wherever a note passes
 # through, so a cell reaches its new column already reading as one of the values above rather
@@ -681,6 +703,43 @@ function Get-SheetsFindingKey {
     return ($parts -join "`u{001F}")
 }
 
+function Get-SheetsRowFingerprint {
+    # What was actually found, as against what the finding is about. The key answers the second
+    # question and deliberately leaves out the payload - the counts, the values, the samples -
+    # because those move while the row goes on meaning the same thing. This is the other half:
+    # every data column of one row, so two rows can be asked whether they are the same reading.
+    #
+    # Only `Fixed` needs it, and only because `Fixed` is the one conclusion that is about a state
+    # rather than about an object. See $SheetsRowReviewCarriedOnPayload.
+    #
+    # A number is compared as a number. The cells come back from Sheets as they were rendered and
+    # the new row's values come from the query, so 4 on one side can be 4.0 on the other; a
+    # difference of formatting is not a difference of finding. Everything else is compared
+    # trimmed and literally.
+    #
+    # Both cultures are tried, invariant first, and thousands separators are not allowed in
+    # either. The machine this runs on writes decimals with a comma and the sheet may render them
+    # either way, so one culture alone would fail to read one side of the pair and report a
+    # change that is only a rendering. Allowing thousands would go the other way and make 1,234
+    # and 1234 the same reading, which is the direction that matters: failing to see a change is
+    # what leaves a green cell on a finding nobody has looked at.
+    param($Values)
+
+    $style = [globalization.numberstyles]::Float
+    $parts = @()
+    foreach ($value in @($Values)) {
+        $text = ([string]$value).Trim()
+        $number = 0.0
+        if ([double]::TryParse($text, $style, [cultureinfo]::InvariantCulture, [ref]$number) -or
+            [double]::TryParse($text, $style, [cultureinfo]::CurrentCulture, [ref]$number)) {
+            $parts += $number.ToString('R', [cultureinfo]::InvariantCulture)
+        } else {
+            $parts += $text
+        }
+    }
+    return ($parts -join "`u{001F}")
+}
+
 function Get-SheetsReviewColumnIndex {
     # Where the reviewer's block starts in a result header, under its current heading or any it
     # has had before. Only the first of the two columns is looked for, because they are adjacent
@@ -747,9 +806,10 @@ function New-SheetsCarriedReview {
     # way the dropdown offers rather than being flagged by the run that introduced it.
     $held = @(@($Notes) | Where-Object { $_ } | ForEach-Object {
             [pscustomobject]@{
-                Key    = $_.Key
-                Review = (ConvertTo-SheetsReviewStatus -Value $_.Review)
-                Note   = $_.Note
+                Key         = $_.Key
+                Review      = (ConvertTo-SheetsReviewStatus -Value $_.Review)
+                Note        = $_.Note
+                Fingerprint = [string]$_.Fingerprint
             }
         })
     if ($held.Count -eq 0) {
@@ -794,8 +854,10 @@ function New-SheetsCarriedReview {
     # depends on: an id travels with the name of the thing it identifies.
     $rowOfKey = @{}
     $ambiguous = @{}
+    $printOfRow = @()
     for ($r = 0; $r -lt @($Rows).Count; $r++) {
         $values = @($Header | ForEach-Object { @($Rows)[$r].$_ })
+        $printOfRow += (Get-SheetsRowFingerprint -Values $values)
         $key = Get-SheetsFindingKey -Row $values -Columns $now
         if ($rowOfKey.ContainsKey($key)) { $ambiguous[$key] = $true; continue }
         $rowOfKey[$key] = $r
@@ -812,6 +874,20 @@ function New-SheetsCarriedReview {
         }
         if ($rowOfKey.ContainsKey($one.Key)) {
             $at = $rowOfKey[$one.Key]
+
+            # `Fixed` is the one conclusion about a state rather than about an object, so it
+            # holds only against the row it was reached about. Anything else in the row having
+            # moved means the reviewer is looking at a reading they have not seen.
+            if ($one.Review -eq $SheetsRowReviewCarriedOnPayload -and
+                $one.Fingerprint -ne $printOfRow[$at]) {
+                $dropped += [pscustomobject]@{
+                    Key = $one.Key; Review = $one.Review; Note = $one.Note
+                    Why = 'it was marked ' + $SheetsRowReviewCarriedOnPayload +
+                          ' and the finding under that key came back reading differently'
+                }
+                continue
+            }
+
             $review[$at] = [string]$one.Review
             $note[$at] = [string]$one.Note
             continue
@@ -2885,13 +2961,31 @@ function Read-SheetReviewNotes {
     # The id columns of the tabs that turned out to hold something. Asked for from column A
     # through the last of them rather than one range each: they sit at the front of a result and
     # a single span is one range instead of five.
+    #
+    # A tab holding a `Fixed` mark is read wider - through its last data column instead of its
+    # last id column - because that conclusion is carried over only against an identical row and
+    # the comparison needs the row. The width is paid for by the tabs that need it and by no
+    # others, which on a board where `Fixed` is rare is most of them.
     for ($i = 0; $i -lt $written.Count; $i += $ChunkSize) {
         $slice = @($written[$i..([math]::Min($i + $ChunkSize - 1, $written.Count - 1))])
         $spans = @()
+        $wide = @()
         foreach ($one in $slice) {
             $keyColumns = @(Get-SheetsFindingKeyColumns -Header $one.Tab.Header)
             $last = 0
             foreach ($index in $keyColumns) { if ($index -gt $last) { $last = $index } }
+
+            $needsRow = $false
+            foreach ($mark in @($one.Marked)) {
+                if ((ConvertTo-SheetsReviewStatus -Value $mark.Review) -eq $SheetsRowReviewCarriedOnPayload) {
+                    $needsRow = $true
+                    break
+                }
+            }
+            if ($needsRow -and $one.Tab.From -gt 0 -and ($one.Tab.From - 1) -gt $last) {
+                $last = $one.Tab.From - 1
+            }
+            $wide += $needsRow
             $spans += $last
         }
 
@@ -2914,10 +3008,24 @@ function Read-SheetReviewNotes {
             $kept = @()
             foreach ($mark in @($slice[$j].Marked)) {
                 if ($mark.Offset -ge $rows.Count) { continue }
+                # Only where the whole row was asked for. A fingerprint built from a short read
+                # would be a fingerprint of the id columns, which every matching key already
+                # shares, and would carry `Fixed` over exactly where it should not.
+                $print = ''
+                if ($wide[$j]) {
+                    $width = [math]::Max(0, $slice[$j].Tab.From)
+                    $cells = @($rows[$mark.Offset])
+                    $line = @()
+                    for ($c = 0; $c -lt $width; $c++) {
+                        $line += $(if ($c -lt $cells.Count) { $cells[$c] } else { '' })
+                    }
+                    $print = Get-SheetsRowFingerprint -Values $line
+                }
                 $kept += [pscustomobject]@{
-                    Key    = (Get-SheetsFindingKey -Row @($rows[$mark.Offset]) -Columns $keyColumns)
-                    Review = $mark.Review
-                    Note   = $mark.Note
+                    Key         = (Get-SheetsFindingKey -Row @($rows[$mark.Offset]) -Columns $keyColumns)
+                    Review      = $mark.Review
+                    Note        = $mark.Note
+                    Fingerprint = $print
                 }
             }
             if ($kept.Count -gt 0) { $notesOf[$slice[$j].Tab.Title] = $kept }
