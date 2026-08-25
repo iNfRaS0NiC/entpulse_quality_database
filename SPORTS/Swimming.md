@@ -321,6 +321,26 @@ World Championships is the meet the open-water races are held at, so its name de
 championship rather than the water those races were swum in. The mirror of `Swimming-DQ-070` is
 deliberately not asserted for that reason.
 
+**`disciplineFK = 0` is one import rather than a habit, and it is now reported.** Measured
+2026-08-25 it sits on six events, all `World Junior Championships` 2013 and all within five
+days of each other: 5315119, 5315120, 5315123, 5315128, 5315130, 5315131. Every one is a
+relay, and every one also holds no result at all, so the same import failed in more than
+one way.
+
+Until that day nothing reported them. `GLOBAL-DQ-015` asked whether the relation existed,
+and it does - the row is there and names a discipline that is not. The template was widened
+to read the reference as well as the relation, and renamed
+`EVENT_SETTINGS_DISCIPLINE_MISSING_OR_UNRESOLVED` for it. Of the twelve documented sports
+only Swimming holds the state, so no other board moved.
+
+**The 3 km knockout sprint is three separate starts, and a six-minute time in it is
+correct.** The competitors swim 1500 metres, then 1000, then a 500 metre final, and the
+overall winner is decided by the 500. The discipline names 3 km and no single event
+contests that distance. Read literally against the discipline, every knockout event looks
+impossible; `Swimming-DQ-069` and `Swimming-DQ-083` both exclude open water and neither
+sees them, which is the right answer for the wrong reason and worth knowing before a
+distance rule is ever written for open water.
+
 <!-- MANUAL PASTE ZONE: 46 GENERIC RELATIONS AND DISCIPLINES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Statistics
@@ -412,6 +432,21 @@ Several markers have more than one live spelling - `Disq.`, `DSQ`, `DSQ*`, `DISQ
 `DNS` and `dns.`; `NC`, `N.C.` and `Nc.`. A statement matching a marker literally will match
 one spelling and miss the rest.
 
+**`Q` is now read as a claim about the next round.** `Swimming-DQ-084` asks whether a
+later round of the same stage and discipline holds the competitor the marker sent there,
+and reports the heats and semi-finals where none does. `R` is deliberately not read: it
+marks a reserve, which is a claim about not swimming.
+
+What the check cannot settle is the difference between a qualifier the record lost and one
+who withdrew. Measured 2026-08-25, 537 of its 647 events lose exactly one qualifier out of
+two to five, which is the shape both take, and nothing in the database appears to record a
+scratch. The rate carries the finding rather than any single row.
+
+Two of its three classes are not about a missing swimmer at all. Twenty-four events send
+more qualifiers forward than the largest later round could hold - sixteen going through to
+one final of eight - which is a semi-final that was never written. Four hold qualifiers
+with no later round of any kind.
+
 <!-- MANUAL PASTE ZONE: 46 REFERENCE VALUES — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event and round representation
@@ -464,6 +499,36 @@ than assuming it.
 swim-off that decides a place in the semi-final, and its round type `223 Swim-Off` is right. A
 name is contradicted only when not one of the round words it carries matches the type.
 
+**The two ids behind a shared round name are two conventions, not one round entered
+twice.** The pairs are listed above as a naming hazard; measured 2026-08-25 they differ in
+what they store, which is the more consequential half.
+
+| Name | Id | Events | Holding places | What the `Round` property says |
+|---|---:|---:|---:|---|
+| Semi Finals | `178` | 2414 | 2412 | `Semi Finals` |
+| Semi Finals | `2` | 697 | 174 | `Semifinal 1`, `Semifinal 2`, then `Semifinals Summary` |
+| Swim-Off | `223` | 151 | 151 | `Swim-Off` |
+| Swim-Off | `224` | 143 | 19 | `Swim Off Heat`, `Swim Off Semifinal`, `Swim Off (H)`, `Swim Off (S)` |
+
+`178` files one ranked semi-final for a discipline. `2` files the two halves and a summary
+as three separate events on that one id: the halves hold eight swimmers each and no place
+at all, and the summary holds all sixteen with places. `223` records that a swim-off was
+decided; `224` records which swim-off was held and usually not its outcome.
+
+**Under `2`, nothing but the `Round` property tells a round's summary from its parts.**
+They share the round type, the discipline, the stage, the event name and their start times
+to within a minute or two. `event.round_typeFK` is the authority on what round an event is
+and the property is not, but the property is the only field that separates the ranked view
+from the halves it was built from. A statement grouping by round type reads all three as
+one round.
+
+The heats are written the same way and are easier to read, because there the two halves of
+the convention took different ids: the parts are `320 Heats` with `Heat 1` through
+`Heat 13` in the property, and the merged view is `329 Heats Summary`.
+
+127 events on `2` and 60 on `320` carry no `Round` property and no places either. Those
+are shells rather than a fourth kind of round.
+
 <!-- MANUAL PASTE ZONE: 46 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
@@ -514,6 +579,40 @@ each used by a handful of stages and nothing more, so the stage's actual locatio
 reliably recoverable from the reference layer. Age class is carried as an object relation and
 resolves to `SENIOR`, `JUNIOR` or `YOUTH`.
 
+**A sixth shape departs from the convention, and it is the largest of them.** The five
+above are read against a rank; this one has no rank to be read against, which is why none
+of them names it. Measured 2026-08-25 over the client's scope:
+
+| Shape | Participations | Events | Templates | Seasons |
+|---|---:|---:|---:|---|
+| An unsigned time in `101` with no rank and no `557` at all | 9695 | 1248 | 16 | 2004-2025 |
+
+It is where the halves of a split round put their times. `Semifinal 1` and `Semifinal 2`
+under round type `2`, the swim-offs under `224`, and every individual heat of the 2023
+`Swimming World Cup` and `World Junior Championships` write each swimmer's time into
+`101 Duration` as an unsigned absolute value, leave `557` empty and record no place. All
+9695 of them are written to two decimals, where the sport writes three everywhere else,
+which is one hand rather than an accumulation.
+
+Three checks that would otherwise catch it need the rank to do their work and are silent:
+`Swimming-DQ-012` cannot establish "below first place", `Swimming-DQ-038` looks for a full
+time beside a rank, and `Swimming-DQ-048` reads a rank that is not there.
+`Swimming-DQ-034` sees the missing place but excuses a competitor holding a comment, and
+2930 of the 9695 carry `Q` or `R`. `Swimming-DQ-082` reports the whole shape at the event.
+
+**A winning time can be too slow for its distance, and when it is, the whole field is.**
+`Swimming-DQ-069` reads the fast side of the same question and has no ceiling.
+`Swimming-DQ-083` supplies one at forty-five seconds per fifty metres, three times that
+check's floor and far slower than the sport has otherwise ever been: 41114 of the 41142
+events holding a winning time sit under it. Almost every one of the twenty-eight above is
+a field swimming a distance the discipline does not name, and the time matches one step
+up - `Butterfly 50m` won in 2:13.700 is a 200, `Indv. Medley 200m` won in 4:55.370 is a
+400. The exception is a `Breaststroke 200m` won in 4:20.340, and since the sport contests
+no 400 metre breaststroke that one is a wrong time rather than a wrong discipline.
+
+Reading the whole field instead of the winner would report every slow swimmer in the
+sport. The winner is what makes the test structural: everyone behind was slower still.
+
 <!-- MANUAL PASTE ZONE: 46 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
@@ -555,5 +654,13 @@ resolves to `SENIOR`, `JUNIOR` or `YOUTH`.
    the 976 athletes it reports are the population that was actually being asked about.
 8. **The whole Comp.Rank layer**, unread by design and to be opened once event results are
    corrected.
+
+9. **Is a withdrawal recorded anywhere?** A swimmer marked `Q` who does not appear in the
+   next round either lost their entry or scratched, and `Swimming-DQ-084` cannot tell the
+   two apart because nothing found so far distinguishes them: there is no status, comment
+   or property on the heat participation that says the swimmer chose not to continue. The
+   answer decides whether that check is a repair list or a proportion to watch. Until it is
+   answered the check runs on the ruling that a `Q` must be followed, which is the stricter
+   reading and the one that keeps the lost entries visible.
 
 <!-- MANUAL PASTE ZONE: 46 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
