@@ -383,6 +383,12 @@ Rank` under `12333`, ids 346970, 347015 and 347207.
 `1273 Comment` and `1277 Medal` are both mostly empty strings. A check testing these for
 presence must test for the empty string, not only for a missing row.
 
+**The Comp.Rank organization is not filled at all, and `Speed-Skating-DQ-121` is a sentinel because of it.** Measured 2026-08-25 this sport holds 6 722 tournament-owned Comp.Rank records over 135 811 ranked participations and **not one** carries an Organization value on the statistic data type the sport declares for it.
+
+That makes `Speed-Skating-DQ-121 COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR` return an `eligible_count` of 0. It is the second of the two things a zero can be - a correct scope over a population that is legitimately empty today, not a misdirected one - and the measurement above is what settles which. The check asks whether the organization that is there is the right one; there is none to ask about. `Speed-Skating-DQ-107` is what reports the absence itself.
+
+It is instantiated rather than left off on the ruling of 2026-08-25 that the field is expected to be populated, and the day it is, this is the check that reads what arrives. Four of the twelve documented sports already fill it - Artistic Gymnastics, Triathlon, Golf and Ice Hockey - and those four are exactly the four that carried this check before today.
+
 <!-- MANUAL PASTE ZONE: 19 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values

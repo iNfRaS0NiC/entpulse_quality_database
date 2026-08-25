@@ -216,6 +216,12 @@ statement excludes — the absence `NUMERIC_DATA_TYPE_LIST` already records. Aud
 superseded field is not an endorsement of it; 321 statistics hold 6 171 duration values there
 and anything reading this sport's Comp.Rank times reads them from `1272`.
 
+**The Comp.Rank organization is not filled at all, and `BMX-DQ-106` is a sentinel because of it.** Measured 2026-08-25 this sport holds 424 tournament-owned Comp.Rank records over 21 150 ranked participations and **not one** carries an Organization value on the statistic data type the sport declares for it.
+
+That makes `BMX-DQ-106 COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR` return an `eligible_count` of 0. It is the second of the two things a zero can be - a correct scope over a population that is legitimately empty today, not a misdirected one - and the measurement above is what settles which. The check asks whether the organization that is there is the right one; there is none to ask about. `BMX-DQ-097` is what reports the absence itself.
+
+It is instantiated rather than left off on the ruling of 2026-08-25 that the field is expected to be populated, and the day it is, this is the check that reads what arrives. Four of the twelve documented sports already fill it - Artistic Gymnastics, Triathlon, Golf and Ice Hockey - and those four are exactly the four that carried this check before today.
+
 <!-- MANUAL PASTE ZONE: 58 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values
