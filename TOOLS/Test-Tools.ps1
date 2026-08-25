@@ -2418,9 +2418,11 @@ Test-That 'a withdrawn check is retired by any run, not only by a complete one' 
     Assert-Equal '' $span[0].Values[0][3] 'Findings is cleared rather than left reading as current'
     Assert-Equal '' $span[0].Values[0][4] 'and so is All findings, which is no more current than it is'
 
-    # Status is I, and this is the one thing a run puts there: a row reading Deprecated in
-    # Signal and Verdict while Status still said Not reviewed was asking to be reviewed and
-    # answering that there was nothing to review, and a filter on Not reviewed kept serving it.
+    # Status is I, and this is the one thing a run puts there - on a row nobody has answered.
+    # A row reading Deprecated in Signal and Verdict while Status still said Not reviewed was
+    # asking to be reviewed and answering that there was nothing to review, and a filter on
+    # Not reviewed kept serving it. This board holds no Status at all, so the registry's word
+    # goes in. The two tests below cover the cell somebody has answered.
     $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I8:I8' })
     Assert-Equal 1 $status.Count 'the withdrawal reaches the reviewer-facing Status too'
     Assert-Equal 'Deprecated' $status[0].Values[0][0] 'in the registry''s own word'
@@ -2455,6 +2457,76 @@ Test-That 'a withdrawn check is retired by any run, not only by a complete one' 
     # overwriting the other, and which one wins would depend on plan order.
     $verdictOnly = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'T8:T8' })
     Assert-Equal 0 $verdictOnly.Count 'no Not-in-this-run cell on a row already marked withdrawn'
+}
+
+Test-That 'a withdrawn check keeps the Status a reviewer typed, and the run says so' {
+    # The reason this test exists: four boards came back from a run with reviewer-set Status
+    # cells overwritten, and the reviewers had to remember what they had put there. A run may
+    # tell a board that a check no longer runs; it may not answer the board's question about
+    # who looked at it and what they concluded.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7; 'Fixtureball-DQ-044' = 8 }
+        TabOf = @{}
+        ResultRowsOf = @{}
+        StatusOf = @{ 'Fixtureball-DQ-044' = 'On Hold' }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
+        -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
+
+    $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I8:I8' })
+    Assert-Equal 0 $status.Count 'no run writes over an answered Status, withdrawn check or not'
+
+    # Signal and Verdict still carry the withdrawal, which is what keeps the row honest without
+    # the run having to reach into the reviewer's column to say it.
+    $secondSpan = '{0}8:{1}8' -f (ConvertTo-SheetsColumnName -Index (OverviewSecondSpanFrom)), (OverviewLastColumn)
+    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq $secondSpan })
+    Assert-Equal 'Deprecated' $span[0].Values[0][0] 'Signal still says withdrawn'
+    Assert-Equal 'Deprecated' $span[0].Values[0][9] 'and so does Verdict'
+
+    # And it is reported rather than merely skipped: silence is how the overwrite went four
+    # days without anybody noticing it.
+    $kept = @($plan.StatusKept | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-044' })
+    Assert-Equal 1 $kept.Count 'the run names the row it left alone'
+    Assert-Equal 'On Hold' $kept[0].Status 'and the word it left there'
+    Assert-Equal 0 @($plan.StatusRenames | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-044' }).Count `
+        'and claims no rename it did not make'
+}
+
+Test-That 'a withdrawn check still on the seeded status is retired, and the run says that too' {
+    # Not reviewed is what the board seeds, so it is nobody's answer. The constant is shared
+    # with the seeding so the two cannot drift into disagreeing about which word means that.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7; 'Fixtureball-DQ-044' = 8 }
+        TabOf = @{}
+        ResultRowsOf = @{}
+        StatusOf = @{ 'Fixtureball-DQ-044' = $SheetsUnreviewedStatus }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
+        -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
+
+    $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I8:I8' })
+    Assert-Equal 1 $status.Count 'an unanswered row takes the registry word'
+    Assert-Equal $SheetsRetiredStatus $status[0].Values[0][0] 'which is Deprecated'
+
+    $renamed = @($plan.StatusRenames | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-044' })
+    Assert-Equal 1 $renamed.Count 'and the run names the cell it changed'
+    Assert-Equal $SheetsUnreviewedStatus $renamed[0].From 'saying what was there'
+    Assert-Equal $SheetsRetiredStatus $renamed[0].To 'and what it put'
+    Assert-True ([string]$renamed[0].Why -ne '') 'and why, so a reviewer can disagree with the reason'
+
+    # A row already reading Deprecated is neither rewritten nor reported as anything: there is
+    # nothing to change and nothing a reviewer needs told.
+    $existing.StatusOf['Fixtureball-DQ-044'] = $SheetsRetiredStatus
+    $again = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
+        -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
+    Assert-Equal 0 @($again.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I8:I8' }).Count `
+        'the word is already there'
+    Assert-Equal 0 @($again.StatusKept | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-044' }).Count `
+        'and it is the registry own word, not a reviewer to be reported'
 }
 
 Test-That 'a withdrawn check that ran anyway keeps the numbers it just produced' {

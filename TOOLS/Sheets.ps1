@@ -289,6 +289,11 @@ $SheetsRowsBands = @(
 # the next run puts the cell back to what the registry says.
 $SheetsRetiredStatus = 'Deprecated'
 
+# The word a row carries before anybody has answered it. Named because two places have to
+# agree on it: the seed that writes it onto a row being added, and the retired-check rule that
+# treats it as "nobody has decided yet" and will write over it.
+$SheetsUnreviewedStatus = 'Not reviewed'
+
 $SheetsStatusBands = @(
     [pscustomobject]@{ Value = 'Not reviewed'; Background = '#FCE8E6'; Colour = '#C5221F' }
     [pscustomobject]@{ Value = 'Clean'; Background = '#E6F4EA'; Colour = '#137333' }
@@ -1348,6 +1353,10 @@ function New-SheetsMergePlan {
             Range  = ((ConvertTo-SheetsColumnName -Index $statusColumnIndex) + [string]$rowOf[$checkId])
             Values = @(, @([string]$SheetsStatusLegacy[$was]))
         }
+        $statusRenames += [pscustomobject]@{
+            CheckId = $checkId; From = $was; To = [string]$SheetsStatusLegacy[$was]
+            Why = 'a superseded spelling of the same conclusion'
+        }
     }
 
     # Google gives a new spreadsheet one tab called Sheet1, and it is nobody's: it exists
@@ -1518,6 +1527,12 @@ function New-SheetsMergePlan {
 
     $cells = 0
     $seen = @{}
+
+    # Every write this run makes into the reviewer's Status column, and every one it declined
+    # to make. Reported by the caller: a column that is theirs should not change without the
+    # run saying so, and finding out afterwards means reading a cell's history one cell at a time.
+    $statusRenames = @()
+    $statusKept = @()
 
     foreach ($entry in $Summary) {
         $runKey = [string]$entry.RunKey
@@ -1769,23 +1784,41 @@ function New-SheetsMergePlan {
         }
         $cells += 1 + $values.Count
 
-        # And the reviewer's own Status, which is the one cell in that column the runner writes
-        # unprompted. Left alone, the row said Deprecated in Signal and Verdict while Status
-        # still read Not reviewed: a row asking to be reviewed and answering that there is
-        # nothing to review, and one that a filter on Not reviewed kept serving up. The registry
-        # withdrew the check, so the registry's word is what belongs there.
+        # And the reviewer's own Status. Left alone, the row said Deprecated in Signal and
+        # Verdict while Status still read Not reviewed: a row asking to be reviewed and
+        # answering that there is nothing to review, and one that a filter on Not reviewed kept
+        # serving up. The registry withdrew the check, so the registry's word belongs there -
+        # but only where nobody has put their own.
         #
-        # Written every run rather than once, like everything else here: the tabs that need it
-        # cannot be named from this side, and a person who typed something over it since the
-        # last run typed it about a check that no longer runs.
+        # It used to be written every run over whatever was in the cell, on the reasoning that
+        # a person who typed something since the last run typed it about a check that no longer
+        # runs. That reasoning covers a stale word and not a considered one, and the cell cannot
+        # tell them apart: a reviewer who marked the row Completed or Other Team said something
+        # about work they did, and a run that erases it is deciding for them. Narrowed 2026-08-25
+        # to a cell nobody has answered - blank, or still on the seeded Not reviewed, or already
+        # Deprecated. Anything else stays, and the row still reads Deprecated in Signal and
+        # Verdict, which is where the registry's word cannot be typed over.
         $statusColumn = [array]::IndexOf($SheetsOverviewColumns, 'Status') + 1
-        $plan += [pscustomobject]@{
-            Kind   = 'Write'
-            Sheet  = 'Overview'
-            Range  = (New-SheetsRange -FromColumn $statusColumn -FromRow $row -ToColumn $statusColumn -ToRow $row)
-            Values = @(, @($SheetsRetiredStatus))
+        $statusNow = ''
+        if ($Existing.StatusOf -and $Existing.StatusOf.ContainsKey($runKey)) {
+            $statusNow = ([string]$Existing.StatusOf[$runKey]).Trim()
         }
-        $cells += 1
+        if ([string]::IsNullOrWhiteSpace($statusNow) -or $statusNow -eq $SheetsUnreviewedStatus) {
+            $plan += [pscustomobject]@{
+                Kind   = 'Write'
+                Sheet  = 'Overview'
+                Range  = (New-SheetsRange -FromColumn $statusColumn -FromRow $row -ToColumn $statusColumn -ToRow $row)
+                Values = @(, @($SheetsRetiredStatus))
+            }
+            $cells += 1
+            $statusRenames += [pscustomobject]@{
+                CheckId = $runKey; From = $statusNow; To = $SheetsRetiredStatus
+                Why = 'the registry withdrew the check and nobody had answered the row'
+            }
+        }
+        elseif ($statusNow -ne $SheetsRetiredStatus) {
+            $statusKept += [pscustomobject]@{ CheckId = $runKey; Status = $statusNow }
+        }
 
         # The tab keeps its identity block and its comments and loses its findings, which is
         # the same shape a check returning nothing leaves behind. C3 already carries whatever
@@ -2625,6 +2658,8 @@ function New-SheetsMergePlan {
     return [pscustomobject]@{
         Operations    = $plan
         Cells         = $cells
+        StatusRenames = $statusRenames
+        StatusKept    = $statusKept
         Warning       = $warning
         RowOf         = $rowOf
         TabOf         = $tabOf

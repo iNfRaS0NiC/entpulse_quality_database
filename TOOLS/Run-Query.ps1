@@ -4153,6 +4153,22 @@ function Save-RunSheet {
         $sent = Invoke-SheetsPlan -SpreadsheetId $id -Plan $plan
         Write-Host ("  {0} tab(s) added, {1} cleared, {2} range(s) written, {3} table(s)" -f `
                 $sent.Added, $sent.Cleared, $sent.Written, $sent.Tables) -ForegroundColor DarkGray
+
+        # Status is the reviewer's column and the run writes into it in two narrow cases only.
+        # Both are named here rather than counted, because a status that changed without anybody
+        # choosing it is otherwise findable only in the document's own edit history, one cell at
+        # a time - which is how the 2026-08-25 On Hold defect went four days without being seen.
+        foreach ($change in @($plan.StatusRenames)) {
+            $from = $(if ([string]::IsNullOrWhiteSpace([string]$change.From)) { 'blank' } else { "'$($change.From)'" })
+            Write-Host ("  Status set on {0}: {1} -> '{2}' - {3}" -f `
+                    $change.CheckId, $from, $change.To, $change.Why) -ForegroundColor Yellow
+        }
+        if (@($plan.StatusKept).Count -gt 0) {
+            Write-Host ("  Status left as the reviewer set it on {0} withdrawn check(s): {1}" -f `
+                    @($plan.StatusKept).Count,
+                    ((@($plan.StatusKept) | ForEach-Object { "$($_.CheckId)=$($_.Status)" }) -join ', ')) `
+                -ForegroundColor DarkGray
+        }
         Write-Host "  https://docs.google.com/spreadsheets/d/$id/edit" -ForegroundColor DarkGray
         return $id
     }
