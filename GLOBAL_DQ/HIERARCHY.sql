@@ -550,15 +550,19 @@ WHERE ts.del = 'no'
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-015
-    -- Name - EVENT_SETTINGS_DISCIPLINE_MISSING_OR_UNRESOLVED
-    -- What it does: Flags events whose discipline cannot be read, either because no relation exists or because the one that does points at no discipline.
+    -- Name - EVENT_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN
+    -- What it does: Flags events with no usable discipline - no relation at all, a relation pointing at no discipline, or one naming a discipline that belongs to another sport.
     CASE
-        -- Two states, two repairs. A missing relation has to be created and the discipline
-        -- chosen; a relation pointing at nothing already names its event and its intent and
-        -- needs the reference corrected. Separated rather than merged, because a reviewer
-        -- filtering for one would otherwise be handed the other.
+        -- Three states and three repairs. A missing relation has to be created and the
+        -- discipline chosen; a relation pointing at nothing already names its event and its
+        -- intent and needs the reference corrected; a relation naming another sport's
+        -- discipline is correct in form and wrong in fact, and the repair is to point it at
+        -- this sport's equivalent - or, where there is none, to decide the event is filed
+        -- under the wrong sport. Separated rather than merged, because a reviewer filtering
+        -- for one would otherwise be handed the others.
         WHEN x.relation_rows = 0 THEN 'Missing_Discipline'
-        ELSE 'Discipline_Reference_Unresolved'
+        WHEN x.resolved_rows = 0 THEN 'Discipline_Reference_Unresolved'
+        ELSE 'Discipline_Belongs_To_Another_Sport'
     END AS check_type,
     x.event_id,
     x.event_name,
@@ -567,23 +571,44 @@ SELECT
     x.tournament_name,
     x.stage_name,
     x.unresolved_discipline_ids,
+    x.foreign_sport_disciplines,
     NULL AS eligible_count
--- What it does, stated in full: Finds events whose discipline cannot be read from
--- object_discipline - either the relation is absent, or a relation exists whose
--- disciplineFK selects no row in discipline.
--- The second state was added on 2026-08-25 and is the reason this statement was rewritten.
--- Until then the check asked only whether the relation existed, through a NOT EXISTS over
--- object_discipline, and an event carrying `disciplineFK = 0` satisfied that test: the row
--- is there, so the event passed, while the discipline it names does not exist and nothing
--- downstream can resolve it. A missing relation and a relation pointing at nothing leave the
--- event equally unreadable, and only the first of them was reported.
--- Measured 2026-08-25 across the twelve documented sports, the second state occurs in one:
--- Swimming holds six events on `disciplineFK = 0`, all in one competition inside five days
--- of 2013, which makes it one import that did not write the reference rather than a habit.
--- The other eleven sports gain nothing from this change, so no board moves but Swimming's.
--- `unresolved_discipline_ids` carries the value the relation actually holds, because `0` and
--- a plausible-looking id that has since been deleted are different stories and the row should
--- not make the reviewer go and look.
+-- What it does, stated in full: Finds events from which no discipline of this sport can be
+-- read - the relation is absent, or it exists and its disciplineFK selects no row in
+-- discipline, or it selects a discipline whose sportFK is a different sport.
+-- The second and third states were both added on 2026-08-25 and are the reason this statement
+-- was rewritten twice in one day. Until the morning the check asked only whether the relation
+-- existed, through a NOT EXISTS over object_discipline, and an event carrying
+-- `disciplineFK = 0` satisfied that test: the row is there, so the event passed, while the
+-- discipline it names does not exist and nothing downstream can resolve it.
+-- The third state came out of a Swimming finding that was first read as a duplicated catalogue
+-- entry and was not one. `Freestyle 800m` and `Freestyle 50m` each appear on two discipline
+-- ids, and the second id of each pair belongs to sport 135, Para Swimming. Measured across the
+-- twelve documented sports there is not one duplicated discipline name inside any single sport;
+-- what looked like a duplicate was an event of one sport reaching into another sport's
+-- catalogue. The events themselves are ordinary - named `800m Freestyle`, in World
+-- Championships Long Course and World Junior Championships, carrying no para classification -
+-- so the reference is what is wrong rather than the sport the event is filed under.
+-- **Why this belongs here and not in its own statement.** All three states leave the event with
+-- no discipline this sport can read, which is one question and one eligible population. It is
+-- still a different question from GLOBAL-DQ-082, which asks whether a discipline that reads
+-- correctly is the right one; that one measures an event against its stage's other events, and
+-- cannot see a reference that resolves outside the sport entirely.
+-- Measured 2026-08-25 across the twelve documented sports:
+--   `Discipline_Reference_Unresolved` occurs in one - Swimming holds six events on
+--     `disciplineFK = 0`, all in one competition inside five days of 2013, which makes it one
+--     import that did not write the reference rather than a habit.
+--   `Discipline_Belongs_To_Another_Sport` occurs in two - Swimming holds 67 events on Para
+--     Swimming's `468 Freestyle 800m` and `479 Freestyle 50m`, spread over three templates and
+--     2005-2025, and Equestrian holds one on Mountain Bike's `402 Cross Country`. Equestrian
+--     has `347 Cross Country Fences` and `72 3Day Event Cross Country` and no plain
+--     `Cross Country` of its own, so that row has a discipline to choose rather than one to
+--     correct. The other ten sports gain nothing from either widening.
+-- `unresolved_discipline_ids` carries the value the relation actually holds, because `0` and a
+-- plausible-looking id that has since been deleted are different stories and the row should not
+-- make the reviewer go and look. `foreign_sport_disciplines` does the same for the third state
+-- and names the owning sport as well as the discipline, because the id alone cannot tell a
+-- reviewer whether the event or the reference is the thing to move.
 FROM (
     SELECT
         e.id AS event_id,
@@ -594,8 +619,12 @@ FROM (
         ts.name AS stage_name,
         COUNT(od.id) AS relation_rows,
         COUNT(d.id) AS resolved_rows,
+        COUNT(CASE WHEN d.sportFK = {{SPORT_ID}} THEN d.id END) AS own_sport_rows,
         GROUP_CONCAT(DISTINCT CASE WHEN d.id IS NULL THEN od.disciplineFK END
-                     ORDER BY od.disciplineFK SEPARATOR ', ') AS unresolved_discipline_ids
+                     ORDER BY od.disciplineFK SEPARATOR ', ') AS unresolved_discipline_ids,
+        GROUP_CONCAT(DISTINCT CASE WHEN d.id IS NOT NULL AND d.sportFK <> {{SPORT_ID}}
+                                   THEN CONCAT(d.id, ' ', d.name, ' - sport ', d.sportFK, ' ', sp.name) END
+                     ORDER BY d.id SEPARATOR ' | ') AS foreign_sport_disciplines
     FROM event e
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
     JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -605,6 +634,7 @@ FROM (
           AND od.objectFK = e.id
           AND od.del = 'no'
     LEFT JOIN discipline d ON d.id = od.disciplineFK
+    LEFT JOIN sport sp ON sp.id = d.sportFK
     WHERE e.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
@@ -614,15 +644,15 @@ FROM (
       -- AND e.startdate <  '<to_datetime>'
     GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ts.name
 ) x
--- An event holding one readable discipline is settled, however many relations it carries.
--- The finding is that not one of them resolves.
-WHERE x.resolved_rows = 0
+-- An event holding one readable discipline of its own sport is settled, however many relations
+-- it carries. The finding is that not one of them gets that far.
+WHERE x.own_sport_rows = 0
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'

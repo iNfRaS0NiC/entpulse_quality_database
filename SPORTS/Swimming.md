@@ -329,8 +329,8 @@ one way.
 
 Until that day nothing reported them. `GLOBAL-DQ-015` asked whether the relation existed,
 and it does - the row is there and names a discipline that is not. The template was widened
-to read the reference as well as the relation, and renamed
-`EVENT_SETTINGS_DISCIPLINE_MISSING_OR_UNRESOLVED` for it. Of the twelve documented sports
+to read the reference as well as the relation, and is now
+`EVENT_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN`. Of the twelve documented sports
 only Swimming holds the state, so no other board moved.
 
 **The 3 km knockout sprint is three separate starts, and a six-minute time in it is
