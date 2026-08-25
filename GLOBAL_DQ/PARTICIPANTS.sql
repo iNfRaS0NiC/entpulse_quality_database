@@ -1274,9 +1274,18 @@ SELECT
 -- The audited object is the event, and field_size travels with it because the two shapes want
 -- different repairs: one stray entry in a field of eight is a wrong participant, and a field
 -- evenly split is a whole event entered at the wrong level.
--- Measured 2026-08-21 over the seven documented sports that field more than one kind at all:
--- Cycling holds 14 events, every one of them a team beside an athlete, and Golf, Equestrian,
--- Swimming, Triathlon, Artistic Gymnastics and Modern Pentathlon hold none.
+-- Measured 2026-08-25 over all twelve documented sports, on the day the remaining ten boards
+-- took it. Cycling holds 14 events, every one of them a team beside an athlete. Ice Hockey holds
+-- one, `1837359 Poland-Ukraine` of World Championship 2 2015, a field of three: two teams and a
+-- single athlete. Soccer holds two, `354295 Elgin-Arbroath` with five stray athletes beside its
+-- two teams and `360313 Asteras Tripolis-Levadiakos` with one - both domestic league fixtures,
+-- so a narrowed client run will not see them. Artistic Gymnastics, BMX, Curling, Equestrian,
+-- Golf, Modern Pentathlon, Speed Skating, Swimming and Triathlon hold none.
+-- **Soccer cannot run this sport-wide.** The statement groups every event in the sport with its
+-- participants and the server runs out of temporary space before it finishes; the two findings
+-- above were established with a lighter query asking only whether any non-team entrant exists at
+-- all, which returns six participations in two events. Soccer's board is narrowed to the client
+-- templates for the reason `WORKFLOW.md` gives, and this check is no different from the rest.
 FROM (
     SELECT
         e.id AS event_id,
