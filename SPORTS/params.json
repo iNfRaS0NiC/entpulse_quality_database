@@ -966,10 +966,6 @@
                 "signal": "Not applicable",
                 "reason": "Structural: the sport writes no lineup row anywhere. A foursome is stored as one athlete participant holding both names, so there is no lineup whose size could be uneven and eligible_count is 0 by construction rather than by a thin population."
             },
-            "GLOBAL-DQ-057": {
-                "signal": "Monitor",
-                "reason": "eligible_count is 0 and this is a sentinel, not a misdirected scope: statistic_data11 declares the 1273 Comment field for statistic type 11 and Golf writes no row into it today. The scope is correct and the population is legitimately empty, so the check stands ready for the first Comp.Rank comment the sport writes. SPORTS/Golf.md owns the distinction."
-            },
             "GLOBAL-DQ-065": {
                 "signal": "Sentinel",
                 "reason": "eligible_count is 0 for the same reason as GLOBAL-DQ-057: the 1429 Team data field is declared for statistic type 11 and Golf writes no row into it. The sport does field teams - the Ryder Cup and Presidents Cup sides - so the population is legitimately empty rather than structurally absent."
