@@ -263,10 +263,23 @@ again for extra time. Match context arrives as `Spectators`, `VenueName`, `Venue
 Production state is carried by `Verified`, `LineupConfirmed`, `Commentary`, `LiveStatsType`,
 `LiveStatsPlus` and `SuperLive`.
 
-**There is no `Winner` property.** Measured across every property name the scope uses, the
-sport records no winning side on the event at all: the outcome lives on the result, as
-`549 finaloutcome`. A check reading a `Winner` event property therefore reads a structure this
-sport does not write, while the information it looks for is present one layer away.
+**There is no `Winner` property, and the outcome is not stored anywhere else either.**
+Measured across every property name the scope uses, the sport records no winning side on the
+event at all. `549 finaloutcome` exists but does not stand in for it: remeasured 2026-08-26
+inside the client scope it sits on **74 of 6479 matches**, so for 6405 of them the winner is
+derivable from the two scores and stored nowhere.
+
+An earlier version of this paragraph said the information a `Winner` check looks for is
+"present one layer away". That is true of 1 per cent of the matches and false of the rest, and
+the difference matters because it decides what kind of absence this is. It is not a sport that
+keeps the outcome somewhere else; it is a sport that does not keep it.
+
+**The check is expected and the sport is not ready for it.** `GLOBAL-DQ-087` and
+`GLOBAL-DQ-088` are `Blocked` rather than `Not applicable`: the `Winner` property is meant to
+be set on every head-to-head sport, the work to add it is under way, and a block lifts when the
+data is fixed while `Not applicable` promises a review that never comes. Until then the
+`WINNER_*` parameters have no vocabulary to declare, which is a fact about today and not about
+the model - Volleyball already writes the property, so the model supports it.
 
 **Match officials reach an event through properties, not through participation.** Properties
 of type `ref:participant` carry `refereeFK`, `assistant1_refereeFK`, `assistant2_refereeFK`,

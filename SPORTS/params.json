@@ -344,6 +344,14 @@
             "RESULT_TIE_VALUE_TYPE_LIST": "the sport is head to head; the pairing settles the place, so no result field holds a quantity a place is read from"
         },
         "_checkSignal": {
+            "GLOBAL-DQ-087": {
+                "signal": "Blocked",
+                "reason": "The Winner property is expected on every head-to-head sport and is missing from most of them, this one included. Blocked rather than Not applicable: a block lifts when the data is fixed and the check is then approved, while Not applicable says the sport does not have the structure and promises a review that never comes. Volleyball already writes the property, so the model supports it and the absence here is a data state under repair. No check reads it in any sport until it is added everywhere; when it is, the WINNER_* parameters are what change, not the checks."
+            },
+            "GLOBAL-DQ-088": {
+                "signal": "Blocked",
+                "reason": "The same standing decision. The template reads the Winner property against the score, and the property is not written in this sport."
+            },
             "GLOBAL-DQ-132": {
                 "signal": "Monitor",
                 "reason": "some of what it returns is correct by construction and will never be corrected, so the count is expected to stay above zero however much is repaired. Measured 2026-08-21 on Artistic Gymnastics, one of its two findings is a Russian gymnast entered under Individual Neutral Athletes, whose country is International - which is exactly how a neutral athlete is recorded, and a refugee team is the same shape. The check is kept because agreement is overwhelmingly the rule, 303791 participations of 303892 across the two sports that fill the field, so the exceptions are few enough to read one at a time. A sport filling no organization at all has an eligible population of 0 here, which is a sentinel rather than clean data, and GLOBAL-DQ-130 is what reports the absence."
@@ -603,12 +611,20 @@
             "SCOPE_PERIOD_DATA_TYPE_LIST": "the scope layer holds the aggregate of a two-legged tie rather than competition periods, so there is no period set to list",
             "SCOPE_PERIOD_SENTINEL_LIST": "the scope layer holds no periods, so it has no vocabulary for a period that was not played",
             "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "extra time is a result type of its own rather than a scope period, so the scope layer stores no column for one",
-            "WINNER_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event. Result type 549 Final Outcome carries won and lost per event participant, and the event property layer - measured across every property name the scope uses - contains no Winner property for GLOBAL-DQ-087 to read. The vocabulary exists, it simply does not live where that check looks",
-            "WINNER_HOME_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write",
-            "WINNER_AWAY_VALUE_LIST": "Structural: the sport stores the outcome on the result rather than on the event, so no side-naming Winner property exists to split into home and away vocabularies. GLOBAL-DQ-088 reads a Winner property this sport does not write",
+            "WINNER_VALUE_LIST": "The Winner property is expected on every head-to-head sport and this sport does not write it yet, so there is no side vocabulary to declare. Remeasured 2026-08-26 inside the client scope: 0 of 6479 events carry a Winner property, and 549 Final Outcome - which an earlier version of this reason offered as the place the outcome lives instead - sits on 74 of them, so for 6405 matches the winner is derivable from the two scores and stored nowhere. This is a data state being worked on, not a structural absence: GLOBAL-DQ-087 and GLOBAL-DQ-088 are Blocked for this sport, and the day the property is written these parameters are what change, not the checks.",
+            "WINNER_HOME_VALUE_LIST": "The Winner property is expected on every head-to-head sport and this sport does not write it yet, so there is no side vocabulary to declare. Remeasured 2026-08-26 inside the client scope: 0 of 6479 events carry a Winner property, and 549 Final Outcome - which an earlier version of this reason offered as the place the outcome lives instead - sits on 74 of them, so for 6405 matches the winner is derivable from the two scores and stored nowhere. This is a data state being worked on, not a structural absence: GLOBAL-DQ-087 and GLOBAL-DQ-088 are Blocked for this sport, and the day the property is written these parameters are what change, not the checks.",
+            "WINNER_AWAY_VALUE_LIST": "The Winner property is expected on every head-to-head sport and this sport does not write it yet, so there is no side vocabulary to declare. Remeasured 2026-08-26 inside the client scope: 0 of 6479 events carry a Winner property, and 549 Final Outcome - which an earlier version of this reason offered as the place the outcome lives instead - sits on 74 of them, so for 6405 matches the winner is derivable from the two scores and stored nowhere. This is a data state being worked on, not a structural absence: GLOBAL-DQ-087 and GLOBAL-DQ-088 are Blocked for this sport, and the day the property is written these parameters are what change, not the checks.",
             "RESULT_TIE_VALUE_TYPE_LIST": "the sport is head to head; the pairing settles the place, so no result field holds a quantity a place is read from"
         },
         "_checkSignal": {
+            "GLOBAL-DQ-087": {
+                "signal": "Blocked",
+                "reason": "The Winner property is expected on every head-to-head sport and is missing from most of them, this one included. Blocked rather than Not applicable: a block lifts when the data is fixed and the check is then approved, while Not applicable says the sport does not have the structure and promises a review that never comes. Volleyball already writes the property, so the model supports it and the absence here is a data state under repair. No check reads it in any sport until it is added everywhere; when it is, the WINNER_* parameters are what change, not the checks."
+            },
+            "GLOBAL-DQ-088": {
+                "signal": "Blocked",
+                "reason": "The same standing decision. The template reads the Winner property against the score, and the property is not written in this sport."
+            },
             "GLOBAL-DQ-132": {
                 "signal": "Monitor",
                 "reason": "some of what it returns is correct by construction and will never be corrected, so the count is expected to stay above zero however much is repaired. Measured 2026-08-21 on Artistic Gymnastics, one of its two findings is a Russian gymnast entered under Individual Neutral Athletes, whose country is International - which is exactly how a neutral athlete is recorded, and a refugee team is the same shape. The check is kept because agreement is overwhelmingly the rule, 303791 participations of 303892 across the two sports that fill the field, so the exceptions are few enough to read one at a time. A sport filling no organization at all has an eligible population of 0 here, which is a sentinel rather than clean data, and GLOBAL-DQ-130 is what reports the absence."
