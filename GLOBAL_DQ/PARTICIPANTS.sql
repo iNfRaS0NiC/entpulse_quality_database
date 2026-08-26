@@ -1343,22 +1343,23 @@ ORDER BY sort_order, event_startdate DESC, event_id;
 SELECT
     -- CheckID - GLOBAL-DQ-130
     -- Name - EVENT_PARTICIPANT_ORGANIZATION_MISSING
-    -- What it does: Finds tournaments whose event participants carry no organization, either none of them at all or only some.
-    CASE
-        WHEN x.with_organization = 0 THEN 'TOURNAMENT_CARRIES_NO_ORGANIZATION_AT_ALL'
-        ELSE 'TOURNAMENT_ORGANIZATION_PARTLY_FILLED'
-    END AS check_type,
+    -- What it does: Finds events holding competitors that carry no organization, and names them.
+    'EVENT_MISSING_ORGANIZATION' AS check_type,
     x.tournament_id,
     x.tournament_name,
     x.template_name,
-    x.participations,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
     x.with_organization,
     x.without_organization,
-    x.first_event_date,
+    x.sample_competitors_without_organization,
     NULL AS eligible_count,
     0 AS sort_order
 -- What it does, stated in full: Every competitor entered into an event is supposed to carry the
--- organization it competes for, and this finds where none does.
+-- organization it competes for. This finds each event where any of them does not, says how many
+-- of that event's entries carry the field and how many do not, and names the competitors it is
+-- missing on.
 -- The organization is a reference-typed property on `event_participants` - `name` is
 -- `organizationFK`, `type` is `ref:participant` and `value` holds a `participant.id`, the
 -- mechanism DATABASE.md describes under "Reference-typed properties". The name is not
@@ -1378,31 +1379,51 @@ SELECT
 -- holds something - 0 of the 319 000 rows in the database are empty, blank or zero - so the
 -- defect is the absent row and nothing else. Whether the id it holds resolves to a live
 -- participant of the right type is `GLOBAL-DQ-104`'s kind of question and is left there.
--- **The audited object is the tournament**, decided 2026-08-21 and not the participation the
--- rule is stated about. A feed either supplies the organization for a competition or it does
--- not, so the correction is made a tournament at a time; reported per participation the same
--- missing feed field would be counted four million times in Soccer alone, which the
--- audited-object rule exists to prevent. `participations`, `with_organization` and
--- `without_organization` carry the proportion as named secondary columns.
--- The two branches want different work and are separated for that reason. A tournament carrying
--- none at all is a feed that never sent the field. A tournament carrying some is a feed that
--- sends it and dropped part of the field, which is the harder defect to see and the one nobody
--- would find by looking at a sport total: Artistic Gymnastics and Triathlon are the only two
--- sports where it occurs, and they are also the only two where the total looks healthy.
+-- **The audited object is the event, decided 2026-08-26.** Until that date it was the
+-- tournament, on the reasoning that a feed either supplies the field for a competition or it
+-- does not, so the correction is made a competition at a time. That reading is true of the feed
+-- and useless to the person doing the correcting, who cannot act on a row that says a number
+-- without saying which events and which competitors. Measured over the twelve documented sports,
+-- the tournament grain was 4122 rows and the event grain is 131 076 - Swimming alone moves from
+-- 484 to 45 188 - and the second was chosen deliberately with those numbers in hand. A tournament
+-- whose feed never sent the field at all therefore reports every one of its events, which is the
+-- price of the detail rather than an accident of it.
+-- **`sample_competitors_without_organization` is a sample and the count beside it is the
+-- assertion.** `group_concat_max_len` on this server is 1024 characters and cannot be raised
+-- from here, because only a `SELECT` may start a statement and there is no session to set it in.
+-- Measured 2026-08-26, the full list of missing competitors runs past that ceiling in eight of
+-- the eleven sports that report any, and for Cycling it passes it on the average event rather
+-- than the largest - 2148 characters against a 9424-character worst case. So the list is cut,
+-- silently, by the server, and `without_organization` beside it is what the row asserts.
+-- `participant` is joined LEFT for the same reason. The name is a convenience and must not be
+-- allowed to narrow the population: a competitor whose participant row has gone reads as a
+-- missing organization exactly as before, with one fewer name in the sample.
+-- **There is no `competitors_without_organization` column and no `participations` one, and
+-- deliberately neither.** At this grain a competitor holds exactly one entry in an event, so a
+-- distinct count of them is the same number as `without_organization` written twice; and
+-- `with_organization` and `without_organization` are already the total split the only way this
+-- check cares about. A column that repeats another invites a reader to compare the two and find
+-- a difference that cannot exist. Both were carried until 2026-08-26 and removed on the day a
+-- reader pointed at them.
+-- Coverage counts events, because the audited object is the event.
 FROM (
     SELECT
         t.id AS tournament_id,
         t.name AS tournament_name,
         tt.name AS template_name,
-        COUNT(*) AS participations,
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
         SUM(CASE WHEN og.id IS NOT NULL THEN 1 ELSE 0 END) AS with_organization,
         SUM(CASE WHEN og.id IS NULL THEN 1 ELSE 0 END) AS without_organization,
-        MIN(e.startdate) AS first_event_date
+        GROUP_CONCAT(DISTINCT CASE WHEN og.id IS NULL THEN p.name END
+            ORDER BY p.name SEPARATOR ', ') AS sample_competitors_without_organization
     FROM event_participants ep
     JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
     JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
     LEFT JOIN property og ON og.object = 'event_participants'
                          AND og.objectFK = ep.id
                          AND og.name = 'organizationFK'
@@ -1414,7 +1435,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
-    GROUP BY t.id, t.name, tt.name
+    GROUP BY t.id, t.name, tt.name, e.id, e.name, e.startdate
     HAVING SUM(CASE WHEN og.id IS NULL THEN 1 ELSE 0 END) > 0
 ) x
 
@@ -1422,8 +1443,8 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT t.id) AS eligible_count,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
@@ -1438,14 +1459,14 @@ WHERE ep.del = 'no'
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
 
-ORDER BY sort_order, without_organization DESC, tournament_id;
+ORDER BY sort_order, without_organization DESC, event_id;
 
 -- ======================================================================================
 
 SELECT
     -- CheckID - GLOBAL-DQ-132
     -- Name - EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR
-    -- What it does: Finds organizations whose country is not the country of the competitors entered under them.
+    -- What it does: Finds organizations whose country is not the country of the competitors entered under them, naming the events and the competitors.
     CASE
         WHEN x.organization_name = x.competitor_country
             THEN 'ORGANIZATION_NAMED_FOR_THE_COMPETITOR_COUNTRY'
@@ -1458,6 +1479,16 @@ SELECT
     x.competitor_country,
     x.competitors,
     x.participations,
+    x.templates,
+    x.events,
+    -- The lists are samples and the counts beside them are the assertion. `group_concat_max_len`
+    -- is 1024 characters on this server and a statement cannot raise it - only a `SELECT` may
+    -- start one, so there is no session to set it in - and the cut is silent. Measured
+    -- 2026-08-26; the 200-character limit these carried until then was a further cut of our own
+    -- on top of the server's, and it showed about ten names where the server would have shown
+    -- fifty.
+    x.sample_template_names,
+    x.sample_event_ids,
     x.sample_competitors,
     NULL AS eligible_count,
     0 AS sort_order
@@ -1507,7 +1538,11 @@ FROM (
         pc.name AS competitor_country,
         COUNT(DISTINCT ep.participantFK) AS competitors,
         COUNT(*) AS participations,
-        SUBSTRING(GROUP_CONCAT(DISTINCT pt.name ORDER BY pt.name SEPARATOR ', '), 1, 200) AS sample_competitors
+        COUNT(DISTINCT t.tournament_templateFK) AS templates,
+        COUNT(DISTINCT e.id) AS events,
+        GROUP_CONCAT(DISTINCT tt.name ORDER BY tt.name SEPARATOR ', ') AS sample_template_names,
+        GROUP_CONCAT(DISTINCT e.id ORDER BY e.id SEPARATOR ', ') AS sample_event_ids,
+        GROUP_CONCAT(DISTINCT pt.name ORDER BY pt.name SEPARATOR ', ') AS sample_competitors
     FROM property og
     JOIN event_participants ep ON ep.id = og.objectFK AND ep.del = 'no'
     JOIN participant pt ON pt.id = ep.participantFK AND pt.del = 'no'
@@ -1535,7 +1570,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT CONCAT(org.id, '#', pt.countryFK)) AS eligible_count,
     1 AS sort_order
 FROM property og

@@ -1718,7 +1718,7 @@ ORDER BY sort_order, blank_result_count DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-076
     -- Name - EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC
-    -- What it does: Finds text stored in numeric result fields.
+    -- What it does: Finds numeric result fields holding a value that is not a number, including a number written with a comma.
     x.check_type,
     x.event_id,
     x.event_name,
@@ -1727,8 +1727,9 @@ SELECT
     x.tournament_name,
 -- What it does, stated in full: Finds events holding non-numeric values in the sport's
 -- numeric result fields, separating one of the sport's own status codes, a no-data sentinel
--- such as nan, a number written with thousands separators, and any other text, and naming
--- how many values are affected and what they hold.
+-- such as nan, a number written with a comma where a dot belongs, a number written with
+-- thousands separators, the shape the two cannot be told apart in, and any other text, and
+-- naming how many values are affected and what they hold.
     -- The result type is named rather than numbered. A reader repairing the field has to know
     -- which field it is, and the id alone sends them back to the catalogue for every row.
     x.result_type_names,
@@ -1764,17 +1765,38 @@ FROM (
         -- One row per offending result value, grouped to the event below. The event is the
         -- audited object because a field-wide storage habit is one thing to repair: a
         -- stroke-play event storing the same sentinel for every competitor reported once per
-        -- competitor, which on Golf turned 1895 events into 16452 rows. The four states stay
+        -- competitor, which on Golf turned 1895 events into 16452 rows. The six states stay
         -- separate check_types because they are repaired differently, so an event holding two
         -- of them is two findings and not one.
         SELECT
             CASE
                 WHEN LOWER(TRIM(r.value)) IN ({{RESULT_COMMENT_VALUE_LIST}}) THEN 'STATUS_CODE_IN_NUMERIC_FIELD'
                 WHEN LOWER(TRIM(r.value)) IN ('nan', 'null', 'n/a', 'na', '-', '--', '?', 'none') THEN 'SENTINEL_IN_NUMERIC_FIELD'
-                -- A grouped number is a number that was written for a reader rather than
-                -- stored for one, and it needs a different repair from text: the digits are
-                -- right and only the separators have to go.
-                WHEN TRIM(r.value) REGEXP '^[-+]?[0-9]{1,3}(,[0-9]{3})+([.][0-9]+)?$' THEN 'GROUPED_NUMBER_IN_NUMERIC_FIELD'
+                -- A number written with a comma is not text: the digits are right and only
+                -- the separator is wrong, so it is repaired differently and reported
+                -- differently. Three states rather than one, because the shape alone cannot
+                -- always say which repair applies.
+                --
+                -- Two groups or more, or one group and a dot. 1,234,567 and 1,234.56 are a
+                -- number written for a reader rather than stored for one, and the repair is to
+                -- drop the separators.
+                WHEN TRIM(r.value) REGEXP '^[-+]?[0-9]{1,3}(,[0-9]{3}){2,}([.][0-9]+)?$'
+                  OR TRIM(r.value) REGEXP '^[-+]?[0-9]{1,3},[0-9]{3}[.][0-9]+$' THEN 'GROUPED_NUMBER_IN_NUMERIC_FIELD'
+                -- One comma and exactly three digits after it. 13,733 and 1,234 are the same
+                -- string, and whether it is a third decimal place or a thousands separator
+                -- depends on what the field measures - a judged score of that magnitude is the
+                -- first, a count of money or distance the second. The template does not know
+                -- which, and says so rather than picking one and being silently wrong in every
+                -- sport where the other was meant.
+                --
+                -- This is also where the old single grouped arm was unreachable. The filter
+                -- below excluded 1,234 before this CASE ever saw it, so GROUPED_NUMBER stood
+                -- in the template while never firing on one separator, which is its commonest
+                -- form. Found 2026-08-26.
+                WHEN TRIM(r.value) REGEXP '^[-+]?[0-9]{1,3},[0-9]{3}$' THEN 'AMBIGUOUS_COMMA_IN_NUMERIC_FIELD'
+                -- Everything else with digits on both sides of a comma: the comma stands where
+                -- a dot belongs and the value itself is right.
+                WHEN TRIM(r.value) REGEXP '^[-+]?[0-9]+,[0-9]+$' THEN 'COMMA_DECIMAL_IN_NUMERIC_FIELD'
                 ELSE 'TEXT_IN_NUMERIC_FIELD'
             END AS check_type,
             e.id AS event_id,
@@ -1812,7 +1834,14 @@ FROM (
           -- from zero is stored signed in both directions - golf's Total Par holds +2 as
           -- readily as -2 - and a pattern accepting only the minus reported every positive one
           -- as text: 9347 of Golf's 16452 findings were correct data the rule could not read.
-          AND TRIM(r.value) NOT REGEXP '^[-+]?[0-9]+([.,][0-9]+)?$'
+          --
+          -- The separator is not part of the number. Only the dot is a decimal point in this
+          -- database; a comma carried this class until 2026-08-26 and made every comma-written
+          -- value read as a valid number, so a score stored 13,733 never reached the CASE
+          -- above at all. Comment needs no exception here: it is the one field where a comma
+          -- is legitimate, separating several statuses in one value alongside the slash, and
+          -- no sport declares it a numeric field, so it is never in this scope.
+          AND TRIM(r.value) NOT REGEXP '^[-+]?[0-9]+([.][0-9]+)?$'
     ) y
     GROUP BY
         y.check_type,
@@ -3916,15 +3945,29 @@ ORDER BY sort_order, event_id;
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-120
-    -- Name - EVENT_RESULTS_NUMERIC_PRECISION_INCONSISTENT
-    -- What it does: Flags numeric result fields where participants use different numbers of decimal places.
+    -- Name - EVENT_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT
+    -- What it does: Flags numeric result fields written with a comma for a decimal point, or to different numbers of decimal places.
     CASE
 -- What it does, stated in full: Finds events whose participants' values in one numeric
--- result field are not all written to the same number of decimal places, separating a value
--- stored with no decimal point at all from a fraction shorter than its neighbours.
+-- result field are not all written the same way - a comma standing where a decimal point
+-- belongs, a value stored with no decimal point at all, or a fraction shorter than its
+-- neighbours - each separated because each is repaired differently.
         -- A value with no point at all is a different repair from a short fraction: the
         -- separator has to be added as well as the digits, and it is the shape a feed
         -- produces when it drops a trailing zero group rather than one digit.
+        -- A comma where a dot belongs is not a matter of scale at all, and it leads the
+        -- three because it is repaired first: the separator is corrected, and whatever the
+        -- next run then says about precision is a reading of the value rather than of a
+        -- string nothing could parse. An object holding both states reports this one, on the
+        -- same reasoning that already decides between the other two.
+        --
+        -- Recorded 2026-08-26. A comma is not a decimal separator anywhere outside the
+        -- Comment field, and until this date the admission filter below accepted only the dot,
+        -- so a comma-written value was excluded from the findings AND from the eligible count -
+        -- invisible rather than clean. Measured across all twelve documented sports on both
+        -- layers, no precision field carries one today; the known case is Track Cycling's
+        -- Duration, 24 values over two events, and it is exactly the shape this could not see.
+        WHEN y.types_with_comma > 0 THEN 'DECIMAL_SEPARATOR_IS_A_COMMA'
         WHEN y.types_with_integer > 0 THEN 'PRECISION_MIXED_WITH_INTEGER'
         ELSE 'PRECISION_MIXED_DECIMAL_PLACES'
     END AS check_type,
@@ -3947,7 +3990,8 @@ FROM (
         GROUP_CONCAT(DISTINCT x.result_typeFK) AS affected_result_types,
         GROUP_CONCAT(DISTINCT x.places_seen SEPARATOR ' | ') AS decimal_places_seen,
         MAX(x.shape_count) AS worst_shape_count,
-        SUM(CASE WHEN x.has_integer = 1 THEN 1 ELSE 0 END) AS types_with_integer
+        SUM(CASE WHEN x.has_integer = 1 THEN 1 ELSE 0 END) AS types_with_integer,
+        SUM(CASE WHEN x.has_comma = 1 THEN 1 ELSE 0 END) AS types_with_comma
     FROM (
         SELECT
             e.id AS event_id,
@@ -3960,11 +4004,20 @@ FROM (
             -- typed, and 13.6 beside 13.733 is one score written to a different scale rather
             -- than a different score - the two are equal to a reader and unequal to anything
             -- that compares the strings. A value with no point counts as zero places.
-            COUNT(DISTINCT CASE WHEN r.value LIKE '%.%'
-                    THEN LENGTH(SUBSTRING_INDEX(r.value, '.', -1)) ELSE 0 END) AS shape_count,
-            MAX(CASE WHEN r.value LIKE '%.%' THEN 0 ELSE 1 END) AS has_integer,
-            GROUP_CONCAT(DISTINCT CASE WHEN r.value LIKE '%.%'
-                    THEN LENGTH(SUBSTRING_INDEX(r.value, '.', -1)) ELSE 0 END) AS places_seen
+            --
+            -- The separator is normalised before the places are counted, and it has to be:
+            -- counted against the dot alone, 33,588 has no point and reads as zero places,
+            -- which would file it under PRECISION_MIXED_WITH_INTEGER - a true statement about
+            -- a string nobody wrote and the wrong repair. Normalising counts it as the three
+            -- places it is, and has_comma reports the separator on its own.
+            COUNT(DISTINCT CASE WHEN REPLACE(r.value, ',', '.') LIKE '%.%'
+                    THEN LENGTH(SUBSTRING_INDEX(REPLACE(r.value, ',', '.'), '.', -1))
+                    ELSE 0 END) AS shape_count,
+            MAX(CASE WHEN REPLACE(r.value, ',', '.') LIKE '%.%' THEN 0 ELSE 1 END) AS has_integer,
+            MAX(CASE WHEN r.value LIKE '%,%' THEN 1 ELSE 0 END) AS has_comma,
+            GROUP_CONCAT(DISTINCT CASE WHEN REPLACE(r.value, ',', '.') LIKE '%.%'
+                    THEN LENGTH(SUBSTRING_INDEX(REPLACE(r.value, ',', '.'), '.', -1))
+                    ELSE 0 END) AS places_seen
         FROM event e
         JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
         JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -3976,7 +4029,10 @@ FROM (
          -- one written 26.567 are both three places and neither is this check's business.
          -- Whether two notations may stand side by side is a separate question about
          -- magnitudes, and anything that is not a number at all belongs to GLOBAL-DQ-076.
-         AND r.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.][0-9]+)?$'
+         -- The comma is admitted from 2026-08-26 so the separator can be reported. It has to
+         -- be admitted here and in COVERAGE identically: excluded from one branch only, a
+         -- comma-written field would read as a smaller population rather than a defect.
+         AND r.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.,][0-9]+)?$'
         WHERE e.del = 'no'
           AND tt.sportFK = {{SPORT_ID}}
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
@@ -3985,7 +4041,10 @@ FROM (
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
         GROUP BY e.id, e.name, e.startdate, tt.name, t.name, r.result_typeFK
-        HAVING shape_count > 1
+        -- A comma qualifies on its own. Track Cycling's two events write every value in the
+        -- field to three places, so shape_count is 1 there and precision alone would drop
+        -- the finding the field exists to catch.
+        HAVING shape_count > 1 OR has_comma = 1
     ) x
     GROUP BY x.event_id, x.event_name, x.event_startdate, x.template_name, x.tournament_name
 ) y
@@ -4003,7 +4062,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
 JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
  AND r.result_typeFK IN ({{PRECISION_RESULT_TYPE_LIST}})
- AND r.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.][0-9]+)?$'
+ AND r.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.,][0-9]+)?$'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})

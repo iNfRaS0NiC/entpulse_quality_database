@@ -468,9 +468,14 @@ Tournament-owned Comp.Rank statistics attach country and age class through
 paths from the event hierarchy.
 
 Tournament-stage dates are a containing competition window: they may begin before the
-earliest event start or end after the latest one. `GLOBAL-DQ-004` is therefore a `Monitor`
-for this sport while it compares exact endpoints; a wider containing stage interval is not
-itself a boundary defect.
+earliest event start or end after the latest one.
+
+**`GLOBAL-DQ-004` is `Actionable` here from 2026-08-26**, reversing the `Monitor` recorded on
+2026-08-04. The earlier classification rested on the argument above — that a wider containing
+interval is population context rather than a row-level defect — and it was withdrawn by
+decision: a stage whose declared dates do not match the events it holds is to be corrected, in
+this sport and in every other. The signal now falls to the category default and no entry
+remains in `SPORTS/params.json`.
 
 The generic name-format checks require language-aware interpretation. `GLOBAL-DQ-048` is a
 `Monitor` because valid compound and geographic names include forms such as `All-Around`,

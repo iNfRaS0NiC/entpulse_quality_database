@@ -212,18 +212,32 @@ WHERE ts.del = 'no'
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-004
-    -- Name - TOURNAMENT_STAGE_DATE_RANGE_MISMATCH
-    -- What it does: Flags stages whose dates do not match the first and last event dates inside the stage.
-    'Date_Range_Mismatch' AS check_type,
+    -- Name - TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE
+    -- What it does: Flags tournament stages holding an event that starts outside the stage's own dates.
+    'Stage_Event_Outside_Date_Range' AS check_type,
     ts.id AS tournament_stage_id,
     ts.name AS tournament_stage_name,
+    tt.name AS template_name,
+    t.name AS tournament_name,
     ts.startdate AS stage_startdate,
     ts.enddate AS stage_enddate,
     MIN(e.startdate) AS earliest_event_startdate,
     MAX(e.startdate) AS latest_event_startdate,
     NULL AS eligible_count
--- What it does, stated in full: Finds tournament stages whose start or end date does not
--- match the earliest and latest event date inside them.
+-- What it does, stated in full: Finds a stage whose first or last event starts before the
+-- stage begins or after it ends, so the stage does not contain the competition it names.
+-- The rule is containment, not equality, and the distinction is what the template is worth.
+-- Equality - stage dates matching the first and last event exactly - reads the format a sport
+-- writes its stages in rather than whether the stage holds its events. A sport writing a stage
+-- as whole days, 00:00:00 to 23:59:59, differs from its events' span by the hours at each end
+-- while containing every one of them: measured on Equestrian 2026-08-18 that was 3303 of the
+-- 3338 stages equality reported, against 18 where an event genuinely fell outside. Changed to
+-- containment 2026-08-26 so the template asserts the same thing on every sport regardless of
+-- how that sport rounds a stage. Containment is asserted on the calendar day, which the
+-- equality form also used: a sport writing a stage from 10:00 and an event in it at 09:00
+-- the same morning has recorded the stage's hours loosely, not put the event outside it.
+-- A stage or event with no date is not judged here at all;
+-- GLOBAL-DQ-005 owns the missing date.
 FROM tournament_stage ts
 JOIN tournament t
   ON t.id = ts.tournamentFK
@@ -239,18 +253,25 @@ WHERE ts.del = 'no'
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
+  AND ts.startdate IS NOT NULL
+  AND ts.enddate IS NOT NULL
+  AND e.startdate IS NOT NULL
 GROUP BY
     ts.id,
     ts.name,
+    tt.name,
+    t.name,
     ts.startdate,
     ts.enddate
-HAVING DATE(ts.startdate) <> DATE(MIN(e.startdate))
-    OR DATE(ts.enddate) <> DATE(MAX(e.startdate))
+HAVING DATE(MIN(e.startdate)) < DATE(ts.startdate)
+    OR DATE(MAX(e.startdate)) > DATE(ts.enddate)
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
+    NULL,
+    NULL,
     NULL,
     NULL,
     NULL,
@@ -270,14 +291,15 @@ WHERE ts.del = 'no'
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
+  AND ts.startdate IS NOT NULL
+  AND ts.enddate IS NOT NULL
   AND EXISTS (
       SELECT 1
       FROM event e2
       WHERE e2.tournament_stageFK = ts.id
         AND e2.del = 'no'
+        AND e2.startdate IS NOT NULL
   );
-
-
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-005

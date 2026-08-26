@@ -2757,7 +2757,7 @@ WHERE sm.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-077
     -- Name - COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC
-    -- What it does: Finds text stored in numeric Comp.Rank fields.
+    -- What it does: Finds numeric Comp.Rank fields holding a value that is not a number, including a number written with a comma.
     x.check_type,
     x.statistic_id,
     x.statistic_name,
@@ -2765,8 +2765,9 @@ SELECT
     x.tournament_name,
 -- What it does, stated in full: Finds Comp.Rank holding non-numeric values in the sport's
 -- numeric fields, separating one of the sport's own status codes, a no-data sentinel such as
--- nan, a number written with thousands separators, and any other text, and naming how many
--- values are affected and what they hold.
+-- nan, a number written with a comma where a dot belongs, a number written with thousands
+-- separators, the shape the two cannot be told apart in, and any other text, and naming how
+-- many values are affected and what they hold.
     -- The data type is named rather than numbered, as in GLOBAL-DQ-076. A reader repairing the
     -- field has to know which field it is, and the id alone sends them back to the catalogue.
     x.data_type_names,
@@ -2806,9 +2807,18 @@ FROM (
             CASE
                 WHEN LOWER(TRIM(sd.value)) IN ({{DATA_COMMENT_VALUE_LIST}}) THEN 'STATUS_CODE_IN_NUMERIC_FIELD'
                 WHEN LOWER(TRIM(sd.value)) IN ('nan', 'null', 'n/a', 'na', '-', '--', '?', 'none') THEN 'SENTINEL_IN_NUMERIC_FIELD'
-                -- As in GLOBAL-DQ-076: a grouped number is a number written for a reader, and
-                -- the repair is to drop the separators rather than to find the value again.
-                WHEN TRIM(sd.value) REGEXP '^[-+]?[0-9]{1,3}(,[0-9]{3})+([.][0-9]+)?$' THEN 'GROUPED_NUMBER_IN_NUMERIC_FIELD'
+                -- The three comma states of GLOBAL-DQ-076, which owns the reasoning: a number
+                -- written with a comma is not text, and the three differ in which repair
+                -- applies. Two groups or more, or one group and a dot, is a number written for
+                -- a reader and the separators drop.
+                WHEN TRIM(sd.value) REGEXP '^[-+]?[0-9]{1,3}(,[0-9]{3}){2,}([.][0-9]+)?$'
+                  OR TRIM(sd.value) REGEXP '^[-+]?[0-9]{1,3},[0-9]{3}[.][0-9]+$' THEN 'GROUPED_NUMBER_IN_NUMERIC_FIELD'
+                -- One comma and exactly three digits after it is the shape the two readings
+                -- share, and the template does not decide it. Unreachable here as well until
+                -- 2026-08-26, for the reason recorded in GLOBAL-DQ-076.
+                WHEN TRIM(sd.value) REGEXP '^[-+]?[0-9]{1,3},[0-9]{3}$' THEN 'AMBIGUOUS_COMMA_IN_NUMERIC_FIELD'
+                -- Anything else with digits either side: the comma stands where a dot belongs.
+                WHEN TRIM(sd.value) REGEXP '^[-+]?[0-9]+,[0-9]+$' THEN 'COMMA_DECIMAL_IN_NUMERIC_FIELD'
                 ELSE 'TEXT_IN_NUMERIC_FIELD'
             END AS check_type,
             s.id AS statistic_id,
@@ -2844,7 +2854,12 @@ FROM (
           -- score against a reference holds the positive direction as readily as the negative
           -- one - measured on Golf, 9019 of that field's 340991 values are written +N, and a
           -- pattern accepting only the minus reported every one of them as text.
-          AND TRIM(sd.value) NOT REGEXP '^[-+]?[0-9]+([.,][0-9]+)?$'
+          --
+          -- The separator is not part of the number, and only the dot is a decimal point. A
+          -- comma carried this class until 2026-08-26, which made every comma-written value
+          -- read as valid. The Comment field is the one place a comma is legitimate and needs
+          -- no exception here, because no sport declares it numeric.
+          AND TRIM(sd.value) NOT REGEXP '^[-+]?[0-9]+([.][0-9]+)?$'
     ) y
     GROUP BY
         y.check_type,
@@ -4117,15 +4132,19 @@ ORDER BY sort_order, statistic_participants_id;
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-121
-    -- Name - COMP.RANK_RESULTS_NUMERIC_PRECISION_INCONSISTENT
-    -- What it does: Flags numeric Comp.Rank fields where participants use different numbers of decimal places.
+    -- Name - COMP.RANK_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT
+    -- What it does: Flags numeric Comp.Rank fields written with a comma for a decimal point, or to different numbers of decimal places.
     CASE
 -- What it does, stated in full: Finds Comp.Rank whose participants' values in one numeric
--- data field are not all written to the same number of decimal places, separating a value
--- stored with no decimal point at all from a fraction shorter than its neighbours.
+-- data field are not all written the same way - a comma standing where a decimal point
+-- belongs, a value stored with no decimal point at all, or a fraction shorter than its
+-- neighbours - each separated because each is repaired differently.
         -- A value with no point at all is a different repair from a short fraction: the
         -- separator has to be added as well as the digits, and it is the shape a feed
         -- produces when it drops a trailing zero group rather than one digit.
+        -- The three states and their order are GLOBAL-DQ-120's, which owns the reasoning;
+        -- the comma was admitted here on the same date and for the same reason.
+        WHEN y.types_with_comma > 0 THEN 'DECIMAL_SEPARATOR_IS_A_COMMA'
         WHEN y.types_with_integer > 0 THEN 'PRECISION_MIXED_WITH_INTEGER'
         ELSE 'PRECISION_MIXED_DECIMAL_PLACES'
     END AS check_type,
@@ -4146,7 +4165,8 @@ FROM (
         GROUP_CONCAT(DISTINCT x.statistic_data_typeFK) AS affected_data_types,
         GROUP_CONCAT(DISTINCT x.places_seen SEPARATOR ' | ') AS decimal_places_seen,
         MAX(x.shape_count) AS worst_shape_count,
-        SUM(CASE WHEN x.has_integer = 1 THEN 1 ELSE 0 END) AS types_with_integer
+        SUM(CASE WHEN x.has_integer = 1 THEN 1 ELSE 0 END) AS types_with_integer,
+        SUM(CASE WHEN x.has_comma = 1 THEN 1 ELSE 0 END) AS types_with_comma
     FROM (
         SELECT
             s.id AS statistic_id,
@@ -4155,12 +4175,17 @@ FROM (
             t.name AS tournament_name,
             sd.statistic_data_typeFK,
             -- The written form, not the value. The event-layer twin is GLOBAL-DQ-120 and
-            -- reads the same invariant one layer down.
-            COUNT(DISTINCT CASE WHEN sd.value LIKE '%.%'
-                    THEN LENGTH(SUBSTRING_INDEX(sd.value, '.', -1)) ELSE 0 END) AS shape_count,
-            MAX(CASE WHEN sd.value LIKE '%.%' THEN 0 ELSE 1 END) AS has_integer,
-            GROUP_CONCAT(DISTINCT CASE WHEN sd.value LIKE '%.%'
-                    THEN LENGTH(SUBSTRING_INDEX(sd.value, '.', -1)) ELSE 0 END) AS places_seen
+            -- reads the same invariant one layer down, separator normalisation included:
+            -- counted against the dot alone a comma-written value reads as zero places and
+            -- files itself under the wrong repair.
+            COUNT(DISTINCT CASE WHEN REPLACE(sd.value, ',', '.') LIKE '%.%'
+                    THEN LENGTH(SUBSTRING_INDEX(REPLACE(sd.value, ',', '.'), '.', -1))
+                    ELSE 0 END) AS shape_count,
+            MAX(CASE WHEN REPLACE(sd.value, ',', '.') LIKE '%.%' THEN 0 ELSE 1 END) AS has_integer,
+            MAX(CASE WHEN sd.value LIKE '%,%' THEN 1 ELSE 0 END) AS has_comma,
+            GROUP_CONCAT(DISTINCT CASE WHEN REPLACE(sd.value, ',', '.') LIKE '%.%'
+                    THEN LENGTH(SUBSTRING_INDEX(REPLACE(sd.value, ',', '.'), '.', -1))
+                    ELSE 0 END) AS places_seen
         FROM statistic s
         JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
         JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -4169,7 +4194,9 @@ FROM (
           ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
          AND sd.del = 'no'
          AND sd.statistic_data_typeFK IN ({{PRECISION_DATA_TYPE_LIST}})
-         AND sd.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.][0-9]+)?$'
+         -- The comma is admitted from 2026-08-26, in this branch and in COVERAGE alike, so
+         -- that a comma-written field reads as a defect rather than as a smaller population.
+         AND sd.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.,][0-9]+)?$'
         WHERE s.del = 'no'
           AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
           AND s.object_typeFK = 3
@@ -4179,7 +4206,9 @@ FROM (
           AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t.tournament_templateFK = <tournament_template_id>
         GROUP BY s.id, s.name, tt.name, t.name, sd.statistic_data_typeFK
-        HAVING shape_count > 1
+        -- A comma qualifies on its own, as in GLOBAL-DQ-120: a field written entirely to one
+        -- scale with the wrong separator has a shape_count of 1 and would otherwise drop.
+        HAVING shape_count > 1 OR has_comma = 1
     ) x
     GROUP BY x.statistic_id, x.statistic_name, x.template_name, x.tournament_name
 ) y
@@ -4198,7 +4227,7 @@ JOIN statistic_data{{SHARD_ID}} sd
   ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
  AND sd.del = 'no'
  AND sd.statistic_data_typeFK IN ({{PRECISION_DATA_TYPE_LIST}})
- AND sd.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.][0-9]+)?$'
+ AND sd.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.,][0-9]+)?$'
 WHERE s.del = 'no'
   AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
   AND s.object_typeFK = 3
@@ -4304,22 +4333,22 @@ ORDER BY sort_order, medal_holder_count DESC, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-131
     -- Name - COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING
-    -- What it does: Finds tournaments whose Comp.Rank participants carry no Organization value, either none of them at all or only some.
-    CASE
-        WHEN x.with_organization = 0 THEN 'TOURNAMENT_COMP.RANK_CARRIES_NO_ORGANIZATION_AT_ALL'
-        ELSE 'TOURNAMENT_COMP.RANK_ORGANIZATION_PARTLY_FILLED'
-    END AS check_type,
+    -- What it does: Finds Comp.Rank holding competitors that carry no Organization, and names them.
+    'COMP.RANK_MISSING_ORGANIZATION' AS check_type,
     x.tournament_id,
     x.tournament_name,
     x.template_name,
-    x.statistics,
-    x.ranked_participants,
+    x.statistic_id,
+    x.statistic_name,
     x.with_organization,
     x.without_organization,
+    x.sample_competitors_without_organization,
     NULL AS eligible_count,
     0 AS sort_order
--- What it does, stated in full: The same rule as GLOBAL-DQ-130 asked of the Comp.Rank layer, and
--- a separate statement because the storage has nothing in common with it. The event layer keeps
+-- What it does, stated in full: The same rule as GLOBAL-DQ-130 asked of the Comp.Rank layer, one
+-- row per ranking that is missing the field on any of its competitors, saying how many of that
+-- ranking's places carry it and naming the ones that do not.
+-- A separate statement because the storage has nothing in common with it. The event layer keeps
 -- the organization as a reference-typed `property` row hanging off `event_participants`; the
 -- statistic layer keeps it as an ordinary data field, `statistic_data_type` 1465 Organization,
 -- declared for statistic type 11 and holding a participant id. One rule, two mechanisms, two
@@ -4330,29 +4359,40 @@ SELECT
 -- switch the check off for the sports it exists to catch. Measured 2026-08-21 over the eleven
 -- documented sports, about 908 000 ranked participations of 1.15 million carry no Organization,
 -- and nine of the eleven carry not one.
--- **The audited object is the tournament**, matching GLOBAL-DQ-130 and departing from the usual
--- convention of this file, which audits the statistic. The departure is deliberate: what is
--- missing here is a feed field for a whole competition, and one tournament's rankings are one
--- feed however many statistics it holds - Golf averages roughly eight per tournament, so the
--- statistic as the object would report the same absent field eight times over. `statistics`,
--- `ranked_participants`, `with_organization` and `without_organization` carry the detail as
--- named secondary columns.
--- Tournament-owned statistics only, and IOC-purpose templates excluded in both branches, as
+-- **The audited object is the statistic, decided 2026-08-26** and matching GLOBAL-DQ-130's move
+-- from the tournament on the same day and the same argument: a row saying how many are missing
+-- cannot be acted on without saying which ranking and which competitors. Measured over the twelve
+-- documented sports, 2922 tournament rows become 15 120 statistic rows.
+-- **`sample_competitors_without_organization` is a sample and the count beside it is the
+-- assertion**, on the ceiling GLOBAL-DQ-130 records: `group_concat_max_len` is 1024 characters on
+-- this server and cannot be raised from a statement, so the list is cut without saying so.
+-- Measured 2026-08-26, one Soccer ranking would need 19 500 characters for its 1248
+-- unattributed competitors, and `without_organization` beside it is what the row asserts.
+-- `participant` is joined LEFT so a missing name cannot narrow the population, exactly as
+-- there. There is no `competitors_without_organization` column and no `ranked_participants`
+-- one, for the reason GLOBAL-DQ-130 gives: a ranked competitor holds one place in a ranking,
+-- so a distinct count of them repeats `without_organization`, and the two counts already in
+-- the row are the total split.
+-- Coverage counts statistics, because the audited object is the statistic.
+-- Tournament-owned statistics only, and IOC-purpose templates excluded in every branch, as
 -- every statistic statement in this file does.
 FROM (
     SELECT
         t.id AS tournament_id,
         t.name AS tournament_name,
         tt.name AS template_name,
-        COUNT(DISTINCT s.id) AS statistics,
-        COUNT(*) AS ranked_participants,
+        s.id AS statistic_id,
+        s.name AS statistic_name,
         SUM(CASE WHEN og.id IS NOT NULL THEN 1 ELSE 0 END) AS with_organization,
-        SUM(CASE WHEN og.id IS NULL THEN 1 ELSE 0 END) AS without_organization
+        SUM(CASE WHEN og.id IS NULL THEN 1 ELSE 0 END) AS without_organization,
+        GROUP_CONCAT(DISTINCT CASE WHEN og.id IS NULL THEN p.name END
+            ORDER BY p.name SEPARATOR ', ') AS sample_competitors_without_organization
     FROM statistic s
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
          AND tt.sportFK = {{SPORT_ID}}
     JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    LEFT JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
     LEFT JOIN statistic_data{{SHARD_ID}} og
            ON og.statistic_participants{{SHARD_ID}}FK = sp.id
           AND og.statistic_data_typeFK = {{DATA_ORGANIZATION_TYPE_ID}}
@@ -4364,7 +4404,7 @@ FROM (
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
-    GROUP BY t.id, t.name, tt.name
+    GROUP BY t.id, t.name, tt.name, s.id, s.name
     HAVING SUM(CASE WHEN og.id IS NULL THEN 1 ELSE 0 END) > 0
 ) x
 
@@ -4372,8 +4412,8 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT t.id) AS eligible_count,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s.id) AS eligible_count,
     1 AS sort_order
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
@@ -4388,7 +4428,7 @@ WHERE s.del = 'no'
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
 
-ORDER BY sort_order, without_organization DESC, tournament_id;
+ORDER BY sort_order, without_organization DESC, statistic_id;
 
 -- ======================================================================================
 
@@ -4625,7 +4665,7 @@ ORDER BY sort_order, statistic_id;
 SELECT
     -- CheckID - GLOBAL-DQ-136
     -- Name - COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR
-    -- What it does: Finds Comp.Rank organizations whose country is not the country of the competitors ranked under them.
+    -- What it does: Finds Comp.Rank organizations whose country is not the country of the competitors ranked under them, naming the rankings and the competitors.
     CASE
         WHEN x.organization_name = x.competitor_country
             THEN 'ORGANIZATION_NAMED_FOR_THE_COMPETITOR_COUNTRY'
@@ -4640,6 +4680,14 @@ SELECT
     x.template_name,
     x.competitors,
     x.ranked_participations,
+    x.statistics,
+    -- The lists are samples and the counts beside them are the assertion. `group_concat_max_len`
+    -- is 1024 characters on this server and a statement cannot raise it - only a `SELECT` may
+    -- start one, so there is no session to set it in - and the cut is silent. Measured
+    -- 2026-08-26; the 200-character limit these carried until then was a further cut of our own
+    -- on top of the server's, and it showed about ten names where the server would have shown
+    -- fifty.
+    x.sample_statistic_ids,
     x.sample_competitors,
     NULL AS eligible_count,
     0 AS sort_order
@@ -4689,8 +4737,10 @@ SELECT
 -- one decision however many people it caught, and on this layer the difference is larger than on
 -- the event layer rather than smaller: a Comp.Rank lists a relay athlete by athlete where an
 -- event enters the team as one participant, so the same decision gathers more rows here.
--- `competitors`, `ranked_participations` and `sample_competitors` carry the detail as named
--- secondary columns.
+-- `competitors`, `ranked_participations`, `statistics`, `sample_statistic_ids` and
+-- `sample_competitors` carry the detail as named secondary columns. The rankings are named
+-- from 2026-08-26: one disagreement is still one decision, but nobody can act on it without
+-- knowing which rankings declared it and who was ranked under them.
 -- The two branches separate two quite different repairs, and the split is GLOBAL-DQ-132's:
 -- where the organization's own name is the competitor's country, the two are one place held
 -- under two `country` rows, which is a single reference-layer correction and not a crowd of
@@ -4712,7 +4762,9 @@ FROM (
         tt.name AS template_name,
         COUNT(DISTINCT sp.participantFK) AS competitors,
         COUNT(*) AS ranked_participations,
-        SUBSTRING(GROUP_CONCAT(DISTINCT pt.name ORDER BY pt.name SEPARATOR ', '), 1, 200) AS sample_competitors
+        COUNT(DISTINCT s.id) AS statistics,
+        GROUP_CONCAT(DISTINCT s.id ORDER BY s.id SEPARATOR ', ') AS sample_statistic_ids,
+        GROUP_CONCAT(DISTINCT pt.name ORDER BY pt.name SEPARATOR ', ') AS sample_competitors
     FROM statistic s
     JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
@@ -4742,7 +4794,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT CONCAT(org.id, '#', pt.countryFK, '#', t.tournament_templateFK)) AS eligible_count,
     1 AS sort_order
 FROM statistic s

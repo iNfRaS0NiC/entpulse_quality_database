@@ -442,14 +442,16 @@ SELECT
     0 AS sort_order
 -- What it does, stated in full: Finds a stage whose first or last event starts before the stage
 -- begins or after it ends, so the stage does not contain the competition it names.
--- GLOBAL-DQ-004 asserts something stronger and this sport does not store it. That template
--- requires the stage dates to equal the first and last event dates; Equestrian writes a stage as
--- whole days, from 00:00:00 to 23:59:59, so a stage containing every one of its events still
--- differs from their span by the hours at each end. Measured 2026-08-18 that is 3303 of the 3338
--- stages the template reports, and reading them says only that the sport rounds to the day.
--- What is left once the rounding is allowed for is 18 stages where an event genuinely falls
--- outside, and those are what this reports. The 17 stages that contain their events without
--- being written as whole days are not reported either: containment is the rule, not the format.
+-- This asserts containment on the exact timestamp, where GLOBAL-DQ-004 asserts it on the
+-- calendar day, and the statement is kept for that difference. Measured 2026-08-26 the template
+-- returns 13 stages and this returns those 13 plus 4 more, where an event falls outside the hours
+-- of a stage that was not written as whole days. GLOBAL-DQ-004 is therefore not instantiated on
+-- this sport: it would restate a subset of what this already reports.
+-- The template asserted equality until 2026-08-26 - the stage dates matching the first and last
+-- event exactly - and that is the assertion this statement was written to replace. Equestrian
+-- writes a stage as whole days, from 00:00:00 to 23:59:59, so a stage containing every one of its
+-- events still differed from their span by the hours at each end: 3303 of the 3338 stages the
+-- template reported, measured 2026-08-18, which said only that the sport rounds to the day.
 FROM (
     SELECT
         ts.id AS tournament_stage_id,

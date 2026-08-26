@@ -28942,6 +28942,279 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 26.08.2026 13-47-53",
+                     "startedUtc":  "2026-08-26T11:47:52Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 26.08.2026 13-47-53",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-046",
+                                        "runKey":  "Artistic-Gymnastics-DQ-046",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  4241,
+                                        "seconds":  40.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-068",
+                                        "runKey":  "Artistic-Gymnastics-DQ-068",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_WITHOUT_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  449,
+                                        "findings":  448,
+                                        "eligible":  4483,
+                                        "seconds":  1.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-069",
+                                        "runKey":  "Artistic-Gymnastics-DQ-069",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  8,
+                                        "findings":  7,
+                                        "eligible":  4017,
+                                        "seconds":  6.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-070",
+                                        "runKey":  "Artistic-Gymnastics-DQ-070",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_STAGE",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  25,
+                                        "findings":  24,
+                                        "eligible":  4278,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-099",
+                                        "runKey":  "Artistic-Gymnastics-DQ-099",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_ORDER_CONTRADICTS_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 104 Comment, 100 Rank, 102 Points",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  172529,
+                                        "seconds":  17.5,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "26.08.2026 13-53-19",
+                     "startedUtc":  "2026-08-26T11:53:19Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-039",
+                                        "runKey":  "Artistic-Gymnastics-DQ-039",
+                                        "parameters":  "",
+                                        "name":  "EVENT_TEAM_LINEUP_SIZE_UNEVEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  183,
+                                        "findings":  182,
+                                        "eligible":  287,
+                                        "seconds":  1.8,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "26.08.2026 14-08-41",
+                     "startedUtc":  "2026-08-26T12:08:41Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-068",
+                                        "runKey":  "Artistic-Gymnastics-DQ-068",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_WITHOUT_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  448,
+                                        "findings":  447,
+                                        "eligible":  4483,
+                                        "seconds":  1,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "26.08.2026 14-10-23",
+                     "startedUtc":  "2026-08-26T12:10:23Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-039",
+                                        "runKey":  "Artistic-Gymnastics-DQ-039",
+                                        "parameters":  "",
+                                        "name":  "EVENT_TEAM_LINEUP_SIZE_UNEVEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  182,
+                                        "findings":  181,
+                                        "eligible":  286,
+                                        "seconds":  1.7,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 26.08.2026 14-30-25",
+                     "startedUtc":  "2026-08-26T12:30:25Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 26.08.2026 14-30-25",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-106",
+                                        "runKey":  "Artistic-Gymnastics-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  531,
+                                        "findings":  530,
+                                        "eligible":  429,
+                                        "seconds":  5.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-107",
+                                        "runKey":  "Artistic-Gymnastics-DQ-107",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  39,
+                                        "findings":  38,
+                                        "eligible":  388,
+                                        "seconds":  22.3,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 26.08.2026 14-45-10",
+                     "startedUtc":  "2026-08-26T12:45:09Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 26.08.2026 14-45-10",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-108",
+                                        "runKey":  "Artistic-Gymnastics-DQ-108",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  144,
+                                        "seconds":  4.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-111",
+                                        "runKey":  "Artistic-Gymnastics-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  1919,
+                                        "seconds":  16,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 26.08.2026 14-58-07",
+                     "startedUtc":  "2026-08-26T12:58:06Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 26.08.2026 14-58-07",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-106",
+                                        "runKey":  "Artistic-Gymnastics-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  546,
+                                        "findings":  545,
+                                        "eligible":  7828,
+                                        "seconds":  3.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-107",
+                                        "runKey":  "Artistic-Gymnastics-DQ-107",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  83,
+                                        "findings":  82,
+                                        "eligible":  4241,
+                                        "seconds":  14.7,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"

@@ -472,10 +472,6 @@
                 "signal": "Monitor",
                 "reason": "The check asserts five stage fields at once, and Artistic Gymnastics populates host country through the sparse object_relation 4 to 33 path rather than on every stage, so 822 of 824 stages are reported for that field alone. The direct tournament_stage.countryFK is present throughout; the proportion carrying the separate host-country relation is the reading. SPORTS/Artistic-Gymnastics.md owns the reasoning."
             },
-            "GLOBAL-DQ-004": {
-                "signal": "Monitor",
-                "reason": "Artistic Gymnastics tournament-stage dates define a containing competition window and need not equal the earliest and latest event start dates. A wider containing interval is population context, not one row-level defect. SPORTS/Artistic-Gymnastics.md owns the reasoning."
-            },
             "GLOBAL-DQ-044": {
                 "signal": "Monitor",
                 "reason": "Athlete-statistic gender contradictions are actionable, but mixed-gender team entities can legitimately appear in a male or female Comp.Rank context and require team-role semantics. The complete output is therefore monitored. SPORTS/Artistic-Gymnastics.md owns the reasoning."
@@ -1774,7 +1770,7 @@
             },
             "GLOBAL-DQ-004": {
                 "signal": "Not applicable",
-                "reason": "the template requires a stage's dates to equal its first and last event dates, and this sport does not store them that way: a stage is written as whole days, 00:00:00 to 23:59:59, so a stage containing every one of its events still differs from their span by the hours at each end. Measured 2026-08-18 that is 3303 of the 3338 stages reported. Equestrian-DQ-067 asserts containment instead and reports the 18 where an event genuinely falls outside."
+                "reason": "the sport asserts the same rule more strictly in its own statement, so the template would duplicate it. The reason changed on 2026-08-26 and the earlier one is no longer true: GLOBAL-DQ-004 required a stage's dates to equal its first and last event dates, which this sport does not store that way - a stage is written as whole days, 00:00:00 to 23:59:59, so a stage containing every one of its events still differed from their span by the hours at each end, and that was 3303 of the 3338 stages it reported measured 2026-08-18. The template now asserts containment on the calendar day, which this sport does satisfy: measured 2026-08-26 it returns 13. Equestrian-DQ-067 asserts the same containment on the exact timestamp and returns those 13 plus 4 more, where an event falls outside the hours of a stage not written as whole days. The stricter statement is kept and the template is not instantiated beside it."
             },
             "GLOBAL-DQ-009": {
                 "signal": "Not applicable",
@@ -2221,6 +2217,86 @@
                 "signal": "Monitor",
                 "reason": "the check is right and most of what it returns will never be corrected, because it reads a discipline the sport does not decide on time. Measured 2026-08-24: 482 findings of 4674 eligible events, and 421 of them are Mass Start in its four forms - 205 Mass Start, 82 and 81 in the two semifinals, 53 in the final. A mass start is settled on points won at intermediate sprints, so the winner routinely does not hold the fastest time and the check reports it every time. That follows from the decision of 2026-08-23 to keep 330 Mass Start in TIMED_DISCIPLINE_LIST, which was taken with this consequence stated; the recommendation that day was to exclude it. The rows worth reading are the other 61: 500 Metres 19, 100 Metres 16, Team Pursuit 11, 1000 Metres 4 and a tail across the rest, where a rank really is contradicted by the times"
             }
+        }
+    },
+    "Track-Cycling": {
+        "SPORT_ID": 55,
+        "CLIENT_FROM_SEASON": 2004,
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "12793, 12794, 12795, 12796",
+        "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "PERSON_ROLE_TYPE_LIST": "'athlete'",
+        "ROUND_TYPE_LIST": "2, 4, 5, 9, 38, 39, 40, 41, 42, 43, 89, 90, 166, 169, 173, 176, 177, 178, 179, 181, 184, 185, 186, 188, 262, 263, 264, 294, 296, 298, 299, 300, 301, 302, 303",
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_COMMENT_TYPE_ID": 104,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "NOT_STARTED_DESC_LIST": "1, 5",
+        "FINAL_ROUND_TYPE_LIST": "9, 173",
+        "MEDAL_ROUND_TYPE_LIST": "9, 173, 177, 181, 186",
+        "BRONZE_ROUND_TYPE_LIST": "181, 186",
+        "RESULT_DURATION_TYPE_ID": 101,
+        "RESULT_TIE_VALUE_TYPE_LIST": "101, 102",
+        "RESULT_FULL_TIME_TYPE_ID": 557,
+        "TIMED_DISCIPLINE_LIST": "122, 123, 124, 130, 376, 382, 385, 387, 392, 393, 394, 395, 396, 548",
+        "PRECISION_RESULT_TYPE_LIST": "101, 557",
+        "CLOCK_RESULT_TYPE_LIST": "101, 557",
+        "NUMERIC_RESULT_TYPE_LIST": "100, 102, 222, 534",
+        "INTEGER_RESULT_TYPE_LIST": "100, 222, 534",
+        "RANK_MAX_PLAUSIBLE": 250,
+        "STALE_NOT_STARTED_DAYS": 2,
+        "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 0,
+        "SERIES_MIN_YEARS": 3,
+        "SERIES_SKIP_YEARS": "2020, 2021",
+        "FULL_TIME_TOLERANCE_SECONDS": 0.001,
+        "RESULT_SCORE_TYPE_ID": 102,
+        "ELIMINATION_ROUND_NAME_LIST": "'semi finals', 'quarter finals', '1/8', '1/16', '1/32', 'qualifier', 'round 1 repechage', 'round 2 repechage', 'repechage 1/8', 'repechage 1/16', 'repechage 1/32'",
+        "GROUP_ROUND_NAME_LIST": "'final', 'small final', 'bronze', 'overall classification', '7/12', '5/8', '9/12', '7/8', '5/6'",
+        "RESULT_COMMENT_VALUE_LIST": "'1', '1 lap down', '12', '18', '2', '22', '3', '4', '5', '6', '8', '9', 'abd', 'ar', 'bronze', 'cwg', 'disq.', 'dnf', 'dnf from final 1-6', 'dnf from first round', 'dnf/from final for bronze', 'dnf/q7-12', 'dnq', 'dnq for 1/16 finals', 'dnq for 1/8 finals', 'dnq for 1/8 finals/rel', 'dnq for first round', 'dnq for first round repechages', 'dnq for quarterfinals.', 'dnq for repechages', 'dnq for second round', 'dnq for semifinal', 'dnq from 1/8 finals', 'dnq from first round', 'dnq from quarterfinals.', 'dnq from quarterfinals/rel', 'dnq from repechages', 'dnq from second round', 'dnq from semifinal', 'dns', 'dns from 1/16 finals', 'dns from final 1-6', 'dns from final 7-12', 'dns from final for bronze', 'dns from first round', 'dns from repechages', 'dq', 'dsq', 'dsq from repechages', 'for places 7-13', 'from 1/16 finals', 'from 1/2 finals', 'from 1/32 finals', 'from 1/4 finals', 'from 1/4 finals/dnf', 'from 1/4 finals/rel', 'from 1/8 finals', 'from 1/8 finals/rel', 'from final', 'from final 1-6', 'from final 1-6/dnf', 'from final 1-6/dsq', 'from final 1-6/rel', 'from final 7-11', 'from final 7-11/dns', 'from final 7-11/rel', 'from final 7-12', 'from final 7-12/dnf', 'from final 7-12/dns', 'from final 7-12/dsq', 'from final 7-12/rel', 'from final for bronze', 'from final for bronze/dnf', 'from final for bronze/ovl', 'from final/gr', 'from final/ovl', 'from first round', 'from first round/dsq', 'from first round/rel', 'from qualification', 'from qualification/dnf', 'from qualification/dsq', 'from qualification/rel', 'from repechages', 'from repechages/rel', 'gold', 'gr', 'lap', 'no time/from final for bronze', 'or', 'or/qg', 'ovl', 'ovl/from final for bronze', 'q', 'q/or', 'q/wr', 'q/wr/or', 'q1/16', 'q1/2', 'q1/4', 'q1/8', 'q5-6', 'q5-8', 'q7-12', 'q7-8', 'qb', 'qg', 'r', 'rel', 'rel/r', 'relegated', 'silver', 'wr', 'wr/or', 'wr/or/qg', 'wr/qg'",
+        "RESULT_COMMENT_NO_RESULT_LIST": "'abd', 'disq.', 'dnf', 'dnf/from final for bronze', 'dnf/q7-12', 'dns', 'dq', 'dsq', 'from 1/4 finals/dnf', 'from final 1-6/dnf', 'from final 1-6/dsq', 'from final 7-11/dns', 'from final 7-12/dnf', 'from final 7-12/dns', 'from final 7-12/dsq', 'from final for bronze/dnf', 'from first round/dsq', 'from qualification/dnf', 'from qualification/dsq'",
+        "_checkSignal": {
+            "GLOBAL-DQ-127": {
+                "signal": "Monitor",
+                "reason": "the template asserts that competitors holding the same deciding value must share a place, and in the points formats they must not: an Omnium separates riders on equal points by their finish in the last race, so equal points at different ranks is the rule rather than a defect. Measured 2026-08-26, 2148 of 15768 events report and the points races are the bulk of them - one Omnium alone carries 15 tied groups over 50 competitors. Dropping 102 Points from RESULT_TIE_VALUE_TYPE_LIST would cut it to 238, and was rejected the same day: a shared place in a points race does have to agree on points, so the list describes the sport correctly and it is this template that reads the agreement the other way round. Kept because the timed formats, where equal times really must share a place, are audited by the same statement"
+            },
+            "GLOBAL-DQ-122": {
+                "signal": "Monitor",
+                "reason": "the template asks whether a ranked competitor holds a value in the field the placing is derived from, and in most of this sport the placing is not derived from a stored value at all: a sprint or keirin heat is settled by who crosses first, and the riders carry a rank and nothing else. Measured 2026-08-26, 13209 of 19241 events report - 3468 where no ranked competitor holds a value and 9741 where part of the field does - so the count cannot reach zero while the sport keeps that model. Narrowing RESULT_TIE_VALUE_TYPE_LIST does not help and makes it worse: with 101 alone the count rises to 16258. Kept rather than dropped because the events that do decide on a stored value are the majority of the sport by result volume, and a field missing there is a real defect"
+            },
+            "GLOBAL-DQ-093": {
+                "signal": "Monitor",
+                "reason": "the template reads a final as a two-sided match that awards gold and silver, with bronze decided elsewhere, and this sport runs both conventions at once: a points race final is one race with the whole field and awards all three medals, while a sprint final is two riders and the small final decides bronze. Measured 2026-08-26, 2195 of its 2444 findings are FINAL_UNEXPECTED_BRONZE and every one of them is the sport behaving normally, so the count cannot reach zero however much is repaired. Setting BRONZE_ROUND_TYPE_LIST to 0 does not help - that parameter drives only the separate bronze branch. Kept rather than dropped because the other four branches are sound and account for 249 rows: 224 finals holding places and no medal at all, 19 bronze rounds with none, 4 finals missing gold or silver, and 2 with a medal duplicated"
+            }
+        },
+        "_names": {
+            "SPORT_ID": "55 Track Cycling, enet code c6",
+            "CLIENT_FROM_SEASON": "2004, the client boundary UK Sport works to and the same season every documented sport records. Not a Track Cycling measurement: it is a fact about the client, applied here as it is applied everywhere else",
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "the four IOC-purpose templates, by the user's decision of 2026-08-26 that IOC templates are outside client scope. Measured the same day: these are every template under the sport whose name carries (IOC), they hold tournaments and no stages or events at all, and the emptiness is a defect that is simply reported outside this boundary rather than inside it. Every other template the sport contests is in scope",
+            "ROUND_TYPE_LIST": "the 35 round_type ids active on the sport's events, read off GLOBAL-DISCOVERY-018 on 2026-08-26. Both ids of every duplicated pair are listed - the sport contests Final, Semi Finals, 1/8, 1/16 and the repechages under two different ids apiece, one busy and one rare - because a list built from the busier id alone silently excludes the other. round_typeFK 0 is deliberately NOT listed: it resolves to no round type at all and what it means is an open question in SPORTS/Track-Cycling.md, so declaring it contested would record a guess",
+            "PERSON_ROLE_TYPE_LIST": "'athlete': the sport registry files athletes and teams and no support role at all - no coach and no official is registered anywhere in it - so the person types and the competitor types coincide here",
+            "NOT_STARTED_DESC_LIST": "1 Not started and 5 Postponed, the two status_desc values under status_type 'notstarted' the sport uses",
+            "FINAL_ROUND_TYPE_LIST": "both ids the sport spells Final - 173 carries the great majority of its finals and 9 a handful - because the sport contests two parallel round vocabularies and a list built from the busier id alone silently excludes the other. Measured 2026-08-26",
+            "MEDAL_ROUND_TYPE_LIST": "every round the sport awards a medal on, read off the Medal result type on 2026-08-26: 173 Final and 9 Final take gold, silver and most of the bronze; 186 Small Final and 181 bronze take bronze alone and never gold, which is the sport deciding bronze outside the final; and 177 Overall Classification takes both on a single event, included by decision of the same day rather than dropped for being rare",
+            "BRONZE_ROUND_TYPE_LIST": "186 Small Final and 181 bronze, the two rounds that award bronze and never gold. Together with FINAL_ROUND_TYPE_LIST this says which medal each round decides, which one list on its own cannot",
+            "RESULT_DURATION_TYPE_ID": "101 Duration, the sport's only field holding an elapsed ride time. It carries three notations at once - plain seconds with a fraction, clock notation, and a signed gap to the leader that is a different quantity in the same field - and SPORTS/Track-Cycling.md owns that fact. 557 Full-time duration is the only other duration-shaped field and is not this one",
+            "RESULT_TIE_VALUE_TYPE_LIST": "101 Duration and 102 Points, both, because the sport settles a place from either depending on the format: the timed formats decide it on the clock and the points races on the score, and a shared place is accounted for by agreement on whichever of the two its event is decided by. Recorded 2026-08-26",
+            "RESULT_FULL_TIME_TYPE_ID": "557 Full-time duration, the sport's only candidate. Declared 2026-08-26 with its size stated rather than discovered later: it stands on 15 events where 101 Duration stands on 12626, so the five checks reading it audit a field the sport has barely begun to fill. What it means here, and why it is so rare, is an open question in SPORTS/Track-Cycling.md",
+            "TIMED_DISCIPLINE_LIST": "the fourteen disciplines whose finishing order follows the clock - the individual and team pursuits, the team sprint, every time trial and flying time trial at each distance, the omnium components that are ridden against the clock, and the stayer. 377 Individual Sprint and 379 Keirin are deliberately absent, decided 2026-08-26: both record a time and neither is settled by it, because a sprint heat is won by whoever crosses first and a tactical one is routinely won slower. Measured the same day, admitting them raised GLOBAL-DQ-045 from 3922 findings to 16277 and lowered GLOBAL-DQ-111 from 9 percent of its scope to 3.2, which is the check reading the format rather than the data",
+            "PRECISION_RESULT_TYPE_LIST": "101 Duration and 557 Full-time duration, the two fields whose written scale is fixed by convention. Both carry clock notation, which this check accepts and ignores, and neither may enter NUMERIC_RESULT_TYPE_LIST for that reason. Recorded 2026-08-26",
+            "CLOCK_RESULT_TYPE_LIST": "101 Duration and 557 Full-time duration, the two fields the sport writes with a colon. Only values actually carrying one are read, so the plain-seconds and signed-gap forms 101 also holds are silent here rather than reported",
+            "NUMERIC_RESULT_TYPE_LIST": "100 Rank, 102 Points, 222 Laps behind and 534 Classification Points - every field carrying a measured quantity rather than a time or a text. Rank is included as road Cycling includes it, by decision of 2026-08-26. 101 and 557 are deliberately absent: they are clock fields and every clock-notated value would report as non-numeric, which is the exclusion the template names",
+            "INTEGER_RESULT_TYPE_LIST": "100 Rank, 222 Laps behind and 534 Classification Points, the three fields that count in whole units by definition. 102 Points is absent and must stay absent: the sport awards half points, and 1012,5 is a legitimate score rather than a fraction in an integral field. Recorded 2026-08-26",
+            "RANK_MAX_PLAUSIBLE": "250, the same ceiling Artistic Gymnastics records. Measured 2026-08-26 the sport's highest rank is 117 and one event alone passes 100, so the value states what a plausible rank is rather than tracking the current maximum",
+            "PLACEHOLDER_COUNTRY_LIST": "the three country names that stand for no country. Only International occurs today, on a single stage, and the other two are declared anyway: the list says what a placeholder is, not which placeholders the data happens to hold",
+            "DUPLICATE_KEY_USES_CALENDAR_DAY": "0, decided 2026-08-26. The six-day meetings run several races of the same name on one evening - a Madison Chase at 19:00 and another at 23:00 with the same riders - and keying on the calendar day reported 188 of those as duplicates. Keyed on the exact timestamp instead, what remains is events sharing a start time to the second, which is the shape a real duplicate import takes",
+            "SERIES_SKIP_YEARS": "2020 and 2021, both. The pandemic cost this sport two seasons rather than one: measured 2026-08-26 the gaps run 2020 to 2022 and 2019 to 2022, and declaring 2020 alone left nine templates reporting a break they did not have. With both years named GLOBAL-DQ-081 falls from 16 findings to 7, and those seven are the real ones - the World Cup ending in 2017 where Nations Cup takes over, a World Championships edition missing at 2016, and the South East Asian Games the sport does not always contest",
+            "FULL_TIME_TOLERANCE_SECONDS": "0.001, because the sport times to the millisecond - 33.588 - as Speed Skating does. A coarser tolerance would accept an error larger than the margins the sport is decided by",
+            "RESULT_SCORE_TYPE_ID": "102 Points, the scalar a placing is read from where the sport does not decide on the clock. The timed formats decide on 101 Duration instead, which is why RESULT_TIE_VALUE_TYPE_LIST names both and this single field cannot",
+            "ELIMINATION_ROUND_NAME_LIST": "the rounds some riders go out of and the rest go on from. Read the way Speed Skating reads it, 2026-08-26: a final eliminates nobody and belongs in the group list, and so do the placement finals, the small final and the bronze round. The numeric round names 1 through 6 are in neither list, which the parameter contract allows: what they denote is an open question in SPORTS/Track-Cycling.md and a name the sport cannot classify from its name alone is left unjudged rather than guessed",
+            "RESULT_COMMENT_VALUE_LIST": "every value the Comment result carries, closed at 116 on 2026-08-26 and recorded lower case because GLOBAL-DQ-052 and -117 compare LOWER(TRIM(value)). The vocabulary is a grammar rather than a flat set - a progression phrase naming the round a rider came from, a qualification bracket, a status code, a record marker, and compounds of those joined by a slash - so a new round or a new combination will appear as a finding and is meant to: that is the check working, and the value is added deliberately rather than silently. Never a comma as the separator; the sport combines with a slash",
+            "RESULT_COMMENT_NO_RESULT_LIST": "the 19 values that mean the competitor holds no classified result: the six plain codes and the thirteen compounds ending in one of them, such as From Final 1-6/DNF. DNQ, REL, Relegated, OVL and LAP are deliberately absent - a rider who failed to qualify, was relegated or was lapped raced and holds a place, so a rank or a time beside them is not a contradiction. Recorded 2026-08-26"
         }
     }
 }
