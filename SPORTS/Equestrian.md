@@ -638,6 +638,23 @@ and nothing downstream can tell a cut name from a short one.
 data rather than carrying 50 as a constant, so it keeps working if the column is widened instead
 of going silently blind on the day that happens.
 
+**A stage is written as whole days, 00:00:00 to 23:59:59, and that is why this is the one
+documented sport carrying no `GLOBAL-DQ-004`.** The template asserts that a stage contains the
+events it holds, and this sport satisfies it: measured 2026-08-26 it returns 13 stages.
+`Equestrian-DQ-067 TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE` asserts the same containment on
+the exact timestamp rather than on the calendar day, and returns those 13 plus 4 more, where an
+event falls outside the hours of a stage that was not written as whole days. The stricter
+statement is kept and the template is not instantiated beside it, because it would restate a
+subset of what the sport already reports.
+
+**The reason recorded before 2026-08-26 was a different one and is no longer true.**
+`GLOBAL-DQ-004` required a stage's dates to *equal* its first and last event dates until that
+day, which the whole-day convention cannot satisfy: a stage containing every one of its events
+still differed from their span by the hours at each end, and that was 3303 of the 3338 stages it
+reported, measured 2026-08-18. The template was changed to containment for every sport at once,
+so the exclusion here now rests on duplication rather than on the sport failing to store what
+the template read. It is recorded because the two look identical from the board - the same name
+on both - and only the granularity separates them.
 <!-- MANUAL PASTE ZONE: 37 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
