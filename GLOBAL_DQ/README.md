@@ -350,6 +350,38 @@ the athlete side, a member given a place their team did not finish in, or a squa
 and absent from the other.
 
 
+### A Comp.Rank participant the event it covers does not contain
+
+Proposed 2026-08-26. `GLOBAL-DQ-042` asks one direction only: an event participant the
+Comp.Rank omits. The mirror — a Comp.Rank listing somebody the event it covers never entered —
+is asked by nothing, and `GLOBAL-DQ-030` does not reach it. That check asks whether the person
+appears anywhere in the tournament, so a competitor who ran the qualifier and not the final
+passes it while sitting in the final's ranking.
+
+**Unmeasured.** One instance is confirmed and the size of the shape is not, which is the first
+thing to establish and the reason this is recorded rather than written. Deferred by the user on
+2026-08-26 with the profiling still to do.
+
+The confirmed instance, in Artistic Gymnastics: statistic 315315,
+`World Cup Apparatus, Maribor 2 Rings Final Male - Competition Rank`, carries an Event id
+config naming exactly one event — 5630593, `Rings Men Final` of 2006-10-01 — whose field is
+eight competitors. The ranking lists nine. The ninth is participant 1997568 `Zoltan Csiuka`,
+who entered the Pommel Horse and Rings qualifiers of 2006-09-29 in the same tournament and
+neither final. Every check the sport carries reads that ranking as correct.
+
+Two things a candidate here has to settle before it is worth writing, and both are why the
+count matters more than the example:
+
+- **What the statistic covers is the scope, not the tournament.** The Event id config is a
+  list, and a ranking naming three events is answerable only against the union of those three
+  fields. A statement comparing against one event would report every multi-event ranking as
+  broken.
+- **A squad's members are not the event's field.** Where a team event stores the team as the
+  event participant and the ranking lists the athletes, every athlete is absent from the field
+  by construction. `GLOBAL-DQ-134`'s exclusion of `(athletes)` rankings is the same problem met
+  from the other side, and whatever this does about it has to be decided before a row count
+  means anything.
+
 ## Qualification rule
 
 A check qualifies as a GLOBAL DQ template only when:
