@@ -3894,9 +3894,47 @@ Test-That 'Fixed stands while the row has not moved' {
     Assert-Equal 0 @($carried.Dropped).Count 'nothing is logged'
 }
 
-Test-That 'the other two conclusions are about the object and outlive its numbers' {
-    # A reviewer who has decided a neutral entry is correct must not be asked again because one
-    # more competitor was ranked under it.
+Test-That 'no conclusion survives onto a reading it was not reached about' {
+    # All three, since 2026-08-26. `No Issue / Change` and `In Progress` used to be carried on
+    # the key alone, on the reasoning that they judge the object rather than the reading. What
+    # reviewers write does not support that: `Same with the source` sat on 176 of the 183 rows
+    # of one Artistic Gymnastics tab, and it is a claim about the reading. Let the row come back
+    # saying something else and the sentence is untrue of it while the cell still looks settled.
+    $header = @('check_type', 'organization_id', 'organization_country', 'competitors')
+    $rows = @(
+        [pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'
+            organization_country = 'Ukraine'; competitors = '9'
+        }
+        [pscustomobject]@{ check_type = 'ORG'; organization_id = '2222222'
+            organization_country = 'Ukraine'; competitors = '3'
+        }
+    )
+    $notes = @(
+        [pscustomobject]@{ Key = (Get-SheetsFindingKey -Row @('ORG', '1611294') -Columns @(0, 1))
+            Review = 'no issue'; Note = 'same with the source'
+            Fingerprint = (Get-SheetsRowFingerprint -Values @('ORG', '1611294', 'International', '9'))
+        }
+        [pscustomobject]@{ Key = (Get-SheetsFindingKey -Row @('ORG', '2222222') -Columns @(0, 1))
+            Review = 'in progress'; Note = 'with the federation'
+            Fingerprint = (Get-SheetsRowFingerprint -Values @('ORG', '2222222', 'International', '3'))
+        }
+    )
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal '' $carried.Review[0] 'the dismissal does not stand on the new reading'
+    Assert-Equal '' $carried.Review[1] 'and neither does the open work'
+    Assert-Equal 2 @($carried.Dropped).Count 'both are logged rather than lost'
+    Assert-True ($carried.Dropped[0].Why -like '*reading differently*') 'saying why'
+
+    # Renamed on the way through, so the log reads in the spelling the column now offers.
+    Assert-Equal 'No Issue / Change' $carried.Dropped[0].Review 'the dismissal keeps what it meant'
+    Assert-Equal 'In Progress' $carried.Dropped[1].Review 'and so does the open work'
+}
+
+Test-That 'a conclusion stands while its reading has not moved' {
+    # The other half of the same rule, and the reason it is not simply a clearing. A reviewer
+    # who dismissed a row must not be asked again on every run for as long as the row reads
+    # what it read.
     $header = @('check_type', 'organization_id', 'organization_country', 'competitors')
     $rows = @(
         [pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'
@@ -3908,17 +3946,38 @@ Test-That 'the other two conclusions are about the object and outlive its number
     )
     $notes = @(
         [pscustomobject]@{ Key = (Get-SheetsFindingKey -Row @('ORG', '1611294') -Columns @(0, 1))
-            Review = 'no issue'; Note = 'neutral athletes'; Fingerprint = ''
+            Review = 'no issue'; Note = 'neutral athletes'
+            Fingerprint = (Get-SheetsRowFingerprint -Values @('ORG', '1611294', 'International', '9'))
         }
         [pscustomobject]@{ Key = (Get-SheetsFindingKey -Row @('ORG', '2222222') -Columns @(0, 1))
-            Review = 'in progress'; Note = 'with the federation'; Fingerprint = ''
+            Review = 'in progress'; Note = 'with the federation'
+            Fingerprint = (Get-SheetsRowFingerprint -Values @('ORG', '2222222', 'International', '3'))
         }
     )
     $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
 
-    Assert-Equal 'No Issue / Change' $carried.Review[0] 'a dismissal survives the count moving'
-    Assert-Equal 'In Progress' $carried.Review[1] 'and so does open work'
-    Assert-Equal 0 @($carried.Dropped).Count 'neither is logged'
+    Assert-Equal 'No Issue / Change' $carried.Review[0] 'the dismissal stands'
+    Assert-Equal 'In Progress' $carried.Review[1] 'and so does the open work'
+    Assert-Equal 0 @($carried.Dropped).Count 'nothing is logged'
+}
+
+Test-That 'a note with no reading behind it is carried on the key alone' {
+    # The one exception, and it is deliberate. A note rescued out of eligible_count by the
+    # legacy path was never read as part of a row, so there is nothing to compare it against.
+    # Dropping it for want of a comparison nobody ever took would throw away the conclusions
+    # that rescue exists to save.
+    $header = @('check_type', 'organization_id', 'organization_country', 'competitors')
+    $rows = @([pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'
+            organization_country = 'Ukraine'; competitors = '9'
+        })
+    $notes = @([pscustomobject]@{
+            Key = (Get-SheetsFindingKey -Row @('ORG', '1611294') -Columns @(0, 1))
+            Review = 'no issue'; Note = 'rescued from eligible_count'; Fingerprint = ''
+        })
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal 'No Issue / Change' $carried.Review[0] 'it reaches the row it belongs to'
+    Assert-Equal 0 @($carried.Dropped).Count 'and is not logged for a comparison that was never taken'
 }
 
 Test-That 'a number that came back formatted differently is the same reading' {

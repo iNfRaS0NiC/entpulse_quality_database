@@ -517,7 +517,7 @@ $SheetsRowReviewBands = @(
 # The other two settle themselves. A row marked Fixed usually leaves the result the next time the
 # check runs, because the thing it described is no longer there - the count falls on its own and
 # needs no help. Usually, not always, and the exception cost a reviewer's conclusion until
-# 2026-08-25: see $SheetsRowReviewCarriedOnPayload for what happens when the row stays and reads
+# 2026-08-25: see $SheetsRowReviewMovedReason for what happens when the row stays and reads
 # differently. A row marked In Progress is still open work and belongs in the count for exactly as
 # long as it says so. No Issue / Change is different in kind: the reviewer has decided the row is
 # the sport rather than a defect, so the row stays in the result for good, and Overview's Rows
@@ -528,25 +528,39 @@ $SheetsRowReviewBands = @(
 # conclusion is not allowed to edit what a statement returned. The tab still holds every row.
 $SheetsRowReviewDismissed = 'No Issue / Change'
 
-# The one of the three that is about a state rather than about an object, and the only one that
-# a changed row invalidates.
+# A conclusion belongs to the reading it was reached about, and to no other.
 #
-# `No Issue / Change` and `In Progress` are judgements about the thing the finding is about: this
-# organization is a neutral entry, this stage is being corrected. The counts beside them moving
-# does not touch either conclusion, and clearing them would ask the reviewer the same question
-# every run until they stopped answering.
+# All three values, since 2026-08-26. Until then only `Fixed` was held to it, on the reasoning
+# that `No Issue / Change` and `In Progress` are judgements about the object rather than about
+# the reading - this organization is a neutral entry, this stage is being corrected - so the
+# counts beside them moving did not touch either conclusion.
 #
-# `Fixed` says something different: that what was found is not there any more. The comment above
-# used to assume the row would leave the result on its own and need no help, and that assumption
-# does not hold. A row can leave and another take its place under the same key within one run,
-# and a row can stay and hold a different reading - a country corrected from one wrong value to
-# another. Either way the conclusion was reached about a reading nobody is looking at any more,
-# and a green cell against a finding nobody has seen is worse than an empty one.
+# That reasoning does not survive contact with what reviewers actually write. `Same with the
+# source` appears on 176 of the 183 rows of one Artistic Gymnastics tab, and it is a statement
+# about the reading: the source says what this row says. Let the row come back saying something
+# else and the sentence is no longer true of it, while the cell goes on looking settled. The
+# same holds for `In Progress`, which says a colleague is looking at this row - at a reading
+# that is no longer on the board.
 #
-# So `Fixed` is carried over only against an identical row, and where the row differs the note
-# goes to the Review log saying so. That log then answers a question nothing else can: which
-# repairs were reported done and came back changed.
-$SheetsRowReviewCarriedOnPayload = 'Fixed'
+# So the rule is one rule: a status and a note are carried to the next run only against a row
+# that comes back identical, and every other note goes to the Review log with the reason. That
+# log then answers a question nothing else can - which conclusions were reached about a reading
+# that has since moved.
+#
+# The cost of holding all three to it is one wide read instead of eight narrow ones. Measured on
+# the Artistic Gymnastics board on 2026-08-26: 40 of its 121 tabs carry notes, 6457 of them, and
+# reading every one of those tabs through its last data column is 108 913 cells in 1000 ms - on
+# a board where reading the state alone is 9.7 seconds.
+#
+# **A note with no fingerprint behind it is carried on the key alone**, which is the one
+# exception and it is deliberate. It arises for a tab read through the legacy path below, where
+# the note was rescued out of `eligible_count` and there is no reading to compare against. Those
+# are read once, on the run that gives the tab somewhere better, and dropping them for want of a
+# comparison nobody ever took would throw away the conclusions that rescue exists to save.
+# Named because two places read it: the drop itself, and the per-check count the run prints. As
+# two literals it was a silent failure waiting - correct the wording in one and the console goes
+# on reporting zero rows moved while the log fills up with them.
+$SheetsRowReviewMovedReason = 'the finding under that key came back reading differently'
 
 # What each spelling written before the list existed meant. Applied wherever a note passes
 # through, so a cell reaches its new column already reading as one of the values above rather
@@ -770,8 +784,8 @@ function Get-SheetsRowFingerprint {
     # because those move while the row goes on meaning the same thing. This is the other half:
     # every data column of one row, so two rows can be asked whether they are the same reading.
     #
-    # Only `Fixed` needs it, and only because `Fixed` is the one conclusion that is about a state
-    # rather than about an object. See $SheetsRowReviewCarriedOnPayload.
+    # Every conclusion needs it, because every one of them was reached about a reading. See
+    # $SheetsRowReviewMovedReason.
     #
     # A number is compared as a number. The cells come back from Sheets as they were rendered and
     # the new row's values come from the query, so 4 on one side can be 4.0 on the other; a
@@ -936,15 +950,17 @@ function New-SheetsCarriedReview {
         if ($rowOfKey.ContainsKey($one.Key)) {
             $at = $rowOfKey[$one.Key]
 
-            # `Fixed` is the one conclusion about a state rather than about an object, so it
-            # holds only against the row it was reached about. Anything else in the row having
-            # moved means the reviewer is looking at a reading they have not seen.
-            if ($one.Review -eq $SheetsRowReviewCarriedOnPayload -and
+            # A conclusion holds only against the row it was reached about. Anything in that
+            # row having moved means the reviewer is looking at a reading they have not seen.
+            #
+            # An empty fingerprint is not a mismatch: it means no reading was ever taken to
+            # compare against, which happens only on the legacy path. Carried on the key, and
+            # said so where $SheetsRowReviewMovedReason is declared.
+            if (-not [string]::IsNullOrEmpty([string]$one.Fingerprint) -and
                 $one.Fingerprint -ne $printOfRow[$at]) {
                 $dropped += [pscustomobject]@{
                     Key = $one.Key; Review = $one.Review; Note = $one.Note
-                    Why = 'it was marked ' + $SheetsRowReviewCarriedOnPayload +
-                          ' and the finding under that key came back reading differently'
+                    Why = $SheetsRowReviewMovedReason
                 }
                 continue
             }
@@ -2936,6 +2952,21 @@ function New-SheetsMergePlan {
     # for what the document will hold. Reported rather than acted on: the answers are to drop
     # a check from the document, tighten a scope or split the sport, and none of those is the
     # runner's to choose silently.
+    # What could not be put back, counted per check so the run can say it out loud rather than
+    # leaving it to whoever opens the Review log. A statement whose values do not survive the
+    # round trip through Sheets would park every one of its notes at once, and a number on the
+    # console is how that gets noticed on the run it happens rather than a week later.
+    $notesDropped = @()
+    foreach ($group in ($dropped | Group-Object { [string]$_.CheckId })) {
+        $notesDropped += [pscustomobject]@{
+            CheckId = [string]$group.Name
+            Count   = @($group.Group).Count
+            Moved   = @($group.Group | Where-Object {
+                    [string]$_.Why -eq $SheetsRowReviewMovedReason
+                }).Count
+        }
+    }
+
     $warning = ''
     if ($sqlWarning) { $warning = $sqlWarning }
     if ($cells -gt $SheetsCellBudgetWarning) {
@@ -2958,6 +2989,7 @@ function New-SheetsMergePlan {
         Cells         = $cells
         StatusRenames = $statusRenames
         StatusKept    = $statusKept
+        NotesDropped  = $notesDropped
         Warning       = $warning
         RowOf         = $rowOf
         TabOf         = $tabOf
@@ -3171,13 +3203,11 @@ function Read-SheetReviewNotes {
             $last = 0
             foreach ($index in $keyColumns) { if ($index -gt $last) { $last = $index } }
 
-            $needsRow = $false
-            foreach ($mark in @($one.Marked)) {
-                if ((ConvertTo-SheetsReviewStatus -Value $mark.Review) -eq $SheetsRowReviewCarriedOnPayload) {
-                    $needsRow = $true
-                    break
-                }
-            }
+            # Every tab that carries a note, rather than only those carrying a `Fixed`. A note
+            # is put back only against the reading it was written against, so the reading has
+            # to be read. The legacy path is the exception and takes no fingerprint: its note
+            # came out of a column that is not part of any reading.
+            $needsRow = (-not $one.Tab.Legacy) -and (@($one.Marked).Count -gt 0)
             if ($needsRow -and $one.Tab.From -gt 0 -and ($one.Tab.From - 1) -gt $last) {
                 $last = $one.Tab.From - 1
             }

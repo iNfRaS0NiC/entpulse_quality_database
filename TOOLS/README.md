@@ -995,6 +995,12 @@ the sport rather than a defect, so it returns every run for good. Counting it ma
 check read as a busy one forever — on `Golf-DQ-048` that was 251 of 283 rows, a board saying
 there were 283 things to do when there were 32.
 
+A dismissal closes a row for as long as the row reads what it read. Let it come back saying
+something else and the dismissal is parked, the row is open again, and the count rises — not
+because the data got worse but because the conclusion that closed it was reached about a reading
+nobody is looking at any more. `A conclusion belongs to the reading it was reached about` below
+owns the rule.
+
 `Findings`, `Eligible` and `Change` are untouched by this and always carry the full number. They
 are the run's own measurement of the database, and a reviewer's conclusion may close a row but
 may not edit what a statement returned. The tab still holds every row, dismissed ones included,
@@ -1697,6 +1703,34 @@ that names both keeps either reviewer's reading legible.
 has yet needed to say it about a single row. Adding a fourth value costs one line and the
 migration below makes it harmless, so the list stays as small as the evidence supports.
 
+### A conclusion belongs to the reading it was reached about
+
+**All three values are carried to the next run only against a row that comes back identical.**
+Every other note goes to the `Review log` with the reason. A note is found by its key — the
+`check_type` and the id columns — and then the rest of the row is compared before it is put
+back, so a finding that stayed under the same key while its counts, names or values moved comes
+back unreviewed rather than green.
+
+Until 2026-08-26 only `Fixed` was held to this, on the reasoning that the other two judge the
+object rather than the reading: this organization is a neutral entry, this stage is being
+corrected. What reviewers write does not support it. `Same with the source` sits on 176 of the
+183 rows of one Artistic Gymnastics tab, and it is a claim about the reading — let the row come
+back saying something else and the sentence is untrue of it while the cell still looks settled.
+`In Progress` says a colleague is looking at this row, which is no less about the reading.
+
+The mechanism was already in production for `Fixed` and had fired: of the 991 `Fixed` marks that
+board has seen, 990 left the result on their own, one came back under the same key holding a
+different reading and was parked in the log, and none was inherited by a changed row.
+
+**A note with no reading behind it is carried on the key alone.** That is the one exception and
+it is deliberate: a note rescued out of `eligible_count` by the legacy path below was never read
+as part of a row, so there is nothing to compare it against, and dropping it for want of a
+comparison nobody took would throw away exactly what the rescue exists to save.
+
+Each run names what it parked, per check, on the console. A statement whose values do not survive
+the round trip through Sheets would park every note it holds on the same run, and a `Review log`
+nobody opens is where that would hide.
+
 `$SheetsRowReviewLegacy` renames what was written before the list existed — `fixed` → `Fixed`,
 `no issue` and `no change` → `No Issue / Change`, `in progress` and `in prog` → `In Progress`.
 It is applied wherever a note passes through, so a cell reaches its column already spelled the
@@ -1794,6 +1828,8 @@ scope that moved underneath them. Each dropped note is written down with the rea
 | `Why` | Means |
 |---|---|
 | the finding is no longer in the result | the row is gone — corrected, or out of scope now |
+| the finding under that key came back reading differently | the row stayed, and says something else than it did |
+| more than one finding in this result carries this key | the note cannot be told which of them it is about |
 | the check was re-shaped | the columns the key is built from are not the ones the note was written against |
 
 The second is not a fix and must not read like one. `GLOBAL-DQ-030` went from one row per stray

@@ -4313,6 +4313,20 @@ function Save-RunSheet {
         # Both are named here rather than counted, because a status that changed without anybody
         # choosing it is otherwise findable only in the document's own edit history, one cell at
         # a time - which is how the 2026-08-25 On Hold defect went four days without being seen.
+        # Notes that could not be put back, named per check rather than counted in one number.
+        # A conclusion is carried only against a row that comes back identical, so a statement
+        # whose values do not survive the round trip through Sheets would park every note it
+        # holds on the same run - and a Review log nobody opens is where that hides. Printed
+        # here for the same reason the Status changes below are: a number that moved without
+        # anybody choosing it has to be said out loud on the run it moved.
+        foreach ($lost in @($plan.NotesDropped)) {
+            $moved = $(if ($lost.Moved -gt 0) {
+                    ', {0} of them because the finding came back reading differently' -f $lost.Moved
+                } else { '' })
+            Write-Host ("  {0}: {1} note(s) went to the Review log{2}" -f `
+                    $lost.CheckId, $lost.Count, $moved) -ForegroundColor Yellow
+        }
+
         foreach ($change in @($plan.StatusRenames)) {
             $from = $(if ([string]::IsNullOrWhiteSpace([string]$change.From)) { 'blank' } else { "'$($change.From)'" })
             Write-Host ("  Status set on {0}: {1} -> '{2}' - {3}" -f `
