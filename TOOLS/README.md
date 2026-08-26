@@ -870,6 +870,25 @@ else to record which check produced it. Files are named after the CheckID —
 `-Format xlsx` collects a whole batch into one file, which is the shape to upload to
 Google Drive and open as Sheets.
 
+**It is written once, at the end of the run.** A batch used to rebuild it every sixty seconds
+so that a run which wedged or was interrupted did not cost the checks that had already
+succeeded. That was removed on 2026-08-26, and the reason is worth keeping because the idea is
+a reasonable one to have again.
+
+The rebuild was whole every time, so it cost more the further the run got — 36.5 seconds after
+30 checks of a Triathlon-shaped board, 49.1 after 114 — and the interval was counted from the
+end of the previous write, which made the real cycle sixty seconds of work and forty-five of
+writing. Measured against the recorded runs, that is 365 of Triathlon's 968 seconds and 1079 of
+Swimming's 1785: six minutes in every ten spent rewriting a file nobody was reading.
+
+What it protected was the least valuable of the three things a run produces. A run that dies has
+not updated the live document and has not written a ledger entry, so it is re-run whatever is on
+disk, and the workbook it leaves behind is a frozen artifact of a run that never counted.
+
+If the protection is ever wanted again, the thing to bring back is not the interim rebuild but
+the per-check flat file that every other format already writes as it goes: one small file per
+check as it completes, costing milliseconds instead of a whole workbook.
+
 `Overview` is the first tab:
 
 | Sport | CheckID | Object | Check Name | Priority | Category | What it does | Rows | Status | Check By | Comment | Signal | Signal reason |

@@ -410,11 +410,6 @@ $WatchdogGraceSec = 30
 # of two per endpoint would let a couple of them stall every statement that follows.
 [Net.ServicePointManager]::DefaultConnectionLimit = 64
 
-# How often a batch writing a workbook re-writes it with the checks completed so far.
-# Rebuilding costs real time on a large catalogue, so this trades a bounded slowdown for
-# never losing more than this much of a run.
-$SnapshotIntervalSec = 60
-
 # Hoisted out of the cell writer, which runs once per cell across thousands of rows.
 $XlsxNumericTypes = @([int], [long], [double], [decimal], [single], [int16], [uint16], [uint32], [uint64], [byte], [sbyte])
 $XlsxInvariant = [Globalization.CultureInfo]::InvariantCulture
@@ -3089,8 +3084,8 @@ function Save-Workbook {
 
             # Columns are unioned across rows, because a later row may carry a key
             # the first one lacked. Membership goes through a hashtable rather than
-            # -notcontains: this runs once per cell, and the interim snapshots repeat
-            # the whole build several times per run.
+            # -notcontains: this runs once per cell, and a board is tens of thousands
+            # of them.
             $columns = @()
             $seenColumn = @{}
             foreach ($row in $rows) {
@@ -4384,9 +4379,8 @@ function Save-RunDecisions {
 }
 
 function Save-RunWorkbook {
-    # Builds the whole workbook out of what the run has produced so far, so one piece of
-    # code writes both the interim snapshots and the final file. Returns the checks whose
-    # tab name still had to be cut.
+    # Builds the whole workbook out of what the run produced. Returns the checks whose tab
+    # name still had to be cut.
     param($Summary, $Collected, [string]$Path)
 
     # The summary leads, so a clean or failed check is still visible in the
@@ -4601,7 +4595,7 @@ function Save-RunWorkbook {
     # Last, so the check tabs stay next to the Overview they are read from.
     if ($sqlSheet) { $sheets += $sqlSheet.Sheet }
 
-    # Written aside and moved into place, so a snapshot interrupted halfway cannot leave a
+    # Written aside and moved into place, so a write interrupted halfway cannot leave a
     # truncated zip where the last good one was.
     $writing = $Path + '.writing'
     Save-Workbook -Sheets $sheets -Path $writing
@@ -5318,7 +5312,6 @@ if ($isBatch) {
     $summary = @()
     $collected = @()
     $index = 0
-    $lastSnapshot = Get-Date
 
     # The run is a queue of waves rather than one list. Without -Chain there is exactly one
     # wave and this behaves as it always did; with it, each wave is built out of what the
@@ -5413,21 +5406,23 @@ if ($isBatch) {
             Write-Host ("[{0}/{1}] {2}  rows={3}  {4:n1}s  {5}" -f `
                     $index, $planned, $runKey, $rowCount, $elapsed, $status) -ForegroundColor $colour
 
-            # A run that wedges or is interrupted must not cost the checks that already
-            # succeeded. Flat files are written per check as they come, so only the workbook
-            # needs this. A snapshot that cannot be written - the file open in Excel, most
-            # likely - is reported and skipped: it must never end the run it exists to protect.
-            if ($isWorkbook -and $collected.Count -gt 0 -and $index -lt $planned -and
-                ((Get-Date) - $lastSnapshot).TotalSeconds -ge $SnapshotIntervalSec) {
-                try {
-                    Save-RunWorkbook -Summary $summary -Collected $collected -Path $workbookPath | Out-Null
-                    Write-Host ("        snapshot: {0} of {1} checks saved" -f $index, $planned) -ForegroundColor DarkGray
-                }
-                catch {
-                    Write-Host "        snapshot failed: $($_.Exception.Message)" -ForegroundColor Yellow
-                }
-                $lastSnapshot = Get-Date
-            }
+            # A workbook run used to rebuild the whole file every sixty seconds here, so that
+            # a run which wedged or was interrupted did not cost the checks that had already
+            # succeeded. Removed 2026-08-26, measured rather than guessed.
+            #
+            # The rebuild is whole every time, so it costs more the further the run gets:
+            # 36.5 seconds after 30 checks of a Triathlon-shaped board, 49.1 after 114. The
+            # interval was counted from the end of the previous write, making the real cycle
+            # 60 seconds of work and 45 of writing. Against the recorded runs that is 365 of
+            # Triathlon's 968 seconds, and 1079 of Swimming's 1785 - six minutes in every ten
+            # spent rewriting a file nobody was reading.
+            #
+            # What it protected was the least valuable of the three destinations. A run that
+            # dies has not updated the live document and has not written a ledger entry, so it
+            # is re-run whatever is on disk; the workbook it leaves behind is a frozen artifact
+            # of a run that never counted. TOOLS/README.md owns the reasoning, and per-check
+            # flat files - which every other format already writes as it goes - are what to
+            # bring back if the protection is ever wanted at a price worth paying.
 
             if ($index -lt $planned) { Start-Sleep -Milliseconds $BatchDelayMs }
         }
