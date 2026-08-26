@@ -4739,7 +4739,16 @@ SELECT
     x.field_size,
     x.timed_participants,
     x.excused_participants,
-    x.deciding_fields_used,
+    -- Which of the sport's ranking fields the times were written to, read once per finding
+    -- rather than once per event the check looks at. It was a GROUP_CONCAT(DISTINCT ...) inside
+    -- the group until 2026-08-26; see the note on cost below.
+    (SELECT GROUP_CONCAT(DISTINCT rv2.result_typeFK ORDER BY rv2.result_typeFK SEPARATOR ', ')
+       FROM event_participants ep2
+       JOIN result rv2 ON rv2.event_participantsFK = ep2.id AND rv2.del = 'no'
+                      AND rv2.result_typeFK IN ({{RESULT_TIE_VALUE_TYPE_LIST}})
+                      AND rv2.value IS NOT NULL
+                      AND TRIM(rv2.value) <> ''
+      WHERE ep2.eventFK = x.event_id AND ep2.del = 'no') AS deciding_fields_used,
     NULL AS eligible_count,
     0 AS sort_order
 -- What it does, stated in full: Finds finished events holding the value their sport ranks on
@@ -4769,6 +4778,22 @@ SELECT
 -- It is carried because it is frequently the second half of the same repair: on Swimming every
 -- one of these events holds its times in `101 Duration` with `557 Full time` left empty, so
 -- writing the places also settles which field the time belongs in.
+-- **Rewritten 2026-08-26 so that it can run at Cycling's scale, and the cost was in the shape
+-- rather than in the question.** The three result tables used to be LEFT JOINed to the
+-- competitor and the counts taken with COUNT(DISTINCT ep.id), with a GROUP_CONCAT(DISTINCT ...)
+-- beside them. Measured on Cycling that group holds 1273108 competitors over 9607 events, and
+-- four COUNT(DISTINCT) plus a GROUP_CONCAT(DISTINCT) over that exhausted the server's temporary
+-- space: the statement did not run at all, while the same joins without the aggregates finished
+-- in 14.5 seconds. So the joins were never the expense.
+-- Each of the three is now an EXISTS asked of the competitor and summed, which answers the same
+-- question - does this competitor hold one of these rows - without a distinct set per group, and
+-- `field_size` is a plain COUNT(*) because with no join to fan the competitor out there is
+-- nothing to make distinct. `deciding_fields_used` moved to the outer select, where it is built
+-- once per finding instead of once per event read; on Swimming that is 1248 subqueries in place
+-- of 45075 concatenations.
+-- The counts are identical by construction and were checked against the run before the rewrite
+-- on all eight sports that carry the template, Swimming's 1248 findings of 45075 among them.
+-- Cycling now completes where it used to fail.
 FROM (
     SELECT
         e.id AS event_id,
@@ -4779,33 +4804,32 @@ FROM (
         e.startdate AS event_startdate,
         e.round_typeFK AS round_type_id,
         COALESCE(rt.name, '(no round_type row)') AS round_type_name,
-        COUNT(DISTINCT ep.id) AS field_size,
-        COUNT(DISTINCT CASE WHEN rv.id IS NOT NULL THEN ep.id END) AS timed_participants,
-        COUNT(DISTINCT CASE WHEN rc.id IS NOT NULL THEN ep.id END) AS excused_participants,
-        -- Counted per competitor, so a duplicated result row cannot inflate a count and a
-        -- competitor holding two of the sport's ranking fields is still one competitor.
-        COUNT(DISTINCT CASE WHEN rr.id IS NOT NULL THEN ep.id END) AS ranked_participants,
-        GROUP_CONCAT(DISTINCT rv.result_typeFK ORDER BY rv.result_typeFK SEPARATOR ', ') AS deciding_fields_used
+        -- One row per competitor and no joins to fan it out, so a plain count is the field.
+        COUNT(*) AS field_size,
+        -- Asked of the competitor rather than joined to them. Any one of the sport's deciding
+        -- fields makes the competitor auditable, which is the reading GLOBAL-DQ-122 and
+        -- GLOBAL-DQ-116 already give the list: a timed sport storing both a duration and a full
+        -- time has measured the competitor either way.
+        SUM(EXISTS (SELECT 1 FROM result rv
+                     WHERE rv.event_participantsFK = ep.id AND rv.del = 'no'
+                       AND rv.result_typeFK IN ({{RESULT_TIE_VALUE_TYPE_LIST}})
+                       AND rv.value IS NOT NULL
+                       AND TRIM(rv.value) <> '')) AS timed_participants,
+        SUM(EXISTS (SELECT 1 FROM result rc
+                     WHERE rc.event_participantsFK = ep.id AND rc.del = 'no'
+                       AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+                       AND LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}}))) AS excused_participants,
+        SUM(EXISTS (SELECT 1 FROM result rr
+                     WHERE rr.event_participantsFK = ep.id AND rr.del = 'no'
+                       AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+                       AND rr.value IS NOT NULL
+                       AND TRIM(rr.value) <> '')) AS ranked_participants
     FROM event e
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
     JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
     JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
     LEFT JOIN round_type rt ON rt.id = e.round_typeFK
-    -- Any one of the sport's deciding fields makes the competitor auditable, which is the
-    -- reading GLOBAL-DQ-122 and GLOBAL-DQ-116 already give the list: a timed sport storing
-    -- both a duration and a full time has measured the competitor either way.
-    LEFT JOIN result rv ON rv.event_participantsFK = ep.id AND rv.del = 'no'
-     AND rv.result_typeFK IN ({{RESULT_TIE_VALUE_TYPE_LIST}})
-     AND rv.value IS NOT NULL
-     AND TRIM(rv.value) <> ''
-    LEFT JOIN result rr ON rr.event_participantsFK = ep.id AND rr.del = 'no'
-     AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}}
-     AND rr.value IS NOT NULL
-     AND TRIM(rr.value) <> ''
-    LEFT JOIN result rc ON rc.event_participantsFK = ep.id AND rc.del = 'no'
-     AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
-     AND LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
     WHERE e.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
       AND e.status_type = 'finished'
