@@ -253,16 +253,41 @@ FROM t;
     return $root
 }
 
+# Directories a repository copy leaves behind, and the one it is currently using. Sixteen
+# tests take such a copy and none of them needs another one afterwards, so the previous copy
+# is removed when the next is made rather than at process exit.
+$script:RepositoryFixture = ''
+
+# What a repository copy leaves out. `.git` and `output` were always excluded; RUNS joined
+# them on 2026-08-26 because it is fifteen of the eighteen megabytes a copy weighs and
+# Test-Package.ps1 does not read a byte of it - the walk that used to has excluded
+# `\RUNS\` since the run before this one.
+#
+# It is not the copying that costs. One copy is 86 milliseconds with RUNS and 41 without, and
+# neither is worth a line of code. It is what the copies leave behind: sixteen of them
+# accumulate almost three hundred megabytes of files nothing has scanned before, and the
+# validator run over each new one grew from 11.4 seconds for the first to 21.9 for the fifth
+# as the tree filled up. The whole suite was 1425 seconds, of which 10 were the two hundred
+# and sixty-one in-process cases.
+$FixtureCopySkips = @('.git', 'output', 'RUNS')
+
 function Copy-RepositoryFixture {
     # A throwaway copy of the real repository, for tests that must run Test-Package.ps1
     # against a deliberately broken package. It exits, so it runs as a child process.
     param([string]$Name)
 
+    # The one before it, because no test holds two at once and keeping them all is what made
+    # the last test in the file cost twice what the first did.
+    if ($script:RepositoryFixture -and (Test-Path -LiteralPath $script:RepositoryFixture)) {
+        Remove-Item -LiteralPath $script:RepositoryFixture -Recurse -Force -ErrorAction SilentlyContinue
+    }
+
     $target = Join-Path $FixtureRoot $Name
     New-Item -ItemType Directory -Path $target -Force | Out-Null
     Get-ChildItem -LiteralPath $RepoRootPath -Force |
-        Where-Object { $_.Name -notin @('.git', 'output') } |
+        Where-Object { $_.Name -notin $FixtureCopySkips } |
         ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $target -Recurse -Force }
+    $script:RepositoryFixture = $target
     return $target
 }
 
@@ -1882,6 +1907,124 @@ Test-That 'a run mixing sports writes to each sport ledger' {
     Assert-Equal 2 $written.Count 'a ledger keyed on anything but the sport cannot be read by that sport'
     Assert-True (Test-Path -LiteralPath (Join-Path $ledgerDir 'Fixtureball.json')) 'Fixtureball has its own file'
     Assert-True (Test-Path -LiteralPath (Join-Path $ledgerDir 'Otherball.json')) 'and so does Otherball'
+}
+
+Test-That 'the History tab carries every recorded run of a check, oldest first' {
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'SPORT_AUTHORED'; What = 'a thing'; Expected = 'Zero' }
+    foreach ($pair in @(@(40, '01'), @(30, '02'), @(30, '03'))) {
+        Save-RunLedger -Summary @(New-RunSummaryRow -Job $job -Rows ($pair[0] + 1) -Seconds 1 `
+                -Status 'OK' -Eligible 900 -Findings $pair[0]) `
+            -Output ("Fixtureball {0}.01.2026 09-00-00" -f $pair[1]) | Out-Null
+    }
+
+    $rows = @(Get-SheetHistoryRows -Summary @() -Sport 'Fixtureball' -RunId 'not this one')
+    Assert-Equal 3 $rows.Count 'one row per recorded run'
+    Assert-Equal 40 $rows[0].Findings 'oldest first, the same direction the Trends column reads'
+    Assert-Equal 30 $rows[-1].Findings 'and the newest last'
+
+    # Against the run before it, so a reader does not have to subtract two cells by eye.
+    Assert-Equal '' ([string]$rows[0].Change) 'the first row has nothing to be a change from'
+    Assert-Equal -10 $rows[1].Change 'the second is measured against the first'
+    Assert-Equal 0 $rows[2].Change 'and a run that moved nothing says so rather than staying blank'
+
+    # The proportion, because a raw count is only comparable while the population is. Invariant
+    # so a run made on a comma-decimal machine writes what the run before it wrote.
+    Assert-Equal '3.33%' ([string]$rows[-1].Rate) 'the share of the population, invariantly spelled'
+}
+
+Test-That 'the History tab holds this run, which the ledger has not been told about yet' {
+    # Save-RunSheet deliberately runs before Save-RunLedger, so that a mistyped sheet id never
+    # becomes the sport's remembered one. At the moment the tab is planned the ledger therefore
+    # ends one run short, and reading it alone would publish a board whose newest history row is
+    # the run before the one the reader is looking at.
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'SPORT_AUTHORED'; What = 'a thing'; Expected = 'Zero' }
+    Save-RunLedger -Summary @(New-RunSummaryRow -Job $job -Rows 41 -Seconds 1 -Status 'OK' `
+            -Eligible 900 -Findings 40) -Output 'Fixtureball 01.01.2026 09-00-00' | Out-Null
+
+    $today = @(New-RunSummaryRow -Job $job -Rows 3 -Seconds 1 -Status 'OK' -Eligible 900 -Findings 2)
+    $rows = @(Get-SheetHistoryRows -Summary $today -Sport 'Fixtureball' -RunId 'Fixtureball 02.01.2026 09-00-00')
+
+    Assert-Equal 2 $rows.Count 'the recorded run and the one being written now'
+    Assert-Equal 2 $rows[-1].Findings 'todays number is on the tab'
+    Assert-Equal 'Fixtureball 02.01.2026 09-00-00' ([string]$rows[-1].Run) `
+        'under the run id the ledger is about to file it under'
+    Assert-Equal -38 $rows[-1].Change 'measured against the last recorded run'
+}
+
+Test-That 'the History window drops the oldest run to make room for the newest' {
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'SPORT_AUTHORED'; What = 'a thing'; Expected = 'Zero' }
+    foreach ($day in 1..5) {
+        Save-RunLedger -Summary @(New-RunSummaryRow -Job $job -Rows ($day + 1) -Seconds 1 `
+                -Status 'OK' -Eligible 900 -Findings $day) `
+            -Output ("Fixtureball {0:00}.01.2026 09-00-00" -f $day) | Out-Null
+    }
+
+    $rows = @(Get-SheetHistoryRows -Summary @() -Sport 'Fixtureball' -RunId 'x' -Keep 3)
+    Assert-Equal 3 $rows.Count 'the window is the last three runs'
+    Assert-Equal 3 $rows[0].Findings 'the two oldest have fallen off the end'
+    Assert-Equal 5 $rows[-1].Findings 'and the newest is kept'
+
+    # The ledger is not trimmed to keep the window this size. The tab is a window onto
+    # RUNS/<Sport>.json and never a second copy of it, and a reading of a population nobody can
+    # take again is exactly what the ledger exists to hold.
+    $ledger = Get-Content -LiteralPath (Join-Path $ledgerDir 'Fixtureball.json') -Raw -Encoding UTF8 |
+        ConvertFrom-Json
+    Assert-Equal 5 @($ledger.runs).Count 'every run is still in the ledger'
+
+    # A row whose predecessor fell off the end has nothing on the tab to be a change from, and
+    # a number the reader cannot see is not a comparison.
+    Assert-Equal '' ([string]$rows[0].Change) 'the first row in the window starts the series again'
+}
+
+Test-That 'a check that has stopped running keeps its History rows' {
+    # The same rule the tabs are under: a check that was deprecated or dropped from the registry
+    # keeps what it recorded. Deleting it would throw away a reading of a population nobody can
+    # take again.
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $gone = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-009'; Name = 'WITHDRAWN'; What = ''; Expected = 'Zero' }
+    $kept = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'KEPT'; What = ''; Expected = 'Zero' }
+    Save-RunLedger -Summary @(
+        (New-RunSummaryRow -Job $gone -Rows 4 -Seconds 1 -Status 'OK' -Eligible 90 -Findings 3),
+        (New-RunSummaryRow -Job $kept -Rows 2 -Seconds 1 -Status 'OK' -Eligible 90 -Findings 1)
+    ) -Output 'Fixtureball 01.01.2026 09-00-00' | Out-Null
+
+    $today = @(New-RunSummaryRow -Job $kept -Rows 2 -Seconds 1 -Status 'OK' -Eligible 90 -Findings 1)
+    $rows = @(Get-SheetHistoryRows -Summary $today -Sport 'Fixtureball' -RunId 'Fixtureball 02.01.2026 09-00-00')
+
+    Assert-Equal 1 @($rows | Where-Object { $_.CheckID -eq 'Fixtureball-DQ-009' }).Count `
+        'the withdrawn check keeps the run it did make'
+    Assert-Equal 2 @($rows | Where-Object { $_.CheckID -eq 'Fixtureball-DQ-002' }).Count `
+        'and the one still running has both'
+}
+
+Test-That 'a failed run leaves a gap in the History rather than a smooth line through it' {
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'A'; What = ''; Expected = 'Zero' }
+    Save-RunLedger -Summary @(New-RunSummaryRow -Job $job -Rows 41 -Seconds 1 -Status 'OK' `
+            -Eligible 900 -Findings 40) -Output 'Fixtureball 01.01.2026 09-00-00' | Out-Null
+    Save-RunLedger -Summary @(New-RunSummaryRow -Job $job -Rows 0 -Seconds 1 `
+            -Status 'ERROR: the statement timed out') -Output 'Fixtureball 02.01.2026 09-00-00' | Out-Null
+
+    $today = @(New-RunSummaryRow -Job $job -Rows 11 -Seconds 1 -Status 'OK' -Eligible 900 -Findings 10)
+    $rows = @(Get-SheetHistoryRows -Summary $today -Sport 'Fixtureball' -RunId 'Fixtureball 03.01.2026 09-00-00')
+
+    Assert-Equal 3 $rows.Count 'the failed run is on the tab, not hidden from it'
+    Assert-Equal '' ([string]$rows[1].Findings) 'a run that did not read the data reports no count'
+    Assert-Equal '' ([string]$rows[1].Rate) 'and no share of a population it never saw'
+    Assert-Equal '' ([string]$rows[2].Change) 'and nothing after it is measured against an error'
 }
 
 Test-That 'a check with no earlier run is New rather than judged' {
@@ -4111,6 +4254,94 @@ Test-That 'the log accumulates rather than being replaced by the latest run' {
     Assert-Equal 0 @($plan.Operations | Where-Object {
             $_.Kind -eq 'AddSheet' -and $_.Sheet -eq $SheetsReviewLogTabName }).Count `
         'a tab that exists is not added again'
+}
+
+Test-That 'the History tab is written whole, with its header and its own table' {
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'FRESH'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $history = @(
+        [pscustomobject]@{ 'CheckID' = 'Fixtureball-DQ-002'; 'Check Name' = 'FRESH'; 'Parameters' = ''
+            'Run' = 'r1'; 'Run date' = '2026-08-01 10:00'; 'Findings' = 5; 'Eligible' = 100
+            'Rate' = '5.00%'; 'Change' = ''; 'Verdict' = 'New'; 'Status' = 'OK' },
+        [pscustomobject]@{ 'CheckID' = 'Fixtureball-DQ-002'; 'Check Name' = 'FRESH'; 'Parameters' = ''
+            'Run' = 'r2'; 'Run date' = '2026-08-02 10:00'; 'Findings' = 1; 'Eligible' = 9
+            'Rate' = '11.11%'; 'Change' = -4; 'Verdict' = 'Improved'; 'Status' = 'OK' })
+    $state = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{}
+        Titles = @('Overview', 'FRESH'); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'FRESH' = 9 }; SheetIndexOf = @{ 'Overview' = 0 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $state -OutputFolder 'x' -History $history `
+        -Collected @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X'; event_id = '7' }) })
+
+    $write = @($plan.Operations | Where-Object {
+            $_.Kind -eq 'Write' -and $_.Sheet -eq $SheetsHistoryTabName })
+    Assert-Equal 1 $write.Count 'one block, not a range per run'
+    Assert-Equal ($SheetsHistoryColumns -join ' ') (@($write[0].Values[0]) -join ' ') 'with its header'
+    Assert-Equal 3 @($write[0].Values).Count 'the header and both runs'
+    Assert-Equal 'r1' @($write[0].Values[1])[3] 'oldest first'
+    Assert-Equal 1 @($plan.Operations | Where-Object {
+            $_.Kind -eq 'AddSheet' -and $_.Sheet -eq $SheetsHistoryTabName }).Count 'the tab is created'
+
+    # Cleared before it is written because the window shrinks as well as grows. A sport whose
+    # oldest runs have just fallen off the end would otherwise keep them below the new block,
+    # dated by nothing on the tab and indistinguishable from current rows.
+    Assert-Equal 1 @($plan.Operations | Where-Object {
+            $_.Kind -eq 'Clear' -and $_.Sheet -eq $SheetsHistoryTabName }).Count 'and cleared first'
+
+    $table = @($plan.Operations | Where-Object {
+            $_.Kind -eq 'Table' -and $_.Sheet -eq $SheetsHistoryTabName })
+    Assert-Equal 1 $table.Count 'the tab is a table, so a reviewer can filter it to one check'
+    Assert-Equal $SheetsHistoryColumns.Count $table[0].ToCol 'covering every column'
+}
+
+Test-That 'no History tab is created with nothing to put in it' {
+    # The same rule the Review log is under. An empty tab on every one of a hundred documents
+    # is a hundred tabs saying nothing.
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'FRESH'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $state = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{}
+        Titles = @('Overview', 'FRESH'); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{}; SheetIdOf = @{ 'Overview' = 5; 'FRESH' = 9 }; SheetIndexOf = @{ 'Overview' = 0 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $state -OutputFolder 'x' `
+        -Collected @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X'; event_id = '7' }) })
+
+    Assert-Equal 0 @($plan.Operations | Where-Object { $_.Sheet -eq $SheetsHistoryTabName }).Count `
+        'nothing is planned for a tab with no runs behind it'
+}
+
+Test-That 'a History tab that already exists is grown, never added a second time' {
+    # And never adopted as a check tab either. Its A2 holds a run id rather than a CheckID, so
+    # a tab read as a check tab lands among the empty ones - which is the pile the next new
+    # check takes its tab from. That would overwrite the history with a result block.
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'FRESH'; What = ''; Sql = 'SELECT 1;' }
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $history = @(1..1500 | ForEach-Object {
+            [pscustomobject]@{ 'CheckID' = 'Fixtureball-DQ-002'; 'Check Name' = 'FRESH'; 'Parameters' = ''
+                'Run' = "r$_"; 'Run date' = '2026-08-01 10:00'; 'Findings' = $_; 'Eligible' = 100
+                'Rate' = ''; 'Change' = ''; 'Verdict' = 'New'; 'Status' = 'OK' } })
+    $state = [pscustomobject]@{
+        HasOverviewSheet = $true; HasOverviewHeader = $true; OverviewRowOf = @{}
+        EmptyCommentOf = @{}; StatusOf = @{}; TabOf = @{}
+        Titles = @('Overview', 'FRESH', $SheetsHistoryTabName); EmptyTabs = @{}; ConditionalFormatsOf = @{}
+        RowCapacityOf = @{ $SheetsHistoryTabName = 1000 }
+        SheetIdOf = @{ 'Overview' = 5; 'FRESH' = 9; $SheetsHistoryTabName = 13 }
+        SheetIndexOf = @{ 'Overview' = 0 }
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Existing $state -OutputFolder 'x' -History $history `
+        -Collected @([pscustomobject]@{ Job = $job; Rows = @([pscustomobject]@{ check_type = 'X'; event_id = '7' }) })
+
+    Assert-Equal 0 @($plan.Operations | Where-Object {
+            $_.Kind -eq 'AddSheet' -and $_.Sheet -eq $SheetsHistoryTabName }).Count 'not added again'
+    $resize = @($plan.Operations | Where-Object {
+            $_.Kind -eq 'Resize' -and $_.Sheet -eq $SheetsHistoryTabName })
+    Assert-Equal 1 $resize.Count 'grown to hold what it now carries'
+    Assert-Equal 13 $resize[0].SheetId 'by the id the document already gave it'
+    Assert-True ($resize[0].Rows -gt 1501) 'with room above the rows themselves'
 }
 
 Test-That 'a board written before a column existed has room made for it, not its rows rewritten' {

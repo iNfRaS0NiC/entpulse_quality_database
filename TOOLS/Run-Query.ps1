@@ -330,6 +330,19 @@ $LedgerVersion = 1
 # for one check shows every run it has.
 $HistoryRunColumns = 12
 
+# How many runs the History tab carries, this one included. The oldest falls off the end to
+# make room for the newest, which is the whole of the rule: the tab is a window onto
+# RUNS/<Sport>.json and never a second copy of it, and nothing is deleted from the ledger to
+# keep the window this size.
+#
+# Forty rather than thirty or fifty. It is a year of weekly runs, it holds every recorded run
+# of six of the twelve sports as this is written, and the largest tab it produces today is
+# Curling at 1664 rows - one range write against the eleven hundred a board already sends. A
+# year of weekly runs at a hundred and twenty checks would make that 4800 rows, which is still
+# one write and still well inside what Sheets will hold. What bounds it is not the cell count
+# but how far back a reviewer will ever scroll.
+$SheetHistoryRuns = 40
+
 # How many runs the Trends column carries, this one included. The document compares against
 # one run and the ledger holds them all; this is the middle, and the middle is what answers
 # "is this moving" without opening anything. Short enough to stay one readable cell.
@@ -4006,6 +4019,128 @@ function Get-CheckHistory {
     return $rows
 }
 
+function Get-SheetHistoryRows {
+    <#
+        The sport's recorded runs as the History tab holds them: one row per check per run,
+        oldest run first within each check, newest runs kept and oldest dropped.
+
+        This run is added here rather than read back, because Save-RunSheet deliberately goes
+        before Save-RunLedger - the sheet id is only remembered once the document has taken a
+        write - so at the moment the tab is planned the ledger does not yet know about today.
+        Built through New-LedgerCheckEntry and filtered the way Save-RunLedger filters, so the
+        row the tab shows for this run is the row the ledger is about to file, and the two
+        cannot come to different conclusions about the same statement.
+
+        The window is applied to runs, not to rows. A check that ran in three of the last forty
+        runs has three rows and a check that ran in all forty has forty, and both series end on
+        the same run - which is what makes two rows on this tab comparable at all.
+    #>
+    param($Summary, [string]$Sport, [string]$RunId, [int]$Keep = $SheetHistoryRuns)
+
+    if ([string]::IsNullOrWhiteSpace($Sport) -or $Sport -in @('MIXED', 'AD-HOC', 'GLOBAL')) { return @() }
+
+    $ledger = Read-RunLedger -Sport $Sport
+    $runs = @()
+    if ($null -ne $ledger) { $runs = @($ledger.runs) }
+
+    # The same two conditions Save-RunLedger records under: a statement with no CheckID has no
+    # series to belong to, and a discovery statement is a census rather than a finding.
+    $mine = @($Summary | Where-Object {
+            -not [string]::IsNullOrWhiteSpace([string]$_.CheckId) -and
+            ([string]$_.CheckId) -notlike $DiscoveryCheckIdPattern -and
+            (Get-SportFromCheckId -CheckId $_.CheckId) -eq $Sport
+        })
+    if ($mine.Count -gt 0) {
+        $runs += [pscustomobject]@{
+            runId      = $RunId
+            startedUtc = $script:RunStartedUtc.ToString('yyyy-MM-ddTHH:mm:ssZ')
+            checks     = @($mine | ForEach-Object { New-LedgerCheckEntry -Entry $_ })
+        }
+    }
+
+    if ($runs.Count -eq 0) { return @() }
+    if ($Keep -gt 0 -and $runs.Count -gt $Keep) { $runs = @($runs | Select-Object -Last $Keep) }
+
+    # Walked oldest first so a check's series is built in the order it happened, and Change can
+    # be read off the entry before it without looking anything up.
+    #
+    # Into a list rather than onto an array. $rows += copies the whole array each time, which is
+    # a second and a half of nothing for the sixteen hundred rows the largest sport holds today
+    # and nine times that for the forty-eight hundred a year of weekly runs would reach. The
+    # tab is meant to cost one write, not a growing share of every run.
+    $rows = New-Object 'Collections.Generic.List[object]'
+    $previous = @{}
+    $seen = 0
+    foreach ($run in $runs) {
+        $stamp = Get-RunStamp -Run $run
+        $when = $(if ($null -eq $stamp) { '' } else {
+                ([datetime]$stamp).ToString('yyyy-MM-dd HH:mm',
+                    [Globalization.CultureInfo]::InvariantCulture)
+            })
+        foreach ($check in @($run.checks)) {
+            $key = [string]$check.runKey
+            if ([string]::IsNullOrWhiteSpace($key)) { $key = [string]$check.checkId }
+
+            $status = [string]$check.status
+            $ran = -not ($status -like 'ERROR*' -or $status -like 'SKIPPED*')
+
+            # The proportion, because a raw count is only comparable while the population is,
+            # and over forty runs it rarely stays still. Blank rather than zero where there is
+            # no population to be a proportion of.
+            #
+            # Formatted under the invariant culture, unlike the console's own history: this
+            # string lands in a document read by people on differently configured machines, and
+            # a run made on one of them must not write 12,63% into a column the run before
+            # filled with 12.63%.
+            $rate = ''
+            if ($ran -and $null -ne $check.findings -and $null -ne $check.eligible -and
+                [int]$check.eligible -gt 0) {
+                $rate = ([double][int]$check.findings / [int]$check.eligible * 100).ToString('N2',
+                    [Globalization.CultureInfo]::InvariantCulture) + '%'
+            }
+
+            # Against the run before it in this window, not against the run before it in the
+            # ledger. A row whose predecessor fell off the end has nothing on the tab to be a
+            # change from, and a number the reader cannot see is not a comparison.
+            $change = ''
+            if ($ran -and $null -ne $check.findings -and $previous.ContainsKey($key) -and
+                $null -ne $previous[$key]) {
+                $change = [int]$check.findings - [int]$previous[$key]
+            }
+            $previous[$key] = $(if ($ran) { $check.findings } else { $null })
+
+            # Sorted by CheckID and then by when the run happened, which needs the position to
+            # survive the sort - two runs can share a minute and a string sort on the stamp
+            # would then put them in either order.
+            $seen++
+            $rows.Add([pscustomobject]@{
+                'CheckID'    = [string]$check.checkId
+                'Check Name' = [string]$check.name
+                'Parameters' = [string]$check.parameters
+                'Run'        = [string]$run.runId
+                'Run date'   = $when
+                'Findings'   = $(if ($ran) { $check.findings } else { '' })
+                'Eligible'   = $(if ($ran) { $check.eligible } else { '' })
+                'Rate'       = $rate
+                'Change'     = $change
+                'Verdict'    = [string]$check.verdict
+                'Status'     = $status
+                # One key rather than three sort expressions. The run's position is padded so it
+                # sorts as a number would - a check that ran forty times would otherwise put its
+                # tenth run before its second - and it is the position rather than the stamp,
+                # because two runs can share a minute and a sort on the stamp would then put
+                # them in either order.
+                # Joined by a unit separator, so a CheckID that is the start of another one
+                # cannot sort into the middle of it.
+                SortKey      = ([string]$check.checkId + "`u{001F}" +
+                    [string]$check.parameters + "`u{001F}" + $seen.ToString('D6'))
+            })
+        }
+    }
+
+    return @($rows | Sort-Object -Property SortKey)
+}
+
 function Show-CheckHistory {
     param([string]$Pattern, [string]$Sport)
 
@@ -4146,13 +4281,33 @@ function Save-RunSheet {
             Where-Object { $_.Status -eq 'Deprecated' } |
             ForEach-Object { [string]$_.CheckId })
 
+        # Built from the ledger plus this run, and windowed to the last $SheetHistoryRuns runs.
+        # Passed in rather than read inside the merge, so the one file that knows where the
+        # ledger lives stays the one file that decides what is kept - and so the merge can be
+        # tested against a handful of rows without a ledger or a login.
+        $history = @(Get-SheetHistoryRows -Summary $Summary -Sport $Sport -RunId $stamp)
+
         $plan = New-SheetsMergePlan -Summary $enriched -Collected $Collected -Existing $state `
-            -OutputFolder $OutputFolder -Stamp $stamp -Retired $retired -Complete:$complete
+            -OutputFolder $OutputFolder -Stamp $stamp -Retired $retired -History $history `
+            -Complete:$complete
         if ($plan.Warning) { Write-Host "  $($plan.Warning)" -ForegroundColor Yellow }
 
         $sent = Invoke-SheetsPlan -SpreadsheetId $id -Plan $plan
         Write-Host ("  {0} tab(s) added, {1} cleared, {2} range(s) written, {3} table(s)" -f `
                 $sent.Added, $sent.Cleared, $sent.Written, $sent.Tables) -ForegroundColor DarkGray
+        if ($history.Count -gt 0) {
+            # The span rather than the count of runs, because "40 runs" says nothing about how
+            # far back the tab reaches and the two are not the same question on a ledger this
+            # busy: forty entries can be a fortnight of re-runs or a year of weekly boards.
+            $span = @($history | ForEach-Object { [string]$_.'Run date' } |
+                Where-Object { $_ } | Sort-Object -Unique)
+            $reach = $(if ($span.Count -gt 1) { '{0} to {1}' -f $span[0], $span[-1] }
+                elseif ($span.Count -eq 1) { $span[0] } else { 'undated' })
+            Write-Host ("  History: {0:n0} row(s) over the last {1} recorded run(s), {2}" -f `
+                    $history.Count, [math]::Min($SheetHistoryRuns, @($history |
+                        ForEach-Object { [string]$_.Run } | Sort-Object -Unique).Count), $reach) `
+                -ForegroundColor DarkGray
+        }
 
         # Status is the reviewer's column and the run writes into it in two narrow cases only.
         # Both are named here rather than counted, because a status that changed without anybody

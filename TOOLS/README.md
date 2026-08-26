@@ -1311,6 +1311,10 @@ concluded at the time, not what today would conclude.
 The sport comes from the CheckID prefix, so nothing else has to be passed. It reads the ledger
 and nothing else: no credentials, no network, and no run.
 
+The live document carries the same thing on its `History` tab, windowed to the last 40 runs,
+for the reviewers who do not have the repository. This command is the unwindowed read and shows
+every run ever recorded.
+
 **A run made with `-TestRun` is absent, by its own request.** So is anything that has not been
 run at all — the command says so rather than printing an empty table that reads like a clean
 result.
@@ -1731,6 +1735,56 @@ corrected, and keying on it would park a note every time one member of the group
 result with no id column at all keys on its whole row, which parks a note whenever anything in it
 changed: conservative, and the right failure for findings with no id to be about.
 
+### `History`
+
+Every recorded run of every check, one row per check per run, oldest first within each check.
+The board compares this run with the one before it and the `Trends` column carries five points;
+this is the rest of the ledger made readable by somebody who will never open a JSON file.
+
+| Column | |
+|---|---|
+| `CheckID`, `Check Name`, `Parameters` | the statement, named rather than numbered |
+| `Run`, `Run date` | the run id, which is the output folder that produced it, and when it started |
+| `Findings`, `Eligible`, `Rate` | what the statement returned, out of how large a population, and the share |
+| `Change` | against the run before it **within the window** — blank where there is none on the tab |
+| `Verdict`, `Status` | what that run concluded at the time, not what today would conclude |
+
+`Findings` here is `All findings`, not `Overview`'s `Findings`. The ledger records what the
+statement returned and the board subtracts what reviewers have since marked
+`No Issue / Change`, so the same run reads higher on this tab than on the board by exactly
+the number of settled findings. That is the right way round for a history: a dismissal is a
+reading of the data rather than a change to it, and subtracting today's dismissals from a
+run made three weeks ago would rewrite what that run measured.
+
+Long form rather than a run to a column. The obvious pivot is wrong for this ledger: most
+entries in it are single-check re-runs made while a statement was being written, and each would
+arrive as a column holding one number and a hundred and twenty blanks. A re-run costs one row
+here and reads as what it was.
+
+A run where the check failed carries no count and no rate, so a gap cannot pass for a zero, and
+nothing after it is measured against an error. A check that has stopped running keeps its rows,
+for the reason its tab is kept: a reading of a population nobody can take again.
+
+**The window is the last 40 runs, and the oldest falls off the end to make room for the newest.**
+`$SheetHistoryRuns` in `TOOLS/Run-Query.ps1` sets it. Forty is a year of weekly runs; it holds
+every recorded run of six of the twelve sports as this is written, and the largest tab it
+produces is around 1700 rows — one range write against the eleven hundred a board already
+sends, and about two seconds of the minutes a board run takes.
+
+**Nothing is deleted from the ledger to keep the window this size.** The tab is a window onto
+`RUNS/<Sport>.json` and never a second copy of it; `-History` still reads every run ever
+recorded, and raising the number brings older runs straight back onto the tab.
+
+The tab is rewritten whole each run — cleared first, because the window shrinks as well as
+grows and rows that have fallen off the end would otherwise sit below the new block dated by
+nothing. Every row on it was generated and none of it is anybody's, so there is nothing to
+carry over. It is written after the run's own numbers are known but before the ledger is
+appended to, so this run's row is on the tab under the run id the ledger is about to file it
+under, and the two cannot disagree.
+
+It is a record of what runs returned, and `It is a record, not evidence` below applies to it
+exactly as it applies to the ledger it is drawn from.
+
 ### `Review log`
 
 What could not be put back. A check that returned 1130 findings and now returns 800 says nothing
@@ -1999,6 +2053,31 @@ on any failure.
 Nothing here touches the network: `Run-Query.ps1` is dot-sourced with `-DotSourceOnly`, which
 runs its prologue and stops before `Main`. That switch exists for this file and for nothing
 else.
+
+### What the suite costs, and where
+
+Two hundred and sixty-one of the cases run in process and take **ten seconds between them**.
+Everything else is the sixteen cases that copy the repository, break the copy in one specific
+way, and run `Test-Package.ps1` over it as a child process — that is the only honest way to
+test that a rule still bites, and it is also the whole of the suite's running time.
+
+It used to be 1425 seconds and is now 396. Not because copying is expensive — one copy is 86
+milliseconds — but because **nothing removed a copy until the process exited**. Sixteen of them
+accumulated almost three hundred megabytes of files nothing on the machine had scanned
+before, and the validator run over each new copy grew with the tree: 11.4 seconds for the
+first, 21.9 for the fifth.
+
+So `Copy-RepositoryFixture` now does two things it did not:
+
+- **leaves `RUNS/` out**, which is fifteen of the eighteen megabytes a copy weighs. Nothing is
+  lost by it: `Test-Package.ps1` has excluded `\RUNS\` from its own walk since the change
+  before this one, and the validator passes `0 failing check(s), 0 finding(s)` on a copy
+  without it;
+- **removes the previous copy when it makes the next one.** No case holds two at once, so the
+  tree stays at one copy instead of sixteen.
+
+If a case is ever written that does need two copies alive together, that second rule is the one
+to revisit — and it will announce itself, because the first copy will have gone.
 
 ## Troubleshooting
 

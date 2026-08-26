@@ -577,6 +577,26 @@ $SheetsReviewLogTabName = 'Review log'
 $SheetsReviewLogColumns = @('CheckID', 'Check tab', 'Finding key', 'Review Status', 'Review Note',
     'Dropped on', 'Why')
 
+# What every recorded run of every check returned, on one tab, so a number that surprises
+# somebody can be followed back through the runs that produced it.
+#
+# Overview's Trends column already carries five points per check and answers "is this moving".
+# This answers the next question, which that cell cannot: moving since when, out of how large
+# a population, and across which runs. Nothing here is new information - the ledger under
+# RUNS/<Sport>.json has held all of it since the first run - it is the ledger made readable by
+# somebody who will never open a JSON file.
+#
+# Long form, one row per check per run, rather than a run to a column. The obvious pivot is
+# wrong for this ledger: most entries in it are single-check re-runs made while a statement was
+# being written, and each would arrive as a column holding one number and a hundred and twenty
+# blanks. A re-run costs one row here and reads as what it was.
+#
+# Every row is generated and none of it is anybody's, so the tab is rewritten whole each run
+# for the reason the Review log is - a failed run must not leave half a block behind.
+$SheetsHistoryTabName = 'History'
+$SheetsHistoryColumns = @('CheckID', 'Check Name', 'Parameters', 'Run', 'Run date',
+    'Findings', 'Eligible', 'Rate', 'Change', 'Verdict', 'Status')
+
 # What a note is tied to. Not the row number - a fix removes a row and everything under it
 # moves up, which would slide every note one finding along - and not the whole row either,
 # because a name corrected elsewhere in the same row would orphan a note that is still about
@@ -1226,6 +1246,7 @@ function New-SheetsMergePlan {
         [string]$OutputFolder,
         [int]$MaxRows = $SheetsMaxRowsPerCheck,
         [string]$Stamp = '',
+        $History = @(),
         [string[]]$Retired = @(),
         [switch]$Complete
     )
@@ -2830,6 +2851,87 @@ function New-SheetsMergePlan {
         }
     }
 
+    # Every run of every check, oldest first within a check.
+    #
+    # Oldest first because Trends reads that way and ends on today. Newest first would put this
+    # run at the top of each block, which is what a log wants, but then the same series runs
+    # left-to-right in one column of the board and top-to-bottom against it in another, and a
+    # reader has no way to know the two are the same numbers.
+    #
+    # The caller decides how many runs reach here and drops the oldest to make room, so this
+    # writes what it is given and does not window anything itself. That keeps the one place
+    # that reads the ledger the one place that decides what is kept.
+    $historyRows = @($History | Where-Object { $_ })
+    if ($historyRows.Count -gt 0) {
+        $historyNeeded = $historyRows.Count + 1
+        if (-not $usedTitles.ContainsKey($SheetsHistoryTabName)) {
+            $plan += [pscustomobject]@{
+                Kind  = 'AddSheet'
+                Sheet = $SheetsHistoryTabName
+                Rows  = [math]::Max($historyNeeded + 100, 1000)
+            }
+            $usedTitles[$SheetsHistoryTabName] = $true
+        }
+        else {
+            $have = $(if ($capacityOf.ContainsKey($SheetsHistoryTabName)) {
+                    $capacityOf[$SheetsHistoryTabName]
+                } else { 1000 })
+            $historyId = $(if ($Existing -and $Existing.SheetIdOf -and
+                    $Existing.SheetIdOf.ContainsKey($SheetsHistoryTabName)) {
+                    [int]$Existing.SheetIdOf[$SheetsHistoryTabName]
+                } else { $null })
+            if (($historyNeeded + 10) -gt $have -and $null -ne $historyId) {
+                $plan += [pscustomobject]@{
+                    Kind = 'Resize'; Sheet = $SheetsHistoryTabName; SheetId = $historyId
+                    Rows = $historyNeeded + 100
+                }
+            }
+        }
+
+        # Cleared before it is written because the window shrinks as well as grows: a sport
+        # whose oldest runs have just fallen off the end would otherwise keep them below the
+        # new block, undated by anything on the tab and indistinguishable from current rows.
+        $lastColumn = ConvertTo-SheetsColumnName -Index $SheetsHistoryColumns.Count
+        $plan += [pscustomobject]@{
+            Kind = 'Clear'; Sheet = $SheetsHistoryTabName; Range = ('A1:' + $lastColumn)
+        }
+
+        # Into a list, and over an index rather than through ForEach-Object. This is the one
+        # block on the board whose height grows with every run rather than with the findings,
+        # so the two costs that are noise on a fifty-row tab are the whole of it here.
+        $historyValues = New-Object 'Collections.Generic.List[object]'
+        foreach ($row in $historyRows) {
+            $line = New-Object 'object[]' $SheetsHistoryColumns.Count
+            for ($c = 0; $c -lt $SheetsHistoryColumns.Count; $c++) {
+                $value = $row.($SheetsHistoryColumns[$c])
+                $line[$c] = $(if ($null -eq $value) { '' } else { $value })
+            }
+            $historyValues.Add($line)
+        }
+        $plan += [pscustomobject]@{
+            Kind   = 'Write'
+            Sheet  = $SheetsHistoryTabName
+            Range  = (New-SheetsRange -FromColumn 1 -FromRow 1 `
+                    -ToColumn $SheetsHistoryColumns.Count -ToRow $historyNeeded)
+            Values = @(, $SheetsHistoryColumns) + $historyValues.ToArray()
+        }
+        $cells += $SheetsHistoryColumns.Count * $historyNeeded
+
+        $plan += [pscustomobject]@{
+            Kind         = 'Table'
+            Sheet        = $SheetsHistoryTabName
+            Name         = (ConvertTo-SheetsTableName -Name 'History')
+            FromRow      = 0
+            ToRow        = $historyNeeded
+            FromCol      = 0
+            ToCol        = $SheetsHistoryColumns.Count
+            HeaderColour = $SheetsDataHeaderColour
+        }
+        $plan += [pscustomobject]@{
+            Kind = 'Freeze'; Sheet = $SheetsHistoryTabName; Rows = 1
+        }
+    }
+
     # A run rewrites essentially every cell it owns, so what this plan writes is a fair proxy
     # for what the document will hold. Reported rather than acted on: the answers are to drop
     # a check from the document, tighten a scope or split the sport, and none of those is the
@@ -3220,7 +3322,8 @@ function Read-SheetState {
             (ConvertTo-SheetsColumnName -Index $SheetsReviewLogColumns.Count))
     }
     $checkTabs = @($titles | Where-Object {
-            $_ -ne 'Overview' -and $_ -ne $SheetsSqlTabName -and $_ -ne $SheetsReviewLogTabName
+            $_ -ne 'Overview' -and $_ -ne $SheetsSqlTabName -and
+            $_ -ne $SheetsReviewLogTabName -and $_ -ne $SheetsHistoryTabName
         })
     # Rows 1 and 2 of every check tab, in one range rather than the single A2 cell this used to
     # ask for. Row 2 is the identity the tab is matched by; row 1 is the column names it was
