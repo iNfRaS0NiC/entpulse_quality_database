@@ -663,10 +663,14 @@ sport. The winner is what makes the test structural: everyone behind was slower 
 9. **Is a withdrawal recorded anywhere?** A swimmer marked `Q` who does not appear in the
    next round either lost their entry or scratched, and `Swimming-DQ-084` cannot tell the
    two apart because nothing found so far distinguishes them: there is no status, comment
-   or property on the heat participation that says the swimmer chose not to continue. The
-   answer decides whether that check is a repair list or a proportion to watch. Until it is
-   answered the check runs on the ruling that a `Q` must be followed, which is the stricter
-   reading and the one that keeps the lost entries visible.
+   or property on the heat participation that says the swimmer chose not to continue.
+   **The question is still open; how to read the check was settled on 2026-08-26.** It runs
+   as `Monitor`: the proportion is the finding - 577 of the sport's heats and 70 of its
+   semi-finals in a population of 11316 - and a single row is a question to ask of that
+   swimmer rather than a defect to repair. `unhonoured_competitors` names them so the
+   question reaches the right person. If a withdrawal is ever found to be recorded the
+   signal becomes `Actionable` and the check becomes the repair list it was first written
+   as.
 
 10. **Should `374 Knockout Sprint 3 km` and `557 3km Knockout Sprint` be one discipline?**
     The independent half of question 2, asked on its own since 2026-08-25. Both ids are new in
