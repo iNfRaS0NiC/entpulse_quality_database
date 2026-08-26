@@ -601,3 +601,293 @@ AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), RE
       WHERE ep.eventFK = e.id AND ep.del = 'no'
         AND TRIM(r.value) REGEXP '^[0-9]+(:[0-9]{2})?[.][0-9]+$'
   );
+
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Track-Cycling-DQ-080
+    -- Name - EVENT_TIMED_FINISHER_WITHOUT_A_TIME
+    -- What it does: Flags a finisher ranked in a discipline decided on the clock who carries no Duration at all.
+    'Timed_Finisher_Without_A_Time' AS check_type,
+    y.event_id,
+    y.event_name,
+    y.startdate,
+    y.discipline_name,
+    y.template_name,
+    y.tournament_name,
+    y.finishers_without_the_value,
+    y.ranked_finishers,
+    y.sample_competitors,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a competitor holding a rank, in a finished event of
+-- a discipline ridden alone against the watch, with no `101 Duration` stored and no status
+-- saying they did not finish. The time is the thing that placed them and it is not there.
+-- `Track-Cycling-DQ-056` asks a weaker question and can never reach zero for it. That
+-- template asks whether a ranked competitor holds any deciding value at all, and half this
+-- sport is settled by who crosses the line first: a keirin rider, a scratch rider and an
+-- elimination rider each carry a rank and nothing else, correctly. Asked per discipline the
+-- question has an answer, and this is the half of it that can be driven to zero.
+-- The pursuits and the team sprint are deliberately out. Their event named `Final` is the
+-- whole competition’s closing classification rather than a race, so it holds the entire
+-- field with only the medal rides timed, and reporting those would be reporting the storage
+-- model. Measured 2026-08-26 admitting them raises this from 172 events to more than 1200.
+-- What is left is the disciplines where every rider starts alone and every finisher must
+-- have a time: the two individual time trials, the flying laps, the Omnium’s timed
+-- components, the team time trial and the stayer.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate,
+        d.name AS discipline_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        SUM(CASE WHEN v.id IS NULL THEN 1 ELSE 0 END) AS finishers_without_the_value,
+        COUNT(DISTINCT ep.id) AS ranked_finishers,
+        SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT CASE WHEN v.id IS NULL THEN p.name END ORDER BY p.name SEPARATOR ' | '), ' | ', 8) AS sample_competitors
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN result rk ON rk.event_participantsFK = ep.id AND rk.result_typeFK = 100 AND rk.del = 'no'
+    LEFT JOIN result v ON v.event_participantsFK = ep.id AND v.result_typeFK = 101 AND v.del = 'no'
+    LEFT JOIN result cmt ON cmt.event_participantsFK = ep.id AND cmt.result_typeFK = 104 AND cmt.del = 'no'
+WHERE e.del = 'no'
+      AND tt.sportFK = 55
+      AND t.tournament_templateFK NOT IN (12793, 12794, 12795, 12796)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      AND e.status_type = 'finished'
+      AND od.disciplineFK IN (122, 123, 382, 385, 387, 392, 393, 394, 395, 396, 548)
+      AND rk.value REGEXP '^[0-9]+$'
+      AND (cmt.value IS NULL OR LOWER(TRIM(cmt.value)) NOT REGEXP '(dnf|dns|dsq|disq|abd|dq)')
+    GROUP BY e.id, e.name, e.startdate, d.name, tt.name, t.name
+    HAVING finishers_without_the_value > 0
+) y
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+WHERE e.del = 'no'
+AND tt.sportFK = 55
+AND t.tournament_templateFK NOT IN (12793, 12794, 12795, 12796)
+AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+-- AND t.tournament_templateFK = <tournament_template_id>
+  AND e.status_type = 'finished'
+  AND od.disciplineFK IN (122, 123, 382, 385, 387, 392, 393, 394, 395, 396, 548)
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result rk ON rk.event_participantsFK = ep.id AND rk.result_typeFK = 100 AND rk.del = 'no'
+      WHERE ep.eventFK = e.id AND ep.del = 'no'
+        AND rk.value REGEXP '^[0-9]+$'
+  );
+
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Track-Cycling-DQ-081
+    -- Name - EVENT_POINTS_FINISHER_WITHOUT_POINTS
+    -- What it does: Flags a finisher ranked in a discipline decided on points who carries no Points at all.
+    'Points_Finisher_Without_Points' AS check_type,
+    y.event_id,
+    y.event_name,
+    y.startdate,
+    y.discipline_name,
+    y.template_name,
+    y.tournament_name,
+    y.finishers_without_the_value,
+    y.ranked_finishers,
+    y.sample_competitors,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds a competitor holding a rank, in a finished event of a
+-- discipline classified on points, with no `102 Points` stored and no status saying they
+-- did not finish. The points races, the tempo race, the Omnium and its overall, the Madison
+-- and the six-day are all placed from that figure, and where it is absent the placing rests
+-- on nothing the database holds.
+-- A missing row does not mean a score of zero. This sport writes the zero: measured
+-- 2026-08-26, `ev 5025645` records `Frank Longstaff 0` in twelfth place, and negative totals
+-- are written too, down to -37 for a lapped Madison pair. An absent Points row is therefore
+-- a value that was never entered rather than a rider who scored none.
+-- This is the other half of the question `Track-Cycling-DQ-056` can only monitor, and it is
+-- kept separate from `Track-Cycling-DQ-080` on purpose. Together they return 360 events,
+-- past the point where a board row is read; apart, each stands under it and each names one
+-- field to repair.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate,
+        d.name AS discipline_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        SUM(CASE WHEN v.id IS NULL THEN 1 ELSE 0 END) AS finishers_without_the_value,
+        COUNT(DISTINCT ep.id) AS ranked_finishers,
+        SUBSTRING_INDEX(GROUP_CONCAT(DISTINCT CASE WHEN v.id IS NULL THEN p.name END ORDER BY p.name SEPARATOR ' | '), ' | ', 8) AS sample_competitors
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN result rk ON rk.event_participantsFK = ep.id AND rk.result_typeFK = 100 AND rk.del = 'no'
+    LEFT JOIN result v ON v.event_participantsFK = ep.id AND v.result_typeFK = 102 AND v.del = 'no'
+    LEFT JOIN result cmt ON cmt.event_participantsFK = ep.id AND cmt.result_typeFK = 104 AND cmt.del = 'no'
+WHERE e.del = 'no'
+      AND tt.sportFK = 55
+      AND t.tournament_templateFK NOT IN (12793, 12794, 12795, 12796)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      AND e.status_type = 'finished'
+      AND od.disciplineFK IN (378, 380, 381, 383, 388, 389, 397, 400)
+      AND rk.value REGEXP '^[0-9]+$'
+      AND (cmt.value IS NULL OR LOWER(TRIM(cmt.value)) NOT REGEXP '(dnf|dns|dsq|disq|abd|dq)')
+    GROUP BY e.id, e.name, e.startdate, d.name, tt.name, t.name
+    HAVING finishers_without_the_value > 0
+) y
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+WHERE e.del = 'no'
+AND tt.sportFK = 55
+AND t.tournament_templateFK NOT IN (12793, 12794, 12795, 12796)
+AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+-- AND t.tournament_templateFK = <tournament_template_id>
+  AND e.status_type = 'finished'
+  AND od.disciplineFK IN (378, 380, 381, 383, 388, 389, 397, 400)
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result rk ON rk.event_participantsFK = ep.id AND rk.result_typeFK = 100 AND rk.del = 'no'
+      WHERE ep.eventFK = e.id AND ep.del = 'no'
+        AND rk.value REGEXP '^[0-9]+$'
+  );
+
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Track-Cycling-DQ-082
+    -- Name - EVENT_TIMED_SPREAD_TOO_WIDE_FOR_ONE_RACE
+    -- What it does: Flags a timed event whose slowest time is more than 1.6 times its fastest, which no single race of that discipline produces.
+    'Timed_Spread_Too_Wide_For_One_Race' AS check_type,
+    y.event_id,
+    y.event_name,
+    y.startdate,
+    y.discipline_name,
+    y.template_name,
+    y.times_seen,
+    y.fastest,
+    y.slowest,
+    ROUND(y.slowest / y.fastest, 2) AS spread,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Finds an event of a fixed-distance discipline whose stored
+-- times are too far apart to have come from one race. The threshold sits in a gap in the
+-- measured distribution rather than at a round number: of the 1704 timed events holding three
+-- times or more, 1499 spread by less than 1.15, another 176 reach 1.30, then 17 reach 1.60,
+-- 8 reach 2.00 and 4 go beyond. Measured 2026-08-26, a cut at 1.60 returns 12 events.
+-- It is a `Monitor` and not an `Actionable` check. A wide spread is a symptom rather than a
+-- defect: it can be a time in the wrong unit, a gap stored without its plus, a rider from
+-- another discipline, or a genuine field mixing a world-class rider with a novice at a small
+-- meeting. The row says the card does not read like one race and the reading decides which.
+-- Its far end overlaps `Track-Cycling-DQ-079`, which reports what no rider of that discipline
+-- could have ridden at all. This one exists for what is possible and still does not belong,
+-- and the overlap is the point where the two agree rather than a duplication.
+FROM (
+    SELECT
+        x.event_id,
+        x.event_name,
+        x.startdate,
+        x.discipline_name,
+        x.template_name,
+        COUNT(*) AS times_seen,
+        MIN(x.secs) AS fastest,
+        MAX(x.secs) AS slowest
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            e.startdate,
+            d.name AS discipline_name,
+            tt.name AS template_name,
+            CASE WHEN TRIM(r.value) LIKE '%:%'
+                 THEN CAST(SUBSTRING_INDEX(TRIM(r.value), ':', 1) AS DECIMAL(12,4)) * 60
+                    + CAST(SUBSTRING_INDEX(TRIM(r.value), ':', -1) AS DECIMAL(12,4))
+                 ELSE CAST(TRIM(r.value) AS DECIMAL(12,4)) END AS secs
+        FROM event e
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+        JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN result r ON r.event_participantsFK = ep.id AND r.result_typeFK = 101 AND r.del = 'no'
+    WHERE e.del = 'no'
+          AND tt.sportFK = 55
+          AND t.tournament_templateFK NOT IN (12793, 12794, 12795, 12796)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          AND od.disciplineFK IN (122, 123, 124, 130, 376, 382, 385, 387, 392, 393, 395, 396)
+          AND TRIM(r.value) REGEXP '^[0-9]+(:[0-9]{2})?[.][0-9]+$'
+    ) x
+    GROUP BY x.event_id, x.event_name, x.startdate, x.discipline_name, x.template_name
+    HAVING COUNT(*) >= 3
+       AND MIN(x.secs) > 0
+       AND MAX(x.secs) / MIN(x.secs) >= 1.6
+) y
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+WHERE e.del = 'no'
+AND tt.sportFK = 55
+AND t.tournament_templateFK NOT IN (12793, 12794, 12795, 12796)
+AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+-- AND t.tournament_templateFK = <tournament_template_id>
+  AND od.disciplineFK IN (122, 123, 124, 130, 376, 382, 385, 387, 392, 393, 395, 396)
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result r ON r.event_participantsFK = ep.id AND r.result_typeFK = 101 AND r.del = 'no'
+      WHERE ep.eventFK = e.id AND ep.del = 'no'
+        AND TRIM(r.value) REGEXP '^[0-9]+(:[0-9]{2})?[.][0-9]+$'
+  );

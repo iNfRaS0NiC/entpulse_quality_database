@@ -516,6 +516,44 @@ distance changes above — every women’s team pursuit record from 2016 is slow
 report: the best male team sprint time of 2021 reads as 0.000. It is recorded as withdrawn
 rather than left unmentioned, because the idea is a natural one and the next reader should
 not have to measure it again to find out why it does not work.
+**Three more checks were written on 2026-08-26, taking the sport’s own statements to nine.**
+
+`Track-Cycling-DQ-080 EVENT_TIMED_FINISHER_WITHOUT_A_TIME` returns 172 of 671 and
+`Track-Cycling-DQ-081 EVENT_POINTS_FINISHER_WITHOUT_POINTS` 188 of 1854. Between them they
+ask per discipline the question `Track-Cycling-DQ-056` can only ask of the sport as a whole.
+That template asks whether a ranked competitor holds any deciding value and can never reach
+zero here, because a keirin, a scratch and an elimination rider each carry a rank and nothing
+else, correctly. Asked of a discipline the question has an answer: a kilometre is settled by
+the clock and a points race by the points, and where the figure is missing the placing rests
+on nothing stored. The two are kept apart on purpose - together they return 360 events, past
+the point where a board row is read.
+
+A missing `102 Points` row is not a score of zero. The sport writes the zero: `ev 5025645`
+records `Frank Longstaff 0` in twelfth, and negative totals go down to -37 for a lapped
+Madison pair.
+
+`Track-Cycling-DQ-082 EVENT_TIMED_SPREAD_TOO_WIDE_FOR_ONE_RACE` is a `Monitor` returning 12
+of 3053. Of the 1704 timed events holding three times or more, 1499 spread by less than 1.15
+and another 176 reach 1.30, then 17 reach 1.60, 8 reach 2.00 and 4 go beyond, so the cut is
+placed in a gap. It is a Monitor because a wide spread is a symptom rather than a defect and
+the reading decides which: `ev 5171646` is a Team Pursuit holding 4.877 against 257.318, and
+`ev 4706591` an Individual pursuit holding 2:18 against 4:29.
+
+**The Omnium’s components cannot be tied to their own overall, and a check that would have
+summed them was withdrawn on 2026-08-26.** What was learned in the attempt is worth keeping.
+
+A stage holding an Omnium holds, measured that day on `stage 897000`: two `Omnium` events with
+the `Round` property `Qualifier`, then `Omnium - Scratch race`, `Omnium - Tempo race` and
+`Omnium - Elimination race` each with `Round = 1`, then **an `Omnium` event with `Round = 1`,
+which is the points race** - filed under the container discipline `397 Omnium` rather than
+under `381 Omnium - Point race` - and finally an `Omnium` with `Round = Final`, the overall.
+So `Round` is what separates an overall from a component, and the discipline id alone is not.
+
+It is still not a key. `object_relation` is written on none of these events, and grouping by
+stage over-collects because a stage here is a whole championship: of 199 overall events, 51
+reach only one component, 83 reach two, 50 reach three, 12 reach four and 3 reach more than
+four. Even among the twelve the total agrees for 3 events and 103 riders of 189. The
+components are not there, and where they are they are not provably the right ones.
 <!-- MANUAL PASTE ZONE: 55 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
@@ -570,4 +608,11 @@ not have to measure it again to find out why it does not work.
     are typed `14 Starter`, and the oversized squads read as a full selection with its
     reserve. If a reserve is to be recorded, it needs a second lineup type rather than a
     fifth starter.
+17. What ties an Omnium component race to the overall it counts towards. The `Round` property
+    separates the overall from the components and the stage does not narrow far enough, so
+    today a competition’s four races cannot be identified as belonging together. Until they
+    can, no check can assert that the overall equals their sum.
+18. Why the Omnium points race is filed under `397 Omnium` with `Round = 1` while its three
+    sibling races have disciplines of their own, and whether `381 Omnium - Point race` was
+    meant to carry it.
 <!-- MANUAL PASTE ZONE: 55 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
