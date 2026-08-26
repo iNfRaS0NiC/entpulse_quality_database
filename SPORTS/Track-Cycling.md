@@ -75,6 +75,32 @@ carries both active and inactive rows for both types.
 Lineups use a single type, `14 Starter`, always a team parent with athlete members, in both
 genders. Team Sprint, Team Pursuit and Madison are where they occur.
 
+**Every team format is ridden by a fixed number of riders, and two of them changed that
+number without changing their discipline id.** Measured 2026-08-26 across every team entry
+carrying a lineup:
+
+| Discipline | Gender | Sizes the sport enters | Sizes also present |
+|---|---|---|---|
+| Team Pursuit | male | 4 (2530) | 3 (8), 5 (23) |
+| Team Pursuit | female | 3 (528), 4 (1385) | 2 (1), 5 (11) |
+| Team Sprint | male | 3 (2618) | 1 (2), 2 (3), 4 (30), 6 (1) |
+| Team Sprint | female | 2 (1650), 3 (357) | 1 (4), 4 (11) |
+| Madison | both | 2 (3389) | 1 (5), 3 (13), 4 (4), 5 (1) |
+| Team Elimination, Derny, 20Km Madison, 250m Team Time Trial | both | 2 | none |
+
+The two female rows carry two correct sizes each and neither is a defect: the women’s team
+pursuit went from three riders over three kilometres to four over four, and the women’s team
+sprint from two riders to three. The discipline id did not change with the distance, so the
+record of a discipline’s size has to be a set and not a number. `Track-Cycling-DQ-077` is
+written that way and needs no cut-off date. **The same shape appears twice more in this
+sport** — in the Omnium’s scoring and in the two women’s record progressions — and it is
+recorded here because a check written against a single expected value would be wrong in all
+three places.
+
+**Derny is a pair here, not a solo ride.** All 55 Derny lineups hold two riders, because the
+sport’s Derny events sit inside six-day meetings and are ridden by the meeting’s pairs. The
+`500m Madison Time Trial` filed under `394 Time Trial` is a pair for the same reason. Both
+are recorded because the discipline names read as individual formats and are not.
 <!-- MANUAL PASTE ZONE: 55 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types
@@ -112,6 +138,26 @@ comma. A check that requires a closed set of status codes cannot be instantiated
 field as it stands; `GLOBAL-DQ-052` and `GLOBAL-DQ-117` are therefore left open rather than
 assigned, and the question is recorded below.
 
+**`222 Laps behind` carries one quantity under two sign conventions.** A rider one lap down
+is written `-1` in some disciplines and `1` in others, and both mean the same thing.
+Measured 2026-08-26:
+
+| Discipline | Events written negative | Events written positive |
+|---|---:|---:|
+| Scratch | 69 | 26 |
+| Omnium - Scratch race | 53 | 7 |
+| Madison | 19 | 39 |
+| 6-days | 0 | 69 |
+| Elimination Race, Stayer 50 km | 2 | 0 |
+
+No event mixes the two inside itself; the disciplines mix them between each other. This is
+the same shape `101 Duration` has with its three notations, in a second field.
+
+**The target convention is the unsigned form, decided 2026-08-26** — one lap down is `1`,
+which is what the field name says. Roughly 143 events are written the other way and are to be
+converted. No check asserts this yet: `Track-Cycling-DQ-075` reads the field as a magnitude
+precisely so that it works under either convention and does not have to wait for the
+conversion.
 <!-- MANUAL PASTE ZONE: 55 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
@@ -352,6 +398,124 @@ EVENT_PARTICIPANT_ORGANIZATION_MISSING`, which is where the population is read. 
 they account for the great majority of the sport's finding rows, and that is the two feeds
 saying the same thing once per event rather than a crowd of separate defects.
 
+**The Omnium reversed the direction of its scoring in 2014, and `102 Points` records both
+eras in one column.** Through 2013 the classification was a sum of finishing places and the
+lowest total won; from 2015 it is accumulated points and the highest wins. Measured
+2026-08-26 on `383 Omnium - Overall`:
+
+| Years | Events scored highest-wins | Events scored lowest-wins |
+|---|---:|---:|
+| 2007 - 2013 | 0 | 43 |
+| 2014 | 8 | 4 |
+| 2015 - 2024 | 96 | 0 |
+
+Nothing in a row says which rule applies to it, only the date of the event that holds it.
+**Any statement reading `102 Points` as good-or-bad must therefore not assert a direction at
+all**, which is why `Track-Cycling-DQ-074` asks only that a single event agree with itself.
+`378 Point race` was highest-wins in every year measured and did not change.
+
+**In the knockout disciplines the event named `Final` is the competition’s final standings,
+not its last race.** A Team Pursuit `Final` holds the whole field ranked 1 to 15, and each
+competitor’s `104 Comment` says how far it got — `From Final`, `From Final for Bronze`,
+`From First Round`, `DNQ for First Round`. Only the four who contested the medal rides carry
+a time. That is why `101 Duration` stands on 29% of Individual pursuit participations and 40%
+of Team Sprint ones while standing on 100% of the individual time trials, and it is the
+storage model rather than missing data.
+
+**A gap is measured from the winner of its own sub-final, not from the winner of the event.**
+A Keirin `Final` holding twelve riders holds two races: ranks 1 to 6 comment `From Final 1-6`
+and ranks 7 to 12 comment `From Final 7-12`. Within each, the winner carries no value and the
+rest carry a gap to it, so rank 8 can hold `+0.074` while rank 3 holds `+0.125` and both are
+correct. The same follows for absolute times: a Team Sprint bronze final is a separate ride,
+so the bronze medallist legitimately records a faster time than the gold — measured
+2026-08-26, `ev 5126345` has the winner on 43.116 and the third place on 42.446. **No check
+may assert that a time or a gap is monotonic across a whole event of these disciplines.**
+
+**Three checks were written for this sport on 2026-08-26**, and they are the first statements
+it owns; every other check on its board is a GLOBAL template.
+
+`Track-Cycling-DQ-074 EVENT_RESULTS_POINTS_RUN_BOTH_DIRECTIONS_AGAINST_RANK` returns 49 of
+1305. It is scoped to the eleven disciplines in which the sport awards points by finishing
+position. The counts it projects are what makes it readable: `ev 4365018` holds 228 pairs
+agreeing with its direction and 1 against, so the minority column points at the wrong rows
+rather than at the event.
+
+`Track-Cycling-DQ-075 EVENT_RESULTS_LAPS_BEHIND_CONTRADICT_RANK` returns 4 of 283, in two
+branches: a competitor ranked ahead of one it is lapped further behind than, and two on the
+same lap ordered against their points. Small today, and it guards the rule the Madison, the
+20Km Madison and the six-day are actually classified by, which nothing else on the board
+reads.
+
+`Track-Cycling-DQ-076 EVENT_DURATION_GAP_WITHOUT_AN_ABSOLUTE_TIME` returns 20 of 3235: a
+timed event whose every stored time is a gap, with nothing to measure the gaps from.
+`Track-Cycling-DQ-053` cannot see this, because `GLOBAL-DQ-019` reaches a competitor through
+the Duration row itself and a rank 1 holding no Duration is not a row it joins.
+
+**The sprint and the keirin are why that last check is scoped.** The sport holds 5415 events
+whose times are all gaps and 5393 of them are `377 Individual Sprint` or `379 Keirin`, where
+the clock settles nothing and the habit is the sport. Running it unscoped would bury the 20.
+
+**`GLOBAL-DQ-142` reads this sport correctly and needed no help.**
+`Track-Cycling-DQ-029 EVENT_PARTICIPANT_TYPE_CONTRADICTS_DISCIPLINE` returns 18 of 19231, and
+its one-per-cent threshold with a hundred-event floor lands exactly where a hand-written rule
+would have had to: it reports the six Team Pursuits entered with individual athletes and the
+four Team Sprints, and it stays silent on `391 Derny`, `394 Time Trial` and `389 6-days`,
+which hold both kinds legitimately. A six-day Derny is ridden by the meeting’s pairs and a
+`500m Madison Time Trial` by a pair as well, so a discipline list naming Derny and Time Trial
+as individual formats would have been wrong. Recorded 2026-08-26 because the threshold looks
+arbitrary until a sport shows what it is protecting.
+**Two disciplines hold the other one’s distance, and the split follows gender.** Measured
+2026-08-26 over every well-formed time:
+
+| Discipline | Gender | Times | Range | What that distance is ridden in |
+|---|---|---:|---|---|
+| `123 1km Individual time trial` | female | 514 | 33.30 - 82.21 | a kilometre is 55.4 at world record |
+| `122 500m Individual time trial` | male | 22 | 59.19 - 69.20 | 500 m is about 26 to 45 |
+| `396 Omnium - 500m Ind. time trial` | male | 75 | 60.91 - 73.70 | as above |
+
+451 of the female kilometre times fall under 50 seconds, across 31 events named
+`1 KM Time Trial`, `Individual 1 km time trial` and `Time Trial`. No woman rides a kilometre
+in 33 seconds; those are five-hundred-metre times. Every male 500 m time in the sport, and
+every male Omnium 500 m time, is a kilometre. Historically the championship distance was
+500 m for women and 1 km for men, and the two disciplines look to have been assigned from
+that expectation rather than from the race that was ridden.
+`Track-Cycling-DQ-079` reports them, and whether the repair belongs to the discipline or to
+the event name is an open question below.
+
+**Three more checks were written on 2026-08-26**, taking the sport’s own statements to six.
+
+`Track-Cycling-DQ-077 EVENT_TEAM_LINEUP_SIZE_NOT_A_FIELD_THE_DISCIPLINE_ENTERS` returns 118
+of 13829 team entries. `Track-Cycling-DQ-022` cannot reach what it finds: `GLOBAL-DQ-068`
+compares the teams inside one event against each other, so an event where every squad is the
+wrong size passes it. `ev 4706595` holds four team pursuit squads of five and `ev 4706594`
+four team sprint squads of four, all typed `14 Starter` — a squad list with its reserve
+recorded where the starters belong.
+
+`Track-Cycling-DQ-078 EVENT_DURATION_WRITTEN_IN_A_NOTATION_THE_SPORT_DOES_NOT_USE` returns 12
+of 12629 events in three branches: 10 write the minute separator as a dot (`4.30.752`), 1
+writes the fraction separator as a colon (`46:17:00`), and 1 writes a clock value with no
+fraction at all (`13:40` for a flying 200 m). All ten of the first branch come from one
+template, the Oceania Track Championship, between 2017 and 2025, so the repair is one feed.
+Neither existing check sees any of it: `GLOBAL-DQ-120` excludes a two-dot value from its
+numeric pattern outright and `GLOBAL-DQ-019` tests only the leading plus.
+
+`Track-Cycling-DQ-079 EVENT_DURATION_IMPLAUSIBLE_FOR_ITS_DISCIPLINE` returns 64 of 3053,
+holding 608 values. Its bands are placed in gaps in the measured distribution and are wide
+enough for every level the sport is raced at; only the fixed-distance disciplines are read,
+because a scratch race has no expected duration and the sprint stores three different
+quantities in the field depending on the round.
+
+**A check on the record markers was written, measured and withdrawn on 2026-08-26.** The idea
+was that a `WR` or `OR` must stand on a time no slower than the record before it. Tested
+against the best of its own year it returned 33 of 71, and most of those are correct: a
+record set in qualifying is beaten later the same day by the record that succeeds it, which
+is what a progression looks like. Tested against everything before it, it breaks on the two
+distance changes above — every women’s team pursuit record from 2016 is slower than the
+2012 ones because the race became a kilometre longer, and the same for the team sprint in
+2024. The comparison set is also polluted by the times `Track-Cycling-DQ-079` exists to
+report: the best male team sprint time of 2021 reads as 0.000. It is recorded as withdrawn
+rather than left unmentioned, because the idea is a natural one and the next reader should
+not have to measure it again to find out why it does not work.
 <!-- MANUAL PASTE ZONE: 55 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
@@ -383,4 +547,27 @@ saying the same thing once per event rather than a crowd of separate defects.
     reading and not evidence.
 11. The Comp.Rank layer in full, deferred by the decision in the verification boundary.
 
+12. Whether four disciplines are duplicates of four others rather than formats in their own
+    right: `401 10Km Scratch Race` holds one event beside `398 Scratch` with 507,
+    `400 20Km Madison` holds four beside `380 Madison` with 496, `392 250m Team Time Trial`
+    holds two, and `548 Stayer 50 km` holds one while the Steherrennen races of the
+    six-day meetings are filed under `389 6-days`. Each names a distance where the
+    discipline it resembles names none.
+13. What `102 Points` means on the events of `377 Individual Sprint`, `379 Keirin`,
+    `398 Scratch` and `399 Elimination Race` that carry it. None of those four is decided on
+    points, and the value is left unread rather than guessed: `Track-Cycling-DQ-074` is
+    scoped away from them for that reason: measured 2026-08-26, admitting them adds the
+    56 events those four hold to its 49.
+14. Whether a non-finisher should hold a rank. Measured 2026-08-26 the sport answers both
+    ways for the same status: `DNS` holds one on 324 participations and none on 412, `DNF`
+    1730 against 981, `Disq.` 138 against 135. `Track-Cycling-DQ-055` reports the
+    status-with-a-rank half under the existing vocabulary; which half is correct is not
+    settled here.
+15. Whether the 500 m and 1 km time trials are to be repaired by moving the events to the
+    other discipline or by correcting the times, and what the events named `1 KM Time Trial`
+    that hold 500 m times should be called afterwards.
+16. Whether a lineup should ever hold a rider who did not start. All lineups in this sport
+    are typed `14 Starter`, and the oversized squads read as a full selection with its
+    reserve. If a reserve is to be recorded, it needs a second lineup type rather than a
+    fifth starter.
 <!-- MANUAL PASTE ZONE: 55 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
