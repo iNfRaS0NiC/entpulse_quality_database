@@ -2268,6 +2268,48 @@ Test-That 'a closed status the run has just contradicted is reopened' {
     Assert-True ($SheetsStatusBands.Value -contains 'Reopened') 'which the closed list has to offer'
 }
 
+Test-That 'a check that was never meant to reach zero is not reopened' {
+    # Measured on the first eleven boards run under this rule, 2026-08-26: 99 checks moved and
+    # eight of them should not have. A Monitor check expects Non-zero - the proportion is the
+    # finding and the count will never be nothing - so Completed on it meant the reviewer read
+    # it, not that it came back empty. Reopening those would ask the same question every run.
+    foreach ($expectation in @('Non-zero', 'Residual', '')) {
+        $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-060' -Findings 1114 -Eligible 90000 -Verdict 'As expected'))
+        $summary[0].Expected = $expectation
+        $existing = [pscustomobject]@{
+            HasOverviewHeader = $true
+            OverviewRowOf = @{ 'Fixtureball-DQ-060' = 6 }
+            StatusOf = @{ 'Fixtureball-DQ-060' = 'Completed' }
+            TabOf = @{}
+            ResultRowsOf = @{}
+        }
+        $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+        $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+        $label = $(if ($expectation) { $expectation } else { 'no expectation at all' })
+        Assert-Equal 0 $status.Count "a check expecting $label keeps the word its reviewer typed"
+    }
+}
+
+Test-That 'a sentinel is reopened, because every row it returns is a defect' {
+    # Sentinel and Monitor are easy to run together and must not be. A sentinel expects Zero: its
+    # population has not arrived, and on the day it does every row is real. Monitor expects
+    # Non-zero and never reaches nothing.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-061' -Findings 3 -Eligible 900 -Verdict 'New'))
+    $summary[0].Expected = 'Zero'
+    $summary[0].Signal = 'Sentinel'
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-061' = 6 }
+        StatusOf = @{ 'Fixtureball-DQ-061' = 'Clean' }
+        TabOf = @{}
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+    Assert-Equal 1 $status.Count 'the population arrived and the board has to stop saying Clean'
+    Assert-Equal 'Reopened' $status[0].Values[0][0] 'in the word that says it came back'
+}
+
 Test-That 'a closed status stands while the check returns nothing' {
     # The run may contradict a conclusion. Forming one is not its to do, so a check back at zero
     # keeps whatever a person last said about it.

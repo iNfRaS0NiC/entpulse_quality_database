@@ -1563,7 +1563,8 @@ So a run that finds `Clean` or `Completed` on a check its own result contradicts
 
 | | |
 |---|---|
-| What triggers it | the cell reads `Clean` or `Completed`, or a superseded spelling of either, **and** the run returns open findings |
+| What triggers it | the cell reads `Clean` or `Completed`, or a superseded spelling of either, **and** the check's `Expected` is `Zero`, **and** the run returns open findings |
+| Why the expectation matters | `Zero` is carried by `Actionable` and `Sentinel`, and for both every returned row is a defect. `Non-zero` belongs to `Monitor`, where the proportion is the finding and the count never reaches nothing; `Residual` is a remainder somebody agreed to leave; an empty expectation belongs to `Blocked`, `Not applicable` and `Out of client scope`. On those, `Completed` means the reviewer read it, so reopening would ask the same question every run for ever. Narrowed 2026-08-26 after the first eleven boards moved 99 checks and eight of them should not have |
 | What counts | `Findings` after dismissals, not raw rows — a check whose remaining rows are all marked `No Issue / Change` is still finished and keeps its word |
 | The other eight | untouched. `Monitor Only` expects a count forever, `Reviewing`, `On Hold` and `Skipped` say where the reading got to, `IT Fix` and `Other Team` say who is holding it, `Not reviewed` is the seed and `Deprecated` is the registry's. None is a claim a result can contradict |
 | Going the other way | never. A check that returns to zero keeps whatever a person last said about it: a run may contradict a conclusion, but forming one is not its to do |

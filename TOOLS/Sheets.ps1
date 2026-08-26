@@ -321,6 +321,19 @@ $SheetsUnreviewedStatus = 'Not reviewed'
 $SheetsReopenedStatus = 'Reopened'
 $SheetsStatusClosedByFinding = @('Clean', 'Completed')
 
+# The one expectation under which a returned row contradicts a closed status.
+#
+# `Zero` is carried by `Actionable` and by `Sentinel`, and both mean the same thing here: every
+# row this check returns is a defect, so a board saying Clean or Completed while it returns rows
+# is saying something the run has just disproved.
+#
+# The other three do not. `Non-zero` belongs to `Monitor`, where the proportion is the finding
+# and the count will never be nothing; `Residual` is a remainder somebody agreed to leave; and an
+# empty expectation belongs to `Blocked`, `Not applicable` and `Out of client scope`, which are
+# not counts anybody is waiting on. `Completed` on any of those means the reviewer read it, not
+# that it came back empty, and reopening it would ask them the same question every run for ever.
+$SheetsExpectationReopenable = 'Zero'
+
 $SheetsStatusBands = @(
     [pscustomobject]@{ Value = 'Not reviewed'; Background = '#FCE8E6'; Colour = '#C5221F' }
     [pscustomobject]@{ Value = 'Clean'; Background = '#E6F4EA'; Colour = '#137333' }
@@ -1746,6 +1759,20 @@ function New-SheetsMergePlan {
             # they have already decided about and it stays in the result for good, so a check
             # whose remaining rows are all dismissed is still finished and keeps its word.
             #
+            # **And only where the check was ever supposed to reach zero.** Corrected 2026-08-26,
+            # after the first eleven boards run under this rule moved 99 checks and eight of them
+            # should not have been. `Expected` is the field that answers it and the only one that
+            # does: a check expecting `Non-zero` is one whose proportion is the finding and whose
+            # count will never be nothing, so `Completed` on it never meant "returns nothing" and
+            # a run contradicts nothing by returning rows - it would have reopened every such row
+            # on every run for ever, which is the nagging the dismissal rule above exists to
+            # avoid. `Residual` is a remainder somebody agreed to leave, and an empty expectation
+            # belongs to `Blocked`, `Not applicable` and `Out of client scope`, none of which is a
+            # count anybody is waiting on.
+            #
+            # `Zero` keeps both the checks that carry it: `Actionable`, and `Sentinel`, whose
+            # population has not arrived but whose every row is a defect on the day it does.
+            #
             # A superseded spelling is mapped first so the two rules agree within one run. Left
             # unmapped, a cell reading `Fixed` would be renamed to `Completed` by the loop above
             # and only reopened on the run after this one.
@@ -1758,6 +1785,7 @@ function New-SheetsMergePlan {
                 } else { $statusNow })
             $openNow = 0
             if (($SheetsStatusClosedByFinding -contains $statusMeans) -and
+                ([string]$entry.Expected -eq $SheetsExpectationReopenable) -and
                 [int]::TryParse([string]$open.Findings, [ref]$openNow) -and $openNow -gt 0) {
                 $statusColumn = [array]::IndexOf($SheetsOverviewColumns, 'Status') + 1
                 $plan += [pscustomobject]@{
