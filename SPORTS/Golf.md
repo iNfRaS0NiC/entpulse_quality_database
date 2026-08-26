@@ -711,6 +711,38 @@ They are not a separate population with its own purpose, which is what the open 
 They are the same object attached one level down, and `GLOBAL-DQ-106` is the template that
 asserts the owner level.
 
+**The `1273` Comment field was empty and is not any more, and two classifications rested on
+that.** Until 2026-08-18 Golf wrote no row into the Comment data field declared for statistic
+type 11. `RUNS/Golf.json` records the population arriving and still growing: 335 eligible on the
+18th, then 921, 1235, 1311, 1912, and 2021 from the 24th.
+
+A shared place is how golf finishes - two players on the same score are both T5 - and the
+template asks for the explanation in exactly that field. While it was empty, every legitimate tie
+in the sport was reported and nothing anybody corrected could empty the list. That is no longer
+true, and the counts show it being emptied: `Golf-DQ-022`
+`COMP.RANK_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT` fell from 495 findings on 19 August to 397 on
+the 21st and 286 on the 24th.
+
+So both checks that rested on the absence stop being `Monitor` and become `Actionable` by
+default, on 2026-08-26:
+
+- `Golf-DQ-011` `COMP.RANK_RESULTS_COMMENT_INVALID_OR_CONTRADICTED`, on `GLOBAL-DQ-057`. Its
+  whole reason was that the population was empty and the check stood ready for the first comment
+  the sport wrote. It came, and the check reports 78 findings of 2021 - which is what a sentinel
+  means on the day it fires.
+- `Golf-DQ-022`, on `GLOBAL-DQ-095`. Each remaining row is a tie whose explanation has not been
+  written yet, and that is correctable now in a way it was not on 2026-08-14 when the reading was
+  decided.
+
+This is deliberately **not** filed with the four sentinels above it. `1427` Time difference and
+`1429` Team are still unwritten and those four checks still audit an empty population; `1273` is
+the one of the three that filled, and the difference between them is now a fact about the sport
+rather than a shared shape.
+
+The board is what noticed. `Golf-DQ-011` had been marked `Completed` by a reviewer and the run of
+2026-08-26 moved it to `Reopened` because its own result contradicted the word; of the 99 rows
+that run moved, this was the one that looked like a false alarm and was not.
+
 <!-- MANUAL PASTE ZONE: 3 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values
