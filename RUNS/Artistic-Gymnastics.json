@@ -29215,6 +29215,84 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 27.08.2026 07-12-58",
+                     "startedUtc":  "2026-08-27T05:12:57Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 27.08.2026 07-12-58",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-106",
+                                        "runKey":  "Artistic-Gymnastics-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  506,
+                                        "findings":  505,
+                                        "eligible":  7828,
+                                        "seconds":  3.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-107",
+                                        "runKey":  "Artistic-Gymnastics-DQ-107",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  42,
+                                        "findings":  41,
+                                        "eligible":  4241,
+                                        "seconds":  15.2,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 27.08.2026 07-28-30",
+                     "startedUtc":  "2026-08-27T05:28:29Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 27.08.2026 07-28-30",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-106",
+                                        "runKey":  "Artistic-Gymnastics-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  506,
+                                        "findings":  505,
+                                        "eligible":  7828,
+                                        "seconds":  3.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-107",
+                                        "runKey":  "Artistic-Gymnastics-DQ-107",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  42,
+                                        "findings":  41,
+                                        "eligible":  4241,
+                                        "seconds":  14.6,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"
