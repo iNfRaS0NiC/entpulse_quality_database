@@ -613,18 +613,109 @@ no 400 metre breaststroke that one is a wrong time rather than a wrong disciplin
 Reading the whole field instead of the winner would report every slow swimmer in the
 sport. The winner is what makes the test structural: everyone behind was slower still.
 
+## The two relay catalogues, measured and decided on 2026-08-27
+
+Open questions 1 and 3 were both about the same thing seen from its two ends, and profiling
+the relay disciplines answered both.
+
+**The six ids are three twins of the same race.** `56 Freestyle 4 x 100 metres` holds 106
+events against `365 Freestyle 4 x 100m` with 674; `57 Medley 4 x 100 metres` holds 152 against
+`367 Medley 4 x 100m` with 735; `58 Freestyle 4 x 200 metres` holds 49 against
+`366 Freestyle 4 x 200m` with 489. Three hundred and seven events against eighteen hundred
+and ninety-eight.
+
+**It is not a distinction of course, of gender or of era.** Ten template-and-relay pairs hold
+events on both ids at once. The men's World Championships Short Course holds 10 events on `56`
+and 30 on `365` for a relay named `4x100m Freestyle Relay` in both. Short course and long
+course each use both; the male, female and mixed templates each use both.
+
+**Whose habit it is, which question 1 asked, has an answer, and it is the competition's.**
+The World Championships changed after 2006 and never went back: the men's short-course
+template writes `56` in 2004 and 2006 and `365` from 2008 to 2026, and the long-course one
+writes `56` only in 2005. **Two competitions never changed.** The World Junior Championships
+writes the older ids in every edition it has, 2006 through 2025, 198 events across its three
+gender templates; the Swimming World Cup writes them in 2015, 2018, 2019 and 2023, 42 events.
+It is neither a legacy nor an error made event by event: it is a habit that belongs to a
+competition and travels with it.
+
+**Question 3 is answered no: the residue is not a stalled correction.** In the editions that
+still use the older ids the event names are uniform - all sixteen relays of the 2025 World
+Junior Championships are named distance-first, whichever id they carry - so nothing on the
+naming side is half-finished, and the whole of the disagreement sits on the id. There is one
+exception in the sport, and it is a single event: `5408531 Men's Medley 4 x 100m` of
+2014-12-07, on the older `57`, eight years after its own template stopped writing them.
+
+**The decision of 2026-08-27: the older catalogue is the defect and folds into the current
+one.** `56` becomes `365`, `57` becomes `367`, `58` becomes `366`. That is a decision about
+the catalogue rather than about any event, it is the user's and not this package's, and it
+reaches the people who own the catalogue as a finding. `Swimming-DQ-086` is the repair list
+and already names the twin on every row; the three relays are 307 of its 374 findings.
+`Swimming-DQ-066` is not the repair list and stays a `Monitor`: what it measures is the naming
+convention, which nobody has declared wrong, and once the fold is done it reaches zero by
+construction rather than by anybody renaming an event.
+
+**The consequence for Comp.Rank is why it mattered.** A ranking grouped by `disciplineFK`
+sees two competitions where the meet ran one. Measured, the split falls between editions of
+one competition rather than inside a single edition, which is what the question assumed:
+the men's short-course World Championships would rank its `4x100m Freestyle Relay` under `56`
+for 2004 and 2006 and under `365` from 2008 on.
+
+## The provisional markers, decided on 2026-08-27
+
+Open question 4 asked whether `?` and `R?` are meant to be resolved or left standing. Measuring
+them against the round the sport uses to settle such a place separates them completely, and they
+were decided apart.
+
+**`?` is an unfinished record and is now `Swimming-DQ-087`.** The sport settles a contested
+qualifying place in a Swim-Off, round types `223` and `224`. Measured 2026-08-27, **all 56 `?`
+rows sit in a tournament that held a Swim-Off in that row's own discipline** - not merely
+somewhere in the meet, but in the same discipline - so the thing that would have answered the
+question was swum every single time and the marker was never updated. The check returns 36
+findings of 36 eligible events, which is the same fact stated as a coverage count: every event
+that ever wrote a `?` had its answer swum. They run from 2007-11-09 to 2025-10-18, thirty-nine
+of the fifty-six between 2007 and 2011 and the rest a thin tail, so it is an old habit that
+never quite stopped rather than a current one.
+
+**`R?` stays and is not read by that check.** It is the provisional reserve marker, and three
+things separate it from `?`. It is new: it appears first in 2022 and grows, 1 row then 12 then
+28, so it is a live convention rather than a residue. It does not depend on a Swim-Off: 29 of
+its 41 rows sit in a meet that held none in their discipline at all, which fits a marker for an
+unsettled reserve place rather than an unsettled qualification. And a reserve place can be
+legitimately open. Reading it in `Swimming-DQ-087` would report a marker doing its job.
+
+**`#NAME?` is neither, and is a single row.** Event `5212269 Backstroke 100m Final B` of the
+2019 Pan American Games carries it. It is a spreadsheet error string that reached the database,
+not a status the sport writes. `Swimming-DQ-039` already reports it for being outside the
+comment vocabulary and no second check is needed.
+
+**Noted while measuring, and not decided:** `223 Swim-Off` and `224 Swim-Off` are two round
+type ids for the same round, holding 157 and 143 events, both in use to 2026 and 2027. That is
+the same duplicate-catalogue shape the disciplines have and it has not been put to anybody.
+
+## The catalogue fold covers all fourteen disciplines, decided on 2026-08-27
+
+The decision recorded above under "The two relay catalogues" was first taken for the three relay
+ids and was extended the same day to the whole `metres` catalogue. The current `m` names are
+canonical and every event on a `metres` id is to be repointed at its twin.
+
+`Swimming-DQ-086` is the one list and returns 374 findings. The three relays are 307 of them and
+the other 67 sit on eleven individual disciplines, led by `54 Individual Medley 200 metres` with
+31 and `55 Individual Medley 400 metres` with 20. **Nothing is blocked**: measured 2026-08-27
+every one of the 374 carries a current twin, so the check's
+`Superseded_Discipline_With_No_Current_Twin` verdict returns nothing and is a sentinel for a
+state the sport is not in.
+
 <!-- MANUAL PASTE ZONE: 46 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
 
-1. **What writes a distance-first event name together with an older discipline id?** The
-   question has narrowed twice. The choice is made per edition of a competition and held
-   consistently within it, so it is not an error made event by event; it is still being made in
-   2025, so it is not a legacy import; and it carries its own naming convention, so it is one
-   habit rather than two. What the database cannot say is whose habit it is. Until that is
-   answered, a Comp.Rank grouping by `disciplineFK` will split one competition's relay across
-   two rankings from one edition to the next. `Swimming-DQ-066` now measures how large that
-   split will be; it does not answer the question.
+1. ~~**What writes a distance-first event name together with an older discipline id?**~~
+   Answered on 2026-08-27 and recorded above under "The two relay catalogues". The habit
+   belongs to the competition: the World Championships changed after 2006, while the World
+   Junior Championships and the Swimming World Cup never did and are still writing the older
+   ids in 2025 and 2023. The same day the user decided the older catalogue is the defect and
+   folds into the current one - `56` into `365`, `57` into `367`, `58` into `366` - which is
+   a catalogue decision for the people who own it. `Swimming-DQ-086` is the repair list.
 2. ~~**Should `468` and `479` be folded into `351` and `362`, and `374` and `557` into one?**~~
    Withdrawn on 2026-08-25, because the question could not be asked of those four together.
    `468` and `479` are not Swimming disciplines: `discipline.sportFK` puts both on sport 135,
@@ -634,13 +725,17 @@ sport. The winner is what makes the test structural: everyone behind was slower 
    was widened the same day. `Swimming-DQ-066` had read the two as the older vocabulary's
    individual twins and no longer does. `374` and `557` are a real question and are asked as
    question 10.
-3. **Are the events holding a distance-first name with a current discipline id a stalled
-   correction?** They are the only place the two halves of the signature disagree, which is what
-   a half-finished cleanup would look like. There are 91 of them under the literal reading, and
-   `Swimming-DQ-066` keeps the count visible so the answer can be read off whether it moves.
-4. **Are `?` and `R?` meant to be resolved, or left standing?** What they mark is settled and
-   the Reference values section records it. What is not settled is whether a qualification the
-   record has left open since 2007 is ever expected to close.
+3. ~~**Are the events holding a distance-first name with a current discipline id a stalled
+   correction?**~~ Answered no on 2026-08-27. The naming is uniform inside every edition that
+   uses the older ids, so nothing on that side is half-finished and the whole disagreement is
+   on the id. The single event that does look like a leftover is `5408531`, and it is one row
+   rather than a residue. `Swimming-DQ-066` keeps its `Monitor` signal and its count.
+4. ~~**Are `?` and `R?` meant to be resolved, or left standing?**~~ Answered on 2026-08-27 and
+   recorded above under "The provisional markers". They were decided apart: `?` is an unfinished
+   record, because all 56 of its rows sit in a meet that swam a Swim-Off in their own discipline,
+   and is now `Swimming-DQ-087`; `R?` stays, because it is new since 2022, growing, and 29 of its
+   41 rows have no Swim-Off to be settled against. What is not settled is whether `R?` now belongs
+   in `RESULT_COMMENT_VALUE_LIST`, which is asked as question 11.
 5. ~~**Is `date_of_birth` required for this sport's athletes, and what bounds a plausible one?**~~
    Answered on 2026-08-20 and both halves are now checks. Required: yes, and `Swimming-DQ-061`
    reports the 12811 athletes carrying none. Bounded: not by a birth year, which would report
@@ -681,5 +776,14 @@ sport. The winner is what makes the test structural: everyone behind was slower 
     and merging it is a decision about the catalogue rather than about this sport. No check can
     see it: the names differ by more than a convention, so no rule pairs them without a person
     deciding they mean the same thing.
+
+11. **Does `R?` now belong in `RESULT_COMMENT_VALUE_LIST`?** Raised on 2026-08-27 by the
+    decision on question 4. `R?` was left out of the vocabulary while it was undecided, and
+    `Swimming-DQ-039` reports all 41 of its rows as an invalid comment. Now that it is decided
+    to stay, that reading is the wrong one: a live marker of the sport is not an invalid value.
+    Admitting it silences those 41 rows and is a parameter change rather than a check change;
+    leaving it out keeps them visible at the cost of calling a valid marker invalid. The same
+    question can be asked of `?`, and there the answer is clearly no - it is reported for two
+    reasons now and both of them hold.
 
 <!-- MANUAL PASTE ZONE: 46 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

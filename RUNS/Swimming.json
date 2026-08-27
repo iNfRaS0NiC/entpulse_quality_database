@@ -6697,6 +6697,98 @@
                                         "status":  "OK"
                                     }
                                 ]
+                 },
+                 {
+                     "runId":  "27.08.2026 12-22-50",
+                     "startedUtc":  "2026-08-27T10:22:50Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-066",
+                                        "runKey":  "Swimming-DQ-066",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_CONVENTION_CONTRADICTS_DISCIPLINE_VOCABULARY",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  93,
+                                        "findings":  92,
+                                        "eligible":  2205,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "scratchpad",
+                     "startedUtc":  "2026-08-27T10:32:29Z",
+                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\3f0e3ff3-a79b-4e4c-8ee9-57020721ae68\\scratchpad",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-086",
+                                        "runKey":  "Swimming-DQ-086",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_DISCIPLINE_ON_SUPERSEDED_CATALOGUE",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  375,
+                                        "findings":  374,
+                                        "eligible":  46365,
+                                        "seconds":  4.5,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "27.08.2026 12-35-42",
+                     "startedUtc":  "2026-08-27T10:35:42Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-066",
+                                        "runKey":  "Swimming-DQ-066",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_CONVENTION_CONTRADICTS_DISCIPLINE_VOCABULARY",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  93,
+                                        "findings":  92,
+                                        "eligible":  2205,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    }
+                                ]
+                 },
+                 {
+                     "runId":  "27.08.2026 13-11-05",
+                     "startedUtc":  "2026-08-27T11:11:05Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-087",
+                                        "runKey":  "Swimming-DQ-087",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_PROVISIONAL_QUALIFICATION_LEFT_UNSETTLED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 104 Comment, 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  37,
+                                        "findings":  36,
+                                        "eligible":  36,
+                                        "seconds":  6.6,
+                                        "status":  "OK"
+                                    }
+                                ]
                  }
              ],
     "sheetId":  "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g"

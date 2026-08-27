@@ -454,13 +454,26 @@ SELECT
 -- What this statement reports is the residue where the two halves of that signature disagree,
 -- and its signal is Monitor: the proportion is the finding and no single row is a defect. A
 -- reviewer driving it to zero would be renaming events to match a convention nobody has
--- declared, which is why the sport file records the count rather than a target. What the
--- residue is worth is that it marks where one of the two halves was corrected and the other was
--- not, so it is the shortest description available of how far a half-finished cleanup got.
--- The reason it matters at all is downstream and is stated in SPORTS/Swimming.md: a Comp.Rank
--- grouped by disciplineFK will split one competition's relay across two rankings from one
--- edition to the next, because the edition and not the event chooses the vocabulary. Until that
--- is settled this is the measurement of how large the split will be.
+-- declared, which is why the sport file records the count rather than a target.
+-- **The half-finished-cleanup reading was tested on 2026-08-27 and is wrong.** It assumed each
+-- vocabulary carries its own way of naming the event, so that a row where the two disagree marks
+-- a correction that got halfway. Profiling the editions refutes it: inside an edition the names
+-- are uniform and the ids are not. All sixteen relays of the 2025 World Junior Championships are
+-- named distance-first, eleven of them on the older ids and five on the current ones, so there
+-- is nothing half-corrected on the naming side and the whole of the disagreement sits on the id.
+-- The one row in the sport that does read like a leftover is event 5408531, Men's Medley
+-- 4 x 100m of 2014-12-07, on the older 57 eight years after its own template stopped writing it.
+-- **Which vocabulary an event gets belongs to the competition.** The World Championships changed
+-- after 2006 and never went back; the World Junior Championships and the Swimming World Cup never
+-- changed and are still writing the older ids in 2025 and 2023. It is neither a legacy nor an
+-- error made event by event.
+-- **The catalogue question this measured was decided on 2026-08-27: the older ids are the defect
+-- and fold into the current ones**, 56 into 365, 57 into 367, 58 into 366. That repair is
+-- Swimming-DQ-086's list and not this one's - this check stays a Monitor of the naming and goes
+-- to zero by construction when the fold is done, rather than by anybody renaming an event.
+-- The reason it mattered at all is downstream and is stated in SPORTS/Swimming.md: a Comp.Rank
+-- grouped by disciplineFK sees two competitions where the meet ran one. Measured, the split
+-- falls between editions of one competition rather than inside a single edition.
 -- Only the six discipline ids where the signature was confirmed are read, and the confirmation
 -- is what limits them to the relays. 351 and 362 are deliberately not among them:
 -- SPORTS/Swimming.md records that those two are written both ways, so neither spelling is the
@@ -1457,6 +1470,17 @@ SELECT
 -- The check does not say which catalogue is the right one. That is a decision for the people who
 -- own the catalogue, and if it goes the other way this statement is the one that gets inverted -
 -- but either way the events cannot stay on both.
+-- **The decision was made on 2026-08-27 and it goes this way**: the current `m` catalogue is
+-- canonical and the `metres` one folds into it, for all fourteen disciplines carrying events and
+-- not only for the relays. This statement is not inverted, and every one of its 374 findings is
+-- a row of one repair list. The three relays are 307 of them - 152 on 57 Medley 4 x 100 metres,
+-- 106 on 56 Freestyle 4 x 100 metres, 49 on 58 Freestyle 4 x 200 metres - and the other 67 sit
+-- on eleven individual disciplines, led by 31 on 54 Individual Medley 200 metres and 20 on
+-- 55 Individual Medley 400 metres.
+-- Measured the same day, every one of the 374 carries a current twin: the
+-- Superseded_Discipline_With_No_Current_Twin branch returns nothing, so the decision leaves no
+-- row without somewhere to go and the second verdict is a sentinel for a state the sport is not
+-- in today.
 -- Not `GLOBAL-DQ-015`'s question: these references resolve, and they resolve to a discipline of
 -- this sport. Not `GLOBAL-DQ-082`'s either - that one asks whether a stage's events disagree
 -- with each other, and a stage filed entirely on the older catalogue agrees with itself.
@@ -1527,3 +1551,119 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, twin_events_in_same_template DESC, event_startdate DESC, event_id;
+
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Swimming-DQ-087
+    -- Name - EVENT_RESULTS_PROVISIONAL_QUALIFICATION_LEFT_UNSETTLED
+    -- What it does: Finds swimmers still marked with a provisional qualification in a meet whose swim-off for that very discipline was swum.
+    'Provisional_Qualification_Left_Unsettled' AS check_type,
+    y.event_id,
+    y.event_name,
+    y.event_startdate,
+    y.round_type_name,
+    y.discipline_id,
+    y.discipline_name,
+    y.swimmers_marked,
+    y.sample_swimmers,
+    y.swim_off_events,
+    y.template_name,
+    y.tournament_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: `?` is this sport's provisional qualification. SPORTS/Swimming.md
+-- records what it marks: on a heats summary it is written at place eight and nowhere else, the
+-- last place that reaches the final, so it says the record never settled who took that place. The
+-- sport settles such a place in a Swim-Off, round types 223 and 224.
+-- **This does not report the marker. It reports the marker surviving its own answer.** For every
+-- row it finds, the meet ran a Swim-Off in the same discipline, so the thing that would have
+-- settled the question was swum and the row was never updated. A provisional value is legitimate
+-- while it is provisional; what makes these a defect is that they are not.
+-- Measured 2026-08-27 the coincidence is total: all 56 `?` rows in the sport sit in a tournament
+-- that held a Swim-Off in that row's own discipline, 56 of 56. They run from 2007-11-09 to
+-- 2025-10-18, thirty-nine of them between 2007 and 2011 and the rest a thin tail, so this is an
+-- old habit that never quite stopped rather than a current one.
+-- **`R?` is deliberately not read.** Decided 2026-08-27: it is the provisional reserve marker and
+-- a live convention rather than a residue - it appears first in 2022 and grows, 1 then 12 then 28
+-- - and 29 of its 41 rows sit in a meet that held no Swim-Off in their discipline at all, so
+-- most of them have nothing to be settled against. Reading it here would report a marker doing
+-- its job.
+-- The audited object is the event and the swimmers are named in a column, because one heats
+-- summary can carry more than one unsettled place and the repair is made once per event.
+-- Not `Swimming-DQ-039`'s question. `GLOBAL-DQ-052` reports `?` for being outside the comment
+-- vocabulary, which is true of every one of them and says nothing about whether it was answered.
+-- Not `Swimming-DQ-084`'s either: that one asks whether a `Q` was honoured by a later round, and
+-- a `?` is not a `Q`.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        rt.name AS round_type_name,
+        od.disciplineFK AS discipline_id,
+        d.name AS discipline_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(DISTINCT ep.id) AS swimmers_marked,
+        SUBSTRING(GROUP_CONCAT(DISTINCT CONCAT(p.name, ' (', COALESCE(rk.value, 'no place'), ')')
+            ORDER BY p.name SEPARATOR ' | '), 1, 300) AS sample_swimmers,
+        (SELECT COUNT(DISTINCT e2.id)
+           FROM tournament_stage ts2
+           JOIN event e2 ON e2.tournament_stageFK = ts2.id AND e2.del = 'no'
+                        AND e2.round_typeFK IN (223, 224)
+           JOIN object_discipline od2 ON od2.object_typeFK = 5 AND od2.objectFK = e2.id
+                                     AND od2.del = 'no'
+          WHERE ts2.tournamentFK = t.id AND ts2.del = 'no'
+            AND od2.disciplineFK = od.disciplineFK) AS swim_off_events
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 46
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    JOIN discipline d ON d.id = od.disciplineFK
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN result cm ON cm.event_participantsFK = ep.id AND cm.del = 'no'
+                  AND cm.result_typeFK = 104 AND cm.value = '?'
+    LEFT JOIN result rk ON rk.event_participantsFK = ep.id AND rk.del = 'no'
+                       AND rk.result_typeFK = 100
+    WHERE e.del = 'no'
+      AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, rt.name, od.disciplineFK, d.name, tt.name, t.name, t.id
+) y
+WHERE y.swim_off_events > 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+-- The eligible population is every event carrying the provisional qualification marker at all.
+-- An event that never wrote a `?` has no question left open on it, and the coverage count is
+-- therefore what says how many of the marked events had their answer swum.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 46
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result cm ON cm.event_participantsFK = ep.id AND cm.del = 'no'
+              AND cm.result_typeFK = 104 AND cm.value = '?'
+WHERE e.del = 'no'
+  AND t.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, swimmers_marked DESC, event_startdate DESC, event_id;
