@@ -2433,6 +2433,57 @@ Test-That 'a check that was never meant to reach zero is not reopened' {
     }
 }
 
+Test-That 'every Overview write names the check it is for' {
+    # The guarantee this whole family of fixes rests on. A plan is built against one reading of
+    # the board; the board can move before the writes land, because a sort saved on the tab's
+    # filter re-applies itself whenever the data changes and a reviewer can be typing into it
+    # at the same time. The transport re-points each write at the row its check now occupies,
+    # and it can only do that for a write that says which check it is for.
+    #
+    # A write that loses its Key does not fail - it silently goes back to being addressed by a
+    # row number that may already be stale - so the loss has to be caught here.
+    $summary = @(
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-090' -Findings 3 -Eligible 900 -Verdict 'New'),
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-091' -Findings 0 -Eligible 900 -Verdict 'Clean' -Status 'Other Team'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-090' = 6; 'Fixtureball-DQ-091' = 7 }
+        StatusOf = @{ 'Fixtureball-DQ-090' = 'Completed'; 'Fixtureball-DQ-091' = 'Other Team' }
+        CommentOf = @{}
+        TabOf = @{ 'Fixtureball-DQ-090' = 'TAB_90'; 'Fixtureball-DQ-091' = 'TAB_91' }
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+
+    # Row 1 is the header and belongs to no check, which is why it is the one write here that
+    # is addressed by position and must stay that way.
+    $writes = @($plan.Operations | Where-Object {
+            $_.Kind -eq 'Write' -and $_.Sheet -eq 'Overview' -and $_.Range -notmatch '^[A-Z]+1:'
+        })
+    Assert-True ($writes.Count -gt 0) 'the plan writes to Overview at all'
+    foreach ($w in $writes) {
+        $named = ($w.PSObject.Properties.Name -contains 'Key') -and $w.Key
+        Assert-True $named "the write at $($w.Range) says which check it is for"
+        Assert-True ($w.PSObject.Properties.Name -contains 'Column') "the write at $($w.Range) says which column it covers"
+    }
+
+    # And the two that move a reviewer's own column are among them, so neither can land on a
+    # row that has since moved: a status reopened, and a handed-off check closing on a clean run.
+    $onStatus = @($writes | Where-Object { $_.Column -eq ([array]::IndexOf($SheetsOverviewColumns, 'Status') + 1) })
+    Assert-Equal 2 $onStatus.Count 'both Status rules fire here, one for each check'
+    $reopened = @($onStatus | Where-Object { $_.Values[0][0] -eq $SheetsReopenedStatus })
+    Assert-Equal 1 $reopened.Count 'the check that came back with findings is reopened'
+    Assert-Equal 'Fixtureball-DQ-090' ([string]$reopened[0].Key) 'and it names that check'
+    $closed = @($onStatus | Where-Object { $_.Values[0][0] -eq $SheetsStatusClosedByClean })
+    Assert-Equal 1 $closed.Count 'the handed-off check that came back clean is closed'
+    Assert-Equal 'Fixtureball-DQ-091' ([string]$closed[0].Key) 'and it names that one'
+
+    $rich = @($plan.Operations | Where-Object { $_.Kind -eq 'RichText' -and $_.Sheet -eq 'Overview' })
+    foreach ($r in $rich) {
+        Assert-True (($r.PSObject.Properties.Name -contains 'Key') -and $r.Key) 'the trend colouring names its check'
+    }
+}
+
 Test-That 'a Comment mirror sitting beside the wrong check is put back' {
     # Found on the Ice-Hockey board on 2026-08-27: ten Overview rows of a hundred and thirty-two
     # held a mirror naming another check's tab, and five of those tabs were named by two rows at

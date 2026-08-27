@@ -1810,10 +1810,13 @@ function New-SheetsMergePlan {
             foreach ($span in $overviewSpans) {
                 $slice = @($values[($span.From - 1)..($span.To - 1)])
                 $plan += [pscustomobject]@{
-                    Kind   = 'Write'
-                    Sheet  = 'Overview'
-                    Range  = (New-SheetsRange -FromColumn $span.From -FromRow $row -ToColumn $span.To -ToRow $row)
-                    Values = @(, $slice)
+                    Kind     = 'Write'
+                    Sheet    = 'Overview'
+                    Key      = $runKey
+                    Column   = $span.From
+                    ColumnTo = $span.To
+                    Range    = (New-SheetsRange -FromColumn $span.From -FromRow $row -ToColumn $span.To -ToRow $row)
+                    Values   = @(, $slice)
                 }
                 $cells += $slice.Count
             }
@@ -1870,11 +1873,14 @@ function New-SheetsMergePlan {
                 [int]::TryParse([string]$open.Findings, [ref]$openNow) -and $openNow -gt 0) {
                 $statusColumn = [array]::IndexOf($SheetsOverviewColumns, 'Status') + 1
                 $plan += [pscustomobject]@{
-                    Kind   = 'Write'
-                    Sheet  = 'Overview'
-                    Range  = (New-SheetsRange -FromColumn $statusColumn -FromRow $row `
+                    Kind     = 'Write'
+                    Sheet    = 'Overview'
+                    Key      = $runKey
+                    Column   = $statusColumn
+                    ColumnTo = $statusColumn
+                    Range    = (New-SheetsRange -FromColumn $statusColumn -FromRow $row `
                             -ToColumn $statusColumn -ToRow $row)
-                    Values = @(, @($SheetsReopenedStatus))
+                    Values   = @(, @($SheetsReopenedStatus))
                 }
                 $cells += 1
                 $statusRenames += [pscustomobject]@{
@@ -1896,11 +1902,14 @@ function New-SheetsMergePlan {
                 [int]::TryParse([string]$open.Findings, [ref]$cleanNow) -and $cleanNow -eq 0) {
                 $statusColumn = [array]::IndexOf($SheetsOverviewColumns, 'Status') + 1
                 $plan += [pscustomobject]@{
-                    Kind   = 'Write'
-                    Sheet  = 'Overview'
-                    Range  = (New-SheetsRange -FromColumn $statusColumn -FromRow $row `
+                    Kind     = 'Write'
+                    Sheet    = 'Overview'
+                    Key      = $runKey
+                    Column   = $statusColumn
+                    ColumnTo = $statusColumn
+                    Range    = (New-SheetsRange -FromColumn $statusColumn -FromRow $row `
                             -ToColumn $statusColumn -ToRow $row)
-                    Values = @(, @($SheetsStatusClosedByClean))
+                    Values   = @(, @($SheetsStatusClosedByClean))
                 }
                 $cells += 1
                 $statusRenames += [pscustomobject]@{
@@ -4119,21 +4128,69 @@ function Invoke-SheetsPlan {
 
         # The check this cell belongs to, carried alongside the range and stripped before the
         # payload is sent. See "the board can move under the second batch" below.
-        if ($write.PSObject.Properties.Name -contains 'Key' -and $write.Key) {
+        if ($write.PSObject.Properties.Name -contains 'Key' -and $write.Key -and
+            $write.Sheet -eq 'Overview') {
             $range['_key'] = [string]$write.Key
             $range['_col'] = [int]$write.Column
+            $range['_to'] = $(if ($write.PSObject.Properties.Name -contains 'ColumnTo') {
+                    [int]$write.ColumnTo
+                } else { [int]$write.Column })
         }
 
         if ($isRaw) { $raw += $range } else { $entered += $range }
     }
 
     $script:SheetsStage = 'writing values'
+
+    # Where each check sits at this moment, read from the board itself.
+    #
+    # Every write below names the check it is for, and the row is looked up here rather than
+    # taken from the plan. That is the whole of what keeps a value with its CheckID: the plan
+    # was built against a reading of the board, and the board can move between the reading and
+    # the write - a reviewer typing into Status, or the sort a reviewer saved on the tab's
+    # filter re-applying itself after an edit.
+    $rowNowOf = @{}
+    $readRowsNow = {
+        $checkColumn = (ConvertTo-SheetsColumnName -Index (
+                [array]::IndexOf($SheetsOverviewColumns, 'CheckID') + 1))
+        $again = Invoke-SheetsApi -Method Get -Path (
+            "$SpreadsheetId/values/Overview!$checkColumn`1:$checkColumn" +
+            '?majorDimension=ROWS')
+        $map = @{}
+        $seen = @($again.values)
+        for ($i = 0; $i -lt $seen.Count; $i++) {
+            $cell = @($seen[$i])
+            if ($cell.Count -eq 0) { continue }
+            $id = [string]$cell[0]
+            if (-not [string]::IsNullOrWhiteSpace($id)) { $map[$id] = $i + 1 }
+        }
+        return $map
+    }
+    $readdress = {
+        param($Batch, $Map)
+        $count = 0
+        foreach ($one in @($Batch)) {
+            if (-not $one.ContainsKey('_key')) { continue }
+            if (-not $Map.ContainsKey($one['_key'])) { continue }
+            $to = [int]$Map[$one['_key']]
+            $want = "'Overview'!" + (New-SheetsRange -FromColumn $one['_col'] -FromRow $to `
+                    -ToColumn $one['_to'] -ToRow $to)
+            if ($one['range'] -ne $want) { $one['range'] = $want; $count++ }
+        }
+        return $count
+    }
+
     # RAW first. The whole-row write of a new Overview row leaves K empty and the mirror lands
     # on top of it, so the order of these two calls is what decides which value survives.
     if ($raw.Count -gt 0) {
+        if (@($raw | Where-Object { $_.ContainsKey('_key') }).Count -gt 0) {
+            $rowNowOf = & $readRowsNow
+            $script:SheetsRowsMoved += (& $readdress $raw $rowNowOf)
+        }
+        $rawPayload = @($raw | ForEach-Object { @{ range = $_['range']; values = $_['values'] } })
         Invoke-SheetsApi -Method Post -Path "$SpreadsheetId/values:batchUpdate" -Body @{
             valueInputOption = 'RAW'
-            data             = $raw
+            data             = $rawPayload
         } | Out-Null
     }
 
@@ -4154,39 +4211,14 @@ function Invoke-SheetsPlan {
     # A cell is addressed by the check it belongs to and not by where that check was sitting a
     # moment ago. One read of the CheckID column, between the two batches, is what turns the one
     # into the other. It costs a request and only where something is actually being written.
-    # Where every check sits now that the first batch has landed. Read once and used by both
-    # of the stages that follow, because both address a cell by the check it belongs to.
-    $rowNowOf = @{}
-    $keyed = @($entered | Where-Object { $_.ContainsKey('_key') })
-    $keyedRich = @($operations | Where-Object {
-            $_.Kind -eq 'RichText' -and $_.Sheet -eq 'Overview' -and
-            ($_.PSObject.Properties.Name -contains 'Key') -and $_.Key
-        })
-    if ($keyed.Count -gt 0 -or $keyedRich.Count -gt 0) {
-        $checkColumn = (ConvertTo-SheetsColumnName -Index (
-                [array]::IndexOf($SheetsOverviewColumns, 'CheckID') + 1))
-        $again = Invoke-SheetsApi -Method Get -Path (
-            "$SpreadsheetId/values/Overview!$checkColumn`1:$checkColumn" +
-            '?majorDimension=ROWS')
-        $seen = @($again.values)
-        for ($i = 0; $i -lt $seen.Count; $i++) {
-            $cell = @($seen[$i])
-            if ($cell.Count -eq 0) { continue }
-            $id = [string]$cell[0]
-            if (-not [string]::IsNullOrWhiteSpace($id)) { $rowNowOf[$id] = $i + 1 }
-        }
-    }
-
+    # Read again for the second batch. The first one wrote Priority and, on a check that
+    # reopened or closed, Status - and both are sort keys on the filter the reviewers saved -
+    # so the board may have re-ordered itself under the writes that just landed.
     if ($entered.Count -gt 0) {
-        $moved = 0
-        foreach ($one in $keyed) {
-            if (-not $rowNowOf.ContainsKey($one['_key'])) { continue }
-            $to = [int]$rowNowOf[$one['_key']]
-            $want = "'Overview'!" + (New-SheetsRange -FromColumn $one['_col'] -FromRow $to `
-                    -ToColumn $one['_col'] -ToRow $to)
-            if ($one['range'] -ne $want) { $one['range'] = $want; $moved++ }
+        if (@($entered | Where-Object { $_.ContainsKey('_key') }).Count -gt 0) {
+            $rowNowOf = & $readRowsNow
+            $script:SheetsRowsMoved += (& $readdress $entered $rowNowOf)
         }
-        if ($moved -gt 0) { $script:SheetsRowsMoved += $moved }
 
         $payload = @($entered | ForEach-Object {
                 $copy = @{ range = $_['range']; values = $_['values'] }
