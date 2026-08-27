@@ -2433,6 +2433,138 @@ Test-That 'a check that was never meant to reach zero is not reopened' {
     }
 }
 
+Test-That 'a Comment mirror sitting beside the wrong check is put back' {
+    # Found on the Ice-Hockey board on 2026-08-27: ten Overview rows of a hundred and thirty-two
+    # held a mirror naming another check's tab, and five of those tabs were named by two rows at
+    # once. Nothing on the board looked wrong - the cell displayed that other check's comment -
+    # and no run could see it, because the seeding rule fires only on an empty cell and a stray
+    # formula is not empty.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-070' -Findings 2 -Eligible 900 -Verdict 'New'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-070' = 6 }
+        StatusOf = @{}
+        CommentOf = @{ 'Fixtureball-DQ-070' = "='SOMEBODY_ELSES_TAB'!E2" }
+        TabOf = @{ 'Fixtureball-DQ-070' = 'THE_TAB_THIS_CHECK_OWNS' }
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    # Collected is empty on purpose: a check the run did not produce still has a tab the
+    # document knows about, and a mirror sitting beside the wrong check is wrong either way.
+    $mine = 'THE_TAB_THIS_CHECK_OWNS'
+
+    $comment = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'K6:K6' })
+    Assert-Equal 1 $comment.Count 'the stray mirror is rewritten'
+    Assert-Equal (New-SheetsCommentMirror -Sheet $mine) $comment[0].Values[0][0] 'to this row own check tab'
+    Assert-True (-not $comment[0].Raw) 'as a formula rather than as the text of one'
+
+    $said = @($plan.MirrorsRepaired | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-070' })
+    Assert-Equal 1 $said.Count 'and the run says so rather than correcting it quietly'
+    Assert-True ($said[0].Was -like '*SOMEBODY_ELSES_TAB*') 'naming what the cell held'
+}
+
+Test-That 'a Comment the reviewer wrote is never touched, mirror or not' {
+    # The whole point of the column. A run may seed an empty cell and correct its own formula;
+    # anything a person put there is theirs, including a formula of their own shape.
+    foreach ($held in @('Asked the Ice Hockey team about this', "=SUM(A1:A2)", "='Notes'!B7")) {
+        $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-071' -Findings 2 -Eligible 900 -Verdict 'New'))
+        $existing = [pscustomobject]@{
+            HasOverviewHeader = $true
+            OverviewRowOf = @{ 'Fixtureball-DQ-071' = 6 }
+            StatusOf = @{}
+            CommentOf = @{ 'Fixtureball-DQ-071' = $held }
+            EmptyCommentOf = @{}
+            TabOf = @{}
+            ResultRowsOf = @{}
+        }
+        $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+        $comment = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'K6:K6' })
+        Assert-Equal 0 $comment.Count "a cell holding '$held' is left exactly as it was"
+    }
+}
+
+Test-That 'a Comment mirror already naming its own tab is left alone' {
+    # Otherwise every run rewrites every mirror on the board, which is a hundred wasted cells a
+    # run and a hundred edits in the document history nobody made.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-072' -Findings 2 -Eligible 900 -Verdict 'New'))
+    $first = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-072' = 6 }
+        StatusOf = @{}; CommentOf = @{}; EmptyCommentOf = @{}; TabOf = @{}; ResultRowsOf = @{}
+    }
+    $mine = [string]((New-SheetsMergePlan -Summary $summary -Collected @() -Existing $first -OutputFolder 'x').TabOf['Fixtureball-DQ-072'])
+
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-072' = 6 }
+        StatusOf = @{}
+        CommentOf = @{ 'Fixtureball-DQ-072' = (New-SheetsCommentMirror -Sheet $mine) }
+        EmptyCommentOf = @{}
+        TabOf = @{ 'Fixtureball-DQ-072' = $mine }
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+    $comment = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'K6:K6' })
+    Assert-Equal 0 $comment.Count 'a mirror that is already right is not rewritten'
+    Assert-Equal 0 @($plan.MirrorsRepaired).Count 'and nothing is reported as repaired'
+}
+
+Test-That 'a check handed to somebody else closes only when it comes back with nothing' {
+    # Asked for on 2026-08-27. These three say the reading stopped and the check is waiting on
+    # somebody who is not the reviewer, and a run has nothing to say about that while the finding
+    # is still there. The one thing it does know is that the finding is gone.
+    foreach ($handed in $SheetsStatusHandedOff) {
+        $clean = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-073' -Findings 0 -Eligible 900 -Verdict 'Clean'))
+        $existing = [pscustomobject]@{
+            HasOverviewHeader = $true
+            OverviewRowOf = @{ 'Fixtureball-DQ-073' = 6 }
+            StatusOf = @{ 'Fixtureball-DQ-073' = $handed }
+            CommentOf = @{}; TabOf = @{}; ResultRowsOf = @{}
+        }
+        $plan = New-SheetsMergePlan -Summary $clean -Collected @() -Existing $existing -OutputFolder 'x'
+        $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+        Assert-Equal 1 $status.Count "$handed closes on a run that returned nothing"
+        Assert-Equal 'Completed' $status[0].Values[0][0] 'to the word that says the work was done'
+
+        $said = @($plan.StatusRenames | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-073' })
+        Assert-Equal 1 $said.Count 'and the run says so'
+        Assert-Equal $handed $said[0].From 'naming what it was'
+    }
+}
+
+Test-That 'a check handed to somebody else keeps its word while the finding is still there' {
+    # The half that matters more. Anything but zero leaves the column exactly as the reviewer
+    # set it - including a run that failed, where no count was measured at all and the word
+    # would otherwise be read off a blank.
+    foreach ($handed in $SheetsStatusHandedOff) {
+        foreach ($rows in @(1, 40)) {
+            $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-074' -Findings $rows -Eligible 900 -Verdict 'Unchanged'))
+            $existing = [pscustomobject]@{
+                HasOverviewHeader = $true
+                OverviewRowOf = @{ 'Fixtureball-DQ-074' = 6 }
+                StatusOf = @{ 'Fixtureball-DQ-074' = $handed }
+                CommentOf = @{}; TabOf = @{}; ResultRowsOf = @{}
+            }
+            $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+            $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+            Assert-Equal 0 $status.Count "$handed is untouched by a run returning $rows finding(s)"
+        }
+
+        # A failed check: the run put a word where the count goes, and it is not zero findings.
+        $failed = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-075' -Findings 0 -Eligible 0 -Verdict 'Failed'))
+        $failed[0].RowsCell = 'ERROR'
+        $existing = [pscustomobject]@{
+            HasOverviewHeader = $true
+            OverviewRowOf = @{ 'Fixtureball-DQ-075' = 6 }
+            StatusOf = @{ 'Fixtureball-DQ-075' = $handed }
+            CommentOf = @{}; TabOf = @{}; ResultRowsOf = @{}
+        }
+        $plan = New-SheetsMergePlan -Summary $failed -Collected @() -Existing $existing -OutputFolder 'x'
+        $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+        Assert-Equal 0 $status.Count "$handed is untouched by a check that failed"
+    }
+}
+
 Test-That 'a sentinel is reopened, because every row it returns is a defect' {
     # Sentinel and Monitor are easy to run together and must not be. A sentinel expects Zero: its
     # population has not arrived, and on the day it does every row is real. Monitor expects

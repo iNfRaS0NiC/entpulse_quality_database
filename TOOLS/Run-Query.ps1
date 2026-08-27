@@ -4327,6 +4327,10 @@ function Save-RunSheet {
             Write-Host ("  Status set on {0}: {1} -> '{2}' - {3}" -f `
                     $change.CheckId, $from, $change.To, $change.Why) -ForegroundColor Yellow
         }
+        foreach ($fixed in @($plan.MirrorsRepaired)) {
+            Write-Host ("  Comment mirror on {0} named another check's tab and was put back: {1} -> {2}" -f `
+                    $fixed.CheckId, $fixed.Was, $fixed.Now) -ForegroundColor Yellow
+        }
         if (@($plan.StatusKept).Count -gt 0) {
             Write-Host ("  Status left as the reviewer set it on {0} withdrawn check(s): {1}" -f `
                     @($plan.StatusKept).Count,

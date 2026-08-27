@@ -321,6 +321,24 @@ $SheetsUnreviewedStatus = 'Not reviewed'
 $SheetsReopenedStatus = 'Reopened'
 $SheetsStatusClosedByFinding = @('Clean', 'Completed')
 
+# A check somebody handed on, and the one word a run may close it with.
+#
+# These three say the same thing in three directions: the reading stopped and it is now waiting
+# on somebody who is not the reviewer. `Other Team` and `IT Fix` name who, `On Hold` does not.
+# A run has nothing to say about any of them while the finding is still there - who is waiting
+# and how long is not a fact about the data - so the run leaves them alone, which is what it has
+# always done and what $SheetsStatusClosedByFinding above is narrow in order to guarantee.
+#
+# **The one thing a run does know is that the finding is gone.** A check handed to another team
+# that comes back with nothing has had its answer: somebody did the work. Leaving it on the
+# board as still waiting is the board lying about the one case it can be certain of, and it is
+# the case a reviewer would otherwise have to notice by hand, one row at a time, across every
+# sport. Asked for on 2026-08-27 and deliberately narrow: zero open findings and nothing else.
+# A count that did not parse, a check that failed, a check that returned rows - all leave the
+# word exactly as the reviewer left it.
+$SheetsStatusHandedOff = @('Other Team', 'IT Fix', 'On Hold')
+$SheetsStatusClosedByClean = 'Completed'
+
 # The one expectation under which a returned row contradicts a closed status.
 #
 # `Zero` is carried by `Actionable` and by `Sentinel`, and both mean the same thing here: every
@@ -996,6 +1014,20 @@ function ConvertTo-SheetsIdentityTableName {
 
     return (ConvertTo-SheetsTableName -Name ([string]$CheckId + '_Overview'))
 }
+
+# What a Comment cell holds when nothing but the run has written it: a reference to one cell of
+# one other tab. Anchored at both ends so it matches the mirror and nothing else - a reviewer who
+# writes a formula of their own is writing something this does not recognise, and something this
+# does not recognise is never touched.
+#
+# It exists because a mirror can end up beside the wrong check and no run could see it. The cell
+# is not empty, so the seeding rule below leaves it; it displays whatever that other check's
+# reviewer typed, so nothing on the board looks wrong. Found on the Ice-Hockey board on
+# 2026-08-27, ten rows of a hundred and thirty-two, five of the named tabs carrying two rows
+# each. How the two came apart is not established - the run writes the row whole and sorts it
+# whole, and a sort of part of the width would do it - so this repairs the state rather than
+# claiming the cause.
+$SheetsCommentMirrorPattern = "^='?([^'!]+)'?!([A-Z]+[0-9]+)$"
 
 function New-SheetsCommentMirror {
     # The formula Overview's Comment holds: a reference to the Comment cell of that check's own
@@ -1714,6 +1746,11 @@ function New-SheetsMergePlan {
     $statusRenames = @()
     $statusKept = @()
 
+    # Every Comment mirror this run found beside the wrong check and put back. Reported by the
+    # caller for the same reason a status rename is: the run has written into a column that is
+    # not its own, and a repair nobody is told about is indistinguishable from a corruption.
+    $mirrorsRepaired = @()
+
     foreach ($entry in $Summary) {
         $runKey = [string]$entry.RunKey
         if (-not $runKey) { $runKey = [string]$entry.CheckId }
@@ -1839,8 +1876,63 @@ function New-SheetsMergePlan {
                 }
             }
 
+            # A handed-off check that has come back with nothing. The mirror of the rule
+            # above and the same shape: narrow, one direction, and only where the run knows
+            # something the reviewer's word does not. See $SheetsStatusHandedOff.
+            #
+            # `$entry.RowsCell` being a number is what says the check ran and returned a result.
+            # A failure and a skip put a word there - ERROR, SKIPPED - and both would otherwise
+            # read as zero findings and close a check nobody has answered.
+            $cleanNow = 0
+            if (($SheetsStatusHandedOff -contains $statusMeans) -and
+                ($entry.RowsCell -isnot [string]) -and
+                [int]::TryParse([string]$open.Findings, [ref]$cleanNow) -and $cleanNow -eq 0) {
+                $statusColumn = [array]::IndexOf($SheetsOverviewColumns, 'Status') + 1
+                $plan += [pscustomobject]@{
+                    Kind   = 'Write'
+                    Sheet  = 'Overview'
+                    Range  = (New-SheetsRange -FromColumn $statusColumn -FromRow $row `
+                            -ToColumn $statusColumn -ToRow $row)
+                    Values = @(, @($SheetsStatusClosedByClean))
+                }
+                $cells += 1
+                $statusRenames += [pscustomobject]@{
+                    CheckId = $runKey; From = $statusNow; To = $SheetsStatusClosedByClean
+                    Why = ('it was {0} and this run returned no findings' -f $statusMeans)
+                }
+            }
+
+            # The Comment cell, in the one case the run may write it and the one case it may
+            # correct it.
+            #
+            # Empty: seed the mirror. A cell holding nothing holds nothing of anybody's, and
+            # this is the only way a row written before the mirror existed, or one whose cell
+            # was cleared, ever gets one.
+            #
+            # Holding a mirror that names another check's tab: rewrite it to this row's own.
+            # The cell is displaying somebody else's comment against this check, which is worse
+            # than displaying nothing because nothing about it looks wrong. Only the exact
+            # mirror shape is touched and only when the tab it names is not this check's, so a
+            # comment somebody typed - formula or text - is never in scope.
+            $was = ''
+            if ($Existing -and $Existing.CommentOf -and $Existing.CommentOf.ContainsKey($runKey)) {
+                $was = [string]$Existing.CommentOf[$runKey]
+            }
+            # This check's own tab: the one this run wrote if it ran, and otherwise the one the
+            # document already holds. The fallback is what lets a repair reach a check the run
+            # did not produce - a stray mirror is wrong whether or not the check ran today, and
+            # $Existing.TabOf is read from each tab's own A2 rather than guessed from its title,
+            # so it is as good an answer as this run's own.
+            $ownTab = ''
+            if ($titleOf.ContainsKey($runKey)) { $ownTab = [string]$titleOf[$runKey] }
+            elseif ($tabOf.ContainsKey($runKey)) { $ownTab = [string]$tabOf[$runKey] }
+
             $wanted = $(if ($Existing -and $Existing.EmptyCommentOf) { [bool]$Existing.EmptyCommentOf[$runKey] } else { $false })
-            if ($wanted -and $titleOf.ContainsKey($runKey)) {
+            $strayMirror = $false
+            if ($ownTab -and $was -match $SheetsCommentMirrorPattern) {
+                $strayMirror = ([string]$Matches[1] -ne $ownTab)
+            }
+            if (($wanted -or $strayMirror) -and $ownTab) {
                 $commentColumn = [array]::IndexOf($SheetsOverviewColumns, 'Comment') + 1
                 $plan += [pscustomobject]@{
                     Kind   = 'Write'
@@ -1848,9 +1940,14 @@ function New-SheetsMergePlan {
                     Sheet  = 'Overview'
                     Range  = (New-SheetsRange -FromColumn $commentColumn -FromRow $row `
                             -ToColumn $commentColumn -ToRow $row)
-                    Values = @(, @((New-SheetsCommentMirror -Sheet $titleOf[$runKey])))
+                    Values = @(, @((New-SheetsCommentMirror -Sheet $ownTab)))
                 }
                 $cells += 1
+                if ($strayMirror) {
+                    $mirrorsRepaired += [pscustomobject]@{
+                        CheckId = $runKey; Was = $was; Now = (New-SheetsCommentMirror -Sheet $ownTab)
+                    }
+                }
             }
         }
         else {
@@ -2989,6 +3086,7 @@ function New-SheetsMergePlan {
         Cells         = $cells
         StatusRenames = $statusRenames
         StatusKept    = $statusKept
+        MirrorsRepaired = $mirrorsRepaired
         NotesDropped  = $notesDropped
         Warning       = $warning
         RowOf         = $rowOf
@@ -3369,6 +3467,7 @@ function Read-SheetState {
     $rowOf = @{}
     $tabOf = @{}
     $emptyComment = @{}
+    $commentOf = @{}
     $statusOf = @{}
     # A tab holding no Check ID in its own A2. Almost always this run's predecessor: the tabs
     # go in one batch and the values in another, so a document update that fails on the second
@@ -3430,6 +3529,34 @@ function Read-SheetState {
                 }
             }
             $offset = 1
+        }
+
+        # The Comment column again, this time as formulas rather than as what they display.
+        #
+        # A second read and not a render option on the first, because the render option is a
+        # property of the whole batch and the SQL tab is in it: its heading rows are HYPERLINK
+        # formulas whose displayed label is the CheckID the block is found by, and asking for
+        # formulas there would leave the tab unreadable.
+        #
+        # What this is for is stated where $SheetsCommentMirrorPattern is declared. The
+        # displayed value cannot tell a mirror pointing at an empty cell from an empty cell, and
+        # it cannot tell a mirror pointing at the right tab from one pointing at another check's.
+        if ($hasOverview) {
+            $commentColumn = (ConvertTo-SheetsColumnName -Index (
+                    [array]::IndexOf($SheetsOverviewColumns, 'Comment') + 1))
+            $formulas = Invoke-SheetsApi -Method Get -Path (
+                "$SpreadsheetId/values/Overview!$commentColumn`1:$commentColumn" +
+                '?majorDimension=ROWS&valueRenderOption=FORMULA')
+            $column = @($formulas.values)
+            foreach ($checkId in @($rowOf.Keys)) {
+                $at = [int]$rowOf[$checkId] - 1
+                $text = ''
+                if ($at -ge 0 -and $at -lt $column.Count) {
+                    $cell = @($column[$at])
+                    if ($cell.Count -gt 0) { $text = [string]$cell[0] }
+                }
+                $commentOf[$checkId] = $text
+            }
         }
 
         # The SQL tab as blocks. A heading row carries a link whose label is the CheckID and
@@ -3521,6 +3648,7 @@ function Read-SheetState {
         CheckTabIdentityOf = $checkTabIdentityOf
         OverviewRowOf     = $rowOf
         EmptyCommentOf    = $emptyComment
+        CommentOf         = $commentOf
         StatusOf          = $statusOf
         TabOf             = $tabOf
         EmptyTabs         = $emptyTabs
