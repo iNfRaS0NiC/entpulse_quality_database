@@ -2639,6 +2639,31 @@ Test-That 'an empty list of ranges asks for no requests at all' {
     Assert-Equal 0 @(Split-SheetsValueBatches -Ranges $null -MaxCells 50000).Count 'nor for a null'
 }
 
+Test-That 'a request that failed says the three things it otherwise would not' {
+    # The Ice-Hockey update died on 2026-08-27 with "The operation has timed out" and nothing
+    # else, and afterwards the cause could not be established from anything the run kept. These
+    # are the three that would have settled it: what it waited against, whether it was the first
+    # call to that host in this process - the one that pays for a dead route - and what the host
+    # was resolving to around the time it failed.
+    $script:SheetsHostsSeen = @{}
+
+    $first = Get-SheetsFailureContext -Uri 'https://sheets.googleapis.com/v4/x' -Seconds 180
+    Assert-True ($first -like '*180*of 180s*') 'it says what it waited and what it was allowed'
+    Assert-True ($first -like '*first request*') 'and that nothing had spoken to that host yet'
+    Assert-True ($first -like '*IPv6*IPv4*') 'and what the host resolves to, by family'
+
+    $script:SheetsHostsSeen['sheets.googleapis.com'] = $true
+    $later = Get-SheetsFailureContext -Uri 'https://sheets.googleapis.com/v4/x' -Seconds 9
+    Assert-True ($later -like '*a later request*') 'a second failure does not call itself the first'
+
+    # A host that cannot be resolved says so rather than throwing: this runs on the failure
+    # path, and a diagnostic that fails inside a failure buries the message it came to explain.
+    $gone = Get-SheetsFailureContext -Uri 'https://nope.invalid/x' -Seconds 3
+    Assert-True ($gone -like '*resolution failed*') 'a name that does not resolve is reported, not thrown'
+
+    $script:SheetsHostsSeen = @{}
+}
+
 Test-That 'only a failure of the connection is worth trying again' {
     # A 400 says the body is wrong and the same body is wrong the second time. Retrying it
     # spends the pause and buries Google's own message, which is the one thing that says what

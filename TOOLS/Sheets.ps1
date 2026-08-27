@@ -52,6 +52,10 @@ $SheetsValueBatchCells = 50000
 # How many times a request that failed on the connection rather than on its content is tried
 # again, and how long between the tries. Only the transport is retried: a 400 says the body is
 # wrong and will be just as wrong the second time.
+# How long one request may take before it is abandoned. Named rather than inlined because a
+# failure now reports what it waited against, and a number quoted from two places drifts.
+$SheetsRequestTimeoutSeconds = 180
+
 $SheetsRetryAttempts = 3
 $SheetsRetryPauseSeconds = @(2, 6)
 
@@ -3375,15 +3379,22 @@ function Invoke-SheetsApi {
         Method     = $Method
         Uri        = $uri
         Headers    = $headers
-        TimeoutSec = 180
+        TimeoutSec = $SheetsRequestTimeoutSeconds
     }
     if ($null -ne $Body) {
         $arguments['Body'] = ($Body | ConvertTo-Json -Depth 12 -Compress)
         $arguments['ContentType'] = 'application/json; charset=utf-8'
     }
 
-    try { return Invoke-RestMethod @arguments }
+    $clock = [Diagnostics.Stopwatch]::StartNew()
+    try {
+        $answer = Invoke-RestMethod @arguments
+        try { $script:SheetsHostsSeen[([Uri]$uri).Host] = $true } catch { }
+        return $answer
+    }
     catch {
+        $clock.Stop()
+
         # Google's own message is in the body and says far more than the status line does -
         # which range was malformed, which sheet does not exist, which scope is missing.
         $detail = $_.Exception.Message
@@ -3394,8 +3405,77 @@ function Invoke-SheetsApi {
             }
             catch { }
         }
-        throw "Sheets API $Method $Path failed: $detail"
+
+        # And what the request itself will not say. Only on the failure path, and only for a
+        # failure of the connection: a 400 is about the body and none of this bears on it.
+        $context = ''
+        if (Test-SheetsTransportFailure -Message $detail) {
+            $context = ' [' + (Get-SheetsFailureContext -Uri $uri -Seconds $clock.Elapsed.TotalSeconds) + ']'
+        }
+
+        # Marked seen either way. A request that reached the far end and was refused proves the
+        # route works just as well as one that succeeded, and the next failure should not be
+        # able to call itself the first.
+        try { $script:SheetsHostsSeen[([Uri]$uri).Host] = $true } catch { }
+
+        throw "Sheets API $Method $Path failed: $detail$context"
     }
+}
+
+# Which hosts this process has already spoken to, so a failure can say whether it was the
+# first call of the run rather than one of many. The first is the one that pays for a dead
+# route: .NET walks the addresses in order, each waiting out its own connect timeout, and by
+# the second call the connection is established and pooled.
+$script:SheetsHostsSeen = @{}
+
+function Get-SheetsFailureContext {
+    <#
+        The three things a timed-out request does not say about itself.
+
+        On 2026-08-27 the Ice-Hockey document update died on its first read - "The operation has
+        timed out", nothing else - and took a sixteen-minute run's update with it. What could be
+        established afterwards was that the board reads in 2.1 seconds and is the fastest of six,
+        so the size was not it; what could not be established was anything about the request. The
+        180 seconds it waited is close to the 168 that Set-SheetsAddressFamily was written for,
+        but that mitigation was in the path and the host resolves to no IPv6 address at all
+        today, so the lead could be neither confirmed nor killed.
+
+        Three numbers would have settled it, and none of them survives a run:
+
+          - how long it actually waited, against the timeout it was given;
+          - whether it was the first request to that host in this process;
+          - what the host resolved to at that moment, by address family.
+
+        Gathered only when a request has already failed, so a healthy run pays nothing. The
+        resolution is re-done here rather than remembered: what matters is what the resolver
+        was answering around the time of the failure, and that is a different question from
+        what it answered when the process started.
+    #>
+    param([string]$Uri, [double]$Seconds)
+
+    $host_ = ''
+    try { $host_ = ([Uri]$Uri).Host } catch { $host_ = '' }
+
+    $first = $true
+    if ($host_ -and $script:SheetsHostsSeen.ContainsKey($host_)) { $first = $false }
+
+    $v6 = 0
+    $v4 = 0
+    $resolved = 'not resolved'
+    if ($host_) {
+        try {
+            foreach ($address in @([Net.Dns]::GetHostAddresses($host_))) {
+                if ($address.AddressFamily -eq [Net.Sockets.AddressFamily]::InterNetworkV6) { $v6++ }
+                else { $v4++ }
+            }
+            $resolved = '{0} IPv6, {1} IPv4' -f $v6, $v4
+        }
+        catch { $resolved = 'resolution failed: ' + ($_.Exception.Message -replace '\s+', ' ') }
+    }
+
+    return ('waited {0:n1}s of {1}s; {2} request to {3} in this process; it resolves to {4}' -f
+        $Seconds, $SheetsRequestTimeoutSeconds, $(if ($first) { 'first' } else { 'a later' }),
+        $host_, $resolved)
 }
 
 function Test-SheetsTransportFailure {
