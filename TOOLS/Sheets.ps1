@@ -1825,7 +1825,10 @@ function New-SheetsMergePlan {
             $rich = New-SheetsTrendRichText -Sheet 'Overview' -Row $row `
                 -Column ([array]::IndexOf($SheetsOverviewColumns, 'Trends') + 1) `
                 -Text ([string]$open.Trend) -Runs $open.TrendRuns
-            if ($rich) { $plan += $rich }
+            if ($rich) {
+                $rich | Add-Member -NotePropertyName Key -NotePropertyValue $runKey -Force
+                $plan += $rich
+            }
 
             # A closed conclusion this run has just contradicted. Status is the reviewer's
             # column and stays theirs; this is the second value the run may write into it, and
@@ -1971,7 +1974,10 @@ function New-SheetsMergePlan {
             $rich = New-SheetsTrendRichText -Sheet 'Overview' -Row $nextRow `
                 -Column ([array]::IndexOf($SheetsOverviewColumns, 'Trends') + 1) `
                 -Text ([string]$open.Trend) -Runs $open.TrendRuns
-            if ($rich) { $plan += $rich }
+            if ($rich) {
+                $rich | Add-Member -NotePropertyName Key -NotePropertyValue $runKey -Force
+                $plan += $rich
+            }
 
             # Comment mirrors the check tab's G2, so a comment is written once beside the rows
             # that provoked it and read from the board that lists every check. Seeded on a new
@@ -4148,32 +4154,39 @@ function Invoke-SheetsPlan {
     # A cell is addressed by the check it belongs to and not by where that check was sitting a
     # moment ago. One read of the CheckID column, between the two batches, is what turns the one
     # into the other. It costs a request and only where something is actually being written.
-    if ($entered.Count -gt 0) {
-        $keyed = @($entered | Where-Object { $_.ContainsKey('_key') })
-        if ($keyed.Count -gt 0) {
-            $checkColumn = (ConvertTo-SheetsColumnName -Index (
-                    [array]::IndexOf($SheetsOverviewColumns, 'CheckID') + 1))
-            $now = @{}
-            $again = Invoke-SheetsApi -Method Get -Path (
-                "$SpreadsheetId/values/Overview!$checkColumn`1:$checkColumn" +
-                '?majorDimension=ROWS')
-            $seen = @($again.values)
-            for ($i = 0; $i -lt $seen.Count; $i++) {
-                $cell = @($seen[$i])
-                if ($cell.Count -eq 0) { continue }
-                $id = [string]$cell[0]
-                if (-not [string]::IsNullOrWhiteSpace($id)) { $now[$id] = $i + 1 }
-            }
-            $moved = 0
-            foreach ($one in $keyed) {
-                if (-not $now.ContainsKey($one['_key'])) { continue }
-                $to = [int]$now[$one['_key']]
-                $want = "'Overview'!" + (New-SheetsRange -FromColumn $one['_col'] -FromRow $to `
-                        -ToColumn $one['_col'] -ToRow $to)
-                if ($one['range'] -ne $want) { $one['range'] = $want; $moved++ }
-            }
-            if ($moved -gt 0) { $script:SheetsRowsMoved = $moved }
+    # Where every check sits now that the first batch has landed. Read once and used by both
+    # of the stages that follow, because both address a cell by the check it belongs to.
+    $rowNowOf = @{}
+    $keyed = @($entered | Where-Object { $_.ContainsKey('_key') })
+    $keyedRich = @($operations | Where-Object {
+            $_.Kind -eq 'RichText' -and $_.Sheet -eq 'Overview' -and
+            ($_.PSObject.Properties.Name -contains 'Key') -and $_.Key
+        })
+    if ($keyed.Count -gt 0 -or $keyedRich.Count -gt 0) {
+        $checkColumn = (ConvertTo-SheetsColumnName -Index (
+                [array]::IndexOf($SheetsOverviewColumns, 'CheckID') + 1))
+        $again = Invoke-SheetsApi -Method Get -Path (
+            "$SpreadsheetId/values/Overview!$checkColumn`1:$checkColumn" +
+            '?majorDimension=ROWS')
+        $seen = @($again.values)
+        for ($i = 0; $i -lt $seen.Count; $i++) {
+            $cell = @($seen[$i])
+            if ($cell.Count -eq 0) { continue }
+            $id = [string]$cell[0]
+            if (-not [string]::IsNullOrWhiteSpace($id)) { $rowNowOf[$id] = $i + 1 }
         }
+    }
+
+    if ($entered.Count -gt 0) {
+        $moved = 0
+        foreach ($one in $keyed) {
+            if (-not $rowNowOf.ContainsKey($one['_key'])) { continue }
+            $to = [int]$rowNowOf[$one['_key']]
+            $want = "'Overview'!" + (New-SheetsRange -FromColumn $one['_col'] -FromRow $to `
+                    -ToColumn $one['_col'] -ToRow $to)
+            if ($one['range'] -ne $want) { $one['range'] = $want; $moved++ }
+        }
+        if ($moved -gt 0) { $script:SheetsRowsMoved += $moved }
 
         $payload = @($entered | ForEach-Object {
                 $copy = @{ range = $_['range']; values = $_['values'] }
@@ -4189,16 +4202,27 @@ function Invoke-SheetsPlan {
     # After the values, because the plain string goes in with the row and this replaces it.
     # updateCells rather than a value write: a cell's runs are structure, not content, and the
     # values endpoint has no way to carry them.
+    # Addressed by the check and not by where it was sitting, for the same reason the batch
+    # above is: this runs after the values, so a board that re-sorted itself under them has
+    # already moved. The plain text went in with the row and is correct wherever the row is;
+    # what this replaces is that cell, and replacing the wrong one would put one check's trend
+    # against another's name.
     $richOps = @($operations | Where-Object { $_.Kind -eq 'RichText' -and $gidOf.ContainsKey($_.Sheet) })
     if ($richOps.Count -gt 0) {
         $richRequests = @()
         foreach ($rich in $richOps) {
+            $atRow = [int]$rich.Row
+            if (($rich.PSObject.Properties.Name -contains 'Key') -and $rich.Key -and
+                $rowNowOf.ContainsKey([string]$rich.Key)) {
+                $to = [int]$rowNowOf[[string]$rich.Key]
+                if ($to -ne $atRow) { $atRow = $to; $script:SheetsRowsMoved += 1 }
+            }
             $richRequests += @{
                 updateCells = @{
                     range  = @{
                         sheetId          = [int]$gidOf[$rich.Sheet]
-                        startRowIndex    = [int]$rich.Row - 1
-                        endRowIndex      = [int]$rich.Row
+                        startRowIndex    = $atRow - 1
+                        endRowIndex      = $atRow
                         startColumnIndex = [int]$rich.Column - 1
                         endColumnIndex   = [int]$rich.Column
                     }
