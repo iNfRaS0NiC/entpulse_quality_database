@@ -4215,6 +4215,21 @@ function Show-CheckHistory {
     Write-Host '  A run made with -TestRun is deliberately absent: it was asked to leave no trace.' -ForegroundColor DarkGray
 }
 
+function Format-RunDuration {
+    # Seconds as something readable at the scale it actually is. A run reports 47.3s, 4m 12s and
+    # 1h 03m from the same function, because a board that takes half an hour and one that takes
+    # half a minute are both normal and "1893.4s" makes neither of them legible.
+    param([double]$Seconds)
+
+    if ($Seconds -lt 90) { return ('{0:n1}s' -f $Seconds) }
+    $span = [timespan]::FromSeconds($Seconds)
+    if ($span.TotalHours -ge 1) { return ('{0}h {1:00}m' -f [int]$span.TotalHours, $span.Minutes) }
+    return ('{0}m {1:00}s' -f [int]$span.TotalMinutes, $span.Seconds)
+}
+
+# What the live document update cost on this run, seconds. Zero when no document was opened.
+$script:SheetSeconds = 0.0
+
 function Save-RunSheet {
     <#
         Bring the sport's live document up to date with this run.
@@ -4243,6 +4258,10 @@ function Save-RunSheet {
 
     try {
         Write-Host 'Updating the live document.' -ForegroundColor DarkGray
+        Reset-SheetsTimings
+        $sheetClock = Get-Date
+
+        Set-SheetsStage 'reading the document'
         $state = Read-SheetState -SpreadsheetId $id
 
         # What the reviewers had on the board when this run read it, against the CheckID each
@@ -4323,6 +4342,7 @@ function Save-RunSheet {
         # tested against a handful of rows without a ledger or a login.
         $history = @(Get-SheetHistoryRows -Summary $Summary -Sport $Sport -RunId $stamp)
 
+        Set-SheetsStage 'planning the changes'
         $plan = New-SheetsMergePlan -Summary $enriched -Collected $Collected -Existing $state `
             -OutputFolder $OutputFolder -Stamp $stamp -Retired $retired -History $history `
             -Complete:$complete
@@ -4331,6 +4351,14 @@ function Save-RunSheet {
         $sent = Invoke-SheetsPlan -SpreadsheetId $id -Plan $plan
         Write-Host ("  {0} tab(s) added, {1} cleared, {2} range(s) written, {3} table(s)" -f `
                 $sent.Added, $sent.Cleared, $sent.Written, $sent.Tables) -ForegroundColor DarkGray
+
+        # What the update cost, and where. Kept for the run's closing line as well as printed
+        # here, because the question this answers is usually "was it the database or the board",
+        # and that one needs both halves side by side.
+        $script:SheetSeconds = ((Get-Date) - $sheetClock).TotalSeconds
+        Write-Host ("  Document updated in {0}: {1}" -f `
+                (Format-RunDuration -Seconds $script:SheetSeconds),
+                (Get-SheetsTimingLine -Total $script:SheetSeconds)) -ForegroundColor DarkGray
         if ($history.Count -gt 0) {
             # The span rather than the count of runs, because "40 runs" says nothing about how
             # far back the tab reaches and the two are not the same question on a ledger this
@@ -5695,6 +5723,25 @@ if ($isBatch) {
     $totalRows = ($summary | Measure-Object Rows -Sum).Sum
     Write-Host ("Done: {0} statement(s), {1} rows, {2} failed -> {3}" -f `
             $index, $totalRows, $failed, $destination) -ForegroundColor DarkGray
+
+    # Where the run's time went, in the three parts anybody asks about. The database figure is
+    # the sum of what each statement reported, which is already on every line above; the document
+    # figure is what the update cost; the file is what is left, and it is named as what is left
+    # rather than measured, so the three add up to the wall clock and none of it goes missing.
+    #
+    # Printed on every batch run and not only on a slow one. A single slow run is a complaint;
+    # the same figure on every run is what makes the next slow one obvious, and the 31 minutes
+    # this line was added for had been paid on every Triathlon run before anybody timed one.
+    $wall = ((Get-Date) - $script:RunStartedUtc.ToLocalTime()).TotalSeconds
+    $database = [double](($summary | Measure-Object Seconds -Sum).Sum)
+    $writing = [math]::Max(0, $wall - $database - $script:SheetSeconds)
+    $split = @(('database {0}' -f (Format-RunDuration -Seconds $database)))
+    if ($script:SheetSeconds -ge 0.5) {
+        $split += ('document {0}' -f (Format-RunDuration -Seconds $script:SheetSeconds))
+    }
+    if ($writing -ge 0.5) { $split += ('files {0}' -f (Format-RunDuration -Seconds $writing)) }
+    Write-Host ("Elapsed {0}: {1}" -f (Format-RunDuration -Seconds $wall), ($split -join ', ')) `
+        -ForegroundColor DarkGray
     return
 }
 

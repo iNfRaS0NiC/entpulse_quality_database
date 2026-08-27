@@ -61,6 +61,74 @@ $script:SheetsStage = ''
 # the second batch'.
 $script:SheetsRowsMoved = 0
 
+# What each phase of the last document update cost, in the order the phases ran.
+#
+# It exists because the answer to "why is this slow" was not findable from outside. A Triathlon
+# run on 2026-08-27 spent 31 minutes here against 13 in the database, and nothing in the output
+# distinguished a slow network from a slow loop - the whole update was one silent block between
+# two printed lines. A phase that is slow now says which phase it is, on the run it was slow on,
+# so the next one of these is a measurement rather than an investigation.
+$script:SheetsTimings = [ordered]@{}
+$script:SheetsStageClock = $null
+
+function Set-SheetsStage {
+    # Name the phase being entered, and stamp what the one before it cost. Passing an empty
+    # name closes the last phase without opening another, which is what the end of an update is.
+    param([string]$Name)
+
+    if ($script:SheetsStage -and $script:SheetsStageClock) {
+        $was = [string]$script:SheetsStage
+        $spent = ((Get-Date) - $script:SheetsStageClock).TotalSeconds
+        # Added to rather than replacing: a phase entered twice in one update is one phase.
+        if ($script:SheetsTimings.Contains($was)) { $spent += [double]$script:SheetsTimings[$was] }
+        $script:SheetsTimings[$was] = $spent
+    }
+    $script:SheetsStage = $Name
+    $script:SheetsStageClock = $(if ($Name) { Get-Date } else { $null })
+}
+
+function Reset-SheetsTimings {
+    # Start of an update. Called by the runner rather than by the transport, because the first
+    # phase - reading the document - happens before the transport is reached.
+    $script:SheetsTimings = [ordered]@{}
+    $script:SheetsStage = ''
+    $script:SheetsStageClock = $null
+}
+
+function Get-SheetsTimingLine {
+    <#
+        The phases of the last update as one line, longest first, with anything under half a
+        second folded into a single figure.
+
+        Longest first and not in the order they ran: the reason to read this line at all is to
+        find out where the time went, and a list in running order buries the answer in the
+        middle. What is folded is named as folded rather than dropped, so the parts add up to
+        the total and nobody has to wonder what the difference is.
+    #>
+    param([double]$Total)
+
+    $named = @()
+    $rest = 0.0
+    foreach ($phase in @($script:SheetsTimings.Keys)) {
+        $spent = [double]$script:SheetsTimings[$phase]
+        if ($spent -lt 0.5) { $rest += $spent; continue }
+        $named += [pscustomobject]@{ Phase = [string]$phase; Seconds = $spent }
+    }
+
+    $parts = @(@($named | Sort-Object -Property Seconds -Descending) |
+        ForEach-Object { '{0} {1:n1}s' -f $_.Phase, $_.Seconds })
+
+    # Whatever the phases do not account for. Everything between them is real time too - the
+    # summary rows the runner enriches, the registry it reads - and a breakdown that silently
+    # loses it reads as though the phases were the whole of it.
+    $unaccounted = $Total - (@($script:SheetsTimings.Values | ForEach-Object { [double]$_ } |
+            Measure-Object -Sum).Sum)
+    $rest += [math]::Max(0, $unaccounted)
+    if ($rest -ge 0.5) { $parts += ('the rest {0:n1}s' -f $rest) }
+
+    return ($parts -join ', ')
+}
+
 function Set-SheetsAddressFamily {
     <#
         Refuse IPv6 for a host whose IPv6 is dead.
@@ -891,9 +959,20 @@ function New-SheetsCarriedReview {
     #>
     param($Header, $Rows, $Was, $Notes)
 
-    $review = @()
-    $note = @()
-    foreach ($row in @($Rows)) { $review += ''; $note += '' }
+    # Sized up front and filled by index, never grown.
+    #
+    # `$array += ` on a PowerShell array allocates a new array and copies the old one into it,
+    # so a loop that appends n times copies n-squared elements. It is invisible on the twenty
+    # rows a test uses and it is most of the run on a real result: these two columns of empty
+    # strings alone took 6.4 seconds to build for Triathlon-DQ-007's 14 024 findings, against
+    # 0.02 allocated. Measured 2026-08-27. The same shape is fixed in four other places, each
+    # marked the same way: the key pass below, the block a check tab is written from, the
+    # transport's own conversion, and Split-SheetsWriteChunks.
+    $all = @($Rows)
+    $count = $all.Count
+    $review = New-Object object[] $count
+    $note = New-Object object[] $count
+    for ($i = 0; $i -lt $count; $i++) { $review[$i] = ''; $note[$i] = '' }
 
     # Filtered rather than taken as given. An empty array reaching an untyped parameter arrives
     # as $null, and @($null) is one element rather than none - which read as a single nameless
@@ -949,12 +1028,20 @@ function New-SheetsCarriedReview {
     # stays fixed and the ambiguity is reported. The repair is to give the statement the id its
     # name already implies, which is the rule DATABASE.md states for the database and this file
     # depends on: an id travels with the name of the thing it identifies.
+    # The result read once, not once per row. `@($Rows)` inside the loop condition and again
+    # inside its body re-wrapped the whole result on every iteration, which on 14 024 findings
+    # is 197 million element copies for each of the two - 44.8 seconds against 2.1 for the same
+    # work over a materialised array. Measured 2026-08-27 on Triathlon-DQ-007.
     $rowOfKey = @{}
     $ambiguous = @{}
-    $printOfRow = @()
-    for ($r = 0; $r -lt @($Rows).Count; $r++) {
-        $values = @($Header | ForEach-Object { @($Rows)[$r].$_ })
-        $printOfRow += (Get-SheetsRowFingerprint -Values $values)
+    $printOfRow = New-Object object[] $count
+    $columns = @($Header)
+    $width = $columns.Count
+    for ($r = 0; $r -lt $count; $r++) {
+        $row = $all[$r]
+        $values = New-Object object[] $width
+        for ($c = 0; $c -lt $width; $c++) { $values[$c] = $row.($columns[$c]) }
+        $printOfRow[$r] = (Get-SheetsRowFingerprint -Values $values)
         $key = Get-SheetsFindingKey -Row $values -Columns $now
         if ($rowOfKey.ContainsKey($key)) { $ambiguous[$key] = $true; continue }
         $rowOfKey[$key] = $r
@@ -2592,12 +2679,21 @@ function New-SheetsMergePlan {
                 }
             }
 
+            # Allocated, and each line filled over an index rather than through a pipeline.
+            # This is the block that carries the findings themselves, so it is the one that
+            # grows with the result: `$table += ` was copying the whole block once per finding.
             $header = @($dataHeader) + $SheetsRowReviewColumns
-            $table = @(, $header)
+            $columns = @($dataHeader)
+            $width = $columns.Count
+            $table = New-Object object[] ($written.Count + 1)
+            $table[0] = $header
             for ($r = 0; $r -lt $written.Count; $r++) {
                 $row = $written[$r]
-                $line = @($dataHeader | ForEach-Object { $row.$_ })
-                $table += , ($line + @($carried.Review[$r], $carried.Note[$r]))
+                $line = New-Object object[] ($width + 2)
+                for ($c = 0; $c -lt $width; $c++) { $line[$c] = $row.($columns[$c]) }
+                $line[$width] = $carried.Review[$r]
+                $line[$width + 1] = $carried.Note[$r]
+                $table[$r + 1] = $line
             }
             $plan += [pscustomobject]@{
                 Kind   = 'Write'
@@ -3717,7 +3813,10 @@ function Split-SheetsWriteChunks {
     $chunks = @()
     $offset = 0
     while ($offset -lt $values.Count) {
-        $slice = @($values | Select-Object -Skip $offset -First $ChunkSize)
+        # Sliced by index. `Select-Object -Skip` walks the rows it is skipping, so chunking a
+        # 14 000-row block re-walked the whole of it once per chunk.
+        $end = [math]::Min($offset + $ChunkSize, $values.Count) - 1
+        $slice = @($values[$offset..$end])
         $start = $fromRow + $offset
         $chunks += [pscustomobject]@{
             Kind   = 'Write'
@@ -3757,7 +3856,7 @@ function Invoke-SheetsPlan {
         foreach ($key in $Plan.KnownTables.Keys) { $knownTables[[string]$key] = $Plan.KnownTables[$key] }
     }
 
-    $script:SheetsStage = 'adding and sizing tabs'
+    Set-SheetsStage 'adding and sizing tabs'
     # Structure first, and in one call: a tab has to exist before a range names it, and a grid
     # has to be big enough before a range reaches past its end. Both are rejected the same
     # way, and a rejection takes the whole batch it travelled in.
@@ -3856,7 +3955,7 @@ function Invoke-SheetsPlan {
         }
     }
 
-    $script:SheetsStage = 'hiding columns and colouring Rows'
+    Set-SheetsStage 'hiding columns and colouring Rows'
     # Both need a tab id, so they wait for the batch that creates the tab.
     #
     # The operation carries which way it is setting the flag. It used to set only true, which
@@ -4070,7 +4169,7 @@ function Invoke-SheetsPlan {
         Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $second } | Out-Null
     }
 
-    $script:SheetsStage = 'clearing stale rows'
+    Set-SheetsStage 'clearing stale rows'
     $clears = @($operations | Where-Object { $_.Kind -eq 'Clear' })
     if ($clears.Count -gt 0) {
         $ranges = @($clears | ForEach-Object { "'" + ($_.Sheet -replace "'", "''") + "'!" + $_.Range })
@@ -4085,9 +4184,18 @@ function Invoke-SheetsPlan {
     $raw = @()
     $entered = @()
     foreach ($write in $writes) {
-        $rows = @()
-        foreach ($row in @($write.Values)) {
-            $rows += , @(@($row) | ForEach-Object { ConvertTo-SheetsCellValue -Value $_ })
+        # Allocated for the same reason as the block it is converting, and over an index
+        # rather than through a pipeline: a pipeline is set up and torn down per row, and this
+        # runs for every row of every tab on the board.
+        $source = @($write.Values)
+        $rows = New-Object object[] $source.Count
+        for ($i = 0; $i -lt $source.Count; $i++) {
+            $cells = @($source[$i])
+            $line = New-Object object[] $cells.Count
+            for ($c = 0; $c -lt $cells.Count; $c++) {
+                $line[$c] = (ConvertTo-SheetsCellValue -Value $cells[$c])
+            }
+            $rows[$i] = $line
         }
         $range = @{
             range  = "'" + ($write.Sheet -replace "'", "''") + "'!" + $write.Range
@@ -4140,7 +4248,7 @@ function Invoke-SheetsPlan {
         if ($isRaw) { $raw += $range } else { $entered += $range }
     }
 
-    $script:SheetsStage = 'writing values'
+    Set-SheetsStage 'writing values'
 
     # Where each check sits at this moment, read from the board itself.
     #
@@ -4230,7 +4338,7 @@ function Invoke-SheetsPlan {
         } | Out-Null
     }
 
-    $script:SheetsStage = 'colouring the trend'
+    Set-SheetsStage 'colouring the trend'
     # After the values, because the plain string goes in with the row and this replaces it.
     # updateCells rather than a value write: a cell's runs are structure, not content, and the
     # values endpoint has no way to carry them.
@@ -4291,7 +4399,7 @@ function Invoke-SheetsPlan {
         }
     }
 
-    $script:SheetsStage = 'sorting the board'
+    Set-SheetsStage 'sorting the board'
     # After the values, never before them: sorting rows the run has not written yet orders
     # last week's board and then overwrites it in this week's order.
     $sortRequests = @()
@@ -4316,7 +4424,7 @@ function Invoke-SheetsPlan {
         Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $sortRequests } | Out-Null
     }
 
-    $script:SheetsStage = 'declaring the result tables'
+    Set-SheetsStage 'declaring the result tables'
     # Tables last: the tab has to exist and its rows have to be in place before a range is
     # declared over them. A tab that already carries one is updated rather than given a
     # second - the range is the part that goes stale, not the table.
@@ -4399,6 +4507,10 @@ function Invoke-SheetsPlan {
         throw ("{0} of {1} table declaration(s) applied. " -f $tablesApplied, $tableRequests.Count) +
         ($tableFailures -join ' | ')
     }
+
+    # The last phase closed, so its cost is stamped like the others. Not in a finally: a
+    # failure leaves the stage name standing, which is what the catch in the runner reports.
+    Set-SheetsStage ''
 
     return [pscustomobject]@{
         Added   = $adds.Count
