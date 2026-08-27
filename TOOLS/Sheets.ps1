@@ -36,6 +36,25 @@ $SheetsFormerTitles = @('Enetpulse DQ - *')
 # slow to build, slow to send and all-or-nothing if it fails.
 $SheetsWriteChunk = 2000
 
+# How many cells one values:batchUpdate may carry.
+#
+# $SheetsWriteChunk splits one operation; this splits the request. Without it every range the
+# run produced travelled in a single body, which on Track-Cycling's 75 128 findings is several
+# megabytes: it went through on 26.08 and then failed twice, the connection closed mid-post,
+# and because it was one request the board took none of it - not one row of one tab. A size
+# that succeeds sometimes is worse than one that fails always, because nobody goes looking.
+#
+# 50 000 cells is roughly 700 KB of JSON at the widths these results have. Small enough that a
+# single one is never the marginal case, large enough that a full board is a dozen requests
+# rather than a hundred.
+$SheetsValueBatchCells = 50000
+
+# How many times a request that failed on the connection rather than on its content is tried
+# again, and how long between the tries. Only the transport is retried: a 400 says the body is
+# wrong and will be just as wrong the second time.
+$SheetsRetryAttempts = 3
+$SheetsRetryPauseSeconds = @(2, 6)
+
 # How many ranges one batchGet asks for. Each is a query parameter, so the whole read is one
 # URL, and a board of a hundred tabs now asks for two ranges per tab - its Check ID and its
 # result header. Sixty keeps the URL comfortably inside what a GET is served at.
@@ -60,6 +79,14 @@ $script:SheetsStage = ''
 # between its two value batches. Reported by the runner; see 'the board can move under
 # the second batch'.
 $script:SheetsRowsMoved = 0
+
+# How many values:batchUpdate requests the last document update took. Reported by the runner
+# beside the phase timings, because the number of requests and the time they cost are the two
+# halves of the same question and one without the other says nothing.
+$script:SheetsValueRequests = 0
+
+# How many check tabs the last update read back to confirm their rows arrived.
+$script:SheetsTabsConfirmed = 0
 
 # What each phase of the last document update cost, in the order the phases ran.
 #
@@ -90,9 +117,16 @@ function Set-SheetsStage {
 function Reset-SheetsTimings {
     # Start of an update. Called by the runner rather than by the transport, because the first
     # phase - reading the document - happens before the transport is reached.
+    #
+    # The counters go with it. A run that updates two documents in one process would otherwise
+    # report the first one's numbers against the second, and a number carried over from
+    # somewhere else is worse than no number: it reads as a measurement.
     $script:SheetsTimings = [ordered]@{}
     $script:SheetsStage = ''
     $script:SheetsStageClock = $null
+    $script:SheetsRowsMoved = 0
+    $script:SheetsValueRequests = 0
+    $script:SheetsTabsConfirmed = 0
 }
 
 function Get-SheetsTimingLine {
@@ -963,6 +997,14 @@ function New-SheetsCarriedReview {
 
     # Sized up front and filled by index, never grown.
     #
+    # [object[]]::new and not New-Object object[]. The two allocate the same array and are not
+    # interchangeable at the far end: PowerShell 5.1 hands New-Object's result back wrapped, and
+    # ConvertTo-Json renders the wrapper rather than the array - {"value":[...],"Count":2} where
+    # Sheets expects [[...]]. It cost the Track-Cycling board an evening on 27.08: every value
+    # request came back 400 with "Unknown name value at data[0].values", the run reported itself
+    # as having written, and the tabs it had already cleared stayed empty. Anything that reaches
+    # ConvertTo-Json has to be allocated this way.
+    #
     # `$array += ` on a PowerShell array allocates a new array and copies the old one into it,
     # so a loop that appends n times copies n-squared elements. It is invisible on the twenty
     # rows a test uses and it is most of the run on a real result: these two columns of empty
@@ -972,8 +1014,8 @@ function New-SheetsCarriedReview {
     # transport's own conversion, and Split-SheetsWriteChunks.
     $all = @($Rows)
     $count = $all.Count
-    $review = New-Object object[] $count
-    $note = New-Object object[] $count
+    $review = [object[]]::new($count)
+    $note = [object[]]::new($count)
     for ($i = 0; $i -lt $count; $i++) { $review[$i] = ''; $note[$i] = '' }
 
     # Filtered rather than taken as given. An empty array reaching an untyped parameter arrives
@@ -1036,12 +1078,12 @@ function New-SheetsCarriedReview {
     # work over a materialised array. Measured 2026-08-27 on Triathlon-DQ-007.
     $rowOfKey = @{}
     $ambiguous = @{}
-    $printOfRow = New-Object object[] $count
+    $printOfRow = [object[]]::new($count)
     $columns = @($Header)
     $width = $columns.Count
     for ($r = 0; $r -lt $count; $r++) {
         $row = $all[$r]
-        $values = New-Object object[] $width
+        $values = [object[]]::new($width)
         for ($c = 0; $c -lt $width; $c++) { $values[$c] = $row.($columns[$c]) }
         $printOfRow[$r] = (Get-SheetsRowFingerprint -Values $values)
         $key = Get-SheetsFindingKey -Row $values -Columns $now
@@ -2393,6 +2435,10 @@ function New-SheetsMergePlan {
     #
     # The order the tab already has is kept, and a check new to it is appended. That keeps
     # most row numbers still, so most C2 links need no rewrite at all.
+    # Where each check tab's result block is meant to end, filled as the blocks are planned and
+    # read back by the update to confirm the rows arrived. See "the board is asked what landed".
+    $lastRowOf = @{}
+
     $sqlOrder = @()
     $sqlOf = @{}
     $sqlTitleOf = @{}
@@ -2687,16 +2733,24 @@ function New-SheetsMergePlan {
             $header = @($dataHeader) + $SheetsRowReviewColumns
             $columns = @($dataHeader)
             $width = $columns.Count
-            $table = New-Object object[] ($written.Count + 1)
+            $table = [object[]]::new(($written.Count + 1))
             $table[0] = $header
             for ($r = 0; $r -lt $written.Count; $r++) {
                 $row = $written[$r]
-                $line = New-Object object[] ($width + 2)
+                $line = [object[]]::new(($width + 2))
                 for ($c = 0; $c -lt $width; $c++) { $line[$c] = $row.($columns[$c]) }
                 $line[$width] = $carried.Review[$r]
                 $line[$width + 1] = $carried.Note[$r]
                 $table[$r + 1] = $line
             }
+            # The last row this block is meant to reach, so the update can ask the document
+            # afterwards whether it got there. Recorded per tab and against the CheckID that
+            # owns it, because "the board is short" is not something anybody can act on.
+            $lastRowOf[$title] = [pscustomobject]@{
+                Row     = ($SheetsCheckTabResultRow + $written.Count)
+                CheckId = [string]$item.Job.CheckId
+            }
+
             $plan += [pscustomobject]@{
                 Kind   = 'Write'
                 Sheet  = $title
@@ -3212,6 +3266,7 @@ function New-SheetsMergePlan {
         Warning       = $warning
         RowOf         = $rowOf
         TabOf         = $tabOf
+        LastRowOf     = $lastRowOf
         KnownSheetIds = $known
         KnownTables   = $tables
     }
@@ -3304,6 +3359,63 @@ function Invoke-SheetsApi {
         }
         throw "Sheets API $Method $Path failed: $detail"
     }
+}
+
+function Test-SheetsTransportFailure {
+    <#
+        Whether a failure is the connection rather than the request.
+
+        The distinction decides whether trying again can help. A closed connection, a timeout, a
+        429 and the 5xx family are all the far end saying "not now"; a 400 is it saying the body
+        is wrong, and a second identical body is wrong in exactly the same way. Retrying that
+        one wastes the pause and buries the message that would have said what to fix.
+    #>
+    param([string]$Message)
+
+    $text = [string]$Message
+    foreach ($sign in @(
+            'connection was closed', 'connection was forcibly', 'operation has timed out',
+            'Unable to connect', 'The operation was canceled', 'underlying connection was closed',
+            'timed out', 'ECONNRESET')) {
+        if ($text -like "*$sign*") { return $true }
+    }
+    # Google's own codes, as they appear in the body this package attaches to the message.
+    foreach ($code in @('"code": 429', '"code": 500', '"code": 502', '"code": 503', '"code": 504',
+            'Rate Limit', 'rateLimitExceeded', 'backendError', 'internalError')) {
+        if ($text -like "*$code*") { return $true }
+    }
+    return $false
+}
+
+function Invoke-SheetsApiWithRetry {
+    <#
+        One request, tried again when the connection rather than the request is what failed.
+
+        Sleeps between attempts because the two causes this catches - a rate limit and a
+        backend that is busy - both want time rather than repetition. What it does NOT do is
+        widen the window this package spent the session narrowing: a retried write is the same
+        body addressed the same way, and a caller whose ranges are addressed by CheckID has to
+        re-address them itself before calling again. Only callers writing a whole block by
+        position use this.
+    #>
+    param([string]$Method, [string]$Path, $Body, [string]$What = '')
+
+    $last = ''
+    for ($attempt = 1; $attempt -le $SheetsRetryAttempts; $attempt++) {
+        try { return (Invoke-SheetsApi -Method $Method -Path $Path -Body $Body) }
+        catch {
+            $last = [string]$_.Exception.Message
+            if (-not (Test-SheetsTransportFailure -Message $last)) { throw }
+            if ($attempt -ge $SheetsRetryAttempts) { throw }
+
+            $pause = [int]$SheetsRetryPauseSeconds[[math]::Min($attempt - 1, $SheetsRetryPauseSeconds.Count - 1)]
+            $name = $(if ($What) { $What } else { $Path })
+            Write-Host ("  {0} did not go through ({1} of {2}); waiting {3}s" -f `
+                    $name, $attempt, $SheetsRetryAttempts, $pause) -ForegroundColor DarkGray
+            Start-Sleep -Seconds $pause
+        }
+    }
+    throw $last
 }
 
 function Read-SheetReviewNotes {
@@ -3798,6 +3910,41 @@ function Read-SheetState {
     }
 }
 
+function Split-SheetsValueBatches {
+    <#
+        One list of value ranges into as many requests as its weight needs.
+
+        Split-SheetsWriteChunks divides a single operation; this divides the request that
+        carries them. Without it every range a run produced travelled in one body, and on
+        Track-Cycling's 75 128 findings that is several megabytes: the post went through on
+        26.08 and failed on the two runs after it, the connection closing part way. Because it
+        was one request the board took none of it, so a run that failed here left every tab
+        reading as it had the run before.
+
+        Grouped in the order given and never reordered. A range past the cap on its own is a
+        group of one rather than an error: the cap governs what travels together, and an
+        oversized block still has to be written.
+    #>
+    param($Ranges, [int]$MaxCells = $SheetsValueBatchCells)
+
+    $groups = @()
+    $group = @()
+    $weight = 0
+    foreach ($one in @($Ranges)) {
+        if (-not $one) { continue }
+        $cells = [int]$one['_cells']
+        if ($group.Count -gt 0 -and ($weight + $cells) -gt $MaxCells) {
+            $groups += , $group
+            $group = @()
+            $weight = 0
+        }
+        $group += $one
+        $weight += $cells
+    }
+    if ($group.Count -gt 0) { $groups += , $group }
+    return $groups
+}
+
 function Split-SheetsWriteChunks {
     # One write operation into as many as its row count needs. A 20 000-row block is megabytes
     # of JSON in a single body: slow to build, slow to send, and lost entirely if it fails.
@@ -4190,10 +4337,10 @@ function Invoke-SheetsPlan {
         # rather than through a pipeline: a pipeline is set up and torn down per row, and this
         # runs for every row of every tab on the board.
         $source = @($write.Values)
-        $rows = New-Object object[] $source.Count
+        $rows = [object[]]::new($source.Count)
         for ($i = 0; $i -lt $source.Count; $i++) {
             $cells = @($source[$i])
-            $line = New-Object object[] $cells.Count
+            $line = [object[]]::new($cells.Count)
             for ($c = 0; $c -lt $cells.Count; $c++) {
                 $line[$c] = (ConvertTo-SheetsCellValue -Value $cells[$c])
             }
@@ -4247,6 +4394,14 @@ function Invoke-SheetsPlan {
                 } else { [int]$write.Column })
         }
 
+        # Which tab it is for and how big it is. The tab so a batch that fails can be named by
+        # the checks it was carrying rather than by a range; the size so the batches can be
+        # capped by what they actually weigh.
+        $range['_sheet'] = [string]$write.Sheet
+        $size = 0
+        foreach ($row in @($range['values'])) { $size += @($row).Count }
+        $range['_cells'] = $size
+
         if ($isRaw) { $raw += $range } else { $entered += $range }
     }
 
@@ -4290,18 +4445,84 @@ function Invoke-SheetsPlan {
         return $count
     }
 
+    # One list of ranges into as many requests as its weight needs, each tried again when the
+    # connection rather than the body is what failed, and every tab that did not go through
+    # named rather than counted.
+    #
+    # A request that fails takes only its own ranges with it. That is a change of kind and not
+    # of degree: the single body this replaces took the whole board with it, so a run that
+    # failed here left every tab reading as it did the run before - which is what the
+    # Track-Cycling board did on 27.08, twice, while its Last run cell went on naming a run
+    # from the night before.
+    $sendValues = {
+        param($Batch, [string]$How)
+
+        $groups = @(Split-SheetsValueBatches -Ranges $Batch)
+
+        $failed = @()
+        $sent = 0
+        foreach ($one in $groups) {
+            $payload = @($one | ForEach-Object { @{ range = $_['range']; values = $_['values'] } })
+            $tabs = @(@($one | ForEach-Object { [string]$_['_sheet'] }) | Sort-Object -Unique)
+            $cells = 0
+            foreach ($r in $one) { $cells += [int]$r['_cells'] }
+            try {
+                Invoke-SheetsApiWithRetry -Method Post -Path "$SpreadsheetId/values:batchUpdate" `
+                    -What ("{0} values for {1} tab(s)" -f $How, $tabs.Count) -Body @{
+                    valueInputOption = $How
+                    data             = $payload
+                } | Out-Null
+                $script:SheetsValueRequests += 1
+                $sent += $one.Count
+            }
+            catch {
+                # Said here and not only in the summary at the end. A failure collected and
+                # reported later is a failure invisible for as long as the run keeps going, and
+                # on 27.08 that was long enough for a different fault to crash the run first and
+                # take the only description of this one with it.
+                $why = ([string]$_.Exception.Message -replace '\s+', ' ')
+                Write-Host ("  {0} value request for {1} did not go through: {2}" -f `
+                        $How, (@($tabs) -join ', '), $why) -ForegroundColor Yellow
+                $failed += [pscustomobject]@{
+                    Tabs   = $tabs
+                    Ranges = $one.Count
+                    Cells  = $cells
+                    Why    = $why
+                }
+            }
+        }
+
+        return [pscustomobject]@{ Sent = $sent; Failed = $failed }
+    }
+
+    # The check tabs first and the board last, in both input modes.
+    #
+    # Not an ordering for its own sake. An Overview range is addressed by the row its check sits
+    # on, and writing Priority or Status re-applies the sort a reviewer saved on the tab - so the
+    # board can move under a batch that is still going out. A check tab cannot move: its rows are
+    # its own and no sort on Overview reaches them. So the tabs go in as many requests as they
+    # need, and only then is the CheckID column read and the board's own handful of ranges sent
+    # in one request against that reading. What used to be one round trip of exposure stays one.
+    $valueFailures = @()
+
     # RAW first. The whole-row write of a new Overview row leaves K empty and the mirror lands
     # on top of it, so the order of these two calls is what decides which value survives.
     if ($raw.Count -gt 0) {
-        if (@($raw | Where-Object { $_.ContainsKey('_key') }).Count -gt 0) {
-            $rowNowOf = & $readRowsNow
-            $script:SheetsRowsMoved += (& $readdress $raw $rowNowOf)
+        $rawTabs = @($raw | Where-Object { $_['_sheet'] -ne 'Overview' })
+        $rawBoard = @($raw | Where-Object { $_['_sheet'] -eq 'Overview' })
+
+        if ($rawTabs.Count -gt 0) {
+            $answer = & $sendValues $rawTabs 'RAW'
+            $valueFailures += @($answer.Failed)
         }
-        $rawPayload = @($raw | ForEach-Object { @{ range = $_['range']; values = $_['values'] } })
-        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId/values:batchUpdate" -Body @{
-            valueInputOption = 'RAW'
-            data             = $rawPayload
-        } | Out-Null
+        if ($rawBoard.Count -gt 0) {
+            if (@($rawBoard | Where-Object { $_.ContainsKey('_key') }).Count -gt 0) {
+                $rowNowOf = & $readRowsNow
+                $script:SheetsRowsMoved += (& $readdress $rawBoard $rowNowOf)
+            }
+            $answer = & $sendValues $rawBoard 'RAW'
+            $valueFailures += @($answer.Failed)
+        }
     }
 
     # **The board can move under the second batch.**
@@ -4325,19 +4546,123 @@ function Invoke-SheetsPlan {
     # reopened or closed, Status - and both are sort keys on the filter the reviewers saved -
     # so the board may have re-ordered itself under the writes that just landed.
     if ($entered.Count -gt 0) {
-        if (@($entered | Where-Object { $_.ContainsKey('_key') }).Count -gt 0) {
-            $rowNowOf = & $readRowsNow
-            $script:SheetsRowsMoved += (& $readdress $entered $rowNowOf)
+        $enteredTabs = @($entered | Where-Object { $_['_sheet'] -ne 'Overview' })
+        $enteredBoard = @($entered | Where-Object { $_['_sheet'] -eq 'Overview' })
+
+        if ($enteredTabs.Count -gt 0) {
+            $answer = & $sendValues $enteredTabs 'USER_ENTERED'
+            $valueFailures += @($answer.Failed)
+        }
+        if ($enteredBoard.Count -gt 0) {
+            if (@($enteredBoard | Where-Object { $_.ContainsKey('_key') }).Count -gt 0) {
+                $rowNowOf = & $readRowsNow
+                $script:SheetsRowsMoved += (& $readdress $enteredBoard $rowNowOf)
+            }
+            $answer = & $sendValues $enteredBoard 'USER_ENTERED'
+            $valueFailures += @($answer.Failed)
+        }
+    }
+
+    # **The board is asked what landed.**
+    #
+    # A request that answered 200 is a request Google accepted, which is not quite the same as
+    # rows a reader will find. This closes the gap the only way that does not depend on trusting
+    # the transport: every result block says which row it is meant to end on, and that one cell
+    # is read back. A block that arrived whole has something in its last row; one that did not
+    # has an empty cell there, whatever the response said.
+    #
+    # One cell per tab and not the column, because the column is the result - reading back
+    # 75 000 rows to find out whether 75 000 rows arrived costs as much as writing them.
+    $shortTabs = @()
+    $checked = 0
+    if ($Plan.PSObject.Properties.Name -contains 'LastRowOf' -and $Plan.LastRowOf) {
+        Set-SheetsStage 'confirming the rows arrived'
+        $titles = @($Plan.LastRowOf.Keys | Where-Object { $gidOf.ContainsKey([string]$_) })
+        for ($i = 0; $i -lt $titles.Count; $i += $SheetsReadChunk) {
+            $slice = @($titles[$i..([math]::Min($i + $SheetsReadChunk - 1, $titles.Count - 1))])
+            $query = ($slice | ForEach-Object {
+                    'ranges=' + [uri]::EscapeDataString(("'{0}'!A{1}" -f
+                            ([string]$_ -replace "'", "''"), [int]$Plan.LastRowOf[$_].Row))
+                }) -join '&'
+            $answer = Invoke-SheetsApiWithRetry -Method Get -What 'the confirming read' `
+                -Path "$SpreadsheetId/values:batchGet`?$query&majorDimension=ROWS"
+            $ranges = @($answer.valueRanges)
+            for ($j = 0; $j -lt $slice.Count; $j++) {
+                $checked++
+                $rows = $(if ($j -lt $ranges.Count) { @($ranges[$j].values) } else { @() })
+                $cell = $(if ($rows.Count -gt 0) { @($rows[0]) } else { @() })
+                $there = ($cell.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$cell[0]))
+                if (-not $there) { $shortTabs += [string]$slice[$j] }
+            }
+        }
+    }
+
+    # Sent again, once. A tab short of its last row is a tab whose write did not take, and the
+    # cheapest thing that can be true is that one request was unlucky. Once and not in a loop:
+    # a second failure is a fact about the board or the block, and repeating it only delays
+    # saying so.
+    if ($shortTabs.Count -gt 0) {
+        Set-SheetsStage 'writing values'
+        Write-Host ("  {0} tab(s) came back short and are being sent again: {1}" -f `
+                $shortTabs.Count, (@($shortTabs) -join ', ')) -ForegroundColor Yellow
+
+        $missing = @{}
+        foreach ($t in $shortTabs) { $missing[$t] = $true }
+        $againRaw = @($raw | Where-Object { $missing.ContainsKey([string]$_['_sheet']) })
+        $againEntered = @($entered | Where-Object { $missing.ContainsKey([string]$_['_sheet']) })
+        if ($againRaw.Count -gt 0) {
+            $answer = & $sendValues $againRaw 'RAW'
+            $valueFailures += @($answer.Failed)
+        }
+        if ($againEntered.Count -gt 0) {
+            $answer = & $sendValues $againEntered 'USER_ENTERED'
+            $valueFailures += @($answer.Failed)
         }
 
-        $payload = @($entered | ForEach-Object {
-                $copy = @{ range = $_['range']; values = $_['values'] }
-                $copy
+        Set-SheetsStage 'confirming the rows arrived'
+        $stillShort = @()
+        foreach ($t in $shortTabs) {
+            # The extra pair of brackets is not decoration. A method call parses its arguments
+            # as a comma-separated list, so EscapeDataString("..." -f $a, $b) is read as two
+            # arguments rather than one formatted string, and the format runs with {1} unfilled.
+            $wanted = ("'{0}'!A{1}" -f ([string]$t -replace "'", "''"), [int]$Plan.LastRowOf[$t].Row)
+            $answer = Invoke-SheetsApiWithRetry -Method Get -What 'the confirming read' -Path (
+                "$SpreadsheetId/values/" + [uri]::EscapeDataString($wanted))
+            $rows = @($answer.values)
+            $cell = $(if ($rows.Count -gt 0) { @($rows[0]) } else { @() })
+            if (-not ($cell.Count -gt 0 -and -not [string]::IsNullOrWhiteSpace([string]$cell[0]))) {
+                $stillShort += [string]$t
+            }
+        }
+        $shortTabs = $stillShort
+    }
+
+    if ($shortTabs.Count -gt 0) {
+        $named = @($shortTabs | ForEach-Object {
+                '{0} (tab {1})' -f [string]$Plan.LastRowOf[$_].CheckId, $_
             })
-        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId/values:batchUpdate" -Body @{
-            valueInputOption = 'USER_ENTERED'
-            data             = $payload
-        } | Out-Null
+        $valueFailures += [pscustomobject]@{
+            Tabs   = $shortTabs
+            Ranges = $shortTabs.Count
+            Cells  = 0
+            Why    = ('the block did not reach its last row after a second attempt: ' +
+                ($named -join ', '))
+        }
+    }
+    $script:SheetsTabsConfirmed = $checked
+
+    # Nothing further is attempted against a board whose values did not all land. The stages
+    # after this one sort the rows and declare the tables over them, and both would be working
+    # from a block that is part this run and part the last: a sort in particular would mix the
+    # two orders past telling apart. The message names the tabs rather than counting them,
+    # because "3 batches failed" sends somebody to look at a hundred of them.
+    if ($valueFailures.Count -gt 0) {
+        $named = @($valueFailures | ForEach-Object {
+                '{0} range(s) over {1}: {2}' -f $_.Ranges, (@($_.Tabs) -join ', '), $_.Why
+            })
+        throw ("{0} of {1} value request(s) did not go through after {2} attempt(s). " -f `
+                $valueFailures.Count, ($script:SheetsValueRequests + $valueFailures.Count),
+                $SheetsRetryAttempts) + ($named -join ' | ')
     }
 
     Set-SheetsStage 'colouring the trend'

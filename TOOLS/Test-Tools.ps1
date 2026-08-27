@@ -2484,6 +2484,141 @@ Test-That 'every Overview write names the check it is for' {
     }
 }
 
+Test-That 'a planned block of rows serialises as a list of rows' {
+    # The one thing every test here had been taking on trust: that what the plan holds is what
+    # Sheets receives. On 27.08 it was not. An array allocated with New-Object object[] is handed
+    # back wrapped in PowerShell 5.1, and ConvertTo-Json renders the wrapper - so the body carried
+    # {"value":[[...]],"Count":2} where the API wants [[...]], every value request came back 400,
+    # and the run reported itself as having written to tabs it had in fact only cleared.
+    #
+    # Asserted on the JSON and not on the object, because the object was right the whole time.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-077' -Findings 2 -Eligible 900 -Verdict 'New'))
+    $rows = @(1..2 | ForEach-Object {
+            [pscustomobject]@{ check_type = 'MISSING'; event_id = $_; eligible_count = $null }
+        })
+    $collected = @([pscustomobject]@{
+            Job  = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-077'; Name = 'NAME_077'; What = 'a thing'; Sql = 'SELECT 1' }
+            Rows = $rows
+        })
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{}; StatusOf = @{}; CommentOf = @{}; TabOf = @{}; ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected $collected -Existing $existing -OutputFolder 'x'
+
+    $writes = @($plan.Operations | Where-Object { $_.Kind -eq 'Write' })
+    Assert-True ($writes.Count -gt 0) 'the plan writes something'
+    foreach ($write in $writes) {
+        foreach ($chunk in @(Split-SheetsWriteChunks -Operation $write)) {
+            # Converted the way the transport converts it, then serialised the way it sends it.
+            $source = @($chunk.Values)
+            $body = [object[]]::new($source.Count)
+            for ($i = 0; $i -lt $source.Count; $i++) {
+                $cells = @($source[$i])
+                $line = [object[]]::new($cells.Count)
+                for ($c = 0; $c -lt $cells.Count; $c++) {
+                    $line[$c] = (ConvertTo-SheetsCellValue -Value $cells[$c])
+                }
+                $body[$i] = $line
+            }
+            $json = @{ range = $chunk.Range; values = $body } | ConvertTo-Json -Depth 12 -Compress
+            Assert-True ($json -match '"values":\[') `
+                "$($chunk.Sheet) $($chunk.Range) sends its rows as a list"
+            Assert-True (-not ($json -match '"Count":')) `
+                "$($chunk.Sheet) $($chunk.Range) sends no wrapper the API would refuse"
+        }
+    }
+}
+
+Test-That 'the value ranges are split into requests a connection can carry' {
+    # Track-Cycling, 27.08.2026: 75 128 findings went into one values:batchUpdate, several
+    # megabytes of it, and the connection closed part way. Twice. The board took none of it -
+    # not one row of one tab - because one request is all or nothing, and its Last run cell went
+    # on naming a run from the night before while two runs reported themselves as done.
+    $ranges = @()
+    foreach ($n in @(20000, 20000, 20000, 1000)) {
+        $ranges += @{ range = "'T$n'!A5:H99"; values = @(); _sheet = "T$n"; _cells = $n }
+    }
+
+    $groups = @(Split-SheetsValueBatches -Ranges $ranges -MaxCells 50000)
+    Assert-Equal 2 $groups.Count 'four ranges of 61 000 cells become two requests'
+
+    # The property that matters, asserted rather than a hand-counted shape: no request carries
+    # more than the cap. A test that only counted groups would pass on a split that put 60 000
+    # cells in one of them.
+    foreach ($one in $groups) {
+        $weight = 0
+        foreach ($r in @($one)) { $weight += [int]$r['_cells'] }
+        Assert-True ($weight -le 50000) "a request of $weight cells is within the cap"
+    }
+
+    # Nothing is dropped and nothing is reordered: the ranges arrive in the order they were
+    # planned, which is the order the tabs were built in.
+    $flat = @($groups | ForEach-Object { $_ } | ForEach-Object { [string]$_['_sheet'] })
+    Assert-Equal 4 $flat.Count 'every range is in exactly one request'
+    Assert-Equal 'T20000,T20000,T20000,T1000' ($flat -join ',') 'in the order they were given'
+}
+
+Test-That 'a single range larger than the cap still travels' {
+    # The cap governs what goes together, not what may be written. A check returning 50 000 rows
+    # in one block has to reach the tab, and refusing it would be this code deciding a finding
+    # is too large to show anybody.
+    $one = @(@{ range = "'Big'!A5:H99"; values = @(); _sheet = 'Big'; _cells = 400000 })
+    $groups = @(Split-SheetsValueBatches -Ranges $one -MaxCells 50000)
+    Assert-Equal 1 $groups.Count 'it goes on its own rather than being refused'
+    Assert-Equal 1 @($groups[0]).Count 'as a request of one range'
+}
+
+Test-That 'an empty list of ranges asks for no requests at all' {
+    Assert-Equal 0 @(Split-SheetsValueBatches -Ranges @() -MaxCells 50000).Count 'nothing to send'
+    Assert-Equal 0 @(Split-SheetsValueBatches -Ranges $null -MaxCells 50000).Count 'nor for a null'
+}
+
+Test-That 'only a failure of the connection is worth trying again' {
+    # A 400 says the body is wrong and the same body is wrong the second time. Retrying it
+    # spends the pause and buries Google's own message, which is the one thing that says what
+    # to fix. These are the two halves of that distinction, named rather than counted.
+    foreach ($transport in @(
+            'The request was aborted: The connection was closed unexpectedly.',
+            'The operation has timed out',
+            'Sheets API failed: { "code": 503, "message": "The service is currently unavailable." }',
+            'rateLimitExceeded')) {
+        Assert-True (Test-SheetsTransportFailure -Message $transport) "tried again: $transport"
+    }
+    foreach ($final in @(
+            'Sheets API failed: { "code": 400, "message": "Unable to parse range: Nope!A1" }',
+            'Sheets API failed: { "code": 403, "message": "The caller does not have permission" }',
+            'Sheets API failed: { "code": 404, "message": "Requested entity was not found." }')) {
+        Assert-True (-not (Test-SheetsTransportFailure -Message $final)) "not retried: $final"
+    }
+}
+
+Test-That 'every result block says which row it has to reach' {
+    # What the confirming read compares against. A block planned to end on row 12 and ending on
+    # row 5 is a block that did not arrive, whatever the request answered - and without this
+    # the run has nothing to ask the document.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-076' -Findings 7 -Eligible 900 -Verdict 'New'))
+    $rows = @(1..7 | ForEach-Object {
+            [pscustomobject]@{ check_type = 'MISSING'; event_id = $_; eligible_count = $null }
+        })
+    $collected = @([pscustomobject]@{
+            Job  = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-076'; Name = 'NAME_076'; What = 'a thing'; Sql = 'SELECT 1' }
+            Rows = $rows
+        })
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{}; StatusOf = @{}; CommentOf = @{}; TabOf = @{}; ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected $collected -Existing $existing -OutputFolder 'x'
+
+    $title = [string]$plan.TabOf['Fixtureball-DQ-076']
+    Assert-True ($plan.LastRowOf.ContainsKey($title)) 'the tab is named in the map'
+    Assert-Equal ($SheetsCheckTabResultRow + 7) ([int]$plan.LastRowOf[$title].Row) `
+        'the last row is the header row plus one per finding'
+    Assert-Equal 'Fixtureball-DQ-076' ([string]$plan.LastRowOf[$title].CheckId) `
+        'and it carries the check, so a short block can be named rather than counted'
+}
+
 Test-That 'a Comment mirror sitting beside the wrong check is put back' {
     # Found on the Ice-Hockey board on 2026-08-27: ten Overview rows of a hundred and thirty-two
     # held a mirror naming another check's tab, and five of those tabs were named by two rows at

@@ -4256,6 +4256,8 @@ function Save-RunSheet {
     }
     if ([string]::IsNullOrWhiteSpace($id)) { return $null }
 
+    # Before the try, so a failure inside it can still say how long it had been going.
+    $sheetClock = $null
     try {
         Write-Host 'Updating the live document.' -ForegroundColor DarkGray
         Reset-SheetsTimings
@@ -4359,6 +4361,16 @@ function Save-RunSheet {
         Write-Host ("  Document updated in {0}: {1}" -f `
                 (Format-RunDuration -Seconds $script:SheetSeconds),
                 (Get-SheetsTimingLine -Total $script:SheetSeconds)) -ForegroundColor DarkGray
+        Write-Host ("  {0} value request(s), {1} tab(s) confirmed to have reached their last row" -f `
+                $script:SheetsValueRequests, $script:SheetsTabsConfirmed) -ForegroundColor DarkGray
+
+        # Said out loud rather than kept. A cell that had to be re-addressed is a cell the board
+        # moved under, which is the defect this addressing exists to close - so the run that
+        # sees it happening is the run that has to say it did.
+        if ($script:SheetsRowsMoved -gt 0) {
+            Write-Host ("  {0} cell(s) were re-addressed because the board moved under the write" -f `
+                    $script:SheetsRowsMoved) -ForegroundColor DarkGray
+        }
         if ($history.Count -gt 0) {
             # The span rather than the count of runs, because "40 runs" says nothing about how
             # far back the tab reaches and the two are not the same question on a ledger this
@@ -4415,6 +4427,18 @@ function Save-RunSheet {
         $stage = $(if ($script:SheetsStage) { $script:SheetsStage } else { 'starting' })
         Write-Host "  the live document update failed while $stage" -ForegroundColor Yellow
         Write-Host "  $($_.Exception.Message)" -ForegroundColor Yellow
+
+        # The time it spent before it failed, and where. Kept on the same variable a successful
+        # update writes, so the run's closing line does not quietly fold a failed half-hour into
+        # the figure for writing files - which is what it did on 27.08, reporting 5m 03s of files
+        # for a workbook that took 6m 24s.
+        if ($sheetClock) {
+            $script:SheetSeconds = ((Get-Date) - $sheetClock).TotalSeconds
+            Set-SheetsStage ''
+            Write-Host ("  It had been going {0}: {1}" -f `
+                    (Format-RunDuration -Seconds $script:SheetSeconds),
+                    (Get-SheetsTimingLine -Total $script:SheetSeconds)) -ForegroundColor Yellow
+        }
         Write-Host '  Whatever ran before that stage is applied. The results are on disk either way,' -ForegroundColor Yellow
         Write-Host '  and running again brings the document fully up to date.' -ForegroundColor Yellow
         return $null
