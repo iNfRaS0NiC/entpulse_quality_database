@@ -4387,7 +4387,15 @@ function Save-RunSheet {
             valueRequests   = [int]$script:SheetsValueRequests
             tabsConfirmed   = [int]$script:SheetsTabsConfirmed
             rowsReaddressed = [int]$script:SheetsRowsMoved
+            tabsMoved       = [int]$script:SheetsTabsMoved
             phases          = (Get-SheetsPhaseRecord)
+        }
+
+        # Said out loud, because it changes what somebody sees when they open the document and
+        # nothing else on the run would mention it.
+        if ($script:SheetsTabsMoved -gt 0) {
+            Write-Host ("  {0} board tab(s) moved to the front: {1}" -f `
+                    $script:SheetsTabsMoved, ($SheetsLeadingTabs -join ', ')) -ForegroundColor DarkGray
         }
 
         # Said out loud rather than kept. A cell that had to be re-addressed is a cell the board
@@ -4476,6 +4484,7 @@ function Save-RunSheet {
             valueRequests   = [int]$script:SheetsValueRequests
             tabsConfirmed   = [int]$script:SheetsTabsConfirmed
             rowsReaddressed = [int]$script:SheetsRowsMoved
+            tabsMoved       = [int]$script:SheetsTabsMoved
             phases          = (Get-SheetsPhaseRecord)
         }
         Write-Host '  Whatever ran before that stage is applied. The results are on disk either way,' -ForegroundColor Yellow

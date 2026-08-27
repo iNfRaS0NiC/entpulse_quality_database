@@ -34230,6 +34230,2880 @@
                                                              "checkBy":  "Simeon"
                                                          }
                                 }
+                 },
+                 {
+                     "runId":  "Triathlon 27.08.2026 19-51-31",
+                     "startedUtc":  "2026-08-27T17:51:29Z",
+                     "output":  "D:\\SQL\u0027s Output\\Triathlon 27.08.2026 19-51-31",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-001",
+                                        "runKey":  "Triathlon-DQ-001",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NO_TOURNAMENTS_OR_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  77,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-002",
+                                        "runKey":  "Triathlon-DQ-002",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_AGE_CLASS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3321,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-003",
+                                        "runKey":  "Triathlon-DQ-003",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NO_EVENTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  19,
+                                        "findings":  18,
+                                        "eligible":  3321,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-004",
+                                        "runKey":  "Triathlon-DQ-004",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3303,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-005",
+                                        "runKey":  "Triathlon-DQ-005",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_START_OR_END_DATE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3321,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-006",
+                                        "runKey":  "Triathlon-DQ-006",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MISSING_ROUND_TYPE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3624,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-007",
+                                        "runKey":  "Triathlon-DQ-007",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_DATE_OF_BIRTH",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  14017,
+                                        "findings":  14016,
+                                        "eligible":  14978,
+                                        "seconds":  19.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-008",
+                                        "runKey":  "Triathlon-DQ-008",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_PROFILE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  14793,
+                                        "seconds":  3.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-009",
+                                        "runKey":  "Triathlon-DQ-009",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_NO_PARTICIPATION_ANYWHERE",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  274,
+                                        "findings":  273,
+                                        "eligible":  15286,
+                                        "seconds":  0.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-010",
+                                        "runKey":  "Triathlon-DQ-010",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_NO_PARTICIPANTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  1.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-011",
+                                        "runKey":  "Triathlon-DQ-011",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MISSING_START_OR_END_DATE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-012",
+                                        "runKey":  "Triathlon-DQ-012",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_INVALID_OR_MISSING",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1273 Comment; Setting: 1463 Start date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  14.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-013",
+                                        "runKey":  "Triathlon-DQ-013",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_MISSING_SET_SUBSET_GENDER_NAME",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  77,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-014",
+                                        "runKey":  "Triathlon-DQ-014",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_STAGE_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3213,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-015",
+                                        "runKey":  "Triathlon-DQ-015",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3624,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-016",
+                                        "runKey":  "Triathlon-DQ-016",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_MISSING_GENDER",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3624,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-017",
+                                        "runKey":  "Triathlon-DQ-017",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MISSING_FOR_FINISHED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-018",
+                                        "runKey":  "Triathlon-DQ-018",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_INVALID_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9888,
+                                        "seconds":  1.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-019",
+                                        "runKey":  "Triathlon-DQ-019",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FORMAT_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-020",
+                                        "runKey":  "Triathlon-DQ-020",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  4.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-021",
+                                        "runKey":  "Triathlon-DQ-021",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment, 557 Full-time duration, 101 Duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  8.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-022",
+                                        "runKey":  "Triathlon-DQ-022",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MISSING_AGE_CLASS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-023",
+                                        "runKey":  "Triathlon-DQ-023",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-024",
+                                        "runKey":  "Triathlon-DQ-024",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_STAGE",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-025",
+                                        "runKey":  "Triathlon-DQ-025",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_EVENTS",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date, 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3401,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-026",
+                                        "runKey":  "Triathlon-DQ-026",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal, 1429 Team, 1270 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  24,
+                                        "findings":  23,
+                                        "eligible":  3404,
+                                        "seconds":  8.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-027",
+                                        "runKey":  "Triathlon-DQ-027",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_INVALID_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  11081,
+                                        "seconds":  14.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-028",
+                                        "runKey":  "Triathlon-DQ-028",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_TIME_DIFFERENCE_FORMAT_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1427 Time Difference",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3401,
+                                        "seconds":  16,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-029",
+                                        "runKey":  "Triathlon-DQ-029",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_DEPRECATED_DURATION_USED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1272 Duration, 1426 Time, 1427 Time Difference",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-030",
+                                        "runKey":  "Triathlon-DQ-030",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  3404,
+                                        "seconds":  29.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-031",
+                                        "runKey":  "Triathlon-DQ-031",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1273 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  111801,
+                                        "seconds":  22.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-032",
+                                        "runKey":  "Triathlon-DQ-032",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NO_RANK_DATA_FOR_PARTICIPANTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  16.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-033",
+                                        "runKey":  "Triathlon-DQ-033",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MISSING_PHASE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  15.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-034",
+                                        "runKey":  "Triathlon-DQ-034",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_CORE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  114,
+                                        "findings":  113,
+                                        "eligible":  3321,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-035",
+                                        "runKey":  "Triathlon-DQ-035",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MISSING_CORE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Setting: 1470 Gender",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-036",
+                                        "runKey":  "Triathlon-DQ-036",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_INVALID_OR_MISSING",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  129860,
+                                        "seconds":  5.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-037",
+                                        "runKey":  "Triathlon-DQ-037",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Result: 100 Rank, 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3303,
+                                        "seconds":  3.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-038",
+                                        "runKey":  "Triathlon-DQ-038",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_MEDAL_ROUND",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3303,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-039",
+                                        "runKey":  "Triathlon-DQ-039",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_UNEXPECTED_MEDAL_FOR_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  304,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-040",
+                                        "runKey":  "Triathlon-DQ-040",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_WITHOUT_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  30,
+                                        "findings":  29,
+                                        "eligible":  3320,
+                                        "seconds":  0.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-041",
+                                        "runKey":  "Triathlon-DQ-041",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_ON_NON_MEDAL_ROUND_PHASE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  11081,
+                                        "seconds":  11,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-042",
+                                        "runKey":  "Triathlon-DQ-042",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  3291,
+                                        "seconds":  5.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-043",
+                                        "runKey":  "Triathlon-DQ-043",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  129860,
+                                        "seconds":  2.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-044",
+                                        "runKey":  "Triathlon-DQ-044",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "Setting: 1470 Gender",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  10.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-045",
+                                        "runKey":  "Triathlon-DQ-045",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FULL_TIME_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  3.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-046",
+                                        "runKey":  "Triathlon-DQ-046",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_TIME_FULL_TIME_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1426 Time, 1427 Time Difference",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  16,
+                                        "findings":  15,
+                                        "eligible":  3404,
+                                        "seconds":  4.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-047",
+                                        "runKey":  "Triathlon-DQ-047",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_UNEXPECTED_FOR_NOT_STARTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-048",
+                                        "runKey":  "Triathlon-DQ-048",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration, 101 Duration, 501 Medal, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  17448,
+                                        "seconds":  2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-049",
+                                        "runKey":  "Triathlon-DQ-049",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_RANK_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9888,
+                                        "seconds":  1.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-050",
+                                        "runKey":  "Triathlon-DQ-050",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_FULL_TIME_NOT_MONOTONIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3604,
+                                        "seconds":  75.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-051",
+                                        "runKey":  "Triathlon-DQ-051",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_DUPLICATE_IN_EVENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  1.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-052",
+                                        "runKey":  "Triathlon-DQ-052",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FULL_TIME_ARITHMETIC_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3604,
+                                        "seconds":  24.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-053",
+                                        "runKey":  "Triathlon-DQ-053",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_COMMENT_INVALID_OR_CONTRADICTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1426 Time, 1277 Medal, 1273 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  23,
+                                        "findings":  22,
+                                        "eligible":  18258,
+                                        "seconds":  14.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-054",
+                                        "runKey":  "Triathlon-DQ-054",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  175,
+                                        "findings":  174,
+                                        "eligible":  745,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-055",
+                                        "runKey":  "Triathlon-DQ-055",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  68,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-056",
+                                        "runKey":  "Triathlon-DQ-056",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3321,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-057",
+                                        "runKey":  "Triathlon-DQ-057",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  294,
+                                        "findings":  293,
+                                        "eligible":  1522,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-058",
+                                        "runKey":  "Triathlon-DQ-058",
+                                        "parameters":  "",
+                                        "name":  "EVENT_TEAM_PARTICIPANT_WITHOUT_LINEUP",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  26,
+                                        "findings":  25,
+                                        "eligible":  128,
+                                        "seconds":  1.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-059",
+                                        "runKey":  "Triathlon-DQ-059",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_DUPLICATE_ROWS",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  6.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-060",
+                                        "runKey":  "Triathlon-DQ-060",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_DUPLICATE_ROWS",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  19.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-061",
+                                        "runKey":  "Triathlon-DQ-061",
+                                        "parameters":  "",
+                                        "name":  "EVENT_STATUS_TIME_CONFLICT",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-062",
+                                        "runKey":  "Triathlon-DQ-062",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DUPLICATE_BY_METADATA",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3624,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-063",
+                                        "runKey":  "Triathlon-DQ-063",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NO_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  879,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-064",
+                                        "runKey":  "Triathlon-DQ-064",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_ATHLETE_TEAM_MISSING_OR_INVALID",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1429 Team",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3822,
+                                        "seconds":  8.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-065",
+                                        "runKey":  "Triathlon-DQ-065",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_ATHLETE_COUNT_UNEVEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1429 Team",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  79,
+                                        "seconds":  15,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-066",
+                                        "runKey":  "Triathlon-DQ-066",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_GENDER_BALANCE_UNEVEN",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "Comp.Rank: 1429 Team; Setting: 1470 Gender",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  67,
+                                        "seconds":  14.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-067",
+                                        "runKey":  "Triathlon-DQ-067",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MIXED_TEAM_LINEUP_GENDER_BALANCE_UNEVEN",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  1283,
+                                        "seconds":  1.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-068",
+                                        "runKey":  "Triathlon-DQ-068",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_DISCIPLINE_NAME_MISMATCH",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3619,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-069",
+                                        "runKey":  "Triathlon-DQ-069",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_FULL_TIME_OUT_OF_DISCIPLINE_BAND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  1097,
+                                        "findings":  1096,
+                                        "eligible":  112366,
+                                        "seconds":  11.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-070",
+                                        "runKey":  "Triathlon-DQ-070",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_DURATION_SHAPE_UNCONFIRMED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 557 Full-time duration, 101 Duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  112366,
+                                        "seconds":  6.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-071",
+                                        "runKey":  "Triathlon-DQ-071",
+                                        "parameters":  "",
+                                        "name":  "EVENT_TEAM_LINEUP_SIZE_UNEVEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  107,
+                                        "seconds":  1.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-072",
+                                        "runKey":  "Triathlon-DQ-072",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_VALUE_BLANK",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  129860,
+                                        "seconds":  5.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-073",
+                                        "runKey":  "Triathlon-DQ-073",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_VALUE_BLANK",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  130036,
+                                        "seconds":  16.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-074",
+                                        "runKey":  "Triathlon-DQ-074",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NO_PARTICIPANTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  18,
+                                        "findings":  17,
+                                        "eligible":  3624,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-075",
+                                        "runKey":  "Triathlon-DQ-075",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_RANK_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  11081,
+                                        "seconds":  14.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-076",
+                                        "runKey":  "Triathlon-DQ-076",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_UNEXPECTED_MEDAL_RELATED_FOR_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  304,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-077",
+                                        "runKey":  "Triathlon-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MISSING_VENUE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3625,
+                                        "findings":  3624,
+                                        "eligible":  3624,
+                                        "seconds":  1.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-078",
+                                        "runKey":  "Triathlon-DQ-078",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3624,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-079",
+                                        "runKey":  "Triathlon-DQ-079",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  23,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-080",
+                                        "runKey":  "Triathlon-DQ-080",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  29,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-081",
+                                        "runKey":  "Triathlon-DQ-081",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  879,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-082",
+                                        "runKey":  "Triathlon-DQ-082",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_YEAR_GAP",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  30,
+                                        "findings":  29,
+                                        "eligible":  60,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-083",
+                                        "runKey":  "Triathlon-DQ-083",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_EVENT_DISCIPLINE_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  13,
+                                        "findings":  12,
+                                        "eligible":  3303,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-084",
+                                        "runKey":  "Triathlon-DQ-084",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  6,
+                                        "seconds":  1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-085",
+                                        "runKey":  "Triathlon-DQ-085",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_FIELD_UNUSED_IN_TEAM_STATISTIC",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1429 Team",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  3276,
+                                        "seconds":  23.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-086",
+                                        "runKey":  "Triathlon-DQ-086",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_VALUE_BELONGS_TO_ANOTHER_FIELD",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  494860,
+                                        "seconds":  16.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-087",
+                                        "runKey":  "Triathlon-DQ-087",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-088",
+                                        "runKey":  "Triathlon-DQ-088",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3401,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-089",
+                                        "runKey":  "Triathlon-DQ-089",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_DUPLICATE_IN_STATISTIC",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-090",
+                                        "runKey":  "Triathlon-DQ-090",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_REFERENCE_OR_TYPE_INVALID",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-091",
+                                        "runKey":  "Triathlon-DQ-091",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_SCALAR_DUPLICATE_ROWS",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date, 1470 Gender",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-092",
+                                        "runKey":  "Triathlon-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_UNEXPECTED_OWNER_TYPE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-093",
+                                        "runKey":  "Triathlon-DQ-093",
+                                        "parameters":  "",
+                                        "name":  "EVENT_LINEUP_ATHLETE_ASSIGNED_MORE_THAN_ONCE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  108,
+                                        "seconds":  1.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-094",
+                                        "runKey":  "Triathlon-DQ-094",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MIXED_RELAY_LINEUP_SIZE_NOT_FOUR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  1196,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-095",
+                                        "runKey":  "Triathlon-DQ-095",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_TYPE_MIXED",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  14.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-096",
+                                        "runKey":  "Triathlon-DQ-096",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3569,
+                                        "findings":  3568,
+                                        "eligible":  3572,
+                                        "seconds":  2.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-097",
+                                        "runKey":  "Triathlon-DQ-097",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_SEQUENCE_BROKEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  2.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-098",
+                                        "runKey":  "Triathlon-DQ-098",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 101 Duration, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  6.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-099",
+                                        "runKey":  "Triathlon-DQ-099",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1426 Time",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3404,
+                                        "seconds":  15.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-100",
+                                        "runKey":  "Triathlon-DQ-100",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration, 101 Duration, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  6.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-101",
+                                        "runKey":  "Triathlon-DQ-101",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  14793,
+                                        "seconds":  1.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-102",
+                                        "runKey":  "Triathlon-DQ-102",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  2.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-103",
+                                        "runKey":  "Triathlon-DQ-103",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  3404,
+                                        "seconds":  15.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-104",
+                                        "runKey":  "Triathlon-DQ-104",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  163,
+                                        "seconds":  3.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-105",
+                                        "runKey":  "Triathlon-DQ-105",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_GENDER_NOT_REFLECTED_IN_ITS_STAGES",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  77,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-106",
+                                        "runKey":  "Triathlon-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_SEQUENCE_BROKEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1429 Team; Setting: 1463 Start date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  3296,
+                                        "seconds":  18,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-107",
+                                        "runKey":  "Triathlon-DQ-107",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  19,
+                                        "findings":  18,
+                                        "eligible":  3022,
+                                        "seconds":  17,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-108",
+                                        "runKey":  "Triathlon-DQ-108",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_NUMBER_DUPLICATE_IN_EVENT",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  0.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-109",
+                                        "runKey":  "Triathlon-DQ-109",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MEDAL_AWARDED_AND_DECLARED_ON_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  304,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-110",
+                                        "runKey":  "Triathlon-DQ-110",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_YEAR_CLAIMED_BY_SPAN_AND_SINGLE_SEASON",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  77,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-111",
+                                        "runKey":  "Triathlon-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_EDITIONS_OVERLAP_IN_TIME",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  77,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-112",
+                                        "runKey":  "Triathlon-DQ-112",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_TYPE_MIXED",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  1.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-113",
+                                        "runKey":  "Triathlon-DQ-113",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_DECIDING_VALUE_WITHOUT_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 557 Full-time duration, 101 Duration, 104 Comment, 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  6.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-114",
+                                        "runKey":  "Triathlon-DQ-114",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_TYPE_CONTRADICTS_DISCIPLINE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3607,
+                                        "seconds":  2.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-115",
+                                        "runKey":  "Triathlon-DQ-115",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_ATHLETE_RANKING_DISAGREES_WITH_ITS_TEAM_TWIN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  108,
+                                        "seconds":  25.9,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  79,
+                                   "valueRequests":  14,
+                                   "tabsConfirmed":  120,
+                                   "rowsReaddressed":  0,
+                                   "phases":  {
+                                                  "reading the document":  13.3,
+                                                  "planning the changes":  9.5,
+                                                  "adding and sizing tabs":  0.8,
+                                                  "hiding columns and colouring Rows":  10.6,
+                                                  "clearing stale rows":  10.9,
+                                                  "writing values":  24.7,
+                                                  "confirming the rows arrived":  0.7,
+                                                  "colouring the trend":  1.8,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  6.4
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Triathlon-DQ-001":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-002":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-003":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-004":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-005":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-006":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-007":  {
+                                                             "status":  "Skipped",
+                                                             "checkBy":  "Lyubomir, Aleks P., Lyudmila, Teodor K, Lyuboslav,Gabriel, Aleks D, Hristiyana"
+                                                         },
+                                    "Triathlon-DQ-008":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-009":  {
+                                                             "status":  "Monitor Only",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-010":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Elena N."
+                                                         },
+                                    "Triathlon-DQ-011":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-012":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-013":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-014":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-015":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-016":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-017":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-018":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-019":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-020":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-021":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-022":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-023":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-024":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-025":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-026":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Teodor D."
+                                                         },
+                                    "Triathlon-DQ-027":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-028":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-029":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-030":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Hristiyana, Lyuboslav, Teodor D., Aleksandar D"
+                                                         },
+                                    "Triathlon-DQ-031":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-032":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-033":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-034":  {
+                                                             "status":  "IT Fix",
+                                                             "checkBy":  "Teodor D., Teodor K, Aleks P., Lyudmila"
+                                                         },
+                                    "Triathlon-DQ-035":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Hristiyana, Lyuboslav"
+                                                         },
+                                    "Triathlon-DQ-036":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-037":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-038":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-039":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-040":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Elena N., Hristiyana"
+                                                         },
+                                    "Triathlon-DQ-041":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-042":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Gabriel"
+                                                         },
+                                    "Triathlon-DQ-043":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-044":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-045":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-046":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D./Gabriel"
+                                                         },
+                                    "Triathlon-DQ-047":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-048":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-049":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-050":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-051":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-052":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-053":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir, Hristiyana"
+                                                         },
+                                    "Triathlon-DQ-054":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-055":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-056":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-057":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-058":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-059":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-060":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-061":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-062":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-063":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  "Elena N., Hristiyana, Aleks P."
+                                                         },
+                                    "Triathlon-DQ-064":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyuboslav"
+                                                         },
+                                    "Triathlon-DQ-065":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Teodor D."
+                                                         },
+                                    "Triathlon-DQ-066":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Teodor K."
+                                                         },
+                                    "Triathlon-DQ-067":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Teodor D."
+                                                         },
+                                    "Triathlon-DQ-068":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-069":  {
+                                                             "status":  "Monitor Only",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-070":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-071":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyuboslav, Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-072":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-073":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-074":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-075":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-076":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-077":  {
+                                                             "status":  "Monitor Only",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-078":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-079":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-080":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-081":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-082":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-083":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Teodor K."
+                                                         },
+                                    "Triathlon-DQ-084":  {
+                                                             "status":  "IT Fix",
+                                                             "checkBy":  "Aleksandar D. "
+                                                         },
+                                    "Triathlon-DQ-085":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyudmila"
+                                                         },
+                                    "Triathlon-DQ-086":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-087":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Gabriel"
+                                                         },
+                                    "Triathlon-DQ-088":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-089":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-090":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-091":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-092":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-093":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Vennie"
+                                                         },
+                                    "Triathlon-DQ-094":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Vennie"
+                                                         },
+                                    "Triathlon-DQ-095":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-096":  {
+                                                             "status":  "IT Fix",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-097":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-098":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-099":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-100":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-101":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-102":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyudmila"
+                                                         },
+                                    "Triathlon-DQ-103":  {
+                                                             "status":  "IT Fix",
+                                                             "checkBy":  "Teodor Dobrev, Hristiyana"
+                                                         },
+                                    "Triathlon-DQ-104":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyudmila"
+                                                         },
+                                    "Triathlon-DQ-105":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-106":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Hristiyana"
+                                                         },
+                                    "Triathlon-DQ-107":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-108":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Gabriel"
+                                                         },
+                                    "Triathlon-DQ-109":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-110":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-111":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-112":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-113":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-114":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Simeon"
+                                                         },
+                                    "Triathlon-DQ-115":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         }
+                                }
+                 },
+                 {
+                     "runId":  "27.08.2026 20-22-27",
+                     "startedUtc":  "2026-08-27T18:22:27Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-001",
+                                        "runKey":  "Triathlon-DQ-001",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NO_TOURNAMENTS_OR_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  77,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  26.6,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  3,
+                                   "phases":  {
+                                                  "reading the document":  6.8,
+                                                  "planning the changes":  3.6,
+                                                  "adding and sizing tabs":  0,
+                                                  "putting the board tabs in front":  0.6,
+                                                  "hiding columns and colouring Rows":  0.6,
+                                                  "clearing stale rows":  1.8,
+                                                  "writing values":  11.6,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Triathlon-DQ-001":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-002":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-003":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-004":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-005":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-006":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-007":  {
+                                                             "status":  "Skipped",
+                                                             "checkBy":  "Lyubomir, Aleks P., Lyudmila, Teodor K, Lyuboslav,Gabriel, Aleks D, Hristiyana"
+                                                         },
+                                    "Triathlon-DQ-008":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-009":  {
+                                                             "status":  "Monitor Only",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-010":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Elena N."
+                                                         },
+                                    "Triathlon-DQ-011":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-012":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-013":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-014":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-015":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-016":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-017":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-018":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-019":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-020":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-021":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-022":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-023":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-024":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-025":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-026":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Teodor D."
+                                                         },
+                                    "Triathlon-DQ-027":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-028":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-029":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-030":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Hristiyana, Lyuboslav, Teodor D., Aleksandar D"
+                                                         },
+                                    "Triathlon-DQ-031":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-032":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-033":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-034":  {
+                                                             "status":  "IT Fix",
+                                                             "checkBy":  "Teodor D., Teodor K, Aleks P., Lyudmila"
+                                                         },
+                                    "Triathlon-DQ-035":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Hristiyana, Lyuboslav"
+                                                         },
+                                    "Triathlon-DQ-036":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-037":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-038":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-039":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-040":  {
+                                                             "status":  "Reopened",
+                                                             "checkBy":  "Elena N., Hristiyana"
+                                                         },
+                                    "Triathlon-DQ-041":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-042":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Gabriel"
+                                                         },
+                                    "Triathlon-DQ-043":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-044":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-045":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-046":  {
+                                                             "status":  "Reopened",
+                                                             "checkBy":  "Aleksandar D./Gabriel"
+                                                         },
+                                    "Triathlon-DQ-047":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-048":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-049":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-050":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-051":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-052":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-053":  {
+                                                             "status":  "Reopened",
+                                                             "checkBy":  "Lyubomir, Hristiyana"
+                                                         },
+                                    "Triathlon-DQ-054":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-055":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-056":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-057":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-058":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-059":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-060":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-061":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-062":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-063":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  "Elena N., Hristiyana, Aleks P."
+                                                         },
+                                    "Triathlon-DQ-064":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyuboslav"
+                                                         },
+                                    "Triathlon-DQ-065":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Teodor D."
+                                                         },
+                                    "Triathlon-DQ-066":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Teodor K."
+                                                         },
+                                    "Triathlon-DQ-067":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Teodor D."
+                                                         },
+                                    "Triathlon-DQ-068":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-069":  {
+                                                             "status":  "Monitor Only",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-070":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-071":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyuboslav, Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-072":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-073":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-074":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-075":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-076":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-077":  {
+                                                             "status":  "Monitor Only",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-078":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-079":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-080":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-081":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar P."
+                                                         },
+                                    "Triathlon-DQ-082":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Aleksandar D."
+                                                         },
+                                    "Triathlon-DQ-083":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Teodor K."
+                                                         },
+                                    "Triathlon-DQ-084":  {
+                                                             "status":  "IT Fix",
+                                                             "checkBy":  "Aleksandar D. "
+                                                         },
+                                    "Triathlon-DQ-085":  {
+                                                             "status":  "Reopened",
+                                                             "checkBy":  "Lyudmila"
+                                                         },
+                                    "Triathlon-DQ-086":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-087":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Gabriel"
+                                                         },
+                                    "Triathlon-DQ-088":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-089":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-090":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-091":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-092":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-093":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Vennie"
+                                                         },
+                                    "Triathlon-DQ-094":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Vennie"
+                                                         },
+                                    "Triathlon-DQ-095":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-096":  {
+                                                             "status":  "IT Fix",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-097":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-098":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyubomir"
+                                                         },
+                                    "Triathlon-DQ-099":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-100":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-101":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-102":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyudmila"
+                                                         },
+                                    "Triathlon-DQ-103":  {
+                                                             "status":  "IT Fix",
+                                                             "checkBy":  "Teodor Dobrev, Hristiyana"
+                                                         },
+                                    "Triathlon-DQ-104":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Lyudmila"
+                                                         },
+                                    "Triathlon-DQ-105":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-106":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Hristiyana"
+                                                         },
+                                    "Triathlon-DQ-107":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-108":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Gabriel"
+                                                         },
+                                    "Triathlon-DQ-109":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-110":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-111":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-112":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-113":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-114":  {
+                                                             "status":  "Completed",
+                                                             "checkBy":  "Simeon"
+                                                         },
+                                    "Triathlon-DQ-115":  {
+                                                             "status":  "Reopened",
+                                                             "checkBy":  ""
+                                                         }
+                                }
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"

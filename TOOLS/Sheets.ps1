@@ -88,6 +88,9 @@ $script:SheetsValueRequests = 0
 # How many check tabs the last update read back to confirm their rows arrived.
 $script:SheetsTabsConfirmed = 0
 
+# How many of the board's own tabs the last update had to move back to the front of it.
+$script:SheetsTabsMoved = 0
+
 # What each phase of the last document update cost, in the order the phases ran.
 #
 # It exists because the answer to "why is this slow" was not findable from outside. A Triathlon
@@ -127,6 +130,7 @@ function Reset-SheetsTimings {
     $script:SheetsRowsMoved = 0
     $script:SheetsValueRequests = 0
     $script:SheetsTabsConfirmed = 0
+    $script:SheetsTabsMoved = 0
 }
 
 function Get-SheetsPhaseRecord {
@@ -729,6 +733,20 @@ $SheetsRowReviewFormerColumns = @('Review')
 # Where a note goes when the finding it belonged to is no longer in the result. Not the bin: a
 # check that returned 1130 rows and now returns 800 has to be explainable, and "which 330 went
 # and what had they been marked" is the question that answers it. Appended to, never rewritten.
+# The tabs that are about the board rather than about one check, in the order they are pinned
+# to the front of it.
+#
+# A tab is created where Sheets puts it, which is the end, so these ended up wherever the run
+# that first needed them happened to fall: on the Triathlon board of 124 tabs, SQL sat at 102,
+# Review log at 107 and History at 122, scattered through the checks. Overview was findable
+# only because it is created first and nothing has displaced it; the other three were not
+# findable at all, which on a board this size means they may as well not exist. Asked for on
+# 2026-08-27 by the reviewer who went looking for the Review log and could not find it.
+#
+# Overview leads because it is where a reader starts. Review log comes next because it is the
+# one of the three somebody goes looking for: it holds what a run took off their rows.
+$SheetsLeadingTabs = @('Overview', 'Review log', 'History', 'SQL')
+
 $SheetsReviewLogTabName = 'Review log'
 $SheetsReviewLogColumns = @('CheckID', 'Check tab', 'Finding key', 'Review Status', 'Review Note',
     'Dropped on', 'Why')
@@ -3283,6 +3301,9 @@ function New-SheetsMergePlan {
         RowOf         = $rowOf
         TabOf         = $tabOf
         LastRowOf     = $lastRowOf
+        SheetIndexOf  = $(if ($Existing -and $Existing.PSObject.Properties.Name -contains 'SheetIndexOf') {
+                $Existing.SheetIndexOf
+            } else { @{} })
         KnownSheetIds = $known
         KnownTables   = $tables
     }
@@ -4118,6 +4139,40 @@ function Invoke-SheetsPlan {
                 $gidOf[[string]$reply.addSheet.properties.title] = [int]$reply.addSheet.properties.sheetId
             }
         }
+    }
+
+    # **The board's own tabs, pinned to the front.**
+    #
+    # After the batch above, because a tab this run created has to exist before it can be moved,
+    # and before everything below, because the rest of the update addresses a tab by name and id
+    # rather than by position - so moving them here costs nothing that follows.
+    #
+    # Sent in the target order, lowest index first. Google applies a batch in order and a move to
+    # a lower index behaves the obvious way; these come from the far end of the board, so every
+    # move is downwards and each one sees the board the previous one left. A tab already where it
+    # belongs is skipped, so a board that has been through this once sends nothing at all.
+    $moves = @()
+    $indexNow = @{}
+    if ($Plan.PSObject.Properties.Name -contains 'SheetIndexOf' -and $Plan.SheetIndexOf) {
+        foreach ($key in $Plan.SheetIndexOf.Keys) { $indexNow[[string]$key] = [int]$Plan.SheetIndexOf[$key] }
+    }
+    $wanted = 0
+    foreach ($title in $SheetsLeadingTabs) {
+        if (-not $gidOf.ContainsKey($title)) { continue }
+        if ($indexNow.ContainsKey($title) -and [int]$indexNow[$title] -eq $wanted) { $wanted++; continue }
+        $moves += @{
+            updateSheetProperties = @{
+                properties = @{ sheetId = [int]$gidOf[$title]; index = $wanted }
+                fields     = 'index'
+            }
+        }
+        $wanted++
+    }
+    if ($moves.Count -gt 0) {
+        Set-SheetsStage 'putting the board tabs in front'
+        Invoke-SheetsApiWithRetry -Method Post -Path "$SpreadsheetId`:batchUpdate" `
+            -What 'the tab order' -Body @{ requests = $moves } | Out-Null
+        $script:SheetsTabsMoved = $moves.Count
     }
 
     Set-SheetsStage 'hiding columns and colouring Rows'

@@ -2531,6 +2531,24 @@ Test-That 'every Overview write names the check it is for' {
     }
 }
 
+Test-That 'the board own tabs are pinned to the front of it' {
+    # A tab is created where Sheets puts it, which is the end. On the Triathlon board of 124
+    # tabs that left SQL at 102, Review log at 107 and History at 122, scattered through the
+    # checks, and a reviewer went looking for the Review log on 2026-08-27 and could not find
+    # it. Four tabs among a hundred and twenty-four is a needle in a haystack, and the haystack
+    # grows with every check the sport gains.
+    Assert-Equal 'Overview' $SheetsLeadingTabs[0] 'Overview leads, because it is where a reader starts'
+    Assert-Equal $SheetsReviewLogTabName $SheetsLeadingTabs[1] `
+        'and the Review log comes next, because it is the one somebody goes looking for'
+    Assert-True ($SheetsLeadingTabs -contains $SheetsHistoryTabName) 'History is pinned too'
+    Assert-True ($SheetsLeadingTabs -contains 'SQL') 'and so is SQL'
+
+    # Every name has to be one this package actually creates. A name matching no tab is silently
+    # skipped, and the tab it was meant to pin goes on being unfindable.
+    Assert-Equal 4 @($SheetsLeadingTabs).Count 'four of them, and no more'
+    Assert-Equal 4 @($SheetsLeadingTabs | Sort-Object -Unique).Count 'each named once'
+}
+
 Test-That 'a planned block of rows serialises as a list of rows' {
     # The one thing every test here had been taking on trust: that what the plan holds is what
     # Sheets receives. On 27.08 it was not. An array allocated with New-Object object[] is handed
