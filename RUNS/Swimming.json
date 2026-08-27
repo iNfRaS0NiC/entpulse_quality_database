@@ -1199,50 +1199,6 @@
                                 ]
                  },
                  {
-                     "runId":  "scratchpad",
-                     "startedUtc":  "2026-08-21T06:35:36Z",
-                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\f8d2a2c4-0fdf-4588-a6ce-d5046c6ebda2\\scratchpad",
-                     "checks":  [
-                                    {
-                                        "checkId":  "Swimming-DQ-072",
-                                        "runKey":  "Swimming-DQ-072",
-                                        "parameters":  "",
-                                        "name":  "EVENT_NAME_CONTRADICTS_DISCIPLINE_DISTANCE_OR_ROUND_TYPE",
-                                        "category":  "WRONG_DISCIPLINE",
-                                        "signal":  "Actionable",
-                                        "expected":  "Zero",
-                                        "verdict":  "New",
-                                        "rows":  38,
-                                        "findings":  37,
-                                        "eligible":  43595,
-                                        "seconds":  2.1,
-                                        "status":  "OK"
-                                    }
-                                ]
-                 },
-                 {
-                     "runId":  "scratchpad",
-                     "startedUtc":  "2026-08-21T06:36:24Z",
-                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\f8d2a2c4-0fdf-4588-a6ce-d5046c6ebda2\\scratchpad",
-                     "checks":  [
-                                    {
-                                        "checkId":  "Swimming-DQ-072",
-                                        "runKey":  "Swimming-DQ-072",
-                                        "parameters":  "",
-                                        "name":  "EVENT_NAME_CONTRADICTS_DISCIPLINE_DISTANCE_OR_ROUND_TYPE",
-                                        "category":  "WRONG_DISCIPLINE",
-                                        "signal":  "Actionable",
-                                        "expected":  "Zero",
-                                        "verdict":  "Improved",
-                                        "rows":  37,
-                                        "findings":  36,
-                                        "eligible":  43595,
-                                        "seconds":  2,
-                                        "status":  "OK"
-                                    }
-                                ]
-                 },
-                 {
                      "runId":  "21.08.2026 08-44-41",
                      "startedUtc":  "2026-08-21T06:44:41Z",
                      "output":  "",
@@ -5201,52 +5157,6 @@
                                 ]
                  },
                  {
-                     "runId":  "scratchpad",
-                     "startedUtc":  "2026-08-25T10:48:20Z",
-                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\3f0e3ff3-a79b-4e4c-8ee9-57020721ae68\\scratchpad",
-                     "checks":  [
-                                    {
-                                        "checkId":  "Swimming-DQ-036",
-                                        "runKey":  "Swimming-DQ-036",
-                                        "parameters":  "",
-                                        "name":  "EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_MEDAL_ROUND",
-                                        "category":  "MISSING_VALUES",
-                                        "dataTypes":  "",
-                                        "signal":  "Actionable",
-                                        "expected":  "Zero",
-                                        "verdict":  "Unchanged",
-                                        "rows":  84,
-                                        "findings":  83,
-                                        "eligible":  11662,
-                                        "seconds":  1.1,
-                                        "status":  "OK"
-                                    }
-                                ]
-                 },
-                 {
-                     "runId":  "scratchpad",
-                     "startedUtc":  "2026-08-25T10:50:20Z",
-                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\3f0e3ff3-a79b-4e4c-8ee9-57020721ae68\\scratchpad",
-                     "checks":  [
-                                    {
-                                        "checkId":  "Swimming-DQ-008",
-                                        "runKey":  "Swimming-DQ-008",
-                                        "parameters":  "",
-                                        "name":  "EVENT_SETTINGS_MISSING_DISCIPLINE",
-                                        "category":  "MISSING_VALUES",
-                                        "dataTypes":  "",
-                                        "signal":  "Actionable",
-                                        "expected":  "Zero",
-                                        "verdict":  "Unchanged",
-                                        "rows":  9,
-                                        "findings":  8,
-                                        "eligible":  46379,
-                                        "seconds":  0.8,
-                                        "status":  "OK"
-                                    }
-                                ]
-                 },
-                 {
                      "runId":  "25.08.2026 12-58-44",
                      "startedUtc":  "2026-08-25T10:58:44Z",
                      "output":  "",
@@ -6717,29 +6627,6 @@
                                         "findings":  92,
                                         "eligible":  2205,
                                         "seconds":  0.5,
-                                        "status":  "OK"
-                                    }
-                                ]
-                 },
-                 {
-                     "runId":  "scratchpad",
-                     "startedUtc":  "2026-08-27T10:32:29Z",
-                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\3f0e3ff3-a79b-4e4c-8ee9-57020721ae68\\scratchpad",
-                     "checks":  [
-                                    {
-                                        "checkId":  "Swimming-DQ-086",
-                                        "runKey":  "Swimming-DQ-086",
-                                        "parameters":  "",
-                                        "name":  "EVENT_SETTINGS_DISCIPLINE_ON_SUPERSEDED_CATALOGUE",
-                                        "category":  "WRONG_DISCIPLINE",
-                                        "dataTypes":  "",
-                                        "signal":  "Actionable",
-                                        "expected":  "Zero",
-                                        "verdict":  "Unchanged",
-                                        "rows":  375,
-                                        "findings":  374,
-                                        "eligible":  46365,
-                                        "seconds":  4.5,
                                         "status":  "OK"
                                     }
                                 ]

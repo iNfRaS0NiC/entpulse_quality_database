@@ -12748,28 +12748,6 @@
                                 ]
                  },
                  {
-                     "runId":  "scratchpad",
-                     "startedUtc":  "2026-08-16T10:09:14Z",
-                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\821ae3b9-d15b-42c2-b21f-d0be04e5b7ed\\scratchpad",
-                     "checks":  [
-                                    {
-                                        "checkId":  "GLOBAL-DQ-020",
-                                        "runKey":  "GLOBAL-DQ-020",
-                                        "parameters":  "",
-                                        "name":  "EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE",
-                                        "category":  "",
-                                        "signal":  "Actionable",
-                                        "expected":  "Zero",
-                                        "verdict":  "New",
-                                        "rows":  273,
-                                        "findings":  272,
-                                        "eligible":  9517,
-                                        "seconds":  8.4,
-                                        "status":  "OK"
-                                    }
-                                ]
-                 },
-                 {
                      "runId":  "Modern-Pentathlon 17.08.2026 22-05-48",
                      "startedUtc":  "2026-08-17T20:05:46Z",
                      "output":  "D:\\SQL\u0027s Output\\Modern-Pentathlon 17.08.2026 22-05-48",

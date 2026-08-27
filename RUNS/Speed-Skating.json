@@ -709,29 +709,6 @@
                                 ]
                  },
                  {
-                     "runId":  "scratchpad",
-                     "startedUtc":  "2026-08-23T03:33:47Z",
-                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\3f0e3ff3-a79b-4e4c-8ee9-57020721ae68\\scratchpad",
-                     "checks":  [
-                                    {
-                                        "checkId":  "GLOBAL-DQ-030",
-                                        "runKey":  "GLOBAL-DQ-030",
-                                        "parameters":  "",
-                                        "name":  "COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT",
-                                        "category":  "",
-                                        "dataTypes":  "",
-                                        "signal":  "Actionable",
-                                        "expected":  "Zero",
-                                        "verdict":  "Unchanged",
-                                        "rows":  2248,
-                                        "findings":  2247,
-                                        "eligible":  6717,
-                                        "seconds":  42.1,
-                                        "status":  "OK"
-                                    }
-                                ]
-                 },
-                 {
                      "runId":  "Speed-Skating 23.08.2026 05-36-13",
                      "startedUtc":  "2026-08-23T03:36:12Z",
                      "output":  "D:\\SQL\u0027s Output\\Speed-Skating 23.08.2026 05-36-13",
@@ -782,29 +759,6 @@
                                         "findings":  0,
                                         "eligible":  4140,
                                         "seconds":  0.7,
-                                        "status":  "OK"
-                                    }
-                                ]
-                 },
-                 {
-                     "runId":  "scratchpad",
-                     "startedUtc":  "2026-08-23T03:36:36Z",
-                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\3f0e3ff3-a79b-4e4c-8ee9-57020721ae68\\scratchpad",
-                     "checks":  [
-                                    {
-                                        "checkId":  "GLOBAL-DQ-040",
-                                        "runKey":  "GLOBAL-DQ-040",
-                                        "parameters":  "",
-                                        "name":  "EVENT_FINAL_WITHOUT_COMP.RANK",
-                                        "category":  "",
-                                        "dataTypes":  "Setting: 1471 Event id",
-                                        "signal":  "Actionable",
-                                        "expected":  "Zero",
-                                        "verdict":  "Unchanged",
-                                        "rows":  495,
-                                        "findings":  494,
-                                        "eligible":  4097,
-                                        "seconds":  1.1,
                                         "status":  "OK"
                                     }
                                 ]
@@ -1896,52 +1850,6 @@
                                         "findings":  234,
                                         "eligible":  4675,
                                         "seconds":  4.6,
-                                        "status":  "OK"
-                                    }
-                                ]
-                 },
-                 {
-                     "runId":  "scratchpad",
-                     "startedUtc":  "2026-08-23T06:08:04Z",
-                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\3f0e3ff3-a79b-4e4c-8ee9-57020721ae68\\scratchpad",
-                     "checks":  [
-                                    {
-                                        "checkId":  "GLOBAL-DQ-019",
-                                        "runKey":  "GLOBAL-DQ-019",
-                                        "parameters":  "",
-                                        "name":  "EVENT_DURATION_FORMAT_MISMATCH_TO_RANK",
-                                        "category":  "",
-                                        "dataTypes":  "Result: 100 Rank, 101 Duration",
-                                        "signal":  "Actionable",
-                                        "expected":  "Zero",
-                                        "verdict":  "Unchanged",
-                                        "rows":  235,
-                                        "findings":  234,
-                                        "eligible":  4675,
-                                        "seconds":  4.3,
-                                        "status":  "OK"
-                                    }
-                                ]
-                 },
-                 {
-                     "runId":  "scratchpad",
-                     "startedUtc":  "2026-08-23T06:08:09Z",
-                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\3f0e3ff3-a79b-4e4c-8ee9-57020721ae68\\scratchpad",
-                     "checks":  [
-                                    {
-                                        "checkId":  "GLOBAL-DQ-024",
-                                        "runKey":  "GLOBAL-DQ-024",
-                                        "parameters":  "",
-                                        "name":  "COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_STAGE",
-                                        "category":  "",
-                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date",
-                                        "signal":  "Actionable",
-                                        "expected":  "Zero",
-                                        "verdict":  "Unchanged",
-                                        "rows":  243,
-                                        "findings":  242,
-                                        "eligible":  4998,
-                                        "seconds":  0.7,
                                         "status":  "OK"
                                     }
                                 ]
@@ -4149,29 +4057,6 @@
                                         "findings":  912,
                                         "eligible":  912,
                                         "seconds":  0.5,
-                                        "status":  "OK"
-                                    }
-                                ]
-                 },
-                 {
-                     "runId":  "scratchpad",
-                     "startedUtc":  "2026-08-23T13:35:58Z",
-                     "output":  "C:\\Users\\igeor\\AppData\\Local\\Temp\\claude\\d--VSCode-entpulse-quality-database\\3f0e3ff3-a79b-4e4c-8ee9-57020721ae68\\scratchpad",
-                     "checks":  [
-                                    {
-                                        "checkId":  "GLOBAL-DQ-035",
-                                        "runKey":  "GLOBAL-DQ-035",
-                                        "parameters":  "",
-                                        "name":  "COMP.RANK_SETTINGS_MISSING_CORE_FIELDS",
-                                        "category":  "",
-                                        "dataTypes":  "Setting: 1470 Gender",
-                                        "signal":  "Actionable",
-                                        "expected":  "Zero",
-                                        "verdict":  "Unchanged",
-                                        "rows":  6994,
-                                        "findings":  6993,
-                                        "eligible":  6993,
-                                        "seconds":  1.3,
                                         "status":  "OK"
                                     }
                                 ]
