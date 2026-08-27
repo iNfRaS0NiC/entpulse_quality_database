@@ -674,6 +674,19 @@ That makes `Cycling-DQ-112 COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICT
 
 It is instantiated rather than left off on the ruling of 2026-08-25 that the field is expected to be populated, and the day it is, this is the check that reads what arrives. Four of the twelve documented sports already fill it - Artistic Gymnastics, Triathlon, Golf and Ice Hockey - and those four are exactly the four that carried this check before today.
 
+**`Cycling-DQ-115 COMP.RANK_ATHLETE_RANKING_DISAGREES_WITH_ITS_TEAM_TWIN` audits nothing, and that
+is a sentinel rather than a misdirected scope.** Instantiated 2026-08-27 with
+`GLOBAL-DQ-143`, it returns `eligible_count = 0`. The reason is measured and not assumed:
+of this sport’s 2020 tournament-owned Comp.Rank rankings, **not one** carries `(athletes)`
+in its name. That suffix marks a ranking listing the members of a squad, each given the
+place their team finished in, and the check compares such a ranking against the team
+ranking it was projected from. With no athlete ranking there is no pair to compare.
+
+**It is deliberately not `Not applicable`.** Nothing structural stops this sport from
+producing an athlete ranking: the layer, the shard and the Rank data field are all here
+and in use. What is absent is rows, and a row count is never the ground for excluding a
+check — that would disarm it for the day the first squad ranking arrives, which is the
+day it was written for. The zero is the honest reading and the coverage count says so.
 <!-- MANUAL PASTE ZONE: 30 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values

@@ -4820,3 +4820,205 @@ WHERE s.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, competitors DESC, organization_id;
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-143
+    -- Name - COMP.RANK_ATHLETE_RANKING_DISAGREES_WITH_ITS_TEAM_TWIN
+    -- What it does: Flags a Comp.Rank listing squad members whose places are not the places its own team ranking hands out.
+    CASE
+        WHEN x.athlete_places < x.team_places THEN 'ATHLETE_RANKING_MISSING_PLACES_THE_TEAM_RANKING_HOLDS'
+        WHEN x.athlete_places > x.team_places THEN 'ATHLETE_RANKING_HOLDS_PLACES_THE_TEAM_RANKING_DOES_NOT'
+        ELSE 'ATHLETE_AND_TEAM_RANKING_HOLD_THE_SAME_COUNT_OF_DIFFERENT_PLACES'
+    END AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.team_statistic_id,
+    x.athlete_places,
+    x.team_places,
+    x.athlete_highest_place,
+    x.team_highest_place,
+    x.template_name,
+    x.tournament_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A Comp.Rank whose name carries (athletes) lists the members of
+-- each squad and gives every one of them the place their team finished in, so its set of places
+-- is by construction the set of places its team ranking hands out. Where the two sets differ,
+-- one of the two rankings is wrong and nothing else in the package says so.
+-- This is the hole GLOBAL-DQ-134 names in its own text and leaves open. That statement excludes
+-- an athlete ranking from the sequence audit entirely, on the ground that an athlete ranking's
+-- places are its team ranking's places and a real gap in it is a gap the team ranking already
+-- reports - which is true, and is exactly why the two are worth comparing. The exclusion assumes
+-- the agreement; this statement is the only thing that checks it.
+-- Measured 2026-08-27 across every sport carrying the layer, 271 of 7614 paired rankings
+-- disagree, and the three shapes are repaired differently rather than being one defect:
+-- a squad whose members were never listed leaves the athlete ranking short of places, which is
+-- the commonest and is the whole of Bobsleigh's 25 and Artistic Gymnastics' 13; an athlete
+-- ranking holding places its team ranking does not is the opposite import failure and is the
+-- bulk of Curling, 34 of its 57; and the two holding the same count of different places is
+-- neither, and is 21 of Modern Pentathlon's 44.
+-- The pairing is by tournament and by name, because the athlete ranking is named for its team
+-- ranking with (athletes) appended and nothing else ties them. A ranking with no twin is not a
+-- finding and is outside the scope: the coverage count is paired rankings, so a sport whose
+-- Comp.Rank never lists squad members reports an eligible count of zero and says so.
+-- Places are compared as a set, by count, by the highest and lowest held and by the sum of their
+-- squares. The sum of squares rather than the values themselves because a ranking of two hundred
+-- places would exceed group_concat_max_len and compare as truncated, which reads as a difference
+-- that is not there.
+-- Only a place written as a positive whole number is read, the same admission GLOBAL-DQ-134
+-- makes, so an unreadable Rank is left to GLOBAL-DQ-012 rather than counted as a place.
+FROM (
+    SELECT
+        a.statistic_id,
+        a.statistic_name,
+        a.template_name,
+        a.tournament_name,
+        tm.statistic_id AS team_statistic_id,
+        a.places AS athlete_places,
+        tm.places AS team_places,
+        a.highest AS athlete_highest_place,
+        tm.highest AS team_highest_place
+    FROM (
+        SELECT
+            s.id AS statistic_id,
+            s.name AS statistic_name,
+            s.objectFK AS tournament_id,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            TRIM(REPLACE(LOWER(s.name), '(athletes)', '')) AS base_name,
+            COUNT(DISTINCT CAST(sd.value AS UNSIGNED)) AS places,
+            MIN(CAST(sd.value AS UNSIGNED)) AS lowest,
+            MAX(CAST(sd.value AS UNSIGNED)) AS highest,
+            SUM(DISTINCT CAST(sd.value AS UNSIGNED) * CAST(sd.value AS UNSIGNED)) AS checksum
+        FROM statistic s
+        JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+        JOIN statistic_data{{SHARD_ID}} sd
+          ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+         AND sd.del = 'no'
+         AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+         AND sd.value REGEXP '^[1-9][0-9]*$'
+        WHERE s.del = 'no'
+          AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+          AND s.object_typeFK = 3
+          AND tt.sportFK = {{SPORT_ID}}
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          AND LOWER(s.name) LIKE '%(athletes)%'
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+        GROUP BY s.id, s.name, s.objectFK, tt.name, t.name
+    ) a
+    JOIN (
+        SELECT
+            s2.id AS statistic_id,
+            LOWER(s2.name) AS lower_name,
+            s2.objectFK AS tournament_id,
+            COUNT(DISTINCT CAST(sd2.value AS UNSIGNED)) AS places,
+            MIN(CAST(sd2.value AS UNSIGNED)) AS lowest,
+            MAX(CAST(sd2.value AS UNSIGNED)) AS highest,
+            SUM(DISTINCT CAST(sd2.value AS UNSIGNED) * CAST(sd2.value AS UNSIGNED)) AS checksum
+        FROM statistic s2
+        JOIN tournament t2 ON t2.id = s2.objectFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+        JOIN statistic_participants{{SHARD_ID}} sp2 ON sp2.statisticFK = s2.id AND sp2.del = 'no'
+        JOIN statistic_data{{SHARD_ID}} sd2
+          ON sd2.statistic_participants{{SHARD_ID}}FK = sp2.id
+         AND sd2.del = 'no'
+         AND sd2.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+         AND sd2.value REGEXP '^[1-9][0-9]*$'
+        WHERE s2.del = 'no'
+          AND s2.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+          AND s2.object_typeFK = 3
+          AND tt2.sportFK = {{SPORT_ID}}
+          AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
+          AND LOWER(s2.name) NOT LIKE '%(athletes)%'
+          AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+        GROUP BY s2.id, s2.name, s2.objectFK
+    ) tm
+      ON tm.tournament_id = a.tournament_id
+     AND tm.lower_name = a.base_name
+    WHERE a.places <> tm.places
+       OR a.lowest <> tm.lowest
+       OR a.highest <> tm.highest
+       OR a.checksum <> tm.checksum
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT y.statistic_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT a.statistic_id
+    FROM (
+        SELECT
+            s.id AS statistic_id,
+            s.name AS statistic_name,
+            s.objectFK AS tournament_id,
+            tt.name AS template_name,
+            t.name AS tournament_name,
+            TRIM(REPLACE(LOWER(s.name), '(athletes)', '')) AS base_name,
+            COUNT(DISTINCT CAST(sd.value AS UNSIGNED)) AS places,
+            MIN(CAST(sd.value AS UNSIGNED)) AS lowest,
+            MAX(CAST(sd.value AS UNSIGNED)) AS highest,
+            SUM(DISTINCT CAST(sd.value AS UNSIGNED) * CAST(sd.value AS UNSIGNED)) AS checksum
+        FROM statistic s
+        JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+        JOIN statistic_data{{SHARD_ID}} sd
+          ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+         AND sd.del = 'no'
+         AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+         AND sd.value REGEXP '^[1-9][0-9]*$'
+        WHERE s.del = 'no'
+          AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+          AND s.object_typeFK = 3
+          AND tt.sportFK = {{SPORT_ID}}
+          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+          AND LOWER(s.name) LIKE '%(athletes)%'
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+        GROUP BY s.id, s.name, s.objectFK, tt.name, t.name
+    ) a
+    JOIN (
+        SELECT
+            s2.id AS statistic_id,
+            LOWER(s2.name) AS lower_name,
+            s2.objectFK AS tournament_id,
+            COUNT(DISTINCT CAST(sd2.value AS UNSIGNED)) AS places,
+            MIN(CAST(sd2.value AS UNSIGNED)) AS lowest,
+            MAX(CAST(sd2.value AS UNSIGNED)) AS highest,
+            SUM(DISTINCT CAST(sd2.value AS UNSIGNED) * CAST(sd2.value AS UNSIGNED)) AS checksum
+        FROM statistic s2
+        JOIN tournament t2 ON t2.id = s2.objectFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+        JOIN statistic_participants{{SHARD_ID}} sp2 ON sp2.statisticFK = s2.id AND sp2.del = 'no'
+        JOIN statistic_data{{SHARD_ID}} sd2
+          ON sd2.statistic_participants{{SHARD_ID}}FK = sp2.id
+         AND sd2.del = 'no'
+         AND sd2.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+         AND sd2.value REGEXP '^[1-9][0-9]*$'
+        WHERE s2.del = 'no'
+          AND s2.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+          AND s2.object_typeFK = 3
+          AND tt2.sportFK = {{SPORT_ID}}
+          AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
+          AND LOWER(s2.name) NOT LIKE '%(athletes)%'
+          AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+        GROUP BY s2.id, s2.name, s2.objectFK
+    ) tm
+      ON tm.tournament_id = a.tournament_id
+     AND tm.lower_name = a.base_name
+) y
+;

@@ -198,11 +198,20 @@ SELECT
 -- the day. 252 Individual, 254 Pursuit, 256 Mass Start and 260 Super Sprint shoot four bouts of
 -- five and cannot exceed 20; 253 Sprint shoots two and cannot exceed 10. A value above the
 -- ceiling is not a bad day, it is a number that could not have been produced.
--- The relay disciplines are deliberately out. There the result row belongs to a team rather than
--- a person, so the value may be a sum across four legs, and 24 misses on a team of four is
--- possible where 24 on one athlete is not. Naming a team ceiling would be asserting something
--- this project has not confirmed.
--- Measured 2026-08-27, 4 events of 2437 and 19 competitors. One 15 km Individual of the 2023
+-- The relay disciplines carry a ceiling of 40, added 2026-08-27 once what their figure counts
+-- was established. Measured that day on a 4 x 7.5 km Relay of the 2020 World Championships,
+-- Finland's team row holds 4 and the 273 missed_shots value at the final_result scope holds 4
+-- as well, with the checkpoints running 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4 - a running total that
+-- never falls. So the team figure is the cumulative count at the finish rather than a per-leg
+-- value or a sum of independent legs, and four legs of two bouts of five rounds is 40.
+-- The ceiling is a fact about the format and is deliberately not computed from the lineup.
+-- Lineup rows per team run 1, 2, 3, 4, 5 and 8 across the relay disciplines: the eights are
+-- what GLOBAL-DQ-068 reports as an uneven lineup and the ones and twos are incomplete, so a
+-- leg count read from storage would inherit those defects and move the ceiling with them.
+-- 40 is generous on purpose. The highest relay value stored anywhere is 24 and the highest
+-- inside the client boundary is 19, so the check returns nothing today and guards the
+-- invariant for the day a figure arrives that no relay could have produced.
+-- Measured 2026-08-27, 4 events and 19 competitors, every one of them individual. One 15 km Individual of the 2023
 -- European Championships holds five competitors at 67, 70, 79, 86 and 88 misses against a
 -- ceiling of 20, all of them placed 87th to 91st. One 5 km Super Sprint Final of 2020 holds ten
 -- at 21 to 30. The remaining two are the other half of a different defect and are also reported
@@ -218,11 +227,11 @@ FROM (
         e.startdate,
         d.name AS discipline_name,
         tt.name AS template_name,
-        CASE WHEN d.id = 253 THEN 10 ELSE 20 END AS shots_fired,
-        SUM(CAST(ms.value AS SIGNED) > CASE WHEN d.id = 253 THEN 10 ELSE 20 END) AS competitors_over,
+        CASE WHEN d.id = 253 THEN 10 WHEN d.id IN (255, 257, 258, 259) THEN 40 ELSE 20 END AS shots_fired,
+        SUM(CAST(ms.value AS SIGNED) > CASE WHEN d.id = 253 THEN 10 WHEN d.id IN (255, 257, 258, 259) THEN 40 ELSE 20 END) AS competitors_over,
         MAX(CAST(ms.value AS SIGNED)) AS worst_missed,
         SUBSTRING(GROUP_CONCAT(DISTINCT CASE
-            WHEN CAST(ms.value AS SIGNED) > CASE WHEN d.id = 253 THEN 10 ELSE 20 END
+            WHEN CAST(ms.value AS SIGNED) > CASE WHEN d.id = 253 THEN 10 WHEN d.id IN (255, 257, 258, 259) THEN 40 ELSE 20 END
             THEN CONCAT(p.name, ' = ', ms.value) END
             ORDER BY ms.value DESC SEPARATOR ' | '), 1, 300) AS sample_competitors
     FROM event e
@@ -239,7 +248,7 @@ FROM (
       AND t.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
       -- AND t.tournament_templateFK = <tournament_template_id>
-      AND od.disciplineFK IN (252, 253, 254, 256, 260)
+      AND od.disciplineFK IN (252, 253, 254, 255, 256, 257, 258, 259, 260)
       AND ms.value REGEXP '^[0-9]+$'
     GROUP BY e.id, e.name, e.startdate, d.id, d.name, tt.name
     HAVING competitors_over > 0
@@ -264,7 +273,7 @@ WHERE e.del = 'no'
   AND t.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
-  AND od.disciplineFK IN (252, 253, 254, 256, 260)
+  AND od.disciplineFK IN (252, 253, 254, 255, 256, 257, 258, 259, 260)
   AND ms.value REGEXP '^[0-9]+$'
 ;
 -- ==============================================================================

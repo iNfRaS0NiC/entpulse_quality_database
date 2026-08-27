@@ -371,6 +371,27 @@ Re-run `Triathlon-DQ-085` to test whether the block still applies: while it repo
 field is still unused and `GLOBAL-DQ-095` still reports the format instead of a defect. When
 it stops reporting, remove the `_blockedChecks` entry and only then approve the check.
 
+**`Triathlon-DQ-115 COMP.RANK_ATHLETE_RANKING_DISAGREES_WITH_ITS_TEAM_TWIN` was written for
+a question asked against this sport.** `GLOBAL-DQ-143`, instantiated 2026-08-27, returns 5
+findings of 103 paired rankings.
+
+The question was why nothing reports statistic `322290`,
+`World Championship - Nottingham Mixed - Competition Rank (athletes)`, whose places run
+1 to 7 and then 9. **Nothing reports it because nothing is wrong**: its team twin `322289`
+holds the same places, and rank 7 there is held by two teams, Canada and Denmark. A shared
+place consumes the place below it, so 8 is consumed and 9 is the correct next place.
+`GLOBAL-DQ-134` counts places by holders rather than by rows and reads that correctly.
+
+**What the question did expose is that nothing checked the twins against each other at all.**
+`GLOBAL-DQ-134` excludes every `(athletes)` ranking, on the ground that its places are its
+team ranking’s places - which is true, and is exactly why the two are worth comparing. The
+exclusion assumed the agreement and nothing tested it. `GLOBAL-DQ-143` is that test.
+
+All five findings here are one shape, `ATHLETE_RANKING_MISSING_PLACES_THE_TEAM_RANKING_HOLDS`:
+a squad the team ranking places but whose members were never listed. The sharpest is
+`357659`, an African Championships Hurghada Mixed ranking of 2023 whose athlete side holds
+only first place while its team side ranks four teams — three squads with nobody in them.
+The others are short by one place each: `353106`, `357640`, `357657` and `363543`.
 <!-- MANUAL PASTE ZONE: 50 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values

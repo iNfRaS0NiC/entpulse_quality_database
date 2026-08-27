@@ -529,45 +529,281 @@ and `MISSING_VALUES`. The checks themselves were approved concretely, by what ea
 and the category follows from what they assert rather than the other way round. Its three
 GLOBAL templates - `GLOBAL-DQ-100`, `-109` and `-110` - are still unread, and two of the
 three need the Comp.Rank layer.
+**The last four DQ categories were opened on 2026-08-27** — `WRONG_GENDER`,
+`MALFORMED_NAME`, `DATE_RANGE_MISMATCH` and `WRONG_DISCIPLINE`. With them every defect
+category this sport can reach without the Comp.Rank layer is now open. Of their 16 templates
+that do not read that layer, 15 are instantiated as `Biathlon-DQ-064` through `-078` and one
+is `Not applicable`. Nothing in the batch passed the 200-row gate: the largest returns 59
+rows, so every one of them was read in full before it was numbered.
+
+| Check | What it asserts | Findings | Eligible |
+|---|---|---:|---:|
+| `-066 EVENT_PARTICIPANTS_GENDER_MISMATCH` | a lineup whose gender is not the stage’s | 59 | 143681 |
+| `-076 PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED` | a competitor whose gender is not the stage’s | 38 | 5231 |
+| `-064 TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE` | a stage holding an event outside its dates | 8 | 843 |
+| `-069 TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT` | one stage spelled two ways | 6 | 848 |
+| `-074 TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES` | a season in the name the dates deny | 6 | 420 |
+| `-071 EVENT_MIXED_TEAM_LINEUP_GENDER_BALANCE_UNEVEN` | a mixed team fielding an uneven squad | 5 | 3367 |
+| `-067 TOURNAMENT_STAGE_NAME_FORMAT_INVALID` | a stage name breaking a hygiene rule | 4 | 50 |
+| `-070 EVENT_STATUS_TIME_CONFLICT` | a status nobody maintained after the date | 2 | 2435 |
+| `-068 EVENT_NAME_FORMAT_INVALID` | an event name breaking a hygiene rule | 1 | 38 |
+
+Six return nothing over a populated scope: `-065` and `-077` on template and stage gender,
+`-072` and `-073` on tournament and template names, `-075` on the two discipline storage
+paths agreeing, and `-078` on editions overlapping in time.
+
+**`-066` and `-076` are one defect seen from two sides, and it is the team record rather
+than the event.** A national team is stored as a participant carrying a gender, and in a
+mixed relay it is neither male nor female. Measured 2026-08-27, `Belarus` is recorded
+`female` and fields two men and two women in a `Mixed 2 x 6 + 2 x 7.5 km Relay`, while
+`Sweden` and `Russia` are recorded `male` and are entered in mixed stages. `-066` counts the
+entries and `-076` counts the team records, which is why 38 participants reach 59 lineups.
+This is a third layer under open question 6: that question asks about the stage gender
+against the discipline, `Biathlon-DQ-059` answered the discipline against the lineup, and
+these two ask about the gender on the team entity itself.
+
+**`-067` and `-068` are `Monitor`, and every finding they hold today is correct data.**
+The stage rule fires four times and each is a compound place name — `Annecy-Le Grand
+Bornand`, `Antholz-Anterselva`, `Brezno-Osrblie` — under `HYPHEN_WITHOUT_SPACES`, which
+the template warns fires on a compound proper noun. The event rule fires once, on
+`Cross-Country Biathlon Mixed Relay`, where the hyphen belongs to the sport the name borrows
+from. Driving either to zero would mean misspelling venues that are spelled correctly.
+
+**They are not `Not applicable`, and the difference from Ice Hockey and Cycling is the
+point.** Those two record the template as structurally inapplicable because the rule fires on
+the way the sport names everything — Ice Hockey reported 1767 names of 1767, and a road
+race is called `Paris-Roubaix` by convention. Here it is 4 of 50 stage names and 1 of 38
+event names: a handful, not a convention. The other fourteen rules in each template stay
+live, and one of them matters more than its silence suggests.
+
+**`NON_ASCII_CHARACTER` is silent for a reason worth recording, and it answers open question
+13.** `Mixed Relay 3 х 6 km` is written with a Cyrillic х where a Latin x belongs, on seven
+events, one per season from 2020 to 2026. All seven sit under template `465 NM`, which the
+client does not take, so `Biathlon-DQ-068` never reads them. The rule is right, the scope is
+right, and nothing is missing: the day that template comes into scope the check reports them
+without an edit. Established 2026-08-27.
+
+**`GLOBAL-DQ-096 EVENT_NAME_DOES_NOT_NAME_ITS_PARTICIPANTS` is `Not applicable` on the
+competition model and not on this sport’s names.** The template is for head-to-head sports
+only: naming an event after the competitors is what `Team 1 - Team 2` is, and a sport that
+lines a field up and ranks it has nothing to put in such a name. `SPORTS.md` records this
+sport as Listing. `SPORTS/params.json` already said the same thing from the other direction:
+`DUPLICATE_KEY_INCLUDES_EVENT_NAME` is 1 here, and a sport instantiating that template
+records 0 by definition.
+
+**`STALE_NOT_STARTED_DAYS` is 2 because it is 2 everywhere.** It measures how long a status
+went unmaintained after the event’s own date, which is a property of the feed and not of the
+sport, so a biathlon value would have to be argued rather than chosen. At 2 days,
+`Biathlon-DQ-070` returns two events, both in the Open European Championships 2026 and both
+still `notstarted` more than 200 days after their date — the same tournament whose five
+finished events hold no results at all under `Biathlon-DQ-024`.
+
+**Every category is now open, and what remains is named rather than assumed.** Twelve GLOBAL
+templates wait on the Comp.Rank layer inside the first two categories, seven more wait on it
+inside these four, and `GLOBAL-DQ-007` waits on it in `MISSING_VALUES`. `DUPLICATE_RECORD`
+has no DQ template at all in this package — it is carried by `GLOBAL-DISCOVERY-033` alone
+— so there was never anything to open there.
+## The open questions, answered on 2026-08-27
+
+Every DQ category for this sport was open by that date, which is when the questions the
+opening had accumulated were measured rather than left standing. Nine of the thirteen are
+answered below and closed. Four remain, and each remains for a reason that is not a
+measurement: two are somebody else’s decision, one is a deferred layer and one is a scope
+question for the client.
+
+### There is one import era, and it accounts for most of what looked odd
+
+**Five separate findings share one window, and three of them share it to the day.** This is
+the single most useful thing the questions produced, because no individual check can see it:
+
+| Finding | First | Last |
+|---|---|---|
+| `100 Rank` stored empty rather than absent, 88 rows over 25 events | 2009-12-02 | 2013-03-23 |
+| `101 Duration` stored empty, 90 rows over 27 events | 2009-12-02 | 2013-03-23 |
+| `104 Comment` stored empty, 8502 rows over 229 events | 2009-12-02 | 2013-03-23 |
+| `FF n` written with a space, against the current `FFn` | 2009-12-12 | 2013-03-23 |
+| Lineup type `6 Unknown`, 543 rows over 37 events | 2009-12-13 | 2013-03-24 |
+| Single-gender relays filed as `255 Team Mixed Relay` | 2005-03-11 | 2013-02-16 |
+
+Three of the starts fall inside eleven days and three of the ends fall on the same day. The
+checkpoint layer switched on in the 2012/2013 season, which is the same boundary read from
+the other side and is recorded above under `GLOBAL-DQ-107`. **This answers question 5 and
+question 1 together**: the empty values are not three defects but one import behaviour that
+wrote a `result` row with an empty value instead of writing no row, and `6 Unknown` is not a
+second lineup role but the same `14 Starter` written before the feed set the type. `14
+Starter` carries 312298 rows over 526 events and 291572 of them hold a per-leg scope result;
+`6 Unknown` carries 543 and **not one** holds one.
+
+### Question 3: `LAP` and `LPD` are one status written two ways
+
+They almost never meet. Of 475 events carrying either, 336 hold only `LAP`, 138 hold only
+`LPD` and **one** holds both. `LPD` appears only in the top tier — IBU Cup, Winter Olympics,
+World Championships, World Cup — while `LAP` appears everywhere including the junior and
+European templates. The one exception decides it: in `ev 3033164`, a `4 x 6 km Relay` of the
+2020 World Championships, Bulgaria is 20th carrying `LAP` between Slovenia 19th and Japan
+21st, both carrying `LPD`, and all three have a place and no full time. Nothing distinguishes
+the row except the spelling.
+
+### Question 6: the stage and the lineup agree, and the discipline is the one that is wrong
+
+The question asked which of the stage gender and the discipline was at fault and said it was
+not settled. It is now, by two to one:
+
+| Filed discipline | Stage gender | Lineup holds | Events |
+|---|---|---|---:|
+| `Relay` | female | female | 181 |
+| `Relay` | male | male | 181 |
+| `Team Mixed Relay` | mixed | male and female | 102 |
+| `Single Mixed Relay` | mixed | male and female | 49 |
+| **`Team Mixed Relay`** | **female** | **female** | **9** |
+| **`Team Mixed Relay`** | **male** | **male** | **9** |
+| **`Relay`** | **female** | **male and female** | **1** |
+
+On the eighteen, the stage and the lineup say the same thing and only the discipline says
+mixed. `Biathlon-DQ-059` reports them. The question’s second half — `257 Relay` appearing
+in a mixed stage from 2017 — does not appear here at all, because those events carry no
+lineup rows: they are the NM events of questions 12 and 13, outside the client boundary.
+
+### Question 7: the uneven medal set is eight tied podiums and not a defect
+
+2340 events carry a gold, 2336 a silver and 2336 a bronze, and the whole difference is eight
+events. Four hold two golds, no silver and a bronze; four hold a gold and two silvers and no
+bronze. Every one is a `173 Final`, `finished`, inside the client boundary, between 2004-12
+and 2022-01. A shared place removes the place below it, so a podium with two golds owes no
+silver. `Biathlon-DQ-031` reads the medals against the places the event’s own Rank results
+hold rather than assuming one of each, which is exactly why it reports nothing. The check is
+right and the count was the misleading thing.
+
+### Question 4: the negative gaps are a broken full time, not a broken gap
+
+Two rows, and both carry a full time that is not a time. `ev 443270`, a 20 km Individual of
+2008, holds `-7.000` against a full time of `45.000` on a race that takes about fifty
+minutes; `ev 4769618`, a 12.5 km Pursuit of **2026-03-21**, holds `-31.000` against a full
+time of `0.000` on a competitor placed second. The gap is computed from the leader, so a full
+time written without its minutes drives it below zero. The second is a week old rather than a
+legacy row, so this is current rather than historical.
+
+### Question 11: a relay’s `502 Missed shots` is the cumulative team total at the finish
+
+Read on `ev 3033169`, a `4 x 7.5 km Relay` of the 2020 World Championships: Finland’s team
+row holds `4`, and the `273 missed_shots` value at the `final_result` scope is also `4`. The
+checkpoints run 2, 2, 2, 2, 2, 2, 4, 4, 4, 4, 4 — a running total that never falls, with the
+four legs owning three of the twelve containers each. So the figure is neither a per-leg
+count nor a sum of independent legs: it is one number accumulating across the race.
+
+**That makes the relay ceiling knowable.** Four legs of two bouts of five rounds is 40, and
+the highest value stored anywhere is 24, so extending `Biathlon-DQ-061` to the relay
+disciplines is now possible and would return nothing today. It is a decision rather than an
+answer, and it has not been taken.
+
+### Question 8: `510 Second points` is a place-derived allocation on a second scale
+
+It is not a measured quantity. Both scales are closed tables: 42 distinct values for a relay
+team, stepping 420, 390, 360, 330, 310, 290, 270, 250, 230, 220, 210, 200, 195 and on down to
+20; and 125 for an individual, stepping 160, 154, 148, 143, 140, 138, 136 and then by one
+through the lower places. A relay place is worth roughly two and a half times an individual
+one. It occurs only under World Cup, World Championships and NM, and coexists with `102
+Points` on most rows. The shape is that of a nations standing, but the database carries no
+name for it, so what the schedule is formally called stays with the provider.
+
+Its structural consequence is settled either way: the field follows the finishing place
+rather than deciding it, so it correctly stays out of `RESULT_TIE_VALUE_TYPE_LIST`.
+
+**The points layer is out of the client’s scope, decided 2026-08-27.** `102 Points` and `510
+Second points` were removed from `NUMERIC_RESULT_TYPE_LIST` and `INTEGER_RESULT_TYPE_LIST`
+the same day, leaving `100 Rank`, `408 Startnumber`, `502 Missed shots` and `503 Additional
+shots`. Both lists are read by `Biathlon-DQ-048` and `-053` alone and both stayed clean
+across the change. Nothing else in the package reads either field.
+
+### Questions 12 and 13: both resolve to template `465 NM`, and to the same nine events
+
+Nine events are filed under `257 Relay` while their name says Mixed and their stage gender
+says `mixed`, and every one is under template `465 NM`, which the client does not take. They
+hold **no lineup rows at all**, which is why `Biathlon-DQ-059` cannot arbitrate them and
+`-060` can: the name is the only witness left. Six of them are also the events written
+`Mixed Relay 3 х 6 km` with a Cyrillic х where a Latin x belongs — one per season from 2020
+to 2026, with the 2021 edition filed correctly and therefore absent. `Biathlon-DQ-068` holds
+a `NON_ASCII_CHARACTER` rule that would report them without an edit the day that template
+comes into scope.
+
+### What is still open, and why none of it is a measurement
+
+**Question 2** is a decision for the people who own the feed, not for this project:
+`Disqualified`, `DSQ` and `Disq.` are one status written three ways, and `FFn` and `FF n` are
+one code written two ways. `Biathlon-DQ-036` reports all of them today. Which spelling is
+canonical is theirs to say.
+
+**Question 9** is a scope question: `125 Para Biathlon` is a separate `sport` row with 2
+templates and 42 events from 2022. If the client wants it, it is its own opening and not an
+addition here.
+
+**Question 10** is the Comp.Rank layer, paused by the decision of 2026-08-26 for a month or
+two while the event results are corrected. Twenty GLOBAL templates across the six categories
+wait on it, plus `GLOBAL-DQ-007`.
+
+**The relay shot ceiling** is the one new question the answers created, and it is recorded as
+question 11 above rather than left implicit: whether to extend `Biathlon-DQ-061` to the relay
+disciplines at 40 now that what the figure counts is known.
+## The last four questions, decided on 2026-08-27
+
+**The majority spelling is the canonical one.** `Disqualified` is right and `DSQ` and `Disq.`
+are to be corrected; `FFn` is right and `FF n` is to be corrected. That is 602 rows against
+11, and 2006-to-2025 against a window that closed in March 2013. Nothing in the package
+changes: `RESULT_COMMENT_VALUE_LIST` already admits the canonical sixty and
+`Biathlon-DQ-036` already reports the 85 rows that are not among them, so the repair list
+exists and is on the board. Question 2 is closed.
+
+**`125 Para Biathlon` is a separate sport and is not being looked at.** Decided 2026-08-27:
+it holds 2 templates and 42 events from 2022 under its own `sport` row, so it would be its
+own opening with its own file, parameters and CheckIDs rather than an addition here. Question
+9 is closed as out of scope rather than answered.
+
+**The Comp.Rank pause holds.** Reaffirmed 2026-08-27. The layer is generated from the event
+results that are being corrected now, so reading it today would document something about to
+be rebuilt. Fifty-six templates wait on it across all eight categories, plus `GLOBAL-DQ-007`,
+and every one of them stays `Not checked` rather than `Not applicable`.
+
+**`Biathlon-DQ-061` was extended to the relay disciplines at a ceiling of 40**, the same day
+and on the strength of the answer to question 11. Findings are unchanged at 4 and the
+eligible population moved from 1832 to 2358, which is the relays entering the audit. The
+check now reads all nine disciplines the sport contests.
+
+**The ceiling is a fact about the format and is deliberately not computed.** Measured
+2026-08-27, lineup rows per relay team run 1, 2, 3, 4, 5 and **8**: the eights are what
+`Biathlon-DQ-043` reports as an uneven lineup and the ones and twos are incomplete entries.
+A leg count read from that storage would inherit those defects and move the ceiling with
+them, so the check states 40 as what four legs of two bouts of five rounds allows and reads
+nothing from the lineup at all. It is generous on purpose: the highest relay value stored
+anywhere is 24 and the highest inside the client boundary is 19, so it returns nothing today
+and guards the invariant for the day a figure arrives that no relay could have produced.
+
+**`DUPLICATE_RECORD` and `PATTERNS` are on this sport’s board and hold no registry row, by
+design.** Recorded here on 2026-08-27 because the absence of a row reads like an omission and
+is not one. A `PATTERNS` statement takes its category from its file — `GLOBAL_QUERIES/
+PATTERNS.sql` holds nothing else — and is never authored per CheckID;
+`GLOBAL-DISCOVERY-033` takes `DUPLICATE_RECORD` through the named exception list in
+`TOOLS/Run-Query.ps1`. Both are census statements, and a census is not an authored check, so
+no CheckID is assigned for either in any sport. On this sport they ride along with every run:
+`GLOBAL-DISCOVERY-018` on round types, `-020` on event names, `-022` on stage names, `-024`
+on statistic names and `-033` on duplicate people, which is why a board of 78 checks runs as
+83 statements.
 <!-- MANUAL PASTE ZONE: 7 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
 
-1. What separates lineup type `6 Unknown` from `14 Starter`. The second carries 39280 rows
-   and the first 543, both with the same parent and member types.
-2. Whether `Disqualified`, `DSQ` and `Disq.` are to be unified, and likewise `FF#` and
-   `FF #`. Until they are, `104 Comment` is near-closed rather than closed.
-3. What `LPD` means beside `LAP`, and whether the two are the same status written twice.
-   Measured 2026-08-27, `LAP` stands on 1446 rows over 337 events and `LPD` on 599 over 139.
-4. Why two `101 Duration` values are written as a negative gap. A gap measured from the
-   leader cannot be below zero.
-5. Why 88 `100 Rank` values over 25 events, 90 `101 Duration` values over 27 and 8502
-   `104 Comment` values over 229 are stored empty rather than absent.
-6. Why `255 Team Mixed Relay` was contested in single-gender stages — 9 male events and 9
-   female between 2005 and 2013 — and why `257 Relay`, a single-gender format, appears in a
-   mixed stage 9 times from 2017. One of the two is a stage gender that does not match its
-   discipline, and which is not settled here.
-7. Why the medal set is uneven at the sport level: 2340 events carry a gold, 2336 a silver
-   and 2336 a bronze.
-8. What `510 Second points` is the standing for, and whether its two ranges — 1 to 160
-   individually and 50 to 420 in relays — are one allocation read at two scales or two
-   separate competitions.
-9. Whether `125 Para Biathlon`, a separate `sport` row holding 2 templates and 42 events from
-   2022, is inside the client’s interest. It is a distinct sport and would be its own
-   opening.
-10. The Comp.Rank layer in full, deferred by the decision in the verification boundary.
+Thirteen questions were raised while this sport was opened. **Nine were measured and closed
+on 2026-08-27** and their answers are recorded above under "The open questions, answered on
+2026-08-27" - questions 1, 3, 4, 5, 6, 7, 8, 12 and 13. **Three more were decided the same
+day** and are recorded under "The last four questions, decided on 2026-08-27" - question 2
+on the canonical spelling, question 9 on Para Biathlon and question 11 on the relay shot
+ceiling. The numbering is kept so an answer can still be found by the number it was asked
+under.
 
-11. What a relay’s `502 Missed shots` counts. A team row reaches 24, which is exactly the
-    ceiling on spare rounds for four legs, so it may be penalty loops rather than missed
-    rounds, and it may be a sum across the legs or the worst single leg. Until it is settled,
-    `Biathlon-DQ-061` reads only the individual disciplines and the relays are unaudited on it.
-12. Whether the ten events named `Mixed Relay` and filed under `257 Relay` were mixed. This is
-    question 6 read from the lineup rather than from the stage, and the lineup disagrees with
-    both: only one plain Relay in the whole sport holds male and female athletes together, and
-    it is a different event, of 2023. So either the name is wrong on all ten or their lineups
-    are single-gender by mistake. `Biathlon-DQ-060` reports them and `-059` does not, and that
-    disagreement between the two checks is the open question rather than a defect in either.
-13. Why `Mixed Relay 3 х 6 km` is written with a Cyrillic х where a Latin x belongs. Noticed
-    2026-08-27 while reading `Biathlon-DQ-060`. No check asserts it: `MALFORMED_NAME` is not an
-    opened category for this sport, and the name is not what `-060` compares.
+One question is still open, and it is a deferral rather than an unknown:
+
+10. The Comp.Rank layer in full, deferred by the decision of 2026-08-26 and reaffirmed on
+    2026-08-27. Fifty-six GLOBAL templates wait on it across all eight categories, plus
+    `GLOBAL-DQ-007 PARTICIPANT_MISSING_DATE_OF_BIRTH`, which counts an athlete history
+    through a statistic shard. The structure exists and is merely unread, which is why every
+    one of them is `Not checked` and none is `Not applicable`.
 <!-- MANUAL PASTE ZONE: 7 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
