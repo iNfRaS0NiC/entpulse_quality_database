@@ -3899,6 +3899,12 @@ function New-LedgerCheckEntry {
     return [pscustomobject]$ordered
 }
 
+# The Overview's Status and Check By as the document held them, keyed by CheckID, filled while
+# the live document is read and emptied by every run that does not open one. Two columns nothing
+# else copies: Status is on the check tabs but as the run's own state rather than the reviewer's,
+# and Check By is nowhere else at all.
+$script:SheetReviewSnapshot = [ordered]@{}
+
 function Save-RunLedger {
     # Append this run to RUNS/<Sport>.json, one file per sport, newest last so a git diff of
     # the file is the run that was just added and nothing else.
@@ -3943,6 +3949,20 @@ function Save-RunLedger {
             startedUtc = $script:RunStartedUtc.ToString('yyyy-MM-ddTHH:mm:ssZ')
             output     = [string]$Output
             checks     = @($group.Group | ForEach-Object { New-LedgerCheckEntry -Entry $_ })
+        }
+
+        # The reviewers' own two columns as the document held them when this run read it, keyed
+        # by CheckID. Recorded only when the run actually opened the document - a run with no
+        # sheet has nothing to snapshot - and only for the sport whose checks these are.
+        if ($script:SheetReviewSnapshot -and $script:SheetReviewSnapshot.Count -gt 0) {
+            $mine = [ordered]@{}
+            foreach ($checkId in @($script:SheetReviewSnapshot.Keys)) {
+                if ((Get-SportFromCheckId -CheckId $checkId) -ne $sport) { continue }
+                $mine[$checkId] = $script:SheetReviewSnapshot[$checkId]
+            }
+            if ($mine.Count -gt 0) {
+                $run | Add-Member -NotePropertyName review -NotePropertyValue $mine
+            }
         }
 
         $ledger.runs = @($ledger.runs) + $run
@@ -4224,6 +4244,27 @@ function Save-RunSheet {
     try {
         Write-Host 'Updating the live document.' -ForegroundColor DarkGray
         $state = Read-SheetState -SpreadsheetId $id
+
+        # What the reviewers had on the board when this run read it, against the CheckID each
+        # value belongs to. Written into the run ledger below, which is in git and is ordered by
+        # nothing but the run: a sort applied to the document cannot reach it, and a value found
+        # beside the wrong check can be traced back to the last run that saw it beside the right
+        # one. Asked for on 2026-08-27, after ten Comment mirrors were found beside the wrong
+        # check and Check By turned out to have no second copy anywhere.
+        $script:SheetReviewSnapshot = [ordered]@{}
+        foreach ($checkId in @($state.OverviewRowOf.Keys | Sort-Object)) {
+            $wasStatus = $(if ($state.StatusOf -and $state.StatusOf.ContainsKey($checkId)) {
+                    [string]$state.StatusOf[$checkId]
+                } else { '' })
+            $wasBy = $(if ($state.CheckByOf -and $state.CheckByOf.ContainsKey($checkId)) {
+                    [string]$state.CheckByOf[$checkId]
+                } else { '' })
+            if ([string]::IsNullOrWhiteSpace($wasStatus) -and [string]::IsNullOrWhiteSpace($wasBy)) { continue }
+            $script:SheetReviewSnapshot[$checkId] = [ordered]@{
+                status  = $wasStatus
+                checkBy = $wasBy
+            }
+        }
 
         $title = $(if ($SheetTitle) { $SheetTitle } else { "DQ $Sport Enetpulse" })
         if (Set-SheetTitleIfUnnamed -SpreadsheetId $id -CurrentTitle $state.Title -Title $title) {

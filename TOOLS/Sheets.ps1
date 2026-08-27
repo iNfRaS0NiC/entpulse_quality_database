@@ -56,6 +56,10 @@ $script:SheetsTokenExpiry = [datetime]::MinValue
 # the earlier ones applied. Without this the run reports "the document was not updated" for a
 # document that was, which is the wrong thing to tell somebody deciding whether to look at it.
 $script:SheetsStage = ''
+# How many cells the last document update had to re-address because the board moved
+# between its two value batches. Reported by the runner; see 'the board can move under
+# the second batch'.
+$script:SheetsRowsMoved = 0
 
 function Set-SheetsAddressFamily {
     <#
@@ -1938,6 +1942,8 @@ function New-SheetsMergePlan {
                     Kind   = 'Write'
                     Raw    = $false
                     Sheet  = 'Overview'
+                    Key    = $runKey
+                    Column = $commentColumn
                     Range  = (New-SheetsRange -FromColumn $commentColumn -FromRow $row `
                             -ToColumn $commentColumn -ToRow $row)
                     Values = @(, @((New-SheetsCommentMirror -Sheet $ownTab)))
@@ -2004,6 +2010,8 @@ function New-SheetsMergePlan {
                 Kind   = 'Write'
                 Raw    = $false
                 Sheet  = 'Overview'
+                Key    = $runKey
+                Column = $rowsColumn
                 Range  = (New-SheetsRange -FromColumn $rowsColumn -FromRow $rowOf[$runKey] `
                         -ToColumn $rowsColumn -ToRow $rowOf[$runKey])
                 Values = @(, @($rowsLink))
@@ -3469,6 +3477,7 @@ function Read-SheetState {
     $emptyComment = @{}
     $commentOf = @{}
     $statusOf = @{}
+    $checkByOf = @{}
     # A tab holding no Check ID in its own A2. Almost always this run's predecessor: the tabs
     # go in one batch and the values in another, so a document update that fails on the second
     # leaves the first behind. Naming them lets the next run adopt its own leftovers instead
@@ -3526,6 +3535,16 @@ function Read-SheetState {
                 $statusIndex = [array]::IndexOf($SheetsOverviewColumns, 'Status')
                 if ($cells.Count -gt $statusIndex) {
                     $statusOf[$checkId] = [string]$cells[$statusIndex]
+                }
+
+                # Check By, which nothing on the board copies and nothing here writes. It is
+                # read so the run can record it against the CheckID it belongs to: the column
+                # has no second copy anywhere - a check tab's own Check By is empty on every tab
+                # of every board - so if it is ever found beside the wrong check there is
+                # nothing in the document to reconstruct it from. The ledger is that copy.
+                $checkByIndex = [array]::IndexOf($SheetsOverviewColumns, 'Check By')
+                if ($cells.Count -gt $checkByIndex) {
+                    $checkByOf[$checkId] = [string]$cells[$checkByIndex]
                 }
             }
             $offset = 1
@@ -3650,6 +3669,7 @@ function Read-SheetState {
         EmptyCommentOf    = $emptyComment
         CommentOf         = $commentOf
         StatusOf          = $statusOf
+        CheckByOf         = $checkByOf
         TabOf             = $tabOf
         EmptyTabs         = $emptyTabs
         RowCapacityOf     = $capacityOf
@@ -4091,6 +4111,13 @@ function Invoke-SheetsPlan {
             $range['values'] = $resolved
         }
 
+        # The check this cell belongs to, carried alongside the range and stripped before the
+        # payload is sent. See "the board can move under the second batch" below.
+        if ($write.PSObject.Properties.Name -contains 'Key' -and $write.Key) {
+            $range['_key'] = [string]$write.Key
+            $range['_col'] = [int]$write.Column
+        }
+
         if ($isRaw) { $raw += $range } else { $entered += $range }
     }
 
@@ -4103,10 +4130,58 @@ function Invoke-SheetsPlan {
             data             = $raw
         } | Out-Null
     }
+
+    # **The board can move under the second batch.**
+    #
+    # A reviewer who sorts the Overview from its column menu leaves a sort saved on the tab's
+    # filter, and Google re-applies it every time the data changes. Found on the Ice-Hockey
+    # board on 2026-08-27: its filter carried sortSpecs of Priority then Status, so the batch
+    # above - which writes Priority and, on a reopened check, Status - reordered the rows it had
+    # just written, and every range in the batch below was still addressed by the row numbers
+    # read before any of it.
+    #
+    # What that cost was ten Comment mirrors sitting beside the wrong check. The Rows link is in
+    # the same batch and survived, because it is rewritten for every row on every run and a run
+    # that lands it wrong is corrected by the next one; the mirror was written once into an empty
+    # cell and never looked at again, so a single bad landing stood for good.
+    #
+    # A cell is addressed by the check it belongs to and not by where that check was sitting a
+    # moment ago. One read of the CheckID column, between the two batches, is what turns the one
+    # into the other. It costs a request and only where something is actually being written.
     if ($entered.Count -gt 0) {
+        $keyed = @($entered | Where-Object { $_.ContainsKey('_key') })
+        if ($keyed.Count -gt 0) {
+            $checkColumn = (ConvertTo-SheetsColumnName -Index (
+                    [array]::IndexOf($SheetsOverviewColumns, 'CheckID') + 1))
+            $now = @{}
+            $again = Invoke-SheetsApi -Method Get -Path (
+                "$SpreadsheetId/values/Overview!$checkColumn`1:$checkColumn" +
+                '?majorDimension=ROWS')
+            $seen = @($again.values)
+            for ($i = 0; $i -lt $seen.Count; $i++) {
+                $cell = @($seen[$i])
+                if ($cell.Count -eq 0) { continue }
+                $id = [string]$cell[0]
+                if (-not [string]::IsNullOrWhiteSpace($id)) { $now[$id] = $i + 1 }
+            }
+            $moved = 0
+            foreach ($one in $keyed) {
+                if (-not $now.ContainsKey($one['_key'])) { continue }
+                $to = [int]$now[$one['_key']]
+                $want = "'Overview'!" + (New-SheetsRange -FromColumn $one['_col'] -FromRow $to `
+                        -ToColumn $one['_col'] -ToRow $to)
+                if ($one['range'] -ne $want) { $one['range'] = $want; $moved++ }
+            }
+            if ($moved -gt 0) { $script:SheetsRowsMoved = $moved }
+        }
+
+        $payload = @($entered | ForEach-Object {
+                $copy = @{ range = $_['range']; values = $_['values'] }
+                $copy
+            })
         Invoke-SheetsApi -Method Post -Path "$SpreadsheetId/values:batchUpdate" -Body @{
             valueInputOption = 'USER_ENTERED'
-            data             = $entered
+            data             = $payload
         } | Out-Null
     }
 
