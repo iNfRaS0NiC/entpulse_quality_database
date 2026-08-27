@@ -787,6 +787,119 @@ no CheckID is assigned for either in any sport. On this sport they ride along wi
 `GLOBAL-DISCOVERY-018` on round types, `-020` on event names, `-022` on stage names, `-024`
 on statistic names and `-033` on duplicate people, which is why a board of 78 checks runs as
 83 statements.
+## Sampling every discipline, and the three monitors that found nothing
+
+On 2026-08-27 five results were read from each of the nine disciplines and the whole result
+layer was profiled against the rules of the sport. Five checks came out of it and are recorded
+in the next section. **Three proposed monitors came out of it holding nothing, and that is a
+finding of its own**, recorded here because a monitor nobody wrote leaves no trace and the
+reason it was not written is the part that cannot be reconstructed later.
+
+**The winning times are internally consistent and there is nothing to monitor.** 2361 winning
+`557 Full-time duration` values were grouped by discipline, stage gender and the distance named
+in the event name, **with the leg count kept** — a `3 x 6 km Relay` is not a `4 x 6 km Relay`
+— giving 49 groups. At a band of ±25 per cent around each group’s median, **zero** events
+fall outside; at ±20 per cent, five do, and all five are real races won slowly or quickly. A
+monitor drawn on this distribution would report nothing today and would report weather tomorrow.
+
+**The correction matters more than the result.** Grouped without the leg count the same data
+appeared to hold monsters: a women’s relay won in 51:50 against a group median of 71:04. Every
+one of them was a three-leg relay filed against four-leg times. The distance in a biathlon event
+name is not the distance raced until the multiplier in front of it is read.
+
+**The spread between first and last carries no signal either.** 179 events hold a classified
+finisher at more than 1.6 times the winner’s time, and they are correct. In `252 Individual`
+every missed shot is a full minute added, so a competitor with ten penalty minutes finishes at
+twice the winner legitimately, and the lap rule that stops a straggler applies only to the mass
+start formats. A threshold here would report the sport rather than its defects.
+
+**The shooting is remarkably even and no event has lost its shooting data.** Missed shots per
+competitor average 2.38 of 10 in `253 Sprint`, 4.65 of 20 in `252 Individual` and 4.12 of 20 in
+`254 Pursuit` — 20 to 25 per cent everywhere, across every discipline and the whole span. **Not
+one event of 2358 has a field in which every competitor recorded zero**, which is the shape a
+dropped shooting feed would leave. What the profiling did find was the opposite shape, and that
+became `Biathlon-DQ-080`.
+
+**The spare-round ceiling of 24 is never exceeded.** `503 Additional shots` runs 0 to 24 across
+the relays and stops there exactly, 24 being four legs of two bouts of three spares. One team row
+in the whole sport holds 24. A ceiling check was therefore not written: `Biathlon-DQ-079` guards
+the same column from the other end, where the data does break, and a second empty statement
+would add a row to the board and nothing to the reading.
+
+**`259 Single Relay` has no event inside the client boundary at all** — ten events sport-wide,
+every one of them outside it. It is named in the scope of the relay checks regardless, because a
+discipline with no rows today is a data state and not a structural absence.
+
+## Five more sport statements, written on 2026-08-27
+
+**`Biathlon-DQ-079 EVENT_RELAY_PENALTY_LOOP_WITHOUT_A_FULL_BOUT_OF_SPARES`** reads the two
+shooting figures against each other. A penalty loop is given only for a target still standing
+after all three spares of that bout are fired, so a team holding a loop must hold at least three
+spares. 7 events of 526. Three of the nine team rows are placed finishers: a `3 x 6 km Relay` of
+2018 where Finland took second with 2 loops and no spares, and a `Mixed 4 x 6 km Relay` of 2022
+where Sweden holds 1 loop with 1 spare and Austria 2 loops with none. Six carry DNF, LAP or LPD.
+**`260 Super Sprint` is deliberately outside its scope**: it fires spares too, but 444 of its rows
+break the rule, which says its formats settle a standing target some other way rather than that
+its data is wrong. Only the floor of three is asserted; the figures are cumulative totals at the
+finish, so the count of bouts that produced a loop cannot be recovered and a stronger claim would
+be a guess.
+
+**`Biathlon-DQ-080 EVENT_MISSED_SHOTS_HOLD_A_DIFFERENT_VALUE_FOR_EVERY_COMPETITOR`** reads the
+shape of the column rather than any value in it. At most twenty-one different miss counts exist
+however large the field, so an event giving every competitor a different number is not reporting
+shooting. 1 event of 2358: a `5 km Super Sprint Final` of 2020-02-26 whose thirty competitors
+hold exactly the numbers 1 to 30, each once, where every other Super Sprint in the sport tops out
+at 9. `Biathlon-DQ-061` reports eleven of that event’s rows, the ones above its ceiling of 20;
+the other nineteen are just as wrong and only this check sees them. A field under fifteen is left
+out, where all-different counts happen by chance.
+
+**`Biathlon-DQ-081 EVENT_START_NUMBER_HELD_BY_MORE_THAN_ONE_COMPETITOR`** reads the `408
+Startnumber` result, a different column from the `event_participants.number` that
+`GLOBAL-DQ-137` audits and finds nothing in here. 34 events of 1885, 100 shared numbers, 200
+competitors. Two carry it wholesale: a `12.5 km Individual` at the 2019 European Junior
+Championships with 27 shared numbers in a field of 107, and a `7.5 km Sprint` at the 2024
+European Championships with 23 in a field of 119. **The usual cause is visible but deliberately
+not asserted.** In that Sprint, Linda Zingerle holds start number 10 with rank 10 and Marlene
+Fichtner 11 with rank 11, while Elena Chirkova holds the real bib 10 with rank 66: the Rank was
+written into this column for part of the field. "The start number equals the rank" is not a
+defect on its own, since a bib and a place coincide legitimately all the time, and
+`GLOBAL-DQ-137` warns against exactly that widening. The duplicate is what can be asserted, and
+it is what found these. No relay is among them; a relay’s number belongs to the team.
+
+**`Biathlon-DQ-082 EVENT_DURATION_HOLDS_A_GAP_WHERE_A_TIME_BELONGS_OR_THE_REVERSE`** states the
+convention this sport writes its two time columns to: `557 Full-time duration` is the absolute
+time for everybody and `101 Duration` is the absolute time for the competitor placed first and
+the gap behind that leader for everybody else. 5 competitors of 2358 events: three leaders
+holding `+0.0`, in Sprints of 2009, 2014 and a 2019 summer race; and two placed second holding a
+plain value where a gap belongs, a Mass Start of 2015 where Quentin Fillon Maillet holds `0.000`
+against a full time of `42.000`, and a Pursuit of 2026 where Eric Perrot holds `-31.000` against
+a full time of `0.000`. **It is not a restatement of `Biathlon-DQ-040`.** `GLOBAL-DQ-056` checks
+the arithmetic and has to read the leader’s time to do it, so an event whose leader holds a gap
+is exactly the event it cannot audit; this one asks the prior question of which column holds
+which kind of value.
+
+**`Biathlon-DQ-083 EVENT_RESULTS_DID_NOT_START_BUT_FIRED_SHOTS`** reads a DNS beside a shooting
+figure above zero. 1 competitor of 2358 events: Jacob Weel Rosbo in a `10 km Sprint` of
+2024-08-24, carrying DNS with 6 missed shots and no time and no place. **Only a figure above zero
+is read, and that is the whole of the design.** 2824 competitor rows across 1059 events hold a
+DNS beside a shooting figure and 2823 of them hold zero, which is the feed writing a default into
+a column it has nothing to put in. Reporting those would bury the one row that means something
+under three orders of magnitude of noise. Only `dns` is read and not the wider no-result list: a
+DNF fired at every range they reached before stopping, so their figure is expected rather than
+contradictory.
+
+## The Super Sprint fires two different numbers, and the round type says which
+
+Established 2026-08-27 from the format: **the qualification shoots two bouts, prone then
+standing, and cannot exceed 10 missed shots; the final shoots four, prone, prone, standing,
+standing, and cannot exceed 20.** Until that day `Biathlon-DQ-061` gave the whole of
+`260 Super Sprint` the final’s ceiling of 20, so a qualification value of 11 to 20 passed unread.
+The check now reads `179 Qualifier` at 10 and everything else at 20.
+
+**Tightening it changes no finding today and that was known before it was done.** Every Super
+Sprint qualification in the sport tops out at 9. The three rows anywhere in the discipline that
+reach 11 are all in finals, where 20 is the correct ceiling and they stay clean. The gap is
+closed for the day a qualification value arrives that no qualification could have produced.
 <!-- MANUAL PASTE ZONE: 7 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

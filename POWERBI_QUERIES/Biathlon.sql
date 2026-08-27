@@ -198,6 +198,13 @@ SELECT
 -- the day. 252 Individual, 254 Pursuit, 256 Mass Start and 260 Super Sprint shoot four bouts of
 -- five and cannot exceed 20; 253 Sprint shoots two and cannot exceed 10. A value above the
 -- ceiling is not a bad day, it is a number that could not have been produced.
+-- 260 Super Sprint fires two different numbers and the round type says which, established
+-- 2026-08-27: its qualification shoots two bouts, prone then standing, and cannot exceed 10,
+-- while its final shoots four, prone, prone, standing, standing, and cannot exceed 20. Until
+-- that day the check gave the whole discipline the final's ceiling of 20 and so let a
+-- qualification value of 11 to 20 pass unread. Tightening it changes no finding today - every
+-- Super Sprint qualification in the sport tops out at 9 - and closes the gap for the day one
+-- arrives.
 -- The relay disciplines carry a ceiling of 40, added 2026-08-27 once what their figure counts
 -- was established. Measured that day on a 4 x 7.5 km Relay of the 2020 World Championships,
 -- Finland's team row holds 4 and the 273 missed_shots value at the final_result scope holds 4
@@ -227,11 +234,11 @@ FROM (
         e.startdate,
         d.name AS discipline_name,
         tt.name AS template_name,
-        CASE WHEN d.id = 253 THEN 10 WHEN d.id IN (255, 257, 258, 259) THEN 40 ELSE 20 END AS shots_fired,
-        SUM(CAST(ms.value AS SIGNED) > CASE WHEN d.id = 253 THEN 10 WHEN d.id IN (255, 257, 258, 259) THEN 40 ELSE 20 END) AS competitors_over,
+        CASE WHEN d.id = 253 THEN 10 WHEN d.id = 260 AND e.round_typeFK = 179 THEN 10 WHEN d.id IN (255, 257, 258, 259) THEN 40 ELSE 20 END AS shots_fired,
+        SUM(CAST(ms.value AS SIGNED) > CASE WHEN d.id = 253 THEN 10 WHEN d.id = 260 AND e.round_typeFK = 179 THEN 10 WHEN d.id IN (255, 257, 258, 259) THEN 40 ELSE 20 END) AS competitors_over,
         MAX(CAST(ms.value AS SIGNED)) AS worst_missed,
         SUBSTRING(GROUP_CONCAT(DISTINCT CASE
-            WHEN CAST(ms.value AS SIGNED) > CASE WHEN d.id = 253 THEN 10 WHEN d.id IN (255, 257, 258, 259) THEN 40 ELSE 20 END
+            WHEN CAST(ms.value AS SIGNED) > CASE WHEN d.id = 253 THEN 10 WHEN d.id = 260 AND e.round_typeFK = 179 THEN 10 WHEN d.id IN (255, 257, 258, 259) THEN 40 ELSE 20 END
             THEN CONCAT(p.name, ' = ', ms.value) END
             ORDER BY ms.value DESC SEPARATOR ' | '), 1, 300) AS sample_competitors
     FROM event e
@@ -452,4 +459,470 @@ WHERE e.del = 'no'
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   -- AND t.tournament_templateFK = <tournament_template_id>
   AND od.disciplineFK IN (252, 253, 254, 256)
+;
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Biathlon-DQ-079
+    -- Name - EVENT_RELAY_PENALTY_LOOP_WITHOUT_A_FULL_BOUT_OF_SPARES
+    -- What it does: Flags a relay whose team was sent round the penalty loop without having fired a full bout of spare rounds first.
+    'Penalty_Loop_Without_A_Full_Bout_Of_Spares' AS check_type,
+    y.event_id,
+    y.event_name,
+    y.startdate,
+    y.discipline_name,
+    y.teams_affected,
+    y.sample_teams,
+    y.template_name,
+    y.tournament_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: In a relay the two stored shooting figures are not independent.
+-- 503 Additional shots counts the spare rounds a team used and 502 Missed shots counts the
+-- penalty loops it was sent round, and the rule that ties them is that a loop is given only for
+-- a target still standing after all three spares of that bout have been fired. So a team with at
+-- least one penalty loop must have used at least three spare rounds, and a row holding a loop
+-- beside fewer than three spares records something that could not have happened on the course.
+-- Only the floor of three is asserted, not the exact arithmetic. A team's figures are cumulative
+-- totals at the finish across eight bouts, so the count of bouts that produced a loop cannot be
+-- recovered from them and a stronger claim would be a guess.
+-- 260 Super Sprint is deliberately outside the scope. It fires spare rounds too, but 444 of its
+-- rows break this rule, which says its formats settle a standing target some other way rather
+-- than that its data is wrong. Only 255 Team Mixed Relay, 257 Relay, 258 Single Mixed Relay and
+-- 259 Single Relay are read.
+-- Measured 2026-08-27, 9 team rows across 7 events of 526. Three are teams that finished and
+-- were placed: a 3 x 6 km Relay of 2018 where Finland took second with 2 loops and no spares,
+-- and a Mixed Relay of 2022 where Sweden holds 1 loop with 1 spare and Austria 2 loops with
+-- none. The other six carry DNF, LAP or LPD, where the shooting figures are as suspect as the
+-- placing, and are reported for the same reason rather than a different one.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate,
+        d.name AS discipline_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        COUNT(*) AS teams_affected,
+        SUBSTRING(GROUP_CONCAT(CONCAT(x.team, ' = ', x.loops, ' loop(s), ', x.spares, ' spare(s)')
+            ORDER BY x.loops DESC SEPARATOR ' | '), 1, 300) AS sample_teams
+    FROM (
+        SELECT
+            ep.id AS epid,
+            e2.id AS eid,
+            p.name AS team,
+            MAX(CASE WHEN r.result_typeFK = 502 THEN CAST(r.value AS SIGNED) END) AS loops,
+            MAX(CASE WHEN r.result_typeFK = 503 THEN CAST(r.value AS SIGNED) END) AS spares
+        FROM event e2
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+        JOIN object_discipline od2 ON od2.object_typeFK = 5 AND od2.objectFK = e2.id AND od2.del = 'no'
+        JOIN event_participants ep ON ep.eventFK = e2.id AND ep.del = 'no'
+        JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+            AND r.result_typeFK IN (502, 503) AND r.value REGEXP '^[0-9]+$'
+        WHERE e2.del = 'no'
+          AND tt2.sportFK = 7
+          AND t2.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+          AND od2.disciplineFK IN (255, 257, 258, 259)
+        GROUP BY ep.id, e2.id, p.name
+        HAVING loops > 0 AND spares < 3
+    ) x
+    JOIN event e ON e.id = x.eid AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+    WHERE tt.sportFK = 7
+      AND t.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      AND od.disciplineFK IN (255, 257, 258, 259)
+    GROUP BY e.id, e.name, e.startdate, d.name, tt.name, t.name
+) y
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+    AND r.result_typeFK IN (502, 503) AND r.value REGEXP '^[0-9]+$'
+WHERE e.del = 'no'
+  AND tt.sportFK = 7
+  AND t.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND od.disciplineFK IN (255, 257, 258, 259)
+;
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Biathlon-DQ-080
+    -- Name - EVENT_MISSED_SHOTS_HOLD_A_DIFFERENT_VALUE_FOR_EVERY_COMPETITOR
+    -- What it does: Flags an event whose Missed shots column gives every competitor a different number, which shooting cannot produce.
+    'Missed_Shots_Different_For_Every_Competitor' AS check_type,
+    y.event_id,
+    y.event_name,
+    y.startdate,
+    y.discipline_name,
+    y.competitors,
+    y.distinct_values,
+    y.lowest_value,
+    y.highest_value,
+    y.template_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A missed-shots count is drawn from a small set. The most a
+-- competitor can fire is twenty rounds, so at most twenty-one different values exist however
+-- large the field, and in a field of thirty the values must repeat many times over. An event in
+-- which every competitor holds a different number is therefore not reporting shooting: some
+-- other column has been written into this one, and the check says so without having to know
+-- which column it was or how many rounds the discipline fires.
+-- The audited object is the event, because the defect is a property of the whole column rather
+-- than of any one competitor. A field of fewer than fifteen is left out: with twenty-one values
+-- available a small field can hold all-different counts by chance, and there the shape carries
+-- no information.
+-- It is deliberately not stated as a ceiling. Biathlon-DQ-061 already asks whether a value
+-- exceeds what the discipline fires and catches only the part of such a column that happens to
+-- run high; this one reads the shape of the column and catches the whole event.
+-- Measured 2026-08-27, 1 event of 2358. A 5 km Super Sprint Final of 2020-02-26 holds thirty
+-- competitors whose Missed shots values are exactly the numbers 1 to 30, each once. Every other
+-- Super Sprint in the sport tops out at 9. Biathlon-DQ-061 reports eleven of that event's rows,
+-- the ones above the ceiling of 20; the other nineteen are just as wrong and only this check
+-- sees them.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate,
+        d.name AS discipline_name,
+        tt.name AS template_name,
+        COUNT(*) AS competitors,
+        COUNT(DISTINCT CAST(ms.value AS SIGNED)) AS distinct_values,
+        MIN(CAST(ms.value AS SIGNED)) AS lowest_value,
+        MAX(CAST(ms.value AS SIGNED)) AS highest_value
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN result ms ON ms.event_participantsFK = ep.id AND ms.result_typeFK = 502 AND ms.del = 'no'
+    WHERE e.del = 'no'
+      AND tt.sportFK = 7
+      AND t.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      AND ms.value REGEXP '^[0-9]+$'
+    GROUP BY e.id, e.name, e.startdate, d.name, tt.name
+    HAVING competitors >= 15 AND distinct_values = competitors
+) y
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result ms ON ms.event_participantsFK = ep.id AND ms.result_typeFK = 502 AND ms.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 7
+  AND t.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND ms.value REGEXP '^[0-9]+$'
+;
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Biathlon-DQ-081
+    -- Name - EVENT_START_NUMBER_HELD_BY_MORE_THAN_ONE_COMPETITOR
+    -- What it does: Flags an event in which one start number is carried by two or more competitors.
+    'Start_Number_Held_By_More_Than_One' AS check_type,
+    y.event_id,
+    y.event_name,
+    y.startdate,
+    y.discipline_name,
+    y.numbers_shared,
+    y.competitors_involved,
+    y.sample_numbers,
+    y.template_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A start number is the bib a competitor wears, and in a biathlon
+-- race it is handed out once. Two entries carrying the same number is not a close call about
+-- what the number means; it is the one thing a number identifying an entry cannot do.
+-- This reads the 408 Startnumber result, which is a different column from the one
+-- GLOBAL-DQ-137 audits. That check reads event_participants.number and finds nothing here.
+-- The rule is stated only as the duplicate, deliberately. Looking at the rows shows the usual
+-- cause is the Rank having been written into this column for part of the field - in a 7.5 km
+-- Sprint of the 2024 European Championships, Linda Zingerle holds start number 10 with rank 10
+-- and Marlene Fichtner 11 with rank 11, while Elena Chirkova holds the real bib 10 with rank 66
+-- - but 'the start number equals the rank' is not a defect on its own, since a bib and a place
+-- coincide legitimately all the time. The duplicate is what can be asserted, and it is what
+-- found these.
+-- Measured 2026-08-27, 34 events of 1885, 100 shared numbers and 200 competitors. Two events
+-- carry the defect wholesale: a 12.5 km Individual at the 2019 European Junior Championships
+-- with 27 shared numbers in a field of 107, and the Sprint above with 23 in a field of 119. The
+-- other 32 hold one or two each. No relay is among them; a relay's number belongs to the team.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate,
+        d.name AS discipline_name,
+        tt.name AS template_name,
+        COUNT(*) AS numbers_shared,
+        SUM(x.holders) AS competitors_involved,
+        SUBSTRING(GROUP_CONCAT(CONCAT(x.startno, ' x', x.holders)
+            ORDER BY CAST(x.startno AS UNSIGNED) SEPARATOR ' | '), 1, 300) AS sample_numbers
+    FROM (
+        SELECT
+            e2.id AS eid,
+            r.value AS startno,
+            COUNT(DISTINCT ep.id) AS holders
+        FROM event e2
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+        JOIN event_participants ep ON ep.eventFK = e2.id AND ep.del = 'no'
+        JOIN result r ON r.event_participantsFK = ep.id AND r.result_typeFK = 408 AND r.del = 'no'
+        WHERE e2.del = 'no'
+          AND tt2.sportFK = 7
+          AND t2.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+          AND r.value <> ''
+        GROUP BY e2.id, r.value
+        HAVING holders > 1
+    ) x
+    JOIN event e ON e.id = x.eid AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+    WHERE tt.sportFK = 7
+      AND t.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY e.id, e.name, e.startdate, d.name, tt.name
+) y
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.result_typeFK = 408 AND r.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = 7
+  AND t.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND r.value <> ''
+;
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Biathlon-DQ-082
+    -- Name - EVENT_DURATION_HOLDS_A_GAP_WHERE_A_TIME_BELONGS_OR_THE_REVERSE
+    -- What it does: Flags a competitor whose Duration breaks the leader-and-gap convention, holding a gap while leading or a plain time while not.
+    CASE
+        WHEN y.rank_value = '1' THEN 'LEADER_HOLDS_A_GAP_INSTEAD_OF_A_TIME'
+        ELSE 'A_PLACED_COMPETITOR_HOLDS_A_TIME_INSTEAD_OF_A_GAP'
+    END AS check_type,
+    y.event_id,
+    y.event_name,
+    y.startdate,
+    y.discipline_name,
+    y.competitor,
+    y.rank_value,
+    y.duration_value,
+    y.full_time_value,
+    y.template_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: This sport writes its two time columns to a fixed convention.
+-- 557 Full-time duration is the absolute time for everybody, and 101 Duration is the absolute
+-- time for the competitor placed first and the gap behind that leader, written with a leading
+-- plus, for everybody else. The convention is what makes the two columns mean different things,
+-- and a row that breaks it is a value read as the wrong quantity by anything downstream.
+-- It is not a restatement of Biathlon-DQ-040. GLOBAL-DQ-056 checks the arithmetic - leader's
+-- time plus this competitor's gap against their own full time - and to do that it has to be able
+-- to read the leader's time, so an event whose leader holds a gap is exactly the event that
+-- check cannot audit. This one asks the prior question of which column holds which kind of value
+-- and needs no arithmetic to answer it.
+-- Measured 2026-08-27, 5 competitors of 2358 events. Three are leaders holding '+0.0': a 10 km
+-- Sprint of 2009, one of 2014 and a 2019 summer Sprint whose full time is 0.000 as well. Two are
+-- placed second and hold a plain value where a gap belongs: a Mass Start of 2015 where Quentin
+-- Fillon Maillet holds 0.000 against a full time of 42.000, and a Pursuit of 2026 where Eric
+-- Perrot holds -31.000 against a full time of 0.000. Those two rows are broken in more ways than
+-- this and are reported by the full-time checks as well; the convention is what this one names.
+-- A competitor with no Duration row at all is outside the scope rather than a finding, and an
+-- empty value is left to Biathlon-DQ-044.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate,
+        d.name AS discipline_name,
+        tt.name AS template_name,
+        p.name AS competitor,
+        MAX(CASE WHEN r.result_typeFK = 100 THEN r.value END) AS rank_value,
+        MAX(CASE WHEN r.result_typeFK = 101 THEN r.value END) AS duration_value,
+        MAX(CASE WHEN r.result_typeFK = 557 THEN r.value END) AS full_time_value
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+        AND r.result_typeFK IN (100, 101, 557)
+    WHERE e.del = 'no'
+      AND tt.sportFK = 7
+      AND t.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY e.id, e.name, e.startdate, d.name, tt.name, p.name, ep.id
+    HAVING (rank_value = '1' AND duration_value LIKE '+%')
+        OR (rank_value REGEXP '^[2-9][0-9]*$' AND duration_value IS NOT NULL
+            AND duration_value <> '' AND duration_value NOT LIKE '+%')
+) y
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+    AND r.result_typeFK IN (100, 101, 557)
+WHERE e.del = 'no'
+  AND tt.sportFK = 7
+  AND t.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+;
+-- ==============================================================================
+
+SELECT
+    -- CheckID - Biathlon-DQ-083
+    -- Name - EVENT_RESULTS_DID_NOT_START_BUT_FIRED_SHOTS
+    -- What it does: Flags a competitor recorded as not having started who nevertheless holds a shooting figure above zero.
+    'Did_Not_Start_But_Fired_Shots' AS check_type,
+    y.event_id,
+    y.event_name,
+    y.startdate,
+    y.discipline_name,
+    y.competitor,
+    y.comment_value,
+    y.missed_shots,
+    y.spare_rounds,
+    y.template_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A competitor whose Comment says DNS never reached the range, so
+-- every shooting figure they carry has to be absent or zero. A count above zero says they fired,
+-- and the two statements cannot both be true of the same entry.
+-- Only a figure above zero is read, and that is the whole of the design. Measured 2026-08-27,
+-- 2824 competitor rows across 1059 events hold a DNS beside a shooting figure, and 2823 of them
+-- hold zero: that is the feed writing a default into a column it has nothing to put in, not a
+-- claim that anybody shot. Reporting those would bury the one row that means something under
+-- three orders of magnitude of noise, and would be the same reading GLOBAL-DQ-052 already gives
+-- of a no-result comment stored beside a Rank, a time or a Medal.
+-- Measured the same day, 1 competitor of 2358 events: Jacob Weel Rosbo, a 10 km Sprint of
+-- 2024-08-24, carries DNS with 6 missed shots and no time and no place.
+-- Only 'dns' is read, not the wider no-result list. A DNF fired at every range they reached
+-- before stopping, so their shooting figure is expected rather than contradictory.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate,
+        d.name AS discipline_name,
+        tt.name AS template_name,
+        p.name AS competitor,
+        MAX(CASE WHEN r.result_typeFK = 104 THEN r.value END) AS comment_value,
+        MAX(CASE WHEN r.result_typeFK = 502 THEN r.value END) AS missed_shots,
+        MAX(CASE WHEN r.result_typeFK = 503 THEN r.value END) AS spare_rounds
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    JOIN discipline d ON d.id = od.disciplineFK AND d.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+        AND r.result_typeFK IN (104, 502, 503)
+    WHERE e.del = 'no'
+      AND tt.sportFK = 7
+      AND t.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY e.id, e.name, e.startdate, d.name, tt.name, p.name, ep.id
+    HAVING LOWER(TRIM(comment_value)) = 'dns'
+       AND (CAST(missed_shots AS SIGNED) > 0 OR CAST(spare_rounds AS SIGNED) > 0)
+) y
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+    AND r.result_typeFK IN (104, 502, 503)
+WHERE e.del = 'no'
+  AND tt.sportFK = 7
+  AND t.tournament_templateFK NOT IN (465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
 ;
