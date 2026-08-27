@@ -3524,7 +3524,7 @@ function Read-SheetReviewNotes {
                     ($SheetsCheckTabResultRow + 1),
                     (ConvertTo-SheetsColumnName -Index ($_.To + 1))))
             }) -join '&'
-        $answer = Invoke-SheetsApi -Method Get -Path "$SpreadsheetId/values:batchGet`?$query&majorDimension=ROWS"
+        $answer = Invoke-SheetsApiWithRetry -Method Get -Path "$SpreadsheetId/values:batchGet`?$query&majorDimension=ROWS"
         $ranges = @($answer.valueRanges)
 
         for ($j = 0; $j -lt $slice.Count; $j++) {
@@ -3590,7 +3590,7 @@ function Read-SheetReviewNotes {
                 ($SheetsCheckTabResultRow + 1),
                 (ConvertTo-SheetsColumnName -Index ($spans[$j] + 1))))
         }
-        $answer = Invoke-SheetsApi -Method Get -Path ("$SpreadsheetId/values:batchGet`?" +
+        $answer = Invoke-SheetsApiWithRetry -Method Get -Path ("$SpreadsheetId/values:batchGet`?" +
             ($query -join '&') + '&majorDimension=ROWS')
         $ranges = @($answer.valueRanges)
 
@@ -3640,7 +3640,11 @@ function Read-SheetState {
     #>
     param([string]$SpreadsheetId)
 
-    $meta = Invoke-SheetsApi -Method Get -Path ("$SpreadsheetId" +
+    # Retried, like every read here. A GET is idempotent, so trying again can only help, and the
+    # cost of not doing it is the whole update: this call timed out at 180 seconds on the
+    # Ice-Hockey board on 2026-08-27 and took a sixteen-minute run's document update with it,
+    # after the database work was already done and paid for.
+    $meta = Invoke-SheetsApiWithRetry -Method Get -Path ("$SpreadsheetId" +
         '?fields=properties.title,sheets.properties.title,sheets.properties.sheetId' +
         ',sheets.properties.gridProperties.rowCount,sheets.tables' +
         ',sheets.conditionalFormats.ranges')
@@ -3765,7 +3769,7 @@ function Read-SheetState {
         for ($i = 0; $i -lt $reads.Count; $i += $SheetsReadChunk) {
             $slice = @($reads[$i..([math]::Min($i + $SheetsReadChunk - 1, $reads.Count - 1))])
             $query = ($slice | ForEach-Object { 'ranges=' + [uri]::EscapeDataString($_) }) -join '&'
-            $values = Invoke-SheetsApi -Method Get -Path "$SpreadsheetId/values:batchGet`?$query&majorDimension=ROWS"
+            $values = Invoke-SheetsApiWithRetry -Method Get -Path "$SpreadsheetId/values:batchGet`?$query&majorDimension=ROWS"
             $ranges += @($values.valueRanges)
         }
 
@@ -3825,7 +3829,7 @@ function Read-SheetState {
         if ($hasOverview) {
             $commentColumn = (ConvertTo-SheetsColumnName -Index (
                     [array]::IndexOf($SheetsOverviewColumns, 'Comment') + 1))
-            $formulas = Invoke-SheetsApi -Method Get -Path (
+            $formulas = Invoke-SheetsApiWithRetry -Method Get -Path (
                 "$SpreadsheetId/values/Overview!$commentColumn`1:$commentColumn" +
                 '?majorDimension=ROWS&valueRenderOption=FORMULA')
             $column = @($formulas.values)
@@ -4489,7 +4493,7 @@ function Invoke-SheetsPlan {
     $readRowsNow = {
         $checkColumn = (ConvertTo-SheetsColumnName -Index (
                 [array]::IndexOf($SheetsOverviewColumns, 'CheckID') + 1))
-        $again = Invoke-SheetsApi -Method Get -Path (
+        $again = Invoke-SheetsApiWithRetry -Method Get -Path (
             "$SpreadsheetId/values/Overview!$checkColumn`1:$checkColumn" +
             '?majorDimension=ROWS')
         $map = @{}
