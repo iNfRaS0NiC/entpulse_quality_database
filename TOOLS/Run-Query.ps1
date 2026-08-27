@@ -3954,6 +3954,13 @@ function Save-RunLedger {
         # The reviewers' own two columns as the document held them when this run read it, keyed
         # by CheckID. Recorded only when the run actually opened the document - a run with no
         # sheet has nothing to snapshot - and only for the sport whose checks these are.
+        # Whether this run reached the live document, and what it cost. Written for the sport
+        # whose document it was, and only when a document was opened at all - a run made with
+        # -NoSheet or against a mixed selection has nothing to say here and says nothing.
+        if ($script:SheetOutcome -and $sport -notin @('MIXED', 'AD-HOC', 'GLOBAL', '')) {
+            $run | Add-Member -NotePropertyName sheet -NotePropertyValue $script:SheetOutcome
+        }
+
         if ($script:SheetReviewSnapshot -and $script:SheetReviewSnapshot.Count -gt 0) {
             $mine = [ordered]@{}
             foreach ($checkId in @($script:SheetReviewSnapshot.Keys)) {
@@ -4230,6 +4237,16 @@ function Format-RunDuration {
 # What the live document update cost on this run, seconds. Zero when no document was opened.
 $script:SheetSeconds = 0.0
 
+# How the live document update ended, or $null when no document was opened at all.
+#
+# Recorded because the question "did that run reach the board" had no answer anywhere. On
+# 27.08 a run was found to have failed and two others could not be told apart from it: the
+# console said so at the time and the console was gone, the board carries no mark of the run
+# that wrote it, and the ledger recorded the run as though the update were part of it. Reading
+# the board instead is what led to the wrong answer - Last run holds the run BEFORE this one,
+# so a board naming yesterday is exactly what a successful run today produces.
+$script:SheetOutcome = $null
+
 function Save-RunSheet {
     <#
         Bring the sport's live document up to date with this run.
@@ -4364,6 +4381,15 @@ function Save-RunSheet {
         Write-Host ("  {0} value request(s), {1} tab(s) confirmed to have reached their last row" -f `
                 $script:SheetsValueRequests, $script:SheetsTabsConfirmed) -ForegroundColor DarkGray
 
+        $script:SheetOutcome = [ordered]@{
+            updated         = $true
+            seconds         = [math]::Round($script:SheetSeconds, 1)
+            valueRequests   = [int]$script:SheetsValueRequests
+            tabsConfirmed   = [int]$script:SheetsTabsConfirmed
+            rowsReaddressed = [int]$script:SheetsRowsMoved
+            phases          = (Get-SheetsPhaseRecord)
+        }
+
         # Said out loud rather than kept. A cell that had to be re-addressed is a cell the board
         # moved under, which is the defect this addressing exists to close - so the run that
         # sees it happening is the run that has to say it did.
@@ -4438,6 +4464,19 @@ function Save-RunSheet {
             Write-Host ("  It had been going {0}: {1}" -f `
                     (Format-RunDuration -Seconds $script:SheetSeconds),
                     (Get-SheetsTimingLine -Total $script:SheetSeconds)) -ForegroundColor Yellow
+        }
+
+        # The failure, in the ledger rather than only on a console nobody kept. `stage` is the
+        # one thing that says how much of the document is current: everything before it applied.
+        $script:SheetOutcome = [ordered]@{
+            updated         = $false
+            stage           = [string]$stage
+            why             = ([string]$_.Exception.Message -replace '\s+', ' ')
+            seconds         = [math]::Round($script:SheetSeconds, 1)
+            valueRequests   = [int]$script:SheetsValueRequests
+            tabsConfirmed   = [int]$script:SheetsTabsConfirmed
+            rowsReaddressed = [int]$script:SheetsRowsMoved
+            phases          = (Get-SheetsPhaseRecord)
         }
         Write-Host '  Whatever ran before that stage is applied. The results are on disk either way,' -ForegroundColor Yellow
         Write-Host '  and running again brings the document fully up to date.' -ForegroundColor Yellow

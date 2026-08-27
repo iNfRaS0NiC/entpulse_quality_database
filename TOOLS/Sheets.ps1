@@ -129,6 +129,22 @@ function Reset-SheetsTimings {
     $script:SheetsTabsConfirmed = 0
 }
 
+function Get-SheetsPhaseRecord {
+    <#
+        The phases of the last update as data rather than as a line of prose.
+
+        The same numbers Get-SheetsTimingLine prints, rounded and in the order they ran, for the
+        run ledger. Nothing is folded here: the line drops what is under half a second because a
+        person reading a console does not want nine figures, and a file being compared with the
+        next one wants all of them.
+    #>
+    $record = [ordered]@{}
+    foreach ($phase in @($script:SheetsTimings.Keys)) {
+        $record[[string]$phase] = [math]::Round([double]$script:SheetsTimings[$phase], 1)
+    }
+    return $record
+}
+
 function Get-SheetsTimingLine {
     <#
         The phases of the last update as one line, longest first, with anything under half a

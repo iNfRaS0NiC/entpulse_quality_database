@@ -1893,6 +1893,53 @@ Test-That 'a discovery statement is left out of the ledger' {
     Assert-Equal 'Fixtureball-DQ-002' $ledger.runs[-1].checks[0].checkId 'and it is the DQ one'
 }
 
+Test-That 'the ledger records whether the run reached the live document' {
+    # Asked for on 27.08.2026, after a run was found to have failed against the board and two
+    # others could not be told apart from it. The console said so at the time and the console
+    # was gone; the board carries no mark of the run that wrote it; and reading the board to
+    # find out is what produced the wrong answer, because Last run holds the run BEFORE this
+    # one - a board naming yesterday is exactly what a successful run today leaves behind.
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-003'; Name = 'A'; What = '' }
+    $summary = @((New-RunSummaryRow -Job $job -Rows 1 -Seconds 1 -Status 'OK' -Eligible 5 -Findings 0))
+
+    $script:SheetOutcome = [ordered]@{
+        updated = $false; stage = 'writing values'; why = 'the connection was closed'
+        seconds = 131.8; valueRequests = 4; tabsConfirmed = 0; rowsReaddressed = 0
+        phases = ([ordered]@{ 'writing values' = 131.8 })
+    }
+    $written = @(Save-RunLedger -Summary $summary -Output 'Fixtureball 05.01.2026 09-00-00')
+    $script:SheetOutcome = $null
+
+    $ledger = Get-Content -LiteralPath $written[0] -Raw -Encoding UTF8 | ConvertFrom-Json
+    $run = $ledger.runs[-1]
+    Assert-True ($null -ne $run.sheet) 'the run says something about the document'
+    Assert-True (-not $run.sheet.updated) 'and says it did not reach it'
+    Assert-Equal 'writing values' ([string]$run.sheet.stage) `
+        'naming the stage, which is what says how much of the document is current'
+    Assert-Equal 4 ([int]$run.sheet.valueRequests) 'and how far it got'
+}
+
+Test-That 'a run that opened no document says nothing about one' {
+    # A -NoSheet run, or one against a sport with no board, has nothing to report here. An
+    # absent field reads as "not attempted"; updated:false would read as "attempted and lost",
+    # which is a different thing and would send somebody looking for a failure that never was.
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $script:SheetOutcome = $null
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-004'; Name = 'A'; What = '' }
+    $written = @(Save-RunLedger -Summary @(
+            (New-RunSummaryRow -Job $job -Rows 1 -Seconds 1 -Status 'OK' -Eligible 5 -Findings 0)) `
+            -Output 'Fixtureball 06.01.2026 09-00-00')
+
+    $ledger = Get-Content -LiteralPath $written[0] -Raw -Encoding UTF8 | ConvertFrom-Json
+    $names = @($ledger.runs[-1].PSObject.Properties.Name)
+    Assert-True ($names -notcontains 'sheet') 'no claim is made about a document nobody opened'
+}
+
 Test-That 'a run mixing sports writes to each sport ledger' {
     $ledgerDir = Join-Path $fixtureRoot 'RUNS'
     if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
