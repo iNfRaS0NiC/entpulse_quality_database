@@ -123,7 +123,9 @@ function Get-SheetsTimingLine {
     # loses it reads as though the phases were the whole of it.
     $unaccounted = $Total - (@($script:SheetsTimings.Values | ForEach-Object { [double]$_ } |
             Measure-Object -Sum).Sum)
-    $rest += [math]::Max(0, $unaccounted)
+    # 0.0 and not 0: [math]::Max(0, 0.38) picks the integer overload and answers 0, so a
+    # breakdown that was short by a third of a second silently claimed to be exact.
+    $rest += [math]::Max(0.0, $unaccounted)
     if ($rest -ge 0.5) { $parts += ('the rest {0:n1}s' -f $rest) }
 
     return ($parts -join ', ')

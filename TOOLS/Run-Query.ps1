@@ -5734,7 +5734,7 @@ if ($isBatch) {
     # this line was added for had been paid on every Triathlon run before anybody timed one.
     $wall = ((Get-Date) - $script:RunStartedUtc.ToLocalTime()).TotalSeconds
     $database = [double](($summary | Measure-Object Seconds -Sum).Sum)
-    $writing = [math]::Max(0, $wall - $database - $script:SheetSeconds)
+    $writing = [math]::Max(0.0, $wall - $database - $script:SheetSeconds)
     $split = @(('database {0}' -f (Format-RunDuration -Seconds $database)))
     if ($script:SheetSeconds -ge 0.5) {
         $split += ('document {0}' -f (Format-RunDuration -Seconds $script:SheetSeconds))
