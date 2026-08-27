@@ -676,12 +676,15 @@ that ever wrote a `?` had its answer swum. They run from 2007-11-09 to 2025-10-1
 of the fifty-six between 2007 and 2011 and the rest a thin tail, so it is an old habit that
 never quite stopped rather than a current one.
 
-**`R?` stays and is not read by that check.** It is the provisional reserve marker, and three
-things separate it from `?`. It is new: it appears first in 2022 and grows, 1 row then 12 then
-28, so it is a live convention rather than a residue. It does not depend on a Swim-Off: 29 of
-its 41 rows sit in a meet that held none in their discipline at all, which fits a marker for an
-unsettled reserve place rather than an unsettled qualification. And a reserve place can be
-legitimately open. Reading it in `Swimming-DQ-087` would report a marker doing its job.
+**`R?` is not read by that check, and the reason is not that it is correct.** The decision of
+question 11, taken the same day, is that no comment value may carry a question mark, so `R?` is
+as much a defect as `?`. What separates them is what can be said about the repair. `R?` marks an
+unsettled reserve place rather than an unsettled qualification, and a Swim-Off does not settle a
+reserve place: 29 of its 41 rows sit in a meet that held none in their discipline at all. It is
+also new, first appearing in 2022 and growing, 1 row then 12 then 28, so it is a habit still
+being formed rather than a residue being cleared. `Swimming-DQ-039` reports every one of the 41;
+`Swimming-DQ-087` is the statement that names the meet which answered the question, and for `R?`
+there is no such meet.
 
 **`#NAME?` is neither, and is a single row.** Event `5212269 Backstroke 100m Final B` of the
 2019 Pan American Games carries it. It is a spreadsheet error string that reached the database,
@@ -704,6 +707,46 @@ the other 67 sit on eleven individual disciplines, led by `54 Individual Medley 
 every one of the 374 carries a current twin, so the check's
 `Superseded_Discipline_With_No_Current_Twin` verdict returns nothing and is a sentinel for a
 state the sport is not in.
+
+## The last four decisions, taken on 2026-08-27
+
+**A comment carries a status, and a question is not a status.** Question 11 is decided: no value
+of `104 Comment` may contain a question mark, so `?`, `R?` and `#NAME?` are all defects and none
+of them enters `RESULT_COMMENT_VALUE_LIST`. All 98 of their rows stay reported by
+`Swimming-DQ-039`. Measured 2026-08-27, those three are the only comment values in the sport
+containing the character at all, so the rule costs nothing beyond what it is meant to catch.
+
+**The rule is recorded as being about the question mark and not about punctuation generally**,
+and that is a reading of the decision rather than its words. The confirmed vocabulary already
+holds `Disq.` with a full stop, `GR NR` with a space, and `Q/OR`, `q/=CR` and `WR/WJ/ER/EJ/CR`
+with slashes and an equals sign; a literal ban on punctuation would make correct values wrong.
+What all three rejected values have in common is that they record an open question rather than
+an outcome, and the question mark is how they say so.
+
+**`374 Knockout Sprint 3 km` and `557 3km Knockout Sprint` are one discipline entered twice, and
+`557` folds into `374`.** Question 10 is decided. What settles it is the date: both were created
+on **2025-07-19**, eighteen hours apart, `374` at 02:00 and `557` at 20:00. A discipline the
+sport genuinely contests in two forms is not born twice in one day. `374` holds 16 events, all
+inside the client scope, under World Championships Long Course and runs to 2027; `557` holds 15,
+of which 8 are in scope, under the Marathon Swim World Series and the Open Water World
+Championships, and stops on 2025-10-11.
+
+**Which of the two survives follows from the rule already set** rather than from a fresh
+judgement: the current catalogue is canonical, `374` sits inside its id range of 348 to 374 and
+follows its convention of name-then-distance, and `557` sits far outside it and puts the distance
+first in the older habit. This is stated here as the reasoning so it can be overturned in one
+line if the catalogue's owners want it the other way.
+
+**Question 9 is answered `Monitor`.** Nothing in the database distinguishes a swimmer who lost
+an entry from one who scratched, and `Swimming-DQ-084` already runs as `Monitor` for that reason.
+The answer is that this is where it stays: the proportion is the finding, 577 heats and 70
+semi-finals of 11316, and a single row is a question to ask of that swimmer rather than a defect
+to repair. If a withdrawal is ever found to be recorded the signal becomes `Actionable` and the
+check becomes the repair list it was first written as.
+
+**Question 8 stands deferred**, reaffirmed 2026-08-27. The Comp.Rank layer stays unread until
+the event results are corrected, for the same reason it was deferred on 2026-08-26: the layer is
+generated from those results and reading it now would document something about to be rebuilt.
 
 <!-- MANUAL PASTE ZONE: 46 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -753,37 +796,35 @@ state the sport is not in.
    missing participation at all. What remains of the question is already `Swimming-DQ-062`, and
    the 976 athletes it reports are the population that was actually being asked about.
 8. **The whole Comp.Rank layer**, unread by design and to be opened once event results are
-   corrected.
+   corrected. Reaffirmed on 2026-08-27: not for now. It is a deferral rather than an unknown,
+   and it is the only question on this sport that stays open.
 
-9. **Is a withdrawal recorded anywhere?** A swimmer marked `Q` who does not appear in the
-   next round either lost their entry or scratched, and `Swimming-DQ-084` cannot tell the
-   two apart because nothing found so far distinguishes them: there is no status, comment
-   or property on the heat participation that says the swimmer chose not to continue.
-   **The question is still open; how to read the check was settled on 2026-08-26.** It runs
-   as `Monitor`: the proportion is the finding - 577 of the sport's heats and 70 of its
-   semi-finals in a population of 11316 - and a single row is a question to ask of that
-   swimmer rather than a defect to repair. `unhonoured_competitors` names them so the
-   question reaches the right person. If a withdrawal is ever found to be recorded the
-   signal becomes `Actionable` and the check becomes the repair list it was first written
-   as.
+9. ~~**Is a withdrawal recorded anywhere?**~~ Answered on 2026-08-27: it is not, and
+   `Swimming-DQ-084` stays a `Monitor`. A swimmer marked `Q` who does not appear in the
+   next round either lost their entry or scratched, and nothing found in the database
+   distinguishes them: there is no status, comment or property on the heat participation
+   that says the swimmer chose not to continue. The proportion is therefore the finding -
+   577 of the sport's heats and 70 of its semi-finals in a population of 11316 - and a
+   single row is a question to ask of that swimmer rather than a defect to repair.
+   `unhonoured_competitors` names them so the question reaches the right person. If a
+   withdrawal is ever found to be recorded the signal becomes `Actionable` and the check
+   becomes the repair list it was first written as.
 
-10. **Should `374 Knockout Sprint 3 km` and `557 3km Knockout Sprint` be one discipline?**
-    The independent half of question 2, asked on its own since 2026-08-25. Both ids are new in
-    2025 and both name their events the same way; what separates them is which competition uses
-    each. `374` carries 16 events in scope under World Championships Long Course and `557` carries
-    8 under the Marathon Swim World Series, with a further 7 under Open Water World Championships
-    outside the client scope. That reads as one discipline entered twice within a single season,
-    and merging it is a decision about the catalogue rather than about this sport. No check can
-    see it: the names differ by more than a convention, so no rule pairs them without a person
-    deciding they mean the same thing.
+10. ~~**Should `374 Knockout Sprint 3 km` and `557 3km Knockout Sprint` be one discipline?**~~
+    Answered yes on 2026-08-27 and recorded above under "The last four decisions". They are one
+    discipline entered twice: both were created on 2025-07-19, eighteen hours apart, and a
+    discipline the sport genuinely contests in two forms is not born twice in one day. `557`
+    folds into `374`, which follows from the catalogue rule set the same day rather than from a
+    fresh judgement - `374` sits inside the current catalogue's id range and follows its
+    convention, `557` sits outside it and puts the distance first.
 
-11. **Does `R?` now belong in `RESULT_COMMENT_VALUE_LIST`?** Raised on 2026-08-27 by the
-    decision on question 4. `R?` was left out of the vocabulary while it was undecided, and
-    `Swimming-DQ-039` reports all 41 of its rows as an invalid comment. Now that it is decided
-    to stay, that reading is the wrong one: a live marker of the sport is not an invalid value.
-    Admitting it silences those 41 rows and is a parameter change rather than a check change;
-    leaving it out keeps them visible at the cost of calling a valid marker invalid. The same
-    question can be asked of `?`, and there the answer is clearly no - it is reported for two
-    reasons now and both of them hold.
+11. ~~**Does `R?` now belong in `RESULT_COMMENT_VALUE_LIST`?**~~ Answered no on 2026-08-27,
+    the day it was raised. A comment carries a status and a question is not a status, so no
+    comment value may contain a question mark: `?`, `R?` and `#NAME?` are all defects, none of
+    them enters the vocabulary, and all 98 of their rows stay reported by `Swimming-DQ-039`.
+    The rule is recorded as being about the question mark rather than about punctuation in
+    general, because the confirmed vocabulary already holds `Disq.`, `GR NR` and `q/=CR`; the
+    reasoning is set out above under "The last four decisions" so it can be corrected if that
+    reading is wrong.
 
 <!-- MANUAL PASTE ZONE: 46 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

@@ -1584,11 +1584,13 @@ SELECT
 -- that held a Swim-Off in that row's own discipline, 56 of 56. They run from 2007-11-09 to
 -- 2025-10-18, thirty-nine of them between 2007 and 2011 and the rest a thin tail, so this is an
 -- old habit that never quite stopped rather than a current one.
--- **`R?` is deliberately not read.** Decided 2026-08-27: it is the provisional reserve marker and
--- a live convention rather than a residue - it appears first in 2022 and grows, 1 then 12 then 28
--- - and 29 of its 41 rows sit in a meet that held no Swim-Off in their discipline at all, so
--- most of them have nothing to be settled against. Reading it here would report a marker doing
--- its job.
+-- **`R?` is deliberately not read here, and not because it is correct.** Decided 2026-08-27 that
+-- no comment value may carry a question mark at all, so `R?` is as much a defect as `?` and
+-- `Swimming-DQ-039` reports both. What this statement adds is the repair instruction - the meet
+-- that settled the question - and a Swim-Off does not settle a reserve place. 29 of `R?`'s 41
+-- rows sit in a meet that held no Swim-Off in their discipline, so the test this check applies
+-- has no answer for them and applying it anyway would report an absence as a finding. The
+-- marker is wrong; this is not the statement that says so.
 -- The audited object is the event and the swimmers are named in a column, because one heats
 -- summary can carry more than one unsettled place and the repair is made once per event.
 -- Not `Swimming-DQ-039`'s question. `GLOBAL-DQ-052` reports `?` for being outside the comment
