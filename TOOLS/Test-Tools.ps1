@@ -1679,8 +1679,8 @@ Test-That 'merging shards concatenates findings and sums coverage' {
 Test-That 'the workbook seeds the two statuses it can settle itself' {
     Assert-Equal 'Monitor Only' (Get-SeededStatus -Signal 'Informational' -Rows 40 -Ran $true -Eligible $null) `
         'an informational check has nothing to act on whatever it returned'
-    Assert-Equal 'Clean' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible 20000) `
-        'only the COVERAGE row, over a population, means nothing was found today'
+    Assert-Equal 'Clean' (Get-SeededStatus -Signal 'Actionable' -Rows 0 -Ran $true -Eligible 20000) `
+        'no findings at all, over a population, means nothing was found today'
     Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 12 -Ran $true -Eligible 20000) `
         'findings wait for a reviewer'
     Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Monitor' -Rows 900 -Ran $true -Eligible 20000) `
@@ -1696,15 +1696,16 @@ Test-That 'the workbook seeds the two statuses it can settle itself' {
 }
 
 Test-That 'a check that audited nothing is never called clean' {
-    # The whole point of the coverage contract. Both of these return one row and no findings;
-    # only the eligible_count inside that row says whether anything was looked at.
-    Assert-Equal 'Clean' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible 952) `
+    # The whole point of the coverage contract. Both of these found nothing; only the
+    # eligible_count says whether anything was looked at. Rows is zero from 2026-08-28, when
+    # the COVERAGE row stopped being counted - it used to be one.
+    Assert-Equal 'Clean' (Get-SeededStatus -Signal 'Actionable' -Rows 0 -Ran $true -Eligible 952) `
         'zero findings over a real population is clean data'
-    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible 0) `
+    Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 0 -Ran $true -Eligible 0) `
         'zero findings over nothing is not clean data and wants a person'
     # No COVERAGE branch at all means the single row is a finding, not a coverage count.
     Assert-Equal 'Not reviewed' (Get-SeededStatus -Signal 'Actionable' -Rows 1 -Ran $true -Eligible $null) `
-        'a statement with no coverage branch cannot be read as clean'
+        'a statement with no coverage branch reports its rows raw, so one row is one finding'
 }
 
 Test-That 'the coverage count is read out of the COVERAGE row' {
@@ -3164,137 +3165,68 @@ Test-That 'an empty SQL tab is still written, because empty is not unreadable' {
     Assert-Equal '' $plan.Warning 'and nothing is warned about'
 }
 
-Test-That 'a withdrawn check is retired by any run, not only by a complete one' {
-    # Deprecation is a row in the registry rather than an inference from what the run
-    # produced, so unlike "Not in this run" it does not wait for -Complete. The run below
-    # names one check and the board holds two.
+Test-That 'a withdrawn check is taken off the board by any run, not only by a complete one' {
+    # Deprecation is a fact this run can read out of the registry rather than an inference it
+    # has to earn, so it does not wait for a complete run the way 'Not in this run' does.
+    # Until 2026-08-28 the row stayed and was marked; now it goes, and the tab with it.
     $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
     $existing = [pscustomobject]@{
         HasOverviewHeader = $true
         OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7; 'Fixtureball-DQ-044' = 8 }
         TabOf = @{ 'Fixtureball-DQ-044' = 'OLD_MEDAL_CHECK' }
+        SheetIdOf = @{ 'OLD_MEDAL_CHECK' = 4242 }
         ResultRowsOf = @{}
     }
     $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
         -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
 
-    $secondSpan = '{0}8:{1}8' -f (ConvertTo-SheetsColumnName -Index (OverviewSecondSpanFrom)), (OverviewLastColumn)
-    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq $secondSpan })
-    Assert-Equal 1 $span.Count 'the run-owned columns are written in one span'
-    Assert-Equal 'Deprecated' $span[0].Values[0][0] 'Signal says so'
-    Assert-Equal 'Deprecated' $span[0].Values[0][9] 'and so does Verdict'
-    Assert-Equal '' $span[0].Values[0][3] 'Findings is cleared rather than left reading as current'
-    Assert-Equal '' $span[0].Values[0][4] 'and so is All findings, which is no more current than it is'
+    $dropped = @($plan.Operations | Where-Object { $_.Kind -eq 'DeleteRow' -and $_.Sheet -eq 'Overview' })
+    Assert-Equal 1 $dropped.Count 'the row is removed'
+    Assert-Equal 8 $dropped[0].Row 'the withdrawn one, not the check that ran'
 
-    # Status is I, and this is the one thing a run puts there - on a row nobody has answered.
-    # A row reading Deprecated in Signal and Verdict while Status still said Not reviewed was
-    # asking to be reviewed and answering that there was nothing to review, and a filter on
-    # Not reviewed kept serving it. This board holds no Status at all, so the registry's word
-    # goes in. The two tests below cover the cell somebody has answered.
-    $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I8:I8' })
-    Assert-Equal 1 $status.Count 'the withdrawal reaches the reviewer-facing Status too'
-    Assert-Equal 'Deprecated' $status[0].Values[0][0] 'in the registry''s own word'
-    Assert-True ($SheetsStatusBands.Value -contains 'Deprecated') 'which the closed list has to offer'
+    $tab = @($plan.Operations | Where-Object { $_.Kind -eq 'DeleteSheet' -and $_.Sheet -eq 'OLD_MEDAL_CHECK' })
+    Assert-Equal 1 $tab.Count 'and its tab goes with it'
+    Assert-Equal 4242 $tab[0].SheetId 'by the id the document gave it'
 
-    # J and K stay the reviewer's: Check By and Comment are what somebody concluded, and a
-    # withdrawn check keeps its history for the same reason its CheckID is never reused.
+    # Nothing is written into the row that is about to be deleted. A write and a deletion of
+    # the same row in one plan is two statements about it, and only one of them can be true.
     $onRow8 = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Kind -eq 'Write' -and $_.Range -like '*8:*8' })
-    foreach ($write in $onRow8) {
-        Assert-True ($write.Range -notmatch '^[JK]') "a run must never write $($write.Range)"
-    }
+    Assert-Equal 0 $onRow8.Count 'the withdrawn row is not written to at all'
 
-    # The Rows cell: a plain zero that always lands, then the link on top. A formula sent RAW
-    # arrives as text, and the USER_ENTERED side drops a write whose tab token did not resolve -
-    # so a single write carrying only the link would leave the stale count standing.
-    $rowsCells = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'H8:H8' })
-    Assert-Equal 2 $rowsCells.Count 'the number and the link are two writes'
-    Assert-Equal 0 $rowsCells[0].Values[0][0] 'the plain zero goes first'
-    Assert-True ($rowsCells[0].PSObject.Properties.Name -notcontains 'Raw') 'and goes in RAW, so it always lands'
-    Assert-Equal $false $rowsCells[1].Raw 'the link needs USER_ENTERED or it arrives as text'
-    Assert-True ([string]$rowsCells[1].Values[0][0] -like '=HYPERLINK(*') 'and it is a link'
-
-    # The tab keeps its identity and its comments, loses its findings, and says why.
-    $cleared = @($plan.Operations | Where-Object { $_.Sheet -eq 'OLD_MEDAL_CHECK' -and $_.Kind -eq 'Clear' })
-    Assert-Equal 1 $cleared.Count 'the findings are cleared from the tab'
-    Assert-True ($cleared[0].Range -like ('A' + $SheetsCheckTabResultRow + ':*')) 'from the result row down, so rows 1 to 4 survive'
-    $note = @($plan.Operations | Where-Object { $_.Sheet -eq 'OLD_MEDAL_CHECK' -and $_.Range -eq 'C3' })
-    Assert-Equal 1 $note.Count 'and the reason is written where a tab says things about itself'
-    Assert-True ([string]$note[0].Values[0][0] -like '*POWERBI_REGISTRY.md*') 'naming where the withdrawal is recorded'
-
-    # A retired row must not also be told it was not in this run: two markers, one of them
-    # overwriting the other, and which one wins would depend on plan order.
-    $verdictOnly = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'T8:T8' })
-    Assert-Equal 0 $verdictOnly.Count 'no Not-in-this-run cell on a row already marked withdrawn'
+    $said = @($plan.StatusRemoved | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-044' })
+    Assert-Equal 1 $said.Count 'and the run says which check it removed'
 }
 
-Test-That 'a withdrawn check keeps the Status a reviewer typed, and the run says so' {
-    # The reason this test exists: four boards came back from a run with reviewer-set Status
-    # cells overwritten, and the reviewers had to remember what they had put there. A run may
-    # tell a board that a check no longer runs; it may not answer the board's question about
-    # who looked at it and what they concluded.
-    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
-    $existing = [pscustomobject]@{
-        HasOverviewHeader = $true
-        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7; 'Fixtureball-DQ-044' = 8 }
-        TabOf = @{}
-        ResultRowsOf = @{}
-        StatusOf = @{ 'Fixtureball-DQ-044' = 'On Hold' }
+Test-That 'a withdrawn check is removed whatever a reviewer had said about it, and the run names it' {
+    # The cost of the 2026-08-28 change, held to deliberately. The old rule kept the row so a
+    # reviewer's word survived; the new one removes the row, so the word goes. What replaces it
+    # is the run saying so by name on the run it happens, which is the same guarantee every
+    # other write into somebody's column carries.
+    foreach ($word in @('On Hold', 'Completed', 'IT Fix', '')) {
+        $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+        $existing = [pscustomobject]@{
+            HasOverviewHeader = $true
+            OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7; 'Fixtureball-DQ-044' = 8 }
+            TabOf = @{}
+            ResultRowsOf = @{}
+            StatusOf = @{ 'Fixtureball-DQ-044' = $word }
+        }
+        $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
+            -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
+
+        $dropped = @($plan.Operations | Where-Object { $_.Kind -eq 'DeleteRow' -and $_.Row -eq 8 })
+        Assert-Equal 1 $dropped.Count "removed whatever the cell said, and it said '$word'"
+
+        $said = @($plan.StatusRemoved | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-044' })
+        Assert-Equal 1 $said.Count 'the run reports it'
+        Assert-Equal $word $said[0].Status 'carrying what the cell had held'
+
+        # And the word Deprecated is never written anywhere on the board again.
+        $wrote = @($plan.Operations | Where-Object {
+                $_.Kind -eq 'Write' -and $_.Values -and
+                (@($_.Values) | ForEach-Object { @($_) }) -contains $SheetsRetiredStatus })
+        Assert-Equal 0 $wrote.Count 'no run writes Deprecated into a cell'
     }
-    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
-        -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
-
-    $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I8:I8' })
-    Assert-Equal 0 $status.Count 'no run writes over an answered Status, withdrawn check or not'
-
-    # Signal and Verdict still carry the withdrawal, which is what keeps the row honest without
-    # the run having to reach into the reviewer's column to say it.
-    $secondSpan = '{0}8:{1}8' -f (ConvertTo-SheetsColumnName -Index (OverviewSecondSpanFrom)), (OverviewLastColumn)
-    $span = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq $secondSpan })
-    Assert-Equal 'Deprecated' $span[0].Values[0][0] 'Signal still says withdrawn'
-    Assert-Equal 'Deprecated' $span[0].Values[0][9] 'and so does Verdict'
-
-    # And it is reported rather than merely skipped: silence is how the overwrite went four
-    # days without anybody noticing it.
-    $kept = @($plan.StatusKept | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-044' })
-    Assert-Equal 1 $kept.Count 'the run names the row it left alone'
-    Assert-Equal 'On Hold' $kept[0].Status 'and the word it left there'
-    Assert-Equal 0 @($plan.StatusRenames | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-044' }).Count `
-        'and claims no rename it did not make'
-}
-
-Test-That 'a withdrawn check still on the seeded status is retired, and the run says that too' {
-    # Not reviewed is what the board seeds, so it is nobody's answer. The constant is shared
-    # with the seeding so the two cannot drift into disagreeing about which word means that.
-    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
-    $existing = [pscustomobject]@{
-        HasOverviewHeader = $true
-        OverviewRowOf = @{ 'Fixtureball-DQ-002' = 7; 'Fixtureball-DQ-044' = 8 }
-        TabOf = @{}
-        ResultRowsOf = @{}
-        StatusOf = @{ 'Fixtureball-DQ-044' = $SheetsUnreviewedStatus }
-    }
-    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
-        -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
-
-    $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I8:I8' })
-    Assert-Equal 1 $status.Count 'an unanswered row takes the registry word'
-    Assert-Equal $SheetsRetiredStatus $status[0].Values[0][0] 'which is Deprecated'
-
-    $renamed = @($plan.StatusRenames | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-044' })
-    Assert-Equal 1 $renamed.Count 'and the run names the cell it changed'
-    Assert-Equal $SheetsUnreviewedStatus $renamed[0].From 'saying what was there'
-    Assert-Equal $SheetsRetiredStatus $renamed[0].To 'and what it put'
-    Assert-True ([string]$renamed[0].Why -ne '') 'and why, so a reviewer can disagree with the reason'
-
-    # A row already reading Deprecated is neither rewritten nor reported as anything: there is
-    # nothing to change and nothing a reviewer needs told.
-    $existing.StatusOf['Fixtureball-DQ-044'] = $SheetsRetiredStatus
-    $again = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
-        -OutputFolder 'x' -Retired @('Fixtureball-DQ-044')
-    Assert-Equal 0 @($again.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I8:I8' }).Count `
-        'the word is already there'
-    Assert-Equal 0 @($again.StatusKept | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-044' }).Count `
-        'and it is the registry own word, not a reviewer to be reported'
 }
 
 Test-That 'a withdrawn check that ran anyway keeps the numbers it just produced' {

@@ -355,9 +355,19 @@ $SheetsOverviewHiddenColumns = @(
 
 # How Overview colours its Rows column, and what each band means.
 #
-# Rows is the raw row count of the result, so a clean check returns exactly one - the COVERAGE
-# branch and nothing else. One is therefore the good case, and zero is not: a statement that
-# returned nothing at all did not run the coverage contract and is a defect in the check.
+# Rows is the work in front of whoever opens the tab, so a clean check reads zero and zero is
+# the good case.
+#
+# It was the raw row count until 2026-08-28, which made one the good case: every DQ statement
+# returns a COVERAGE row whether or not it found anything, so a clean check reported 1 and a
+# check with a single finding reported 2. Reviewers were reading a column where the smallest
+# number was not the empty one. The row now comes off the tab as well as the count, so the
+# figure here and the rows behind it are the same thing.
+#
+# What zero no longer says is that a statement returned nothing at all - which used to mean a
+# check that never ran its coverage branch. Nothing is lost by that: a COUNT always returns a
+# row, and Test-Package.ps1 fails a DQ statement with no COVERAGE branch before it can reach a
+# board. A statement that audited nothing is told apart by Eligible, not by this column.
 #
 # Above that the bands are a size judgement rather than a severity one. Severity is Priority,
 # which comes from the category and does not move; this says how much work is in front of
@@ -369,8 +379,8 @@ $SheetsOverviewHiddenColumns = @(
 # somebody adds themselves on the Rows column will not survive the next run. Any other column
 # is theirs.
 $SheetsRowsBands = @(
-    [pscustomobject]@{ Type = 'NUMBER_EQ'; Values = @('1'); Colour = '#188038' }
-    [pscustomobject]@{ Type = 'NUMBER_BETWEEN'; Values = @('2', '100'); Colour = '#B06000' }
+    [pscustomobject]@{ Type = 'NUMBER_EQ'; Values = @('0'); Colour = '#188038' }
+    [pscustomobject]@{ Type = 'NUMBER_BETWEEN'; Values = @('1', '100'); Colour = '#B06000' }
     [pscustomobject]@{ Type = 'NUMBER_GREATER'; Values = @('100'); Colour = '#C5221F' }
 )
 
@@ -1945,6 +1955,7 @@ function New-SheetsMergePlan {
     # run saying so, and finding out afterwards means reading a cell's history one cell at a time.
     $statusRenames = @()
     $statusKept = @()
+    $statusRemoved = @()
 
     # Every Comment mirror this run found beside the wrong check and put back. Reported by the
     # caller for the same reason a status rename is: the run has written into a column that is
@@ -2275,132 +2286,53 @@ function New-SheetsMergePlan {
         $cells += 1
     }
 
-    # A check the registry has withdrawn. Deprecation is a fact this run can read rather than
-    # an inference it has to earn, so unlike "Not in this run" it is written by every run and
-    # not only by a complete one: a CheckID is permanent and its row stays for good, but the
-    # numbers beside it stop being true the moment the check stops running, and a board that
-    # keeps showing them is worse than one showing nothing. Golf-DQ-044 stood at 3286 findings
-    # for half a day after it was replaced, and was read as current.
+    # A check the registry has withdrawn, taken off the board entirely.
     #
-    # The reviewer's three columns are not touched. What somebody concluded while the check was
-    # running is still what they concluded, and a run that erased it would be destroying the one
-    # thing in the document it cannot rebuild. The tab is not deleted for the same reason.
+    # Until 2026-08-28 the row stayed and was marked: Rows to 0, Signal and Verdict to
+    # Deprecated, a sentence in C3 of the tab, and the word Deprecated in Status where nobody
+    # had answered. The reasoning was that a CheckID is permanent, so its row is too. That
+    # confuses two things. The CheckID is permanent in POWERBI_REGISTRY.md, which is where
+    # permanence is owned and where the row still stands with its Deprecated status. The board
+    # is a work list, and a check that no longer runs is not work - it is a line every reviewer
+    # reads past for ever, on every sport, and thirteen of them had accumulated by the day this
+    # changed.
+    #
+    # So the row goes and the tab goes with it. What that costs is real and is the reason the
+    # old rule existed: a comment somebody wrote against the check while it was running goes
+    # too, and this run cannot rebuild it. It is accepted deliberately - the conclusion that
+    # matters about a withdrawn check is why it was withdrawn, and that lives in the sport file
+    # and the registry rather than in a cell on a board.
+    #
+    # The deletion is planned here and applied after every value write, bottom-up. See the
+    # 'removing withdrawn rows' stage in Invoke-SheetsPlan for why that order is the only safe
+    # one.
     foreach ($runKey in @($rowOf.Keys)) {
         if (-not $retiredSet.ContainsKey($runKey)) { continue }
         # It ran anyway - the registry and the selection disagree - so this run's own numbers
-        # are real and stand. Marking the row would replace a measurement with an assertion.
+        # are real and stand, and the row stays. Removing it would delete a measurement that
+        # was taken.
         if ($seen.ContainsKey($runKey)) { continue }
 
-        $row = $rowOf[$runKey]
-        $rowsColumn = [array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1
-        $rowsRange = (New-SheetsRange -FromColumn $rowsColumn -FromRow $row -ToColumn $rowsColumn -ToRow $row)
-
-        # The plain number first and the link on top of it, in that order and as two writes,
-        # which is how the rest of this planner does it and for a reason worth repeating here.
-        # A link is a formula and a formula sent RAW arrives as the literal text of one, so it
-        # needs the USER_ENTERED side; and that side drops any write whose tab token did not
-        # resolve, on the grounds that a broken link is worse than a missing one. One write
-        # carrying only the link would therefore leave the stale count standing on exactly the
-        # row this exists to clear. Written as one on 2026-08-13, which put {{GID:...}} in the
-        # cell as text.
         $plan += [pscustomobject]@{
-            Kind   = 'Write'
-            Sheet  = 'Overview'
-            Range  = $rowsRange
-            Values = @(, @(0))
+            Kind  = 'DeleteRow'
+            Sheet = 'Overview'
+            Row   = [int]$rowOf[$runKey]
+            Key   = $runKey
         }
-        if ($tabOf.ContainsKey($runKey)) {
-            # Still a link, because the tab is where the note explaining the withdrawal is.
-            $plan += [pscustomobject]@{
-                Kind   = 'Write'
-                Raw    = $false
-                Sheet  = 'Overview'
-                Range  = $rowsRange
-                Values = @(, @((New-SheetsGidLink -Sheet $tabOf[$runKey] -Text 0)))
-            }
+        $statusRemoved += [pscustomobject]@{
+            CheckId = $runKey
+            Status  = $(if ($Existing -and $Existing.StatusOf -and $Existing.StatusOf.ContainsKey($runKey)) {
+                    ([string]$Existing.StatusOf[$runKey]).Trim()
+                } else { '' })
         }
 
-        # Signal to the end of the board in one span: every column after the reviewer's own
-        # belongs to the run, and they are contiguous, so it is one write rather than twelve.
-        # Built by walking the column list rather than by position, so All findings arriving in
-        # the middle of it was cleared by the default arm without this needing to know.
-        #
-        # The end is the last column and not a column named here. Naming Trends was the one
-        # positional assumption left in this block, and Data types arriving after it in August
-        # 2026 made the span stop one short - the retirement wrote every marker correctly and
-        # left a withdrawn check showing the data types of the run that dropped it.
-        $from = [array]::IndexOf($SheetsOverviewColumns, 'Signal') + 1
-        $to = $SheetsOverviewColumns.Count
-        $values = @()
-        foreach ($column in $SheetsOverviewColumns[($from - 1)..($to - 1)]) {
-            $values += switch ($column) {
-                'Signal' { $SheetsRetiredMarker }
-                'Signal reason' { $SheetsRetiredReason }
-                'Verdict' { $SheetsRetiredMarker }
-                default { '' }
-            }
-        }
-        $plan += [pscustomobject]@{
-            Kind   = 'Write'
-            Sheet  = 'Overview'
-            Range  = (New-SheetsRange -FromColumn $from -FromRow $row -ToColumn $to -ToRow $row)
-            Values = @(, $values)
-        }
-        $cells += 1 + $values.Count
-
-        # And the reviewer's own Status. Left alone, the row said Deprecated in Signal and
-        # Verdict while Status still read Not reviewed: a row asking to be reviewed and
-        # answering that there is nothing to review, and one that a filter on Not reviewed kept
-        # serving up. The registry withdrew the check, so the registry's word belongs there -
-        # but only where nobody has put their own.
-        #
-        # It used to be written every run over whatever was in the cell, on the reasoning that
-        # a person who typed something since the last run typed it about a check that no longer
-        # runs. That reasoning covers a stale word and not a considered one, and the cell cannot
-        # tell them apart: a reviewer who marked the row Completed or Other Team said something
-        # about work they did, and a run that erases it is deciding for them. Narrowed 2026-08-25
-        # to a cell nobody has answered - blank, or still on the seeded Not reviewed, or already
-        # Deprecated. Anything else stays, and the row still reads Deprecated in Signal and
-        # Verdict, which is where the registry's word cannot be typed over.
-        $statusColumn = [array]::IndexOf($SheetsOverviewColumns, 'Status') + 1
-        $statusNow = ''
-        if ($Existing.StatusOf -and $Existing.StatusOf.ContainsKey($runKey)) {
-            $statusNow = ([string]$Existing.StatusOf[$runKey]).Trim()
-        }
-        if ([string]::IsNullOrWhiteSpace($statusNow) -or $statusNow -eq $SheetsUnreviewedStatus) {
+        if ($tabOf.ContainsKey($runKey) -and $Existing -and $Existing.SheetIdOf -and
+            $Existing.SheetIdOf.ContainsKey($tabOf[$runKey])) {
             $plan += [pscustomobject]@{
-                Kind   = 'Write'
-                Sheet  = 'Overview'
-                Range  = (New-SheetsRange -FromColumn $statusColumn -FromRow $row -ToColumn $statusColumn -ToRow $row)
-                Values = @(, @($SheetsRetiredStatus))
+                Kind    = 'DeleteSheet'
+                Sheet   = $tabOf[$runKey]
+                SheetId = [int]$Existing.SheetIdOf[$tabOf[$runKey]]
             }
-            $cells += 1
-            $statusRenames += [pscustomobject]@{
-                CheckId = $runKey; From = $statusNow; To = $SheetsRetiredStatus
-                Why = 'the registry withdrew the check and nobody had answered the row'
-            }
-        }
-        elseif ($statusNow -ne $SheetsRetiredStatus) {
-            $statusKept += [pscustomobject]@{ CheckId = $runKey; Status = $statusNow }
-        }
-
-        # The tab keeps its identity block and its comments and loses its findings, which is
-        # the same shape a check returning nothing leaves behind. C3 already carries whatever
-        # this tab has to say about itself, so the reason goes there.
-        if ($tabOf.ContainsKey($runKey)) {
-            $title = $tabOf[$runKey]
-            $plan += [pscustomobject]@{
-                Kind  = 'Clear'
-                Sheet = $title
-                Range = '{0}{1}:AZ' -f (ConvertTo-SheetsColumnName -Index 1), $SheetsCheckTabResultRow
-            }
-            $plan += [pscustomobject]@{
-                Kind   = 'Write'
-                Sheet  = $title
-                Range  = 'C3'
-                Values = @(, @($SheetsRetiredReason))
-            }
-            $cells += 1
         }
     }
 
@@ -3341,6 +3273,7 @@ function New-SheetsMergePlan {
         Cells         = $cells
         StatusRenames = $statusRenames
         StatusKept    = $statusKept
+        StatusRemoved = $statusRemoved
         MirrorsRepaired = $mirrorsRepaired
         NotesDropped  = $notesDropped
         Warning       = $warning
@@ -4921,6 +4854,36 @@ function Invoke-SheetsPlan {
                 Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $slice } | Out-Null
             }
         }
+    }
+
+    Set-SheetsStage 'removing withdrawn rows'
+    # A row the registry has withdrawn, taken off the board rather than left on it saying so.
+    #
+    # After the values and before the sort, and both halves of that matter. Deleting a row
+    # shifts every row beneath it, so doing it in the structure batch - which is sent first -
+    # would land every write of this run one row out. Doing it here means the writes have
+    # already gone into the rows they were planned against, and the sort that follows tidies
+    # what is left.
+    #
+    # Descending, because the same shift applies within this batch: delete row 40 first and
+    # row 12 is still row 12, delete row 12 first and row 40 is row 39.
+    $dropRows = @($operations | Where-Object { $_.Kind -eq 'DeleteRow' -and $gidOf.ContainsKey($_.Sheet) } |
+        Sort-Object -Property @{ Expression = { [int]$_.Row }; Descending = $true })
+    if ($dropRows.Count -gt 0) {
+        $dropRequests = @()
+        foreach ($drop in $dropRows) {
+            $dropRequests += @{
+                deleteDimension = @{
+                    range = @{
+                        sheetId    = [int]$gidOf[$drop.Sheet]
+                        dimension  = 'ROWS'
+                        startIndex = ([int]$drop.Row - 1)
+                        endIndex   = [int]$drop.Row
+                    }
+                }
+            }
+        }
+        Invoke-SheetsApi -Method Post -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $dropRequests } | Out-Null
     }
 
     Set-SheetsStage 'sorting the board'

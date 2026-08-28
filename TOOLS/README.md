@@ -1548,16 +1548,23 @@ is a second copy of the ledger, and a run that fails to reach the document leave
 complete while quietly missing the newest run. A column goes stale with the row it sits in,
 and the whole board goes stale together — visibly, and fixed by the next successful run.
 
-`Rows` is coloured by how much work is behind it: **1 in green**, since a clean check returns
-exactly the `COVERAGE` row and nothing else; **2 to 100 in orange**; **above 100 in red**. That
-is a size judgement and not a severity one — severity is `Priority`, which comes from the
-category and does not move. Zero is deliberately uncoloured: a statement that returned nothing
-at all did not honour the coverage contract, and the defect is in the check.
+`Rows` is coloured by how much work is behind it: **0 in green**; **1 to 100 in orange**;
+**above 100 in red**. That is a size judgement and not a severity one — severity is `Priority`,
+which comes from the category and does not move.
+
+**The `COVERAGE` row is not counted, and from 2026-08-28 it is not written to the tab either.**
+Until then `Rows` was the raw row count, so a clean check read 1 and a check with a single
+finding read 2 — a column whose smallest number was not the empty one. The row is a statement
+answering how much it audited rather than something it found, so it comes out of the count and
+off the tab together, and the number on Overview is the number of rows behind the link.
+`eligible_count` is not lost: it is the `Eligible` column, it is in `_summary.csv`, and it is in
+`RUNS/<Sport>.json`. What it costs is that a check that audited nothing and a check that found
+nothing now look alike on the tab — both empty — and are told apart by `Eligible` and by the
+run's own `Audited nothing` line.
 
 Because the cell counts what is open, the colour follows the review rather than the run, and
 that is the point of it: a check whose findings have all been dismissed goes green, and a
-reviewer working down the board by colour stops being sent back to it. A check dismissed down to
-zero is the one case where the uncoloured zero is not a defect in the statement — `All findings`
+reviewer working down the board by colour stops being sent back to it. `All findings`
 beside it says what the run actually returned.
 
 The cell is a link to the check's tab and a number at the same time, which is why the count
@@ -1601,14 +1608,19 @@ to `Clean`, `No action needed` to `Monitor Only`, `Fixed` to `Completed`, `For I
 a closed list of synonyms, so it renames a conclusion and never forms one. A word nobody declared
 is left exactly as typed.
 
-### `Reopened`, and the four cases in which the runner writes a Status
+### `Reopened`, and the three cases in which the runner writes a Status
 
-`Status` is the reviewer's column and the runner writes around it. Four exceptions, each narrow
+`Status` is the reviewer's column and the runner writes around it. Three exceptions, each narrow
 by construction and each reported by the run rather than made quietly - `-RunAll` prints every
 write into the column and every one it declined to make.
 
-The first is the rename above. The second is `Deprecated`, which the registry owns, written only
-onto a cell nobody has answered.
+The first is the rename above. The second is the reopening below, and the third is the closing
+after it.
+
+**`Deprecated` used to be a fourth and is not written anywhere any more.** Until 2026-08-28 a
+withdrawn check kept its row, with `Rows` set to 0, `Signal` and `Verdict` reading `Deprecated`,
+a sentence in `C3` of its tab, and the registry's word in `Status` wherever nobody had answered.
+The row and the tab are now removed instead - see **A withdrawn check leaves the board** below.
 
 The third is **`Reopened`, added 2026-08-25**, and it exists because two of the words are claims
 about a state rather than about a check. `Clean` says the check returns nothing; `Completed` says
@@ -1639,7 +1651,7 @@ answered as it now stands.
 which on a long-lived board is the accumulated debt arriving at once rather than anything going
 wrong.
 
-### The fourth: a check closed by coming back with nothing
+### The third: a check closed by coming back with nothing
 
 The mirror of `Reopened` and the same shape - one direction, and only where the run knows
 something the reviewer's word does not. **The one thing a run can be certain of is that the
@@ -1662,6 +1674,26 @@ contradict a conclusion, but forming one is not its to do. What changed is not t
 its cost - a row fixed months ago sat red until somebody scrolled past it, and there is nothing
 there for a person to decide, because the run raised the word and the run can see it no longer
 applies. The guard is what keeps the original argument intact.
+
+### A withdrawn check leaves the board
+
+A check `POWERBI_REGISTRY.md` records as `Deprecated` has its Overview row deleted and its tab
+deleted with it, on every run and not only on a complete one. The registry is where a CheckID is
+permanent, and the row there keeps its `Deprecated` status for good; the board is a work list,
+and a check that no longer runs is not work. Thirteen such rows had accumulated across the
+fifteen boards by 2026-08-28, each one a line every reviewer reads past for ever.
+
+**What it costs is stated rather than hidden: a comment somebody wrote against that check goes
+with the row, and no run can rebuild it.** That is why it was not done before. It is accepted
+now because the conclusion worth keeping about a withdrawn check is why it was withdrawn, and
+that lives in the sport file and the registry rather than in a cell. Every removal is named on
+the run that makes it, with whatever the Status cell had held.
+
+| | |
+|---|---|
+| What triggers it | the registry row reads `Deprecated`, **and** the run did not produce a result for the check |
+| What does not | a withdrawn check that ran anyway. The registry and the selection disagreeing is a state worth surviving: this run measured the check, and deleting the row would delete a measurement that was taken |
+| When it is applied | after every value write and before the sort. Deleting a row shifts every row beneath it, so doing it in the structure batch - which is sent first - would land every write of the run one row out. Within the batch the deletions go bottom-up for the same reason |
 
 Seeding uses the same vocabulary: an informational check opens on `Monitor Only`, a check that
 came back with its `COVERAGE` row alone over a real population opens on `Clean`, and everything
