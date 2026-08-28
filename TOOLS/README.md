@@ -228,6 +228,37 @@ statements too, since a sport check carries no tokens. `TOOLS/Test-Package.ps1` 
 ids there match `SPORTS/params.json`, and that the statements did not write the complement
 instead — which would put the wrong default back where nobody would look for it.
 
+**One exception, added 2026-08-28, for a statement the including form cannot execute.** A
+selective `IN` over a short list can make the optimiser drive from `tournament` and lose the
+index path into the statistic shards — the same failure `DB-SEM-016` describes for `tt.id`,
+arriving from a different direction. Where that happens the server does not return slowly, it
+gives up: `Handball-DQ-062` timed out at the gateway on five rewrites — the filter written
+directly, moved after the aggregation, with the coverage branch rebuilt as a derived table,
+with `STRAIGHT_JOIN` pinning the driving table, and with the joins reversed to drive from
+`statistic_data11` — and returned in 14.3 seconds the moment the same filter was written as the
+complement.
+
+Such a statement may write the complement, and it declares that it is doing so:
+
+```sql
+-- CLIENT BOUNDARY EXCLUDING FORM: <why the including form does not execute, measured>
+-- IN SCOPE: 363, 364, 380, ...
+```
+
+`Test-Package.ps1` then checks what it still can: the `IN SCOPE` line must equal
+`IN_SCOPE_TEMPLATE_ID_LIST` exactly, every branch that can reach a template must still carry a
+boundary line, and the excluded list must not hold a single template the client takes. A
+statement claiming the exception without the `IN SCOPE` line fails, because its ids would be
+comparable with nothing.
+
+What the exception cannot protect is the reason the including form is the rule: **a template
+the sport gains next season is outside the inclusion and inside such a statement.** No checker
+sees that, because the repository does not hold the sport's template inventory. So the marker
+text is required to say it, and a sport carrying one of these has a standing obligation — when
+its boundary changes, that statement's excluded list changes with it or it silently widens.
+Use the exception only where the including form has actually been measured not to run, and
+record the measurement.
+
 ### Narrowing a run to certain templates
 
 `-TemplateIds` restricts a run to named tournament templates:

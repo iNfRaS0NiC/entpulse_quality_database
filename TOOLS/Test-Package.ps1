@@ -751,6 +751,53 @@ foreach ($s in $statements) {
     # inclusion and inside an exclusion, and only one of those is what the client asked for.
     $inScope = [string]$inScopeOf[$slug]
     if (-not [string]::IsNullOrWhiteSpace($inScope)) {
+
+        # The excluding form, allowed only where the including one does not execute. A
+        # selective IN over a short list makes the optimiser drive from tournament and lose the
+        # index path into the statistic shards, and on a big enough statement the server gives
+        # up rather than returning slowly: Handball-DQ-062 timed out at the gateway on five
+        # separate rewrites and ran in 14 seconds the moment the same filter was written as the
+        # complement. A statement in that position declares it, and the declaration is what is
+        # checked - not the author's word for it.
+        #
+        # What the marker costs is the safe default, and that is the whole reason the including
+        # form is the rule: a template the sport gains next season is outside an inclusion and
+        # INSIDE this statement. So the ids are still verified, from the side that can be: the
+        # declared in-scope list must equal SPORTS/params.json exactly, and the excluded list
+        # must not hold a single template the client takes. What cannot be caught here is the
+        # new template, and the marker text is required to say so in the statement itself.
+        $boundaryMarker = [regex]::Match($s.Sql,
+                '(?m)^\s*--\s*CLIENT BOUNDARY EXCLUDING FORM:\s*(\S.*)$')
+        if ($boundaryMarker.Success) {
+            $declared = [regex]::Match($s.Sql, '(?m)^\s*--\s*IN SCOPE:\s*([0-9,\s]+)$')
+            if (-not $declared.Success) {
+                $scopeFindings += "${where}: declares the excluding form but no '-- IN SCOPE:' line, so its ids cannot be compared with SPORTS/params.json"
+                continue
+            }
+            $wantedIn = @($inScope -split ',' | ForEach-Object { $_.Trim() } | Sort-Object)
+            $said = @($declared.Groups[1].Value -split ',' | ForEach-Object { $_.Trim() } |
+                Where-Object { $_ } | Sort-Object)
+            if (($said -join ',') -ne ($wantedIn -join ',')) {
+                $scopeFindings += "${where}: its '-- IN SCOPE:' line is ($($declared.Groups[1].Value.Trim())) but SPORTS/params.json $InScopeKey for $slug is ($inScope)"
+                continue
+            }
+            if ($excluded.Count -lt $markers.Count) {
+                $scopeFindings += ("${where}: {0} template filter(s) but {1} client-boundary line(s); " -f
+                    $markers.Count, $excluded.Count) +
+                "the excluding form still keeps every branch that can reach a template to the boundary"
+                continue
+            }
+            foreach ($listed in $excluded) {
+                $held = @($listed.Groups[1].Value -split ',' | ForEach-Object { $_.Trim() } |
+                    Where-Object { $_ })
+                $overlap = @($held | Where-Object { $wantedIn -contains $_ })
+                if ($overlap.Count -gt 0) {
+                    $scopeFindings += "${where}: excludes ($($overlap -join ', ')), which $slug declares as in scope"
+                }
+            }
+            continue
+        }
+
         $included = @([regex]::Matches($s.Sql,
                 '(?m)^\s*AND\s+\w+\.(?:id|tournament_templateFK)\s+IN\s*\(([^)]*)\)'))
         if ($included.Count -lt $markers.Count) {
