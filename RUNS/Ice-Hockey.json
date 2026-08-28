@@ -21896,6 +21896,2298 @@
                                                               "checkBy":  ""
                                                           }
                                 }
+                 },
+                 {
+                     "runId":  "28.08.2026 14-14-09",
+                     "startedUtc":  "2026-08-28T12:14:09Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-031",
+                                        "runKey":  "Ice-Hockey-DQ-031",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_RANK_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  8496,
+                                        "seconds":  14.1,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  20.7,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  6.6,
+                                                  "planning the changes":  3.1,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.6,
+                                                  "clearing stale rows":  1.4,
+                                                  "writing values":  7.2,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.5,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Ice-Hockey-DQ-001":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-002":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-003":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-004":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-005":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-006":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-007":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-008":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-009":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-010":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-011":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-012":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-013":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-014":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-015":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-016":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-017":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-018":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-019":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-020":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-021":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D., Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-022":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-023":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-024":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-025":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-026":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-027":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-028":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-029":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-030":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-031":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-032":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-033":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-034":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-035":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-036":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-037":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-038":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-039":  {
+                                                              "status":  "On Hold",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-040":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-041":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-042":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-043":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-044":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-045":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-046":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-047":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-048":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-049":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-050":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-051":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-052":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-053":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-054":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-055":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-056":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-057":  {
+                                                              "status":  "On Hold",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-058":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-059":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-060":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-061":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-062":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-063":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Hristiyana,Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-064":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-065":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-066":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-067":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-068":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-069":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-070":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-071":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-072":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-073":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-074":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-075":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-076":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-077":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-078":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-079":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-080":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-081":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-082":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-083":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-084":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-085":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-086":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-087":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-088":  {
+                                                              "status":  "Monitor Only",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-089":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-090":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-091":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-092":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-093":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-094":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-095":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-096":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-097":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-098":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-099":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-100":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-101":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-102":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-103":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-104":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-105":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-106":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-107":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-108":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-109":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-110":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-111":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-112":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-113":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-114":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-115":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-116":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-117":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-118":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-119":  {
+                                                              "status":  "Monitor Only",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-120":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-121":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-122":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-123":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-124":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-125":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-126":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-127":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          }
+                                }
+                 },
+                 {
+                     "runId":  "28.08.2026 14-15-46",
+                     "startedUtc":  "2026-08-28T12:15:46Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-112",
+                                        "runKey":  "Ice-Hockey-DQ-112",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID_IN_MEDAL_RANKING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal, 1429 Team, 1270 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  189,
+                                        "seconds":  124.3,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  30.8,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  8.4,
+                                                  "planning the changes":  7.3,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  3.7,
+                                                  "writing values":  8.7,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.5,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Ice-Hockey-DQ-001":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-002":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-003":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-004":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-005":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-006":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-007":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-008":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-009":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-010":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-011":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-012":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-013":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-014":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-015":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-016":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-017":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-018":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-019":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-020":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-021":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D., Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-022":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-023":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-024":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-025":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-026":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-027":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-028":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-029":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-030":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-031":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-032":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-033":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-034":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-035":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-036":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-037":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-038":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-039":  {
+                                                              "status":  "On Hold",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-040":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-041":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-042":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-043":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-044":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-045":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-046":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-047":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-048":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-049":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-050":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-051":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-052":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-053":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-054":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-055":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-056":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-057":  {
+                                                              "status":  "On Hold",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-058":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-059":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-060":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-061":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-062":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-063":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Hristiyana,Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-064":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-065":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-066":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-067":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-068":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-069":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-070":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-071":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-072":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-073":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-074":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-075":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-076":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-077":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-078":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-079":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-080":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-081":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-082":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-083":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-084":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-085":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-086":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-087":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-088":  {
+                                                              "status":  "Monitor Only",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-089":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-090":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-091":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-092":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-093":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-094":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-095":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-096":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-097":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-098":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-099":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-100":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-101":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-102":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-103":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-104":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-105":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-106":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-107":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-108":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-109":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-110":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-111":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-112":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-113":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-114":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-115":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-116":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-117":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-118":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-119":  {
+                                                              "status":  "Monitor Only",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-120":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-121":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-122":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-123":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-124":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-125":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-126":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-127":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          }
+                                }
+                 },
+                 {
+                     "runId":  "28.08.2026 14-19-42",
+                     "startedUtc":  "2026-08-28T12:19:42Z",
+                     "output":  "",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-110",
+                                        "runKey":  "Ice-Hockey-DQ-110",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT_WITH_LINEUPS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  25,
+                                        "findings":  24,
+                                        "eligible":  66,
+                                        "seconds":  48.7,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  24.3,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  6.8,
+                                                  "planning the changes":  4.8,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  3,
+                                                  "writing values":  7.4,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Ice-Hockey-DQ-001":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-002":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-003":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-004":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-005":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-006":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-007":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-008":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-009":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-010":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-011":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-012":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-013":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-014":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-015":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-016":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-017":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-018":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-019":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-020":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-021":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D., Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-022":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-023":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-024":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-025":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-026":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-027":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-028":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-029":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-030":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-031":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-032":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-033":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-034":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-035":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-036":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-037":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-038":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-039":  {
+                                                              "status":  "On Hold",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-040":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-041":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-042":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-043":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-044":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-045":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-046":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-047":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-048":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-049":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-050":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-051":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-052":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-053":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-054":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-055":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-056":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-057":  {
+                                                              "status":  "On Hold",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-058":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-059":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-060":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-061":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-062":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-063":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Hristiyana,Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-064":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-065":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-066":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-067":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-068":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-069":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-070":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-071":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-072":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-073":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-074":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-075":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-076":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-077":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-078":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-079":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-080":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-081":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-082":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-083":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-084":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-085":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-086":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-087":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-088":  {
+                                                              "status":  "Monitor Only",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-089":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-090":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-091":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-092":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-093":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-094":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-095":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-096":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-097":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-098":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-099":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-100":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-101":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-102":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-103":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-104":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-105":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-106":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-107":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-108":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-109":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-110":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-111":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-112":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-113":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-114":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-115":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-116":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-117":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-118":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-119":  {
+                                                              "status":  "Monitor Only",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-120":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-121":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-122":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-123":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-124":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-125":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-126":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-127":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          }
+                                }
+                 },
+                 {
+                     "runId":  "Ice-Hockey 28.08.2026 14-21-04",
+                     "startedUtc":  "2026-08-28T12:21:03Z",
+                     "output":  "D:\\SQL\u0027s Output\\Ice-Hockey 28.08.2026 14-21-04",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-128",
+                                        "runKey":  "Ice-Hockey-DQ-128",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_DOES_NOT_RESTATE_THE_MEDAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal, 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  117,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  39.3,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  9.7,
+                                                  "planning the changes":  7.7,
+                                                  "adding and sizing tabs":  4.9,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  4.6,
+                                                  "writing values":  10.3,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Ice-Hockey-DQ-001":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-002":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-003":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-004":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-005":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-006":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-007":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-008":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-009":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-010":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-011":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-012":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-013":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-014":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-015":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-016":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-017":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-018":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-019":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-020":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-021":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D., Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-022":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-023":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-024":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-025":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-026":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-027":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-028":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-029":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-030":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-031":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-032":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-033":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-034":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-035":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-036":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-037":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-038":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-039":  {
+                                                              "status":  "On Hold",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-040":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-041":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-042":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-043":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-044":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-045":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-046":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-047":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-048":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-049":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-050":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-051":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-052":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-053":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-054":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-055":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-056":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-057":  {
+                                                              "status":  "On Hold",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-058":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-059":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-060":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-061":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-062":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-063":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Hristiyana,Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-064":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-065":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-066":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-067":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-068":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-069":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-070":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-071":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-072":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-073":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-074":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-075":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-076":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-077":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-078":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-079":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-080":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-081":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-082":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-083":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-084":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-085":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-086":  {
+                                                              "status":  "Deprecated",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-087":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-088":  {
+                                                              "status":  "Monitor Only",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-089":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-090":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-091":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-092":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-093":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-094":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-095":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-096":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-097":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-098":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-099":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-100":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-101":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-102":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-103":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-104":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-105":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-106":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-107":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-108":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Aleksandar D."
+                                                          },
+                                    "Ice-Hockey-DQ-109":  {
+                                                              "status":  "Skipped",
+                                                              "checkBy":  "Lyubomir"
+                                                          },
+                                    "Ice-Hockey-DQ-110":  {
+                                                              "status":  "Reopened",
+                                                              "checkBy":  "Squads"
+                                                          },
+                                    "Ice-Hockey-DQ-111":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-112":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          },
+                                    "Ice-Hockey-DQ-113":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Vanin"
+                                                          },
+                                    "Ice-Hockey-DQ-114":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-115":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-116":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-117":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-118":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Hristiyana"
+                                                          },
+                                    "Ice-Hockey-DQ-119":  {
+                                                              "status":  "Monitor Only",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-120":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-121":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-122":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-123":  {
+                                                              "status":  "Other Team",
+                                                              "checkBy":  "fixtures@enetpulse.com"
+                                                          },
+                                    "Ice-Hockey-DQ-124":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-125":  {
+                                                              "status":  "IT Fix",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-126":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Ice-Hockey-DQ-127":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          }
+                                }
                  }
              ],
     "sheetId":  "1Vy0mfddOI9cWkWEpeM7oA12BTDuvUB-nevFZwQANn94"
