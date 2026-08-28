@@ -1392,6 +1392,12 @@ SELECT
     x.field_size,
     x.missing_count,
     x.missing_participants,
+    -- Which Comp.Rank omitted them, added 2026-08-28, and the same column GLOBAL-DQ-042 now
+    -- carries. The event and the missing names do not say where the repair is made, and the
+    -- covering statistic was already resolved by the join below - it was only being thrown
+    -- away. Measured the same day, every Golf event inside the boundary is covered by exactly
+    -- one statistic, 9724 of 9724, so carrying the id through the join multiplies nothing.
+    x.covering_statistic_ids,
     NULL AS eligible_count,
     0 AS sort_order
 -- GLOBAL-DQ-042 rewritten for Golf because it cannot be run here. That template asks, for each
@@ -1415,6 +1421,8 @@ FROM (
         f.template_name,
         f.tournament_name,
         COUNT(DISTINCT f.participant_id) AS field_size,
+        GROUP_CONCAT(DISTINCT f.statistic_id ORDER BY f.statistic_id SEPARATOR ', ')
+            AS covering_statistic_ids,
         COUNT(DISTINCT CASE WHEN c.participant_id IS NULL THEN f.participant_id END) AS missing_count,
         GROUP_CONCAT(DISTINCT CASE WHEN c.participant_id IS NULL THEN f.participant_name END
                      ORDER BY f.participant_name SEPARATOR ' | ') AS missing_participants
@@ -1427,7 +1435,8 @@ FROM (
             tt.name AS template_name,
             t.name AS tournament_name,
             p.id AS participant_id,
-            p.name AS participant_name
+            p.name AS participant_name,
+            cov.statistic_id AS statistic_id
         FROM event e
         JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
         JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -1443,7 +1452,7 @@ FROM (
         -- identical 3055 events. It is the shape the covering set below already used; this
         -- side had been left behind.
         JOIN (
-            SELECT DISTINCT eg.id AS event_id
+            SELECT DISTINCT eg.id AS event_id, sg.id AS statistic_id
             FROM statistic_config scg
             JOIN statistic sg ON sg.id = scg.statisticFK AND sg.del = 'no'
                  AND sg.statistic_typeFK = 11 AND sg.object_typeFK = 3
@@ -1501,7 +1510,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event e

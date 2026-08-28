@@ -1579,6 +1579,12 @@ SELECT
     -- group_concat_max_len without saying so, and missing_count is counted separately and is
     -- what the row asserts.
     x.missing_participants,
+    -- Which Comp.Rank omitted them, added 2026-08-28. The event and the names alone do not
+    -- say where the repair is made: a reviewer had the field and the missing people and then
+    -- had to find the ranking by hand. The map from event to covering statistic is already
+    -- built and joined below, so the id was there all along and only had to be carried up.
+    -- It costs no extra pass.
+    x.covering_statistic_ids,
     NULL AS eligible_count
 FROM (
     SELECT
@@ -1590,7 +1596,10 @@ FROM (
         COUNT(*) AS field_size,
         SUM(y.is_missing) AS missing_count,
         GROUP_CONCAT(CASE WHEN y.is_missing = 1 THEN y.participant_name END
-                     ORDER BY y.participant_name SEPARATOR ', ') AS missing_participants
+                     ORDER BY y.participant_name SEPARATOR ', ') AS missing_participants,
+        -- Every competitor of one event carries the same covering set, so MAX is that set
+        -- rather than a choice between different ones.
+        MAX(y.covering_statistic_ids) AS covering_statistic_ids
     FROM (
         -- One row per competitor in the event, carrying whether the Comp.Rank covering that
         -- event lists them. The event is the audited object: a statistic that omits six of
@@ -1612,7 +1621,9 @@ FROM (
             t.name AS tournament_name,
             p.name AS participant_name,
             CASE WHEN MAX(CASE WHEN sp.id IS NOT NULL THEN 1 ELSE 0 END) = 0
-                 THEN 1 ELSE 0 END AS is_missing
+                 THEN 1 ELSE 0 END AS is_missing,
+            GROUP_CONCAT(DISTINCT m.statistic_id ORDER BY m.statistic_id SEPARATOR ', ')
+                AS covering_statistic_ids
         FROM event e
         JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
         JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -1671,7 +1682,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
