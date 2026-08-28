@@ -448,8 +448,12 @@ $SheetsUnreviewedStatus = 'Not reviewed'
 # both mean this row has not been answered as it now stands. The same argument the file already
 # makes for IT Fix and Other Team being two ambers.
 #
-# The run writes it and never writes it back. A check that returns to zero stays `Reopened` until
-# a person says otherwise: a run may contradict a conclusion, but forming one is not its to do.
+# The run writes it, and from 2026-08-28 it may write it back - but only after two clean runs in
+# a row. The rule until then was that it never did: a run may contradict a conclusion, and forming
+# one is not its to do. What changed is not that argument but its cost. A row fixed months ago sat
+# red until somebody scrolled past it, and there is nothing for them to decide there - the run
+# raised the word and the run can see it no longer applies. The guard is what keeps the original
+# argument intact: see $SheetsStatusClosedWhenCleanTwice for why one clean run is not enough.
 $SheetsReopenedStatus = 'Reopened'
 $SheetsStatusClosedByFinding = @('Clean', 'Completed')
 
@@ -470,6 +474,29 @@ $SheetsStatusClosedByFinding = @('Clean', 'Completed')
 # word exactly as the reviewer left it.
 $SheetsStatusHandedOff = @('Other Team', 'IT Fix', 'On Hold')
 $SheetsStatusClosedByClean = 'Completed'
+
+# `Reviewing` closes on the same terms, added 2026-08-28. It is not a hand-off - nobody else is
+# holding it - but the argument is the one above and does not depend on who is: a reading that
+# started and has come back to nothing has its answer, and On Hold, which is the same reading
+# stopped rather than running, has closed this way since 2026-08-27. Leaving the two apart said
+# that a review in progress is less finished than a review paused, which is not a distinction
+# anybody meant.
+$SheetsStatusClosedWhenClean = @('Reviewing')
+
+# `Reopened` closes too, and only from a board that was already clean on the run before.
+#
+# This is the one status the run writes itself, and the rule it replaces said the run never
+# writes it back: a check that returns to zero stays Reopened until a person says otherwise.
+# The reason that rule existed is real and the guard is what answers it. Without one, a check
+# whose rows come and go would be reopened on Monday and closed on Tuesday by the same
+# mechanism, and the reviewer would never learn it had reopened at all - the board is the only
+# place they look, and an Overview status change is not written to the Review log.
+#
+# Requiring the previous run to have been clean as well means the alarm always survives at
+# least one full run in front of somebody. A flickering check stays red; a check that was
+# fixed, verified once and stayed fixed closes on its own. Asked for on 2026-08-28, and the
+# guard was the condition of asking.
+$SheetsStatusClosedWhenCleanTwice = @($SheetsReopenedStatus)
 
 # The one expectation under which a returned row contradicts a closed status.
 #
@@ -2065,8 +2092,19 @@ function New-SheetsMergePlan {
             # `$entry.RowsCell` being a number is what says the check ran and returned a result.
             # A failure and a skip put a word there - ERROR, SKIPPED - and both would otherwise
             # read as zero findings and close a check nobody has answered.
+            # Three sets close on nothing, and they differ only in what "nothing" has to have
+            # lasted for. The handed-off three and Reviewing close on this run alone; Reopened
+            # needs the run before it to have been clean as well, so the run cannot put out an
+            # alarm it raised itself before anybody saw it. A previous count that is missing or
+            # does not parse is not a clean previous run and does not satisfy the guard.
             $cleanNow = 0
-            if (($SheetsStatusHandedOff -contains $statusMeans) -and
+            $closesOnThisRun = ($SheetsStatusHandedOff -contains $statusMeans) -or
+                               ($SheetsStatusClosedWhenClean -contains $statusMeans)
+            $closesOnTwoRuns = $SheetsStatusClosedWhenCleanTwice -contains $statusMeans
+            $cleanBefore = 0
+            $wasCleanBefore = [int]::TryParse([string]$open.PrevFindings, [ref]$cleanBefore) -and
+                              $cleanBefore -eq 0
+            if (($closesOnThisRun -or ($closesOnTwoRuns -and $wasCleanBefore)) -and
                 ($entry.RowsCell -isnot [string]) -and
                 [int]::TryParse([string]$open.Findings, [ref]$cleanNow) -and $cleanNow -eq 0) {
                 $statusColumn = [array]::IndexOf($SheetsOverviewColumns, 'Status') + 1
@@ -2083,7 +2121,11 @@ function New-SheetsMergePlan {
                 $cells += 1
                 $statusRenames += [pscustomobject]@{
                     CheckId = $runKey; From = $statusNow; To = $SheetsStatusClosedByClean
-                    Why = ('it was {0} and this run returned no findings' -f $statusMeans)
+                    Why = $(if ($closesOnTwoRuns) {
+                            'it was {0} and this run and the one before it both returned no findings' -f $statusMeans
+                        } else {
+                            'it was {0} and this run returned no findings' -f $statusMeans
+                        })
                 }
             }
 

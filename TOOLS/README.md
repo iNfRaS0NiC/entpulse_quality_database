@@ -1601,9 +1601,9 @@ to `Clean`, `No action needed` to `Monitor Only`, `Fixed` to `Completed`, `For I
 a closed list of synonyms, so it renames a conclusion and never forms one. A word nobody declared
 is left exactly as typed.
 
-### `Reopened`, and the three cases in which the runner writes a Status
+### `Reopened`, and the four cases in which the runner writes a Status
 
-`Status` is the reviewer's column and the runner writes around it. Three exceptions, each narrow
+`Status` is the reviewer's column and the runner writes around it. Four exceptions, each narrow
 by construction and each reported by the run rather than made quietly - `-RunAll` prints every
 write into the column and every one it declined to make.
 
@@ -1626,8 +1626,8 @@ So a run that finds `Clean` or `Completed` on a check its own result contradicts
 | What triggers it | the cell reads `Clean` or `Completed`, or a superseded spelling of either, **and** the check's `Expected` is `Zero`, **and** the run returns open findings |
 | Why the expectation matters | `Zero` is carried by `Actionable` and `Sentinel`, and for both every returned row is a defect. `Non-zero` belongs to `Monitor`, where the proportion is the finding and the count never reaches nothing; `Residual` is a remainder somebody agreed to leave; an empty expectation belongs to `Blocked`, `Not applicable` and `Out of client scope`. On those, `Completed` means the reviewer read it, so reopening would ask the same question every run for ever. Narrowed 2026-08-26 after the first eleven boards moved 99 checks and eight of them should not have |
 | What counts | `Findings` after dismissals, not raw rows — a check whose remaining rows are all marked `No Issue / Change` is still finished and keeps its word |
-| The other eight | untouched. `Monitor Only` expects a count forever, `Reviewing`, `On Hold` and `Skipped` say where the reading got to, `IT Fix` and `Other Team` say who is holding it, `Not reviewed` is the seed and `Deprecated` is the registry's. None is a claim a result can contradict |
-| Going the other way | never. A check that returns to zero keeps whatever a person last said about it: a run may contradict a conclusion, but forming one is not its to do |
+| The other eight | untouched by *this* rule. `Monitor Only` expects a count forever, `Reviewing`, `On Hold` and `Skipped` say where the reading got to, `IT Fix` and `Other Team` say who is holding it, `Not reviewed` is the seed and `Deprecated` is the registry's. None is a claim a result can contradict by returning rows — but five of them are closed by returning nothing, which is the fourth exception below |
+| Going the other way | see the fourth exception. Until 2026-08-27 the answer here was *never*, and for `Clean`, `Monitor Only` and `Skipped` it still is |
 
 `Reopened` rather than `Not reviewed` because the two are different facts. Nobody has looked is
 not the same as somebody looked, closed it, and it came back - and the second is the one worth a
@@ -1638,6 +1638,30 @@ answered as it now stands.
 **The first run after a board adopts it will reopen everything that had already gone stale**,
 which on a long-lived board is the accumulated debt arriving at once rather than anything going
 wrong.
+
+### The fourth: a check closed by coming back with nothing
+
+The mirror of `Reopened` and the same shape - one direction, and only where the run knows
+something the reviewer's word does not. **The one thing a run can be certain of is that the
+finding is gone.** A check waiting on somebody, or part-read, that comes back with its `COVERAGE`
+row alone has had its answer, and leaving it open is the board saying otherwise about the single
+case it cannot be wrong on. Found by hand it costs a reviewer one row at a time across every
+sport.
+
+| | |
+|---|---|
+| What triggers it | the cell reads one of the five words below, **and** the check ran and returned a result, **and** `Findings` after dismissals is zero |
+| Written | `Completed` |
+| The five | `Other Team`, `IT Fix` and `On Hold`, added 2026-08-27, which say the reading stopped and is waiting on somebody. `Reviewing`, added 2026-08-28, which is the same reading still running - keeping it apart from `On Hold` said a review in progress is less finished than a review paused, which nobody meant. And `Reopened`, added the same day under a guard |
+| The guard on `Reopened` | it closes only when **the run before it was also clean**. This is the one word the run writes itself, and without the guard a check whose rows come and go would be raised on one run and put out on the next by the same mechanism, with nobody ever seeing it red - the board is where reviewers look, and an Overview status change is not written to the `Review log`. A previous count that is missing or does not parse is not a clean previous run |
+| What does not trigger it | a check that failed or was skipped. Both put a word where the count goes - `ERROR`, `SKIPPED` - and both would otherwise read as zero findings and close a check nobody has answered |
+| Still never closed | `Clean` and `Monitor Only`, which are already conclusions, and `Skipped`, which says the reading never started |
+
+The rule for `Reopened` before 2026-08-28 was that the run never writes it back: a run may
+contradict a conclusion, but forming one is not its to do. What changed is not that argument but
+its cost - a row fixed months ago sat red until somebody scrolled past it, and there is nothing
+there for a person to decide, because the run raised the word and the run can see it no longer
+applies. The guard is what keeps the original argument intact.
 
 Seeding uses the same vocabulary: an informational check opens on `Monitor Only`, a check that
 came back with its `COVERAGE` row alone over a real population opens on `Clean`, and everything

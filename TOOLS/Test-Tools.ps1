@@ -2883,6 +2883,61 @@ Test-That 'a check handed to somebody else keeps its word while the finding is s
     }
 }
 
+Test-That 'a review in progress closes on one clean run' {
+    # Reviewing is not a hand-off, and closes anyway: a reading that started and came back to
+    # nothing has its answer, exactly as On Hold - the same reading, stopped - has since
+    # 2026-08-27. One clean run is enough because nothing here was raised by the run itself.
+    foreach ($word in $SheetsStatusClosedWhenClean) {
+        $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-076' -Findings 0 -Eligible 900 -Verdict 'Resolved'))
+        $existing = [pscustomobject]@{
+            HasOverviewHeader = $true
+            OverviewRowOf = @{ 'Fixtureball-DQ-076' = 6 }
+            StatusOf = @{ 'Fixtureball-DQ-076' = $word }
+            CommentOf = @{}; TabOf = @{}; ResultRowsOf = @{}
+        }
+        $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+        $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+        Assert-Equal 1 $status.Count "$word closes on a clean run"
+        Assert-Equal $SheetsStatusClosedByClean $status[0].Values[0][0] 'to the word that says it is finished'
+    }
+}
+
+Test-That 'a reopened check needs two clean runs, so the run cannot cancel its own alarm' {
+    # The guard the whole change rests on. Reopened is the one word the run writes itself, and
+    # closing it on a single clean run would let a check whose rows come and go be raised and
+    # put out between two runs with nobody ever seeing it red.
+    foreach ($word in $SheetsStatusClosedWhenCleanTwice) {
+        # Previous run unknown: not a clean previous run, so the word stands.
+        $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-077' -Findings 0 -Eligible 900 -Verdict 'Resolved'))
+        $existing = [pscustomobject]@{
+            HasOverviewHeader = $true
+            OverviewRowOf = @{ 'Fixtureball-DQ-077' = 6 }
+            StatusOf = @{ 'Fixtureball-DQ-077' = $word }
+            CommentOf = @{}; TabOf = @{}; ResultRowsOf = @{}
+        }
+        $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+        $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+        Assert-Equal 0 $status.Count "$word stands when the run before it is unknown"
+
+        # Previous run had findings: this is the flicker, and it stays visible.
+        $summary[0].PrevFindings = 4
+        $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+        $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+        Assert-Equal 0 $status.Count "$word stands when the run before it returned findings"
+
+        # Two clean runs: the alarm has been in front of somebody for a full run, and closes.
+        $summary[0].PrevFindings = 0
+        $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+        $status = @($plan.Operations | Where-Object { $_.Sheet -eq 'Overview' -and $_.Range -eq 'I6:I6' })
+        Assert-Equal 1 $status.Count "$word closes after two clean runs"
+        Assert-Equal $SheetsStatusClosedByClean $status[0].Values[0][0] 'to the word that says it is finished'
+
+        $said = @($plan.StatusRenames | Where-Object { $_.CheckId -eq 'Fixtureball-DQ-077' })
+        Assert-Equal 1 $said.Count 'and the run says so'
+        Assert-True ($said[0].Why -match 'the one before it') 'naming the second run as the reason'
+    }
+}
+
 Test-That 'a sentinel is reopened, because every row it returns is a defect' {
     # Sentinel and Monitor are easy to run together and must not be. A sentinel expects Zero: its
     # population has not arrived, and on the day it does every row is real. Monitor expects
