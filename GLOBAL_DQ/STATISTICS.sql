@@ -5022,3 +5022,109 @@ FROM (
      AND tm.lower_name = a.base_name
 ) y
 ;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-145
+    -- Name - COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL
+    -- What it does: Names every ranked competitor whose organization's country is not their own, one row per ranking they are listed in.
+    CASE
+        WHEN org.name = pc.name
+            THEN 'ORGANIZATION_NAMED_FOR_THE_COMPETITOR_COUNTRY'
+        ELSE 'ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR'
+    END AS check_type,
+    sp.id AS statistic_participants_id,
+    s.id AS statistic_id,
+    s.name AS statistic_name,
+    t.id AS tournament_id,
+    t.name AS tournament_name,
+    tt.id AS template_id,
+    tt.name AS template_name,
+    pt.id AS competitor_id,
+    pt.name AS competitor_name,
+    pc.id AS competitor_country_id,
+    pc.name AS competitor_country,
+    org.id AS organization_id,
+    org.name AS organization_name,
+    oc.name AS organization_country,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: The drill-down of GLOBAL-DQ-136, which audits the organization
+-- together with the competitor country and the template and reports one row for each. That is
+-- the right object for deciding - one disagreement is one decision however many people it
+-- caught - and the wrong one for repairing: the summary carries the competitors in one list and
+-- the rankings in another, and nothing pairs them.
+-- Two GROUP_CONCAT columns cannot be paired into one either, and that was measured rather than
+-- assumed. On the event layer, which GLOBAL-DQ-146 covers, one Swimming organization gathers 32
+-- competitors across 70 events; the two lists are about 640 characters each and fit, while a
+-- paired list of the same rows would run past the 1024 characters `group_concat_max_len` allows
+-- and be cut without saying so. A row per pairing has no such limit.
+-- **One row per ranked participation**, which is the object a correction is made against: this
+-- competitor, in this ranking, declared under this organization. `statistic_participants_id` is
+-- projected first because it is what identifies the row to change.
+-- The two check_types are the summary's and mean the same thing here: where the organization's
+-- own name is the competitor's country the two are one place held under two `country` rows, and
+-- where they differ it is a competitor question - a federation change, a neutral entry, or an
+-- error.
+-- Its signal follows the summary's and is Monitor for the same reason: a neutral athlete ranked
+-- under `Individual Neutral Athletes`, whose country is `International`, is recorded exactly as
+-- it should be. The count will not reach zero and is not meant to.
+-- An Organization value that does not resolve to a live participant is not reported here, as in
+-- the summary: an unresolvable reference is a different defect and GLOBAL-DQ-115 owns it.
+-- Tournament-owned statistics only, template_name projected and IOC-purpose templates excluded
+-- in both branches, as every statistic statement in this file does.
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN statistic_data{{SHARD_ID}} og
+  ON og.statistic_participants{{SHARD_ID}}FK = sp.id
+ AND og.statistic_data_typeFK = {{DATA_ORGANIZATION_TYPE_ID}}
+ AND og.del = 'no'
+ AND og.value REGEXP '^[1-9][0-9]*$'
+JOIN participant pt ON pt.id = sp.participantFK AND pt.del = 'no'
+JOIN participant org ON org.id = CAST(og.value AS UNSIGNED) AND org.del = 'no'
+JOIN country oc ON oc.id = org.countryFK
+JOIN country pc ON pc.id = pt.countryFK
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND org.countryFK <> pt.countryFK
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT sp.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s
+JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+JOIN statistic_data{{SHARD_ID}} og
+  ON og.statistic_participants{{SHARD_ID}}FK = sp.id
+ AND og.statistic_data_typeFK = {{DATA_ORGANIZATION_TYPE_ID}}
+ AND og.del = 'no'
+ AND og.value REGEXP '^[1-9][0-9]*$'
+JOIN participant pt ON pt.id = sp.participantFK AND pt.del = 'no'
+JOIN participant org ON org.id = CAST(og.value AS UNSIGNED) AND org.del = 'no'
+JOIN country oc ON oc.id = org.countryFK
+JOIN country pc ON pc.id = pt.countryFK
+WHERE s.del = 'no'
+  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s.object_typeFK = 3
+  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, organization_id, competitor_name, statistic_id;

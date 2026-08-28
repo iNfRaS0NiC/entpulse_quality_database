@@ -2000,3 +2000,110 @@ FROM (
 ) c
 
 ORDER BY sort_order, events_of_this_kind, event_startdate DESC, event_id;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-146
+    -- Name - EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL
+    -- What it does: Names every entered competitor whose organization country is not their own, one row per event they are entered in.
+    CASE
+        WHEN org.name = pc.name
+            THEN 'ORGANIZATION_NAMED_FOR_THE_COMPETITOR_COUNTRY'
+        ELSE 'ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR'
+    END AS check_type,
+    ep.id AS event_participants_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    t.id AS tournament_id,
+    t.name AS tournament_name,
+    tt.name AS template_name,
+    pt.id AS competitor_id,
+    pt.name AS competitor_name,
+    pc.id AS competitor_country_id,
+    pc.name AS competitor_country,
+    org.id AS organization_id,
+    org.name AS organization_name,
+    oc.name AS organization_country,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: The drill-down of GLOBAL-DQ-132, which audits the organization
+-- together with the competitor country and reports one row for each. That is the right object
+-- for deciding and the wrong one for repairing: the summary carries the competitors in one list
+-- and the events in another, and nothing pairs them.
+-- **This is the layer where that actually bites**, which is why the detail was written for both
+-- rather than only for the Comp.Rank one that was asked about. Measured 2026-08-28: of the
+-- Comp.Rank summary findings, none on Triathlon and none on Golf gather more than one competitor
+-- and more than one ranking, and one of Ice Hockey's nineteen does - so its lists are already
+-- unambiguous. Six of Swimming's ten findings here are not: `Russian Swimming Federation`
+-- gathers 32 competitors across 70 events and `Russian Olympic Committee` 25 across 57.
+-- Those same rows are why the two lists were not simply merged into one paired column. Each is
+-- around 640 characters and fits; a paired list of the same rows would run past the 1024
+-- characters `group_concat_max_len` allows on this server, and a statement cannot raise it -
+-- only a `SELECT` may start one, so there is no session to set it in. The cut would be silent.
+-- A row per pairing has no such limit.
+-- **One row per event participation**, which is the object a correction is made against: this
+-- competitor, in this event, entered under this organization. `event_participants_id` is
+-- projected first because it is what identifies the row to change, and `organizationFK` is a
+-- property of that row rather than of the competitor.
+-- The two check_types are the summary's. Where the organization's own name is the competitor's
+-- country the two are one place held under two `country` rows, which is a single reference-layer
+-- correction; where they differ it is a competitor question - a federation change, a neutral
+-- entry, or an error.
+-- Its signal follows the summary's and is Monitor for the same reason: a neutral athlete entered
+-- under `Individual Neutral Athletes`, whose country is `International`, is recorded exactly as
+-- it should be, and a refugee team is the same shape. The count will not reach zero and is not
+-- meant to.
+-- An organization value that does not resolve to a live participant is not reported here, as in
+-- the summary: an unresolvable reference is a different defect.
+FROM property og
+JOIN event_participants ep ON ep.id = og.objectFK AND ep.del = 'no'
+JOIN participant pt ON pt.id = ep.participantFK AND pt.del = 'no'
+JOIN participant org ON org.id = CAST(og.value AS UNSIGNED) AND org.del = 'no'
+JOIN country oc ON oc.id = org.countryFK
+JOIN country pc ON pc.id = pt.countryFK
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE og.object = 'event_participants'
+  AND og.name = 'organizationFK'
+  AND og.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND org.countryFK <> pt.countryFK
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM property og
+JOIN event_participants ep ON ep.id = og.objectFK AND ep.del = 'no'
+JOIN participant pt ON pt.id = ep.participantFK AND pt.del = 'no'
+JOIN participant org ON org.id = CAST(og.value AS UNSIGNED) AND org.del = 'no'
+JOIN country oc ON oc.id = org.countryFK
+JOIN country pc ON pc.id = pt.countryFK
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE og.object = 'event_participants'
+  AND og.name = 'organizationFK'
+  AND og.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, organization_id, competitor_name, event_startdate;
