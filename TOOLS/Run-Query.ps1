@@ -1483,6 +1483,30 @@ function Remove-RegistryBranch {
     return [pscustomobject]@{ Sql = $stripped; Removed = $found.Count }
 }
 
+# The Comp.Rank branch of a statement that reaches the same people another way as well. A
+# sport opened without that layer has no confirmed SHARD_ID or STATISTIC_TYPE_ID, so the branch
+# cannot be written at all, and refusing the whole statement would leave the sport with no check
+# over the paths it can read. Unlike the registry branch this is not a switch: what the sport has
+# had confirmed decides it, so it cannot be remembered on one run and forgotten on the next, and
+# it stops applying by itself on the day the parameters are recorded.
+$StatisticBranchMarker =
+'(?ms)^[ 	]*--[ 	]*STATISTIC BRANCH BEGIN[ 	]*?
+.*?^[ 	]*--[ 	]*STATISTIC BRANCH END[ 	]*?
+'
+
+# The parameters the marked branch is written from. Both must be confirmed for it to stand.
+$StatisticBranchParameters = @('SHARD_ID', 'STATISTIC_TYPE_ID')
+
+function Remove-StatisticBranch {
+    # Removes every marked branch and reports how many it found.
+    param([string]$Text)
+
+    $found = [regex]::Matches($Text, $StatisticBranchMarker)
+    $stripped = [regex]::Replace($Text, $StatisticBranchMarker, '')
+
+    return [pscustomobject]@{ Sql = $stripped; Removed = $found.Count }
+}
+
 function Expand-Placeholders {
     param([string]$Text, [hashtable]$Values)
 
@@ -5158,6 +5182,10 @@ $jobs = @(Set-JobCheckExpectation -Jobs $jobs -SportName $(if ($sportIdentity) {
 
 $paramTable = ConvertTo-ParamTable -Value $Params
 
+# Named before the sport block so the report below can read it whether or not a sport was given.
+$statisticTrimmed = @()
+$statisticBranchMissing = @()
+
 # Precedence, widest trust last: an explicit -Params or -SportId wins, then the values the
 # sport has had confirmed and recorded, then live discovery for whatever is still missing.
 # Each step fills only keys the earlier ones left empty.
@@ -5169,6 +5197,24 @@ if ($sportIdentity) {
     Write-Host "Resolving parameters for $identityText..." -ForegroundColor DarkGray
     foreach ($entry in (Get-SportFileParameters -SportName $ResolvedSportSlug).GetEnumerator()) {
         if (-not $paramTable.ContainsKey($entry.Key)) { $paramTable[$entry.Key] = $entry.Value }
+    }
+
+    # The Comp.Rank branch, dropped from the statements that mark it where the sport has no
+    # confirmed parameters to write it with. Read here rather than after discovery, and that
+    # order is the point: discovery can find a shard for any sport, so letting it fill one
+    # would run a layer nobody has confirmed and report its coverage as though somebody had.
+    # A value passed on -Params counts as confirmed and keeps the branch, which is how a run
+    # reads the layer deliberately.
+    $statisticBranchMissing = @($StatisticBranchParameters |
+        Where-Object { -not $paramTable.ContainsKey($_) })
+    if ($statisticBranchMissing.Count -gt 0) {
+        foreach ($job in $jobs) {
+            $trimmed = Remove-StatisticBranch -Text $job.Sql
+            if ($trimmed.Removed -gt 0) {
+                $job.Sql = $trimmed.Sql
+                $statisticTrimmed += $job.CheckId
+            }
+        }
     }
 
     # Discovery costs several executions, so it runs only when it can actually supply
@@ -5359,6 +5405,23 @@ if ($skipped.Count -gt 0) {
 
 if ($registryTrimmed.Count -gt 0) {
     Write-Host ("Registry branch dropped from {0}: {1}" -f $registryTrimmed.Count, ($registryTrimmed -join ', ')) -ForegroundColor DarkGray
+    Write-Host ''
+}
+
+if ($statisticTrimmed.Count -gt 0) {
+    # Louder than the registry line and deliberately so. That one reports a switch somebody
+    # asked for; this one reports a narrowing the run decided by itself, and a coverage number
+    # standing without it beside it would read as the whole population.
+    Write-Host ("Comp.Rank branch dropped from {0}: {1}" -f $statisticTrimmed.Count, ($statisticTrimmed -join ', ')) -ForegroundColor Yellow
+    Write-Host ("  {0} not confirmed for this sport, so the branch cannot be written. The run" -f ($statisticBranchMissing -join ' and ')) -ForegroundColor Yellow
+    Write-Host '  covers the other paths only, and eligible_count counts those.' -ForegroundColor Yellow
+    Add-RunDecision -Kind 'Comp.Rank branch dropped' -Subject ($statisticTrimmed -join ', ') `
+        -Chose 'ran the statement without its Comp.Rank path' `
+        -Why ("{0} is not confirmed in SPORTS/params.json for this sport, so the marked branch cannot be written. eligible_count counts the remaining paths, and a person reachable only through Comp.Rank is not audited by this run" -f ($statisticBranchMissing -join ' and ')) `
+        -Alternatives @(
+            'confirm the Comp.Rank parameters in the sport file and re-run with every path',
+            'pass -Params SHARD_ID=<id> STATISTIC_TYPE_ID=<id> to read the layer for this run only',
+            'accept the narrowed coverage and record in the sport file which paths it covered')
     Write-Host ''
 }
 

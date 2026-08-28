@@ -763,6 +763,48 @@ Test-That 'GLOBAL-DQ-007 marks its registry branch and GLOBAL-DQ-009 does not' {
     Assert-True ($nine[0] -match 'object_participants') 'GLOBAL-DQ-009 still reads the registry'
 }
 
+Test-That 'a marked Comp.Rank branch is dropped in both UNIONs together' {
+    # The findings branch and the coverage branch must lose the statistic path at the same
+    # time, or eligible_count would count people the findings were never read over.
+    $one = "    -- STATISTIC BRANCH BEGIN`n    UNION ALL`n    SELECT sp.participantFK`n    -- STATISTIC BRANCH END`n"
+    $out = Remove-StatisticBranch -Text ("A`n" + $one + "B`n" + $one + "C`n")
+
+    Assert-Equal 2 $out.Removed 'both branches should be removed'
+    Assert-Equal "A`nB`nC`n" $out.Sql 'only the marked blocks should go'
+}
+
+Test-That 'a statement marking no Comp.Rank branch is returned untouched' {
+    # Every COMP.RANK_* template audits that layer itself, so it marks nothing and waits for
+    # the layer rather than being trimmed into auditing nothing at all.
+    $sql = "SELECT sp.participantFK FROM statistic_participants11 sp"
+    $out = Remove-StatisticBranch -Text $sql
+
+    Assert-Equal 0 $out.Removed 'nothing should be removed'
+    Assert-Equal $sql $out.Sql 'the statement should be returned untouched'
+}
+
+Test-That 'GLOBAL-DQ-007 marks its Comp.Rank branch and the rest of it still runs' {
+    # Asserted against the real file: the whole mechanism rests on which statement carries the
+    # pair, and this is the statement two sports were missing a check over until 2026-08-28.
+    $file = Join-Path $RealRepoRoot 'GLOBAL_DQ\PARTICIPANTS.sql'
+    $text = Get-Content -LiteralPath $file -Raw
+    $statements = $text -split '(?m)^-- ={10,}\s*$'
+
+    $seven = @($statements | Where-Object { $_ -match 'CheckID - GLOBAL-DQ-007\b' })
+    Assert-Equal 1 $seven.Count 'GLOBAL-DQ-007 should be found once'
+
+    $out = Remove-StatisticBranch -Text $seven[0]
+    Assert-Equal 2 $out.Removed 'GLOBAL-DQ-007 marks both its statistic branches'
+    Assert-True ($out.Sql -notmatch 'statistic_participants') 'the statistic path should be gone'
+    # The placeholder, not the name: the statement's own prose explains why the branch is
+    # optional and says both parameter names while doing it.
+    Assert-True ($out.Sql -notmatch '\{\{SHARD_ID\}\}') 'the shard placeholder should go with it'
+    Assert-True ($out.Sql -notmatch '\{\{STATISTIC_TYPE_ID\}\}') 'the statistic type placeholder should go with it'
+    Assert-True ($out.Sql -match 'object_participants') 'the registry path should survive'
+    Assert-True ($out.Sql -match 'FROM lineup l') 'the lineup path should survive'
+    Assert-True ($out.Sql -match 'SUM\(u\.st\)') 'the statistic count column still resolves from the remaining branches'
+}
+
 Test-That 'an already active filter is not activated twice' {
     $sql = "  -- AND tt.id = <tournament_template_id>"
     $once = Enable-TemplateFilter -Text $sql -TemplateIds @(44)

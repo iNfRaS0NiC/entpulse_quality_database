@@ -31,6 +31,12 @@ SELECT
 -- moment to fix it, so a zero count is context and never a reason to leave the row out.
 -- The three counts are projected separately rather than summed only, because which path a
 -- person is on tells the reader where to go and fix the record.
+-- The Comp.Rank path is marked optional, in the findings branch and the coverage branch
+-- together. A sport opened without that layer has no confirmed SHARD_ID or STATISTIC_TYPE_ID
+-- and cannot write the branch at all, and refusing the whole statement for it would leave the
+-- sport with no date-of-birth check over the three paths it can read. The runner drops the
+-- marked pair for such a sport and says so; the run then covers the event, lineup and registry
+-- paths, and a person reachable only through Comp.Rank is not audited until the layer returns.
 FROM (
     SELECT
         p.id AS participant_id,
@@ -69,6 +75,7 @@ FROM (
           AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t.tournament_templateFK = <tournament_template_id>
 
+        -- STATISTIC BRANCH BEGIN
         UNION ALL
 
         SELECT sp.participantFK, 0, 0, 1
@@ -83,6 +90,7 @@ FROM (
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
           AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
           -- AND t.tournament_templateFK = <tournament_template_id>
+        -- STATISTIC BRANCH END
 
         -- REGISTRY BRANCH BEGIN
         UNION ALL
@@ -145,6 +153,7 @@ FROM (
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
 
+    -- STATISTIC BRANCH BEGIN
     UNION ALL
 
     SELECT sp.participantFK
@@ -159,6 +168,7 @@ FROM (
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
       -- AND t.tournament_templateFK = <tournament_template_id>
+    -- STATISTIC BRANCH END
 
     -- REGISTRY BRANCH BEGIN
     UNION ALL

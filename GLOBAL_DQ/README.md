@@ -137,6 +137,71 @@ Two rules bind it:
   the registry knows and no path reaches, so dropping its registry branch would leave it with
   nothing to audit. It marks no branch, and the runner therefore refuses to strip it.
 
+## Optional Comp.Rank branch
+
+A template that reaches the same people through a Comp.Rank row **as well as** another way
+marks that branch optional, bracketed the same way and in both UNIONs:
+
+```sql
+        -- STATISTIC BRANCH BEGIN
+        UNION ALL
+
+        SELECT sp.participantFK, 0, 0, 1
+        FROM statistic_participants{{SHARD_ID}} sp
+        JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+             AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+        ...
+        -- STATISTIC BRANCH END
+```
+
+It exists for a different reason from the registry marker and is driven differently. Since
+2026-08-26 a sport is opened without the Comp.Rank layer by default, so it confirms no
+`SHARD_ID` and no `STATISTIC_TYPE_ID`, and a template asking for either cannot be instantiated
+for it at all. For a template whose whole subject is Comp.Rank that is the right answer and the
+check waits. For one that merely reads Comp.Rank as one path among several it is not: refusing
+it leaves the sport with no check over the paths it can read, which is how
+`GLOBAL-DQ-007 PARTICIPANT_MISSING_DATE_OF_BIRTH` came to be missing from two sports until
+2026-08-28 with nothing anywhere recording that it was.
+
+**There is no switch.** `TOOLS/Run-Query.ps1` drops the marked pair when the sport has neither
+parameter confirmed, and keeps it when it has both. A run may still read the layer deliberately
+by passing them on `-Params`, which counts as confirming them for that run. The decision is
+made from what the sport file records rather than from what somebody remembered to type, so it
+cannot be forgotten on one run and applied on the next, and it stops applying by itself on the
+day the parameters are recorded.
+
+Three rules bind it:
+
+- **mark both branches or neither**, exactly as the registry marker requires, and for the same
+  reason: `eligible_count` must be counted over the population the findings were read from;
+- **mark nothing where Comp.Rank is the audited population.** Every `COMP.RANK_*` template
+  audits that layer itself, so dropping the branch would leave it auditing nothing. Those
+  templates wait for the layer instead, which is what `Not checked` means for them;
+- **the narrowing is reported, never silent.** The runner names the statements it trimmed, says
+  which parameters were absent, and writes the drop into the run's Decisions tab with its
+  alternatives. A coverage number standing alone would read as the whole population.
+
+## Mandatory templates
+
+A template whose Applicability cell opens with **Mandatory for every sport.** must carry an
+Approved registry row for every sport in `SPORTS.md`, and `TOOLS/Test-Package.ps1` fails the
+package while one does not. The list is here because this file owns which template to reuse;
+the script encodes the rule rather than redefining it.
+
+Today the list holds one entry, `GLOBAL-DQ-007 PARTICIPANT_MISSING_DATE_OF_BIRTH`. Marking a
+second is a decision about every sport at once and belongs to the user, not to whoever is
+opening the next sport: a template that is merely applicable almost everywhere is not mandatory,
+because the sports it does not fit are then forced to carry a check or to argue their way out of
+one. What earns the mark is a template with no structural prerequisite at all - it reads
+something every sport in this database stores by definition.
+
+The rule exists because its absence was the reason nobody saw the gap. `GLOBAL-DQ-007` was
+missing from Biathlon and Track-Cycling from the day each was opened until 2026-08-28, and the
+package passed the whole time: the parameter rule had refused the template for a sport with no
+confirmed Comp.Rank values, that refusal was correct, and no rule anywhere said the check was
+still owed. A refusal that is right for a reason nobody records is indistinguishable from a
+decision nobody made.
+
 ## Sport parameter file
 
 `SPORTS/params.json` maps a sport slug to its confirmed values:
@@ -172,7 +237,7 @@ The `Description` column mirrors each statement's `-- What it does:` comment.
 | GLOBAL-DQ-004 | TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE | `HIERARCHY.sql` | Flags tournament stages holding an event that starts outside the stage's own dates. | `SPORT_ID`, `OUT_OF_SCOPE_TEMPLATE_ID_LIST`, `CLIENT_FROM_SEASON` | Sport whose stages are expected to contain the events they hold. The rule is containment, not equality, and every sport storing a stage with dates qualifies: asserting that the dates equal the first and last event reads how a sport rounds a stage rather than whether the stage holds its competition, and a sport writing stages as whole days then reports nearly all of them. Changed from equality to containment 2026-08-26. A stage or event with no date is not judged here - `GLOBAL-DQ-005` owns the missing date | DATE_RANGE_MISMATCH |
 | GLOBAL-DQ-005 | TOURNAMENT_STAGE_MISSING_START_OR_END_DATE | `HIERARCHY.sql` | Flags tournament stages with a missing start date or end date. | `SPORT_ID`, `OUT_OF_SCOPE_TEMPLATE_ID_LIST`, `CLIENT_FROM_SEASON` | Any sport with active stages | MISSING_VALUES |
 | GLOBAL-DQ-006 | EVENT_MISSING_ROUND_TYPE | `HIERARCHY.sql` | Flags events with no round type or with a round type that no longer exists. | `SPORT_ID`, `OUT_OF_SCOPE_TEMPLATE_ID_LIST`, `CLIENT_FROM_SEASON` | Sport confirmed to use `event.round_typeFK` | MISSING_VALUES |
-| GLOBAL-DQ-007 | PARTICIPANT_MISSING_DATE_OF_BIRTH | `PARTICIPANTS.sql` | Flags athletes with no date of birth. | `SPORT_ID`, `PERSON_PARTICIPANT_TYPE_LIST`, `SHARD_ID`, `STATISTIC_TYPE_ID`, `OUT_OF_SCOPE_TEMPLATE_ID_LIST`, `CLIENT_FROM_SEASON` | Any sport that registers or fields people. Scoped to `PERSON_PARTICIPANT_TYPE_LIST` rather than `EVENT_PARTICIPANT_TYPE_LIST`: a date of birth is an attribute of a natural person, so a team entered as an event participant has none and would be reported as missing one in every sport fielding teams. The population is reached through the sport registry and all three participation paths, because no sport uses one mechanism only - a sport entering teams carries its athletes in lineups or in the Comp.Rank statistic, and a check reading the event path alone covers nothing there. A participation count of zero is context and never a reason to omit the row | MISSING_VALUES |
+| GLOBAL-DQ-007 | PARTICIPANT_MISSING_DATE_OF_BIRTH | `PARTICIPANTS.sql` | Flags athletes with no date of birth. | `SPORT_ID`, `PERSON_PARTICIPANT_TYPE_LIST`, `OUT_OF_SCOPE_TEMPLATE_ID_LIST`, `CLIENT_FROM_SEASON`, and `SHARD_ID` with `STATISTIC_TYPE_ID` for the optional Comp.Rank branch only | **Mandatory for every sport.** Any sport that registers or fields people. Scoped to `PERSON_PARTICIPANT_TYPE_LIST` rather than `EVENT_PARTICIPANT_TYPE_LIST`: a date of birth is an attribute of a natural person, so a team entered as an event participant has none and would be reported as missing one in every sport fielding teams. The population is reached through the sport registry and all three participation paths, because no sport uses one mechanism only - a sport entering teams carries its athletes in lineups or in the Comp.Rank statistic, and a check reading the event path alone covers nothing there. A participation count of zero is context and never a reason to omit the row. The Comp.Rank path is marked optional: a sport with no confirmed `SHARD_ID` and `STATISTIC_TYPE_ID` loses that branch and is audited over the other three rather than being left with no check at all | MISSING_VALUES |
 | GLOBAL-DQ-008 | PARTICIPANT_MISSING_PROFILE_FIELDS | `PARTICIPANTS.sql` | Flags active event participants missing a name or country, or people missing a first name or last name. | `SPORT_ID`, `EVENT_PARTICIPANT_TYPE_LIST`, `PERSON_PARTICIPANT_TYPE_LIST`, `OUT_OF_SCOPE_TEMPLATE_ID_LIST`, `CLIENT_FROM_SEASON` | Sport confirmed to store split first/last name via `language` types 7 and 8. The row filter stays `EVENT_PARTICIPANT_TYPE_LIST`, because name and country are asserted of every entered participant including a team; the two split-name tests are guarded by `PERSON_PARTICIPANT_TYPE_LIST` in both the reported field list and the emission condition, so a team carrying a name and a country is not reported for lacking a first name it cannot have | MISSING_VALUES |
 | GLOBAL-DQ-009 | PARTICIPANT_NO_PARTICIPATION_ANYWHERE | `PARTICIPANTS.sql` | Flags registered participants who never appear as an event participant, lineup member, or Comp.Rank participant. | `SPORT_ID`, `REGISTRY_PARTICIPANT_TYPE_LIST`, `SHARD_ID`, `STATISTIC_TYPE_ID` | Sport with an active `object_participants` registry (`object='sport'`). All three paths are asserted together: a sport that enters teams and carries its people in lineups or in the Comp.Rank statistic would have its whole registry reported by an event-only rule. **Its signal is `Actionable` and stays `Actionable`, by decision of 2026-08-24.** What it reports is a defect to be cleared even where it does not look like one today, so a sport must not record it `Informational` on the reasoning that the competitor is not wrong and the missing participations are not ours to add - that reading was recorded for BMX and Soccer on 2026-08-05 and is reversed here. The size is not a counter-argument and is stated so nobody rediscovers it as a surprise: Soccer alone reaches 135282 of 364192 registered athletes and 6140 of 29954 registered teams. `Not applicable` remains available and is a different question - Equestrian and Ice-Hockey hold it because a participation there travels a path this template does not read, a `horseFK` and a `refereeFK` respectively, and that is structure rather than signal | NO_RELATED_RECORDS |
 | GLOBAL-DQ-010 | COMP.RANK_NO_PARTICIPANTS | `STATISTICS.sql` | Flags Comp.Rank records with no participant rows in the sport's shard. | `SPORT_ID`, `STATISTIC_TYPE_ID`, `SHARD_ID`, `OUT_OF_SCOPE_TEMPLATE_ID_LIST`, `CLIENT_FROM_SEASON` | Tournament-owned statistics only (`statistic.object_typeFK=3`); shard confirmed per `DB-SEM-006` | NO_RELATED_RECORDS |
