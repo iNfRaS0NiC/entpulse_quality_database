@@ -3843,6 +3843,16 @@ SELECT
 -- The start-at-one branch is not redundant with the step branch: a sequence running 2, 3, 4
 -- has correct steps throughout and is invisible without it. No sport currently holds one,
 -- which is a data state rather than a structural absence, so the branch stays.
+-- **A bronze round may start at 1 or at 3 and neither is reported.** A match for third place
+-- decides places three and four, so a sequence running 3, 4 is what the event should say; but
+-- the convention is not shared. Measured 2026-08-28: Track Cycling ranks its bronze and small
+-- finals from 3 on 11 events, while Speed Skating ranks its 12 bronze events from 1 and
+-- Artistic Gymnastics its 2 the same way. Insisting on either number would turn one sport's
+-- correct data into findings, so both are accepted and the round type is what decides which
+-- events get the latitude - BRONZE_ROUND_TYPE_LIST, the same list the medal checks read. The
+-- cost is stated rather than hidden: on a bronze round a sequence starting at 2 is still
+-- reported, but one written 1 where the sport means 3, or 3 where it means 1, is not. A sport
+-- with no third-place round declares the list as 0 and nothing changes for it.
 FROM (
     SELECT
         b.event_id,
@@ -3859,13 +3869,17 @@ FROM (
             s.event_id,
             s.rank_value AS at_place,
             CASE
-                WHEN s.prev_rank IS NULL AND s.rank_value <> 1 THEN 'START'
+                WHEN s.prev_rank IS NULL AND s.rank_value <> 1
+                     AND NOT (s.is_bronze_round = 1 AND s.rank_value = 3) THEN 'START'
                 WHEN s.next_rank > s.rank_value + s.places_taken THEN 'GAP'
                 ELSE 'TIE'
             END AS break_kind,
             CASE
                 WHEN s.prev_rank IS NULL AND s.rank_value <> 1
-                    THEN CONCAT('sequence starts at ', s.rank_value, ', expected 1')
+                     AND NOT (s.is_bronze_round = 1 AND s.rank_value = 3)
+                    THEN CONCAT('sequence starts at ', s.rank_value,
+                                CASE WHEN s.is_bronze_round = 1
+                                     THEN ', expected 1 or 3' ELSE ', expected 1' END)
                 ELSE CONCAT('place ', s.rank_value,
                             CASE WHEN s.places_taken > 1
                                  THEN CONCAT(' shared by ', s.places_taken) ELSE '' END,
@@ -3877,13 +3891,16 @@ FROM (
                 ranked.event_id,
                 ranked.rank_value,
                 ranked.places_taken,
+                ranked.is_bronze_round,
                 LAG(ranked.rank_value)  OVER (PARTITION BY ranked.event_id ORDER BY ranked.rank_value) AS prev_rank,
                 LEAD(ranked.rank_value) OVER (PARTITION BY ranked.event_id ORDER BY ranked.rank_value) AS next_rank
             FROM (
                 SELECT
                     e2.id AS event_id,
                     CAST(r.value AS UNSIGNED) AS rank_value,
-                    COUNT(DISTINCT ep.id) AS places_taken
+                    COUNT(DISTINCT ep.id) AS places_taken,
+                    MAX(CASE WHEN e2.round_typeFK IN ({{BRONZE_ROUND_TYPE_LIST}})
+                             THEN 1 ELSE 0 END) AS is_bronze_round
                 FROM event_participants ep
                 JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
                 JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
@@ -3902,7 +3919,8 @@ FROM (
                 GROUP BY e2.id, CAST(r.value AS UNSIGNED)
             ) ranked
         ) s
-        WHERE (s.prev_rank IS NULL AND s.rank_value <> 1)
+        WHERE (s.prev_rank IS NULL AND s.rank_value <> 1
+               AND NOT (s.is_bronze_round = 1 AND s.rank_value = 3))
            OR (s.next_rank IS NOT NULL AND s.next_rank <> s.rank_value + s.places_taken)
     ) b
     JOIN event e ON e.id = b.event_id AND e.del = 'no'

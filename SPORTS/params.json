@@ -1,5 +1,6 @@
 {
     "BMX": {
+        "BRONZE_ROUND_TYPE_LIST": "0",
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 58,
         "CLIENT_FROM_SEASON": 2004,
@@ -52,6 +53,7 @@
         "SERIES_SKIP_YEARS": "2020",
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
         "_names": {
+            "BRONZE_ROUND_TYPE_LIST": "0, the sentinel for a sport that decides no third place in an event of its own - every medal is awarded inside the Final event, so no separate round decides bronze",
             "DATA_ORGANIZATION_TYPE_ID": "1465 Organization, the statistic_data_type that holds the participant.id of the organization a ranked competitor represents. Declared for statistic type 11 and the only id of that name in the database, measured 2026-08-21. GLOBAL-DQ-131 reads it; the event layer keeps the same fact somewhere else entirely, as an organizationFK property on event_participants, which is why GLOBAL-DQ-130 is a separate statement and needs no parameter for it",
             "PERSON_ROLE_TYPE_LIST": "'athlete': the participant types that denote a natural person, measured against the sport registry on 2026-08-20. Not PERSON_PARTICIPANT_TYPE_LIST, which names who competes - a coach is a person and does not compete - and not REGISTRY_PARTICIPANT_TYPE_LIST, which includes team and, for Equestrian, horse. GLOBAL-DQ-113 asks whether one ranking mixes teams with individuals, and participant.type carries a person's CURRENT role rather than the one held at the event: 446 people typed coach appear in Ice Hockey's rankings and 406 of them also occupy a playing lineup slot, so a squad from 2004 reads as coach-and-athlete because its players have since become coaches. Collapsing the person types keeps that out of the findings and leaves team against athlete, and horse against athlete, where they were",
             "SPORT_ID": "58 BMX",
@@ -87,7 +89,6 @@
             "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
             "RESULT_FINAL_SCORE_TYPE_ID": "the sport is not head to head; an event is a field ranked against itself rather than a pair holding one deciding score",
             "RESULT_MIRROR_SCORE_TYPE_ID": "the sport is not head to head; no result type mirrors a deciding score",
-            "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event, so no separate round decides bronze",
             "WINNER_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
             "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
             "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
@@ -117,6 +118,7 @@
         }
     },
     "Triathlon": {
+        "BRONZE_ROUND_TYPE_LIST": "0",
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 50,
         "CLIENT_FROM_SEASON": 2004,
@@ -168,6 +170,7 @@
         "SERIES_SKIP_YEARS": "2020",
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
         "_names": {
+            "BRONZE_ROUND_TYPE_LIST": "0, the sentinel for a sport that decides no third place in an event of its own - every medal is awarded inside the Final event, so no separate round decides bronze",
             "DATA_ORGANIZATION_TYPE_ID": "1465 Organization, the statistic_data_type that holds the participant.id of the organization a ranked competitor represents. Declared for statistic type 11 and the only id of that name in the database, measured 2026-08-21. GLOBAL-DQ-131 reads it; the event layer keeps the same fact somewhere else entirely, as an organizationFK property on event_participants, which is why GLOBAL-DQ-130 is a separate statement and needs no parameter for it",
             "PERSON_ROLE_TYPE_LIST": "'athlete': the participant types that denote a natural person, measured against the sport registry on 2026-08-20. Not PERSON_PARTICIPANT_TYPE_LIST, which names who competes - a coach is a person and does not compete - and not REGISTRY_PARTICIPANT_TYPE_LIST, which includes team and, for Equestrian, horse. GLOBAL-DQ-113 asks whether one ranking mixes teams with individuals, and participant.type carries a person's CURRENT role rather than the one held at the event: 446 people typed coach appear in Ice Hockey's rankings and 406 of them also occupy a playing lineup slot, so a squad from 2004 reads as coach-and-athlete because its players have since become coaches. Collapsing the person types keeps that out of the findings and leaves team against athlete, and horse against athlete, where they were",
             "SPORT_ID": "50 Triathlon",
@@ -203,7 +206,6 @@
             "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
             "RESULT_FINAL_SCORE_TYPE_ID": "the sport is not head to head; an event is a field ranked against itself rather than a pair holding one deciding score",
             "RESULT_MIRROR_SCORE_TYPE_ID": "the sport is not head to head; no result type mirrors a deciding score",
-            "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event, so no separate round decides bronze",
             "WINNER_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
             "WINNER_HOME_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
             "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
@@ -245,6 +247,7 @@
         }
     },
     "Curling": {
+        "RESULT_RANK_TYPE_ID": 100,
         "COMP_RANK_ENTRY_SIZE_LIST": "1, 2",
         "SPORT_ID": 10,
         "CLIENT_FROM_SEASON": 2004,
@@ -294,6 +297,7 @@
         "SUPPORT_PARTICIPANT_TYPE_LIST": "'coach'",
         "PARTICIPATION_PROPERTY_NAME_LIST": "'refereeFK'",
         "_names": {
+            "RESULT_RANK_TYPE_ID": "100 Rank, named so GLOBAL-DQ-144 can look for it. The sport writes no row of this type - measured 2026-08-28, zero inside and outside the boundary - and must not: no Rank result type; the score in Final Result and Running score carries the classification",
             "DATA_ORGANIZATION_TYPE_ID": "1465 Organization, the statistic_data_type that holds the participant.id of the organization a ranked competitor represents. Declared for statistic type 11 and the only id of that name in the database, measured 2026-08-21. GLOBAL-DQ-131 reads it; the event layer keeps the same fact somewhere else entirely, as an organizationFK property on event_participants, which is why GLOBAL-DQ-130 is a separate statement and needs no parameter for it",
             "EVENT_PARTICIPANT_COUNT_LIST": "2: the field sizes this sport enters as event_participants rows. GLOBAL-DQ-083 asserted exactly two until 2026-08-20, which is right for a sport that only ever fields a pair and wrong for a doubles sport - Badminton enters the four players rather than two pairs, 48072 events against 40951 singles, and Table Tennis 7788 against 55314. This sport fields a pair and nothing else, so the value is 2 and the check reads exactly as it did",
             "PERSON_ROLE_TYPE_LIST": "'athlete', 'coach': the participant types that denote a natural person, measured against the sport registry on 2026-08-20. Not PERSON_PARTICIPANT_TYPE_LIST, which names who competes - a coach is a person and does not compete - and not REGISTRY_PARTICIPANT_TYPE_LIST, which includes team and, for Equestrian, horse. GLOBAL-DQ-113 asks whether one ranking mixes teams with individuals, and participant.type carries a person's CURRENT role rather than the one held at the event: 446 people typed coach appear in Ice Hockey's rankings and 406 of them also occupy a playing lineup slot, so a squad from 2004 reads as coach-and-athlete because its players have since become coaches. Collapsing the person types keeps that out of the findings and leaves team against athlete, and horse against athlete, where they were",
@@ -326,7 +330,6 @@
             "REGISTRY_PARTICIPANT_TYPE_LIST": "athlete and team, the competitors this sport enters. coach was removed on 2026-08-24 when GLOBAL-DQ-135 was instantiated: that statement reads SUPPORT_PARTICIPANT_TYPE_LIST and the two lists must not intersect, or every unattached coach reports twice under two CheckIDs. The rows do not disappear, they move - all 38 registered coaches reach no participation of any kind, measured 2026-08-24, and they are reported by GLOBAL-DQ-135 from now on instead of by GLOBAL-DQ-009. Curling-DQ-009's count therefore falls by 38 without anything having been repaired, which is a change of owner and not a change of state"
         },
         "_notApplicable": {
-            "RESULT_RANK_TYPE_ID": "no Rank result type; the score in Final Result and Running score carries the classification",
             "RESULT_DURATION_TYPE_ID": "the sport stores no time on a result",
             "RESULT_FULL_TIME_TYPE_ID": "the sport stores no time on a result",
             "FULL_TIME_TOLERANCE_SECONDS": "the sport stores no time on a result",
@@ -379,6 +382,7 @@
         }
     },
     "Artistic-Gymnastics": {
+        "BRONZE_ROUND_TYPE_LIST": "181",
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 40,
         "CLIENT_FROM_SEASON": 2004,
@@ -427,6 +431,7 @@
         "DATA_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disq.', 'withdrawn'",
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
         "_names": {
+            "BRONZE_ROUND_TYPE_LIST": "181 bronze",
             "DATA_ORGANIZATION_TYPE_ID": "1465 Organization, the statistic_data_type that holds the participant.id of the organization a ranked competitor represents. Declared for statistic type 11 and the only id of that name in the database, measured 2026-08-21. GLOBAL-DQ-131 reads it; the event layer keeps the same fact somewhere else entirely, as an organizationFK property on event_participants, which is why GLOBAL-DQ-130 is a separate statement and needs no parameter for it",
             "PERSON_ROLE_TYPE_LIST": "'athlete': the participant types that denote a natural person, measured against the sport registry on 2026-08-20. Not PERSON_PARTICIPANT_TYPE_LIST, which names who competes - a coach is a person and does not compete - and not REGISTRY_PARTICIPANT_TYPE_LIST, which includes team and, for Equestrian, horse. GLOBAL-DQ-113 asks whether one ranking mixes teams with individuals, and participant.type carries a person's CURRENT role rather than the one held at the event: 446 people typed coach appear in Ice Hockey's rankings and 406 of them also occupy a playing lineup slot, so a squad from 2004 reads as coach-and-athlete because its players have since become coaches. Collapsing the person types keeps that out of the findings and leaves team against athlete, and horse against athlete, where they were",
             "SPORT_ID": "40 Artistic Gymnastics",
@@ -705,6 +710,7 @@
         }
     },
     "Modern-Pentathlon": {
+        "BRONZE_ROUND_TYPE_LIST": "0",
         "COMP_RANK_ENTRY_SIZE_LIST": "1, 2",
         "SPORT_ID": 42,
         "CLIENT_FROM_SEASON": 2004,
@@ -755,6 +761,7 @@
         "DATA_COMMENT_NO_RESULT_LIST": "'dns', 'dns.', 'dnf', 'dsq', 'disq.', 'disqualified'",
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
         "_names": {
+            "BRONZE_ROUND_TYPE_LIST": "0, the sentinel for a sport that decides no third place in an event of its own - every medal is awarded inside the Final event (round type 173), so no separate round decides bronze",
             "DATA_ORGANIZATION_TYPE_ID": "1465 Organization, the statistic_data_type that holds the participant.id of the organization a ranked competitor represents. Declared for statistic type 11 and the only id of that name in the database, measured 2026-08-21. GLOBAL-DQ-131 reads it; the event layer keeps the same fact somewhere else entirely, as an organizationFK property on event_participants, which is why GLOBAL-DQ-130 is a separate statement and needs no parameter for it",
             "PERSON_ROLE_TYPE_LIST": "'athlete': the participant types that denote a natural person, measured against the sport registry on 2026-08-20. Not PERSON_PARTICIPANT_TYPE_LIST, which names who competes - a coach is a person and does not compete - and not REGISTRY_PARTICIPANT_TYPE_LIST, which includes team and, for Equestrian, horse. GLOBAL-DQ-113 asks whether one ranking mixes teams with individuals, and participant.type carries a person's CURRENT role rather than the one held at the event: 446 people typed coach appear in Ice Hockey's rankings and 406 of them also occupy a playing lineup slot, so a squad from 2004 reads as coach-and-athlete because its players have since become coaches. Collapsing the person types keeps that out of the findings and leaves team against athlete, and horse against athlete, where they were",
             "SPORT_ID": "42 Modern Pentathlon",
@@ -799,8 +806,7 @@
             "WINNER_AWAY_VALUE_LIST": "the sport records no Winner event property; the field is ranked rather than a side named",
             "RESULT_FULL_TIME_TYPE_ID": "no result type records elapsed time; a segment's time is stored on the Comp.Rank statistic rather than on the event result, so there is no absolute finishing time to assert on a result",
             "RESULT_DURATION_TYPE_ID": "no result type records elapsed time or a gap to the leader; the result layer carries Rank, Points, Comment and Medal only",
-            "FULL_TIME_TOLERANCE_SECONDS": "the sport stores no time on a result, so there is no arithmetic between times to hold to a tolerance",
-            "BRONZE_ROUND_TYPE_LIST": "every medal is awarded inside the Final event (round type 173), so no separate round decides bronze"
+            "FULL_TIME_TOLERANCE_SECONDS": "the sport stores no time on a result, so there is no arithmetic between times to hold to a tolerance"
         },
         "_checkSignal": {
             "GLOBAL-DQ-132": {
@@ -850,6 +856,7 @@
         }
     },
     "Golf": {
+        "BRONZE_ROUND_TYPE_LIST": "0",
         "COMP_RANK_ENTRY_SIZE_LIST": "1, 2",
         "SPORT_ID": 3,
         "CLIENT_FROM_SEASON": 2004,
@@ -876,6 +883,7 @@
         "NOT_STARTED_DESC_LIST": "1",
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "432, 435, 438, 9142, 9201, 9418, 9633, 9645, 9691, 9692, 9693, 9831, 9932, 10305, 10333, 10334, 10341, 11528, 11529, 12649",
         "_names": {
+            "BRONZE_ROUND_TYPE_LIST": "0, the sentinel for a sport that decides no third place in an event of its own - bronze is not decided in an event of its own: all 18 medal results sit in round type 225 Main Phase, six gold, six silver and six bronze across the same six events",
             "DATA_ORGANIZATION_TYPE_ID": "1465 Organization, the statistic_data_type that holds the participant.id of the organization a ranked competitor represents. Declared for statistic type 11 and the only id of that name in the database, measured 2026-08-21. GLOBAL-DQ-131 reads it; the event layer keeps the same fact somewhere else entirely, as an organizationFK property on event_participants, which is why GLOBAL-DQ-130 is a separate statement and needs no parameter for it",
             "PERSON_ROLE_TYPE_LIST": "'athlete': the participant types that denote a natural person, measured against the sport registry on 2026-08-20. Not PERSON_PARTICIPANT_TYPE_LIST, which names who competes - a coach is a person and does not compete - and not REGISTRY_PARTICIPANT_TYPE_LIST, which includes team and, for Equestrian, horse. GLOBAL-DQ-113 asks whether one ranking mixes teams with individuals, and participant.type carries a person's CURRENT role rather than the one held at the event: 446 people typed coach appear in Ice Hockey's rankings and 406 of them also occupy a playing lineup slot, so a squad from 2004 reads as coach-and-athlete because its players have since become coaches. Collapsing the person types keeps that out of the findings and leaves team against athlete, and horse against athlete, where they were",
             "SPORT_ID": "3 Golf",
@@ -918,7 +926,6 @@
             "RESULT_DURATION_TYPE_ID": "the sport records no time or duration result type",
             "TIMED_DISCIPLINE_LIST": "neither discipline is timed; Stroke Play and Match Play both resolve on strokes",
             "FULL_TIME_TOLERANCE_SECONDS": "no time is recorded, so no tolerance applies",
-            "BRONZE_ROUND_TYPE_LIST": "bronze is not decided in an event of its own: all 18 medal results sit in round type 225 Main Phase, six gold, six silver and six bronze across the same six events",
             "SCOPE_PERIOD_DATA_TYPE_LIST": "deferred with the hole-by-hole scope layer, which is outside the DQ work by decision on 2026-08-12",
             "SCOPE_PERIOD_SENTINEL_LIST": "deferred with the hole-by-hole scope layer",
             "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "deferred with the hole-by-hole scope layer",
@@ -1327,6 +1334,7 @@
         }
     },
     "Cycling": {
+        "BRONZE_ROUND_TYPE_LIST": "0",
         "DATA_TEAM_TYPE_ID": 1429,
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 30,
@@ -1357,6 +1365,7 @@
         "ROUND_TYPE_LIST": "0, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 89, 173",
         "FINAL_ROUND_TYPE_LIST": "173",
         "_names": {
+            "BRONZE_ROUND_TYPE_LIST": "0, the sentinel for a sport that decides no third place in an event of its own - the sport runs no third-place round: its round types are 0, the stage numbers 1 to 21 under ids 38 to 58, 89 and 173 Final, and a mass-start race settles all three medals at once",
             "DATA_ORGANIZATION_TYPE_ID": "1465 Organization, the statistic_data_type that holds the participant.id of the organization a ranked competitor represents. Declared for statistic type 11 and the only id of that name in the database, measured 2026-08-21. GLOBAL-DQ-131 reads it; the event layer keeps the same fact somewhere else entirely, as an organizationFK property on event_participants, which is why GLOBAL-DQ-130 is a separate statement and needs no parameter for it",
             "PERSON_ROLE_TYPE_LIST": "'athlete', 'coach': the participant types that denote a natural person, measured against the sport registry on 2026-08-20. Not PERSON_PARTICIPANT_TYPE_LIST, which names who competes - a coach is a person and does not compete - and not REGISTRY_PARTICIPANT_TYPE_LIST, which includes team and, for Equestrian, horse. GLOBAL-DQ-113 asks whether one ranking mixes teams with individuals, and participant.type carries a person's CURRENT role rather than the one held at the event: 446 people typed coach appear in Ice Hockey's rankings and 406 of them also occupy a playing lineup slot, so a squad from 2004 reads as coach-and-athlete because its players have since become coaches. Collapsing the person types keeps that out of the findings and leaves team against athlete, and horse against athlete, where they were",
             "SPORT_ID": "30 Cycling",
@@ -1603,7 +1612,6 @@
             "SCOPE_PERIOD_SENTINEL_LIST": "no period values exist, so no sentinel vocabulary does",
             "SCOPE_EXTRA_PERIOD_DATA_TYPE_ID": "a road race has no overtime: a tie on the line is settled by the finish photograph rather than by more racing",
             "EXTRA_PERIOD_STATUS_DESC_LIST": "no extra period exists, so no status describes one",
-            "BRONZE_ROUND_TYPE_LIST": "the sport runs no third-place round: its round types are 0, the stage numbers 1 to 21 under ids 38 to 58, 89 and 173 Final, and a mass-start race settles all three medals at once",
             "ELIMINATION_ROUND_NAME_LIST": "the sport runs no elimination round; the same 24 round types are stage numbers and a Final",
             "GROUP_ROUND_NAME_LIST": "the sport runs no group stage; the same 24 round types are stage numbers and a Final"
         },
@@ -2221,6 +2229,7 @@
         }
     },
     "Biathlon": {
+        "BRONZE_ROUND_TYPE_LIST": "0",
         "SPORT_ID": 7,
         "CLIENT_FROM_SEASON": 2004,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "465, 10241, 10820, 11242, 12457, 12458, 12461, 12462, 12477, 12478, 12566, 12567, 12568, 12569, 12570, 12571, 12572, 12573, 12574, 12575, 12576, 12577, 12578, 12579, 12580",
@@ -2257,6 +2266,7 @@
         "RESULT_COMMENT_NO_RESULT_LIST": "'dns', 'dnf', 'disqualified'",
         "STALE_NOT_STARTED_DAYS": 2,
         "_names": {
+            "BRONZE_ROUND_TYPE_LIST": "no round type decides third place in its own event; 0 is the sentinel",
             "SPORT_ID": "7 Biathlon. A second row, 125 Para Biathlon, exists as a separate sport and is not this one",
             "CLIENT_FROM_SEASON": "2004, the client boundary UK Sport works to and the same season every documented sport uses",
             "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "25 of the sport's 58 templates, by the user's decision of 2026-08-27. Fifteen are the IOC-purpose templates, which hold 352 tournaments and not one event. The other ten are competitions the client does not follow: IBU Cup (12477, 12478, 11242), the Norwegian championships NM (12457, 12458, 465), Season Start (12461, 12462, 10241) and Winter Olympics medal winners (10820). The boundary removes 249 events of 2775 and leaves 2526. Template 89 Norges Cup 1 was named in the same decision and is deliberately absent: it is del = yes and no statement in this package reads a deleted row",
@@ -2387,6 +2397,7 @@
         }
     },
     "Handball": {
+        "RESULT_RANK_TYPE_ID": 100,
         "SPORT_ID": 20,
         "CLIENT_FROM_SEASON": 2004,
         "IN_SCOPE_TEMPLATE_ID_LIST": "363, 364, 380, 381, 387, 388, 9609, 9610, 9611, 10376, 10377, 10382, 10383, 10384, 10385, 10386, 10387, 10495, 10496, 10499, 10500, 10506, 10562, 10590, 10995, 11000, 11075, 11078, 11079, 11108, 11115, 11116, 11117, 11286, 11287, 11546, 11547, 11616, 11617",
@@ -2441,7 +2452,6 @@
             }
         },
         "_notApplicable": {
-            "RESULT_RANK_TYPE_ID": "handball stores no rank on an event result at all. Its eight result types are the six goal counts plus 501 Medal and 668 Event outcome, measured to coverage by GLOBAL-DISCOVERY-007 and -026 on 2026-08-28. This is the model rather than the population: the sport is H2H by DB-SEM-015, so an event is a contest between two teams decided by a score, not a field ranked against itself - the place a team finishes on is the Comp.Rank's business and lives in 1270 Rank, which IS recorded",
             "RANK_MAX_PLAUSIBLE": "there is no event rank to bound; see RESULT_RANK_TYPE_ID",
             "RESULT_COMMENT_TYPE_ID": "handball stores no Comment result type. The status a competitor ends an event in - did not start, disqualified, retired - is a listing sport's vocabulary; a handball match that was not played carries an event status instead, and 668 Event outcome carries won, lost or draw for one that was",
             "RESULT_COMMENT_VALUE_LIST": "there is no Comment result to hold a vocabulary; see RESULT_COMMENT_TYPE_ID",
@@ -2467,6 +2477,7 @@
             "SCOPE_PERIOD_SENTINEL_LIST": "the scope layer holds only 162 goals over the two extra-time containers, and every value it holds is a real score - there is no sentinel standing for a period that was not played"
         },
         "_names": {
+            "RESULT_RANK_TYPE_ID": "100 Rank, named so GLOBAL-DQ-144 can look for it. The sport writes no row of this type - measured 2026-08-28, zero inside and outside the boundary - and must not: handball stores no rank on an event result at all. Its eight result types are the six goal counts plus 501 Medal and 668 Event outcome, measured to coverage by GLOBAL-DISCOVERY-007 and -026 on 2026-08-28. This is the model rather than the population: the sport is H2H by DB-SEM-015, so an event is a contest between two teams decided by a score, not a field ranked against itself - the place a team finishes on is the Comp.Rank's business and lives in 1270 Rank, which IS recorded",
             "CLIENT_FROM_SEASON": "2004, the package-wide client boundary rather than a value measured for this sport: every one of the other fourteen documented sports records the same year, and GLOBAL_DQ/README.md states UK Sport's scope as starting at the 2004 season. The season is read from tournament.name because the tournament row carries no date column. Handball reaches back to 2000 for women and 2001 for men, so the cutoff removes the first few editions of the competitions the boundary names; recorded 2026-08-28",
             "RESULT_FINAL_SCORE_TYPE_ID": "4 Final Result, the score the match is decided on. 26750 rows over 13375 events, and those 13375 are exactly the events under a finished status - every finished event carries it and no unfinished one does, measured 2026-08-28",
             "RESULT_MIRROR_SCORE_TYPE_ID": "6 Running score, which mirrors the deciding score and is the only result type reaching all 13573 events in the boundary - including the 198 that hold no 4 Final Result",
