@@ -604,6 +604,28 @@ foreach ($s in ($dqStatements + $globalDq)) {
 Add-Result -Group 'DQ' -Name 'Coverage contract' -Findings $coverageFindings
 Add-Result -Group 'DQ' -Name 'No result-level LIMIT' -Findings $limitFindings
 
+# Optional branches. A statement marking one drops it in the findings and in the coverage
+# together, or eligible_count is counted over a population the findings never saw - the rule
+# GLOBAL_DQ/README.md states for both markers. Mechanically that means BEGIN and END come in
+# pairs and the pairs come in twos; a statement marking none is untouched by this.
+$branchFindings = @()
+foreach ($s in ($dqStatements + $globalDq)) {
+    $where = "$($s.CheckId) ($($s.File):$($s.Line))"
+    foreach ($marker in @('REGISTRY', 'STATISTIC')) {
+        $begins = ([regex]::Matches($s.Sql, "(?m)^[ `t]*--[ `t]*$marker BRANCH BEGIN[ `t]*`$")).Count
+        $ends = ([regex]::Matches($s.Sql, "(?m)^[ `t]*--[ `t]*$marker BRANCH END[ `t]*`$")).Count
+        if ($begins -ne $ends) {
+            $branchFindings += "${where}: $marker BRANCH has $begins BEGIN and $ends END"
+            continue
+        }
+        if ($begins -ne 0 -and $begins -ne 2) {
+            $branchFindings += ("${where}: $marker BRANCH is marked $begins time(s); " +
+                'mark the findings branch and the coverage branch together, or neither')
+        }
+    }
+}
+Add-Result -Group 'DQ' -Name 'Optional branches marked in pairs' -Findings $branchFindings
+
 # Statistics rules: a statistic-owned audited object needs template context and the IOC
 # exclusion in every branch. The trigger is the audited object, not any mention of the
 # tables: a participant check may read statistic_data11 in a subquery and still audit a
@@ -1157,6 +1179,42 @@ foreach ($group in ($indexRows | Group-Object { $_.Cells[1].ToLowerInvariant() }
     $sportFindings += "SPORTS.md: repository slug '$($group.Group[0].Cells[1])' appears more than once"
 }
 
+# A template GLOBAL_DQ/README.md marks mandatory must carry an Approved row for every sport in
+# the index. Nothing enforced this until 2026-08-28, which is how
+# GLOBAL-DQ-007 PARTICIPANT_MISSING_DATE_OF_BIRTH came to be missing from Biathlon and
+# Track-Cycling: the parameter rule below refused it for a sport with no Comp.Rank values, the
+# refusal was correct at the time, and nothing anywhere said the check was owed. A missing
+# mandatory template now fails the package rather than waiting for somebody to notice.
+#
+# The marker lives in the Applicability cell because GLOBAL_DQ/README.md owns which template to
+# reuse; this script encodes the rule and does not redefine it. Adding a template to the list is
+# a decision about every sport at once, so it is made there, in the sentence a reader of that
+# file will see, rather than in a list here that only this script reads.
+$mandatoryMarker = 'Mandatory for every sport.'
+$dqReadmeRows = Get-MarkdownTableRow -Path (Join-Path $RepoRoot 'GLOBAL_DQ/README.md') -FirstCell '^GLOBAL-DQ-\d+$'
+$mandatory = @($dqReadmeRows | Where-Object { $_.Cells.Count -gt 5 -and $_.Cells[5] -like "*$mandatoryMarker*" })
+
+if ($mandatory.Count -eq 0) {
+    $sportFindings += ("GLOBAL_DQ/README.md: no template carries '$mandatoryMarker', so the " +
+        'mandatory-template rule inspected nothing')
+}
+foreach ($template in $mandatory) {
+    $family = $template.Cells[0]
+    $templateName = Remove-Backtick $template.Cells[1]
+    $carrying = @($registryRows |
+        Where-Object {
+            $_.Cells.Count -eq $expectedColumns -and $_.Cells[7] -eq 'Approved' -and
+            (Remove-Backtick $_.Cells[2]) -eq $family
+        } | ForEach-Object { $_.Cells[1] } | Select-Object -Unique)
+
+    foreach ($sport in ($indexed.Keys | Sort-Object)) {
+        if ($carrying -notcontains $sport) {
+            $sportFindings += ("POWERBI_REGISTRY.md: '$sport' carries no Approved row for " +
+                "$family $templateName, which GLOBAL_DQ/README.md declares mandatory for every sport")
+        }
+    }
+}
+
 foreach ($group in ($indexRows | Group-Object { $_.Cells[0] } | Where-Object { $_.Count -gt 1 })) {
     $slugs = @($group.Group | ForEach-Object { $_.Cells[1] }) -join ', '
     $sportFindings += "SPORTS.md: Sport ID $($group.Name) maps to more than one slug: $slugs"
@@ -1424,7 +1482,17 @@ if (Test-Path -LiteralPath $paramsPath) {
             $template = $globalDq | Where-Object { $_.CheckId -eq $family }
             if (-not $template) { continue }
 
-            $needed = @([regex]::Matches($template.Sql, '\{\{([A-Z_]+)\}\}') |
+            # A placeholder standing only inside the optional Comp.Rank branch is not one the
+            # sport has to record. TOOLS/Run-Query.ps1 drops that branch for a sport with no
+            # confirmed SHARD_ID and STATISTIC_TYPE_ID, so demanding them here would refuse the
+            # instantiation the marker exists to allow - which is exactly how GLOBAL-DQ-007 came
+            # to be missing from Biathlon and Track-Cycling. The registry branch is not stripped
+            # here: it goes only on an explicit switch, so its parameters stay required.
+            $templateSql = [regex]::Replace($template.Sql,
+                '(?ms)^[ 	]*--[ 	]*STATISTIC BRANCH BEGIN[ 	]*?
+.*?^[ 	]*--[ 	]*STATISTIC BRANCH END[ 	]*?
+', '')
+            $needed = @([regex]::Matches($templateSql, '\{\{([A-Z_]+)\}\}') |
                 ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
             $recorded = @()
             $unsupplied = @()
