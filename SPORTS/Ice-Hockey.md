@@ -957,12 +957,23 @@ a place of 92 in a match between two teams is not a place at all. `Ice-Hockey-DQ
 that row - event 1837359, Poland-Ukraine - and removing the parameter would take the only
 report of it with it.
 
-**`Ice-Hockey-DQ-055` carries a smaller version of the same H2H problem, and it is left open
-rather than settled here.** Measured 2026-08-28 it returns 3 findings of 60 eligible, and two
-of the three are events 344939 and 344941, the Euro Hockey Tour bronze matches of 2007, each
-reported as `sequence starts at 3, expected 1`. A bronze match ranks third and fourth, so
-starting at 3 is what the event should say. The third finding is the 92. What to do about the
-other two is an open question below rather than a decision taken on this pass.
+**`Ice-Hockey-DQ-055` carried a smaller version of the same H2H problem and is `Deprecated`
+from 2026-08-28 too, replaced by `Ice-Hockey-DQ-128`.** It ran `GLOBAL-DQ-119`, whose own
+applicability asks for a sport storing an event-level Rank over a ranked field, and this sport
+has no field to rank. Measured that day it returned 3 findings of 60 eligible, two of them
+events 344939 and 344941 - the Euro Hockey Tour bronze matches of 2007 - each reported as
+`sequence starts at 3, expected 1`. A bronze match decides third and fourth, so starting at 3
+is what those events should say. Ten of the eleven sports running that template are Listing or
+Hybrid; Ice-Hockey was the only H2H one, for the same reason it was the only one running
+`GLOBAL-DQ-053`.
+
+**`Ice-Hockey-DQ-128 EVENT_RESULTS_RANK_DOES_NOT_RESTATE_THE_MEDAL` asks what a place can
+actually mean here.** With no field to rank, a Rank in this sport is either the medal written
+a second time as a number or it is nothing, so the statement reports a Rank with no medal
+beside it and a Rank that disagrees with the medal it sits next to, and nothing else. Measured
+2026-08-28 it returns 1 finding of 117 eligible: the 92 on Aleksandr Ossipov, and no bronze
+match. It does not depend on `Ice-Hockey-DQ-057` continuing to reach the same event, which it
+would stop doing the day somebody writes that side a Final Result instead of removing the row.
 
 <!-- MANUAL PASTE ZONE: 5 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -1016,14 +1027,23 @@ other two is an open question below rather than a decision taken on this pass.
    period; `Ice-Hockey-DQ-059` and `Ice-Hockey-DQ-104` already audit only sides holding all
    three, so neither depends on it.
 
-8. **Should a bronze match be expected to rank its two teams 3 and 4, or 1 and 2?**
+8. ~~**Should a bronze match be expected to rank its two teams 3 and 4, or 1 and 2?**~~
+   Answered 2026-08-28, on the day it was raised: the question does not have to be settled,
+   because nothing in this sport needs to read a rank sequence. `Ice-Hockey-DQ-055` was
+   deprecated and `Ice-Hockey-DQ-128` put in its place, and that statement asks whether a rank
+   restates its medal rather than whether a sequence starts at one - so a bronze match ranking
+   3 is simply correct to it and is not reported. What follows below is the reading that led
+   there, kept because it is why the template does not fit.
    `Ice-Hockey-DQ-055` reports events 344939 and 344941, the Euro Hockey Tour bronze matches of
    2007, as `sequence starts at 3, expected 1`, and third and fourth is what a bronze match
    actually decides. `GLOBAL-DQ-119` reads an event as a field ranked from one, which is right
    for a listing sport and wrong for a two-team match that settles places three and four.
-   Raised 2026-08-28 while deprecating `Ice-Hockey-DQ-023` for the same H2H mismatch, and left
-   open rather than decided: the two events are a small population, and whether the fix is a
-   template that takes the round's expected first place as a parameter, a sport statement, or
-   simply correcting the two rows is a decision nobody has taken. Until it is, `-055` keeps
-   reporting them beside the one finding that is real, the rank of 92 on 1837359.
+   Raised while deprecating `Ice-Hockey-DQ-023` for the same H2H mismatch. Three ways out were
+   weighed: teaching `GLOBAL-DQ-119` the bronze round, which would have reached Speed-Skating
+   and Track-Cycling as well - the only other two declaring a `BRONZE_ROUND_TYPE_LIST` - and so
+   needed measuring on both before a line could be written; asking the colleagues whether the
+   116 echo ranks belong in the data at all; and the sport statement, which is what was chosen.
+   The other two remain available and neither is closed by this: whether ice hockey should
+   store an event-level Rank at all is still nobody's decision, and `-128` reports the same one
+   row either way.
 <!-- MANUAL PASTE ZONE: 5 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

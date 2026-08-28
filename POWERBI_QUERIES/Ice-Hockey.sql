@@ -1972,3 +1972,114 @@ WHERE s.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_id;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Ice-Hockey-DQ-128
+    -- Name - EVENT_RESULTS_RANK_DOES_NOT_RESTATE_THE_MEDAL
+    -- What it does: Flags an event-level Rank that neither restates the medal on the same side nor agrees with the place that medal stands for.
+    CASE
+        WHEN x.medal_value IS NULL THEN 'RANK_WITH_NO_MEDAL_TO_RESTATE'
+        ELSE 'RANK_CONTRADICTS_THE_MEDAL_IT_RESTATES'
+    END AS check_type,
+    x.event_participants_id,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.round_type_name,
+    x.template_name,
+    x.tournament_name,
+    x.participant_name,
+    x.rank_value,
+    x.medal_value,
+    x.expected_rank_from_medal,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Reads every side carrying a value in the 100 Rank event
+-- result and asks the only question a place can answer in this sport.
+-- Ice hockey is H2H by DB-SEM-015: an event is two teams and a score, never a field ranked
+-- against itself, so there is no sequence for a place to belong to. What the sport does have
+-- is medal rounds, and measured 2026-08-28 that is all its ranks are: of 117 Rank rows inside
+-- the boundary, 116 sit beside a medal on 9 Final or 138 bronze and read 1, 2 or 3 - the
+-- medal word written a second time as a number. So a rank here is either a restatement of
+-- the medal, or it means nothing, and the two check_types separate those.
+-- Replaces Ice-Hockey-DQ-055, which ran GLOBAL-DQ-119 and is Deprecated from 2026-08-28.
+-- That template asserts the sequence 1, 2, 3 across an event and says so in its own
+-- applicability - a sport storing an event-level Rank over a ranked field. Over a bronze
+-- match it reported 'sequence starts at 3, expected 1' on the two Euro Hockey Tour matches of
+-- 2007, and third and fourth is exactly what a bronze match decides: two of its three
+-- findings were the sport behaving correctly.
+-- This statement keeps the one that was not. Event 1837359 Poland-Ukraine carries a third
+-- event_participants row where every other event carries two, and that row holds a Rank of 92
+-- with no medal beside it. SPORTS/Ice-Hockey.md open question 6 records the correction, and
+-- Ice-Hockey-DQ-057 reaches the same event by another route - the side holds no Final Result
+-- either - but it would stop reporting it the day somebody fills that score in rather than
+-- removing the row. This one reads the rank itself, so it does not depend on that.
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        rt.name AS round_type_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        p.name AS participant_name,
+        TRIM(rr.value) AS rank_value,
+        (SELECT NULLIF(TRIM(rm.value), '') FROM result rm
+          WHERE rm.event_participantsFK = ep.id AND rm.result_typeFK = 501
+            AND rm.del = 'no' LIMIT 1) AS medal_value,
+        CASE LOWER((SELECT NULLIF(TRIM(rm2.value), '') FROM result rm2
+                     WHERE rm2.event_participantsFK = ep.id AND rm2.result_typeFK = 501
+                       AND rm2.del = 'no' LIMIT 1))
+            WHEN 'gold' THEN '1'
+            WHEN 'silver' THEN '2'
+            WHEN 'bronze' THEN '3'
+            ELSE NULL
+        END AS expected_rank_from_medal
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 5
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = 100
+         AND rr.del = 'no' AND TRIM(COALESCE(rr.value, '')) <> ''
+    WHERE ep.del = 'no'
+      AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+) x
+WHERE x.medal_value IS NULL
+   OR x.expected_rank_from_medal IS NULL
+   OR x.rank_value <> x.expected_rank_from_medal
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = 5
+JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = 100
+     AND rr.del = 'no' AND TRIM(COALESCE(rr.value, '')) <> ''
+WHERE ep.del = 'no'
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 313, 328, 546, 10083, 10501, 10560, 10568, 10720, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate, event_id;
