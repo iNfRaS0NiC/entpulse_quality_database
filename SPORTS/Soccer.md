@@ -540,6 +540,29 @@ records the play rather than contradicting the status.
 - The registry role and `participant.type` are independent fields that disagree in both
   directions.
 
+**`RESULT_RANK_TYPE_ID` is recorded from 2026-08-28, and was `Not applicable` until then.**
+The old entry read that the sport has no Rank result type because the pairing is the
+classification. The first half of that turned out to be wrong: measured 2026-08-28 sport-wide
+and outside any boundary, soccer holds **6 rows of `100 Rank` over 2 events**. The second half
+stands and is now what a check asserts rather than what excuses one.
+
+The six are event `354295 Elgin-Arbroath`, template `125 Scotland 4`, five rows reading 10, 31,
+36, 36 and 38, and event `360313 Asteras Tripolis-Levadiakos`, template `135 Greece 1`, one row
+reading 11. Every one of them is on an `event_participants` row holding a **person** - Jesper
+Persson, Qiang Wang, Ike Melnits, Michael Hellweger, Jack Young, Julian Kern - in a match that
+carries two clubs. The same shape as Ice Hockey's single case.
+
+**`Soccer-DQ-106` runs `GLOBAL-DQ-144` over them and reports 6 of 6.** Read that count against
+the Scope section above: neither template is among the client's 28, so a narrowed run - which
+is how this sport is normally run - reports `eligible_count = 0`, and that zero is the sentinel
+kind rather than the misdirected kind. The rows are a defect in the database and not the
+client's, so the check is worth having and its narrowed silence is worth knowing about.
+
+Nothing else changes with the parameter. `GLOBAL-DQ-020`, `-021`, `-053` and `-119` stay
+uninstantiated here and always will: each reads a place against the field it belongs to, and
+a head-to-head event has no field. That reason used to be carried by the `_notApplicable`
+entry and is written here now, because the entry had to go for `GLOBAL-DQ-144` to run.
+
 <!-- MANUAL PASTE ZONE: 1 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

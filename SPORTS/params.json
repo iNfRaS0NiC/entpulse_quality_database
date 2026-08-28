@@ -521,6 +521,7 @@
     "Soccer": {
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 1,
+        "RESULT_RANK_TYPE_ID": 100,
         "CLIENT_FROM_SEASON": 2004,
         "EVENT_PARTICIPANT_TYPE_LIST": "'team'",
         "EVENT_PARTICIPANT_COUNT_LIST": "2",
@@ -561,6 +562,7 @@
         "SUPPORT_PARTICIPANT_TYPE_LIST": "'coach', 'official'",
         "PARTICIPATION_PROPERTY_NAME_LIST": "'refereeFK'",
         "_names": {
+            "RESULT_RANK_TYPE_ID": "100 Rank",
             "DATA_ORGANIZATION_TYPE_ID": "1465 Organization, the statistic_data_type that holds the participant.id of the organization a ranked competitor represents. Declared for statistic type 11 and the only id of that name in the database, measured 2026-08-21. GLOBAL-DQ-131 reads it; the event layer keeps the same fact somewhere else entirely, as an organizationFK property on event_participants, which is why GLOBAL-DQ-130 is a separate statement and needs no parameter for it",
             "EVENT_PARTICIPANT_COUNT_LIST": "2: the field sizes this sport enters as event_participants rows. GLOBAL-DQ-083 asserted exactly two until 2026-08-20, which is right for a sport that only ever fields a pair and wrong for a doubles sport - Badminton enters the four players rather than two pairs, 48072 events against 40951 singles, and Table Tennis 7788 against 55314. This sport fields a pair and nothing else, so the value is 2 and the check reads exactly as it did",
             "PERSON_ROLE_TYPE_LIST": "'athlete', 'coach', 'official': the participant types that denote a natural person, measured against the sport registry on 2026-08-20. Not PERSON_PARTICIPANT_TYPE_LIST, which names who competes - a coach is a person and does not compete - and not REGISTRY_PARTICIPANT_TYPE_LIST, which includes team and, for Equestrian, horse. GLOBAL-DQ-113 asks whether one ranking mixes teams with individuals, and participant.type carries a person's CURRENT role rather than the one held at the event: 446 people typed coach appear in Ice Hockey's rankings and 406 of them also occupy a playing lineup slot, so a squad from 2004 reads as coach-and-athlete because its players have since become coaches. Collapsing the person types keeps that out of the findings and leaves team against athlete, and horse against athlete, where they were",
@@ -588,7 +590,6 @@
             "PARTICIPATION_PROPERTY_NAME_LIST": "the event properties that attach a person to the competition they worked, read by GLOBAL-DQ-135 as a fourth participation path beside event, lineup and Comp.Rank. Measured 2026-08-24: Soccer writes refereeFK on 99259 events reaching 1626 people, and without this path 3919 of its 3920 registered officials would report as unattached. It is a list of names rather than a switch, so a sport writing no such property declares the name anyway and stays inside the check - Curling has none, its join matches nothing, and every coach it has filed stays unattached, which is the correct reading there"
         },
         "_notApplicable": {
-            "RESULT_RANK_TYPE_ID": "no Rank result type; the sport is head to head and the pairing is the classification, so no place is stored on a result",
             "RESULT_COMMENT_TYPE_ID": "no Comment result type; the sport records no status vocabulary on a result",
             "RESULT_COMMENT_VALUE_LIST": "no Comment result type; the sport records no status vocabulary on a result",
             "RESULT_COMMENT_NO_RESULT_LIST": "no Comment result type; the sport records no status vocabulary on a result",

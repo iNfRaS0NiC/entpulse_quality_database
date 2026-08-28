@@ -975,6 +975,21 @@ beside it and a Rank that disagrees with the medal it sits next to, and nothing 
 match. It does not depend on `Ice-Hockey-DQ-057` continuing to reach the same event, which it
 would stop doing the day somebody writes that side a Final Result instead of removing the row.
 
+**`Ice-Hockey-DQ-128` is `Deprecated` the same day it was written, and `Ice-Hockey-DQ-129`
+replaces it.** `-128` asked whether a Rank restates the medal beside it, which took the 116
+echoes to be acceptable and reported only the 92. The user's rule of 2026-08-28 is stronger and
+settles the question that statement was working around: almost no head-to-head sport should
+carry an event-level rank at all. Under that rule all 117 rows are the defect, not one of them.
+
+`Ice-Hockey-DQ-129` runs `GLOBAL-DQ-144 EVENT_RESULTS_RANK_STORED_BY_A_HEAD_TO_HEAD_SPORT`,
+which reports every side holding a Rank and nothing else. Measured 2026-08-28: **117 findings
+of 117 eligible**, and that ratio is the check working rather than the check being wrong. It is
+a work list first and a guard second - it runs at its own coverage count until the rows are
+removed, then sits at zero for good. The two shapes inside it are separate repairs and
+`sides_entered` tells them apart: 116 sit beside a medal on a final or a bronze match and are
+redundant, and the 92 on Aleksandr Ossipov sits on a third `event_participants` row where the
+event carries two teams.
+
 <!-- MANUAL PASTE ZONE: 5 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

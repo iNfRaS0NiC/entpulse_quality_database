@@ -4932,3 +4932,102 @@ WHERE e.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, timed_participants DESC, event_startdate DESC;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-144
+    -- Name - EVENT_RESULTS_RANK_STORED_BY_A_HEAD_TO_HEAD_SPORT
+    -- What it does: Flags an event-level Rank in a sport whose events are contests between two sides, where a place has nothing to be a place in.
+    'RANK_ON_A_HEAD_TO_HEAD_EVENT' AS check_type,
+    x.event_participants_id,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.round_type_name,
+    x.template_name,
+    x.tournament_name,
+    x.participant_name,
+    x.participant_type,
+    x.rank_value,
+    x.sides_entered,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Reports every side holding a value in the Rank event result
+-- for a sport documented as H2H under DB-SEM-015. Instantiate it for no other kind of sport:
+-- over a listing sport it would report the whole population, and the questions worth asking
+-- there are GLOBAL-DQ-020, -021 and -119, which read the place against the field it belongs to.
+-- A head-to-head event is two sides and a score. There is no field, so a place has nothing to
+-- be a place in, and whatever a Rank row means it is not the thing the column is for. The
+-- sport's own classification lives elsewhere: in the score for the match, in the medal for a
+-- final or a bronze match, and in 1270 Rank on the Comp.Rank layer for the tournament. The
+-- rule was stated by the user on 2026-08-28 - almost no head-to-head sport should carry an
+-- event-level rank at all - and this is the statement that holds it.
+-- Every row is a finding, so this check is expected to run at its own coverage count until
+-- the rows are removed and then to sit at zero for good. That is the shape intended: it is a
+-- work list first and a guard afterwards. Measured 2026-08-28 across the four documented H2H
+-- sports, the whole population is Ice Hockey 117 rows over 60 events and Soccer 6 rows over 2,
+-- with Curling and Handball holding none.
+-- The two shapes it finds are not one defect. In Ice Hockey 116 of the 117 sit beside a medal
+-- on a final or a bronze match and read 1, 2 or 3 - the medal word written a second time as a
+-- number, redundant rather than wrong in itself. The rest, one in Ice Hockey and all six in
+-- Soccer, sit on an extra event_participants row holding a person where the event carries two
+-- teams, and read 10, 11, 31, 36, 36, 38 and 92. sides_entered is projected so the two can be
+-- told apart without a second query: a row on an event of more than two sides is the second
+-- kind.
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        rt.name AS round_type_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        p.name AS participant_name,
+        p.type AS participant_type,
+        TRIM(rr.value) AS rank_value,
+        (SELECT COUNT(*) FROM event_participants ep2
+          WHERE ep2.eventFK = e.id AND ep2.del = 'no') AS sides_entered
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = {{SPORT_ID}}
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+         AND rr.del = 'no' AND TRIM(COALESCE(rr.value, '')) <> ''
+    WHERE ep.del = 'no'
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+     AND rr.del = 'no' AND TRIM(COALESCE(rr.value, '')) <> ''
+WHERE ep.del = 'no'
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+
+ORDER BY sort_order, event_startdate, event_id;

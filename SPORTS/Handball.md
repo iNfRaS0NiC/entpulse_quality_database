@@ -579,6 +579,20 @@ layer, and Comp.Rank on the tournament in shard 11.
 Two things are specific to handball and are stated where they belong rather than repeated
 here: `23 2 min suspension` is a card, and `6 Unknown` is the busiest lineup type.
 
+**`GLOBAL-DQ-144 EVENT_RESULTS_RANK_STORED_BY_A_HEAD_TO_HEAD_SPORT` is not instantiated here,
+and the reason is a missing parameter rather than a settled applicability.** The template was
+written 2026-08-28 on the rule that almost no head-to-head sport should carry an event-level
+rank, and this sport is head to head. It reads `RESULT_RANK_TYPE_ID`, which handball declares
+not applicable because no row of that type has ever been seen here - measured sport-wide and
+outside any boundary the same day, handball holds **zero**, as does Curling, against Ice
+Hockey's 117 and Soccer's 6.
+
+So the check that would catch the first such row arriving is exactly the check that cannot be
+armed until one does. That is an uncomfortable shape and it is recorded rather than smoothed
+over: it follows from the rule that an unconfirmed parameter blocks a template, which is right
+in general and awkward here. If a rank row ever appears in handball, this is the entry that
+says what to do - record `RESULT_RANK_TYPE_ID`, drop the `_notApplicable` line, and instantiate.
+
 <!-- MANUAL PASTE ZONE: 20 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

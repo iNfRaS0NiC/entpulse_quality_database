@@ -460,6 +460,17 @@ property says `2aside` and the relation says `mixed doubles`: one format written
 names rather than two different formats claimed for one match. Which of the two names is the
 one to keep is not settled here.
 
+**`GLOBAL-DQ-144 EVENT_RESULTS_RANK_STORED_BY_A_HEAD_TO_HEAD_SPORT` is not instantiated here,
+for the same reason as in `SPORTS/Handball.md`.** The template was written 2026-08-28 on the
+rule that almost no head-to-head sport should carry an event-level rank, and curling is head to
+head. It reads `RESULT_RANK_TYPE_ID`, which this sport declares not applicable: measured
+sport-wide and outside any boundary the same day, curling holds **zero** rows of `100 Rank`,
+against Ice Hockey's 117 and Soccer's 6.
+
+The check that would catch the first such row is therefore the one that cannot be armed until
+one exists. Recorded rather than smoothed over. If a rank row ever appears here, record
+`RESULT_RANK_TYPE_ID`, drop the `_notApplicable` line, and instantiate.
+
 <!-- MANUAL PASTE ZONE: 10 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
