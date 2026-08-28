@@ -434,10 +434,22 @@ all three medals at once, which is what `Biathlon-DQ-031` already asserts.
 preference: this sport stores a time on its result, so `-052` is the one whose time arm can
 run, and it carries `Biathlon-DQ-036`.
 
-**`GLOBAL-DQ-007 PARTICIPANT_MISSING_DATE_OF_BIRTH` is `Not checked`, not `Not applicable`.**
-It counts an athlete history through a statistic shard and needs a `STATISTIC_TYPE_ID` and a
-`SHARD_ID`, so it belongs to the paused Comp.Rank layer with the twelve from the first two
-categories.
+**`GLOBAL-DQ-007 PARTICIPANT_MISSING_DATE_OF_BIRTH` runs after all, as `Biathlon-DQ-084`.**
+It was recorded here as `Not checked` on 2026-08-27, on the reading that it needs a
+`STATISTIC_TYPE_ID` and a `SHARD_ID` and therefore belongs to the paused Comp.Rank layer. That
+reading was half right and the wrong half was the conclusion: the statement reaches people
+through four paths and only one of them is the statistic. The template now marks that branch
+optional, the runner drops it for a sport whose Comp.Rank parameters are not confirmed and says
+so in its own words, and the check runs over the sport registry, the event participants and the
+lineups. `GLOBAL_DQ/README.md` owns the marker and the two rules binding it.
+
+What the run covers is therefore three paths, not four, and that is the part to carry forward:
+an athlete this sport reaches only through a Comp.Rank row is not audited by it, and the count
+will move when the layer returns and the branch comes back. Measured 2026-08-28, the check
+reports 884 athletes of 6866 eligible. 732 of them have never entered an event or a lineup and
+are known only to the sport registry, and 719 of the 884 are Norwegian - one import rather than
+a scatter, which is what makes it correctable in one pass. The remaining 152 have competed, the
+busiest across 80 events.
 **Five sport statements were written on 2026-08-27, `Biathlon-DQ-059` through `-063`.** They
 came out of reading the shooting and timing data rather than out of a template, and each
 asserts something no GLOBAL template can express because it depends on what a biathlon

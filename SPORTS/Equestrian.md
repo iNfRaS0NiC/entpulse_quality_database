@@ -655,6 +655,24 @@ reported, measured 2026-08-18. The template was changed to containment for every
 so the exclusion here now rests on duplication rather than on the sport failing to store what
 the template read. It is recorded because the two look identical from the board - the same name
 on both - and only the granularity separates them.
+**`GLOBAL-DQ-055 EVENT_PARTICIPANTS_DUPLICATE_IN_EVENT` is deliberately not instantiated, and
+this is where that is recorded.** It was simply absent until 2026-08-28 - no parameter blocked
+it and no line explained it - so it was run and read before being left out. Measured that day
+it reports 1273 events of 5527 eligible, which is a quarter of the sport and would have gone to
+the board as defects.
+
+They are not defects. Splitting every rider entered more than once in one event by the `horseFK`
+on the participation gives 3977 pairs where the two entries name two different horses, 18 where
+neither entry names a horse at all and the entrant is a team, 2 where the same horse is entered
+twice, and 1 mixed. A rider contesting a competition on two horses is what this sport does, and
+the template cannot see it: no other sport puts a second object on the participation, so
+`event_participants` alone reads the two entries as one competitor entered twice.
+
+Roughly twenty-one of the four thousand are the thing the template was written to find. A sport
+statement reading `horseFK` would report those and nothing else; it is not written yet, and the
+decision of 2026-08-28 was to record the reason first rather than assign a CheckID to a check
+that would be 99.5 per cent noise. `POWERBI.md`'s 200-row gate owns why that order matters.
+
 <!-- MANUAL PASTE ZONE: 37 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

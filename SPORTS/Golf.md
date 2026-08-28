@@ -1205,6 +1205,15 @@ stages onto new templates, so it is a finding for the provider rather than somet
 here. A fifth template of the same shape, `9831 GolfSixes`, sits outside the client's boundary
 and is therefore not reported; it is recorded so nobody re-measures it.
 
+**`GLOBAL-DQ-043 EVENT_PARTICIPANTS_GENDER_MISMATCH` runs as `Golf-DQ-123` and returns
+nothing.** It was absent from this sport until 2026-08-28, and absent for no recorded reason:
+every parameter it declares was already confirmed here, so nothing was blocking it and nothing
+explained it. Measured on the day it was added, it reports 0 rows over 420 277 eligible
+participations - the widest population any check in this package audits. That zero is the
+invariant holding rather than the check being idle: a participant's gender and the gender of
+the event entered are written by different paths, and this is where a new import would show if
+the two stopped agreeing.
+
 <!-- MANUAL PASTE ZONE: 3 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

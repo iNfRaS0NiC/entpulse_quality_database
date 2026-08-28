@@ -451,6 +451,15 @@ first and its last. 2020 is reduced rather than absent, so it is not a skipped y
 `GLOBAL_DQ/README.md` states for a sport with nothing to skip. This differs from both sports
 documented before it, which do skip 2020.
 
+**`GLOBAL-DQ-109 EVENT_SETTINGS_DISCIPLINE_STORAGE_MISMATCH` runs as `Curling-DQ-118`.** It was
+absent until 2026-08-28 with nothing recorded against it and nothing blocking it. Measured that
+day it reports 6 events of 9 eligible - a population this small because the property and the
+relation are both filled on very few events here, which is context for the ratio and not a
+reason to leave the check out. All six are World Championship matches of 2008 where the
+property says `2aside` and the relation says `mixed doubles`: one format written under two
+names rather than two different formats claimed for one match. Which of the two names is the
+one to keep is not settled here.
+
 <!-- MANUAL PASTE ZONE: 10 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

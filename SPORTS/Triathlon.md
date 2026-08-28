@@ -480,6 +480,14 @@ A participant-level check that joins `event_participants` directly to `participa
 audits a mixture of athletes and teams, and must filter on participant type when the two
 require different treatment.
 
+**`GLOBAL-DQ-109 EVENT_SETTINGS_DISCIPLINE_STORAGE_MISMATCH` runs as `Triathlon-DQ-116`.** It
+was absent until 2026-08-28 with nothing recorded against it and nothing blocking it. Measured
+that day it reports 29 events of 612 eligible. The shape is one-directional and worth carrying:
+the property reads `standard distance` on every one of them while the relation names what the
+event actually was - `aquathlon`, `mixed relay`, `sprint distance`. That is a default left
+unchanged rather than a disagreement between two considered values, which makes the relation
+the side to trust and the property the side to correct.
+
 <!-- MANUAL PASTE ZONE: 50 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

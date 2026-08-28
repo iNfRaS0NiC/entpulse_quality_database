@@ -304,6 +304,23 @@ and is what `Track-Cycling-DQ-055` runs.
 `GLOBAL-DQ-087 EVENT_WINNER_MISSING_OR_INVALID` needs a `Winner` event property and the sport
 writes none anywhere, which the property inventory confirms.
 
+`GLOBAL-DQ-007 PARTICIPANT_MISSING_DATE_OF_BIRTH` was left out of this sport when it was opened,
+and that was an omission rather than a decision: nothing here recorded it, unlike every other
+template excluded above. The cause was structural - the statement reaches people through four
+paths and one of them is a Comp.Rank row, so it asked for a `SHARD_ID` and a `STATISTIC_TYPE_ID`
+this sport has never confirmed, and the runner had no way to instantiate it. Since 2026-08-28
+the template marks that branch optional in its findings and coverage together, the runner drops
+the pair for a sport whose Comp.Rank parameters are absent and reports that it did, and the
+check runs here as `Track-Cycling-DQ-083` over the registry, the event participants and the
+lineups. `GLOBAL_DQ/README.md` owns the marker.
+
+What it covers is three paths of four, so a rider this sport reaches only through a Comp.Rank
+row is not audited by it and the number will move when the layer returns. Measured 2026-08-28,
+it reports 1632 riders of 6422 eligible - a quarter of the sport. 1432 of them have actually
+competed, which is what separates this from a registry import: the busiest carries 192 events
+and 36 lineup places with no date of birth on the person. `Great Britain` holds 384 of the
+1632, the largest share of any country, and this client is UK Sport.
+
 `GLOBAL-DQ-083 EVENT_PARTICIPANT_COUNT_NOT_A_FIELD_THE_SPORT_ENTERS` needs the set of field
 sizes the sport enters, and there is no such set: a field runs from one competitor to eighty
 without settling on fixed sizes.
