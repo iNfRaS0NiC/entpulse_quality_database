@@ -9976,6 +9976,407 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "Biathlon 28.08.2026 13-46-08",
+                     "startedUtc":  "2026-08-28T11:46:04Z",
+                     "output":  "D:\\SQL\u0027s Output\\Biathlon 28.08.2026 13-46-08",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Biathlon-DQ-084",
+                                        "runKey":  "Biathlon-DQ-084",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_DATE_OF_BIRTH",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  885,
+                                        "findings":  884,
+                                        "eligible":  6866,
+                                        "seconds":  3.3,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  19.4,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  8.7,
+                                                  "planning the changes":  1.4,
+                                                  "adding and sizing tabs":  1.4,
+                                                  "hiding columns and colouring Rows":  0.7,
+                                                  "clearing stale rows":  1,
+                                                  "writing values":  4.8,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Biathlon-DQ-001":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-002":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-003":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-004":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-005":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-006":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-007":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-008":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-009":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-010":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-011":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-012":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-013":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-014":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-015":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-016":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-017":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-018":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-019":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-020":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-021":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-022":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-023":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-024":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-025":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-026":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-027":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-028":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-029":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-030":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-031":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-032":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-033":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-034":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-035":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-036":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-037":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-038":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-039":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-040":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-041":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-042":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-043":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-044":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-045":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-046":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-047":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-048":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-049":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-050":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-051":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-052":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-053":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-054":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-055":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-056":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-057":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-058":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-059":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-060":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-061":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-062":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-063":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-064":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-065":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-066":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-067":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-068":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-069":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-070":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-071":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-072":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-073":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-074":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-075":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-076":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-077":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-078":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-079":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-080":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-081":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-082":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Biathlon-DQ-083":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DQ-007":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      }
+                                }
                  }
              ],
     "sheetId":  "1eQNoYSY_1jbTh0hzFa6CiSXkCuTo4ceolGt8qDxKUr4"
