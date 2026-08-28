@@ -1214,6 +1214,44 @@ invariant holding rather than the check being idle: a participant's gender and t
 the event entered are written by different paths, and this is where a new import would show if
 the two stopped agreeing.
 
+**`GLOBAL-DQ-030 COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT` cannot be run here either, and
+`Golf-DQ-126` replaces it.** It is the reverse of `Golf-DQ-096`, and the two together ask the
+whole question both ways: one finds a competitor who played and was left out of the ranking, the
+other one who is ranked and was never entered.
+
+The template asks, per ranked row, whether that person appears anywhere under their tournament,
+as two correlated `NOT EXISTS`. Run on this sport on 2026-08-28 it returned 504 from the gateway
+- the same shape and the same outcome as `GLOBAL-DQ-042`, and the same fix: every
+(tournament, competitor) pair the sport entered is built once as one set and joined. That runs
+in 18 seconds. Until this was written the sport had no reverse check at all and nothing recorded
+why, which is the silence rather than a decision.
+
+**The lineup half of the template is dropped rather than translated.** `GLOBAL-DQ-030` accepts a
+ranked athlete who appears only as a lineup member, because a team sport carries its people
+there. Golf writes no lineup row at all - the participant section above records that a foursome
+is stored as one athlete participant holding both names, and measured 2026-08-28 the sport holds
+**0** lineup rows across every template. A join that can match nothing is a pass for no reading.
+
+Measured the day it was written it returns **19 findings of 3319 rankings**, and they are two
+different repairs:
+
+- **Football clubs ranked in golf tournaments.** `Gillingham` and `Wolverhampton Wanderers` in
+  the WGC-Accenture Match Play rankings of 2004, 2005, 2006 and 2007, `Broendby IF` and `Viborg`
+  in 2008, `FC Koeln` and `Kaiserslautern` in 2009, `Metz` and `Monaco` in 2010, and
+  `Harelbeke` and `Standard Liege` in the 2005 Presidents Cup. The ranking points at participant
+  ids belonging to another sport. **It resembles what `Golf-DQ-057` reports** - an `Event id`
+  list cut at 255 characters whose trailing fragment is a valid id belonging to a football match
+  played in 2000 - but it is a different column in a different table, and whether the two share
+  a cause is not established here.
+- **Golfers ranked without being entered.** `Sophie Giquel-Bettan` in four 2006 tournaments,
+  `Lotte Neumann`, `Laura Diaz`, `Mark Brown` and `James H. McLean`, one ranking each. Eleven
+  more sit in the 2004 Team World Cup under pair names - `A.Hansen/ Kjeldsen`, `Brier/Wiegele` -
+  which is the foursome shape the participant section describes.
+
+`ranked_participants` is projected beside `stray_participants` so the proportion reads on the
+row: two strays out of 34 and one out of 242 are not the same repair, and the template could not
+tell them apart.
+
 <!-- MANUAL PASTE ZONE: 3 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
