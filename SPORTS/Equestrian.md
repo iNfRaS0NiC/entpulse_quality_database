@@ -668,10 +668,31 @@ twice, and 1 mixed. A rider contesting a competition on two horses is what this 
 the template cannot see it: no other sport puts a second object on the participation, so
 `event_participants` alone reads the two entries as one competitor entered twice.
 
-Roughly twenty-one of the four thousand are the thing the template was written to find. A sport
-statement reading `horseFK` would report those and nothing else; it is not written yet, and the
-decision of 2026-08-28 was to record the reason first rather than assign a CheckID to a check
-that would be 99.5 per cent noise. `POWERBI.md`'s 200-row gate owns why that order matters.
+**`Equestrian-DQ-124 EVENT_PARTICIPANTS_DUPLICATE_THE_HORSE_DOES_NOT_EXPLAIN` is the
+twenty-one, written 2026-08-28 once the reason above had been recorded.** It audits the same
+object the template does - a competitor entered more than once in a single event - and reports
+only the duplicates the horse fails to account for. Measured the day it was written: **21
+findings of 3998 eligible**, where the eligible count is competitors entered more than once,
+not every participation, because that is the population the twenty-one should be read against.
+
+Three shapes, and they are three different repairs:
+
+- **18 `NO_ENTRY_NAMES_A_HORSE`.** Every one is a team - Great Britain, Germany and Ireland are
+  each entered twice in event `2912966`. A team carries no `horseFK` and correctly so, so
+  nothing can explain a team appearing twice; these are plain duplicates.
+- **2 `THE_SAME_HORSE_ENTERED_MORE_THAN_ONCE`.** Joris van Springel on `Over and Over` in event
+  `471269`, and Julie Davey on `Air Hill The Rajah` in `5095903`. One rider, one horse, two
+  entries.
+- **1 `SOME_ENTRIES_NAME_A_HORSE_AND_SOME_DO_NOT`.** Jose Filho in event `5077706`, one entry on
+  `Cartujano Jmen` and one with `horseFK` empty.
+
+The horse is read from the `horseFK` property, never from `event_participants`, for the reason
+the participant section records: a horse is not an event participant in this sport. The join to
+the horse itself is a `LEFT JOIN` on purpose - the 272 participations whose `horseFK` points at
+a participant that does not exist still name a horse as far as this check is concerned, so a
+dangling reference does not turn a two-horse ride into a duplicate. That defect belongs to
+`GLOBAL-DQ-006`. `0` and the empty string are treated as no horse rather than as a horse, which
+is what separates the Jose Filho row from a legitimate two-horse ride.
 
 <!-- MANUAL PASTE ZONE: 37 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 

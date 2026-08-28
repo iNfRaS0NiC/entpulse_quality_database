@@ -2974,3 +2974,123 @@ WHERE tt.del = 'no'
   AND tt.name <> ''
 
 ORDER BY sort_order, template_id;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - Equestrian-DQ-124
+    -- Name - EVENT_PARTICIPANTS_DUPLICATE_THE_HORSE_DOES_NOT_EXPLAIN
+    -- What it does: Flags a rider entered more than once in one event where the entries do not name a different horse each.
+    CASE
+        WHEN d.entries_without_horse = d.entries THEN 'NO_ENTRY_NAMES_A_HORSE'
+        WHEN d.entries_without_horse > 0 THEN 'SOME_ENTRIES_NAME_A_HORSE_AND_SOME_DO_NOT'
+        ELSE 'THE_SAME_HORSE_ENTERED_MORE_THAN_ONCE'
+    END AS check_type,
+    d.event_id,
+    d.event_name,
+    d.event_startdate,
+    d.template_name,
+    d.tournament_name,
+    d.participant_name,
+    d.participant_type,
+    d.entries,
+    d.distinct_horses,
+    d.entries_without_horse,
+    d.horse_names,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: Audits one object - a competitor entered more than once in a
+-- single event - and reports only the ones the horse does not account for.
+-- GLOBAL-DQ-055 EVENT_PARTICIPANTS_DUPLICATE_IN_EVENT asks the same question of every other
+-- sport and is deliberately not instantiated here; SPORTS/Equestrian.md records why. It counts
+-- entries and cannot see the horse, because no other sport puts a second object on the
+-- participation, so a rider contesting a competition on two horses reads to it as one
+-- competitor entered twice. Measured 2026-08-28 it reported 1273 events of 5527, a quarter of
+-- the sport, and splitting those by the horseFK property on the participation gives 3977 pairs
+-- riding two different horses, 18 where no entry names a horse at all, 2 where the same horse
+-- is entered twice and 1 mixed. This statement is the twenty-one.
+-- The horse is read from the horseFK property rather than from event_participants, because
+-- SPORTS/Equestrian.md records that a horse is never an event participant in this sport and a
+-- join on participant.type = 'horse' returns an empty set. The join to the horse itself is a
+-- LEFT JOIN: 272 participations point horseFK at a participant that does not exist, and that
+-- is GLOBAL-DQ-006's finding rather than this one's - a dangling reference still names a horse
+-- as far as this check is concerned, so it does not turn a two-horse ride into a duplicate.
+-- Team entries carry no horseFK and correctly so, which is what NO_ENTRY_NAMES_A_HORSE mostly
+-- finds; participant_type is projected so a reader can tell a team from a rider without a
+-- second query.
+-- eligible_count counts competitors entered more than once, not every participation. The
+-- question is which of those duplicates the horse explains, so that is the population the
+-- twenty-one should be read against.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        p.name AS participant_name,
+        p.type AS participant_type,
+        COUNT(*) AS entries,
+        COUNT(DISTINCT NULLIF(NULLIF(TRIM(COALESCE(pr.value, '')), ''), '0')) AS distinct_horses,
+        SUM(CASE WHEN pr.value IS NULL
+                   OR TRIM(pr.value) = ''
+                   OR TRIM(pr.value) = '0' THEN 1 ELSE 0 END) AS entries_without_horse,
+        GROUP_CONCAT(DISTINCT CASE
+                       WHEN NULLIF(NULLIF(TRIM(COALESCE(pr.value, '')), ''), '0') IS NULL
+                            THEN NULL
+                       ELSE COALESCE(h.name, CONCAT('horse ', TRIM(pr.value), ' not found'))
+                     END
+                     ORDER BY COALESCE(h.name, TRIM(pr.value)) SEPARATOR ' / ') AS horse_names
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 37
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    LEFT JOIN property pr ON pr.object = 'event_participants' AND pr.objectFK = ep.id
+         AND pr.name = 'horseFK' AND pr.del = 'no'
+    LEFT JOIN participant h ON h.id = CAST(NULLIF(NULLIF(TRIM(COALESCE(pr.value, '')), ''), '0') AS UNSIGNED)
+         AND h.del = 'no'
+    WHERE e.del = 'no'
+      AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name, p.id, p.name, p.type
+    HAVING COUNT(*) > 1
+       AND (COUNT(DISTINCT NULLIF(NULLIF(TRIM(COALESCE(pr.value, '')), ''), '0')) < COUNT(*)
+            OR SUM(CASE WHEN pr.value IS NULL
+                          OR TRIM(pr.value) = ''
+                          OR TRIM(pr.value) = '0' THEN 1 ELSE 0 END) > 0)
+) d
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(*) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT e.id AS event_id, p.id AS participant_id
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+         AND tt.sportFK = 37
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    WHERE e.del = 'no'
+      AND t.tournament_templateFK NOT IN (12779, 12780, 12781, 12785, 12787)
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+    GROUP BY e.id, p.id
+    HAVING COUNT(*) > 1
+) c
+
+ORDER BY sort_order, event_startdate, event_id;
