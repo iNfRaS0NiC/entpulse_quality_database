@@ -579,19 +579,26 @@ layer, and Comp.Rank on the tournament in shard 11.
 Two things are specific to handball and are stated where they belong rather than repeated
 here: `23 2 min suspension` is a card, and `6 Unknown` is the busiest lineup type.
 
-**`GLOBAL-DQ-144 EVENT_RESULTS_RANK_STORED_BY_A_HEAD_TO_HEAD_SPORT` is not instantiated here,
-and the reason is a missing parameter rather than a settled applicability.** The template was
-written 2026-08-28 on the rule that almost no head-to-head sport should carry an event-level
-rank, and this sport is head to head. It reads `RESULT_RANK_TYPE_ID`, which handball declares
-not applicable because no row of that type has ever been seen here - measured sport-wide and
-outside any boundary the same day, handball holds **zero**, as does Curling, against Ice
-Hockey's 117 and Soccer's 6.
+**`GLOBAL-DQ-144 EVENT_RESULTS_RANK_STORED_BY_A_HEAD_TO_HEAD_SPORT` runs here as
+`Handball-DQ-115`, and reports nothing over nothing.** The template was written 2026-08-28 on
+the rule that almost no head-to-head sport should carry an event-level rank, and this sport is
+head to head. Measured that day sport-wide and outside any boundary, handball holds **zero**
+rows of `100 Rank`, as does Curling, against Ice Hockey's 117 and Soccer's 6.
 
-So the check that would catch the first such row arriving is exactly the check that cannot be
-armed until one does. That is an uncomfortable shape and it is recorded rather than smoothed
-over: it follows from the rule that an unconfirmed parameter blocks a template, which is right
-in general and awkward here. If a rank row ever appears in handball, this is the entry that
-says what to do - record `RESULT_RANK_TYPE_ID`, drop the `_notApplicable` line, and instantiate.
+`RESULT_RANK_TYPE_ID` is therefore recorded as `100` and is no longer declared not applicable.
+The value names the type the check must look for, not a type this sport writes - `SPORTS/params.json`
+says so in its `_names` entry, and the old reason is kept there word for word.
+
+**Its `eligible_count = 0` is the answer rather than an empty scope, and this check is the one
+place in the package where that is so.** Every other statement counts a population it audits, so
+a zero there means it looked at nothing. This one audits rows that must not exist: zero eligible
+and zero findings is the sport being correct, and the day the count moves off zero is the day
+there is something to repair. Recorded here so nobody reclassifies it as a misdirected scope.
+
+The other rank templates stay uninstantiated and always will. `GLOBAL-DQ-020`, `-021`, `-053`
+and `-119` each read a place against the field it belongs to, and a head-to-head event has no
+field. That reason used to be carried by the `_notApplicable` entry, which had to go for
+`GLOBAL-DQ-144` to run, so it is written here instead.
 
 <!-- MANUAL PASTE ZONE: 20 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 

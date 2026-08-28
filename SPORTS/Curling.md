@@ -460,16 +460,23 @@ property says `2aside` and the relation says `mixed doubles`: one format written
 names rather than two different formats claimed for one match. Which of the two names is the
 one to keep is not settled here.
 
-**`GLOBAL-DQ-144 EVENT_RESULTS_RANK_STORED_BY_A_HEAD_TO_HEAD_SPORT` is not instantiated here,
-for the same reason as in `SPORTS/Handball.md`.** The template was written 2026-08-28 on the
+**`GLOBAL-DQ-144 EVENT_RESULTS_RANK_STORED_BY_A_HEAD_TO_HEAD_SPORT` runs here as
+`Curling-DQ-119`, and reports nothing over nothing.** The template was written 2026-08-28 on the
 rule that almost no head-to-head sport should carry an event-level rank, and curling is head to
-head. It reads `RESULT_RANK_TYPE_ID`, which this sport declares not applicable: measured
-sport-wide and outside any boundary the same day, curling holds **zero** rows of `100 Rank`,
-against Ice Hockey's 117 and Soccer's 6.
+head. Measured that day sport-wide and outside any boundary, curling holds **zero** rows of
+`100 Rank`, as does Handball, against Ice Hockey's 117 and Soccer's 6.
 
-The check that would catch the first such row is therefore the one that cannot be armed until
-one exists. Recorded rather than smoothed over. If a rank row ever appears here, record
-`RESULT_RANK_TYPE_ID`, drop the `_notApplicable` line, and instantiate.
+`RESULT_RANK_TYPE_ID` is therefore recorded as `100` and is no longer declared not applicable.
+The value names the type the check must look for, not a type this sport writes, and the old
+reason is kept word for word in the `_names` entry of `SPORTS/params.json`.
+
+**Its `eligible_count = 0` is the answer rather than an empty scope.** The statement audits rows
+that must not exist, so zero eligible and zero findings is the sport being correct; the day the
+count moves off zero is the day there is something to repair. It is not a misdirected scope and
+must not be reclassified as one. `SPORTS/Handball.md` carries the same note.
+
+`GLOBAL-DQ-020`, `-021`, `-053` and `-119` stay uninstantiated: each reads a place against the
+field it belongs to, and a head-to-head event has no field.
 
 <!-- MANUAL PASTE ZONE: 10 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
