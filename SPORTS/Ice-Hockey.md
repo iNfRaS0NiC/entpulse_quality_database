@@ -176,7 +176,7 @@ Twelve active result types inside the boundary, from `GLOBAL-DISCOVERY-007` narr
 | medal | 501 | `bronze` / silver / gold | Medal awarded | 30 rows, 20 events |
 | overallscore | 550 | integer | Aggregate over a series | 8 rows, 4 events |
 | finaloutcome | 549 | `lost` / won | Outcome word | 6 rows, 3 events |
-| rank | 100 | integer | Finishing place | **1 row, 1 event** |
+| rank | 100 | integer | See the note under `Ice-Hockey-DQ-023` | 117 rows, 2026-08-28 |
 
 **`1 Ordinary time` and `51 Period 1` reach every event in the boundary and `4 Final Result`
 does not.** 9803 against 9601, and measuring the 202 on 2026-08-14 settled what they are:
@@ -925,6 +925,45 @@ question came back from the review. What that leaves outstanding is a data corre
 what each check should return after it needs no `_expected` entry: the signal supplies it, so
 the two `Monitor` checks expect a number that stays and every other approved check expects zero.
 
+**`Ice-Hockey-DQ-023 EVENT_RESULTS_MEDAL_RANK_MISMATCH` is `Deprecated` from 2026-08-28, and
+the CheckID keeps its row.** `GLOBAL-DQ-053` asserts that a medal follows a place: gold is one,
+silver two, bronze three, and a medal with no place at all is a defect. That is true of a sport
+whose medals come out of a ranking. This sport's do not.
+
+Measured 2026-08-28 inside the boundary, all 658 medal rows over 412 events sit in `9 Final`
+or `138 bronze` and nowhere else - 246 finals carrying gold and silver, 166 bronze matches
+carrying bronze. The medal is the outcome of a match, so 542 of the 658 carry no place, and the
+check was reporting every one of them: 542 findings of 542 eligible, a check with no clean row
+in it. It had grown 30, then 35, then 542 as colleagues added the medals that were missing,
+which is the check getting louder the more correct the data became.
+
+The question it asks is already asked where this sport does store a place. `1270 Rank` lives on
+the Comp.Rank layer and `Ice-Hockey-DQ-031` runs `GLOBAL-DQ-072` over it. The medal itself is
+covered from four sides at event level - `-078` for the medal set the round should hold, `-079`
+for the medal against the score, `-014` for a medal on a round that awards none, and `-121`.
+Nothing is unwatched by this deprecation.
+
+Handball, Soccer and Curling never instantiated `GLOBAL-DQ-053` at all: each declares
+`RESULT_RANK_TYPE_ID` not applicable because the pairing is the classification, and the
+parameter rule refused the template for them. Ice-Hockey is the only H2H sport that records the
+parameter, which is the only reason the template reached it.
+
+**`RESULT_RANK_TYPE_ID` stays recorded, and is not to be declared not applicable here.** Unlike
+the other three, this sport does store `100 Rank` - 117 rows on 2026-08-28. What they hold is
+the point: 116 sit beside a medal on a final or a bronze match and read `1`, `2` or `3`, an
+exact restatement of the medal word that adds nothing to it, and every one of them agrees with
+its medal. The 117th carries `92` on an event of round type `40`, with no medal beside it, and
+a place of 92 in a match between two teams is not a place at all. `Ice-Hockey-DQ-055` reports
+that row - event 1837359, Poland-Ukraine - and removing the parameter would take the only
+report of it with it.
+
+**`Ice-Hockey-DQ-055` carries a smaller version of the same H2H problem, and it is left open
+rather than settled here.** Measured 2026-08-28 it returns 3 findings of 60 eligible, and two
+of the three are events 344939 and 344941, the Euro Hockey Tour bronze matches of 2007, each
+reported as `sequence starts at 3, expected 1`. A bronze match ranks third and fourth, so
+starting at 3 is what the event should say. The third finding is the 92. What to do about the
+other two is an open question below rather than a decision taken on this pass.
+
 <!-- MANUAL PASTE ZONE: 5 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
@@ -960,7 +999,11 @@ the two `Monitor` checks expect a number that stays and every other approved che
    and Aleksandr Ossipov - and the third holds the sport's only `100 Rank` value and no
    `4 Final Result`. `Ice-Hockey-DQ-057` found it independently as its single finding, which is
    what made the three observations one row. It is one correction, and it belongs to the
-   colleagues rather than to a check.
+   colleagues rather than to a check. **The word "only" was true on 2026-08-14 and is not any
+   more:** re-measured 2026-08-28 the sport holds 117 `100 Rank` rows inside the boundary. The
+   other 116 arrived with the medals the colleagues have been adding and restate the medal word
+   rather than adding a place. Nothing about the answer above changes - 1837359 is still the
+   event and 92 is still the value - but a later reader should not take the count from here.
 7. ~~**Is `51 Period 1` the first period or the whole game on the 1091 events that store no
    other period?**~~ Closed as a question on 2026-08-15 and reported instead. The value equals
    the final result on every one of them and they run from 1932 to 2024. Every layer that could
@@ -973,4 +1016,14 @@ the two `Monitor` checks expect a number that stays and every other approved che
    period; `Ice-Hockey-DQ-059` and `Ice-Hockey-DQ-104` already audit only sides holding all
    three, so neither depends on it.
 
+8. **Should a bronze match be expected to rank its two teams 3 and 4, or 1 and 2?**
+   `Ice-Hockey-DQ-055` reports events 344939 and 344941, the Euro Hockey Tour bronze matches of
+   2007, as `sequence starts at 3, expected 1`, and third and fourth is what a bronze match
+   actually decides. `GLOBAL-DQ-119` reads an event as a field ranked from one, which is right
+   for a listing sport and wrong for a two-team match that settles places three and four.
+   Raised 2026-08-28 while deprecating `Ice-Hockey-DQ-023` for the same H2H mismatch, and left
+   open rather than decided: the two events are a small population, and whether the fix is a
+   template that takes the round's expected first place as a parameter, a sport statement, or
+   simply correcting the two rows is a decision nobody has taken. Until it is, `-055` keeps
+   reporting them beside the one finding that is real, the rank of 92 on 1837359.
 <!-- MANUAL PASTE ZONE: 5 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
