@@ -3853,6 +3853,20 @@ SELECT
 -- cost is stated rather than hidden: on a bronze round a sequence starting at 2 is still
 -- reported, but one written 1 where the sport means 3, or 3 where it means 1, is not. A sport
 -- with no third-place round declares the list as 0 and nothing changes for it.
+-- **A round whose name states a band of places is expected to start at the top of that band.**
+-- `7/12` decides places seven to twelve, so a sequence running 7, 8, 9 is what it should hold,
+-- and reading the first number off the name is the only thing that knows it: no parameter can
+-- carry a place per round type, and the band is already written where the sport put it. Added
+-- 2026-08-28. Measured that day inside Track Cycling's boundary, 264 of its 350 start breaks
+-- are a round starting at the top of its own band - 139 under `7/12`, 114 under `5/8`, 10 under
+-- `9/12` - and every one of them is the sport behaving correctly.
+-- It is deliberately not the same as excusing those rounds. Six events sit in a round with a
+-- stated band and do not start at the top of it - four `5/8` starting at 6, 7 and 8, and two
+-- `1/16` at 7 and 2 - and this form keeps reporting them where a declared list of placing round
+-- types would have dropped them with the noise. The elimination rounds named the same way,
+-- `1/8`, `1/16` and `1/32`, yield a first place of 1, which is what the check already expected,
+-- so nothing changes for the sports whose only such rounds are those - BMX among them, measured
+-- the same day.
 FROM (
     SELECT
         b.event_id,
@@ -3869,17 +3883,17 @@ FROM (
             s.event_id,
             s.rank_value AS at_place,
             CASE
-                WHEN s.prev_rank IS NULL AND s.rank_value <> 1
+                WHEN s.prev_rank IS NULL AND s.rank_value <> s.expected_first_place
                      AND NOT (s.is_bronze_round = 1 AND s.rank_value = 3) THEN 'START'
                 WHEN s.next_rank > s.rank_value + s.places_taken THEN 'GAP'
                 ELSE 'TIE'
             END AS break_kind,
             CASE
-                WHEN s.prev_rank IS NULL AND s.rank_value <> 1
+                WHEN s.prev_rank IS NULL AND s.rank_value <> s.expected_first_place
                      AND NOT (s.is_bronze_round = 1 AND s.rank_value = 3)
-                    THEN CONCAT('sequence starts at ', s.rank_value,
-                                CASE WHEN s.is_bronze_round = 1
-                                     THEN ', expected 1 or 3' ELSE ', expected 1' END)
+                    THEN CONCAT('sequence starts at ', s.rank_value, ', expected ',
+                                s.expected_first_place,
+                                CASE WHEN s.is_bronze_round = 1 THEN ' or 3' ELSE '' END)
                 ELSE CONCAT('place ', s.rank_value,
                             CASE WHEN s.places_taken > 1
                                  THEN CONCAT(' shared by ', s.places_taken) ELSE '' END,
@@ -3892,6 +3906,7 @@ FROM (
                 ranked.rank_value,
                 ranked.places_taken,
                 ranked.is_bronze_round,
+                COALESCE(ranked.band_first_place, 1) AS expected_first_place,
                 LAG(ranked.rank_value)  OVER (PARTITION BY ranked.event_id ORDER BY ranked.rank_value) AS prev_rank,
                 LEAD(ranked.rank_value) OVER (PARTITION BY ranked.event_id ORDER BY ranked.rank_value) AS next_rank
             FROM (
@@ -3900,9 +3915,13 @@ FROM (
                     CAST(r.value AS UNSIGNED) AS rank_value,
                     COUNT(DISTINCT ep.id) AS places_taken,
                     MAX(CASE WHEN e2.round_typeFK IN ({{BRONZE_ROUND_TYPE_LIST}})
-                             THEN 1 ELSE 0 END) AS is_bronze_round
+                             THEN 1 ELSE 0 END) AS is_bronze_round,
+                    MAX(CASE WHEN rt2.name REGEXP '^[0-9]+/[0-9]+$'
+                             THEN CAST(SUBSTRING_INDEX(rt2.name, '/', 1) AS UNSIGNED)
+                             END) AS band_first_place
                 FROM event_participants ep
                 JOIN event e2 ON e2.id = ep.eventFK AND e2.del = 'no'
+                LEFT JOIN round_type rt2 ON rt2.id = e2.round_typeFK
                 JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
                 JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
                 JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
@@ -3919,7 +3938,7 @@ FROM (
                 GROUP BY e2.id, CAST(r.value AS UNSIGNED)
             ) ranked
         ) s
-        WHERE (s.prev_rank IS NULL AND s.rank_value <> 1
+        WHERE (s.prev_rank IS NULL AND s.rank_value <> s.expected_first_place
                AND NOT (s.is_bronze_round = 1 AND s.rank_value = 3))
            OR (s.next_rank IS NOT NULL AND s.next_rank <> s.rank_value + s.places_taken)
     ) b
