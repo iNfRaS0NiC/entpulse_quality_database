@@ -1490,9 +1490,7 @@ function Remove-RegistryBranch {
 # had confirmed decides it, so it cannot be remembered on one run and forgotten on the next, and
 # it stops applying by itself on the day the parameters are recorded.
 $StatisticBranchMarker =
-'(?ms)^[ 	]*--[ 	]*STATISTIC BRANCH BEGIN[ 	]*?
-.*?^[ 	]*--[ 	]*STATISTIC BRANCH END[ 	]*?
-'
+'(?ms)^[ \t]*--[ \t]*STATISTIC BRANCH BEGIN[ \t]*\r?\n.*?^[ \t]*--[ \t]*STATISTIC BRANCH END[ \t]*\r?\n'
 
 # The parameters the marked branch is written from. Both must be confirmed for it to stand.
 $StatisticBranchParameters = @('SHARD_ID', 'STATISTIC_TYPE_ID')
@@ -2430,13 +2428,42 @@ function Get-FindingCount {
     return $all.Count - $coverage
 }
 
+function Remove-CoverageRows {
+    # The rows a reader is meant to work through, which is every row except the COVERAGE one.
+    #
+    # A COVERAGE row is the statement answering how much it audited, not something it found. It
+    # carries a count and nothing else - every finding column in it is NULL - so on a tab it is
+    # a row somebody has to read past, and in a count it is the reason a clean check reported 1
+    # where it had found nothing. Taken off both from 2026-08-28, so the number on Overview and
+    # the rows on the tab it links to are the same thing.
+    #
+    # Nothing is lost. eligible_count is its own Overview column, it is in _summary.csv, and it
+    # is in RUNS/<Sport>.json. What it costs is that a check auditing nothing and a check finding
+    # nothing now look alike on the tab - both empty - and are told apart by Eligible and by the
+    # run's own `Audited nothing` line.
+    #
+    # A statement with no check_type column is returned untouched: a discovery or pattern
+    # statement declares no coverage branch, so there is nothing here to subtract and guessing
+    # that one of its rows is a coverage row would delete a result.
+    param($Rows)
+
+    $all = @($Rows | Where-Object { $null -ne $_ })
+    if ($all.Count -eq 0) { return $all }
+    if (-not ($all | Where-Object { $_.PSObject.Properties.Name -contains 'check_type' })) {
+        return $all
+    }
+    return @($all | Where-Object { [string]$_.check_type -ne 'COVERAGE' })
+}
+
 function Get-SeededStatus {
     # The two verdicts the workbook can settle for itself, so a reviewer opens on the rows
     # that actually want reading.
     #
     # An informational check has nothing to act on by its nature. A check that came back with
-    # its COVERAGE row alone found nothing today - which is a reading of the data and not the
-    # absence of one.
+    # no findings at all found nothing today - which is a reading of the data and not the
+    # absence of one. It was `$Rows -eq 1` until 2026-08-28, when the COVERAGE row stopped
+    # being counted: the check that reported one row and the check that reports none now are
+    # the same check.
     #
     # But the row count alone cannot say that. A statement that audited nothing returns the
     # same single row as one that found nothing wrong, and only the eligible_count in it tells
@@ -2452,7 +2479,7 @@ function Get-SeededStatus {
 
     if (-not $Ran) { return 'Not reviewed' }
     if ($Signal -eq 'Informational') { return 'Monitor Only' }
-    if ($Rows -eq 1 -and $null -ne $Eligible -and $Eligible -gt 0) { return 'Clean' }
+    if ($Rows -eq 0 -and $null -ne $Eligible -and $Eligible -gt 0) { return 'Clean' }
     return 'Not reviewed'
 }
 
@@ -4340,10 +4367,15 @@ function Save-RunSheet {
         # about the same check.
         $enriched = @()
         foreach ($entry in $Summary) {
+            # Findings rather than the raw row count, so the number matches the tab it links
+            # to: Remove-CoverageRows takes the COVERAGE row off the tab and this takes it out
+            # of the count. Findings is $null for a statement that declares no coverage branch
+            # - a pattern or discovery statement - and there the raw count is what its tab
+            # holds.
             $rowsCell = switch -Wildcard ($entry.Status) {
                 'ERROR*' { 'ERROR' }
                 'SKIPPED*' { 'SKIPPED' }
-                default { $entry.Rows }
+                default { $(if ($null -ne $entry.Findings) { $entry.Findings } else { $entry.Rows }) }
             }
             $ran = ($rowsCell -isnot [string])
             $signal = $(if ($entry.Signal) { [string]$entry.Signal } else { 'Actionable' })
@@ -4470,11 +4502,15 @@ function Save-RunSheet {
             Write-Host ("  Comment mirror on {0} named another check's tab and was put back: {1} -> {2}" -f `
                     $fixed.CheckId, $fixed.Was, $fixed.Now) -ForegroundColor Yellow
         }
-        if (@($plan.StatusKept).Count -gt 0) {
-            Write-Host ("  Status left as the reviewer set it on {0} withdrawn check(s): {1}" -f `
-                    @($plan.StatusKept).Count,
-                    ((@($plan.StatusKept) | ForEach-Object { "$($_.CheckId)=$($_.Status)" }) -join ', ')) `
-                -ForegroundColor DarkGray
+        # A withdrawn check leaving the board, named rather than counted and for the same reason
+        # every other write into somebody's columns is: the row goes, and any comment on it goes
+        # with it. If that was not wanted, this line is where it has to be seen.
+        if (@($plan.StatusRemoved).Count -gt 0) {
+            Write-Host ("  Withdrawn and removed from the board: {0}" -f `
+                    ((@($plan.StatusRemoved) | ForEach-Object {
+                            $was = $(if ([string]::IsNullOrWhiteSpace([string]$_.Status)) { 'no status' } else { $_.Status })
+                            "$($_.CheckId) ($was)"
+                        }) -join ', ')) -ForegroundColor Yellow
         }
         Write-Host "  https://docs.google.com/spreadsheets/d/$id/edit" -ForegroundColor DarkGray
         return $id
@@ -4565,9 +4601,19 @@ function Save-RunWorkbook {
     # Keyed by RunKey throughout: under -Chain one CheckID runs several times with different
     # values, and keying by CheckID would give all of those runs the last one's tab and the
     # last one's coverage count.
+    # The eligible count travels with the rows rather than being read back out of them: the
+    # COVERAGE row is stripped before a tab is written, so recomputing it here would find
+    # nothing and call every check in the workbook uncounted. A caller passing rows with no
+    # Eligible beside them - a fixture, an older path - still gets the old reading.
     $eligibleOf = @{}
+    $tabRowsOf = @{}
     foreach ($item in $Collected) {
-        $eligibleOf[(Get-JobRunKey -Job $item.Job)] = Get-CoverageCount -Rows $item.Rows
+        $tabRowsOf[(Get-JobRunKey -Job $item.Job)] = @(Remove-CoverageRows -Rows $item.Rows).Count
+        $eligibleOf[(Get-JobRunKey -Job $item.Job)] = $(
+            if ($item.PSObject.Properties.Name -contains 'Eligible' -and $null -ne $item.Eligible) {
+                $item.Eligible
+            }
+            else { Get-CoverageCount -Rows $item.Rows })
     }
 
     $tabOf = @{}
@@ -4595,10 +4641,23 @@ function Save-RunWorkbook {
     foreach ($entry in $Summary) {
         $overviewRow++
         # A check that failed or never ran would otherwise read as a clean zero.
+        #
+        # Findings rather than the raw row count, for the reason the live document uses it too:
+        # the COVERAGE row is not work, so it is not in the number. The two derivations have to
+        # stay the same expression or the workbook and the board seed different statuses for
+        # the same check - which is what the note above Get-SeededStatus warns about.
+        $entryKey = $(if ($entry.PSObject.Properties.Name -contains 'RunKey' -and $entry.RunKey) {
+                [string]$entry.RunKey
+            }
+            else { [string]$entry.CheckId })
         $rowsCell = switch -Wildcard ($entry.Status) {
             'ERROR*' { 'ERROR' }
             'SKIPPED*' { 'SKIPPED' }
-            default { $entry.Rows }
+            default {
+                $(if ($null -ne $entry.Findings) { $entry.Findings }
+                    elseif ($tabRowsOf.ContainsKey($entryKey)) { $tabRowsOf[$entryKey] }
+                    else { $entry.Rows })
+            }
         }
         $ran = ($rowsCell -isnot [string])
 
@@ -4739,7 +4798,7 @@ function Save-RunWorkbook {
         # lives, and moving SQL Used off C would move the link with it.
         $sheet = [pscustomobject]@{
             Name   = $tabOf[$itemRunKey]
-            Rows   = $item.Rows
+            Rows   = (Remove-CoverageRows -Rows $item.Rows)
             Header = @($item.Job.CheckId, $item.Job.Name, 'SQL',
                 (Get-CheckPriority -Category $itemCategory), $itemCategory,
                 $item.Job.What, '', '',
@@ -5568,7 +5627,11 @@ if ($isBatch) {
                     if ($isWorkbook) {
                         # A workbook names the check on the tab and on row 1, so the rows
                         # themselves stay clean.
-                        $collected += [pscustomobject]@{ Job = $job; Rows = $rows }
+                        $collected += [pscustomobject]@{
+                            Job      = $job
+                            Rows     = (Remove-CoverageRows -Rows $rows)
+                            Eligible = $eligible
+                        }
                     }
                     else {
                         # A flat file has nowhere else to record which check a row came from.
@@ -5590,8 +5653,10 @@ if ($isBatch) {
                         # run streams to disk precisely so a large result is not carried in
                         # memory, and the plan writes no more than this either.
                         $collected += [pscustomobject]@{
-                            Job  = $job
-                            Rows = @($rows | Select-Object -First $SheetsMaxRowsPerCheck)
+                            Job      = $job
+                            Rows     = @((Remove-CoverageRows -Rows $rows) |
+                                Select-Object -First $SheetsMaxRowsPerCheck)
+                            Eligible = $eligible
                         }
                     }
 
