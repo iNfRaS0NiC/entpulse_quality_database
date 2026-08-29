@@ -1472,9 +1472,38 @@ So the column is overwritten in place, padded with blank rows out to whatever th
 reached, in a single write. A write that never lands leaves the previous column entire. And
 because overwriting in place is no protection against a *read* that came back empty, a tab
 holding rows that parse as no block at all is left untouched and reported: rows that yield no
-statement mean a tab this run could not read, not an empty one. Recovering from either is the
-same thing — run the sport's whole catalogue once and every block is rebuilt from the
-repository.
+statement mean a tab this run could not read, not an empty one.
+
+That skip used to be permanent, and saying so is the point of the rest of this section. The
+condition is read off the tab, and nothing a later run does changes what the tab holds, so a
+board that reached the state stayed in it while the warning told the reader to run the sport's
+whole catalogue and the code refused that run exactly as it refused the narrow ones. Golf sat
+there from 2026-08-20 to 2026-08-29. Three things now stand between a board and that state,
+and they are listed in the order they are reached.
+
+**A heading is read from either column.** A block is found by a heading row carrying the
+CheckID and nothing else. In column `A` that heading is a link, and a link is a formula, and a
+formula cannot be sent in the same `RAW` batch as the statements — so it goes in a second
+batch, and a run that dies between the two leaves the statements standing under blank headings.
+Column `B` of the same row carries the CheckID as plain text, rides in the batch with the
+statement it names, and is hidden. The two land together or neither lands.
+
+**A statement says what it is.** For a tab written before that column existed, and only when
+neither heading is found anywhere, the blocks are recovered from the statements themselves:
+every one opens with `SELECT` alone and its `-- CheckID - ` comment directly under it, which
+`TOOLS/Test-Package.ps1` enforces on every statement in the package. The match is strict about
+that two-line shape, because a comment may mention another check — Golf's own tab has three
+such lines — and it is tried last, since a heading that is present is better evidence than one
+inferred.
+
+**A complete run may rebuild.** `-RunAll`, uncapped, was asked for the sport's whole approved
+catalogue and produced it, so a tab that parses as nothing is rewritten rather than preserved.
+Only if the run really did produce it all: a check that failed, or that returned nothing
+whatsoever, never reaches the collected results and so has no block, and rebuilding without it
+would delete the one copy of its statement there is. Such a run leaves the tab alone and names
+the checks that are missing. A discovery statement the board carries is not in the catalogue
+and does not survive the rebuild — against a tab that already parses as nothing, those blocks
+were lost either way.
 
 A check tab is also cleared to its end before it is written, rather than to a depth this code
 believes it has. Forty rows last run and three this one would otherwise leave thirty-seven

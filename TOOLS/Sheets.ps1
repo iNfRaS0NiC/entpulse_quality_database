@@ -1250,6 +1250,80 @@ function New-SheetsCommentMirror {
     return "='" + ($Sheet -replace "'", "''") + "'!" + $cell
 }
 
+function ConvertTo-SheetsSqlBlocks {
+    <#
+        The SQL tab's rows as one block per check. Separated from the transport because the
+        decision is worth testing and a login is not.
+
+        Three ways a block is found, in descending order of how much they are trusted.
+
+        Column A's heading: a cell holding the CheckID and nothing else, which is what a
+        HYPERLINK's label renders as. No line of SQL has that shape.
+
+        Column B of the same row, holding the CheckID as plain text. A's heading is a formula
+        and so cannot ride in the RAW batch that carries the statements; B's is plain and does.
+        The two batches are sent in order, and a run that dies between them leaves the
+        statements standing under blank headings - a tab that then parses as nothing at all,
+        and no later run of any size could repair it because the refusal is read off the tab.
+        Golf sat in exactly that state from 2026-08-20 to 2026-08-29.
+
+        The identity header, for a tab written before column B existed. Every statement in the
+        package opens with SELECT alone and the CheckID comment directly under it, and
+        TOOLS/Test-Package.ps1 enforces that on all of them, so a tab whose headings were lost
+        still says what it holds. Strict, and last: a comment may mention another check - Golf's
+        own tab has three such lines - so only the exact two-line shape counts, and only when
+        the other two found nothing at all. A heading that is present is better evidence than
+        one inferred.
+    #>
+    param([string[]]$Lines, [string[]]$Marks = @())
+
+    $blocks = @()
+    $lines = @($Lines)
+    if ($lines.Count -eq 0) { return @() }
+    $marks = @($Marks)
+
+    $pattern = '^[A-Za-z][A-Za-z0-9-]*-(DQ|DISCOVERY)-[0-9]+$'
+    $current = $null
+    for ($r = 0; $r -lt $lines.Count; $r++) {
+        $text = [string]$lines[$r]
+        $mark = $(if ($r -lt $marks.Count) { [string]$marks[$r] } else { '' })
+        $heading = ''
+        if ($text -match $pattern) { $heading = $text }
+        elseif ($mark -match $pattern) { $heading = $mark }
+        if ($heading) {
+            if ($current) { $blocks += $current }
+            $current = [pscustomobject]@{ CheckId = $heading; Row = $r + 1; Lines = @() }
+            continue
+        }
+        if ($current) { $current.Lines += $text }
+    }
+    if ($current) { $blocks += $current }
+    if ($blocks.Count -gt 0) { return @($blocks) }
+
+    # Nothing carried a heading. Read the statements themselves.
+    $starts = @()
+    for ($r = 1; $r -lt $lines.Count; $r++) {
+        if ([string]$lines[$r] -notmatch
+            '^\s*--\s*CheckID\s*-\s*([A-Za-z][A-Za-z0-9-]*-(?:DQ|DISCOVERY)-[0-9]+)\s*$') { continue }
+        if (([string]$lines[$r - 1]).Trim() -ne 'SELECT') { continue }
+        # The heading row is the blank one above the SELECT, which is where the rewrite puts
+        # the link back. Row is 1-based, so the SELECT's 0-based index is also the heading's
+        # row number.
+        $starts += [pscustomobject]@{ CheckId = $matches[1]; Row = $r - 1 }
+    }
+    for ($i = 0; $i -lt $starts.Count; $i++) {
+        $from = [int]$starts[$i].Row
+        $to = $(if ($i + 1 -lt $starts.Count) { [int]$starts[$i + 1].Row - 1 } else { $lines.Count - 1 })
+        if ($to -lt $from) { continue }
+        $blocks += [pscustomobject]@{
+            CheckId = [string]$starts[$i].CheckId
+            Row     = $from
+            Lines   = @($lines[$from..$to])
+        }
+    }
+    return @($blocks)
+}
+
 function New-SheetsGidLink {
     # A link to another tab of the same document, and optionally to a cell in it. The tab is
     # named rather than numbered because a tab this run is creating has no number yet;
@@ -2925,12 +2999,26 @@ function New-SheetsMergePlan {
     # The merged column, and where each block's heading lands in it. Built here rather than as
     # the checks were collected, because a block belonging to a check this run did not hold
     # still occupies rows and still shifts everything under it.
+    # The CheckID goes into column B of the heading row, in this same block of values, and the
+    # reader treats it as a heading in its own right.
+    #
+    # Column A's heading is a link, and a link is a formula, and a formula cannot be sent in the
+    # RAW batch that carries the statements. So it goes in a second, USER_ENTERED batch after
+    # this one - which means there is a window where the statements have landed and the headings
+    # have not, and a tab in that state parses as nothing at all. That is not hypothetical
+    # either: it is what Golf's tab was, 14 471 rows of intact SQL under 123 blank headings,
+    # from 2026-08-20 until it was found on 2026-08-29.
+    #
+    # Column B closes the window rather than narrowing it. It is plain text, so it rides in the
+    # RAW batch with the statement it names: the two land together or neither lands, and no
+    # ordering between the batches can separate them. The column is hidden, so the tab looks
+    # exactly as it did.
     $sqlLines = @()
     $sqlBackLinks = @()
     $sqlRowOf = @{}
     foreach ($key in $sqlOrder) {
         $sqlRowOf[$key] = $sqlLines.Count + 1
-        $sqlLines += , @('', '')
+        $sqlLines += , @('', [string]$key)
         foreach ($line in @($sqlOf[$key])) { $sqlLines += , @([string]$line, '') }
     }
 
@@ -2962,13 +3050,42 @@ function New-SheetsMergePlan {
     # not read, and the honest response is to leave it exactly as it stands and say so. The
     # cost of skipping is that a statement changed this run is not refreshed until the next
     # one; the cost of not skipping is every other statement on the board.
+    # Skipping cannot be the whole answer, though, because on its own it is permanent. The
+    # condition is read off the tab and nothing a later run does changes what the tab holds,
+    # so a board that reached this state stayed in it: Golf sat here from 2026-08-20 to
+    # 2026-08-29 while the warning told the reader to run the sport's whole catalogue and the
+    # code refused that run exactly as it refused the narrow ones.
+    #
+    # A complete run is the one case where the trade is worth making. It was asked for the
+    # sport's whole approved catalogue and nothing capped it, so what it rebuilds is the
+    # catalogue. Not quite everything: a discovery statement the board carries is not in that
+    # catalogue and its block does not survive the rebuild. Against a tab that already parses
+    # as nothing, though, those blocks are lost either way, and 123 statements back is not a
+    # worse position than none. The recovery below is what keeps it from coming to that.
+    #
+    # Only if it really did produce them all. A check that failed, or that came back with no
+    # rows whatsoever, never reaches $Collected and so has no block here - and rebuilding
+    # without it would delete the one copy of its statement that exists. So the rebuild is
+    # allowed against what the run planned rather than against the switch it was given: every
+    # check with a summary row must have a block, and a run one check short leaves the tab
+    # alone and names the check, which is a thing the reader can act on.
     $sqlBlocksRead = @($(if ($Existing) { $Existing.SqlBlocks } else { @() })).Count
-    $sqlUnreadable = ($sqlFloor -gt 0 -and $sqlBlocksRead -eq 0)
+    $sqlOwed = @(@($Summary) | ForEach-Object { [string]$_.CheckId } |
+        Where-Object { $_ -and -not $sqlOf.ContainsKey($_) } | Sort-Object -Unique)
+    $sqlRebuild = ($Complete -and $sqlOwed.Count -eq 0)
+    $sqlUnreadable = ($sqlFloor -gt 0 -and $sqlBlocksRead -eq 0 -and -not $sqlRebuild)
     if ($sqlUnreadable) {
         $sqlLines = @()
         $sqlWarning = ("The SQL tab holds {0:n0} rows that parse as no statement at all. " +
             'It has been left untouched rather than rewritten from this run alone - run the ' +
             "sport's whole catalogue to rebuild it.") -f $sqlFloor
+        if ($Complete) {
+            $sqlWarning = ("The SQL tab holds {0:n0} rows that parse as no statement at all, " +
+                'and this run cannot rebuild it because {1} check(s) of the catalogue produced ' +
+                'no statement: {2}. Their SQL exists nowhere but on that tab. Re-run the sport ' +
+                'once those succeed and the tab is rebuilt whole.') -f `
+                $sqlFloor, $sqlOwed.Count, ($sqlOwed -join ', ')
+        }
     }
 
     # Every heading, not only this run's. The label is a link back to the check's own tab, and
@@ -3033,6 +3150,14 @@ function New-SheetsMergePlan {
             Values = $sqlLines
         }
         $cells += $sqlLines.Count
+
+        # Column B is the reader's, not the reviewer's: it repeats the CheckID the link in A
+        # already displays, and its whole purpose is to be there when that link is not. Hidden
+        # so the tab reads exactly as it did before it was given one.
+        $plan += [pscustomobject]@{
+            Kind = 'HideColumns'; Sheet = $SheetsSqlTabName
+            From = 2; To = 2; Hidden = $true
+        }
 
         # The heading rows are links, so they go in the USER_ENTERED batch and land on top of
         # the blank cells the block write leaves for them.
@@ -3770,9 +3895,11 @@ function Read-SheetState {
         $reads += ('Overview!A1:' + (ConvertTo-SheetsColumnName -Index $SheetsOverviewColumns.Count))
     }
     # The SQL tab whole, because a run that holds only some of the checks still has to leave
-    # the blocks belonging to the others where they were. Column A is all of it.
+    # the blocks belonging to the others where they were. Column A carries the statements and
+    # the heading links; column B carries each heading's CheckID as plain text, which is what
+    # survives a run that wrote the statements and died before the links.
     $hasSql = ($titles -contains $SheetsSqlTabName)
-    if ($hasSql) { $reads += ($SheetsSqlTabName + '!A1:A') }
+    if ($hasSql) { $reads += ($SheetsSqlTabName + '!A1:B') }
     $hasReviewLog = ($titles -contains $SheetsReviewLogTabName)
     if ($hasReviewLog) {
         $reads += ("'" + ($SheetsReviewLogTabName -replace "'", "''") + "'!A2:" +
@@ -3903,19 +4030,16 @@ function Read-SheetState {
         # nothing else, which is what separates it from the statement lines under it; a line
         # of SQL never has that shape.
         if ($hasSql -and $ranges.Count -gt $offset) {
-            $lines = @(@($ranges[$offset].values) | ForEach-Object { [string]@($_)[0] })
+            $rows = @($ranges[$offset].values)
+            $lines = @($rows | ForEach-Object { [string]@($_)[0] })
+            # Column B of the same row, empty on every row a board written before 2026-08-29
+            # holds. Read beside column A rather than instead of it: a heading is either.
+            $marks = @($rows | ForEach-Object {
+                    $cells = @($_)
+                    $(if ($cells.Count -gt 1) { [string]$cells[1] } else { '' })
+                })
             $offset++
-            $current = $null
-            for ($r = 0; $r -lt $lines.Count; $r++) {
-                $text = [string]$lines[$r]
-                if ($text -match '^[A-Za-z][A-Za-z0-9-]*-(DQ|DISCOVERY)-[0-9]+$') {
-                    if ($current) { $sqlBlocks += $current }
-                    $current = [pscustomobject]@{ CheckId = $text; Row = $r + 1; Lines = @() }
-                    continue
-                }
-                if ($current) { $current.Lines += $text }
-            }
-            if ($current) { $sqlBlocks += $current }
+            $sqlBlocks = @(ConvertTo-SheetsSqlBlocks -Lines $lines -Marks $marks)
             # How far the tab's content reached, so the rewrite can blank whatever it does not
             # cover instead of clearing the tab first. See the write side for why that matters.
             $sqlRowCount = $lines.Count

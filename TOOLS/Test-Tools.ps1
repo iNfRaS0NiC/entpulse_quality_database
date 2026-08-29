@@ -3165,6 +3165,111 @@ Test-That 'an empty SQL tab is still written, because empty is not unreadable' {
     Assert-Equal '' $plan.Warning 'and nothing is warned about'
 }
 
+Test-That 'a complete run rebuilds a SQL tab that parses as nothing, because it holds it all' {
+    # Skipping cannot be the whole answer: the condition is read off the tab, and nothing a
+    # later run does changes what the tab holds. So a board that reached the state above stayed
+    # in it - Golf from 2026-08-20 to 2026-08-29, while the warning told the reader to run the
+    # sport's whole catalogue and the code refused that run exactly as it refused narrow ones.
+    # A complete run was asked for the catalogue and produced it, so there is nothing to weigh.
+    $existing = New-SqlTabFixture
+    $existing.SqlBlocks = @()
+    $summary = @(
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-001' -Findings 0 -Eligible 900 -Verdict 'Clean')
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved')
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-003' -Findings 0 -Eligible 900 -Verdict 'Clean')
+    )
+    $collected = @('Fixtureball-DQ-001', 'Fixtureball-DQ-002', 'Fixtureball-DQ-003' |
+        ForEach-Object { @(New-SqlNarrowRun -CheckId $_)[0] })
+    $plan = New-SheetsMergePlan -Summary $summary -Collected $collected -Existing $existing `
+        -OutputFolder 'x' -Complete
+
+    $bulk = @($plan.Operations | Where-Object {
+            $_.Sheet -eq 'SQL' -and $_.Kind -eq 'Write' -and @($_.Values).Count -gt 3
+        })
+    Assert-Equal 1 $bulk.Count 'the tab is rewritten rather than left broken'
+    Assert-Equal '' $plan.Warning 'and there is nothing left to warn about'
+}
+
+Test-That 'a complete run one statement short still leaves the broken tab alone, and names it' {
+    # The rebuild is allowed against what the run produced, not against the switch it was given.
+    # A check that failed never reaches $Collected and so has no block, and rebuilding without
+    # it would delete the one copy of its statement there is.
+    $existing = New-SqlTabFixture
+    $existing.SqlBlocks = @()
+    $summary = @(
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-001' -Findings 0 -Eligible 900 -Verdict 'Clean')
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved')
+        (New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-003' -Findings 0 -Eligible 900 -Verdict 'Clean')
+    )
+    $collected = @('Fixtureball-DQ-001', 'Fixtureball-DQ-002' |
+        ForEach-Object { @(New-SqlNarrowRun -CheckId $_)[0] })
+    $plan = New-SheetsMergePlan -Summary $summary -Collected $collected -Existing $existing `
+        -OutputFolder 'x' -Complete
+
+    $touched = @($plan.Operations | Where-Object { $_.Sheet -eq 'SQL' })
+    Assert-Equal 0 $touched.Count 'nothing is sent to the SQL tab'
+    Assert-True ($plan.Warning -like '*Fixtureball-DQ-003*') 'and the check that is missing is named'
+}
+
+Test-That 'each heading row carries its CheckID in a column the statements are written with' {
+    # Column A's heading is a link, so it cannot ride in the RAW batch that carries the
+    # statements; column B's is plain text and does. That is what closes the window between the
+    # two batches rather than narrowing it.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 3 -Eligible 900 -Verdict 'Improved'))
+    $plan = New-SheetsMergePlan -Summary $summary -Collected (New-SqlNarrowRun) `
+        -Existing (New-SqlTabFixture) -OutputFolder 'x'
+
+    $bulk = @($plan.Operations | Where-Object {
+            $_.Sheet -eq 'SQL' -and $_.Kind -eq 'Write' -and @($_.Values).Count -gt 3
+        })[0]
+    $second = @(@($bulk.Values) | ForEach-Object { [string]@($_)[1] } | Where-Object { $_ })
+    foreach ($id in 'Fixtureball-DQ-001', 'Fixtureball-DQ-002', 'Fixtureball-DQ-003') {
+        Assert-True ($second -contains $id) "$id names its own heading row"
+    }
+    $hidden = @($plan.Operations | Where-Object {
+            $_.Kind -eq 'HideColumns' -and $_.Sheet -eq 'SQL' -and $_.From -eq 2
+        })
+    Assert-Equal 1 $hidden.Count 'and the column is hidden, so the tab reads as it always did'
+}
+
+Test-That 'a heading is read from either column, and from the identity header when from neither' {
+    # The three ways a block is found, in the order they are trusted.
+    $lines = @('', 'SELECT', '    -- CheckID - Fixtureball-DQ-001', 'FROM a', '',
+        '', 'SELECT', '    -- CheckID - Fixtureball-DQ-002', 'FROM b', '')
+
+    $byLink = @(ConvertTo-SheetsSqlBlocks -Lines @('Fixtureball-DQ-001', 'SELECT one', ''))
+    Assert-Equal 1 $byLink.Count 'the rendered link is a heading'
+    Assert-Equal 'Fixtureball-DQ-001' $byLink[0].CheckId 'and names the block'
+
+    $marks = @('', 'Fixtureball-DQ-009', '', '')
+    $byMark = @(ConvertTo-SheetsSqlBlocks -Lines @('', '', 'SELECT one', '') -Marks $marks)
+    Assert-Equal 1 $byMark.Count 'so is the plain-text column beside it'
+    Assert-Equal 'Fixtureball-DQ-009' $byMark[0].CheckId 'and it names the block too'
+    Assert-Equal 2 $byMark[0].Row 'at the row it was found on'
+
+    # Both headings gone: Golf's tab, 14 471 rows of intact SQL under blank headings.
+    $recovered = @(ConvertTo-SheetsSqlBlocks -Lines $lines)
+    Assert-Equal 2 $recovered.Count 'the statements still say what they are'
+    Assert-Equal 'Fixtureball-DQ-001' $recovered[0].CheckId 'the first block is named'
+    Assert-Equal 1 $recovered[0].Row 'and starts on the blank row above its SELECT'
+    Assert-Equal 'Fixtureball-DQ-002' $recovered[1].CheckId 'the second block is named'
+    Assert-Equal 6 $recovered[1].Row 'and starts on its own'
+    Assert-True (@($recovered[0].Lines) -contains 'FROM a') 'each keeps its own statement'
+    Assert-True (@($recovered[1].Lines) -contains 'FROM b') 'and only its own'
+}
+
+Test-That 'a CheckID merely mentioned in a comment is not mistaken for a statement' {
+    # Golf's tab has three such lines. Recovery is strict about the two-line shape precisely
+    # so that a sentence about another check does not become a block that overwrites it.
+    $lines = @('', 'SELECT', '    -- CheckID - Fixtureball-DQ-001', 'FROM a',
+        '    -- Fixtureball-DQ-044 held the global template and is deprecated',
+        '    -- CheckID - Fixtureball-DQ-777 mentioned mid-comment', '')
+
+    $blocks = @(ConvertTo-SheetsSqlBlocks -Lines $lines)
+    Assert-Equal 1 $blocks.Count 'only the statement that opens with SELECT counts'
+    Assert-Equal 'Fixtureball-DQ-001' $blocks[0].CheckId 'and it is the one that does'
+}
+
 Test-That 'a withdrawn check is taken off the board by any run, not only by a complete one' {
     # Deprecation is a fact this run can read out of the registry rather than an inference it
     # has to earn, so it does not wait for a complete run the way 'Not in this run' does.
