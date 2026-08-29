@@ -344,7 +344,8 @@
             "EVENT_OUTCOME_VALUE_LIST": "the words this sport writes on 668 Event outcome, taken from the data rather than assumed: 'won', 'lost'",
             "WINNER_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST.",
             "WINNER_HOME_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST.",
-            "WINNER_AWAY_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST."
+            "WINNER_AWAY_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST.",
+            "EVENT_OUTCOME_WON_VALUE": "the one word inside EVENT_OUTCOME_VALUE_LIST that names the winning side, read by GLOBAL-DQ-088 to find which side won. Declared rather than assumed: the list also holds lost and, where the sport has draws, draw, and neither names a winner. All four head-to-head sports write 'won', measured 2026-08-29"
         },
         "_notApplicable": {
             "RESULT_DURATION_TYPE_ID": "the sport stores no time on a result",
@@ -364,10 +365,6 @@
             "GLOBAL-DQ-146": {
                 "signal": "Monitor",
                 "reason": "the drill-down of GLOBAL-DQ-132 and it carries that check's verdict unchanged: part of what it returns is correct by construction and will never be corrected, so the count is expected to stay above zero. A competitor entered under a neutral or refugee organization is entered under a country that is not their own on purpose. What the detail adds is that the exceptions can now be told apart from the rest one row at a time. Measured 2026-08-28 on Swimming, the sport with the largest population: 306 findings of 394 eligible participations, and every one of the 306 sits under an organization whose country is International - Russian Swimming Federation, Neutral Athletes A and B, Individual Neutral Athletes, Russian Olympic Committee. Eight of them are worth a look on their own and were invisible in the summary, where they were one number with the other 298: five participations of French competitors under Russian Olympic Committee and three under Russian Swimming Federation."
-            },
-            "GLOBAL-DQ-088": {
-                "signal": "Blocked",
-                "reason": "Still Blocked, and now for a narrower reason than before. GLOBAL-DQ-088 compares the recorded winner against the higher score and reads the Winner event property alone to find that winner. This sport records the winner in 668 Event outcome instead, so the template has nothing to compare and would report every event. GLOBAL-DQ-087 was widened to read both places on 2026-08-29; this one has not been, and until it is the block stands. Handball-DQ-114 asks the same question off the outcome word and returns clean, which is the shape the widened template would take."
             },
             "GLOBAL-DQ-132": {
                 "signal": "Monitor",
@@ -398,7 +395,8 @@
         "EVENT_OUTCOME_VALUE_LIST": "'won', 'lost'",
         "WINNER_VALUE_LIST": "'home', 'away', 'draw'",
         "WINNER_HOME_VALUE_LIST": "'home'",
-        "WINNER_AWAY_VALUE_LIST": "'away'"
+        "WINNER_AWAY_VALUE_LIST": "'away'",
+        "EVENT_OUTCOME_WON_VALUE": "'won'"
     },
     "Artistic-Gymnastics": {
         "BRONZE_ROUND_TYPE_LIST": "181",
@@ -624,7 +622,8 @@
             "EVENT_OUTCOME_VALUE_LIST": "the words this sport writes on 668 Event outcome, taken from the data rather than assumed: 'won', 'lost', 'draw'",
             "WINNER_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST.",
             "WINNER_HOME_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST.",
-            "WINNER_AWAY_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST."
+            "WINNER_AWAY_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST.",
+            "EVENT_OUTCOME_WON_VALUE": "the one word inside EVENT_OUTCOME_VALUE_LIST that names the winning side, read by GLOBAL-DQ-088 to find which side won. Declared rather than assumed: the list also holds lost and, where the sport has draws, draw, and neither names a winner. All four head-to-head sports write 'won', measured 2026-08-29"
         },
         "_notApplicable": {
             "RESULT_COMMENT_TYPE_ID": "no Comment result type; the sport records no status vocabulary on a result",
@@ -651,10 +650,6 @@
             "GLOBAL-DQ-146": {
                 "signal": "Monitor",
                 "reason": "the drill-down of GLOBAL-DQ-132 and it carries that check's verdict unchanged: part of what it returns is correct by construction and will never be corrected, so the count is expected to stay above zero. A competitor entered under a neutral or refugee organization is entered under a country that is not their own on purpose. What the detail adds is that the exceptions can now be told apart from the rest one row at a time. Measured 2026-08-28 on Swimming, the sport with the largest population: 306 findings of 394 eligible participations, and every one of the 306 sits under an organization whose country is International - Russian Swimming Federation, Neutral Athletes A and B, Individual Neutral Athletes, Russian Olympic Committee. Eight of them are worth a look on their own and were invisible in the summary, where they were one number with the other 298: five participations of French competitors under Russian Olympic Committee and three under Russian Swimming Federation."
-            },
-            "GLOBAL-DQ-088": {
-                "signal": "Blocked",
-                "reason": "Still Blocked, and now for a narrower reason than before. GLOBAL-DQ-088 compares the recorded winner against the higher score and reads the Winner event property alone to find that winner. This sport records the winner in 668 Event outcome instead, so the template has nothing to compare and would report every event. GLOBAL-DQ-087 was widened to read both places on 2026-08-29; this one has not been, and until it is the block stands. Handball-DQ-114 asks the same question off the outcome word and returns clean, which is the shape the widened template would take."
             },
             "GLOBAL-DQ-132": {
                 "signal": "Monitor",
@@ -741,7 +736,8 @@
         "EVENT_OUTCOME_VALUE_LIST": "'won', 'lost', 'draw'",
         "WINNER_VALUE_LIST": "'home', 'away', 'draw'",
         "WINNER_HOME_VALUE_LIST": "'home'",
-        "WINNER_AWAY_VALUE_LIST": "'away'"
+        "WINNER_AWAY_VALUE_LIST": "'away'",
+        "EVENT_OUTCOME_WON_VALUE": "'won'"
     },
     "Modern-Pentathlon": {
         "BRONZE_ROUND_TYPE_LIST": "0",
@@ -1211,7 +1207,8 @@
             "EVENT_OUTCOME_VALUE_LIST": "the words this sport writes on 668 Event outcome, taken from the data rather than assumed: 'won', 'lost', 'draw'",
             "WINNER_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST.",
             "WINNER_HOME_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST.",
-            "WINNER_AWAY_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST."
+            "WINNER_AWAY_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST.",
+            "EVENT_OUTCOME_WON_VALUE": "the one word inside EVENT_OUTCOME_VALUE_LIST that names the winning side, read by GLOBAL-DQ-088 to find which side won. Declared rather than assumed: the list also holds lost and, where the sport has draws, draw, and neither names a winner. All four head-to-head sports write 'won', measured 2026-08-29"
         },
         "_checkSignal": {
             "GLOBAL-DQ-145": {
@@ -1334,10 +1331,6 @@
                 "signal": "Not applicable",
                 "reason": "Structural: the sport does not store a period as a scope_data_type inside one scope container, which is the shape this template reads. Ice hockey inverts the axis - the period is the container, 322 period1, 323 period2 and 324 period3, and each carries a single 162 goals field. Measured 2026-08-14 over 882 events. SCOPE_PERIOD_SENTINEL_LIST is also empty by measurement: the period values are the plain numbers 0 to 9 and the sport has no symbol for a period that was not played, so there is no vocabulary to assert. Ice-Hockey-DQ-089 carries the part of the question that survives the inversion."
             },
-            "GLOBAL-DQ-088": {
-                "signal": "Blocked",
-                "reason": "Still Blocked, and now for a narrower reason than before. GLOBAL-DQ-088 compares the recorded winner against the higher score and reads the Winner event property alone to find that winner. This sport records the winner in 668 Event outcome instead, so the template has nothing to compare and would report every event. GLOBAL-DQ-087 was widened to read both places on 2026-08-29; this one has not been, and until it is the block stands. Handball-DQ-114 asks the same question off the outcome word and returns clean, which is the shape the widened template would take."
-            },
             "GLOBAL-DQ-089": {
                 "signal": "Not applicable",
                 "reason": "Structural: the template reads the extra period as its own scope column. Ice hockey stores the extra period as its own scope type - 310 overtime, 133 events measured 2026-08-14 - and that container holds no 162 goals field at all, so no extra-period score can be read from the scope layer. The score lives in the result layer as type 2 Extra time, which Ice-Hockey-DQ-058 and Ice-Hockey-DQ-059 already read."
@@ -1391,7 +1384,8 @@
         "EVENT_OUTCOME_VALUE_LIST": "'won', 'lost', 'draw'",
         "WINNER_VALUE_LIST": "'home', 'away', 'draw'",
         "WINNER_HOME_VALUE_LIST": "'home'",
-        "WINNER_AWAY_VALUE_LIST": "'away'"
+        "WINNER_AWAY_VALUE_LIST": "'away'",
+        "EVENT_OUTCOME_WON_VALUE": "'won'"
     },
     "Cycling": {
         "BRONZE_ROUND_TYPE_LIST": "0",
@@ -2525,10 +2519,6 @@
             "GLOBAL-DQ-058": {
                 "signal": "Monitor",
                 "reason": "what it returns is a collection gap rather than a defect on any row, and it will not be driven to zero. Measured 2026-08-28: 9555 of 13098 team participations in the client boundary carry no lineup at all, every finding of the EVENT_NO_TEAM_HAS_LINEUP kind, running from 2004 forward - the squads were never collected for the older tournaments rather than entered wrongly. Decided the same day to keep the check and read it as a coverage indicator: the number itself is not a work list, and a RISE in it is the question, because that would mean squads stopped being collected for competitions that had them. The lineup layer stays inside the client scope, unlike the incident layer, because a team is the only kind of event participant this sport enters and the lineup is therefore the only path from an event to a person."
-            },
-            "GLOBAL-DQ-088": {
-                "signal": "Blocked",
-                "reason": "Still Blocked, and now for a narrower reason than before. GLOBAL-DQ-088 compares the recorded winner against the higher score and reads the Winner event property alone to find that winner. This sport records the winner in 668 Event outcome instead, so the template has nothing to compare and would report every event. GLOBAL-DQ-087 was widened to read both places on 2026-08-29; this one has not been, and until it is the block stands. Handball-DQ-114 asks the same question off the outcome word and returns clean, which is the shape the widened template would take."
             }
         },
         "_notApplicable": {
@@ -2606,12 +2596,14 @@
             "EVENT_OUTCOME_VALUE_LIST": "the words this sport writes on 668 Event outcome, taken from the data rather than assumed: 'won', 'lost', 'draw'",
             "WINNER_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST.",
             "WINNER_HOME_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST.",
-            "WINNER_AWAY_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST."
+            "WINNER_AWAY_VALUE_LIST": "Read by GLOBAL-DQ-087 as one of two places the winner may be recorded, and this sport writes the other one. Measured 2026-08-29: no event of any of the fifteen sports this package documents carries a Winner event property, while 32 other sports do - Tennis on 425 225 events, Volleyball on 127 496, both still writing. The list stays declared rather than blank so the template can test it, and the day the property starts being written here it is this value that changes and not the check. What the sport keeps instead is 668 Event outcome; see RESULT_EVENT_OUTCOME_TYPE_ID and EVENT_OUTCOME_VALUE_LIST.",
+            "EVENT_OUTCOME_WON_VALUE": "the one word inside EVENT_OUTCOME_VALUE_LIST that names the winning side, read by GLOBAL-DQ-088 to find which side won. Declared rather than assumed: the list also holds lost and, where the sport has draws, draw, and neither names a winner. All four head-to-head sports write 'won', measured 2026-08-29"
         },
         "RESULT_EVENT_OUTCOME_TYPE_ID": 668,
         "EVENT_OUTCOME_VALUE_LIST": "'won', 'lost', 'draw'",
         "WINNER_VALUE_LIST": "'home', 'away', 'draw'",
         "WINNER_HOME_VALUE_LIST": "'home'",
-        "WINNER_AWAY_VALUE_LIST": "'away'"
+        "WINNER_AWAY_VALUE_LIST": "'away'",
+        "EVENT_OUTCOME_WON_VALUE": "'won'"
     }
 }

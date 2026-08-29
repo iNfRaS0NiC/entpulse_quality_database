@@ -2182,7 +2182,7 @@ ORDER BY sort_order, event_startdate DESC;
 SELECT
     -- CheckID - GLOBAL-DQ-088
     -- Name - EVENT_WINNER_CONTRADICTS_SCORE
-    -- What it does: Finds finished head-to-head events whose Winner is not the higher-scoring side.
+    -- What it does: Finds finished head-to-head events whose recorded winner is not the higher-scoring side, reading the winner from the Winner property where the sport writes one and from the Event outcome word where it does not.
     CASE
         WHEN x.score_1 = x.score_2 THEN 'WINNER_NAMED_ON_EQUAL_SCORE'
         ELSE 'WINNER_CONTRADICTS_SCORE'
@@ -2194,7 +2194,8 @@ SELECT
     t.name AS tournament_name,
     ts.name AS stage_name,
     e.round_typeFK,
-    pr.value AS winner_value,
+    COALESCE(pr.value, oc.won_value) AS winner_value,
+    CASE WHEN pr.id IS NOT NULL THEN 'Winner property' ELSE 'Event outcome' END AS winner_source,
     x.score_1,
     x.score_2,
     NULL AS eligible_count,
@@ -2203,8 +2204,46 @@ FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
-                AND pr.name = 'Winner' AND pr.del = 'no'
+-- The winner is read from whichever of the two places the sport keeps it, exactly as
+-- GLOBAL-DQ-087 asks for it. Inner-joining the property, which this statement did until
+-- 2026-08-29, made the check uninstantiable for every sport in this package: none of the
+-- fifteen writes that property, so both branches returned nothing and coverage returned 0 -
+-- a clean-looking check that had audited no event at all.
+LEFT JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
+                     AND pr.name = 'Winner' AND pr.del = 'no'
+                     AND LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}, {{WINNER_AWAY_VALUE_LIST}})
+-- The other place: 668 Event outcome, a result row per side. The side holding the winning word
+-- is the winner, and its event_participants.number is what compares against the scores.
+--
+-- Exactly one winning side is required. Two of them, or none on a decided contest, is a
+-- disagreement between the outcome words rather than with the score, and reporting it here
+-- would blame a field that was never consulted. A level match carrying the drawn word on both
+-- sides yields no winning side and drops out, which is correct: there is nothing to contradict.
+LEFT JOIN (
+    SELECT ep2.eventFK AS event_id,
+           MAX(CASE WHEN LOWER(TRIM(r2.value)) IN ({{EVENT_OUTCOME_WON_VALUE}}) THEN ep2.number END) AS won_number,
+           MAX(CASE WHEN LOWER(TRIM(r2.value)) IN ({{EVENT_OUTCOME_WON_VALUE}}) THEN LOWER(TRIM(r2.value)) END) AS won_value
+    FROM result r2
+    JOIN event_participants ep2 ON ep2.id = r2.event_participantsFK AND ep2.del = 'no'
+    JOIN event e3 ON e3.id = ep2.eventFK AND e3.del = 'no'
+    JOIN tournament_stage ts3 ON ts3.id = e3.tournament_stageFK AND ts3.del = 'no'
+    JOIN tournament t3 ON t3.id = ts3.tournamentFK AND t3.del = 'no'
+    JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
+    WHERE r2.del = 'no'
+      AND r2.result_typeFK = {{RESULT_EVENT_OUTCOME_TYPE_ID}}
+      AND LOWER(TRIM(r2.value)) IN ({{EVENT_OUTCOME_VALUE_LIST}})
+      AND ep2.number IN (1, 2)
+      AND tt3.sportFK = {{SPORT_ID}}
+      -- The boundary and the narrowing repeated inside the derived table, not only outside it.
+      -- Without them this builds over the sport's whole outcome layer and the outer scope then
+      -- throws most of it away: on Soccer the statement timed out at 504 until these were added
+      -- and returned in 1.1 seconds afterwards. -TemplateIds activates every marker in the
+      -- statement, which is what lets a narrowed run narrow the joins it depends on.
+      AND t3.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      -- AND t3.tournament_templateFK = <tournament_template_id>
+    GROUP BY ep2.eventFK
+    HAVING COUNT(DISTINCT CASE WHEN LOWER(TRIM(r2.value)) IN ({{EVENT_OUTCOME_WON_VALUE}}) THEN ep2.id END) = 1
+) oc ON oc.event_id = e.id
 -- event_participants.number is the side discriminator: 1 is the home side and 2 the away
 -- side, confirmed by the agreement between the stored Winner and the higher score wherever
 -- both exist. The vocabulary naming those two sides differs per sport - Home/Away, a/b, A/B
@@ -2225,6 +2264,8 @@ JOIN (
       AND tt2.sportFK = {{SPORT_ID}}
       AND TRIM(r.value) REGEXP '^-?[0-9]+$'
       AND ep.number IN (1, 2)
+      AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      -- AND t2.tournament_templateFK = <tournament_template_id>
     GROUP BY ep.eventFK
     HAVING COUNT(*) = 2
 ) x ON x.event_id = e.id
@@ -2236,26 +2277,63 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
-  AND LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}, {{WINNER_AWAY_VALUE_LIST}})
+  -- A winner has to have been recorded somewhere before it can contradict anything. Written as
+  -- one COALESCE repeated rather than a named column because the server takes no CTE and a
+  -- select alias is not visible here; the property wins where both exist, which is the order
+  -- the rest of the package reads the two places in.
+  AND COALESCE(
+        CASE WHEN LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}) THEN 1
+             WHEN LOWER(TRIM(pr.value)) IN ({{WINNER_AWAY_VALUE_LIST}}) THEN 2 END,
+        oc.won_number) IS NOT NULL
   AND (
       x.score_1 = x.score_2
-      OR (LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}) AND x.score_1 < x.score_2)
-      OR (LOWER(TRIM(pr.value)) IN ({{WINNER_AWAY_VALUE_LIST}}) AND x.score_2 < x.score_1)
+      OR (COALESCE(
+            CASE WHEN LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}) THEN 1
+                 WHEN LOWER(TRIM(pr.value)) IN ({{WINNER_AWAY_VALUE_LIST}}) THEN 2 END,
+            oc.won_number) = 1 AND x.score_1 < x.score_2)
+      OR (COALESCE(
+            CASE WHEN LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}) THEN 1
+                 WHEN LOWER(TRIM(pr.value)) IN ({{WINNER_AWAY_VALUE_LIST}}) THEN 2 END,
+            oc.won_number) = 2 AND x.score_2 < x.score_1)
   )
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
-                AND pr.name = 'Winner' AND pr.del = 'no'
+-- The identical scope, read the identical way: an event counts here when it has two numeric
+-- scores and a winner recorded in one of the two places, which is exactly the population the
+-- findings branch can judge. Counting every scored event instead would put the events that
+-- record no winner at all into this denominator, and those belong to GLOBAL-DQ-087.
+LEFT JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
+                     AND pr.name = 'Winner' AND pr.del = 'no'
+                     AND LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}, {{WINNER_AWAY_VALUE_LIST}})
+LEFT JOIN (
+    SELECT ep2.eventFK AS event_id,
+           MAX(CASE WHEN LOWER(TRIM(r2.value)) IN ({{EVENT_OUTCOME_WON_VALUE}}) THEN ep2.number END) AS won_number
+    FROM result r2
+    JOIN event_participants ep2 ON ep2.id = r2.event_participantsFK AND ep2.del = 'no'
+    JOIN event e3 ON e3.id = ep2.eventFK AND e3.del = 'no'
+    JOIN tournament_stage ts3 ON ts3.id = e3.tournament_stageFK AND ts3.del = 'no'
+    JOIN tournament t3 ON t3.id = ts3.tournamentFK AND t3.del = 'no'
+    JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
+    WHERE r2.del = 'no'
+      AND r2.result_typeFK = {{RESULT_EVENT_OUTCOME_TYPE_ID}}
+      AND LOWER(TRIM(r2.value)) IN ({{EVENT_OUTCOME_VALUE_LIST}})
+      AND ep2.number IN (1, 2)
+      AND tt3.sportFK = {{SPORT_ID}}
+      AND t3.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      -- AND t3.tournament_templateFK = <tournament_template_id>
+    GROUP BY ep2.eventFK
+    HAVING COUNT(DISTINCT CASE WHEN LOWER(TRIM(r2.value)) IN ({{EVENT_OUTCOME_WON_VALUE}}) THEN ep2.id END) = 1
+) oc ON oc.event_id = e.id
 JOIN (
     SELECT ep.eventFK AS event_id
     FROM result r
@@ -2269,6 +2347,8 @@ JOIN (
       AND tt2.sportFK = {{SPORT_ID}}
       AND TRIM(r.value) REGEXP '^-?[0-9]+$'
       AND ep.number IN (1, 2)
+      AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      -- AND t2.tournament_templateFK = <tournament_template_id>
     GROUP BY ep.eventFK
     HAVING COUNT(*) = 2
 ) x ON x.event_id = e.id
@@ -2280,7 +2360,10 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
-  AND LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}, {{WINNER_AWAY_VALUE_LIST}})
+  AND COALESCE(
+        CASE WHEN LOWER(TRIM(pr.value)) IN ({{WINNER_HOME_VALUE_LIST}}) THEN 1
+             WHEN LOWER(TRIM(pr.value)) IN ({{WINNER_AWAY_VALUE_LIST}}) THEN 2 END,
+        oc.won_number) IS NOT NULL
 
 ORDER BY sort_order, event_startdate DESC;
 

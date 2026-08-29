@@ -2342,6 +2342,13 @@ LEFT JOIN (
       AND r2.result_typeFK = {{RESULT_EVENT_OUTCOME_TYPE_ID}}
       AND r2.value IS NOT NULL AND TRIM(r2.value) <> ''
       AND tt2.sportFK = {{SPORT_ID}}
+      -- The boundary and the narrowing repeated inside the derived table, not only outside it.
+      -- Without them this scans the sport's whole outcome layer and then throws away what the
+      -- outer scope excludes: on Soccer that is 1.78 million rows to answer a question about
+      -- 6 318 events. -TemplateIds activates every marker in the statement, so putting one here
+      -- is what lets a narrowed run narrow the join it actually depends on.
+      AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      -- AND t2.tournament_templateFK = <tournament_template_id>
     GROUP BY ep2.eventFK
 ) oc ON oc.event_id = e.id
 WHERE e.del = 'no'
