@@ -8485,6 +8485,1812 @@
                                                             "checkBy":  "Here the SQL is okay, but the updater would not know what the solution is. It is basically duplicated disciplines with different names. We need to specify the solution"
                                                         }
                                 }
+                 },
+                 {
+                     "runId":  "Swimming 29.08.2026 01-22-49",
+                     "startedUtc":  "2026-08-28T23:22:47Z",
+                     "output":  "D:\\SQL\u0027s Output\\Swimming 29.08.2026 01-22-49",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-001",
+                                        "runKey":  "Swimming-DQ-001",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NO_TOURNAMENTS_OR_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  79,
+                                        "seconds":  0.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-002",
+                                        "runKey":  "Swimming-DQ-002",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_AGE_CLASS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  10,
+                                        "findings":  9,
+                                        "eligible":  816,
+                                        "seconds":  0.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-003",
+                                        "runKey":  "Swimming-DQ-003",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NO_EVENTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  19,
+                                        "findings":  18,
+                                        "eligible":  816,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-004",
+                                        "runKey":  "Swimming-DQ-004",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_START_OR_END_DATE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  816,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-005",
+                                        "runKey":  "Swimming-DQ-005",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MISSING_ROUND_TYPE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  28,
+                                        "findings":  27,
+                                        "eligible":  46379,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-006",
+                                        "runKey":  "Swimming-DQ-006",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_PROFILE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  389,
+                                        "findings":  388,
+                                        "eligible":  32552,
+                                        "seconds":  9.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-007",
+                                        "runKey":  "Swimming-DQ-007",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_MISSING_SET_SUBSET_GENDER_NAME",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  78,
+                                        "findings":  77,
+                                        "eligible":  79,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-008",
+                                        "runKey":  "Swimming-DQ-008",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  82,
+                                        "findings":  81,
+                                        "eligible":  46379,
+                                        "seconds":  1.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-009",
+                                        "runKey":  "Swimming-DQ-009",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_MISSING_GENDER",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  46379,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-010",
+                                        "runKey":  "Swimming-DQ-010",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MISSING_FOR_FINISHED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  521,
+                                        "findings":  520,
+                                        "eligible":  45602,
+                                        "seconds":  4.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-011",
+                                        "runKey":  "Swimming-DQ-011",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_INVALID_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  34207,
+                                        "seconds":  4.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-012",
+                                        "runKey":  "Swimming-DQ-012",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FORMAT_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2679,
+                                        "findings":  2678,
+                                        "eligible":  43834,
+                                        "seconds":  24.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-013",
+                                        "runKey":  "Swimming-DQ-013",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  209,
+                                        "findings":  208,
+                                        "eligible":  43828,
+                                        "seconds":  17.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-014",
+                                        "runKey":  "Swimming-DQ-014",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_UNEXPECTED_FOR_NOT_STARTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  8,
+                                        "findings":  7,
+                                        "eligible":  733,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-015",
+                                        "runKey":  "Swimming-DQ-015",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  12,
+                                        "findings":  11,
+                                        "eligible":  166,
+                                        "seconds":  0.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-016",
+                                        "runKey":  "Swimming-DQ-016",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  36,
+                                        "findings":  35,
+                                        "eligible":  301,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-017",
+                                        "runKey":  "Swimming-DQ-017",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  816,
+                                        "seconds":  0.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-018",
+                                        "runKey":  "Swimming-DQ-018",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_RANK_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  34207,
+                                        "seconds":  5.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-019",
+                                        "runKey":  "Swimming-DQ-019",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_DUPLICATE_IN_EVENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  58,
+                                        "findings":  57,
+                                        "eligible":  45188,
+                                        "seconds":  4.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-020",
+                                        "runKey":  "Swimming-DQ-020",
+                                        "parameters":  "",
+                                        "name":  "EVENT_TEAM_PARTICIPANT_WITHOUT_LINEUP",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  948,
+                                        "findings":  947,
+                                        "eligible":  2621,
+                                        "seconds":  5.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-021",
+                                        "runKey":  "Swimming-DQ-021",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_DUPLICATE_ROWS",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  45090,
+                                        "seconds":  20.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-022",
+                                        "runKey":  "Swimming-DQ-022",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NO_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  116,
+                                        "findings":  115,
+                                        "eligible":  628,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-023",
+                                        "runKey":  "Swimming-DQ-023",
+                                        "parameters":  "",
+                                        "name":  "EVENT_TEAM_LINEUP_SIZE_UNEVEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  70,
+                                        "findings":  69,
+                                        "eligible":  2094,
+                                        "seconds":  4.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-024",
+                                        "runKey":  "Swimming-DQ-024",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_VALUE_BLANK",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  466068,
+                                        "seconds":  14.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-025",
+                                        "runKey":  "Swimming-DQ-025",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NO_PARTICIPANTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  1192,
+                                        "findings":  1191,
+                                        "eligible":  46379,
+                                        "seconds":  1.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-026",
+                                        "runKey":  "Swimming-DQ-026",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MISSING_VENUE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  46380,
+                                        "findings":  46379,
+                                        "eligible":  46379,
+                                        "seconds":  13.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-027",
+                                        "runKey":  "Swimming-DQ-027",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  46352,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-028",
+                                        "runKey":  "Swimming-DQ-028",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  27,
+                                        "seconds":  0.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-029",
+                                        "runKey":  "Swimming-DQ-029",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  29,
+                                        "seconds":  0.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-030",
+                                        "runKey":  "Swimming-DQ-030",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_DISCIPLINE_STORAGE_MISMATCH",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  21337,
+                                        "seconds":  14.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-031",
+                                        "runKey":  "Swimming-DQ-031",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_INTEGER_FIELD_FRACTIONAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  43836,
+                                        "seconds":  10.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-032",
+                                        "runKey":  "Swimming-DQ-032",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment, 557 Full-time duration, 101 Duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  29,
+                                        "findings":  28,
+                                        "eligible":  43828,
+                                        "seconds":  26.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-033",
+                                        "runKey":  "Swimming-DQ-033",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_CORE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  814,
+                                        "findings":  813,
+                                        "eligible":  816,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-034",
+                                        "runKey":  "Swimming-DQ-034",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_INVALID_OR_MISSING",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  8742,
+                                        "findings":  8741,
+                                        "eligible":  467966,
+                                        "seconds":  17.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-035",
+                                        "runKey":  "Swimming-DQ-035",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Result: 100 Rank, 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  76,
+                                        "findings":  75,
+                                        "eligible":  11662,
+                                        "seconds":  2.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-036",
+                                        "runKey":  "Swimming-DQ-036",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_MEDAL_ROUND",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  84,
+                                        "findings":  83,
+                                        "eligible":  11662,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-037",
+                                        "runKey":  "Swimming-DQ-037",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_UNEXPECTED_MEDAL_FOR_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  33940,
+                                        "seconds":  2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-038",
+                                        "runKey":  "Swimming-DQ-038",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FULL_TIME_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3495,
+                                        "findings":  3494,
+                                        "eligible":  45168,
+                                        "seconds":  14.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-039",
+                                        "runKey":  "Swimming-DQ-039",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration, 101 Duration, 501 Medal, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  1506,
+                                        "findings":  1505,
+                                        "eligible":  102724,
+                                        "seconds":  9.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-040",
+                                        "runKey":  "Swimming-DQ-040",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_FULL_TIME_NOT_MONOTONIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  134,
+                                        "findings":  133,
+                                        "eligible":  41149,
+                                        "seconds":  103.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-041",
+                                        "runKey":  "Swimming-DQ-041",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FULL_TIME_ARITHMETIC_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  18,
+                                        "findings":  17,
+                                        "eligible":  41147,
+                                        "seconds":  44.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-042",
+                                        "runKey":  "Swimming-DQ-042",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DUPLICATE_BY_METADATA",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  64,
+                                        "findings":  63,
+                                        "eligible":  46379,
+                                        "seconds":  2.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-043",
+                                        "runKey":  "Swimming-DQ-043",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_UNEXPECTED_MEDAL_RELATED_FOR_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  33940,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-044",
+                                        "runKey":  "Swimming-DQ-044",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_YEAR_GAP",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  23,
+                                        "findings":  22,
+                                        "eligible":  58,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-045",
+                                        "runKey":  "Swimming-DQ-045",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration, 101 Duration, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  131,
+                                        "findings":  130,
+                                        "eligible":  43825,
+                                        "seconds":  39.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-046",
+                                        "runKey":  "Swimming-DQ-046",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_SEQUENCE_BROKEN_OUTSIDE_SECONDARY_FINAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  83,
+                                        "findings":  82,
+                                        "eligible":  43836,
+                                        "seconds":  9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-047",
+                                        "runKey":  "Swimming-DQ-047",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 101 Duration, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  25,
+                                        "findings":  24,
+                                        "eligible":  45083,
+                                        "seconds":  20.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-048",
+                                        "runKey":  "Swimming-DQ-048",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration, 101 Duration, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  30,
+                                        "findings":  29,
+                                        "eligible":  43828,
+                                        "seconds":  23.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-049",
+                                        "runKey":  "Swimming-DQ-049",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_STAGE_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  648,
+                                        "seconds":  0.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-050",
+                                        "runKey":  "Swimming-DQ-050",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  121,
+                                        "findings":  120,
+                                        "eligible":  468019,
+                                        "seconds":  9.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-051",
+                                        "runKey":  "Swimming-DQ-051",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MIXED_TEAM_LINEUP_GENDER_BALANCE_UNEVEN",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  115,
+                                        "findings":  114,
+                                        "eligible":  5149,
+                                        "seconds":  4.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-052",
+                                        "runKey":  "Swimming-DQ-052",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  10,
+                                        "findings":  9,
+                                        "eligible":  18,
+                                        "seconds":  1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-053",
+                                        "runKey":  "Swimming-DQ-053",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SCOPE_RESULT_OWNER_EVENT_MISMATCH",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Scope: 101 checkpoint1, 102 checkpoint2, 103 checkpoint3, 104 checkpoint4, 105 checkpoint5, 305 final_result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  125,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-054",
+                                        "runKey":  "Swimming-DQ-054",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_REFERENCE_OR_TYPE_INVALID",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  45188,
+                                        "seconds":  3.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-055",
+                                        "runKey":  "Swimming-DQ-055",
+                                        "parameters":  "",
+                                        "name":  "EVENT_LINEUP_ATHLETE_ASSIGNED_MORE_THAN_ONCE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  14,
+                                        "findings":  13,
+                                        "eligible":  2095,
+                                        "seconds":  4.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-056",
+                                        "runKey":  "Swimming-DQ-056",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3141,
+                                        "findings":  3140,
+                                        "eligible":  34788,
+                                        "seconds":  2.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-057",
+                                        "runKey":  "Swimming-DQ-057",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  69,
+                                        "findings":  68,
+                                        "eligible":  32552,
+                                        "seconds":  4.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-058",
+                                        "runKey":  "Swimming-DQ-058",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  59,
+                                        "findings":  58,
+                                        "eligible":  798,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-059",
+                                        "runKey":  "Swimming-DQ-059",
+                                        "parameters":  "",
+                                        "name":  "EVENT_STATUS_TIME_CONFLICT",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  64,
+                                        "findings":  63,
+                                        "eligible":  46335,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-060",
+                                        "runKey":  "Swimming-DQ-060",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  513,
+                                        "seconds":  0.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-061",
+                                        "runKey":  "Swimming-DQ-061",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_DATE_OF_BIRTH",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  12812,
+                                        "findings":  12811,
+                                        "eligible":  36199,
+                                        "seconds":  26.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-062",
+                                        "runKey":  "Swimming-DQ-062",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_NO_PARTICIPATION_ANYWHERE",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  1222,
+                                        "findings":  1221,
+                                        "eligible":  37446,
+                                        "seconds":  2.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-063",
+                                        "runKey":  "Swimming-DQ-063",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_STROKE_CONTRADICTS_DISCIPLINE",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  65,
+                                        "findings":  64,
+                                        "eligible":  40910,
+                                        "seconds":  0.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-064",
+                                        "runKey":  "Swimming-DQ-064",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_AGE_AT_EVENT_IMPLAUSIBLE",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  49,
+                                        "findings":  48,
+                                        "eligible":  21723,
+                                        "seconds":  8.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-065",
+                                        "runKey":  "Swimming-DQ-065",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_REGISTRY_ACTIVE_CONTRADICTS_STATUS",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  12,
+                                        "findings":  11,
+                                        "eligible":  36076,
+                                        "seconds":  0.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-066",
+                                        "runKey":  "Swimming-DQ-066",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_CONVENTION_CONTRADICTS_DISCIPLINE_VOCABULARY",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  93,
+                                        "findings":  92,
+                                        "eligible":  2205,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-067",
+                                        "runKey":  "Swimming-DQ-067",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration, 101 Duration, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  300,
+                                        "findings":  299,
+                                        "eligible":  43825,
+                                        "seconds":  40.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-068",
+                                        "runKey":  "Swimming-DQ-068",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_CLOCK_VALUE_COMPONENT_OUT_OF_RANGE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 101 Duration, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  29597,
+                                        "seconds":  18.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-069",
+                                        "runKey":  "Swimming-DQ-069",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_FULL_TIME_IMPOSSIBLE_FOR_DISTANCE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  48,
+                                        "findings":  47,
+                                        "eligible":  41143,
+                                        "seconds":  12.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-070",
+                                        "runKey":  "Swimming-DQ-070",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DISCIPLINE_CONTRADICTS_TEMPLATE_COURSE",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  573,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-071",
+                                        "runKey":  "Swimming-DQ-071",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_TYPE_MIXED",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  45188,
+                                        "seconds":  5.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-072",
+                                        "runKey":  "Swimming-DQ-072",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_CONTRADICTS_DISCIPLINE_DISTANCE_OR_ROUND_TYPE",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "Result: 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  37,
+                                        "findings":  36,
+                                        "eligible":  43595,
+                                        "seconds":  1.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-073",
+                                        "runKey":  "Swimming-DQ-073",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_RECORDED_IN_NAME_NOT_IN_ROUND_TYPE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  594,
+                                        "findings":  593,
+                                        "eligible":  35408,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-074",
+                                        "runKey":  "Swimming-DQ-074",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "",
+                                        "rows":  0,
+                                        "findings":  null,
+                                        "eligible":  null,
+                                        "seconds":  6.9,
+                                        "status":  "ERROR: Query failed (HTTP 500): Allowed memory size of 134217728 bytes exhausted (tried to allocate 4096 bytes)"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-075",
+                                        "runKey":  "Swimming-DQ-075",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  3,
+                                        "seconds":  13.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-076",
+                                        "runKey":  "Swimming-DQ-076",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  11,
+                                        "findings":  10,
+                                        "eligible":  16,
+                                        "seconds":  7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-077",
+                                        "runKey":  "Swimming-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_GENDER_NOT_REFLECTED_IN_ITS_STAGES",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  75,
+                                        "seconds":  0.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-078",
+                                        "runKey":  "Swimming-DQ-078",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_NUMBER_DUPLICATE_IN_EVENT",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  45188,
+                                        "seconds":  3.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-079",
+                                        "runKey":  "Swimming-DQ-079",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MEDAL_AWARDED_AND_DECLARED_ON_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  33940,
+                                        "seconds":  2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-080",
+                                        "runKey":  "Swimming-DQ-080",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_YEAR_CLAIMED_BY_SPAN_AND_SINGLE_SEASON",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  79,
+                                        "seconds":  0.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-081",
+                                        "runKey":  "Swimming-DQ-081",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_EDITIONS_OVERLAP_IN_TIME",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  75,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-082",
+                                        "runKey":  "Swimming-DQ-082",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_DECIDING_VALUE_WITHOUT_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 557 Full-time duration, 101 Duration, 104 Comment, 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  1249,
+                                        "findings":  1248,
+                                        "eligible":  45075,
+                                        "seconds":  22.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-083",
+                                        "runKey":  "Swimming-DQ-083",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_WINNING_TIME_TOO_SLOW_FOR_DISTANCE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  29,
+                                        "findings":  28,
+                                        "eligible":  41142,
+                                        "seconds":  18.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-084",
+                                        "runKey":  "Swimming-DQ-084",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_QUALIFICATION_NOT_HONOURED_BY_LATER_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 104 Comment",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  648,
+                                        "findings":  647,
+                                        "eligible":  11316,
+                                        "seconds":  46.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-085",
+                                        "runKey":  "Swimming-DQ-085",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_TYPE_CONTRADICTS_DISCIPLINE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  45176,
+                                        "seconds":  7.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-086",
+                                        "runKey":  "Swimming-DQ-086",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_DISCIPLINE_ON_SUPERSEDED_CATALOGUE",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  375,
+                                        "findings":  374,
+                                        "eligible":  46365,
+                                        "seconds":  4.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-087",
+                                        "runKey":  "Swimming-DQ-087",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_PROVISIONAL_QUALIFICATION_LEFT_UNSETTLED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 104 Comment, 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  37,
+                                        "findings":  36,
+                                        "eligible":  36,
+                                        "seconds":  7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-088",
+                                        "runKey":  "Swimming-DQ-088",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "New",
+                                        "rows":  307,
+                                        "findings":  306,
+                                        "eligible":  394,
+                                        "seconds":  6.8,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  159.3,
+                                   "valueRequests":  31,
+                                   "tabsConfirmed":  72,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  7,
+                                                  "planning the changes":  11,
+                                                  "adding and sizing tabs":  3.8,
+                                                  "hiding columns and colouring Rows":  8,
+                                                  "clearing stale rows":  46.3,
+                                                  "writing values":  77.5,
+                                                  "confirming the rows arrived":  0.5,
+                                                  "colouring the trend":  1,
+                                                  "removing withdrawn rows":  0.1,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  3.6
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Swimming-DQ-001":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-002":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-003":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "all good can we just add gender of the template so we know easier where to look? As names are the same for men women mixed gender templates"
+                                                        },
+                                    "Swimming-DQ-004":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-005":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-006":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "We need to clarify who will fix those issues? Updater or IT or?"
+                                                        },
+                                    "Swimming-DQ-007":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-008":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Here i believe the issue is that in the log there is a discipline from another event. We will add the correct discipline, but IT should delete the wrong one or?"
+                                                        },
+                                    "Swimming-DQ-009":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-010":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-011":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-012":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-013":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "There are genuinely wrong events, but they seem much more wrong then the SQL says. For example 5211858 flags only rank 9 as wrong while the whole event ranks are wrong. They start from 9 and go 10 11 etc. All events i have checked were like that"
+                                                        },
+                                    "Swimming-DQ-014":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-015":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-016":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-017":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-018":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-019":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-020":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-021":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-022":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "All good but as above can we add the gender of the template? It can be checked easy in admin section, but still helps to have it here as well"
+                                                        },
+                                    "Swimming-DQ-023":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-024":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-025":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-026":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-027":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-028":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-029":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-030":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Its fine but the flagged cases are just reversed wording. Do not know if this is an issue etc. The updaters would ask the same thing i believe"
+                                                        },
+                                    "Swimming-DQ-031":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-032":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-033":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-034":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "many rows. Testing the scraper issues? Maybe some kind of IT job will be required here etc?"
+                                                        },
+                                    "Swimming-DQ-035":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-036":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-037":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-038":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "RANK_PRESENT_DURATION_FULL_TIME_MISSING - 99% of the cases. Most of them are players with Rank and Comment (DSQ DNS etc) but no duration. If those players need ranks, we should omit them from this SQL? Also other type are okay results that were just not forced to have time differences - this could be IT task first?"
+                                                        },
+                                    "Swimming-DQ-039":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Here same case as above - DNS players have ranks and are flagged because of that. If for this sport this is okay, we should omit them?"
+                                                        },
+                                    "Swimming-DQ-040":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-041":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-042":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-043":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "add a column to show the round type name as well, not only the ID?"
+                                                        },
+                                    "Swimming-DQ-044":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-045":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "very similar to Swimming-DQ-040 - it will have duplicate events in both SQL\u0027s. Unite them in one SQL with different check types?"
+                                                        },
+                                    "Swimming-DQ-046":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-047":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-048":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-049":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-050":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-051":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-052":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "All good but this task in general to be with another predefined status? Monitor Only or IT Fix?"
+                                                        },
+                                    "Swimming-DQ-053":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-054":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-055":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-056":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-057":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-058":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-059":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-060":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-061":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-062":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-063":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-064":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-065":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-066":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Is this for IT. Naming of event/discipline is just reversed"
+                                                        },
+                                    "Swimming-DQ-067":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-068":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-069":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-070":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-071":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-072":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-073":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Here can we also have not olny the ID of the round type, but also the name, so the check is faster? round_type_says \"38 named \"1\"\" to also have the actual names."
+                                                        },
+                                    "Swimming-DQ-074":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-075":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-076":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-077":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-078":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-079":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-080":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Flags things like 2003/2004 and 2004/2005 which are completely normal, but overall fast check"
+                                                        },
+                                    "Swimming-DQ-081":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-082":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Events here dont have ranks? Part of scraper testing or?"
+                                                        },
+                                    "Swimming-DQ-083":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-084":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "This will be very difficult SQL to check"
+                                                        },
+                                    "Swimming-DQ-085":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-086":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Here the SQL is okay, but the updater would not know what the solution is. It is basically duplicated disciplines with different names. We need to specify the solution"
+                                                        },
+                                    "Swimming-DQ-087":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        }
+                                }
                  }
              ],
     "sheetId":  "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g"
