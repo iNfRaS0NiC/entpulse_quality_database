@@ -1214,43 +1214,24 @@ invariant holding rather than the check being idle: a participant's gender and t
 the event entered are written by different paths, and this is where a new import would show if
 the two stopped agreeing.
 
-**`GLOBAL-DQ-030 COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT` cannot be run here either, and
-`Golf-DQ-126` replaces it.** It is the reverse of `Golf-DQ-096`, and the two together ask the
-whole question both ways: one finds a competitor who played and was left out of the ranking, the
-other one who is ranked and was never entered.
+**`Golf-DQ-126` was written on 2026-08-28 and withdrawn the same day: it duplicated
+`Golf-DQ-093`.** Both ask the reverse of `Golf-DQ-096` - who is ranked and was never entered -
+both replace `GLOBAL-DQ-030`, which times out on this sport, both do it by subtracting one set
+from another rather than asking per row, and both drop the template's lineup half because this
+sport writes no lineup row. Run against the same data on the same day they returned the same
+19 findings of 3319.
 
-The template asks, per ranked row, whether that person appears anywhere under their tournament,
-as two correlated `NOT EXISTS`. Run on this sport on 2026-08-28 it returned 504 from the gateway
-- the same shape and the same outcome as `GLOBAL-DQ-042`, and the same fix: every
-(tournament, competitor) pair the sport entered is built once as one set and joined. That runs
-in 18 seconds. Until this was written the sport had no reverse check at all and nothing recorded
-why, which is the silence rather than a decision.
+The CheckID keeps its row as `Deprecated` and its statement is removed, which is what happened
+to `Golf-DQ-098` before it. What produced the duplicate is worth recording because it is a
+search that will mislead again: `Golf-DQ-093` is a sport statement and carries no `Family`, so
+looking for `GLOBAL-DQ-030` in `POWERBI_REGISTRY.md` finds nine sports and not this one. A
+template that a sport has rewritten is invisible to a search by family, and the check name is
+what has to be searched instead.
 
-**The lineup half of the template is dropped rather than translated.** `GLOBAL-DQ-030` accepts a
-ranked athlete who appears only as a lineup member, because a team sport carries its people
-there. Golf writes no lineup row at all - the participant section above records that a foursome
-is stored as one athlete participant holding both names, and measured 2026-08-28 the sport holds
-**0** lineup rows across every template. A join that can match nothing is a pass for no reading.
-
-Measured the day it was written it returns **19 findings of 3319 rankings**, and they are two
-different repairs:
-
-- **Football clubs ranked in golf tournaments.** `Gillingham` and `Wolverhampton Wanderers` in
-  the WGC-Accenture Match Play rankings of 2004, 2005, 2006 and 2007, `Broendby IF` and `Viborg`
-  in 2008, `FC Koeln` and `Kaiserslautern` in 2009, `Metz` and `Monaco` in 2010, and
-  `Harelbeke` and `Standard Liege` in the 2005 Presidents Cup. The ranking points at participant
-  ids belonging to another sport. **It resembles what `Golf-DQ-057` reports** - an `Event id`
-  list cut at 255 characters whose trailing fragment is a valid id belonging to a football match
-  played in 2000 - but it is a different column in a different table, and whether the two share
-  a cause is not established here.
-- **Golfers ranked without being entered.** `Sophie Giquel-Bettan` in four 2006 tournaments,
-  `Lotte Neumann`, `Laura Diaz`, `Mark Brown` and `James H. McLean`, one ranking each. Eleven
-  more sit in the 2004 Team World Cup under pair names - `A.Hansen/ Kjeldsen`, `Brier/Wiegele` -
-  which is the foursome shape the participant section describes.
-
-`ranked_participants` is projected beside `stray_participants` so the proportion reads on the
-row: two strays out of 34 and one out of 242 are not the same repair, and the template could not
-tell them apart.
+One thing `Golf-DQ-126` carried that `Golf-DQ-093` does not is `ranked_participants` beside
+`stray_participants`, so that two strays out of 34 and one out of 242 read as the different
+repairs they are. Not folded in: that is a change to a live check and belongs to a decision of
+its own rather than to tidying up after a mistake.
 
 <!-- MANUAL PASTE ZONE: 3 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
