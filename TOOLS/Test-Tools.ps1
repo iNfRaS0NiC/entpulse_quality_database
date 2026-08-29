@@ -3232,42 +3232,33 @@ Test-That 'each heading row carries its CheckID in a column the statements are w
     Assert-Equal 1 $hidden.Count 'and the column is hidden, so the tab reads as it always did'
 }
 
-Test-That 'a heading is read from either column, and from the identity header when from neither' {
-    # The three ways a block is found, in the order they are trusted.
-    $lines = @('', 'SELECT', '    -- CheckID - Fixtureball-DQ-001', 'FROM a', '',
-        '', 'SELECT', '    -- CheckID - Fixtureball-DQ-002', 'FROM b', '')
-
+Test-That 'a heading is read from either column, so losing the link does not lose the block' {
     $byLink = @(ConvertTo-SheetsSqlBlocks -Lines @('Fixtureball-DQ-001', 'SELECT one', ''))
     Assert-Equal 1 $byLink.Count 'the rendered link is a heading'
     Assert-Equal 'Fixtureball-DQ-001' $byLink[0].CheckId 'and names the block'
 
+    # The same tab after a run that wrote the statements and died before the links.
     $marks = @('', 'Fixtureball-DQ-009', '', '')
     $byMark = @(ConvertTo-SheetsSqlBlocks -Lines @('', '', 'SELECT one', '') -Marks $marks)
-    Assert-Equal 1 $byMark.Count 'so is the plain-text column beside it'
-    Assert-Equal 'Fixtureball-DQ-009' $byMark[0].CheckId 'and it names the block too'
+    Assert-Equal 1 $byMark.Count 'the plain-text column beside it is a heading too'
+    Assert-Equal 'Fixtureball-DQ-009' $byMark[0].CheckId 'and it names the block'
     Assert-Equal 2 $byMark[0].Row 'at the row it was found on'
-
-    # Both headings gone: Golf's tab, 14 471 rows of intact SQL under blank headings.
-    $recovered = @(ConvertTo-SheetsSqlBlocks -Lines $lines)
-    Assert-Equal 2 $recovered.Count 'the statements still say what they are'
-    Assert-Equal 'Fixtureball-DQ-001' $recovered[0].CheckId 'the first block is named'
-    Assert-Equal 1 $recovered[0].Row 'and starts on the blank row above its SELECT'
-    Assert-Equal 'Fixtureball-DQ-002' $recovered[1].CheckId 'the second block is named'
-    Assert-Equal 6 $recovered[1].Row 'and starts on its own'
-    Assert-True (@($recovered[0].Lines) -contains 'FROM a') 'each keeps its own statement'
-    Assert-True (@($recovered[1].Lines) -contains 'FROM b') 'and only its own'
+    Assert-True (@($byMark[0].Lines) -contains 'SELECT one') 'carrying the statement under it'
 }
 
-Test-That 'a CheckID merely mentioned in a comment is not mistaken for a statement' {
-    # Golf's tab has three such lines. Recovery is strict about the two-line shape precisely
-    # so that a sentence about another check does not become a block that overwrites it.
-    $lines = @('', 'SELECT', '    -- CheckID - Fixtureball-DQ-001', 'FROM a',
-        '    -- Fixtureball-DQ-044 held the global template and is deprecated',
-        '    -- CheckID - Fixtureball-DQ-777 mentioned mid-comment', '')
+Test-That 'the identity header is never read as a heading, because it names the template' {
+    # It looks like the obvious way to rescue a tab whose headings were lost, and it was
+    # written that way before being measured. The comment carries the CheckID of the statement,
+    # which for a check instantiated from a GLOBAL template is the template's rather than the
+    # board's: 109 of Handball's 123 blocks would come back named GLOBAL-DQ-nnn. Nothing on the
+    # board maps one to the other, so those blocks would merge under names nothing matches and
+    # every statement would be written twice under the wrong heading. A tab that parses as
+    # nothing is recoverable by a complete run; a tab rebuilt from the wrong names is not.
+    $lines = @('', 'SELECT', '    -- CheckID - GLOBAL-DQ-030', 'FROM a', '',
+        '', 'SELECT', '    -- CheckID - GLOBAL-DQ-058', 'FROM b', '')
 
     $blocks = @(ConvertTo-SheetsSqlBlocks -Lines $lines)
-    Assert-Equal 1 $blocks.Count 'only the statement that opens with SELECT counts'
-    Assert-Equal 'Fixtureball-DQ-001' $blocks[0].CheckId 'and it is the one that does'
+    Assert-Equal 0 $blocks.Count 'a headless tab yields nothing rather than something wrong'
 }
 
 Test-That 'a withdrawn check is taken off the board by any run, not only by a complete one' {

@@ -1255,7 +1255,7 @@ function ConvertTo-SheetsSqlBlocks {
         The SQL tab's rows as one block per check. Separated from the transport because the
         decision is worth testing and a login is not.
 
-        Three ways a block is found, in descending order of how much they are trusted.
+        Two ways a block is found, and one that looks available and is not.
 
         Column A's heading: a cell holding the CheckID and nothing else, which is what a
         HYPERLINK's label renders as. No line of SQL has that shape.
@@ -1264,16 +1264,20 @@ function ConvertTo-SheetsSqlBlocks {
         and so cannot ride in the RAW batch that carries the statements; B's is plain and does.
         The two batches are sent in order, and a run that dies between them leaves the
         statements standing under blank headings - a tab that then parses as nothing at all,
-        and no later run of any size could repair it because the refusal is read off the tab.
-        Golf sat in exactly that state from 2026-08-20 to 2026-08-29.
+        and which no later run could repair while the refusal was read off the tab alone. Two
+        boards were found in that state on 2026-08-29, Golf and Ice-Hockey, each after a run
+        whose sheet update failed earlier the same day.
 
-        The identity header, for a tab written before column B existed. Every statement in the
-        package opens with SELECT alone and the CheckID comment directly under it, and
-        TOOLS/Test-Package.ps1 enforces that on all of them, so a tab whose headings were lost
-        still says what it holds. Strict, and last: a comment may mention another check - Golf's
-        own tab has three such lines - so only the exact two-line shape counts, and only when
-        the other two found nothing at all. A heading that is present is better evidence than
-        one inferred.
+        Not the identity header. Every statement opens with SELECT alone and its CheckID
+        comment under it, which makes a headless tab look self-describing, and it was written
+        that way before being measured. What that comment carries is the CheckID of the
+        statement - which for a check instantiated from a GLOBAL template is the template's,
+        not the board's. Measured against Handball's tab: 109 of its 123 blocks would come back
+        named GLOBAL-DQ-nnn instead of Handball-DQ-nnn, and only the 14 sport-authored ones
+        would be right. The board carries no template-to-CheckID mapping to correct them with -
+        Overview holds neither - so the blocks would merge under names nothing matches and the
+        rewrite would write every statement twice, under the wrong headings. A tab that parses
+        as nothing is recoverable by a complete run. A tab rebuilt from the wrong names is not.
     #>
     param([string[]]$Lines, [string[]]$Marks = @())
 
@@ -1298,29 +1302,6 @@ function ConvertTo-SheetsSqlBlocks {
         if ($current) { $current.Lines += $text }
     }
     if ($current) { $blocks += $current }
-    if ($blocks.Count -gt 0) { return @($blocks) }
-
-    # Nothing carried a heading. Read the statements themselves.
-    $starts = @()
-    for ($r = 1; $r -lt $lines.Count; $r++) {
-        if ([string]$lines[$r] -notmatch
-            '^\s*--\s*CheckID\s*-\s*([A-Za-z][A-Za-z0-9-]*-(?:DQ|DISCOVERY)-[0-9]+)\s*$') { continue }
-        if (([string]$lines[$r - 1]).Trim() -ne 'SELECT') { continue }
-        # The heading row is the blank one above the SELECT, which is where the rewrite puts
-        # the link back. Row is 1-based, so the SELECT's 0-based index is also the heading's
-        # row number.
-        $starts += [pscustomobject]@{ CheckId = $matches[1]; Row = $r - 1 }
-    }
-    for ($i = 0; $i -lt $starts.Count; $i++) {
-        $from = [int]$starts[$i].Row
-        $to = $(if ($i + 1 -lt $starts.Count) { [int]$starts[$i + 1].Row - 1 } else { $lines.Count - 1 })
-        if ($to -lt $from) { continue }
-        $blocks += [pscustomobject]@{
-            CheckId = [string]$starts[$i].CheckId
-            Row     = $from
-            Lines   = @($lines[$from..$to])
-        }
-    }
     return @($blocks)
 }
 
@@ -3006,8 +2987,8 @@ function New-SheetsMergePlan {
     # RAW batch that carries the statements. So it goes in a second, USER_ENTERED batch after
     # this one - which means there is a window where the statements have landed and the headings
     # have not, and a tab in that state parses as nothing at all. That is not hypothetical
-    # either: it is what Golf's tab was, 14 471 rows of intact SQL under 123 blank headings,
-    # from 2026-08-20 until it was found on 2026-08-29.
+    # either: on 2026-08-29 both Golf and Ice-Hockey were in it, 14 471 and 13 703 rows of
+    # intact SQL under blank headings, each after a sheet update that failed that same day.
     #
     # Column B closes the window rather than narrowing it. It is plain text, so it rides in the
     # RAW batch with the statement it names: the two land together or neither lands, and no
@@ -3052,9 +3033,9 @@ function New-SheetsMergePlan {
     # one; the cost of not skipping is every other statement on the board.
     # Skipping cannot be the whole answer, though, because on its own it is permanent. The
     # condition is read off the tab and nothing a later run does changes what the tab holds,
-    # so a board that reached this state stayed in it: Golf sat here from 2026-08-20 to
-    # 2026-08-29 while the warning told the reader to run the sport's whole catalogue and the
-    # code refused that run exactly as it refused the narrow ones.
+    # so a board that reached this state stayed in it while the warning told the reader to run
+    # the sport's whole catalogue and the code refused that run exactly as it refused the
+    # narrow ones. Golf and Ice-Hockey were both found there on 2026-08-29.
     #
     # A complete run is the one case where the trade is worth making. It was asked for the
     # sport's whole approved catalogue and nothing capped it, so what it rebuilds is the

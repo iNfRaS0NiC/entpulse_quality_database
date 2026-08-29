@@ -1477,24 +1477,17 @@ statement mean a tab this run could not read, not an empty one.
 That skip used to be permanent, and saying so is the point of the rest of this section. The
 condition is read off the tab, and nothing a later run does changes what the tab holds, so a
 board that reached the state stayed in it while the warning told the reader to run the sport's
-whole catalogue and the code refused that run exactly as it refused the narrow ones. Golf sat
-there from 2026-08-20 to 2026-08-29. Three things now stand between a board and that state,
-and they are listed in the order they are reached.
+whole catalogue and the code refused that run exactly as it refused the narrow ones. Golf and
+Ice-Hockey were both found there on 2026-08-29, 14 471 and 13 703 rows of intact SQL under
+blank headings, each after a sheet update that had failed earlier the same day. Two things now
+stand between a board and that state.
 
 **A heading is read from either column.** A block is found by a heading row carrying the
 CheckID and nothing else. In column `A` that heading is a link, and a link is a formula, and a
 formula cannot be sent in the same `RAW` batch as the statements — so it goes in a second
-batch, and a run that dies between the two leaves the statements standing under blank headings.
-Column `B` of the same row carries the CheckID as plain text, rides in the batch with the
-statement it names, and is hidden. The two land together or neither lands.
-
-**A statement says what it is.** For a tab written before that column existed, and only when
-neither heading is found anywhere, the blocks are recovered from the statements themselves:
-every one opens with `SELECT` alone and its `-- CheckID - ` comment directly under it, which
-`TOOLS/Test-Package.ps1` enforces on every statement in the package. The match is strict about
-that two-line shape, because a comment may mention another check — Golf's own tab has three
-such lines — and it is tried last, since a heading that is present is better evidence than one
-inferred.
+batch, and a run that dies between the two leaves exactly that tab. Column `B` of the same row
+carries the CheckID as plain text, rides in the batch with the statement it names, and is
+hidden. The two land together or neither lands.
 
 **A complete run may rebuild.** `-RunAll`, uncapped, was asked for the sport's whole approved
 catalogue and produced it, so a tab that parses as nothing is rewritten rather than preserved.
@@ -1503,7 +1496,19 @@ whatsoever, never reaches the collected results and so has no block, and rebuild
 would delete the one copy of its statement there is. Such a run leaves the tab alone and names
 the checks that are missing. A discovery statement the board carries is not in the catalogue
 and does not survive the rebuild — against a tab that already parses as nothing, those blocks
-were lost either way.
+were lost either way, but running the sport's discovery statements alongside the catalogue puts
+them back in the same rewrite.
+
+**Not the identity header**, though it looks like the obvious third. Every statement opens with
+`SELECT` alone and its `-- CheckID - ` comment under it, which makes a headless tab look
+self-describing. What that comment carries is the CheckID of the *statement*, and for a check
+instantiated from a `GLOBAL` template that is the template's rather than the board's: measured
+against Handball's tab, 109 of its 123 blocks come back named `GLOBAL-DQ-nnn` instead of
+`Handball-DQ-nnn`, and only the 14 sport-authored ones are right. Nothing on the board maps one
+to the other — `Overview` carries no template column — so those blocks would merge under names
+nothing matches and the rewrite would write every statement twice, under the wrong headings. A
+tab that parses as nothing is recoverable by a complete run. A tab rebuilt from the wrong names
+is not.
 
 A check tab is also cleared to its end before it is written, rather than to a depth this code
 believes it has. Forty rows last run and three this one would otherwise leave thirty-seven
