@@ -4169,6 +4169,44 @@ Test-That 'the runner renames a document it named itself, and nobody else' {
     Assert-Equal $false (Test-SheetsTitleIsOurs -CurrentTitle $new -Title $new) 'and one already right is not rewritten'
 }
 
+Test-That 'Findings is coloured by its share of the population, not by how large it is' {
+    # The board sorts on the count, so a check that found every one of the 420 things it looked
+    # at sits below one that found a hundredth of 46 379. The share is what separates them, and
+    # 63 of the 88 rows over the threshold are at 100% - a whole population, which is either a
+    # systemic gap or a scope pointed at the wrong thing.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-002' -Findings 1 -Eligible 9 -Verdict 'New'))
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
+    $rule = @($plan.Operations | Where-Object {
+            $_.Kind -eq 'FormatRules' -and
+            $_.Column -eq ([array]::IndexOf($SheetsOverviewColumns, 'Findings') + 1) })
+
+    Assert-Equal 1 $rule.Count 'Findings carries a rule'
+    Assert-Equal 1 @($rule[0].Rules).Count 'one band, not a scale'
+    $f = [string]$rule[0].Rules[0].Values[0]
+    Assert-Equal 'CUSTOM_FORMULA' $rule[0].Rules[0].Type 'a share is two cells, so it takes a formula'
+    Assert-Equal $SheetsFindingsShareColour $rule[0].Rules[0].Colour 'in the red the board already uses'
+
+    # Absolute column, relative row, against a range starting on row 2 - which is what makes one
+    # rule follow every row down. P is Findings, R is Eligible, M is Signal.
+    $p = '$' + (ConvertTo-SheetsColumnName -Index ([array]::IndexOf($SheetsOverviewColumns, 'Findings') + 1)) + '2'
+    $r = '$' + (ConvertTo-SheetsColumnName -Index ([array]::IndexOf($SheetsOverviewColumns, 'Eligible') + 1)) + '2'
+    $m = '$' + (ConvertTo-SheetsColumnName -Index ([array]::IndexOf($SheetsOverviewColumns, 'Signal') + 1)) + '2'
+    Assert-True ($f -like "*$p/$r*") 'the share is Findings over Eligible'
+    Assert-True ($f -like "*ISNUMBER($r)*") 'guarded on the population, because an empty cell reads as zero'
+    Assert-True ($f -like "*$r>0*") 'and on it not being zero, because nothing divides by that'
+
+    # The decimal point matters: this machine formats numbers with a comma, and "0,5" inside a
+    # formula is two arguments rather than one threshold.
+    Assert-True ($f -like '*>0.5*') 'the threshold reaches the formula with a point, not a comma'
+    Assert-True ($f -notlike '*0,5*') 'and never with a comma'
+
+    # Positively listed, because the vocabulary is closed and the negative list is longer.
+    Assert-True ($f -like "*$m=`"Actionable`"*") 'a check that asks for action is in'
+    Assert-True ($f -like "*$m=`"Sentinel`"*") 'and a sentinel, which expects zero, loudest of all'
+    Assert-True ($f -notlike "*`"Monitor`"*") 'Monitor is out, as is Informational under it'
+    Assert-True ($f -notlike "*`"Blocked`"*") 'and so is a check that is not in play'
+}
+
 Test-That 'the Rows colour bands are rewritten every run, over that column only' {
     # Set once, they could never reach a document created before a threshold changed - the
     # defect that left one board with a column Sheets had to name for itself. Added without
@@ -4177,11 +4215,11 @@ Test-That 'the Rows colour bands are rewritten every run, over that column only'
 
     $fresh = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $null -OutputFolder 'x'
     $rules = @($fresh.Operations | Where-Object { $_.Kind -eq 'FormatRules' })
-    # Four columns carry bands now - Rows, Status, and the pair that says which way a check
-    # moved. Change and Verdict were added on 2026-08-17 so a column of a hundred reads the way
-    # one check's Trends cell already did.
-    Assert-Equal 4 $rules.Count 'a new document gets its bands'
-    # Found by the column it covers, not by where it happens to sit in the plan: four columns
+    # Five columns carry bands now - Rows, Status, the pair that says which way a check moved,
+    # and Findings. Change and Verdict were added on 2026-08-17 so a column of a hundred reads
+    # the way one check's Trends cell already did; Findings on 2026-08-29.
+    Assert-Equal 5 $rules.Count 'a new document gets its bands'
+    # Found by the column it covers, not by where it happens to sit in the plan: five columns
     # are banded now and the order they are emitted in is not part of the contract.
     $rowsBand = @($rules | Where-Object { $_.Column -eq ([array]::IndexOf($SheetsOverviewColumns, 'Rows') + 1) })
     Assert-Equal 1 $rowsBand.Count 'Rows is banded'
@@ -4203,7 +4241,7 @@ Test-That 'the Rows colour bands are rewritten every run, over that column only'
     }
     $again = @(@(New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing `
                 -OutputFolder 'x').Operations | Where-Object { $_.Kind -eq 'FormatRules' })
-    Assert-Equal 4 $again.Count 'and an existing one gets them again'
+    Assert-Equal 5 $again.Count 'and an existing one gets them again'
 
     # Change takes plain numeric rules; Verdict holds a word, so its rule reads the Change cell
     # on its own row through a formula. Both carry the trend's own three colours.

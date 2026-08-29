@@ -1538,6 +1538,30 @@ subtraction to itself until 2026-08-17, which is how a check could show 0 open r
 `Eligible` and `Prev eligible` are untouched by it. They count the population a finding came out
 of, and dismissing a finding does not shrink the population it was found in.
 
+`Findings` turns **red** where it is more than half of `Eligible` and the check's signal is
+`Actionable` or `Sentinel`. The count alone does not say this: 420 findings is a small number
+beside Swimming's 46 379 and a total one beside BMX's 420 eligible, and the board sorts on the
+count — so the check that found every single thing it looked at sits below one that found a
+hundredth of what it looked at. The share is what separates them.
+
+Measured across all fifteen boards on 2026-08-29: 742 rows carry findings and a population and
+ask for action, of which 199 are over a tenth, 131 over a quarter, 88 over a half and 63 over
+nine tenths. So most of what the band catches is not merely high but at 100% — a whole
+population, which is either a systemic gap or a scope pointed at the wrong thing. Either way it
+is a question for a person rather than a number to read past, and every one of the twelve
+highest was still `Not reviewed` when the band was added.
+
+The signals are listed positively because the vocabulary is closed and the negative list is
+longer. `Monitor` and `Informational` are out because nothing in their output is correctable,
+and `Informational` is what this board renders as `Monitor Only`, so excluding one without the
+other would leave half the idea behind. `Blocked`, `Not applicable` and `Out of client scope`
+are out because the check is not in play. `Sentinel` is in: it expects zero, so a sentinel
+covering its whole population is the loudest thing on the board.
+
+The rule is a formula rather than a number band, because a share is two cells. It is guarded on
+`Eligible` being a number greater than zero — a row whose coverage branch has not run yet holds
+an empty cell, and Sheets reads that as zero.
+
 The dismissal count is today's, and it comes off the historical points of the series as well,
 because no per-run figure was ever recorded to use instead. A reduced present against a raw past
 would draw a drop on the day the reviewers worked rather than the day the data changed. It also

@@ -384,6 +384,31 @@ $SheetsRowsBands = @(
     [pscustomobject]@{ Type = 'NUMBER_GREATER'; Values = @('100'); Colour = '#C5221F' }
 )
 
+# When Findings is a large enough share of Eligible to be worth a second look, and the row is
+# one that asks for action at all.
+#
+# A count on its own does not say this. 420 findings is a small number beside Swimming's 46 379
+# and a total one beside BMX's 420 eligible, and the board sorts on the count, so the check
+# that found every single thing it looked at sits below one that found a hundredth of what it
+# looked at. The share is what separates them, and 63 of the 88 rows over this threshold are
+# not merely high but at 100% - a whole population, which is either a systemic gap or a scope
+# pointed at the wrong thing. Either way it is a question for a person rather than a number to
+# read past.
+#
+# Measured across all fifteen boards on 2026-08-29: 742 rows carry findings and a population
+# and ask for action; 199 are over a tenth, 131 over a quarter, 88 over a half, 63 over nine
+# tenths.
+#
+# The signals are listed positively because the vocabulary is closed and the negative list is
+# longer. Monitor and Informational are excluded because nothing in their output is
+# correctable - Informational is what the board renders as 'Monitor Only', so excluding Monitor
+# without it would leave half the idea behind. Blocked, Not applicable and Out of client scope
+# are excluded because the check is not in play. Sentinel stays: it expects zero, so a sentinel
+# covering its whole population is the loudest thing on the board.
+$SheetsFindingsShareThreshold = 0.5
+$SheetsFindingsShareSignals = @('Actionable', 'Sentinel')
+$SheetsFindingsShareColour = '#C5221F'
+
 # The outcomes a reviewer may record, and the only ones. Status was free text until now, and
 # free text drifted: six boards between them held nine spellings of five ideas, because the
 # workbook offered one vocabulary, the seeding code wrote a second, and whoever typed into the
@@ -1704,6 +1729,9 @@ function New-SheetsMergePlan {
     $statusColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Status') + 1
     $changeColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Change') + 1
     $verdictColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Verdict') + 1
+    $findingsColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Findings') + 1
+    $eligibleColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Eligible') + 1
+    $signalColumnIndex = [array]::IndexOf($SheetsOverviewColumns, 'Signal') + 1
     $existingRules = @()
     if ($Existing -and $Existing.ConditionalFormatsOf -and $Existing.ConditionalFormatsOf.ContainsKey('Overview')) {
         $existingRules = @($Existing.ConditionalFormatsOf['Overview'])
@@ -1712,7 +1740,8 @@ function New-SheetsMergePlan {
     # Every column's rules are dropped in one pass. Deleting by index renumbers what follows,
     # so two planner entries each computing its own indexes against the same original list
     # would have the second one delete a rule the first had already shifted.
-    $ruled = @($rowsColumnIndex, $statusColumnIndex, $changeColumnIndex, $verdictColumnIndex)
+    $ruled = @($rowsColumnIndex, $statusColumnIndex, $changeColumnIndex, $verdictColumnIndex,
+        $findingsColumnIndex)
     $dropOf = @{}
     foreach ($column in $ruled) { $dropOf[$column] = @() }
     for ($index = 0; $index -lt $existingRules.Count; $index++) {
@@ -1770,6 +1799,34 @@ function New-SheetsMergePlan {
         Column = $rowsColumnIndex
         Drop   = $dropOf[$rowsColumnIndex]
         Rules  = $SheetsRowsBands
+    }
+
+    # Findings, coloured when it is a large share of the population rather than when it is a
+    # large number. Written the way Verdict is - the column addressed absolutely and the row
+    # relatively, against a range starting on row 2 - so one rule follows every row down.
+    #
+    # Guarded on Eligible rather than trusting the division: a row whose coverage branch has
+    # not run yet holds an empty cell, and Sheets reads that as zero.
+    $findingsCell = '$' + (ConvertTo-SheetsColumnName -Index $findingsColumnIndex) + '2'
+    $eligibleCell = '$' + (ConvertTo-SheetsColumnName -Index $eligibleColumnIndex) + '2'
+    $signalCell = '$' + (ConvertTo-SheetsColumnName -Index $signalColumnIndex) + '2'
+    $shareSignals = ($SheetsFindingsShareSignals | ForEach-Object { "$signalCell=`"$_`"" }) -join ', '
+    # Formatted invariantly and not interpolated. This machine writes decimals with a comma -
+    # the runner's own timings print as 0,9s - and "0,5" inside a formula is two arguments.
+    $shareValue = $SheetsFindingsShareThreshold.ToString([System.Globalization.CultureInfo]::InvariantCulture)
+    $plan += [pscustomobject]@{
+        Kind   = 'FormatRules'
+        Sheet  = 'Overview'
+        Column = $findingsColumnIndex
+        Drop   = $dropOf[$findingsColumnIndex]
+        Rules  = @(
+            [pscustomobject]@{
+                Type   = 'CUSTOM_FORMULA'
+                Values = @("=AND(ISNUMBER($eligibleCell), $eligibleCell>0, " +
+                    "$findingsCell/$eligibleCell>$shareValue, OR($shareSignals))")
+                Colour = $SheetsFindingsShareColour
+            }
+        )
     }
 
     $plan += [pscustomobject]@{
