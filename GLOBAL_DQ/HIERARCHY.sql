@@ -2285,12 +2285,13 @@ WHERE ts.del = 'no'
 -- ================================================================================
 SELECT
     -- CheckID - GLOBAL-DQ-087
-    -- Name - EVENT_WINNER_MISSING_OR_INVALID
-    -- What it does: Finds finished head-to-head events with no usable Winner value.
+    -- Name - EVENT_WINNER_RECORDED_IN_NEITHER_PLACE_THE_SPORT_KEEPS_IT
+    -- What it does: Finds finished head-to-head events that name a winner neither in the Winner event property nor in the Event outcome result, having a score that decides one.
     CASE
-        WHEN pr.id IS NULL THEN 'WINNER_MISSING'
-        WHEN TRIM(pr.value) = '' THEN 'WINNER_VALUE_EMPTY'
-        ELSE 'WINNER_VALUE_INVALID'
+        WHEN pr.id IS NOT NULL AND TRIM(pr.value) = '' THEN 'WINNER_PROPERTY_VALUE_EMPTY'
+        WHEN pr.id IS NOT NULL THEN 'WINNER_PROPERTY_VALUE_INVALID'
+        WHEN oc.event_id IS NOT NULL THEN 'EVENT_OUTCOME_VALUE_INVALID'
+        ELSE 'WINNER_RECORDED_NOWHERE'
     END AS check_type,
     e.id AS event_id,
     e.name AS event_name,
@@ -2300,18 +2301,49 @@ SELECT
     ts.name AS stage_name,
     e.round_typeFK,
     e.status_descFK,
-    pr.value AS stored_value,
+    COALESCE(pr.value, oc.values_seen) AS stored_value,
     NULL AS eligible_count,
     0 AS sort_order
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
--- The Winner side is stored as an event property rather than on either result row, so a
--- missing one is an absent row and not an empty value: DB-SEM-002 makes those different
--- states, and the join is left outer precisely so the absent case is reportable at all.
+-- Two places, and a sport keeps the winner in one or the other rather than in both.
+--
+-- The Winner event property is what most of the database uses - 32 sports write it, Tennis on
+-- 425 225 events and Volleyball on 127 496, both still writing today. Not one of the fifteen
+-- sports this package documents does: measured 2026-08-29 over 2 613 135 finished events, a
+-- single Soccer event carries one, and it sits outside the client boundary.
+--
+-- They keep it in `668 Event outcome` instead, a result row per side reading won, lost or
+-- draw. Ice Hockey carries it on all 286 049 of its events and Curling on all 17 521, so a
+-- check reading only the property called both of them defective in full while the winner sat
+-- one join away. That is why this asks for either and reports only an event holding neither.
+--
+-- The property side stays outer-joined because DB-SEM-002 makes an absent row and an empty
+-- value different states, and both have to be reportable.
+-- Both joins are left outer and unfiltered by value, and the vocabulary is tested in the
+-- WHERE rather than in the ON. Filtering in the ON would make a row holding a word nobody
+-- declared indistinguishable from no row at all, and those are the two states check_type
+-- exists to tell apart: one is a value to correct, the other is a value never written.
 LEFT JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id
                      AND pr.name = 'Winner' AND pr.del = 'no'
+LEFT JOIN (
+    SELECT ep2.eventFK AS event_id,
+           MAX(CASE WHEN LOWER(TRIM(r2.value)) IN ({{EVENT_OUTCOME_VALUE_LIST}}) THEN 1 ELSE 0 END) AS has_usable,
+           GROUP_CONCAT(DISTINCT LOWER(TRIM(r2.value)) ORDER BY LOWER(TRIM(r2.value)) SEPARATOR ', ') AS values_seen
+    FROM result r2
+    JOIN event_participants ep2 ON ep2.id = r2.event_participantsFK AND ep2.del = 'no'
+    JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    WHERE r2.del = 'no'
+      AND r2.result_typeFK = {{RESULT_EVENT_OUTCOME_TYPE_ID}}
+      AND r2.value IS NOT NULL AND TRIM(r2.value) <> ''
+      AND tt2.sportFK = {{SPORT_ID}}
+    GROUP BY ep2.eventFK
+) oc ON oc.event_id = e.id
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.status_type = 'finished'
@@ -2320,11 +2352,21 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  AND (pr.id IS NULL OR LOWER(TRIM(pr.value)) NOT IN ({{WINNER_VALUE_LIST}}))
+  AND (oc.event_id IS NULL OR oc.has_usable = 0)
+  -- Only where a winner is there to be recorded. An event holding fewer than two scored sides
+  -- has a different defect and its own check, and reporting it here would say the winner was
+  -- dropped when it was never determinable. Measured 2026-08-29: this excludes 3 of Handball's
+  -- 40 313 and none of Soccer's 4 662, so it changes almost nothing and stops the check from
+  -- claiming something it has not established.
   AND (
-      pr.id IS NULL
-      OR TRIM(pr.value) = ''
-      OR LOWER(TRIM(pr.value)) NOT IN ({{WINNER_VALUE_LIST}})
-  )
+      SELECT COUNT(DISTINCT ep3.id)
+      FROM event_participants ep3
+      JOIN result r3 ON r3.event_participantsFK = ep3.id AND r3.del = 'no'
+                    AND r3.result_typeFK = {{RESULT_FINAL_SCORE_TYPE_ID}}
+                    AND r3.value IS NOT NULL AND TRIM(r3.value) <> ''
+      WHERE ep3.eventFK = e.id AND ep3.del = 'no'
+  ) >= 2
 
 UNION ALL
 
