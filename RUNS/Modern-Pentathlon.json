@@ -26200,6 +26200,564 @@
                                                                      "checkBy":  ""
                                                                  }
                                 }
+                 },
+                 {
+                     "runId":  "Modern-Pentathlon 29.08.2026 07-36-20",
+                     "startedUtc":  "2026-08-29T05:36:19Z",
+                     "output":  "D:\\SQL\u0027s Output\\Modern-Pentathlon 29.08.2026 07-36-20",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-105",
+                                        "runKey":  "Modern-Pentathlon-DQ-105",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  2.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-121",
+                                        "runKey":  "Modern-Pentathlon-DQ-121",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_PARTICIPANT_ORGANIZATION_MISSING_THROUGHOUT",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  558,
+                                        "findings":  557,
+                                        "eligible":  557,
+                                        "seconds":  3,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  21.7,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  6.3,
+                                                  "planning the changes":  2.7,
+                                                  "adding and sizing tabs":  2.5,
+                                                  "hiding columns and colouring Rows":  0.6,
+                                                  "clearing stale rows":  1.4,
+                                                  "writing values":  6.4,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Modern-Pentathlon-DQ-001":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-002":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-003":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-004":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-005":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-006":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-007":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-008":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-009":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-010":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-011":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-012":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-013":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-014":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-015":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-016":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-017":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-018":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-019":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-020":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-021":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-022":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-023":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-024":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-025":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-026":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-027":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-028":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-029":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-030":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-031":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-032":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-033":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-034":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-035":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-036":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-037":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-038":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-039":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-040":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-041":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-042":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-043":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-044":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-045":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-046":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-047":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-048":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-049":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-050":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-051":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-052":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-053":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-054":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-055":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-056":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-057":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-058":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-059":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-060":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-061":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-062":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-063":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-064":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-065":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-066":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-068":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-069":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-070":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-071":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-072":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-073":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-074":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-075":  {
+                                                                     "status":  "Reopened",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-076":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-077":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-078":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-079":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-080":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-081":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-082":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-083":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-084":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-085":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-086":  {
+                                                                     "status":  "Reopened",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-087":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-088":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-089":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-090":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-091":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-092":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-093":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-094":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-095":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-096":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-097":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-098":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-099":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-100":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-101":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-102":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-103":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-104":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-105":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-106":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-107":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-108":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-109":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-110":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-111":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-112":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-113":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-114":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-115":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-116":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-117":  {
+                                                                     "status":  "Clean",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-118":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-119":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 },
+                                    "Modern-Pentathlon-DQ-120":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 }
+                                }
                  }
              ],
     "sheetId":  "1kWKqdBc2ZD1AYcMEzGUmZHzgjfEgnLyf8AfbCvkxuKs"

@@ -7847,6 +7847,556 @@
                                                             "checkBy":  ""
                                                         }
                                 }
+                 },
+                 {
+                     "runId":  "Handball 29.08.2026 07-35-08",
+                     "startedUtc":  "2026-08-29T05:35:08Z",
+                     "output":  "D:\\SQL\u0027s Output\\Handball 29.08.2026 07-35-08",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-083",
+                                        "runKey":  "Handball-DQ-083",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  5.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Handball-DQ-118",
+                                        "runKey":  "Handball-DQ-118",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_PARTICIPANT_ORGANIZATION_MISSING_THROUGHOUT",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  282,
+                                        "findings":  281,
+                                        "eligible":  281,
+                                        "seconds":  0.9,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  30.3,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  9.4,
+                                                  "planning the changes":  2.1,
+                                                  "adding and sizing tabs":  4.5,
+                                                  "hiding columns and colouring Rows":  1.3,
+                                                  "clearing stale rows":  1,
+                                                  "writing values":  9.8,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  1
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Handball-DQ-001":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-002":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-003":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-004":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-005":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-006":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-007":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-008":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-009":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-010":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-011":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-012":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-013":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-014":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-015":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-016":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-017":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-018":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-019":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-020":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-021":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-022":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-023":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-024":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-025":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-026":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-027":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-028":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-029":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-030":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-031":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-032":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-033":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-034":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-035":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-036":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-037":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-038":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-039":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-040":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-041":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-042":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-043":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-044":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-045":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-046":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-047":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-048":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-049":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-050":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-051":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-052":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-053":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-054":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-055":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-056":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-057":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-058":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-059":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-060":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-061":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-062":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-063":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-064":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-065":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-066":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-067":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-068":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-069":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-070":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-071":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-072":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-073":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-074":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-075":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-076":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-077":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-078":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-079":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-080":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-081":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-082":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-083":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-084":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-085":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-086":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-087":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-088":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-089":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-090":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-091":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-092":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-093":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-094":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-095":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-096":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-097":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-098":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-099":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-100":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-101":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-102":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-103":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-104":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-105":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-106":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-107":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-108":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-109":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-110":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-111":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-112":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-113":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-114":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-115":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-116":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-117":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        }
+                                }
                  }
              ],
     "sheetId":  "1AUVNbf1U-OZO6V2VZZ9QbMBBaxMtzdWjsACfML_9sQI"

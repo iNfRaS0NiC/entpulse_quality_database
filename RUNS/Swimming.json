@@ -10291,6 +10291,440 @@
                                                             "checkBy":  ""
                                                         }
                                 }
+                 },
+                 {
+                     "runId":  "Swimming 29.08.2026 07-38-33",
+                     "startedUtc":  "2026-08-29T05:38:32Z",
+                     "output":  "D:\\SQL\u0027s Output\\Swimming 29.08.2026 07-38-33",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-074",
+                                        "runKey":  "Swimming-DQ-074",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  2057,
+                                        "findings":  2056,
+                                        "eligible":  2056,
+                                        "seconds":  5.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Swimming-DQ-089",
+                                        "runKey":  "Swimming-DQ-089",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_PARTICIPANT_ORGANIZATION_MISSING_THROUGHOUT",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  466,
+                                        "findings":  465,
+                                        "eligible":  484,
+                                        "seconds":  5.7,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  19.8,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  2,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  5.4,
+                                                  "planning the changes":  1.5,
+                                                  "adding and sizing tabs":  2.4,
+                                                  "hiding columns and colouring Rows":  0.6,
+                                                  "clearing stale rows":  1.3,
+                                                  "writing values":  7.1,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Swimming-DQ-001":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-002":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-003":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "all good can we just add gender of the template so we know easier where to look? As names are the same for men women mixed gender templates"
+                                                        },
+                                    "Swimming-DQ-004":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-005":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-006":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "We need to clarify who will fix those issues? Updater or IT or?"
+                                                        },
+                                    "Swimming-DQ-007":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-008":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Here i believe the issue is that in the log there is a discipline from another event. We will add the correct discipline, but IT should delete the wrong one or?"
+                                                        },
+                                    "Swimming-DQ-009":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-010":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-011":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-012":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-013":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "There are genuinely wrong events, but they seem much more wrong then the SQL says. For example 5211858 flags only rank 9 as wrong while the whole event ranks are wrong. They start from 9 and go 10 11 etc. All events i have checked were like that"
+                                                        },
+                                    "Swimming-DQ-014":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-015":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-016":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-017":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-018":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-019":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-020":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-021":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-022":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "All good but as above can we add the gender of the template? It can be checked easy in admin section, but still helps to have it here as well"
+                                                        },
+                                    "Swimming-DQ-023":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-024":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-025":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-026":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-027":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-028":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-029":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-030":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Its fine but the flagged cases are just reversed wording. Do not know if this is an issue etc. The updaters would ask the same thing i believe"
+                                                        },
+                                    "Swimming-DQ-031":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-032":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-033":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-034":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "many rows. Testing the scraper issues? Maybe some kind of IT job will be required here etc?"
+                                                        },
+                                    "Swimming-DQ-035":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-036":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-037":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-038":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "RANK_PRESENT_DURATION_FULL_TIME_MISSING - 99% of the cases. Most of them are players with Rank and Comment (DSQ DNS etc) but no duration. If those players need ranks, we should omit them from this SQL? Also other type are okay results that were just not forced to have time differences - this could be IT task first?"
+                                                        },
+                                    "Swimming-DQ-039":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Here same case as above - DNS players have ranks and are flagged because of that. If for this sport this is okay, we should omit them?"
+                                                        },
+                                    "Swimming-DQ-040":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-041":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-042":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-043":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "add a column to show the round type name as well, not only the ID?"
+                                                        },
+                                    "Swimming-DQ-044":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-045":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "very similar to Swimming-DQ-040 - it will have duplicate events in both SQL\u0027s. Unite them in one SQL with different check types?"
+                                                        },
+                                    "Swimming-DQ-046":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-047":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-048":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-049":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-050":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-051":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-052":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "All good but this task in general to be with another predefined status? Monitor Only or IT Fix?"
+                                                        },
+                                    "Swimming-DQ-053":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-054":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-055":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-056":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-057":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-058":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-059":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-060":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-061":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-062":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-063":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-064":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-065":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-066":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Is this for IT. Naming of event/discipline is just reversed"
+                                                        },
+                                    "Swimming-DQ-067":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-068":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-069":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-070":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-071":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-072":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-073":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Here can we also have not olny the ID of the round type, but also the name, so the check is faster? round_type_says \"38 named \"1\"\" to also have the actual names."
+                                                        },
+                                    "Swimming-DQ-074":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-075":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-076":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-077":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-078":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-079":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-080":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Flags things like 2003/2004 and 2004/2005 which are completely normal, but overall fast check"
+                                                        },
+                                    "Swimming-DQ-081":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-082":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Events here dont have ranks? Part of scraper testing or?"
+                                                        },
+                                    "Swimming-DQ-083":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-084":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "This will be very difficult SQL to check"
+                                                        },
+                                    "Swimming-DQ-085":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-086":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "Here the SQL is okay, but the updater would not know what the solution is. It is basically duplicated disciplines with different names. We need to specify the solution"
+                                                        },
+                                    "Swimming-DQ-087":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Swimming-DQ-088":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        }
+                                }
                  }
              ],
     "sheetId":  "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g"
