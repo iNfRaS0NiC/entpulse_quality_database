@@ -1396,8 +1396,22 @@ SELECT
 -- without saying which events and which competitors. Measured over the twelve documented sports,
 -- the tournament grain was 4122 rows and the event grain is 131 076 - Swimming alone moves from
 -- 484 to 45 188 - and the second was chosen deliberately with those numbers in hand. A tournament
--- whose feed never sent the field at all therefore reports every one of its events, which is the
--- price of the detail rather than an accident of it.
+-- whose feed never sent the field at all is **not** reported here at all, and that is the
+-- correction of 2026-08-29 rather than the price the note above was willing to pay.
+-- **Only a tournament that fills the field somewhere is in scope**, in the findings branch and
+-- the coverage branch alike. A tournament that never carries it is one feed that never sent it,
+-- and reporting that once per event says the same thing thousands of times. It is
+-- `GLOBAL-DQ-147`, at the grain the fact actually has.
+-- The change was forced rather than chosen. On the event grain this statement stopped running
+-- on Swimming: HTTP 500, the API's 128 MB exhausted, from 2026-08-28 onwards. Measured
+-- 2026-08-29 it would return 45 188 rows there, of which 43 132 sit in 465 tournaments that
+-- carry the field nowhere and 2 056 in the 19 that carry it somewhere. Narrowing the row was
+-- tried first and does not work: the whole payload is 10.5 MB, the name sample is 7.0 MB of it,
+-- and the statement still exhausted the limit with that column removed. The rows are the cost,
+-- not the width.
+-- What is left here is the harder defect and the one the old tournament grain could not show:
+-- a feed that does send the field and dropped part of a field. Swimming reports 2 056 events in
+-- 19 tournaments, and every sport whose feed is complete reports what it always did.
 -- **`sample_competitors_without_organization` is a sample and the count beside it is the
 -- assertion.** `group_concat_max_len` on this server is 1024 characters and cannot be raised
 -- from here, because only a `SELECT` may start a statement and there is no session to set it in.
@@ -1438,6 +1452,22 @@ FROM (
                          AND og.objectFK = ep.id
                          AND og.name = 'organizationFK'
                          AND og.del = 'no'
+    JOIN (
+        -- The tournaments this sport does fill the field on, anywhere within them. An inner
+        -- join on the property rather than a count, because the property row either exists or
+        -- it does not and the selective side is the cheap one to drive from.
+        SELECT DISTINCT ts2.tournamentFK AS tournament_id
+        FROM property og2
+        JOIN event_participants ep2 ON ep2.id = og2.objectFK AND ep2.del = 'no'
+        JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+             AND tt2.sportFK = {{SPORT_ID}}
+        WHERE og2.object = 'event_participants'
+          AND og2.name = 'organizationFK'
+          AND og2.del = 'no'
+    ) filled ON filled.tournament_id = t.id
     WHERE ep.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
@@ -1461,6 +1491,22 @@ JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN (
+    -- The tournaments this sport does fill the field on, anywhere within them. An inner
+    -- join on the property rather than a count, because the property row either exists or
+    -- it does not and the selective side is the cheap one to drive from.
+    SELECT DISTINCT ts2.tournamentFK AS tournament_id
+    FROM property og2
+    JOIN event_participants ep2 ON ep2.id = og2.objectFK AND ep2.del = 'no'
+    JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+    JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+         AND tt2.sportFK = {{SPORT_ID}}
+    WHERE og2.object = 'event_participants'
+      AND og2.name = 'organizationFK'
+      AND og2.del = 'no'
+) filled ON filled.tournament_id = t.id
 WHERE ep.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
@@ -2107,3 +2153,99 @@ WHERE og.object = 'event_participants'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, organization_id, competitor_name, event_startdate;
+
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-147
+    -- Name - TOURNAMENT_PARTICIPANT_ORGANIZATION_MISSING_THROUGHOUT
+    -- What it does: Finds tournaments where no entered competitor anywhere carries an organization, which is one feed that never sent the field.
+    'TOURNAMENT_CARRIES_NO_ORGANIZATION_AT_ALL' AS check_type,
+    x.tournament_id,
+    x.tournament_name,
+    x.template_id,
+    x.template_name,
+    x.first_event_date,
+    x.last_event_date,
+    x.events,
+    x.participations,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: The other half of GLOBAL-DQ-130, split off on 2026-08-29.
+-- That statement audits the event and names the competitors missing an organization, which is
+-- the right grain for a feed that sends the field and dropped part of a field. It is the wrong
+-- grain for a feed that never sent it at all: there the same one fact is repeated once per
+-- event, and on Swimming that was 43 132 rows across 465 tournaments saying one thing 43 132
+-- times.
+-- It was not only noise. On the event grain GLOBAL-DQ-130 stopped running on Swimming
+-- altogether from 2026-08-28: HTTP 500, the API's 128 MB exhausted. Trimming the row was tried
+-- and does not reach - the whole payload is 10.5 MB and the statement still died with its widest
+-- column removed - because the cost is 45 188 rows, not their width.
+-- **The audited object is the tournament**, and that is what the fact is about. A feed either
+-- supplies the organization for a competition or it does not; nobody corrects that an event at a
+-- time. `events` and `participations` carry the size of what is missing as named secondary
+-- columns, and the dates say which editions to go back to.
+-- The two statements do not overlap and together they cover the same ground as before. This one
+-- takes the tournaments carrying the field nowhere; GLOBAL-DQ-130 takes the events inside the
+-- tournaments that carry it somewhere. A sport whose feed is complete reports nothing here, and
+-- a sport that has never filled the field reports every one of its tournaments once.
+-- `eligible_count` counts tournaments in scope holding at least one entered competitor, so the
+-- proportion on the row reads as what share of the sport's competitions the feed never covered.
+FROM (
+    SELECT
+        t.id AS tournament_id,
+        t.name AS tournament_name,
+        tt.id AS template_id,
+        tt.name AS template_name,
+        MIN(e.startdate) AS first_event_date,
+        MAX(e.startdate) AS last_event_date,
+        COUNT(DISTINCT e.id) AS events,
+        COUNT(DISTINCT ep.id) AS participations
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- The tournament carries the field nowhere. Written as NOT EXISTS rather than as an
+      -- anti-join because it is asked once per tournament rather than once per entry, and the
+      -- property row it looks for is the selective side.
+      AND NOT EXISTS (
+          SELECT 1
+          FROM property og2
+          JOIN event_participants ep2 ON ep2.id = og2.objectFK AND ep2.del = 'no'
+          JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+          JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+          WHERE ts2.tournamentFK = t.id
+            AND ts2.del = 'no'
+            AND og2.object = 'event_participants'
+            AND og2.name = 'organizationFK'
+            AND og2.del = 'no'
+      )
+    GROUP BY t.id, t.name, tt.id, tt.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT t.id) AS eligible_count,
+    1 AS sort_order
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+
+ORDER BY sort_order, events DESC, tournament_id;
