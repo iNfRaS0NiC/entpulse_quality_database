@@ -439,8 +439,35 @@ The complete active event-round inventory contains two different IDs named `Fina
 as active event values across more than one competition context; they are not unused legacy
 references.
 
-Both confirmed Final IDs, `9` and `173`, are medal-awarding rounds for this sport and form
-the approved `MEDAL_ROUND_TYPE_LIST`. The non-medal Qualifier IDs remain outside that list.
+Both confirmed Final IDs, `9` and `173`, are medal-awarding rounds for this sport. So is the
+bronze round `181`, and the three together form the approved `MEDAL_ROUND_TYPE_LIST`. The
+non-medal Qualifier IDs remain outside that list.
+
+`181` was missing from it until 2026-08-29, although the sport had carried it in
+`BRONZE_ROUND_TYPE_LIST` since the round was confirmed. Artistic Gymnastics was the only one
+of the seven sports with a bronze round whose medal list omitted it; Curling, Handball, Ice
+Hockey, Soccer, Speed Skating and Track Cycling all list theirs. A bronze round awards a medal,
+so its absence made three checks read every bronze event as a defect.
+
+Three checks were reading it that way and each returned exactly the same two events —
+`6094493 Mixed Team Bronze` at the European Youth Olympic Festival and `5997261 Mixed Team
+Bronze` at the Senior European Championships, both on round type `181 bronze`:
+`Artistic-Gymnastics-DQ-049 EVENT_RESULTS_UNEXPECTED_MEDAL_FOR_NON_MEDAL_ROUND`,
+`Artistic-Gymnastics-DQ-057 EVENT_SETTINGS_UNEXPECTED_MEDAL_RELATED_FOR_NON_MEDAL_ROUND` and
+`Artistic-Gymnastics-DQ-113 EVENT_MEDAL_AWARDED_AND_DECLARED_ON_NON_MEDAL_ROUND`. All three
+return zero once `181` is a medal round.
+
+**Their findings went to zero because the parameter was corrected, not because the data was.**
+The two events were always right. All three checks stood at `Reopened` when this was found, and
+the run that follows closes them automatically the way a check that comes back with nothing is
+closed — which on any other row would mean colleagues had repaired something. Here nothing was
+repaired, and this paragraph is where that is recorded.
+
+`Artistic-Gymnastics-DQ-048 EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_MEDAL_ROUND` is unmoved at
+412: both bronze events already declare themselves medal-related, so widening the list adds
+nothing for it to find. `Artistic-Gymnastics-DQ-088 COMP.RANK_RESULTS_MEDAL_ON_NON_MEDAL_ROUND_PHASE`
+is unmoved at 36, which means its findings sit on some round other than the bronze one and are
+a separate question this change does not touch.
 
 <!-- MANUAL PASTE ZONE: 40 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
