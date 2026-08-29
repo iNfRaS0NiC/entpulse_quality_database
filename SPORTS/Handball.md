@@ -653,8 +653,45 @@ has classified; each is a measurement or a decision that has not been made.
    missing layer. `REQUIRED_RESULT_TYPE_LIST` is `1, 4` and deliberately not wider - the
    parameter's own note in `SPORTS/params.json` records why `6 Running score` and `2 Extra time`
    are out of it.
-3. **Nine medal sets are missing their bronze** - 239 `gold`, 239 `silver`, 230 `bronze` on
-   `501 Medal`, every one of them inside the boundary.
+3. ~~**Nine medal sets are missing their bronze** - 239 `gold`, 239 `silver`, 230 `bronze` on
+   `501 Medal`.~~ **Answered 2026-08-29: they are eight tournaments, they are not one defect,
+   and seven of them were reported by nothing.**
+
+   | Tournament | Gold | Silver | Bronze | Bronze match |
+   |---|---|---|---|---|
+   | `Southeast Asian Games 1` 2025 | 1 | 1 | 0 | none |
+   | `Southeast Asian Games 1` 2025 | 1 | 1 | 0 | none |
+   | `Africa Cup of Nations 1` 2016 | 1 | 1 | 0 | **exists, empty** |
+   | `Pan American Championship 1` 2012 | 1 | 1 | 0 | none |
+   | `Africa Cup of Nations 1` 2008 | 2 | 2 | 0 | none |
+   | `Olympic Qualification Asia 1` 2007 | 1 | 1 | 0 | none |
+   | `Africa Cup of Nations 1` 2006 | 1 | 1 | 0 | none |
+   | `Pan American Championship 1` 2004 | 1 | 1 | 0 | none |
+
+   Eight tournaments and nine sets, because the 2008 Africa Cup holds two of each. They divide
+   three ways, and the division decides who repairs what.
+
+   **One is a medal never recorded.** The 2016 Africa Cup played its bronze match - round type
+   `138 bronze`, one event, finished - and put no medal on it. `Handball-DQ-058` already reports
+   it, as one of the twelve `BRONZE_ROUND_NO_MEDALS_AT_ALL` in its 33 findings of 488.
+
+   **Six are a match never entered.** Africa Cup 2006 and 2008, Pan American 2004 and 2012, and
+   both 2025 Southeast Asian Games tournaments each hold two semi-finals - so two losing
+   semi-finalists - and no event between them. The medal is the second thing missing; the match
+   is the first. Nothing reported these, and no round-level check could: `GLOBAL-DQ-093` and
+   `GLOBAL-DQ-037` audit a medal round and there is no row for them to start from.
+
+   **One is neither.** `Olympic Qualification Asia 1` 2007 is a single event in the whole
+   tournament, with no final and no semi-final, awarding a gold and a silver. Its one event is
+   dated 2008-01-08 under a tournament named 2007.
+
+   The 2025 pair matter more than the rest: everything else here is 2016 or older, and those two
+   are from December 2025.
+
+   `GLOBAL-DQ-149 TOURNAMENT_MEDAL_SET_INCOMPLETE` was written for this on 2026-08-29 and this
+   sport carries it as `Handball-DQ-122`, reporting all eight of 231 tournaments. The audited
+   object is the tournament, which is what lets it see a bronze that was never played, and
+   `bronze_round_events` is the column that tells the 2016 case from the other seven.
 4. **`round_typeFK = 0` on 85 events, with an empty name**, and six round names carried by two
    different round type ids each.
 5. **30 registered athletes hold more than one registry row under the same name.**

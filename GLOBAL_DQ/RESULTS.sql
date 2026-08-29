@@ -5250,3 +5250,117 @@ WHERE e.del = 'no'
   )
 
 ORDER BY sort_order, event_startdate DESC;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-149
+    -- Name - TOURNAMENT_MEDAL_SET_INCOMPLETE
+    -- What it does: Finds tournaments that awarded a gold but fewer silvers or bronzes, which is the medal nobody recorded where there is no medal round for a round-level check to audit.
+    CASE
+        WHEN m.silver = 0 AND m.bronze = 0 THEN 'ONLY_GOLD_AWARDED'
+        WHEN m.bronze = 0 THEN 'NO_BRONZE_AWARDED'
+        WHEN m.silver = 0 THEN 'NO_SILVER_AWARDED'
+        ELSE 'MEDAL_COUNTS_DISAGREE'
+    END AS check_type,
+    t.id AS tournament_id,
+    t.name AS tournament_name,
+    tt.name AS template_name,
+    m.gold,
+    m.silver,
+    m.bronze,
+    -- What separates the two repairs, and it counts the bronze round alone rather than every
+    -- medal round: a tournament holding a final and no bronze match would otherwise read as 1
+    -- here and look like the first case while being the second. A tournament with a bronze
+    -- match recorded no medal on it; a tournament without one never had the match entered, and
+    -- the medal is the second thing missing rather than the first. A sport that awards bronze
+    -- inside the final declares no bronze round and reads 0 throughout, which is true of it.
+    -- Counted over the tournament's events rather than inside the medal aggregate, because the
+    -- event this asks about is precisely the one carrying no medal: computed in there it read 0
+    -- for a tournament whose bronze match exists and is empty, which is the case it was added to
+    -- tell apart.
+    (SELECT COUNT(DISTINCT e4.id)
+     FROM event e4
+     JOIN tournament_stage ts4 ON ts4.id = e4.tournament_stageFK AND ts4.del = 'no'
+     WHERE ts4.tournamentFK = t.id AND e4.del = 'no'
+       AND e4.round_typeFK IN ({{BRONZE_ROUND_TYPE_LIST}})) AS bronze_round_events,
+    m.earliest_medal,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A competition awards its medals as a set. One gold, one silver
+-- and one bronze come out of the same tournament, and a tournament holding two of the three has
+-- lost one somewhere.
+--
+-- The audited object is the tournament rather than the event, and that is the whole reason this
+-- exists beside the round-level medal checks. GLOBAL-DQ-093 and GLOBAL-DQ-037 audit a medal
+-- round and ask whether its medals are right; neither can say anything about a bronze that was
+-- never played, because there is no row for them to start from. Measured on Handball 2026-08-29:
+-- nine medal sets inside the boundary hold a gold and a silver and no bronze, and Handball-DQ-058
+-- reports exactly one of them - the Africa Cup of Nations 2016, where the bronze match exists,
+-- finished, and carries no medal. The other eight hold no bronze round at all. Six of those have
+-- two semi-finals apiece, so two losing semi-finalists and no match between them, and one -
+-- Olympic Qualification Asia 2007 - is a single event awarding a gold and a silver with no final
+-- and no semi-final in the tournament. Nothing reported any of them.
+--
+-- Counts rather than presence, so a tournament with three golds, three silvers and one bronze is
+-- caught as well as one with none. gold, silver and bronze are the package's fixed medal
+-- vocabulary, the same set GLOBAL-DQ-018 admits.
+FROM (
+    SELECT
+        ts.tournamentFK AS tournament_id,
+        SUM(CASE WHEN LOWER(TRIM(r.value)) = 'gold' THEN 1 ELSE 0 END) AS gold,
+        SUM(CASE WHEN LOWER(TRIM(r.value)) = 'silver' THEN 1 ELSE 0 END) AS silver,
+        SUM(CASE WHEN LOWER(TRIM(r.value)) = 'bronze' THEN 1 ELSE 0 END) AS bronze,
+        MIN(e.startdate) AS earliest_medal
+    FROM result r
+    JOIN event_participants ep ON ep.id = r.event_participantsFK AND ep.del = 'no'
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t2 ON t2.id = ts.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    WHERE r.del = 'no'
+      AND ts.del = 'no'
+      AND r.result_typeFK = {{RESULT_MEDAL_TYPE_ID}}
+      AND r.value IS NOT NULL AND TRIM(r.value) <> ''
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      -- AND t2.tournament_templateFK = <tournament_template_id>
+    GROUP BY ts.tournamentFK
+) m
+JOIN tournament t ON t.id = m.tournament_id AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND m.gold > 0
+  AND (m.silver < m.gold OR m.bronze < m.gold)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT t.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament t
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE t.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- A tournament that awarded no medal at all is not short of one. The population is the
+  -- tournaments that award medals, which is what the findings branch can judge.
+  AND EXISTS (
+      SELECT 1
+      FROM event e2
+      JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+      JOIN event_participants ep2 ON ep2.eventFK = e2.id AND ep2.del = 'no'
+      JOIN result r2 ON r2.event_participantsFK = ep2.id AND r2.del = 'no'
+                    AND r2.result_typeFK = {{RESULT_MEDAL_TYPE_ID}}
+                    AND r2.value IS NOT NULL AND TRIM(r2.value) <> ''
+      WHERE ts2.tournamentFK = t.id AND e2.del = 'no'
+  )
+
+ORDER BY sort_order, earliest_medal DESC;
