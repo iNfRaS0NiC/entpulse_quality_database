@@ -360,8 +360,15 @@ SELECT
 -- applicable here for reasons SPORTS/Handball.md records; this reads the result layer instead,
 -- where handball actually stores its periods.
 -- Both result types must be present on both sides before the sum means anything, which is what
--- the two counts assert: a match holding only one of them is GLOBAL-DQ-017's finding, not this
--- one, and reporting it here would double the work under two CheckIDs.
+-- the two counts assert: a match holding only one of them has a different defect and reporting
+-- it here would double the work under two CheckIDs.
+-- Where it goes was stated wrongly here until 2026-08-29. This text sent such a match to
+-- GLOBAL-DQ-017, and it never arrived: that check asks whether the event holds ANY result, and
+-- a match missing only Ordinary time holds Final Result and Running score, so Handball-DQ-020
+-- returned 0 of 12659 while 54 finished events in the boundary carried no Ordinary time at all.
+-- They were reported by neither check for as long as both existed. GLOBAL-DQ-148
+-- EVENT_RESULTS_REQUIRED_RESULT_LAYER_MISSING was written for them and this sport carries it as
+-- Handball-DQ-121.
 FROM (
     SELECT
         e.id AS event_id,

@@ -607,13 +607,52 @@ field. That reason used to be carried by the `_notApplicable` entry, which had t
 Ordered by what a check would have to settle first. None of these is a defect anybody here
 has classified; each is a measurement or a decision that has not been made.
 
-1. **`9610 World Championship U18` male is in the client boundary and holds nothing.** Its
-   female counterpart holds 724 events. Are the male editions stored under another template,
-   or absent from the database?
-2. **198 events in the boundary hold no `4 Final Result` and 88 hold no `1 Ordinary time`,**
-   while `6 Running score` reaches all 13573. Both counts were identical before `11108` was
-   added, so none of them is in that template. Which events those are has not been measured,
-   and the answer decides how a results check is scoped here.
+1. ~~**`9610 World Championship U18` male is in the client boundary and holds nothing.**~~
+   **Answered 2026-08-29: the male editions are not missing. They are under
+   `11108 World Championship U19 1` male, which holds 11 tournaments and 813 events running
+   2005 to 2027.** The two are not a male-and-female pair of the same name, because the
+   competition is not named the same for the two: the men's youth World Championship is U19
+   and the women's is U18, and the junior pair below it is men U21 against women U20. Measured
+   the same day across the sport's thirteen youth and junior templates:
+   `9611 World Championship U18` female 724 events, `11075 World Championship U20` female 806,
+   `10995 World Championship U21` male 973. So `9610` is an empty template naming a competition
+   that is already filed elsewhere, rather than a gap in the data.
+
+   It stays inside the boundary and `Handball-DQ-001 TEMPLATE_NO_TOURNAMENTS_OR_STAGES` goes on
+   reporting it - 1 finding of 39 templates, and it is this one. Whether an empty duplicate
+   template should exist at all is a decision for the people who own the data, and taking it
+   out of `IN_SCOPE_TEMPLATE_ID_LIST` would only stop us seeing it while leaving it there.
+
+   The European templates run the other way round and are not settled by this answer:
+   `11115 European Championship U18 1` male holds 544 events across ten tournaments while
+   `11116 European Championship U19 1` male holds 56, all from 2021 alone. That looks like the
+   same kind of duplicate with a little data in it, which is a different case from an empty one,
+   and it has not been measured.
+2. ~~**198 events in the boundary hold no `4 Final Result` and 88 hold no `1 Ordinary time`.**~~
+   **Answered 2026-08-29, and half the gap had closed on its own.** Remeasured that day over the
+   12900 finished events in the boundary: **12900 hold `4 Final Result`**, 12900 hold
+   `6 Running score`, and **12846 hold `1 Ordinary time`**. The 198 are gone - corrected between
+   2026-08-28 and 2026-08-29, which is the repair work running alongside this review rather than
+   anything done here.
+
+   The 54 that remain can be described instead of counted. Every one is status `6 Finished`, and
+   they sit in two templates and one era: **36 in `World Championship 1`** across round types
+   38, 39 and 40 - the numbered rounds 1, 2 and 3 - all inside 2007, and **18 in `Summer
+   Olympics`** across round types 22 to 26, the placement family, running 2004 to 2008. Nothing
+   after 2008. So it is a closed historical set rather than a gap in the live feed, and a
+   results check needs no scope carved around it.
+
+   **Nothing was reporting them, and this file said otherwise.** `Handball-DQ-110` requires two
+   `1 Ordinary time` rows before its sum means anything, and its own text sends a match missing
+   that layer to `GLOBAL-DQ-017`. It does not arrive there: `-017` asks whether the event holds
+   any result at all, these hold two layers of three, and `Handball-DQ-020` returns 0 of 12659
+   for exactly that reason. The 54 fell between the two checks and were reported by neither.
+
+   `GLOBAL-DQ-148 EVENT_RESULTS_REQUIRED_RESULT_LAYER_MISSING` was written for this on
+   2026-08-29 and this sport carries it as `Handball-DQ-121`, reporting 54 of 12900, one row per
+   missing layer. `REQUIRED_RESULT_TYPE_LIST` is `1, 4` and deliberately not wider - the
+   parameter's own note in `SPORTS/params.json` records why `6 Running score` and `2 Extra time`
+   are out of it.
 3. **Nine medal sets are missing their bronze** - 239 `gold`, 239 `silver`, 230 `bronze` on
    `501 Medal`, every one of them inside the boundary.
 4. **`round_typeFK = 0` on 85 events, with an empty name**, and six round names carried by two

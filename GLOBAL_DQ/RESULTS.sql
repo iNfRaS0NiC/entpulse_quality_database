@@ -5151,3 +5151,102 @@ WHERE ep.del = 'no'
   -- AND e.startdate <  '<to_datetime>'
 
 ORDER BY sort_order, event_startdate, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-148
+    -- Name - EVENT_RESULTS_REQUIRED_RESULT_LAYER_MISSING
+    -- What it does: Finds finished events that hold results but not every result type the sport writes on all of them, naming which layer is absent.
+    'REQUIRED_RESULT_LAYER_MISSING' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    e.round_typeFK,
+    e.status_descFK,
+    rt.id AS missing_result_type_id,
+    rt.name AS missing_result_type_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A sport writes several result types on the same finished
+-- event and some of them are not optional - handball records the score after regulation, the
+-- score after any extra period, and the final score, and a match that ended has the first and
+-- the third whatever else it has. This finds the event that carries results but is missing one
+-- of the layers the sport declares mandatory, and names the layer rather than the event alone,
+-- because a repair is made per field.
+--
+-- Distinct from GLOBAL-DQ-017, and that distinction is the reason this exists. That check asks
+-- whether the event holds ANY result and is silent for an event holding two layers of three.
+-- Handball's own Handball-DQ-110 states in its text that a match missing Ordinary time is
+-- GLOBAL-DQ-017's finding; measured 2026-08-29 it is not, and was not - 54 finished events in
+-- the boundary hold 4 Final Result and 6 Running score with no 1 Ordinary time, and
+-- Handball-DQ-020 returns 0 of 12659 because every one of them holds results. They fell
+-- between the two checks and nothing reported them.
+--
+-- The event must hold at least one declared layer before it enters the scope. An event holding
+-- none of them is either GLOBAL-DQ-017's finding or a sport whose parameter names the wrong
+-- types, and reporting every such event here would bury the layer-level defect this asks about.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+-- Driven from the declared layers rather than from the event, so one row comes back per
+-- missing layer and an event short of two of them says so twice.
+JOIN result_type rt ON rt.id IN ({{REQUIRED_RESULT_TYPE_LIST}})
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND NOT EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                   AND r.result_typeFK = rt.id
+                   AND r.value IS NOT NULL AND TRIM(r.value) <> ''
+      WHERE ep.eventFK = e.id AND ep.del = 'no'
+  )
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep2
+      JOIN result r2 ON r2.event_participantsFK = ep2.id AND r2.del = 'no'
+                    AND r2.result_typeFK IN ({{REQUIRED_RESULT_TYPE_LIST}})
+                    AND r2.value IS NOT NULL AND TRIM(r2.value) <> ''
+      WHERE ep2.eventFK = e.id AND ep2.del = 'no'
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND e.status_type = 'finished'
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep3
+      JOIN result r3 ON r3.event_participantsFK = ep3.id AND r3.del = 'no'
+                    AND r3.result_typeFK IN ({{REQUIRED_RESULT_TYPE_LIST}})
+                    AND r3.value IS NOT NULL AND TRIM(r3.value) <> ''
+      WHERE ep3.eventFK = e.id AND ep3.del = 'no'
+  )
+
+ORDER BY sort_order, event_startdate DESC;
