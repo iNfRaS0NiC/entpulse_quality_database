@@ -604,8 +604,22 @@ field. That reason used to be carried by the `_notApplicable` entry, which had t
 
 ## Open questions
 
-Ordered by what a check would have to settle first. None of these is a defect anybody here
-has classified; each is a measurement or a decision that has not been made.
+Ordered by what a check would have to settle first. None of these was a defect anybody here had
+classified; each was a measurement or a decision that had not been made.
+
+**All eight are answered as of 2026-08-29.** The numbering is kept rather than compacted,
+because answers given against these numbers exist outside this file, and each entry keeps its
+question above its answer so a reader can see what was being asked.
+
+Four of them turned out to be already covered and only unrecorded - questions 1, 4, 5 and 7,
+answered by `Handball-DQ-001`, `-065`, `-059` and `-061`, which were reporting them while the
+question sat open. Two produced a check that had not existed: question 2 gave `GLOBAL-DQ-148`
+and question 3 gave `GLOBAL-DQ-149`, both because a defect was falling between two existing
+checks that each believed the other held it. And part of question 2 answered itself: 198 events
+without a `4 Final Result` became none while this review was running.
+
+The list below is history rather than work. What is still open for this sport is under
+**Not checked, and deliberately so** beneath it.
 
 1. ~~**`9610 World Championship U18` male is in the client boundary and holds nothing.**~~
    **Answered 2026-08-29: the male editions are not missing. They are under
@@ -692,12 +706,69 @@ has classified; each is a measurement or a decision that has not been made.
    sport carries it as `Handball-DQ-122`, reporting all eight of 231 tournaments. The audited
    object is the tournament, which is what lets it see a bronze that was never played, and
    `bronze_round_events` is the column that tells the 2016 case from the other seven.
-4. **`round_typeFK = 0` on 85 events, with an empty name**, and six round names carried by two
-   different round type ids each.
-5. **30 registered athletes hold more than one registry row under the same name.**
+4. ~~**`round_typeFK = 0` on 85 events, with an empty name**, and six round names carried by two
+   different round type ids each.~~ **Answered 2026-08-29. Both halves, and neither needs a new
+   check.**
+
+   **The 85 are already reported.** `Handball-DQ-065 EVENT_MISSING_ROUND_TYPE` returns exactly 85
+   of 13098 - the question was asking after a gap that was never one. Two things about them were
+   not recorded, though, and both bear on how they get repaired. They are **not historical**: they
+   run from 2006-01-10 to **2026-01-29**, the most recent seven months before this was written.
+   And the round is **knowable without research** - every one sits in a stage whose name says what
+   it was, `Preliminary Round Grp. C`, `Main Round Grp. 1`, `Final Stage`, `Placement Matches
+   Grp. I`. The value is in the next column, not lost. By status, 84 are `6 Finished` and one is
+   `190 Finished after awarded win`.
+
+   **The six collisions are two parallel numberings, not scattered duplicates.** The names `1` to
+   `6` are each carried by one id from `38, 39, 40, 41, 42, 43` and one from `89, 90, 91, 92, 93,
+   94`. Exactly six names, exactly two families, nothing else. `Handball-DQ-029
+   EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET` returns 0 of 13013, so both families are inside the
+   declared set and neither is a stray.
+
+   So this is a rule for reading rather than a defect to repair: **round identity is
+   `round_typeFK`, never the display name.** Anything keying on the name merges the two families
+   silently, and the merge looks like correct output. `Event and round representation` above
+   states the same rule for this sport; it is repeated here because the question that produced it
+   was asked here.
+5. ~~**30 registered athletes hold more than one registry row under the same name.**~~
+   **Answered 2026-08-29: it became `Handball-DQ-059 PARTICIPANT_DUPLICATE_REGISTRY_ROWS` on
+   2026-08-28 and returns exactly those 30 of 27786.** It was written the same day as
+   `Handball-DQ-060`, which closed question 6, and only that one was recorded as closing its
+   question.
+
+   The profile is narrow enough to be worth stating, because it points at one import rather than
+   at a habit. **All 30 are female and all 30 are registered as `athlete`** - no man and no other
+   role is in the set. Twenty-nine hold two registry rows; one holds four, `Celine Lundbye
+   Kristiansen`, `participant_id 566731`. **Twenty-seven of the 30 carry a `participant_id` above
+   2 000 000**, so they are recent entries made together, and their names read as one intake -
+   `Beatriz Bundo Calepete Pereira`, `Carla Beatriz Lussende`, `Catalina Alexa Losarcos`,
+   `Delfina Arzola`. Twenty-seven are `active` on both rows, two are inactive on both, and one
+   carries one of each.
+
+   So it is a single female squad duplicated as it was entered, not a registry decaying over
+   years. The three with older ids are a separate and older case inside the same finding.
 6. ~~95 registry rows disagree between the role and the participant type.~~ **Answered
    2026-08-28: the count is 100, and it is now `Handball-DQ-060` rather than an open question.**
-7. **The group abbreviation is spelled `Grp.`, `grp.` and `Gr.`** across stage names.
+7. ~~**The group abbreviation is spelled `Grp.`, `grp.` and `Gr.`** across stage names.~~
+   **Answered 2026-08-29: there are two spellings now, not three, and the minority one is a
+   practice that stopped in 2013.**
+
+   | Spelling | Stages | Templates | Span |
+   |---|---:|---:|---|
+   | `Grp.` | 1255 | 30 | 2004-2027 |
+   | `Gr.` | 32 | 7 | 2004-2022 |
+   | no group marker | 635 | 38 | 2004-2027 |
+
+   **`grp.` in lower case no longer occurs anywhere in the boundary.** It was there when this
+   question was written and is not there now.
+
+   `Handball-DQ-061 TOURNAMENT_STAGE_NAME_GROUP_ABBREVIATION_INCONSISTENT` reports 22 of 1922,
+   and they are not spread across the sport: every one is `World Championship 1`, named
+   `World Championships Gr. A` through `Gr. D`, in five editions - 4 in 2005, 6 in 2007, 4 each
+   in 2009, 2011 and 2013. **Nothing after 2013**, and the same template writes `Grp.` from 2015
+   on. So it is one old house style in one competition, abandoned twelve years ago, rather than a
+   convention nobody agreed. The 32 stages this measurement finds against the check's 22 are ten
+   sitting outside the check's own scope.
 8. ~~The incident layer reaches 1855 of 13573 events.~~ **Closed 2026-08-28: the incident
    layer is outside UK Sport's scope, so its coverage is not a question for this client.**
    Revisit when the package serves a client who takes it. Whether the rest were never collected
