@@ -25,7 +25,6 @@ mechanisms from `DATABASE.md`.
 | 46 | Swimming | Listing (individual and team) | `SPORTS/Swimming.md` | In progress | 2026-08-25 | Swimming |
 | 19 | Speed-Skating | Listing (individual and team) | `SPORTS/Speed-Skating.md` | In progress | 2026-08-22 | Speed Skating |
 | 55 | Track-Cycling | Listing (individual and team) | `SPORTS/Track-Cycling.md` | In progress | 2026-08-26 | Track Cycling |
-
 | 7 | Biathlon | Listing (individual and team) | `SPORTS/Biathlon.md` | In progress | 2026-08-27 | Biathlon |
 | 20 | Handball | H2H (team) | `SPORTS/Handball.md` | In progress | 2026-08-28 | Handball |
 
