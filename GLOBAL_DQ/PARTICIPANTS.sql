@@ -585,6 +585,14 @@ UNION ALL
 SELECT
     'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+-- Coverage counts distinct events across every participation, and the obvious repair is to
+-- drive from the parent and stop at the first eligible child with EXISTS. It was tried on
+-- 2026-08-30 across every sport that runs this template and it is slower here: 29.6 seconds
+-- became 84.7, with identical eligible and identical findings throughout. EXISTS wins where
+-- the fan-in is large - GLOBAL-DQ-019 on Cycling fell from 62.4 seconds to 28.9 - and loses
+-- where the events are many and the participations per event few, because the correlated
+-- probe is then paid once per event instead of once per scan. Three templates were changed
+-- on that measurement and six, including this one, were left alone.
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event_participants ep
 JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
@@ -1014,6 +1022,14 @@ SELECT
     NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
+-- Coverage counts distinct events across every participation, and the obvious repair is to
+-- drive from the parent and stop at the first eligible child with EXISTS. It was tried on
+-- 2026-08-30 across every sport that runs this template and it is slower here: 23.0 seconds
+-- became 62.8, with identical eligible and identical findings throughout. EXISTS wins where
+-- the fan-in is large - GLOBAL-DQ-019 on Cycling fell from 62.4 seconds to 28.9 - and loses
+-- where the events are many and the participations per event few, because the correlated
+-- probe is then paid once per event instead of once per scan. Three templates were changed
+-- on that measurement and six, including this one, were left alone.
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -2235,6 +2251,14 @@ UNION ALL
 SELECT
     'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+-- Coverage counts distinct events across every participation, and the obvious repair is to
+-- drive from the parent and stop at the first eligible child with EXISTS. It was tried on
+-- 2026-08-30 across every sport that runs this template and it is slower here: 39.9 seconds
+-- became 67.6, with identical eligible and identical findings throughout. EXISTS wins where
+-- the fan-in is large - GLOBAL-DQ-019 on Cycling fell from 62.4 seconds to 28.9 - and loses
+-- where the events are many and the participations per event few, because the correlated
+-- probe is then paid once per event instead of once per scan. Three templates were changed
+-- on that measurement and six, including this one, were left alone.
     COUNT(DISTINCT t.id) AS eligible_count,
     1 AS sort_order
 FROM event_participants ep

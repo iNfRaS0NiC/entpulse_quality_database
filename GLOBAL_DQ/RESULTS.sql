@@ -184,22 +184,33 @@ SELECT
     'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
-FROM event_participants ep
-JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+-- Coverage asks whether the event holds one eligible participant, and EXISTS answers it by
+-- stopping at the first, instead of scanning every participation to count distinct events.
+-- Measured 2026-08-30 across every sport that runs this template: 118.8 seconds became 97.0,
+-- with identical eligible and identical findings on all of them. The same change was tried
+-- on six sibling templates the same day and made them slower, so it is here on measurement
+-- rather than on principle: EXISTS wins where the fan-in is large and loses where the events
+-- are many and the participations per event few. Cycling alone falls from 62.4 to 28.9.
+FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN result rk ON rk.event_participantsFK = ep.id AND rk.result_typeFK = {{RESULT_RANK_TYPE_ID}} AND rk.del = 'no'
-JOIN result dur ON dur.event_participantsFK = ep.id AND dur.result_typeFK = {{RESULT_DURATION_TYPE_ID}} AND dur.del = 'no'
-WHERE ep.del = 'no'
+WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
-  AND TRIM(rk.value) <> ''
-  AND TRIM(dur.value) <> ''
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result rk ON rk.event_participantsFK = ep.id AND rk.result_typeFK = {{RESULT_RANK_TYPE_ID}} AND rk.del = 'no'
+      JOIN result dur ON dur.event_participantsFK = ep.id AND dur.result_typeFK = {{RESULT_DURATION_TYPE_ID}} AND dur.del = 'no'
+      WHERE ep.eventFK = e.id AND ep.del = 'no'
+        AND TRIM(rk.value) <> ''
+        AND TRIM(dur.value) <> ''
+  )
 ;
 
 
@@ -347,6 +358,14 @@ SELECT
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
+-- Coverage counts distinct events across every participation, and the obvious repair is to
+-- drive from the event and stop at the first eligible participant with EXISTS. It was tried
+-- on 2026-08-30 across every sport that runs this template and it is slower here: 78.4
+-- seconds became 107.6, with identical eligible and identical findings throughout. EXISTS wins
+-- where the fan-in is large - GLOBAL-DQ-019 on Cycling fell from 62.4 seconds to 28.9 - and
+-- loses where the events are many and the participations per event few, because the
+-- correlated probe is then paid once per event instead of once per scan. Three templates
+-- were changed on that measurement and six, including this one, were left alone.
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -1474,6 +1493,14 @@ UNION ALL
 SELECT
     'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+-- Coverage counts distinct events across every participation, and the obvious repair is to
+-- drive from the event and stop at the first eligible participant with EXISTS. It was tried
+-- on 2026-08-30 across every sport that runs this template and it is slower here: 31.8
+-- seconds became 39.6, with identical eligible and identical findings throughout. EXISTS wins
+-- where the fan-in is large - GLOBAL-DQ-019 on Cycling fell from 62.4 seconds to 28.9 - and
+-- loses where the events are many and the participations per event few, because the
+-- correlated probe is then paid once per event instead of once per scan. Three templates
+-- were changed on that measurement and six, including this one, were left alone.
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
@@ -1935,22 +1962,33 @@ SELECT
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
-FROM event_participants ep
-JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+-- Coverage asks whether the event holds one eligible participant, and EXISTS answers it by
+-- stopping at the first, instead of scanning every participation to count distinct events.
+-- Measured 2026-08-30 across every sport that runs this template: 92.0 seconds became 79.7,
+-- with identical eligible and identical findings on all of them. The same change was tried
+-- on six sibling templates the same day and made them slower, so it is here on measurement
+-- rather than on principle: EXISTS wins where the fan-in is large and loses where the events
+-- are many and the participations per event few.
+FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
- AND r.result_typeFK IN ({{NUMERIC_RESULT_TYPE_LIST}})
-WHERE ep.del = 'no'
+WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
-  AND r.value IS NOT NULL
-  AND TRIM(r.value) <> ''
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+           AND r.result_typeFK IN ({{NUMERIC_RESULT_TYPE_LIST}})
+      WHERE ep.eventFK = e.id AND ep.del = 'no'
+        AND r.value IS NOT NULL
+        AND TRIM(r.value) <> ''
+  )
 
 ORDER BY sort_order, affected_count DESC, event_id;
 
@@ -2562,6 +2600,14 @@ SELECT
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
+-- Coverage counts distinct events across every participation, and the obvious repair is to
+-- drive from the event and stop at the first eligible participant with EXISTS. It was tried
+-- on 2026-08-30 across every sport that runs this template and it is slower here: 5.2
+-- seconds became 13.8, with identical eligible and identical findings throughout. EXISTS wins
+-- where the fan-in is large - GLOBAL-DQ-019 on Cycling fell from 62.4 seconds to 28.9 - and
+-- loses where the events are many and the participations per event few, because the
+-- correlated probe is then paid once per event instead of once per scan. Three templates
+-- were changed on that measurement and six, including this one, were left alone.
 FROM event_participants ep
 JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
@@ -4481,22 +4527,33 @@ SELECT
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
-FROM event_participants ep
-JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+-- Coverage asks whether the event holds one eligible participant, and EXISTS answers it by
+-- stopping at the first, instead of scanning every participation to count distinct events.
+-- Measured 2026-08-30 across every sport that runs this template: 89.2 seconds became 62.5,
+-- with identical eligible and identical findings on all of them. The same change was tried
+-- on six sibling templates the same day and made them slower, so it is here on measurement
+-- rather than on principle: EXISTS wins where the fan-in is large and loses where the events
+-- are many and the participations per event few.
+FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
- AND r.result_typeFK IN ({{INTEGER_RESULT_TYPE_LIST}})
-WHERE ep.del = 'no'
+WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
-  AND r.value IS NOT NULL
-  AND TRIM(r.value) <> ''
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+           AND r.result_typeFK IN ({{INTEGER_RESULT_TYPE_LIST}})
+      WHERE ep.eventFK = e.id AND ep.del = 'no'
+        AND r.value IS NOT NULL
+        AND TRIM(r.value) <> ''
+  )
 
 ORDER BY sort_order, affected_count DESC, event_id;
 

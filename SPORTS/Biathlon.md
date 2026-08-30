@@ -108,6 +108,27 @@ runs 1 to 160 in the individual disciplines and 50 to 420 in the relays, on 512 
 is the shape of a nations-standings allocation rather than a race result. `408 Startnumber`
 records the bib.
 
+**`Biathlon-DQ-038` and `Biathlon-DQ-049` return the same answer here, and that is the data
+rather than the rule.** The first runs `GLOBAL-DQ-054`, which compares Rank against the Full
+time alone; the second runs `GLOBAL-DQ-111`, which compares Rank against the effective time -
+the Full time where one is stored and the Duration otherwise. On 2026-08-30 both returned the
+same three events, 1846572, 3016396 and 4769618, over the same 2358 eligible.
+
+They agree because there is nothing here for them to disagree about. Measured the same day
+inside the client boundary: of the ranked participations in the timed disciplines, **136442
+across 2358 events carry both `557` and `101`, and not one carries `101` alone**. So the
+effective time is always the Full time, `GLOBAL-DQ-111` never falls back, and the two checks
+read the same column.
+
+That is a property of the feed and not of the schema, so it is not a reason to retire either of
+them. The first import that writes a Duration without a Full time separates them at once, and
+`CLAUDE.md` is explicit that applicability is structural and never a row count - a CheckID is
+permanent and a `Deprecated` row would outlive the state that justified it. The two also differ
+in more than the column: `GLOBAL-DQ-111` excludes confirmed non-finishers, keeps gaps and
+absolute times apart, and reports a time it cannot read at all, none of which `GLOBAL-DQ-054`
+does. The cost argument went with the rewrite of 2026-08-30, which took `Biathlon-DQ-038` from
+141.8 seconds to 12.1.
+
 <!-- MANUAL PASTE ZONE: 7 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Incident types
