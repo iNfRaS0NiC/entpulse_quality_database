@@ -61,6 +61,23 @@ eligible population of every statistic check rather than inside it with no findi
 A narrowed check's `eligible_count` is therefore read against these templates. A count far
 below the sport's own population is the scope working, not a misdirected scope.
 
+**Two checks audit the sport registry and cannot be narrowed at all.** `-TemplateIds` works by
+activating a template filter the statement already carries, and the registry has no template
+relation: a person is registered to the sport, not to a competition. The runner reports this
+honestly - `SKIPPED: not narrowable` - but the console counts only `ERROR` as failure, so a
+skipped check reads there as one that passed. Read the ledger, not the console.
+
+`Soccer-DQ-096 PARTICIPANT_COACH_OR_OFFICIAL_NO_PARTICIPATION_ANYWHERE` is therefore run on its
+own, without `-TemplateIds`. Measured 2026-08-30 it costs 46 seconds and returns 3678 of 16344,
+which is a reading somebody can work through; narrowing would only lose it. Any registry check
+approved later is run the same way.
+
+`Soccer-DQ-080 PARTICIPANT_NO_PARTICIPATION_ANYWHERE` is the other one and is not run at all.
+It is recorded `Out of client scope` in `SPORTS/params.json` against `GLOBAL-DQ-009`: it asks
+for participants with no participation anywhere, so every row it returns is by construction
+someone the 28 templates above never touch. Sport-wide it returns 140167 of 394064 and costs
+between 781 and 2562 seconds to say so.
+
 <!-- MANUAL PASTE ZONE: 1 SCOPE — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Structural coverage
