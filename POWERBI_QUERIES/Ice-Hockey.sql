@@ -1933,7 +1933,7 @@ FROM (
       AND s.object_typeFK = 3
       AND tt.sportFK = 5
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-      AND tt.id IN (31, 32, 33, 308, 328, 546, 10083, 10560, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+      AND t.tournament_templateFK IN (31, 32, 33, 308, 328, 546, 10083, 10560, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
       -- Group tables and squad lists are not medal rankings. The note above says why the name
       -- is what separates them.
@@ -1965,7 +1965,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND tt.sportFK = 5
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  AND tt.id IN (31, 32, 33, 308, 328, 546, 10083, 10560, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
+  AND t.tournament_templateFK IN (31, 32, 33, 308, 328, 546, 10083, 10560, 10738, 10849, 11044, 11076, 11077, 11083, 11091, 11092, 11102, 11103, 11104, 11105, 11285)
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   AND s.name NOT LIKE '%Group%'
   AND s.name NOT LIKE '%(athletes)%'
