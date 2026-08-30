@@ -345,6 +345,22 @@ athlete ranking in handball is a squad list with each player's team id, not a ra
 athletes. This is why `Handball-DQ-032` (`GLOBAL-DQ-143`) audits nothing: it compares an
 athlete ranking's places against its team twin's, and one side has no places to compare.
 
+**Handball is the only documented sport where that is true, measured 2026-08-30.** Of the six
+whose Comp.Rank lists squad members, every other one writes the place on almost all of them:
+Curling 17122 of 17163, Modern Pentathlon 13377 of 13377, Artistic Gymnastics 13990 of 14069,
+Speed Skating 12498 of 13241, Triathlon 4525 of 5575. Handball is 0 of 20768 - which is what
+makes this a gap in what the feed has sent rather than how the sport stores its rankings.
+
+**A second check audits nothing for the same reason, and the paragraph above names only the
+first.** `Handball-DQ-082` runs `GLOBAL-DQ-098`, which looks for rankings that read as
+team-based because places are shared equally while no athlete carries a Team value: it needs
+athlete participants holding a place, and there are none. Both it and `Handball-DQ-032` are
+recorded `Sentinel` in `SPORTS/params.json` with this measurement as the reason - the scope is
+right and the population is expected to fill.
+
+**Nothing in the package reports the gap itself.** Found on 2026-08-30 while classifying those
+two zeroes, and left as a finding rather than made into a check: Comp.Rank work is paused and a
+CheckID needs its own approval.
 <!-- MANUAL PASTE ZONE: 20 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## DQ checks
