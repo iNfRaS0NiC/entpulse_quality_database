@@ -68,7 +68,7 @@ rediscovering it for the next client would cost what it cost the first time.
 | `TOOLS/Connect-Sheets.ps1` | One-time Google authorisation for that document |
 | `TOOLS/Test-Package.ps1` | Static package, registry and SQL-shape validation |
 | `TOOLS/Test-Tools.ps1` | Behavioural tests for the two scripts above |
-| `VALIDATION_REPORT.md` | Generated output of the latest `TOOLS/Test-Package.ps1` run |
+| `VALIDATION_REPORT.md` | Generated output of `TOOLS/Test-Package.ps1`, refreshed when the user confirms a sport is closed |
 | `AI_INSTRUCTIONS.md` | Matching behavior instructions for the user-operated assistant |
 
 Each rule has one canonical owner. Other files may link to it but must not restate the

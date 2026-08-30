@@ -420,6 +420,20 @@ It parses and does not execute, so it proves package consistency, never runtime 
 result semantics. `VALIDATION_REPORT.md` is its output, refreshed with `-ReportPath`; edit
 the script rather than the report.
 
+Refresh it when a sport is finished and handed to the reviewers, not after every package
+change. The gate after a `.sql` edit is the run itself, and its result is read on the screen;
+the report is the copy somebody outside this repository reads, and the moment worth writing
+one is the moment a sport stops moving. Between two refreshes it therefore describes that
+handover and not the working tree, which is what the date on its first line is for: a metric
+in it is read as of that date, and a package changed since will disagree with it without
+either of them being wrong.
+
+Whether a sport is finished is answered by the user and never read off the package. The
+assistant asks - is this sport closed, is every approved check written - and refreshes the
+report only on a yes. Nothing here marks a sport closed for it to read instead: `SPORTS.md`
+carries a structural status and not a DQ one, and a validator that passes has said the
+package is consistent, which is not the same as the work being done.
+
 ## PowerBI update command
 
 Approved DQ changes are prepared only after:
