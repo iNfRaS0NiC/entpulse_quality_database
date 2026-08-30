@@ -877,6 +877,44 @@ foreach ($s in $statements) {
 }
 Add-Result -Group 'DQ' -Name 'Client boundary is in the statement' -Findings $scopeFindings
 
+# A template filter reads the tournament's foreign key, never the template's primary key.
+# The two select identical rows and are not the same query: keying on tournament_template.id
+# makes the optimiser drive from tournament_template and lose the index path into the
+# statistic shards. Measured 2026-08-30 against the live database, alternating runs, with
+# byte-identical result sets both ways - Golf-DQ-085 62.4s against 2.8, Ice-Hockey-DQ-112
+# 122.9s against 4.4. Twenty-two and twenty-eight times, on one filter each.
+#
+# Only a literal filter is reported. A join condition carrying the same alias - tt2.id =
+# st.objectFK, which correlates a template to the statistic that owns it - is how a statement
+# auditing templates themselves is written, and is correct: it has no tournament to read the
+# key from. What makes a filter a filter is a literal on the right-hand side.
+#
+# The pair is discovered from the statement rather than assumed, because the alias that owns
+# the template is whatever the statement declared it to be: tt goes with t, tt2 with t2.
+# DATABASE.md DB-SEM-016 owns the database fact and POWERBI.md the query contract; the
+# commented marker the runner activates is held to the same rule by Test-Tools.ps1, which is
+# why these two were written by hand and reached the package unnoticed.
+$filterFindings = @()
+foreach ($s in $statements) {
+    $masked = Get-MaskedSql -Sql $s.Sql
+    $owners = @{}
+    foreach ($m in [regex]::Matches($masked, '(\w+)\.id\s*=\s*(\w+)\.tournament_templateFK')) {
+        $owners[$m.Groups[1].Value] = $m.Groups[2].Value
+    }
+    if ($owners.Count -eq 0) { continue }
+
+    foreach ($alias in $owners.Keys) {
+        $pattern = '(?m)^[ 	]*AND[ 	]+' + [regex]::Escape($alias) + '\.id[ 	]*(?:IN[ 	]*\([ 	]*\d|=[ 	]*\d)'
+        foreach ($hit in [regex]::Matches($masked, $pattern)) {
+            $line = ([regex]::Matches($masked.Substring(0, $hit.Index), "`n")).Count + 1
+            $filterFindings += ("$($s.File):$($s.Line) ($($s.CheckId)): filters on $alias.id at statement line " +
+                "$line - the template's own key, where $($owners[$alias]) is already joined; " +
+                "use $($owners[$alias]).tournament_templateFK")
+        }
+    }
+}
+Add-Result -Group 'DQ' -Name 'Template filter uses the foreign key' -Findings $filterFindings
+
 # --------------------------------------------------------------------------------------
 # GLOBAL parameterization
 # --------------------------------------------------------------------------------------

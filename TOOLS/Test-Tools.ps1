@@ -5939,16 +5939,23 @@ Test-That 'a template list that is neither the boundary nor the medal list is re
     # the ids are compared.
     $root = Copy-RepositoryFixture -Name 'medal-narrowing-drifted'
     $path = Join-Path $root 'POWERBI_QUERIES\Ice-Hockey.sql'
-    if (Test-Path $path) {
-        $text = [IO.File]::ReadAllText($path)
-        $text = $text.Replace('AND tt.id IN (31, 32, 33,', 'AND tt.id IN (31, 32, 99999, 33,')
-        [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+    Assert-True (Test-Path $path) 'the fixture must carry the sport file this test drifts'
 
-        $run = Invoke-PackageValidator -Root $root
-        Assert-Equal 1 $run.ExitCode 'validator exit code'
-        Assert-True ($run.Text -match 'MEDAL_TEMPLATE_ID_LIST is') `
-            "a drifted list should name both lists it failed to match; output was:`n$($run.Text)"
-    }
+    # The anchor is the statement's own filter, so it tracks the form that statement is
+    # written in. It read tt.id until 2026-08-30, when both medal-narrowed checks were moved
+    # to the foreign key. A Replace that matches nothing leaves the fixture undamaged and the
+    # validator rightly passes, which is a test quietly reporting success for a defect it
+    # never injected - so the injection is asserted rather than assumed.
+    $text = [IO.File]::ReadAllText($path)
+    $drifted = $text.Replace('AND t.tournament_templateFK IN (31, 32, 33,',
+        'AND t.tournament_templateFK IN (31, 32, 99999, 33,')
+    Assert-True ($drifted -ne $text) 'the drifted template list must actually be injected'
+    [IO.File]::WriteAllText($path, $drifted, (New-Object System.Text.UTF8Encoding $false))
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match 'MEDAL_TEMPLATE_ID_LIST is') `
+        "a drifted list should name both lists it failed to match; output was:`n$($run.Text)"
 }
 
 Test-That 'the client boundary is derived only when the sport asked for it' {
