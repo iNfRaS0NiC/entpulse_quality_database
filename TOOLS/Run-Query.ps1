@@ -3544,6 +3544,52 @@ function Save-Rows {
     }
 }
 
+function Get-SqlFingerprint {
+    # The first twelve hex of SHA256 over the statement as it was actually sent, parameters
+    # substituted and narrowing applied.
+    #
+    # It exists because a moved count cannot otherwise be read. Biathlon-DQ-038 recorded 3
+    # findings of 2358 on six consecutive runs, and between the last two the statement was
+    # rewritten from an all-pairs self-join to a window and went from 141.8 seconds to 12.1.
+    # Nothing in those six rows says so, so a reviewer cannot tell a number that held because
+    # the data held from one that held because the check is the same check.
+    #
+    # Twelve characters, not sixty-four. It answers same-or-different and nothing else, and
+    # sixty-four across 23126 rows is 1.2 MB of a 25.5 MB ledger to say it four times over.
+    #
+    # A narrowed run hashes differently from a wide one on purpose. -TemplateIds rewrites the
+    # statement, and the population it audits is genuinely not the same population, so a count
+    # from one is not comparable with a count from the other. That the fingerprint says so is
+    # the point rather than a false alarm.
+    param([string]$Text)
+
+    if ([string]::IsNullOrWhiteSpace($Text)) { return '' }
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $bytes = $sha.ComputeHash([System.Text.Encoding]::UTF8.GetBytes($Text))
+        return ([System.BitConverter]::ToString($bytes) -replace '-', '').Substring(0, 12).ToLowerInvariant()
+    }
+    finally { $sha.Dispose() }
+}
+
+function Get-RepoCommit {
+    # Which version of the package produced a run, as a short commit with a trailing + when
+    # the working tree carried uncommitted changes - because a run made mid-edit is exactly
+    # the case where a bare commit hash would be a lie. Empty where git cannot answer, which
+    # is a fact about the machine rather than a failure of the run.
+    if ($script:RepoCommit -ne $null) { return $script:RepoCommit }
+    $script:RepoCommit = ''
+    try {
+        $head = (& git -C $RepoRoot rev-parse --short=12 HEAD 2>$null)
+        if ($LASTEXITCODE -eq 0 -and $head) {
+            $dirty = (& git -C $RepoRoot status --porcelain 2>$null)
+            $script:RepoCommit = ([string]$head).Trim() + $(if ($dirty) { '+' } else { '' })
+        }
+    }
+    catch { $script:RepoCommit = '' }
+    return $script:RepoCommit
+}
+$script:RepoCommit = $null
 function New-RunSummaryRow {
     # One durable execution record used by both XLSX Overview and flat _summary.csv. The
     # signal defaults here so pattern jobs and older callers cannot accidentally emit an
@@ -3689,6 +3735,10 @@ function New-RunSummaryRow {
         PrevEligible = $(if ($previous) { $previous.Eligible } else { $null })
         PrevRunId    = $(if ($previous) { [string]$previous.RunId } else { '' })
         Trend        = $trend
+        # Appended after Trend rather than beside PrevRunId, so a reader whose script names
+        # _summary.csv columns by position keeps every column it already had.
+        SqlHash      = Get-SqlFingerprint -Text ([string]$Job.Sql)
+        PrevSqlHash  = $(if ($previous) { [string]$previous.SqlHash } else { '' })
         TrendRuns    = $trendRuns
         # The series as points rather than as the string built from them. The live document
         # subtracts the findings its reviewers have already settled, and a rendered trend cannot
@@ -3784,6 +3834,7 @@ function Import-PreviousRunEntries {
                     StartedUtc = [string]$run.startedUtc
                     Findings   = $check.findings
                     Eligible   = $check.eligible
+                    SqlHash    = [string]$check.sqlHash
                 }
             }
         }
@@ -4082,6 +4133,9 @@ function New-LedgerCheckEntry {
         eligible   = $Entry.Eligible
         seconds    = $Entry.Seconds
         status     = [string]$Entry.Status
+        # The statement this row is about, so the next run can tell a count that held because
+        # the data held from one that held because nothing about the check moved.
+        sqlHash    = [string]$Entry.SqlHash
     }
     if ($null -ne $Entry.ExpectedResidual) { $ordered['residual'] = $Entry.ExpectedResidual }
     return [pscustomobject]$ordered
@@ -4136,6 +4190,7 @@ function Save-RunLedger {
             runId      = $runId
             startedUtc = $script:RunStartedUtc.ToString('yyyy-MM-ddTHH:mm:ssZ')
             output     = [string]$Output
+            commit     = (Get-RepoCommit)
             checks     = @($group.Group | ForEach-Object { New-LedgerCheckEntry -Entry $_ })
         }
 
@@ -6080,6 +6135,17 @@ if ($isBatch) {
     }
     Close-AbandonedShells
 
+    # Checks whose statement is not the one the previous run ran. Named rather than counted,
+    # for the reason the skipped ones are: a count sends the reader to the ledger to work out
+    # which, and a number that moved because the statement moved reads exactly like a number
+    # that moved because the data did.
+    $rewritten = @($summary | Where-Object {
+            $_.PrevSqlHash -and $_.SqlHash -and $_.PrevSqlHash -ne $_.SqlHash })
+    if ($rewritten.Count -gt 0) {
+        Write-Host ('  Compared against a different statement, so the change is not only the data: {0}' -f `
+            ((@($rewritten | ForEach-Object { [string]$_.RunKey })) -join ', ')) -ForegroundColor Yellow
+    }
+
     # Where the run's time went, in the three parts anybody asks about. The database figure is
     # the sum of what each statement reported, which is already on every line above; the document
     # figure is what the update cost; the file is what is left, and it is named as what is left
@@ -6156,6 +6222,13 @@ if ($singleRow.Verdict) {
             ' (was {0}, run {1})' -f $singleRow.PrevFindings, $singleRow.PrevRunId
         }
         else { '' })
+    # Whether the two numbers are even comparable. A count that held across a rewritten
+    # statement is not the same news as a count that held across the same one, and until the
+    # fingerprint was recorded there was no way to tell them apart after the fact.
+    if ($singleRow.PrevSqlHash -and $singleRow.SqlHash -and
+        $singleRow.PrevSqlHash -ne $singleRow.SqlHash) {
+        $against += ', which ran a different statement'
+    }
     Write-Host ("{0}: {1} finding(s) of {2} eligible, expected {3}{4}" -f `
             $singleRow.Verdict, $singleRow.Findings, $singleRow.Eligible,
             $(if ($singleRow.Expected) { $singleRow.Expected } else { 'nothing recorded' }),

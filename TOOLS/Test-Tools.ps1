@@ -1462,10 +1462,14 @@ Test-That 'flat run summary writes Signal and SignalReason columns' {
     # check rather than about what it returned - which family, which layer, which stored
     # values - and the first two are read off the registry while the third is read off the
     # statement itself.
+    # SqlHash and PrevSqlHash are last, and that position is the assertion. They were added on
+    # 2026-08-30 and every column before them keeps the index it already had, so a script
+    # reading this file by position is not broken by their arrival. Anything new goes on the
+    # end for the same reason.
     $expected = '"CheckId","RunKey","Parameters","Name","What","Rows","Findings","Eligible",' +
         '"Seconds","Status","Priority","Category","Object","DataTypes","Signal","SignalReason",' +
         '"Expected","ExpectedResidual","ExpectedReason",' +
-        '"Verdict","Change","PrevFindings","PrevEligible","PrevRunId","Trend"'
+        '"Verdict","Change","PrevFindings","PrevEligible","PrevRunId","Trend","SqlHash","PrevSqlHash"'
     Assert-Equal $expected $header 'summary column order'
     Assert-Equal 'Monitor' $saved[0].Signal 'saved signal'
     Assert-Equal 'population-wide fixture signal' $saved[0].SignalReason 'saved signal reason'

@@ -1228,12 +1228,13 @@ workbook beside the new one and compare by eye, check by check.
       "runId": "BMX 07.08.2026 09-09-47",
       "startedUtc": "2026-08-07T06:09:47Z",
       "output": "D:\\SQL's Output\\BMX 07.08.2026 09-09-47",
+      "commit": "883eb473e1e6",
       "checks": [
         { "checkId": "BMX-DQ-001", "runKey": "BMX-DQ-001", "parameters": "",
           "name": "PARTICIPANT_MISSING_DATE_OF_BIRTH", "category": "MISSING_VALUES",
           "signal": "Monitor", "expected": "Non-zero",
           "rows": 1065, "findings": 1064, "eligible": 12043,
-          "seconds": 3.2, "status": "OK" }
+          "seconds": 3.2, "status": "OK", "sqlHash": "921cc305e33f" }
       ]
     }
   ]
@@ -1248,6 +1249,50 @@ same proportion corrected nothing. Both numbers were being computed already — 
 reads the coverage branch to seed the workbook's `Status` — and both were thrown away with
 the terminal. They now also travel in `_summary.csv`.
 
+### Which statement produced the number
+
+`sqlHash` is the first twelve hex of SHA256 over the statement **as it was actually sent** —
+parameters substituted, narrowing applied. `commit` is the package version that ran it, with a
+trailing `+` when the working tree carried uncommitted changes, because a run made mid-edit is
+exactly the case where a bare commit would be a lie.
+
+They exist because a moved count could not otherwise be read. `Biathlon-DQ-038` recorded 3
+findings of 2358 eligible on six consecutive runs:
+
+```text
+Biathlon 27.08.2026 10-29-25    134.6s  find=3  elig=2358  Unchanged
+Biathlon 27.08.2026 11-53-22    144.1s  find=3  elig=2358  Unchanged
+Biathlon 27.08.2026 12-09-22    139.4s  find=3  elig=2358  Unchanged
+Biathlon 27.08.2026 21-38-33    154.8s  find=3  elig=2358  Unchanged
+Biathlon 29.08.2026 02-09-13    142.7s  find=3  elig=2358  Unchanged
+Biathlon 30.08.2026 07-53-09    141.8s  find=3  elig=2358  Unchanged
+```
+
+Between the last two the statement was rewritten from an all-pairs self-join to a window and
+went from 141.8 seconds to 12.1. Nothing in those rows says so. A reviewer reading them cannot
+tell a number that held because the data held from one that held because nothing about the
+check moved — and those are different pieces of news.
+
+A run that finds the fingerprint changed says so rather than leaving it in the file. On one
+check it is appended to the comparison:
+
+```text
+Unchanged: 3 finding(s) of 2358 eligible, expected Zero (was 3, run Biathlon 30.08.2026 07-53-09), which ran a different statement
+```
+
+and on a batch it is named after `Done:`, beside the skipped ones.
+
+**A narrowed run fingerprints differently from a wide one, on purpose.** `-TemplateIds`
+rewrites the statement and the population it audits is genuinely not the same population, so a
+count from one is not comparable with a count from the other. That the fingerprint says so is
+the point, not a false alarm.
+
+Twelve characters rather than sixty-four: it answers same-or-different and nothing else, and
+the full digest across 23126 rows would be 1.2 MB of a 25.5 MB ledger to say it four times
+over. As it stands the two fields cost about 2.2 per cent of the file.
+
+They travel in `_summary.csv` too, appended after `Trend`. **Anything new goes on the end**, so
+a script reading that file by column position keeps every column it already had.
 ### The verdict
 
 Each run reads itself against the last recorded one and writes the answer per check. The
