@@ -5699,27 +5699,62 @@ Test-That 'GLOBAL-DQ-025 treats configured dates as a containing interval' {
 }
 
 Test-That 'GLOBAL-DQ-030 accepts direct event participants and active lineup members' {
+    # The two participation paths are what the check forgives, and they survived the rewrite of
+    # 2026-08-30 from two correlated NOT EXISTS probes to one set anti-join. The assertions
+    # below name the shape that replaced them, because a test pinned to the old wording would
+    # have passed a statement that quietly dropped a path.
     $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'GLOBAL-DQ-030' })
     Assert-Equal 1 $statement.Count 'GLOBAL-DQ-030 statement count'
     $sql = $statement[0].Sql
     $branches = [regex]::Split($sql, '(?im)^\s*UNION ALL\s*$')
 
     Assert-Equal 2 $branches.Count 'findings and coverage branches'
-    Assert-Equal 2 ([regex]::Matches($branches[0], 'AND\s+NOT\s+EXISTS\s*\(')).Count `
-        'direct-participant and lineup-member exclusion paths'
-    Assert-True ($branches[0] -match 'ep2\.participantFK\s*=\s*sp\.participantFK') `
-        'direct event participant predicate'
+
+    # Both halves of the played set, unioned inside one derived table. Golf-DQ-093 drops the
+    # lineup half because that sport writes no lineup row; a template cannot, because Soccer,
+    # Ice Hockey and Handball carry their people there and nowhere else.
+    Assert-True ($branches[0] -match 'JOIN\s+event_participants\s+ep2\s+ON\s+ep2\.eventFK\s*=\s*e2\.id') `
+        'direct event participant path'
     Assert-True ($branches[0] -match 'JOIN\s+lineup\s+l3\s+ON\s+l3\.event_participantsFK\s*=\s*ep3\.id') `
         'active lineup path'
-    Assert-True ($branches[0] -match 'l3\.participantFK\s*=\s*sp\.participantFK') `
-        'lineup member predicate'
+    Assert-Equal 1 ([regex]::Matches($branches[0], '(?im)^\s*UNION\s*$')).Count `
+        'the two paths are one set, not two passes'
+
+    # The anti-join itself: matched on both keys, and a row that matches nothing is the finding.
+    Assert-True ($branches[0] -match 'played\.tournament_id\s*=\s*cr\.tournament_id') `
+        'played is matched on the tournament'
+    Assert-True ($branches[0] -match 'played\.participant_id\s*=\s*cr\.participant_id') `
+        'played is matched on the participant'
+    Assert-True ($branches[0] -match '(?im)^\s*WHERE\s+played\.participant_id\s+IS\s+NULL\s*$') `
+        'a Comp.Rank row matching no played pair is the finding'
+
+    # The predicate that makes the statement runnable at all. Without it Soccer builds every
+    # pair in the sport and the gateway answers 504 before a row returns. It is asserted here
+    # rather than trusted, because nothing about the result would reveal its absence - only the
+    # clock would, and only on the largest sport.
+    Assert-Equal 2 ([regex]::Matches($branches[0],
+            'tournamentFK\s+IN\s*\(\s*SELECT\s+s[23]\.objectFK')).Count `
+        'played is built only for tournaments owning a Comp.Rank, on both halves'
+
+    # No id window. played cannot be windowed - it is the set the whole question is asked
+    # against - so a sharded run would rebuild it once per shard.
+    Assert-Equal 0 ([regex]::Matches($sql, 'BETWEEN\s+<from_')).Count `
+        'the rewritten statement carries no id window'
+
+    # One marker per place the tournament is narrowed, or -TemplateIds would constrain one side
+    # of the anti-join and not the other, and the statement would return a wrong answer rather
+    # than a slow one.
+    Assert-Equal 4 ([regex]::Matches($sql,
+            '(?im)^\s*--\s*AND\s+t[23]?\.tournament_templateFK\s*=\s*<tournament_template_id>\s*$')).Count `
+        'a template filter on cr, on both played halves and on coverage'
+
     Assert-Equal 0 ([regex]::Matches($branches[1], 'event_participants|JOIN\s+lineup')).Count `
         'coverage must remain independent of participation representation'
 
     # The audited object is the statistic, not the stray participant row. Whoever corrects this
     # works a Comp.Rank table at a time, and the row-level shape repeated one tournament's name
     # up to 54 times for what is one table with one thing wrong with it.
-    Assert-True ($branches[0] -match '(?im)^\s*GROUP BY\s+s\.id\s*,') `
+    Assert-True ($branches[0] -match '(?im)^\s*GROUP BY\s+cr\.statistic_id\s*,') `
         'findings grouped to one row per statistic'
     Assert-True ($branches[1] -match 'COUNT\s*\(\s*DISTINCT\s+s\.id\s*\)\s+AS\s+eligible_count') `
         'coverage must count the same object the findings do'
@@ -5735,7 +5770,6 @@ Test-That 'GLOBAL-DQ-030 accepts direct event participants and active lineup mem
     Assert-Equal 2 ([regex]::Matches($sql, "tt\.name\s+NOT\s+LIKE\s+'%\(IOC\)%'")).Count `
         'IOC exclusion in findings and coverage'
 }
-
 Test-That 'Artistic-Gymnastics-DQ-029 excludes only confirmed postponed editions symmetrically' {
     $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'Artistic-Gymnastics-DQ-029' })
     Assert-Equal 1 $statement.Count 'Artistic-Gymnastics-DQ-029 statement count'

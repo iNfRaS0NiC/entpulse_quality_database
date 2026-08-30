@@ -916,13 +916,13 @@ SELECT
     -- Name - COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT
     -- What it does: Flags Comp.Rank statistics for participants who are never event participants or lineup members in the same tournament.
     'PARTICIPANT_NOT_IN_TOURNAMENT' AS check_type,
-    s.id AS statistic_id,
-    tt.name AS template_name,
-    t.name AS tournament_name,
-    COUNT(DISTINCT sp.participantFK) AS stray_participants,
-    COUNT(DISTINCT sp.id) AS stray_participant_rows,
-    GROUP_CONCAT(DISTINCT p.id ORDER BY p.id SEPARATOR ' | ') AS participant_ids,
-    GROUP_CONCAT(DISTINCT p.name ORDER BY p.name SEPARATOR ' | ') AS participant_names,
+    cr.statistic_id,
+    cr.template_name,
+    cr.tournament_name,
+    COUNT(DISTINCT cr.participant_id) AS stray_participants,
+    COUNT(DISTINCT cr.statistic_participants_id) AS stray_participant_rows,
+    GROUP_CONCAT(DISTINCT cr.participant_id ORDER BY cr.participant_id SEPARATOR ' | ') AS participant_ids,
+    GROUP_CONCAT(DISTINCT cr.participant_name ORDER BY cr.participant_name SEPARATOR ' | ') AS participant_names,
     NULL AS eligible_count
 -- What it does, stated in full: Finds Comp.Rank statistics holding participants who are
 -- neither an event participant nor a lineup member anywhere under their own tournament.
@@ -936,41 +936,110 @@ SELECT
 -- GROUP_CONCAT at 1024 characters and truncates silently past it, which the widest group
 -- measured already reaches. A list naming fewer people than stray_participants says has been
 -- cut, and the ids are the ones to trust first because they are shorter.
-FROM statistic s
-JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
-JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
-JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
-WHERE s.del = 'no'
-  AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-  AND s.object_typeFK = 3
-  AND tt.sportFK = {{SPORT_ID}}
-  AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
-  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
-  -- AND t.tournament_templateFK = <tournament_template_id>
-  -- AND s.id BETWEEN <from_statistic_id> AND <to_statistic_id>
-  AND NOT EXISTS (
-      SELECT 1
-      FROM tournament_stage ts2
-      JOIN event e2 ON e2.tournament_stageFK = ts2.id AND e2.del = 'no'
-      JOIN event_participants ep2 ON ep2.eventFK = e2.id AND ep2.del = 'no'
-      WHERE ts2.tournamentFK = t.id
-        AND ts2.del = 'no'
-        AND ep2.participantFK = sp.participantFK
-  )
-  AND NOT EXISTS (
-      SELECT 1
-      FROM tournament_stage ts3
-      JOIN event e3 ON e3.tournament_stageFK = ts3.id AND e3.del = 'no'
-      JOIN event_participants ep3 ON ep3.eventFK = e3.id AND ep3.del = 'no'
-      JOIN lineup l3 ON l3.event_participantsFK = ep3.id
-                    AND l3.del = 'no'
-                    AND l3.participantFK = sp.participantFK
-      WHERE ts3.tournamentFK = t.id
-        AND ts3.del = 'no'
-  )
-GROUP BY s.id, tt.name, t.name
+--
+-- Asked once as a set rather than once per participant. Until 2026-08-30 the question was two
+-- correlated NOT EXISTS probes evaluated for every Comp.Rank row, each walking its own
+-- tournament's stages, events and entries; Golf could not run it at all and answered with a
+-- statement of its own, Golf-DQ-093, at 6.1 seconds against 843. This builds every
+-- (tournament, participant) pair the sport actually played - by entry and by lineup - and
+-- reports the Comp.Rank rows matching none of them.
+--
+-- Both halves are kept, and that is what separates this from Golf-DQ-093. That statement drops
+-- the lineup half because SPORTS/Golf.md records that the sport writes no lineup row; a
+-- template cannot, because Soccer, Ice Hockey and Handball carry their people there and
+-- nowhere else. Measured on Handball, where they do: identical findings.
+--
+-- The played set is built only for tournaments that own a Comp.Rank statistic, and that
+-- predicate is not a detail - it is the difference between this statement running and not.
+-- Without it Soccer builds every pair in the sport and the gateway answers 504 before a row
+-- returns. It cannot change an answer: the join reads played.tournament_id = cr.tournament_id
+-- and every tournament in cr owns a Comp.Rank by construction, so a tournament the predicate
+-- removes could never have matched one.
+--
+-- Measured 2026-08-30 against all nine sports that instantiate it, output hashed both ways and
+-- identical on every one: 376.8 seconds down to 148.3 across the package. Cycling 146.3 to
+-- 21.3, Speed-Skating 41.1 to 16.7, Soccer 36.1 to 14.5, Artistic Gymnastics 35.2 to 16.4,
+-- Modern Pentathlon 33.4 to 16.4, Triathlon 28.2 to 16.0, Handball 21.8 to 16.2, BMX 19.0 to
+-- 15.4, Curling 15.7 to 15.4.
+--
+-- The floor is the part to remember. Building the set costs about fifteen seconds whatever the
+-- sport, so the gain is everything above that and nothing below it: Cycling saves 125 seconds
+-- and Curling saves none. A sport smaller than Curling would be slower this way than the old
+-- shape, so the first one opened after this is measured rather than assumed.
+--
+-- It carries no id window. A window exists to make a statement that will not finish arrive
+-- in pieces, and this one arrives whole - the slowest sport is 21 seconds. Keeping it would
+-- now cost rather than save: played is not windowed and cannot be, being the set the whole
+-- question is asked against, so a run cut into thirty-two shards would build it thirty-two
+-- times. WORKFLOW.md's rule is that a statement which will not run is redesigned rather than
+-- cut, and this is the redesign.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        t.id AS tournament_id,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        sp.id AS statistic_participants_id,
+        sp.participantFK AS participant_id,
+        p.name AS participant_name
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+) cr
+LEFT JOIN (
+    SELECT ts2.tournamentFK AS tournament_id, ep2.participantFK AS participant_id
+    FROM tournament_stage ts2
+    JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+    JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+    JOIN event e2 ON e2.tournament_stageFK = ts2.id AND e2.del = 'no'
+    JOIN event_participants ep2 ON ep2.eventFK = e2.id AND ep2.del = 'no'
+    WHERE ts2.del = 'no'
+      AND tt2.sportFK = {{SPORT_ID}}
+      AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      AND ts2.tournamentFK IN (
+          SELECT s2.objectFK
+          FROM statistic s2
+          WHERE s2.del = 'no'
+            AND s2.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+            AND s2.object_typeFK = 3
+      )
+      -- AND t2.tournament_templateFK = <tournament_template_id>
+    UNION
+    SELECT ts3.tournamentFK AS tournament_id, l3.participantFK AS participant_id
+    FROM tournament_stage ts3
+    JOIN tournament t3 ON t3.id = ts3.tournamentFK AND t3.del = 'no'
+    JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
+    JOIN event e3 ON e3.tournament_stageFK = ts3.id AND e3.del = 'no'
+    JOIN event_participants ep3 ON ep3.eventFK = e3.id AND ep3.del = 'no'
+    JOIN lineup l3 ON l3.event_participantsFK = ep3.id AND l3.del = 'no'
+    WHERE ts3.del = 'no'
+      AND tt3.sportFK = {{SPORT_ID}}
+      AND t3.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      AND ts3.tournamentFK IN (
+          SELECT s3.objectFK
+          FROM statistic s3
+          WHERE s3.del = 'no'
+            AND s3.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+            AND s3.object_typeFK = 3
+      )
+      -- AND t3.tournament_templateFK = <tournament_template_id>
+) played
+  ON played.tournament_id = cr.tournament_id
+ AND played.participant_id = cr.participant_id
+WHERE played.participant_id IS NULL
+GROUP BY cr.statistic_id, cr.template_name, cr.tournament_name
 
 UNION ALL
 
@@ -990,7 +1059,6 @@ WHERE s.del = 'no'
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
   -- AND t.tournament_templateFK = <tournament_template_id>
-  -- AND s.id BETWEEN <from_statistic_id> AND <to_statistic_id>
 ;
 
 
