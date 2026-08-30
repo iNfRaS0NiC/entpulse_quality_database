@@ -636,11 +636,17 @@ the sport writes it consistently:
 | `... - Competition Rank (Athletes)` | a squad list, one row per player | no |
 | `Winter Olympics Male 2010 - Competition Rank` | the tournament's own standings | yes |
 
-That is why `GLOBAL-DQ-026` is `Not applicable` here. Run plainly inside the 2004 boundary it
-returned 295 of 557, and 292 of those were the first two kinds behaving correctly - 210
-`No_Medals_At_All` and 82 `Medal_Set_Unreadable_Without_Rank`. Three rows said something.
+That is why `GLOBAL-DQ-026` is not instantiated plainly here. Run that way inside the 2004
+boundary it returned 295 of 557, and 292 of those were the first two kinds behaving correctly -
+210 `No_Medals_At_All` and 82 `Medal_Set_Unreadable_Without_Rank`. Three rows said something.
 `Ice-Hockey-DQ-112` narrows twice, by `MEDAL_TEMPLATE_ID_LIST` and by the name, and returns
 **4 of 189**. Golf met the same wall at 3286 of 3491 and answered it the same way.
+
+The narrowing is not a statement that the sport lacks the structure the template reads: it has
+it, and `Ice-Hockey-DQ-112` reads it. So the sport records no `Not applicable` signal for the
+template, exactly as Golf records none - `Ice-Hockey-DQ-112` carries `GLOBAL-DQ-026` as its
+family, which is how the check groups with the nine sports instantiating it whole, and
+`Ice-Hockey-DQ-083`, the plain instantiation, keeps its id as `Deprecated`.
 
 Two of the four are the same defect a decade apart - Winter Olympics 2010 and Asian Winter
 Games 2011, each holding two golds against one first place and no bronze at all. The other two
@@ -846,11 +852,20 @@ the sport has no place for, so `Ice-Hockey-DQ-084` keeps it on the board until i
 readings are not distinguishable from the data, which is why the decision is recorded here and
 not derived.
 
-**A Comp.Rank that awards a place awards a medal, the group phase included.** `GLOBAL-DQ-026`
-reports 309, of which 224 are group standings - `Competition Stats Group A` and `Group B` of the
-World Championship divisions - holding a first, second and third place and no medal at all. The
-reading that a group is not a medal event was refused on the same day: `Ice-Hockey-DQ-083` runs
-whole.
+**A Comp.Rank that awards a place awards a medal, the group phase included - decided
+2026-08-14 and reversed 2026-08-20.** `GLOBAL-DQ-026` reported 309, of which 224 were group
+standings - `Competition Stats Group A` and `Group B` of the World Championship divisions -
+holding a first, second and third place and no medal at all. The reading that a group is not a
+medal event was refused that day and `Ice-Hockey-DQ-083` ran whole.
+
+Six days later the same rows were read the other way round. Nothing in the structure separates
+a group table from a medal table, so a check reporting every group standing reports the sport's
+convention rather than a defect; the statistics section above records the measurement that
+settled it, 292 of 295 findings describing correct data. `Ice-Hockey-DQ-083` is `Deprecated`
+and `Ice-Hockey-DQ-112` narrows by `MEDAL_TEMPLATE_ID_LIST` and by the ranking's name. The
+earlier decision is kept here rather than deleted because what it gave up is real and is named
+above: a group table that does hold a medal is a defect `Ice-Hockey-DQ-112` cannot see, and
+`GLOBAL-DQ-125` is what covers that half.
 
 **No tournament stage in this sport carries a city.** `GLOBAL-DQ-034` reports 1348 of 1348
 stages, and on 995 of them the city is the only thing missing; the other 353 also carry no host
