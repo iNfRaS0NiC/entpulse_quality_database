@@ -1,6 +1,6 @@
 SELECT
     -- CheckID - Golf-DQ-085
-    -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID_IN_MEDAL_TEMPLATE
+    -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID
     -- What it does: Finds Golf Comp.Rank medals that do not match the places the ranking holds.
     CASE
 -- What it does, stated in full: Finds Comp.Rank under a Golf template that awards medals

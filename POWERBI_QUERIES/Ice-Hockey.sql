@@ -1807,7 +1807,7 @@ WHERE e.del = 'no'
 -- ==============================================================================
 SELECT
     -- CheckID - Ice-Hockey-DQ-112
-    -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID_IN_MEDAL_RANKING
+    -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID
     -- What it does: Finds medal-awarding Comp.Rank whose medal set does not match the places the ranking holds.
     CASE
 -- What it does, stated in full: Finds Comp.Rank under a Golf template that awards medals
