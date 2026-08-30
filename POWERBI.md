@@ -338,8 +338,10 @@ The distinction is never readable from the number itself, so the sport file must
 one applies and why, naming the check. Without that sentence a later reader has to re-derive
 it, and the cheap conclusion — "no rows, so it does not apply here" — is the one `CLAUDE.md`
 forbids: a sentinel retired on its own zero is silent precisely when the row it waits for
-arrives. A sentinel is not a `_checkSignal` value. It is an ordinary `Actionable` check with
-nothing to act on yet, and `TOOLS/README.md` owns why none of the three signals fits it.
+arrives. `Sentinel` is a `_checkSignal` value of its own, and it carries `Monitor`'s
+requirement rather than `Blocked`'s: it describes a check that is approved and running over a
+population which is empty today, so a sentinel with no `Approved` row is a check watching
+nothing from nowhere. `TOOLS/README.md` owns the vocabulary.
 
 Coverage values are operational evidence only. They are not structural findings and do
 not belong in `DATABASE.md` or `SPORTS/<SportSlug>.md`.
