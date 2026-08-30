@@ -5958,9 +5958,20 @@ if ($isBatch) {
     }
 
     $failed = @($summary | Where-Object { $_.Status -like 'ERROR*' }).Count
+    # Counted and named beside the failures, because a skipped check is not a passed one and
+    # this line was the only place anybody looked. Soccer-DQ-080 and Soccer-DQ-096 skipped on
+    # every narrowed run from 26.08 to 30.08 - the ledger said SKIPPED each time and this line
+    # said nothing, so a run reporting '0 failed' had in fact audited two fewer things than it
+    # was asked to. Named rather than counted: a number alone sends the reader to the ledger to
+    # find out which, which is exactly the step nobody took.
+    $skipped = @($summary | Where-Object { $_.Status -like 'SKIPPED*' })
     $totalRows = ($summary | Measure-Object Rows -Sum).Sum
-    Write-Host ("Done: {0} statement(s), {1} rows, {2} failed -> {3}" -f `
-            $index, $totalRows, $failed, $destination) -ForegroundColor DarkGray
+    Write-Host ("Done: {0} statement(s), {1} rows, {2} failed, {3} skipped -> {4}" -f `
+            $index, $totalRows, $failed, $skipped.Count, $destination) -ForegroundColor DarkGray
+    if ($skipped.Count -gt 0) {
+        Write-Host ("  Skipped, so nothing was audited for: {0}" -f `
+            ((@($skipped | ForEach-Object { [string]$_.RunKey })) -join ', ')) -ForegroundColor Yellow
+    }
 
     # Where the run's time went, in the three parts anybody asks about. The database figure is
     # the sum of what each statement reported, which is already on every line above; the document
