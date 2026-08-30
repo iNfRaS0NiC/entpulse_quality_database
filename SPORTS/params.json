@@ -730,6 +730,10 @@
             "GLOBAL-DQ-098": {
                 "signal": "Sentinel",
                 "reason": "Its population is the athlete Comp.Rank row holding a numeric Rank, and this sport's squad lists carry no Rank row at all - so there is no ranking for the check to find shared places in. The third of the three SPORTS/Soccer.md records under 'Checks whose eligible population is empty', measured 2026-08-05. The scope is aimed correctly at a population that does not exist yet."
+            },
+            "GLOBAL-DQ-009": {
+                "signal": "Out of client scope",
+                "reason": "every row it returns is, by construction, a participant this client's competitions never touch: the check requires no participation anywhere in the sport, so a finding cannot also appear in the 28 national-team templates SPORTS/Soccer.md lists as the client's scope. Measured 2026-08-30 sport-wide it returns 140167 of 394064 registered participants, 36 per cent of the registry - 127026 active athletes, 8642 inactive, 4355 active teams, 144 inactive. A sample of the active athletes is club squad membership: real players registered against a participant rather than the sport, whose matches carry no lineup in this database. Whether an uncovered club squad is a defect is a question for whoever fills the database and is not answered here. It cost 781 seconds that day and 2562 on 2026-08-25, to establish something no run of the client's competitions could act on. Eight other sports instantiate GLOBAL-DQ-009 and are unaffected."
             }
         },
         "RESULT_EVENT_OUTCOME_TYPE_ID": 668,
