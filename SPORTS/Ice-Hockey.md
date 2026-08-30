@@ -639,8 +639,9 @@ the sport writes it consistently:
 That is why `GLOBAL-DQ-026` is not instantiated plainly here. Run that way inside the 2004
 boundary it returned 295 of 557, and 292 of those were the first two kinds behaving correctly -
 210 `No_Medals_At_All` and 82 `Medal_Set_Unreadable_Without_Rank`. Three rows said something.
-`Ice-Hockey-DQ-112` narrows twice, by `MEDAL_TEMPLATE_ID_LIST` and by the name, and returns
-**4 of 189**. Golf met the same wall at 3286 of 3491 and answered it the same way.
+`Ice-Hockey-DQ-112` narrows twice, by `MEDAL_TEMPLATE_ID_LIST` and by the name, and returned
+**4 of 189** the day it was written. Golf met the same wall at 3286 of 3491 and answered it the
+same way.
 
 The narrowing is not a statement that the sport lacks the structure the template reads: it has
 it, and `Ice-Hockey-DQ-112` reads it. So the sport records no `Not applicable` signal for the
@@ -648,10 +649,16 @@ template, exactly as Golf records none - `Ice-Hockey-DQ-112` carries `GLOBAL-DQ-
 family, which is how the check groups with the nine sports instantiating it whole, and
 `Ice-Hockey-DQ-083`, the plain instantiation, keeps its id as `Deprecated`.
 
-Two of the four are the same defect a decade apart - Winter Olympics 2010 and Asian Winter
+Two of the four were the same defect a decade apart - Winter Olympics 2010 and Asian Winter
 Games 2011, each holding two golds against one first place and no bronze at all. The other two
-are World Championship 2 rankings from 2009 and 2011 that hold three places and no medal of any
+were World Championship 2 rankings from 2009 and 2011 that hold three places and no medal of any
 kind.
+
+Re-run 2026-08-30 the check returns **0 of 189**. The four have been corrected. The eligible
+population is the same 189 it was, which is what makes this a repair rather than a scope that
+quietly narrowed: a check reporting nothing because it stopped looking reads identically in the
+count and differently in the coverage. What the four were is kept above, because a corrected
+defect is the only record of what the check is for.
 
 **What the narrowing gives up is worth naming.** A group table holding a medal, or a squad list
 holding one, is a real defect and `Ice-Hockey-DQ-112` cannot see it. `GLOBAL-DQ-125` asserts the
