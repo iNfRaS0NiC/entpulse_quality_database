@@ -41,6 +41,7 @@
         "FULL_TIME_TOLERANCE_SECONDS": 0.01,
         "RESULT_MEDAL_TYPE_ID": 501,
         "RESULT_FULL_TIME_TYPE_ID": 557,
+        "CLOCK_RESULT_TYPE_LIST": "101, 557",
         "STALE_NOT_STARTED_DAYS": 2,
         "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
         "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', '1/8', '1/16', '1/32', 'heats', 'qualifier', 'repechage', 'playoff', 'tie-breaker', 'small final'",
@@ -83,7 +84,8 @@
             "RESULT_MEDAL_TYPE_ID": "501 Medal",
             "RESULT_FULL_TIME_TYPE_ID": "557 Full-time duration",
             "ROUND_TYPE_LIST": "3 Quarter Finals (knockout: yes), 9 Final (knockout: yes), 38 1 (knockout: no), 171 Preliminary (knockout: no), 173 Final (knockout: no), 176 Quarter Finals (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 180 Repechage (knockout: no), 184 1/8 (knockout: no), 185 1/16 (knockout: no), 188 1/32 (knockout: no), 189 Seeding (knockout: no), 204 Heats (knockout: no), 320 Heats (knockout: yes)",
-            "NUMERIC_RESULT_TYPE_LIST": "102 Points"
+            "NUMERIC_RESULT_TYPE_LIST": "102 Points",
+            "CLOCK_RESULT_TYPE_LIST": "101 Duration and 557 Full-time duration, the two fields the sport writes with a colon. Measured 2026-08-30 inside the client boundary: 1546 Duration values carry one and 15 Full-time values do. Two Duration values are not clock notation at all - `1:18.619 +`, a time with a plus stuck on the end, both in one event - and none has a component over 59, so GLOBAL-DQ-128 is expected to return nothing here and exists to stop being silent when one arrives. The trailing plus is a sign problem and belongs to GLOBAL-DQ-019, not here"
         },
         "_notApplicable": {
             "NUMERIC_DATA_TYPE_LIST": "1271 Points is the only numeric data field and it occurs under IOC-purpose templates only, which a statistics statement excludes",
@@ -175,6 +177,7 @@
         "FULL_TIME_TOLERANCE_SECONDS": 1,
         "RESULT_MEDAL_TYPE_ID": 501,
         "RESULT_FULL_TIME_TYPE_ID": 557,
+        "CLOCK_RESULT_TYPE_LIST": "101, 557",
         "STALE_NOT_STARTED_DAYS": 2,
         "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
         "ELIMINATION_ROUND_NAME_LIST": "'final', 'semi finals', 'quarter finals', '1/8', '1/16', '1/32', 'heats', 'qualifier', 'repechage', 'playoff', 'tie-breaker', 'small final'",
@@ -215,7 +218,8 @@
             "RESULT_COMMENT_TYPE_ID": "104 Comment",
             "RESULT_MEDAL_TYPE_ID": "501 Medal",
             "RESULT_FULL_TIME_TYPE_ID": "557 Full-time duration",
-            "ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 180 Repechage (knockout: no), 204 Heats (knockout: no), 267 Final Phase (knockout: no), 283 Final C (knockout: no), 284 Final B (knockout: no)"
+            "ROUND_TYPE_LIST": "9 Final (knockout: yes), 173 Final (knockout: no), 178 Semi Finals (knockout: no), 179 Qualifier (knockout: no), 180 Repechage (knockout: no), 204 Heats (knockout: no), 267 Final Phase (knockout: no), 283 Final C (knockout: no), 284 Final B (knockout: no)",
+            "CLOCK_RESULT_TYPE_LIST": "101 Duration and 557 Full-time duration, the two fields the sport writes with a colon. Measured 2026-08-30 inside the client boundary: 95403 Duration values and 112423 Full-time values carry one, and not a single value in either field is malformed - no component over 59 and nothing outside clock notation. GLOBAL-DQ-128 is expected to return nothing here. It is instantiated regardless, because a check is judged by the invariant it guards and this sport writes more clock notation than any other documented one"
         },
         "_notApplicable": {
             "NUMERIC_RESULT_TYPE_LIST": "no result type carries a measured quantity; every confirmed type is a place, a time, a status vocabulary or a medal code",
@@ -1516,7 +1520,8 @@
             "INTEGER_RESULT_TYPE_LIST": "100 Rank, 102 Points and 222 Laps behind, the three that count in whole units by definition. Stated from what the fields mean rather than read off the data: none of the three holds a fraction today, and that is not what makes them integral",
             "PRECISION_RESULT_TYPE_LIST": "101 Duration, the only result field in the sport that carries a decimal at all: 1275 of its 1140293 values do, written like +0:00.27. Rank, Points and Laps behind hold none. Duration must stay out of NUMERIC_RESULT_TYPE_LIST for the reason the template gives - clock notation would read as non-numeric - and it belongs here for the same reason it is excluded there",
             "PRECISION_DATA_TYPE_LIST": "1426 Time and 1427 Time Difference, the two Comp.Rank fields that carry a written time and therefore a scale",
-            "SCOPE_TYPE_LIST": "the 192 checkpoint scope types, ids 101 to 200 and 205 to 296, named checkpoint1 to checkpoint192. The chain is far longer than first recorded: measured 2026-08-16 over event_scope, the sport writes 193 scope types, and the unnamed type 0 is left out of the list because it names nothing. Reach falls along the chain - checkpoint1 on 1095 events, checkpoint48 on 385, checkpoint100 on 18, checkpoint192 on 1 - because a longer race carries more points"
+            "SCOPE_TYPE_LIST": "the 192 checkpoint scope types, ids 101 to 200 and 205 to 296, named checkpoint1 to checkpoint192. The chain is far longer than first recorded: measured 2026-08-16 over event_scope, the sport writes 193 scope types, and the unnamed type 0 is left out of the list because it names nothing. Reach falls along the chain - checkpoint1 on 1095 events, checkpoint48 on 385, checkpoint100 on 18, checkpoint192 on 1 - because a longer race carries more points",
+            "CLOCK_RESULT_TYPE_LIST": "101 Duration, the only field the sport writes with a colon: 1136951 Duration values carry one and no Full-time value does, measured 2026-08-30 inside the client boundary. 557 is listed beside it because GLOBAL-DQ-128 reads only values that actually carry a colon, so a field that never uses one is silent rather than wrong, and the day the sport starts writing Full-time it is already covered. 79 values in 3 events carry a component over 59 - `+0:08:71` and `+9:97` among them - which is what this check is for. A further 155 values in 28 events are not clock notation at all, `+ 0:00` with a space and `_+0:20` with an underscore, and no check owns those yet"
         },
         "_checkSignal": {
             "GLOBAL-DQ-146": {
@@ -1734,6 +1739,7 @@
             "GROUP_ROUND_NAME_LIST": "the sport runs no group stage; the same 24 round types are stage numbers and a Final"
         },
         "RESULT_FULL_TIME_TYPE_ID": "557",
+        "CLOCK_RESULT_TYPE_LIST": "101, 557",
         "TIMED_DISCIPLINE_LIST": "628",
         "MEDAL_TEMPLATE_ID_LIST": "484, 485, 486, 9513, 9870, 9871, 10054, 11046, 11047, 11048, 11049, 11050, 11052, 11054, 11055, 11056, 11057, 11058, 11059, 11060, 11061, 11062, 11063, 11084, 11085, 11086, 11087, 11101, 11121",
         "RESULT_COMMENT_VALUE_LIST": "'dnf', 'dns', 'hd', 'disqualified', 'dsq', 'dq', 'otl', 'ftm', 'hud', 'oot', '+1 lap', 'ff1', 'ff2', 'ff3', 'ff4', 'ff5', 'ff6', 'ff7', 'ff8', 'ff9', 'ff10', 'ff11', 'ff12', 'ff13', 'ff14', 'ff15', 'ff16', 'ff17', 'ff18', 'ff19', 'ff20', 'ff21', 'ff22', 'ff23', 'ff24', 'ff25', 'ff26', 'ff27', 'ff28', 'ff29', 'ff30', 'ff31', 'ff32', 'ff33', 'ff34', 'ff35', 'ff36', 'ff37', 'ff38', 'ff39', 'ff40', 'ff41', 'ff42', 'ff43', 'ff44', 'ff45', 'ff46', 'ff47', 'ff48', 'ff49', 'ff50', 'ff51', 'ff52', 'ff53', 'ff54', 'ff55', 'ff56', 'ff57', 'ff58', 'ff59', 'ff60', 'ff61', 'ff62', 'ff63', 'ff64', 'ff65', 'ff66', 'ff67', 'ff68', 'ff69', 'ff70', 'ff71', 'ff72', 'ff73', 'ff74', 'ff75', 'ff76', 'ff77', 'ff78', 'ff79', 'ff80', 'ff81', 'ff82', 'ff83', 'ff84', 'ff85', 'ff86', 'ff87', 'ff88', 'ff89', 'ff90', 'ff91', 'ff92', 'ff93', 'ff94', 'ff95', 'ff96', 'ff97', 'ff98', 'ff99', 'ff100', 'ff101', 'ff102', 'ff103', 'ff104', 'ff105', 'ff106', 'ff107', 'ff108', 'ff109', 'ff110', 'ff111', 'ff112', 'ff113', 'ff114', 'ff115', 'ff116', 'ff117', 'ff118', 'ff119', 'ff120', 'ff121', 'ff122', 'ff123', 'ff124', 'ff125', 'ff126', 'ff127', 'ff128', 'ff129', 'ff130', 'ff131', 'ff132', 'ff133', 'ff134', 'ff135', 'ff136', 'ff137', 'ff138', 'ff139', 'ff140', 'ff141', 'ff142', 'ff143', 'ff144', 'ff145', 'ff146', 'ff147', 'ff148', 'ff149', 'ff150', 'ff151', 'ff152', 'ff153', 'ff154', 'ff155', 'ff156', 'ff157', 'ff158', 'ff159', 'ff160', 'ff161', 'ff162', 'ff163', 'ff164', 'ff165', 'ff166', 'ff167', 'ff168', 'ff169', 'ff170', 'ff171', 'ff172', 'ff173', 'ff174', 'ff175', 'ff176', 'ff177', 'ff178', 'ff179', 'ff180', 'ff181', 'ff182', 'ff183', 'ff184', 'ff185', 'ff186', 'ff187', 'ff188', 'ff189', 'ff190', 'ff191', 'ff192', 'ff193', 'ff194', 'ff195', 'ff196', 'ff197', 'ff198', 'ff199', 'ff200', 'ff201', 'ff202', 'ff203', 'ff204', 'ff205', 'ff206', 'ff207', 'ff208', 'ff209', 'ff210', 'ff211', 'ff212', 'ff213', 'ff214', 'ff215', 'ff216', 'ff217', 'ff218', 'ff219', 'ff220', 'ff221', 'ff222', 'ff223', 'ff224', 'ff225', 'ff226', 'ff227', 'ff228', 'ff229', 'ff230', 'ff231', 'ff232', 'ff233', 'ff234', 'ff235', 'ff236', 'ff237', 'ff238', 'ff239', 'ff240', 'ff241', 'ff242', 'ff243', 'ff244', 'ff245', 'ff246', 'ff247', 'ff248', 'ff249', 'ff250'",
