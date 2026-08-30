@@ -1568,6 +1568,17 @@ function Add-CookieToSession {
 }
 
 function Save-SessionState {
+    # The values are encrypted with DPAPI before they touch the disk, because one of them is
+    # not a session at all: remember_web_* is a persistent credential, and anything that can
+    # read the file can log in as the user until it is revoked.
+    #
+    # DPAPI rather than an ACL, because the ACL is not this project's to set. %LOCALAPPDATA%
+    # grants CodexSandboxUsers read by inheritance, machine-wide, for the agent sandboxes that
+    # run here - tightening one folder underneath it would be this repository quietly editing
+    # the machine. ConvertFrom-SecureString keys the ciphertext to the user account instead, so
+    # those accounts still read the bytes and get nothing they can open. The wire is a separate
+    # question and not one this file can answer: the server offers no TLS port, and reaching it
+    # at all goes through the VPN.
     param($Session)
 
     if (-not (Test-Path $StateDir)) { New-Item -ItemType Directory -Path $StateDir | Out-Null }
@@ -1578,7 +1589,10 @@ function Save-SessionState {
     foreach ($c in $Session.Cookies.GetCookies($uri)) { $latest[$c.Name] = $c.Value }
 
     $bag = @()
-    foreach ($name in $latest.Keys) { $bag += @{ Name = $name; Value = $latest[$name] } }
+    foreach ($name in $latest.Keys) {
+        $secure = ConvertTo-SecureString -String ([string]$latest[$name]) -AsPlainText -Force
+        $bag += @{ Name = $name; Protected = (ConvertFrom-SecureString -SecureString $secure) }
+    }
     $bag | Export-Clixml -Path $StatePath
 }
 
@@ -1592,8 +1606,20 @@ function Restore-SessionState {
     }
     if (-not $bag) { return $null }
 
+    # A file written before the values were protected has Value and no Protected, and a file
+    # written by another user account cannot be unprotected by this one. Both return $null and
+    # cost a fresh login, which is what this function already does for a file it cannot parse.
     $session = New-EmptySession
-    foreach ($c in $bag) { Add-CookieToSession -Session $session -Name $c.Name -Value $c.Value }
+    foreach ($c in $bag) {
+        if (-not $c.Protected) { return $null }
+        try {
+            $secure = ConvertTo-SecureString -String ([string]$c.Protected)
+            $plain = [Runtime.InteropServices.Marshal]::PtrToStringUni(
+                [Runtime.InteropServices.Marshal]::SecureStringToGlobalAllocUnicode($secure))
+        }
+        catch { return $null }
+        Add-CookieToSession -Session $session -Name $c.Name -Value $plain
+    }
     return $session
 }
 
