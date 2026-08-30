@@ -5646,6 +5646,68 @@ Test-That 'GLOBAL-DQ-111 keeps unreadable times, one event row and symmetric no-
         'the effective time is read a different number of times than the finding input, its type filter and the coverage semi-join'
 }
 
+Test-That 'GLOBAL-DQ-054 compares each competitor with the field behind them, once' {
+    # Rewritten on 2026-08-30 from an all-pairs self-join to a window, the same move
+    # GLOBAL-DQ-111 made on 2026-08-16 and for the same three costs. What is asserted here is
+    # what the comparison must mean, not how it is spelled, plus the costs as absences -
+    # reintroducing any of them is silent, because the statement still returns the right
+    # events on every sport small enough to finish.
+    $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'GLOBAL-DQ-054' })
+    Assert-Equal 1 $statement.Count 'GLOBAL-DQ-054 statement count'
+    $sql = $statement[0].Sql
+    $branches = [regex]::Split($sql, '(?im)^\s*UNION ALL\s*$')
+
+    Assert-Equal 2 $branches.Count 'findings and coverage branches'
+
+    # Only ranks strictly greater are read, ties included, so two competitors sharing a place
+    # are not compared with each other. This is what b.rank_num > a.rank_num meant.
+    Assert-True ($branches[0] -match '(?is)MIN\(v\.secs\)\s+OVER\s*\(\s*PARTITION\s+BY\s+v\.event_id\s+ORDER\s+BY\s+v\.rank_num\s+RANGE\s+BETWEEN\s+1\s+FOLLOWING\s+AND\s+UNBOUNDED\s+FOLLOWING') `
+        'the comparison no longer reads only the field behind each competitor, so tied places would be compared with each other'
+    Assert-True ($branches[0] -match '(?is)w\.best_secs_behind\s*<\s*w\.secs') `
+        'the non-monotonic condition is missing'
+    Assert-True ($branches[0] -match '(?m)^\s*GROUP BY w\.event_id\s*$') `
+        'findings are not collapsed to one row per event'
+
+    # The all-pairs self-join, whose cost grew with the square of the field: Biathlon ran
+    # 137.9 seconds with it and 10.1 without, over the identical three events.
+    Assert-Equal 0 ([regex]::Matches($sql, '(?is)\)\s*a\s*\r?\n\s*JOIN\s*\(')).Count `
+        'the all-pairs self-join is back, whose cost grows with the square of the field'
+
+    # The raw value is parsed once, at its own level. A select alias is not visible to its
+    # siblings, so a parser sitting in the grouped query re-reads the same TRIM for every
+    # branch of the CASE and for every comparison built on it.
+    Assert-Equal 1 ([regex]::Matches($sql, 'TRIM\(rf\.value\)\s+AS\s+raw')).Count `
+        'the full time is resolved more than once, so every branch below re-reads it'
+    Assert-True ($sql -match '(?is)AS\s+DECIMAL\(14,3\)\)\s*\*\s*3600') `
+        'the hours branch is gone, so H:MM:SS no longer converts to seconds'
+
+    # One competitor, not one pair. Biathlon's event 3016396 is a single fault - the whole
+    # event's Full time written as a gap to the leader - and the pair form reported it as 31
+    # contradictions all naming the same person, in a detail the server cut at 1024 characters.
+    # A GROUP_CONCAT here would bring both back.
+    Assert-True ($branches[0] -match 'AS\s+contradicting_participant_count') `
+        'the count is back to pairs, which counts one fault many times over'
+    Assert-Equal 0 ([regex]::Matches($sql, '(?i)GROUP_CONCAT')).Count `
+        'the detail is a concatenated list again, which the server truncates at 1024 characters without saying so'
+
+    # Symmetric scope. The old right-hand side carried no client boundary and no season, which
+    # cost rather than misled, and no participant join, which could have let a deleted
+    # competitor convict a live one while never being reportable itself.
+    Assert-Equal 2 ([regex]::Matches($sql,
+            "JOIN\s+participant\s+p\s+ON\s+p\.id\s*=\s*ep\.participantFK\s+AND\s+p\.del\s*=\s*'no'")).Count `
+        'findings and coverage must read the same participant population'
+    Assert-Equal 2 ([regex]::Matches($sql, 'OUT_OF_SCOPE_TEMPLATE_ID_LIST')).Count `
+        'client boundary in findings and coverage'
+    Assert-Equal 2 ([regex]::Matches($sql, 'CLIENT_FROM_SEASON')).Count `
+        'season boundary in findings and coverage'
+    Assert-Equal 2 ([regex]::Matches($sql, 'TIMED_DISCIPLINE_LIST')).Count `
+        'the timed-discipline population must be the same on both sides'
+    Assert-Equal 2 ([regex]::Matches($sql,
+            '(?im)^\s*--\s*AND\s+t\.tournament_templateFK\s*=\s*<tournament_template_id>\s*$')).Count `
+        'a template filter on findings and on coverage, or -TemplateIds narrows one and not the other'
+    Assert-True ($branches[1] -match 'COUNT\(DISTINCT\s+c\.event_id\)\s+AS\s+eligible_count') `
+        'coverage must count the same object the findings do'
+}
 Test-That 'GLOBAL-DQ-102 keeps the scope-type list symmetric across findings and coverage' {
     $statement = @($realCatalogue | Where-Object { $_.CheckId -eq 'GLOBAL-DQ-102' })
     Assert-Equal 1 $statement.Count 'GLOBAL-DQ-102 statement count'

@@ -1223,97 +1223,144 @@ WHERE ep.del = 'no'
 SELECT
     -- CheckID - GLOBAL-DQ-054
     -- Name - EVENT_RESULTS_RANK_FULL_TIME_NOT_MONOTONIC
-    -- What it does: Flags timed-event participant pairs where the better-ranked competitor has a slower Full time.
+    -- What it does: Flags timed events where a better-ranked competitor records a slower Full time than somebody placed behind them.
     'RANK_FULL_TIME_NOT_MONOTONIC' AS check_type,
-    a.event_id,
-    a.event_name,
-    a.event_startdate,
-    a.tournament_template_name,
-    COUNT(*) AS contradicting_pair_count,
-    GROUP_CONCAT(DISTINCT CONCAT(a.participant_name, ' #', a.rank_num, ' ', a.time_value,
-                                 ' slower than #', b.rank_num, ' ', b.time_value)
-                 ORDER BY 1 SEPARATOR ' | ') AS contradiction_detail,
+    x.event_id,
+    ev.name AS event_name,
+    ev.startdate AS event_startdate,
+    ttn.name AS tournament_template_name,
+    x.offending_count AS contradicting_participant_count,
+    x.sample_offence AS contradiction_detail,
     NULL AS eligible_count
--- What it does, stated in full: Finds events in the sport's timed disciplines holding a pair
--- whose Rank order contradicts their full-time order, so a better-ranked competitor is
--- recorded as slower.
+-- What it does, stated in full: Finds events in the sport's timed disciplines holding a
+-- competitor whose Rank puts them ahead of somebody who recorded a faster Full time. One row
+-- per event; contradicting_participant_count counts the competitors standing in front of a
+-- faster time, not the pairs they form with each of them.
+--
+-- That column changed meaning on 2026-08-30 and the change is the point rather than a side
+-- effect. Biathlon's event 3016396 is one fault - the whole event's Full time is written as a
+-- gap to the leader instead of an absolute time - and the pair form reported it as 31
+-- contradictions, every one of them naming Lucie Charvatova again, in a detail string the
+-- server had silently cut at 1024 characters mid-name. The same fault now reads as one
+-- competitor and one legible line. GLOBAL-DQ-111 made the identical change on 2026-08-16 for
+-- the identical reason and records it in its own block; this is the same count in the same
+-- package meaning the same thing.
+--
+-- Asked once per competitor rather than once per pair. Until 2026-08-30 the statement joined
+-- the event's field to itself, so its cost grew with the square of the field and a third scan
+-- was needed for coverage on top. The window takes the fastest time recorded anywhere behind
+-- each competitor in one pass: RANGE ... 1 FOLLOWING reads ranks strictly greater, which is
+-- what the join's b.rank_num > a.rank_num did, ties included, so two competitors sharing a
+-- place are still not compared with each other. The raw value is also parsed once, at its own
+-- level, instead of being re-read by every branch of the CASE - a select alias is not visible
+-- to its siblings, which is what forced the repetition.
+--
+-- Measured 2026-08-30 against all seven sports that instantiate it, alternating and comparing
+-- the finding event set and the coverage count: identical on every one, 364.7 seconds down to
+-- 66.6 across the package. Biathlon 137.9 to 10.1, Swimming 104.9 to 24.4, Triathlon 72.1 to
+-- 7.5, Speed-Skating 29.4 to 5.7, Cycling 16.6 to 16.4, BMX 2.7 to 1.5, Track-Cycling 1.1 to
+-- 1.0.
+--
+-- The old right-hand side of the join carried neither the out-of-scope list, the season, the
+-- template filter nor the date window, and that was cost rather than a wrong answer: it was
+-- joined on b.event_id = a.event_id and the left side carried all four, so a row outside the
+-- scope could never reach a pair. It did make the sport's whole timed population every time.
+-- There is one scoped population now and the question is asked inside it.
+--
+-- The participant join is symmetric, findings and coverage alike. The old shape joined
+-- participant with del = 'no' on the reported side only, so a deleted competitor could be the
+-- comparator that convicts a live one and could never be reported itself. Measured across the
+-- seven sports on 2026-08-30: 760962 entries, every one of them a live participant, none
+-- deleted and none missing. The asymmetry decided nothing today and is gone regardless,
+-- because coverage has to count the population the findings can actually reach.
+--
+-- The parser reads three shapes - H:MM:SS, M:SS and plain seconds, each with an optional
+-- fraction - and deliberately accepts a minute or second component past 59, which converts
+-- arithmetically and keeps its order. Asserting the notation itself belongs to
+-- GLOBAL-DQ-128 EVENT_RESULTS_CLOCK_VALUE_COMPONENT_OUT_OF_RANGE, which owns that rule and
+-- names the same example. Three of the seven sports carrying this check do not carry that one
+-- yet, so nothing there is testing the notation; the sport files own that gap.
 FROM (
-    SELECT e.id AS event_id, e.name AS event_name, e.startdate AS event_startdate, tt.name AS tournament_template_name,
-           p.name AS participant_name,
-           CAST(TRIM(rr.value) AS UNSIGNED) AS rank_num,
-           TRIM(rf.value) AS time_value,
-           CASE
-               WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$'
-                   THEN CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', 1) AS DECIMAL(14,3)) * 3600
-                      + CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(TRIM(rf.value), ':', 2), ':', -1) AS DECIMAL(14,3)) * 60
-                      + CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', -1) AS DECIMAL(14,3))
-               WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}(\\.[0-9]+)?$'
-                   THEN CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', 1) AS DECIMAL(14,3)) * 60
-                      + CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', -1) AS DECIMAL(14,3))
-               WHEN TRIM(rf.value) REGEXP '^[0-9]+(\\.[0-9]+)?$'
-                   THEN CAST(TRIM(rf.value) AS DECIMAL(14,3))
-               ELSE NULL
-           END AS secs
-    FROM event_participants ep
-    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
-    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
-    JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}} AND rr.del = 'no'
-    JOIN result rf ON rf.event_participantsFK = ep.id AND rf.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} AND rf.del = 'no'
-    WHERE ep.del = 'no'
-      AND tt.sportFK = {{SPORT_ID}}
-      AND TRIM(rr.value) REGEXP '^[0-9]+$'
-      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
-      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
-      -- AND t.tournament_templateFK = <tournament_template_id>
-      -- AND e.startdate >= '<from_datetime>'
-      -- AND e.startdate <  '<to_datetime>'
-      AND EXISTS (
-          SELECT 1 FROM object_discipline od
-          WHERE od.object_typeFK = 5 AND od.objectFK = e.id
-            AND od.disciplineFK IN ({{TIMED_DISCIPLINE_LIST}}) AND od.del = 'no'
-      )
-) a
-JOIN (
-    SELECT e.id AS event_id,
-           CAST(TRIM(rr.value) AS UNSIGNED) AS rank_num,
-           TRIM(rf.value) AS time_value,
-           CASE
-               WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$'
-                   THEN CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', 1) AS DECIMAL(14,3)) * 3600
-                      + CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(TRIM(rf.value), ':', 2), ':', -1) AS DECIMAL(14,3)) * 60
-                      + CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', -1) AS DECIMAL(14,3))
-               WHEN TRIM(rf.value) REGEXP '^[0-9]+:[0-9]{2}(\\.[0-9]+)?$'
-                   THEN CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', 1) AS DECIMAL(14,3)) * 60
-                      + CAST(SUBSTRING_INDEX(TRIM(rf.value), ':', -1) AS DECIMAL(14,3))
-               WHEN TRIM(rf.value) REGEXP '^[0-9]+(\\.[0-9]+)?$'
-                   THEN CAST(TRIM(rf.value) AS DECIMAL(14,3))
-               ELSE NULL
-           END AS secs
-    FROM event_participants ep
-    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
-    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-    JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}} AND rr.del = 'no'
-    JOIN result rf ON rf.event_participantsFK = ep.id AND rf.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} AND rf.del = 'no'
-    WHERE ep.del = 'no'
-      AND tt.sportFK = {{SPORT_ID}}
-      AND TRIM(rr.value) REGEXP '^[0-9]+$'
-      AND EXISTS (
-          SELECT 1 FROM object_discipline od
-          WHERE od.object_typeFK = 5 AND od.objectFK = e.id
-            AND od.disciplineFK IN ({{TIMED_DISCIPLINE_LIST}}) AND od.del = 'no'
-      )
-) b
-  ON b.event_id = a.event_id
- AND b.rank_num > a.rank_num
- AND b.secs < a.secs
-WHERE a.secs IS NOT NULL
-  AND b.secs IS NOT NULL
-GROUP BY a.event_id, a.event_name, a.event_startdate, a.tournament_template_name
+    SELECT
+        w.event_id,
+        SUM(CASE WHEN w.best_secs_behind IS NOT NULL AND w.best_secs_behind < w.secs
+                 THEN 1 ELSE 0 END) AS offending_count,
+        MIN(CASE WHEN w.best_secs_behind IS NOT NULL AND w.best_secs_behind < w.secs
+                 THEN CONCAT(w.participant_name, ' #', w.rank_num, ' ', w.time_value,
+                             ' beaten by ', w.best_secs_behind, 's recorded further back')
+            END) AS sample_offence
+    FROM (
+        -- The fastest time recorded anywhere behind this competitor, taken once per row
+        -- instead of by pairing every competitor with every competitor below them.
+        SELECT
+            v.event_id,
+            v.participant_name,
+            v.rank_num,
+            v.time_value,
+            v.secs,
+            MIN(v.secs) OVER (
+                PARTITION BY v.event_id
+                ORDER BY v.rank_num
+                RANGE BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING
+            ) AS best_secs_behind
+        FROM (
+            -- The value is parsed here, once, from the raw the level below resolved.
+            SELECT
+                g.event_id,
+                g.participant_name,
+                g.rank_num,
+                CAST(g.raw AS CHAR(16)) AS time_value,
+                CASE
+                    WHEN g.raw REGEXP '^[0-9]+:[0-9]{2}:[0-9]{2}(\\.[0-9]+)?$'
+                        THEN CAST(SUBSTRING_INDEX(g.raw, ':', 1) AS DECIMAL(14,3)) * 3600
+                           + CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(g.raw, ':', 2), ':', -1) AS DECIMAL(14,3)) * 60
+                           + CAST(SUBSTRING_INDEX(g.raw, ':', -1) AS DECIMAL(14,3))
+                    WHEN g.raw REGEXP '^[0-9]+:[0-9]{2}(\\.[0-9]+)?$'
+                        THEN CAST(SUBSTRING_INDEX(g.raw, ':', 1) AS DECIMAL(14,3)) * 60
+                           + CAST(SUBSTRING_INDEX(g.raw, ':', -1) AS DECIMAL(14,3))
+                    WHEN g.raw REGEXP '^[0-9]+(\\.[0-9]+)?$'
+                        THEN CAST(g.raw AS DECIMAL(14,3))
+                    ELSE NULL
+                END AS secs
+            FROM (
+                SELECT
+                    e.id AS event_id,
+                    p.name AS participant_name,
+                    CAST(TRIM(rr.value) AS UNSIGNED) AS rank_num,
+                    TRIM(rf.value) AS raw
+                FROM event_participants ep
+                JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+                JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+                JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+                JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+                JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}} AND rr.del = 'no'
+                JOIN result rf ON rf.event_participantsFK = ep.id AND rf.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} AND rf.del = 'no'
+                WHERE ep.del = 'no'
+                  AND tt.sportFK = {{SPORT_ID}}
+                  AND TRIM(rr.value) REGEXP '^[0-9]+$'
+                  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+                  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+                  -- AND t.tournament_templateFK = <tournament_template_id>
+                  -- AND e.startdate >= '<from_datetime>'
+                  -- AND e.startdate <  '<to_datetime>'
+                  AND EXISTS (
+                      SELECT 1 FROM object_discipline od
+                      WHERE od.object_typeFK = 5 AND od.objectFK = e.id
+                        AND od.disciplineFK IN ({{TIMED_DISCIPLINE_LIST}}) AND od.del = 'no'
+                  )
+            ) g
+        ) v
+    ) w
+    WHERE w.secs IS NOT NULL
+    GROUP BY w.event_id
+    HAVING SUM(CASE WHEN w.best_secs_behind IS NOT NULL AND w.best_secs_behind < w.secs
+                    THEN 1 ELSE 0 END) > 0
+) x
+JOIN event ev ON ev.id = x.event_id
+JOIN tournament_stage tsn ON tsn.id = ev.tournament_stageFK
+JOIN tournament tn ON tn.id = tsn.tournamentFK
+JOIN tournament_template ttn ON ttn.id = tn.tournament_templateFK
 
 UNION ALL
 
@@ -1328,6 +1375,7 @@ FROM (
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
     JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
     JOIN result rr ON rr.event_participantsFK = ep.id AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}} AND rr.del = 'no'
     JOIN result rf ON rf.event_participantsFK = ep.id AND rf.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} AND rf.del = 'no'
     WHERE ep.del = 'no'
