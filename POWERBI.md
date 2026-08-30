@@ -431,8 +431,26 @@ column at all - `id`, `name`, `tournament_templateFK`, `enetSeasonID`, `n`, `loc
 `del` and nothing else - so a date filter would have to reach the stages, and the stage dates
 are missing on precisely the rows it would need to catch. Measured 2026-08-20: Curling holds
 477 undated tournaments of 793 and Modern Pentathlon 285 of 847, and a filter on the earliest
-stage date excluded **0** of Triathlon's 60 pre-2004 seasons against 60 excluded by name. Every
-tournament name in every documented sport carries a year.
+stage date excluded **0** of Triathlon's 60 pre-2004 seasons against 60 excluded by name.
+
+**The expression reads 19xx and 20xx, and nothing else.** A name carrying no year it can read
+yields `NULL`, and `NULL >= 2004` is not true, so the tournament leaves scope silently rather
+than being reported. Measured across the thirteen sports on 2026-08-30, that is 14 tournaments
+and all of them are Track Cycling's, named `1893` through `1899` under `World Championships`
+and its `(IOC)` twin. They hold no stage, no event and no entry, and a nineteenth-century
+season is outside a 2004 boundary by any reading, so the exclusion is right and the reason for
+it is wrong. It matters if the boundary ever moves back or a sport arrives with older
+competitions that were actually played: nothing would say those rows had gone.
+
+**What the expression costs is nothing, and that was measured rather than assumed.** It is not
+sargable and does not need to be: it is evaluated over `tournament`, which holds 19198 rows
+across the thirteen sports and passes the whole regex in 0.5 seconds, and the optimiser keeps
+it there rather than lifting it above the join. Measured on Cycling 2026-08-30, alternating
+against the identical query with the 413 qualifying tournament ids written out as a literal
+list: 13.4 seconds against 12.8, both scanning the same 1136837 rows and returning the same
+9610 events, with each variant's own spread at 2.0 seconds - three times the difference
+between them. An indexed season column on `tournament` would buy nothing here and is not worth
+asking the schema owner for.
 
 A season written `YYYY/YYYY` is dated by its **last** year, so `2003/2004` is inside a 2004
 boundary and `2002/2003` is not. 133 tournaments turn on that and the choice was made rather
