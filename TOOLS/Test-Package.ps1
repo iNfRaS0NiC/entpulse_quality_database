@@ -964,7 +964,23 @@ $registryPath = Join-Path $RepoRoot 'POWERBI_REGISTRY.md'
 $registryRows = Get-MarkdownTableRow -Path $registryPath -FirstCell '^\S+-DQ-\d+$'
 $registryFindings = @()
 $expectedColumns = 8
-$templateIds = @($globalDq | ForEach-Object { $_.CheckId })
+# Both collections are indexed by CheckID here rather than scanned inside the loop below. That
+# loop runs once per registry row - 1724 of them - and a pipeline scan for the statement and a
+# second for the template costs 1724 x (162 + 149) predicate evaluations for an answer a
+# hashtable gives in one lookup. Measured on this package, indexing them here and memoising the
+# template placeholders further down takes the validator from 10.1 seconds to 5.5 on an idle
+# machine, with identical output and identical metrics.
+$sqlById = @{}
+foreach ($dqStatement in $dqStatements) {
+    if (-not $sqlById.ContainsKey($dqStatement.CheckId)) { $sqlById[$dqStatement.CheckId] = $dqStatement }
+}
+$templateById = @{}
+foreach ($dqTemplate in $globalDq) {
+    if (-not $templateById.ContainsKey($dqTemplate.CheckId)) { $templateById[$dqTemplate.CheckId] = $dqTemplate }
+}
+# What a template declares, filled in the first time each family is asked for. See the
+# parameter-completeness loop below, which is where it is read.
+$neededByFamily = @{}
 
 $rowById = @{}
 foreach ($row in $registryRows) {
@@ -989,7 +1005,7 @@ foreach ($row in $registryRows) {
     if ($id -notlike "$sport-DQ-*") {
         $registryFindings += "POWERBI_REGISTRY.md:$($row.Line): $id does not carry the Sport '$sport' as its prefix"
     }
-    if ($family -ne $EmDash -and $templateIds -notcontains $family) {
+    if ($family -ne $EmDash -and -not $templateById.ContainsKey($family)) {
         $registryFindings += "POWERBI_REGISTRY.md:$($row.Line): $id declares Family '$family', which is not an existing GLOBAL-DQ template"
     }
     if ($status -notin @('Approved', 'Deprecated')) {
@@ -1001,8 +1017,8 @@ foreach ($row in $registryRows) {
         # PowerBI can group one check family across sports. Query file names the executable
         # SQL: a template under GLOBAL_DQ/ means the row is an instantiation; the sport file
         # means the sport authored its own statement, which a member of a family still may.
-        $sql = $dqStatements | Where-Object { $_.CheckId -eq $id }
-        $template = $globalDq | Where-Object { $_.CheckId -eq $family }
+        $sql = $(if ($sqlById.ContainsKey($id)) { $sqlById[$id] } else { $null })
+        $template = $(if ($templateById.ContainsKey($family)) { $templateById[$family] } else { $null })
 
         if ($queryFile -like 'GLOBAL_DQ/*') {
             if ($family -eq $EmDash) {
@@ -1362,7 +1378,7 @@ if (Test-Path -LiteralPath $paramsPath) {
                         $sportFindings += "SPORTS/params.json: '$sport' $CheckSignalKey key '$key' is neither a GLOBAL-DQ template ID nor a $sport CheckID"
                         continue
                     }
-                    if ($isTemplate -and @($globalDq | Where-Object { $_.CheckId -eq $key }).Count -eq 0) {
+                    if ($isTemplate -and -not $templateById.ContainsKey($key)) {
                         $sportFindings += "SPORTS/params.json: '$sport' classifies $key, which is not an existing GLOBAL-DQ template"
                         continue
                     }
@@ -1425,7 +1441,7 @@ if (Test-Path -LiteralPath $paramsPath) {
                         $sportFindings += "SPORTS/params.json: '$sport' $ExpectedKey key '$key' is neither a GLOBAL-DQ template ID nor a $sport CheckID"
                         continue
                     }
-                    if ($isTemplate -and @($globalDq | Where-Object { $_.CheckId -eq $key }).Count -eq 0) {
+                    if ($isTemplate -and -not $templateById.ContainsKey($key)) {
                         $sportFindings += "SPORTS/params.json: '$sport' records an expectation for $key, which is not an existing GLOBAL-DQ template"
                         continue
                     }
@@ -1479,7 +1495,7 @@ if (Test-Path -LiteralPath $paramsPath) {
             if ($family -eq $EmDash) { continue }
 
             $sport = $row.Cells[1]
-            $template = $globalDq | Where-Object { $_.CheckId -eq $family }
+            $template = $(if ($templateById.ContainsKey($family)) { $templateById[$family] } else { $null })
             if (-not $template) { continue }
 
             # A placeholder standing only inside the optional Comp.Rank branch is not one the
@@ -1488,12 +1504,28 @@ if (Test-Path -LiteralPath $paramsPath) {
             # instantiation the marker exists to allow - which is exactly how GLOBAL-DQ-007 came
             # to be missing from Biathlon and Track-Cycling. The registry branch is not stripped
             # here: it goes only on an explicit switch, so its parameters stay required.
-            $templateSql = [regex]::Replace($template.Sql,
-                '(?ms)^[ 	]*--[ 	]*STATISTIC BRANCH BEGIN[ 	]*?
+            # Worked out once per template, not once per row that instantiates it: 149 templates
+            # stand behind about 1700 Approved rows, and stripping the branch and re-matching the
+            # placeholders for each of them re-answers the same question 1700 times.
+            #
+            # The pattern below keeps a carriage return and a line feed as real characters
+            # inside the string literal, which is what lets it match both line endings. It is
+            # left exactly as it was: an editor normalising this file's line endings would eat
+            # the carriage return out of it, and the pattern would then stop matching the CRLF
+            # the SQL files use - surfacing not as a crash but as four sports reported missing
+            # parameters they do record.
+            if ($neededByFamily.ContainsKey($family)) {
+                $needed = $neededByFamily[$family]
+            }
+            else {
+                $templateSql = [regex]::Replace($template.Sql,
+                    '(?ms)^[ 	]*--[ 	]*STATISTIC BRANCH BEGIN[ 	]*?
 .*?^[ 	]*--[ 	]*STATISTIC BRANCH END[ 	]*?
 ', '')
-            $needed = @([regex]::Matches($templateSql, '\{\{([A-Z_]+)\}\}') |
-                ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
+                $needed = @([regex]::Matches($templateSql, '\{\{([A-Z_]+)\}\}') |
+                        ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)
+                $neededByFamily[$family] = $needed
+            }
             $recorded = @()
             $unsupplied = @()
             if ($params.PSObject.Properties.Name -contains $sport) {
