@@ -4490,6 +4490,13 @@ function Save-RunSheet {
         $sent = Invoke-SheetsPlan -SpreadsheetId $id -Plan $plan
         Write-Host ("  {0} tab(s) added, {1} cleared, {2} range(s) written, {3} table(s)" -f `
                 $sent.Added, $sent.Cleared, $sent.Written, $sent.Tables) -ForegroundColor DarkGray
+        # Where the reviewers' notes were put before the tabs were cleared. Said out loud
+        # rather than left in the folder, because the run that needs it is the one that did
+        # not finish - and that run's last legible line is this one.
+        if ($sent.PSObject.Properties.Name -contains 'NotesSaved' -and $sent.NotesSaved) {
+            Write-Host ("  {0} reviewer note(s) written down before the clear: {1}" -f `
+                    $sent.NotesCount, $sent.NotesSaved) -ForegroundColor DarkGray
+        }
 
         # What the update cost, and where. Kept for the run's closing line as well as printed
         # here, because the question this answers is usually "was it the database or the board",

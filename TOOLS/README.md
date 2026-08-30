@@ -2010,6 +2010,40 @@ columns alone are asked for first, and Google stops a range at its last non-empt
 nobody has written on comes back empty; only the tabs that returned something are then asked for
 their id columns.
 
+### The copy taken before the tabs are cleared
+
+A check tab is cleared through `AZ` and rewritten from the notes read off it minutes earlier.
+The clear has to reach that far — the reviewer columns sit to the right of whatever the
+statement returned, and stopping short of them leaves last week's notes standing beside this
+week's rows, which is the one failure the whole mechanism exists to prevent. Between the clear
+and the write, though, those columns are on the board nowhere and in the run's own memory only.
+
+That window is the `writing values` phase, and it is not short: **51.8 to 82.5 seconds** across
+the runs recorded so far. A run that dies inside it — a refused batch, a dropped connection, a
+cancelled console — takes every note with it. The same failure has already happened once: the
+SQL catalogue tab lost 105 of Golf's statements on 2026-08-20, and the loss looked exactly like
+correct behaviour. That tab was moved to overwriting in place, which a check tab cannot be,
+because its result shrinks and the stale rows underneath have to go.
+
+So the notes are written down first, into the run's own output folder:
+
+```text
+reviewer notes before clear 30.08.2026 11-42-07.json
+```
+
+It holds the document id, the run it belongs to and every note as it was read — the key that
+puts it back beside its finding, the `Status`, the `Comment` and the row fingerprint. The run
+names the file on the console as it writes it, because the run that needs it is the one that did
+not finish, and this is its last legible line.
+
+It is written only when there is something to clear and there is something to lose, it is
+stamped rather than overwritten — two failures in a row would otherwise have the second write
+notes read off an already-emptied board over the first one's copy — and a failure to write it is
+reported without stopping the update. Abandoning a run to protect a backup would be the larger
+loss.
+
+Nothing reads it back automatically. It is a copy for a person to restore from, and restoring is
+a decision, not a step.
 ### Pointing a sport at its document
 
 Create the Sheet yourself, share it with whoever reviews, and give the runner its id once —

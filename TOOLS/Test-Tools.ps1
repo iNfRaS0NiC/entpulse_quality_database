@@ -2475,6 +2475,103 @@ Test-That 'the reviewer columns split the row into the spans a run may write' {
     Assert-Equal 22 $spans[1].To 'and runs to the last column'
 }
 
+Test-That 'the reviewers notes are written down before the tabs are cleared' {
+    # The window this closes: a check tab is cleared through AZ and rewritten from notes read
+    # off it minutes earlier, and in between they are on the board nowhere and in this
+    # process's memory only - 51.8 to 82.5 seconds across the recorded runs. The same failure
+    # cost Golf 105 SQL statements on 2026-08-20 before that tab was moved to overwrite in
+    # place. What matters is the order, so the order is what is asserted: the mock records
+    # whether the file was already on disk at the moment batchClear was called.
+    $folder = Join-Path ([System.IO.Path]::GetTempPath()) ('sheetnotes-' + [guid]::NewGuid().ToString('N'))
+    $plan = [pscustomobject]@{
+        Operations  = @(
+            [pscustomobject]@{ Kind = 'Clear'; Sheet = 'Fixtureball-DQ-050'; Range = 'A5:AZ' },
+            [pscustomobject]@{ Kind = 'Write'; Sheet = 'Fixtureball-DQ-050'; Range = 'A5:B5'
+                Values = @(, @('a', 'b')) }
+        )
+        NotesHeld   = @{ 'Fixtureball-DQ-050' = @(
+                [pscustomobject]@{ Key = 'k1'; Review = 'Fixed'; Note = 'checked with the source'; Fingerprint = 'f1' },
+                [pscustomobject]@{ Key = 'k2'; Review = ''; Note = 'ask the federation'; Fingerprint = 'f2' }) }
+        NotesFolder = $folder
+        NotesStamp  = '30.08.2026 12-00-00'
+        KnownTables = @{}
+        RowOf       = @{}
+        TabOf       = @{}
+        LastRowOf   = @{}
+        SheetIndexOf = @{}
+        KnownSheetIds = @{ 'Fixtureball-DQ-050' = 111 }
+    }
+
+    $script:sheetCalls = @()
+    $script:fileAtClear = $null
+    $saved = Get-Item Function:\Invoke-SheetsApi
+    try {
+        Set-Item Function:\Invoke-SheetsApi -Value {
+            param([string]$Method, [string]$Path, $Body)
+            $script:sheetCalls += [string]$Path
+            if ($Path -like '*values:batchClear*') {
+                $script:fileAtClear = @(Get-ChildItem -LiteralPath $folder -Filter '*.json' -ErrorAction SilentlyContinue)
+            }
+            return [pscustomobject]@{ replies = @(); spreadsheetId = 'x'; valueRanges = @() }
+        }
+        $sent = Invoke-SheetsPlan -SpreadsheetId 'fixture' -Plan $plan
+
+        Assert-True ($script:sheetCalls -join ' ') -match 'values:batchClear' 'the clear was actually sent'
+        Assert-Equal 1 @($script:fileAtClear).Count `
+            'the notes were not on disk when the clear was sent, so a run dying in the write phase takes them with it'
+        Assert-Equal 2 ([int]$sent.NotesCount) 'both notes counted'
+        Assert-True ([string]$sent.NotesSaved -ne '') 'the run is told where they went'
+        Assert-True (Test-Path -LiteralPath ([string]$sent.NotesSaved)) 'and the path it is told is real'
+
+        # Stamped, not fixed: two failures in a row would otherwise have the second write notes
+        # read off an already-emptied board over the first one's copy.
+        Assert-True (([string]$sent.NotesSaved) -like '*30.08.2026 12-00-00*') `
+            'the file carries the run it belongs to'
+
+        # The contents have to be the notes themselves, not a count of them. A file that says
+        # two notes existed restores nothing.
+        $back = (Get-Content -LiteralPath ([string]$sent.NotesSaved) -Raw | ConvertFrom-Json)
+        $held = @($back.notes.'Fixtureball-DQ-050')
+        Assert-Equal 2 $held.Count 'both notes are in the file'
+        Assert-True (@($held | ForEach-Object { [string]$_.Note }) -contains 'ask the federation') `
+            'with the text the reviewer wrote'
+        Assert-True (@($held | ForEach-Object { [string]$_.Key }) -contains 'k1') `
+            'and the key that puts it back beside its finding'
+    }
+    finally {
+        Set-Item Function:\Invoke-SheetsApi -Value $saved.ScriptBlock
+        if (Test-Path -LiteralPath $folder) { Remove-Item -LiteralPath $folder -Recurse -Force }
+    }
+}
+
+Test-That 'a run with nothing to clear writes no notes file' {
+    # It costs one small file and it must not cost one every time. A plan with no clear takes
+    # the notes nowhere, because nothing is about to remove them.
+    $folder = Join-Path ([System.IO.Path]::GetTempPath()) ('sheetnotes-' + [guid]::NewGuid().ToString('N'))
+    $plan = [pscustomobject]@{
+        Operations  = @([pscustomobject]@{ Kind = 'Write'; Sheet = 'Fixtureball-DQ-050'; Range = 'A5:B5'
+                Values = @(, @('a', 'b')) })
+        NotesHeld   = @{ 'Fixtureball-DQ-050' = @([pscustomobject]@{ Key = 'k1'; Review = 'Fixed'; Note = 'n'; Fingerprint = 'f' }) }
+        NotesFolder = $folder
+        NotesStamp  = '30.08.2026 12-00-00'
+        KnownTables = @{}; RowOf = @{}; TabOf = @{}; LastRowOf = @{}; SheetIndexOf = @{}
+        KnownSheetIds = @{ 'Fixtureball-DQ-050' = 111 }
+    }
+    $saved = Get-Item Function:\Invoke-SheetsApi
+    try {
+        Set-Item Function:\Invoke-SheetsApi -Value {
+            param([string]$Method, [string]$Path, $Body)
+            return [pscustomobject]@{ replies = @(); spreadsheetId = 'x'; valueRanges = @() }
+        }
+        $sent = Invoke-SheetsPlan -SpreadsheetId 'fixture' -Plan $plan
+        Assert-Equal '' ([string]$sent.NotesSaved) 'no clear, so no file'
+        Assert-True (-not (Test-Path -LiteralPath $folder)) 'and no folder made for one'
+    }
+    finally {
+        Set-Item Function:\Invoke-SheetsApi -Value $saved.ScriptBlock
+        if (Test-Path -LiteralPath $folder) { Remove-Item -LiteralPath $folder -Recurse -Force }
+    }
+}
 Test-That 'a closed status the run has just contradicted is reopened' {
     # Colleagues clear a check and mark it Completed. Ten days later it comes back with new
     # findings, and until 2026-08-25 it came back under the green chip - work made invisible to

@@ -3439,6 +3439,15 @@ function New-SheetsMergePlan {
         StatusRemoved = $statusRemoved
         MirrorsRepaired = $mirrorsRepaired
         NotesDropped  = $notesDropped
+        # What the reviewers have written, exactly as it was read off the board, and where to
+        # put it if the board is about to be cleared. Carried on the plan rather than left in
+        # Read-SheetReviewNotes' return value because the clear happens in Invoke-SheetsPlan,
+        # which is handed the plan and nothing else. See 'the notes exist in one place only'
+        # at the clear itself.
+        NotesHeld     = $(if ($Existing -and $Existing.PSObject.Properties.Name -contains 'ReviewNotesOf' -and
+                $Existing.ReviewNotesOf) { $Existing.ReviewNotesOf } else { @{} })
+        NotesFolder   = [string]$OutputFolder
+        NotesStamp    = [string]$Stamp
         Warning       = $warning
         RowOf         = $rowOf
         TabOf         = $tabOf
@@ -4612,6 +4621,61 @@ function Invoke-SheetsPlan {
 
     Set-SheetsStage 'clearing stale rows'
     $clears = @($operations | Where-Object { $_.Kind -eq 'Clear' })
+
+    # The notes exist in one place only, and the clear is about to remove it.
+    #
+    # A check tab is cleared through AZ and rewritten from the notes read off it minutes
+    # earlier, and between those two the reviewers' columns are on the board nowhere and in
+    # this process's memory only. The window is the 'writing values' phase and it has been
+    # measured at 51.8 to 82.5 seconds across the recorded runs. Nothing else in this file
+    # writes to disk, so a run that dies in it - a refused batch, a dropped connection, a
+    # cancelled console - takes the notes with it.
+    #
+    # This is not a hypothetical failure and not a new argument. The SQL catalogue tab was
+    # moved to overwrite-in-place for exactly this, after Golf lost 105 statements on
+    # 2026-08-20 and the loss looked like correct behaviour. That fix does not extend here:
+    # the clear through AZ is what stops last week's notes standing beside this week's rows,
+    # which is the failure the whole mechanism exists to prevent, so the range stays and the
+    # window stays with it.
+    #
+    # So the notes are written down first. It costs one small file, changes no range, no
+    # ordering and no request, and it cannot make a good run worse - the worst it does is
+    # leave a file nobody needs. A failure here is reported and does not stop the update:
+    # abandoning a run to protect a backup would be the larger loss.
+    #
+    # Stamped rather than overwritten, because two failures in a row would otherwise have the
+    # second one write notes read off an already-emptied board over the first one's copy.
+    $notesSaved = ''
+    $held = $(if ($Plan.PSObject.Properties.Name -contains 'NotesHeld' -and $Plan.NotesHeld) {
+            $Plan.NotesHeld
+        } else { @{} })
+    $noteCount = 0
+    foreach ($tab in @($held.Keys)) { $noteCount += @($held[$tab]).Count }
+    if ($clears.Count -gt 0 -and $noteCount -gt 0 -and $Plan.NotesFolder) {
+        try {
+            $stamp = [string]$Plan.NotesStamp
+            if ([string]::IsNullOrWhiteSpace($stamp)) { $stamp = (Get-Date).ToString('dd.MM.yyyy HH-mm-ss') }
+            $folder = [string]$Plan.NotesFolder
+            if (-not (Test-Path -LiteralPath $folder)) {
+                New-Item -ItemType Directory -Path $folder -Force | Out-Null
+            }
+            $file = Join-Path $folder ('reviewer notes before clear {0}.json' -f ($stamp -replace '[\\/:*?"<>|]', '-'))
+            $body = [ordered]@{
+                spreadsheetId = [string]$SpreadsheetId
+                readAt        = $stamp
+                tabs          = $noteCount
+                notes         = $held
+            }
+            [System.IO.File]::WriteAllText($file, ($body | ConvertTo-Json -Depth 8),
+                (New-Object System.Text.UTF8Encoding($false)))
+            $notesSaved = $file
+        }
+        catch {
+            Write-Host ("  The reviewers' notes could not be written down before the clear: {0}" -f `
+                    $_.Exception.Message) -ForegroundColor Yellow
+        }
+    }
+
     if ($clears.Count -gt 0) {
         $ranges = @($clears | ForEach-Object { "'" + ($_.Sheet -replace "'", "''") + "'!" + $_.Range })
         Invoke-SheetsApi -Method Post -Path "$SpreadsheetId/values:batchClear" -Body @{ ranges = $ranges } | Out-Null
@@ -5162,10 +5226,12 @@ function Invoke-SheetsPlan {
     Set-SheetsStage ''
 
     return [pscustomobject]@{
-        Added   = $adds.Count
-        Cleared = $clears.Count
-        Written = $writes.Count
-        Tables  = $tablesApplied
+        Added      = $adds.Count
+        Cleared    = $clears.Count
+        Written    = $writes.Count
+        Tables     = $tablesApplied
+        NotesSaved = [string]$notesSaved
+        NotesCount = [int]$noteCount
     }
 }
 
