@@ -26,6 +26,7 @@ output, not a hand-written claim: re-run the script rather than editing it.
 | DQ | Statistics context and IOC exclusion | PASS |
 | DQ | Shardable statements can be merged | PASS |
 | DQ | Client boundary is in the statement | PASS |
+| DQ | Template filter uses the foreign key | PASS |
 | GLOBAL | Registry versus executable SQL, and declared parameters | PASS |
 | PowerBI | Registry versus active sport SQL | PASS |
 | PowerBI | Registry row order and contiguity | PASS |
