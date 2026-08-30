@@ -27657,6 +27657,2596 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "Equestrian 30.08.2026 08-56-19",
+                     "startedUtc":  "2026-08-30T06:56:17Z",
+                     "output":  "D:\\SQL\u0027s Output\\Equestrian 30.08.2026 08-56-19",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Equestrian-DQ-001",
+                                        "runKey":  "Equestrian-DQ-001",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NO_TOURNAMENTS_OR_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  86,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-002",
+                                        "runKey":  "Equestrian-DQ-002",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_AGE_CLASS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3365,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-003",
+                                        "runKey":  "Equestrian-DQ-003",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NO_EVENTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  31,
+                                        "findings":  30,
+                                        "eligible":  3365,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-004",
+                                        "runKey":  "Equestrian-DQ-004",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_START_OR_END_DATE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3365,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-005",
+                                        "runKey":  "Equestrian-DQ-005",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MISSING_ROUND_TYPE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  341,
+                                        "findings":  340,
+                                        "eligible":  5693,
+                                        "seconds":  0.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-006",
+                                        "runKey":  "Equestrian-DQ-006",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_DATE_OF_BIRTH",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  476,
+                                        "findings":  475,
+                                        "eligible":  12037,
+                                        "seconds":  15.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-007",
+                                        "runKey":  "Equestrian-DQ-007",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_PROFILE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  11291,
+                                        "seconds":  2.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-008",
+                                        "runKey":  "Equestrian-DQ-008",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_NO_PARTICIPANTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  19,
+                                        "findings":  18,
+                                        "eligible":  442,
+                                        "seconds":  1.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-009",
+                                        "runKey":  "Equestrian-DQ-009",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MISSING_START_OR_END_DATE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  442,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-010",
+                                        "runKey":  "Equestrian-DQ-010",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_INVALID_OR_MISSING",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1273 Comment; Setting: 1463 Start date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  424,
+                                        "seconds":  13,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-011",
+                                        "runKey":  "Equestrian-DQ-011",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_MISSING_SET_SUBSET_GENDER_NAME",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  87,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-012",
+                                        "runKey":  "Equestrian-DQ-012",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  5693,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-013",
+                                        "runKey":  "Equestrian-DQ-013",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_MISSING_GENDER",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  5693,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-014",
+                                        "runKey":  "Equestrian-DQ-014",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MISSING_FOR_FINISHED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  5520,
+                                        "seconds":  1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-015",
+                                        "runKey":  "Equestrian-DQ-015",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  5506,
+                                        "seconds":  3.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-016",
+                                        "runKey":  "Equestrian-DQ-016",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MISSING_AGE_CLASS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  442,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-017",
+                                        "runKey":  "Equestrian-DQ-017",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  442,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-018",
+                                        "runKey":  "Equestrian-DQ-018",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_STAGE",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  437,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-019",
+                                        "runKey":  "Equestrian-DQ-019",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_EVENTS",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date, 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  437,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-020",
+                                        "runKey":  "Equestrian-DQ-020",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal, 1429 Team, 1270 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  74,
+                                        "findings":  73,
+                                        "eligible":  442,
+                                        "seconds":  7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-021",
+                                        "runKey":  "Equestrian-DQ-021",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_INVALID_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  2696,
+                                        "seconds":  13.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-022",
+                                        "runKey":  "Equestrian-DQ-022",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1273 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  22552,
+                                        "seconds":  20.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-023",
+                                        "runKey":  "Equestrian-DQ-023",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NO_RANK_DATA_FOR_PARTICIPANTS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  424,
+                                        "seconds":  13.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-024",
+                                        "runKey":  "Equestrian-DQ-024",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MISSING_PHASE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  424,
+                                        "seconds":  13.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-025",
+                                        "runKey":  "Equestrian-DQ-025",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "Setting: 1470 Gender",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  22,
+                                        "findings":  21,
+                                        "eligible":  424,
+                                        "seconds":  8.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-026",
+                                        "runKey":  "Equestrian-DQ-026",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  27,
+                                        "findings":  26,
+                                        "eligible":  562,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-027",
+                                        "runKey":  "Equestrian-DQ-027",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  182,
+                                        "findings":  181,
+                                        "eligible":  754,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-028",
+                                        "runKey":  "Equestrian-DQ-028",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3365,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-029",
+                                        "runKey":  "Equestrian-DQ-029",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  58,
+                                        "findings":  57,
+                                        "eligible":  253,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-030",
+                                        "runKey":  "Equestrian-DQ-030",
+                                        "parameters":  "",
+                                        "name":  "EVENT_TEAM_PARTICIPANT_WITHOUT_LINEUP",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  92,
+                                        "findings":  91,
+                                        "eligible":  545,
+                                        "seconds":  1.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-031",
+                                        "runKey":  "Equestrian-DQ-031",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_DUPLICATE_ROWS",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  5525,
+                                        "seconds":  3.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-032",
+                                        "runKey":  "Equestrian-DQ-032",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_DUPLICATE_ROWS",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  424,
+                                        "seconds":  13.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-033",
+                                        "runKey":  "Equestrian-DQ-033",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NO_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  49,
+                                        "findings":  48,
+                                        "eligible":  867,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-034",
+                                        "runKey":  "Equestrian-DQ-034",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_ATHLETE_TEAM_MISSING_OR_INVALID",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1429 Team",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  1850,
+                                        "seconds":  7.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-035",
+                                        "runKey":  "Equestrian-DQ-035",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_VALUE_BLANK",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  70,
+                                        "findings":  69,
+                                        "eligible":  121015,
+                                        "seconds":  2.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-036",
+                                        "runKey":  "Equestrian-DQ-036",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_VALUE_BLANK",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  25449,
+                                        "seconds":  13.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-037",
+                                        "runKey":  "Equestrian-DQ-037",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NO_PARTICIPANTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  167,
+                                        "findings":  166,
+                                        "eligible":  5693,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-038",
+                                        "runKey":  "Equestrian-DQ-038",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_RANK_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  2696,
+                                        "seconds":  13.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-039",
+                                        "runKey":  "Equestrian-DQ-039",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  5353,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-040",
+                                        "runKey":  "Equestrian-DQ-040",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  48,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-041",
+                                        "runKey":  "Equestrian-DQ-041",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  84,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-042",
+                                        "runKey":  "Equestrian-DQ-042",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  163,
+                                        "findings":  162,
+                                        "eligible":  819,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-043",
+                                        "runKey":  "Equestrian-DQ-043",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_EVENT_DISCIPLINE_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  40,
+                                        "findings":  39,
+                                        "eligible":  3335,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-044",
+                                        "runKey":  "Equestrian-DQ-044",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_FIELD_UNUSED_IN_TEAM_STATISTIC",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1429 Team",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  381,
+                                        "seconds":  19.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-045",
+                                        "runKey":  "Equestrian-DQ-045",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_VALUE_BELONGS_TO_ANOTHER_FIELD",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  59475,
+                                        "seconds":  13.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-046",
+                                        "runKey":  "Equestrian-DQ-046",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  437,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-047",
+                                        "runKey":  "Equestrian-DQ-047",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  437,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-048",
+                                        "runKey":  "Equestrian-DQ-048",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SCOPE_RESULT_OWNER_EVENT_MISMATCH",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Scope: 305 final_result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  1,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-049",
+                                        "runKey":  "Equestrian-DQ-049",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_REFERENCE_OR_TYPE_INVALID",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  5527,
+                                        "seconds":  1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-050",
+                                        "runKey":  "Equestrian-DQ-050",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_SCALAR_DUPLICATE_ROWS",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date, 1470 Gender",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  437,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-051",
+                                        "runKey":  "Equestrian-DQ-051",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_UNEXPECTED_OWNER_TYPE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  442,
+                                        "seconds":  0.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-052",
+                                        "runKey":  "Equestrian-DQ-052",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_DISCIPLINE_STORAGE_MISMATCH",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  367,
+                                        "seconds":  0.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-053",
+                                        "runKey":  "Equestrian-DQ-053",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_DISCIPLINE_CONTRADICTS_LINKED_EVENT",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  437,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-054",
+                                        "runKey":  "Equestrian-DQ-054",
+                                        "parameters":  "",
+                                        "name":  "EVENT_LINEUP_ATHLETE_ASSIGNED_MORE_THAN_ONCE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  459,
+                                        "seconds":  1.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-055",
+                                        "runKey":  "Equestrian-DQ-055",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_REFERENCE_INVALID",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  25,
+                                        "findings":  24,
+                                        "eligible":  25449,
+                                        "seconds":  13.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-056",
+                                        "runKey":  "Equestrian-DQ-056",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  11291,
+                                        "seconds":  1.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-057",
+                                        "runKey":  "Equestrian-DQ-057",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_SEQUENCE_BROKEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  224,
+                                        "findings":  223,
+                                        "eligible":  5519,
+                                        "seconds":  2.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-058",
+                                        "runKey":  "Equestrian-DQ-058",
+                                        "parameters":  "",
+                                        "name":  "EVENT_TEAM_LINEUP_SIZE_UNEVEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  249,
+                                        "findings":  248,
+                                        "eligible":  458,
+                                        "seconds":  1.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-059",
+                                        "runKey":  "Equestrian-DQ-059",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_ATHLETE_COUNT_UNEVEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1429 Team",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  25,
+                                        "findings":  24,
+                                        "eligible":  45,
+                                        "seconds":  13.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-060",
+                                        "runKey":  "Equestrian-DQ-060",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_DUPLICATE_ON_ONE_PAIR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1276 Pair",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  424,
+                                        "seconds":  7.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-061",
+                                        "runKey":  "Equestrian-DQ-061",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_NOT_IN_TOURNAMENT_BY_OWN_PATH",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  45,
+                                        "findings":  44,
+                                        "eligible":  424,
+                                        "seconds":  24.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-062",
+                                        "runKey":  "Equestrian-DQ-062",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PLACE_SHARED_BY_TWO_RIDES_WITHOUT_COMMENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1276 Pair, 1273 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  31,
+                                        "findings":  30,
+                                        "eligible":  378,
+                                        "seconds":  16.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-063",
+                                        "runKey":  "Equestrian-DQ-063",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  1961,
+                                        "findings":  1960,
+                                        "eligible":  121101,
+                                        "seconds":  3.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-064",
+                                        "runKey":  "Equestrian-DQ-064",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_GENDER_BALANCE_UNEVEN",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "Comp.Rank: 1429 Team; Setting: 1470 Gender",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  46,
+                                        "findings":  45,
+                                        "eligible":  45,
+                                        "seconds":  28.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-065",
+                                        "runKey":  "Equestrian-DQ-065",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MIXED_TEAM_LINEUP_GENDER_BALANCE_UNEVEN",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  2068,
+                                        "findings":  2067,
+                                        "eligible":  2856,
+                                        "seconds":  2.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-066",
+                                        "runKey":  "Equestrian-DQ-066",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MISSING_VENUE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5666,
+                                        "findings":  5665,
+                                        "eligible":  5693,
+                                        "seconds":  2.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-067",
+                                        "runKey":  "Equestrian-DQ-067",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  18,
+                                        "findings":  17,
+                                        "eligible":  3335,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-068",
+                                        "runKey":  "Equestrian-DQ-068",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_NO_PARTICIPATION_BY_OWN_PATH",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  1208,
+                                        "findings":  1207,
+                                        "eligible":  37858,
+                                        "seconds":  5.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-069",
+                                        "runKey":  "Equestrian-DQ-069",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_DUPLICATE_ON_ONE_HORSE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  5527,
+                                        "seconds":  1.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-070",
+                                        "runKey":  "Equestrian-DQ-070",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_TIE_CONTRADICTED_BY_SCORE_WHERE_SCORED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 644 Score",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  27,
+                                        "findings":  26,
+                                        "eligible":  2130,
+                                        "seconds":  1.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-071",
+                                        "runKey":  "Equestrian-DQ-071",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_STAGE_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-072",
+                                        "runKey":  "Equestrian-DQ-072",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_GENDER_NOT_REFLECTED_IN_ITS_STAGES",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  81,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-073",
+                                        "runKey":  "Equestrian-DQ-073",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_CORE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3365,
+                                        "findings":  3364,
+                                        "eligible":  3365,
+                                        "seconds":  1.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-074",
+                                        "runKey":  "Equestrian-DQ-074",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MISSING_CORE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Setting: 1470 Gender",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  443,
+                                        "findings":  442,
+                                        "eligible":  442,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-075",
+                                        "runKey":  "Equestrian-DQ-075",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_SET_INVALID_FOR_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5164,
+                                        "findings":  5163,
+                                        "eligible":  5221,
+                                        "seconds":  4.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-076",
+                                        "runKey":  "Equestrian-DQ-076",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_INVALID_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  6131,
+                                        "seconds":  1.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-077",
+                                        "runKey":  "Equestrian-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_INVALID_OR_MISSING",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  151,
+                                        "findings":  150,
+                                        "eligible":  120668,
+                                        "seconds":  3.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-078",
+                                        "runKey":  "Equestrian-DQ-078",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_UNEXPECTED_MEDAL_FOR_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  540,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-079",
+                                        "runKey":  "Equestrian-DQ-079",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_ON_NON_MEDAL_ROUND_PHASE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  2696,
+                                        "seconds":  10.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-080",
+                                        "runKey":  "Equestrian-DQ-080",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  384,
+                                        "seconds":  2.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-081",
+                                        "runKey":  "Equestrian-DQ-081",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_UNEXPECTED_FOR_NOT_STARTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  14,
+                                        "findings":  13,
+                                        "eligible":  140,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-082",
+                                        "runKey":  "Equestrian-DQ-082",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_RANK_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  29,
+                                        "findings":  28,
+                                        "eligible":  6131,
+                                        "seconds":  1.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-083",
+                                        "runKey":  "Equestrian-DQ-083",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_COMMENT_INVALID_OR_CONTRADICTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1426 Time, 1277 Medal, 1273 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  134,
+                                        "findings":  133,
+                                        "eligible":  3032,
+                                        "seconds":  13.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-084",
+                                        "runKey":  "Equestrian-DQ-084",
+                                        "parameters":  "",
+                                        "name":  "EVENT_STATUS_TIME_CONFLICT",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  49,
+                                        "findings":  48,
+                                        "eligible":  5660,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-085",
+                                        "runKey":  "Equestrian-DQ-085",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DUPLICATE_BY_METADATA",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  8,
+                                        "findings":  7,
+                                        "eligible":  5693,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-086",
+                                        "runKey":  "Equestrian-DQ-086",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_UNEXPECTED_MEDAL_RELATED_FOR_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  17,
+                                        "findings":  16,
+                                        "eligible":  540,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-087",
+                                        "runKey":  "Equestrian-DQ-087",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1271 Points",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  424,
+                                        "seconds":  13.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-088",
+                                        "runKey":  "Equestrian-DQ-088",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1271 Points",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  10,
+                                        "seconds":  13.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-089",
+                                        "runKey":  "Equestrian-DQ-089",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_INTEGER_FIELD_FRACTIONAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  5519,
+                                        "seconds":  2.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-090",
+                                        "runKey":  "Equestrian-DQ-090",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_MEDAL_AWARDED_OUTSIDE_MEDAL_TEMPLATE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  48,
+                                        "seconds":  6.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-091",
+                                        "runKey":  "Equestrian-DQ-091",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED_BY_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 644 Score, 501 Medal, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  842,
+                                        "findings":  841,
+                                        "eligible":  12428,
+                                        "seconds":  2.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-092",
+                                        "runKey":  "Equestrian-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT_WHERE_SCORED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 644 Score, 100 Rank, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  41,
+                                        "findings":  40,
+                                        "eligible":  2130,
+                                        "seconds":  1.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-093",
+                                        "runKey":  "Equestrian-DQ-093",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE_WHERE_SCORED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 644 Score",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  339,
+                                        "findings":  338,
+                                        "eligible":  2130,
+                                        "seconds":  2.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-094",
+                                        "runKey":  "Equestrian-DQ-094",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_MISSING_FROM_ITS_TOURNAMENT_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  48,
+                                        "findings":  47,
+                                        "eligible":  437,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-095",
+                                        "runKey":  "Equestrian-DQ-095",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Result: 100 Rank, 501 Medal",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  2922,
+                                        "findings":  2921,
+                                        "eligible":  4980,
+                                        "seconds":  3.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-096",
+                                        "runKey":  "Equestrian-DQ-096",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_MEDAL_ROUND",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  3000,
+                                        "findings":  2999,
+                                        "eligible":  4980,
+                                        "seconds":  1.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-097",
+                                        "runKey":  "Equestrian-DQ-097",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_YEAR_GAP",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  33,
+                                        "findings":  32,
+                                        "eligible":  69,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-098",
+                                        "runKey":  "Equestrian-DQ-098",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PAIR_SIDES_CONTRADICT_EACH_OTHER",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1276 Pair",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  14,
+                                        "findings":  13,
+                                        "eligible":  378,
+                                        "seconds":  13.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-099",
+                                        "runKey":  "Equestrian-DQ-099",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPATION_WITHOUT_A_VALID_HORSE",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  760,
+                                        "findings":  759,
+                                        "eligible":  115580,
+                                        "seconds":  2.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-100",
+                                        "runKey":  "Equestrian-DQ-100",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PAIR_MISSING_ONE_OF_ITS_TWO_SIDES",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1276 Pair",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  113,
+                                        "findings":  112,
+                                        "eligible":  378,
+                                        "seconds":  13.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-101",
+                                        "runKey":  "Equestrian-DQ-101",
+                                        "parameters":  "",
+                                        "name":  "EVENT_LINEUP_MEMBER_WITHOUT_A_VALID_HORSE",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  178,
+                                        "findings":  177,
+                                        "eligible":  18427,
+                                        "seconds":  1.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-102",
+                                        "runKey":  "Equestrian-DQ-102",
+                                        "parameters":  "",
+                                        "name":  "OBJECT_DISCIPLINE_NOT_ONE_OF_THE_SPORT_FOUR_DISCIPLINES",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  402,
+                                        "findings":  401,
+                                        "eligible":  6130,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-103",
+                                        "runKey":  "Equestrian-DQ-103",
+                                        "parameters":  "",
+                                        "name":  "EVENT_HORSE_RIDDEN_BY_MORE_THAN_ONE_RIDER",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  45,
+                                        "findings":  44,
+                                        "eligible":  4975,
+                                        "seconds":  1.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-104",
+                                        "runKey":  "Equestrian-DQ-104",
+                                        "parameters":  "",
+                                        "name":  "EVENT_LINEUP_HORSE_RIDDEN_BY_MORE_THAN_ONE_MEMBER",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  459,
+                                        "seconds":  2.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-105",
+                                        "runKey":  "Equestrian-DQ-105",
+                                        "parameters":  "",
+                                        "name":  "EVENT_LINEUP_COMPOSED_OF_THE_WRONG_PARTICIPANT_TYPES",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  18426,
+                                        "seconds":  1.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-106",
+                                        "runKey":  "Equestrian-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_FIELD_NOT_NAMING_A_TEAM",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1429 Team",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3425,
+                                        "seconds":  13.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-107",
+                                        "runKey":  "Equestrian-DQ-107",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_RECORDED_TWICE_UNDER_ONE_RIDE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  578,
+                                        "findings":  577,
+                                        "eligible":  37623,
+                                        "seconds":  6.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-108",
+                                        "runKey":  "Equestrian-DQ-108",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PAIR_FIELD_CARRIED_BY_ONE_SIDE_ONLY",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1276 Pair",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  11,
+                                        "findings":  10,
+                                        "eligible":  378,
+                                        "seconds":  14.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-109",
+                                        "runKey":  "Equestrian-DQ-109",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RANKED_PARTICIPATION_HOLDING_NO_MEASURE_WHERE_THE_FIELD_IS_MEASURED",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Result: 100 Rank, 644 Score, 312 Errors, 101 Duration, 102 Points, 6 Running score, 515 Jump Off Penalties, 516 Jump Off Time, 545 Penalties",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  1433,
+                                        "findings":  1432,
+                                        "eligible":  110328,
+                                        "seconds":  6.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-110",
+                                        "runKey":  "Equestrian-DQ-110",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NAME_STOPPED_AT_THE_STORAGE_CEILING",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  87,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-111",
+                                        "runKey":  "Equestrian-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  1.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-112",
+                                        "runKey":  "Equestrian-DQ-112",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  425,
+                                        "findings":  424,
+                                        "eligible":  424,
+                                        "seconds":  14.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-113",
+                                        "runKey":  "Equestrian-DQ-113",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  2.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-114",
+                                        "runKey":  "Equestrian-DQ-114",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_NUMBER_DUPLICATE_IN_EVENT",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  5527,
+                                        "seconds":  0.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-115",
+                                        "runKey":  "Equestrian-DQ-115",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MEDAL_AWARDED_AND_DECLARED_ON_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  540,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-116",
+                                        "runKey":  "Equestrian-DQ-116",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_YEAR_CLAIMED_BY_SPAN_AND_SINGLE_SEASON",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  85,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-117",
+                                        "runKey":  "Equestrian-DQ-117",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_EDITIONS_OVERLAP_IN_TIME",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  81,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-118",
+                                        "runKey":  "Equestrian-DQ-118",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_SEQUENCE_BROKEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1429 Team; Setting: 1463 Start date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  79,
+                                        "findings":  78,
+                                        "eligible":  379,
+                                        "seconds":  15.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-119",
+                                        "runKey":  "Equestrian-DQ-119",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_TYPE_MIXED",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  5527,
+                                        "seconds":  1.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-120",
+                                        "runKey":  "Equestrian-DQ-120",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  14,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-121",
+                                        "runKey":  "Equestrian-DQ-121",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_DECIDING_VALUE_WITHOUT_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 644 Score, 104 Comment, 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  2130,
+                                        "seconds":  3.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-122",
+                                        "runKey":  "Equestrian-DQ-122",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_TYPE_CONTRADICTS_DISCIPLINE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  5527,
+                                        "seconds":  2.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-123",
+                                        "runKey":  "Equestrian-DQ-123",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_ATHLETE_RANKING_DISAGREES_WITH_ITS_TEAM_TWIN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  10,
+                                        "findings":  9,
+                                        "eligible":  45,
+                                        "seconds":  22.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-124",
+                                        "runKey":  "Equestrian-DQ-124",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_DUPLICATE_THE_HORSE_DOES_NOT_EXPLAIN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  22,
+                                        "findings":  21,
+                                        "eligible":  3998,
+                                        "seconds":  3.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-125",
+                                        "runKey":  "Equestrian-DQ-125",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  2.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-126",
+                                        "runKey":  "Equestrian-DQ-126",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  13.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "Equestrian-DQ-127",
+                                        "runKey":  "Equestrian-DQ-127",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_PARTICIPANT_ORGANIZATION_MISSING_THROUGHOUT",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  786,
+                                        "findings":  785,
+                                        "eligible":  785,
+                                        "seconds":  1.9,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  95,
+                                   "valueRequests":  16,
+                                   "tabsConfirmed":  90,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  9.7,
+                                                  "planning the changes":  13,
+                                                  "adding and sizing tabs":  0.8,
+                                                  "hiding columns and colouring Rows":  11,
+                                                  "clearing stale rows":  14.2,
+                                                  "writing values":  38.3,
+                                                  "confirming the rows arrived":  0.6,
+                                                  "colouring the trend":  1.8,
+                                                  "removing withdrawn rows":  0.1,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  5.2
+                                              }
+                               },
+                     "review":  {
+                                    "Equestrian-DQ-001":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-002":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-003":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-004":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-005":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-006":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-007":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-008":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-009":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-010":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-011":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-012":  {
+                                                              "status":  "Reopened",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-013":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-014":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-015":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-016":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-017":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-018":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-019":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-020":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-021":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-022":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-023":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-024":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-025":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-026":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-027":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-028":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-029":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-030":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-031":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-032":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-033":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-034":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-035":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-036":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-037":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-038":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-039":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-040":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-041":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-042":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-043":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-044":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-045":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-046":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-047":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-048":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-049":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-050":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-051":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-052":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-053":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-054":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-055":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-056":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-057":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-058":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-059":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-060":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-061":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-062":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-063":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-064":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-065":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-066":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-067":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-068":  {
+                                                              "status":  "Monitor Only",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-069":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-070":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-071":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-072":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-073":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-074":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-075":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-076":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-077":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-078":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-079":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-080":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-081":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-082":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-083":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-084":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-085":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-086":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-087":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-088":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-089":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-090":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-091":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-092":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-093":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-094":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-095":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-096":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-097":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-098":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-099":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-100":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-101":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-102":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-103":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-104":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-105":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-106":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-107":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-108":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-109":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-110":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-111":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-112":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-113":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-114":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-115":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-116":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-117":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-118":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-119":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-120":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-121":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-122":  {
+                                                              "status":  "Clean",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-123":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-124":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-125":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-126":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "Equestrian-DQ-127":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          },
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
                  }
              ],
     "sheetId":  "15DvzC1TLzhMB9bXeyy-2OUa0Xmfo0Mn84-isqYSs9cU"

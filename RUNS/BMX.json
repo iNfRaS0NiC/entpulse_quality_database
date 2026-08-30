@@ -27648,6 +27648,2296 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "BMX 30.08.2026 08-43-57",
+                     "startedUtc":  "2026-08-30T06:43:55Z",
+                     "output":  "D:\\SQL\u0027s Output\\BMX 30.08.2026 08-43-57",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-001",
+                                        "runKey":  "BMX-DQ-001",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_DATE_OF_BIRTH",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  1177,
+                                        "findings":  1176,
+                                        "eligible":  2912,
+                                        "seconds":  14.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-002",
+                                        "runKey":  "BMX-DQ-002",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_PROFILE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  2690,
+                                        "seconds":  1.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-003",
+                                        "runKey":  "BMX-DQ-003",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_NO_PARTICIPATION_ANYWHERE",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  161,
+                                        "findings":  160,
+                                        "eligible":  2926,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-004",
+                                        "runKey":  "BMX-DQ-004",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_AGE_CLASS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  529,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-005",
+                                        "runKey":  "BMX-DQ-005",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NO_EVENTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  13,
+                                        "findings":  12,
+                                        "eligible":  529,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-006",
+                                        "runKey":  "BMX-DQ-006",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  7,
+                                        "findings":  6,
+                                        "eligible":  517,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-007",
+                                        "runKey":  "BMX-DQ-007",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_START_OR_END_DATE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  529,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-008",
+                                        "runKey":  "BMX-DQ-008",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_MISSING_SET_SUBSET_GENDER_NAME",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  55,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-009",
+                                        "runKey":  "BMX-DQ-009",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_CORE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  423,
+                                        "findings":  422,
+                                        "eligible":  529,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-010",
+                                        "runKey":  "BMX-DQ-010",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9508,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-011",
+                                        "runKey":  "BMX-DQ-011",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MISSING_ROUND_TYPE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9508,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-012",
+                                        "runKey":  "BMX-DQ-012",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_MISSING_GENDER",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9508,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-013",
+                                        "runKey":  "BMX-DQ-013",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NO_TOURNAMENTS_OR_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  55,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-014",
+                                        "runKey":  "BMX-DQ-014",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MISSING_FOR_FINISHED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  139,
+                                        "findings":  138,
+                                        "eligible":  9491,
+                                        "seconds":  1.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-015",
+                                        "runKey":  "BMX-DQ-015",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_UNEXPECTED_FOR_NOT_STARTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  8,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-016",
+                                        "runKey":  "BMX-DQ-016",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MISSING_AGE_CLASS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  438,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-017",
+                                        "runKey":  "BMX-DQ-017",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_NO_PARTICIPANTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  15,
+                                        "findings":  14,
+                                        "eligible":  438,
+                                        "seconds":  1.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-018",
+                                        "runKey":  "BMX-DQ-018",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_STAGE",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  18,
+                                        "findings":  17,
+                                        "eligible":  438,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-019",
+                                        "runKey":  "BMX-DQ-019",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_EVENTS",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date, 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  437,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-020",
+                                        "runKey":  "BMX-DQ-020",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MISSING_START_OR_END_DATE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  438,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-021",
+                                        "runKey":  "BMX-DQ-021",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MISSING_CORE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Setting: 1470 Gender",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  431,
+                                        "findings":  430,
+                                        "eligible":  438,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-022",
+                                        "runKey":  "BMX-DQ-022",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  438,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-023",
+                                        "runKey":  "BMX-DQ-023",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_STAGE_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  528,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-024",
+                                        "runKey":  "BMX-DQ-024",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  80871,
+                                        "seconds":  1.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-025",
+                                        "runKey":  "BMX-DQ-025",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_GENDER_MISMATCH",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "Setting: 1470 Gender",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  424,
+                                        "seconds":  8.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-026",
+                                        "runKey":  "BMX-DQ-026",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  543,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-027",
+                                        "runKey":  "BMX-DQ-027",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal, 1429 Team, 1270 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  205,
+                                        "findings":  204,
+                                        "eligible":  438,
+                                        "seconds":  7.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-028",
+                                        "runKey":  "BMX-DQ-028",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_MEDAL_ROUND",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  29,
+                                        "findings":  28,
+                                        "eligible":  543,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-029",
+                                        "runKey":  "BMX-DQ-029",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_UNEXPECTED_MEDAL_FOR_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  8948,
+                                        "seconds":  0.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-030",
+                                        "runKey":  "BMX-DQ-030",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FORMAT_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  7971,
+                                        "findings":  7970,
+                                        "eligible":  8014,
+                                        "seconds":  7.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-031",
+                                        "runKey":  "BMX-DQ-031",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_INVALID_OR_MISSING",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  80871,
+                                        "seconds":  3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-032",
+                                        "runKey":  "BMX-DQ-032",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_INVALID_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  1623,
+                                        "seconds":  1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-033",
+                                        "runKey":  "BMX-DQ-033",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FULL_TIME_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9056,
+                                        "findings":  9055,
+                                        "eligible":  9091,
+                                        "seconds":  4.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-034",
+                                        "runKey":  "BMX-DQ-034",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_TIME_DIFFERENCE_FORMAT_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1427 Time Difference",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  285,
+                                        "seconds":  13.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-035",
+                                        "runKey":  "BMX-DQ-035",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_INVALID_OR_MISSING",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1273 Comment; Setting: 1463 Start date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  424,
+                                        "seconds":  13.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-036",
+                                        "runKey":  "BMX-DQ-036",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_INVALID_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  662,
+                                        "seconds":  13.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-037",
+                                        "runKey":  "BMX-DQ-037",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_TIME_FULL_TIME_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1426 Time, 1427 Time Difference",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  421,
+                                        "findings":  420,
+                                        "eligible":  420,
+                                        "seconds":  2.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-038",
+                                        "runKey":  "BMX-DQ-038",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_DEPRECATED_DURATION_USED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1272 Duration, 1426 Time, 1427 Time Difference",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  322,
+                                        "findings":  321,
+                                        "eligible":  438,
+                                        "seconds":  7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-039",
+                                        "runKey":  "BMX-DQ-039",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  9353,
+                                        "seconds":  3.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-040",
+                                        "runKey":  "BMX-DQ-040",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment, 101 Duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  15,
+                                        "findings":  14,
+                                        "eligible":  9353,
+                                        "seconds":  4.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-041",
+                                        "runKey":  "BMX-DQ-041",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  79,
+                                        "findings":  78,
+                                        "eligible":  424,
+                                        "seconds":  18.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-042",
+                                        "runKey":  "BMX-DQ-042",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MISSING_PHASE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  424,
+                                        "seconds":  13.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-043",
+                                        "runKey":  "BMX-DQ-043",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_WITHOUT_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  113,
+                                        "findings":  112,
+                                        "eligible":  547,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-044",
+                                        "runKey":  "BMX-DQ-044",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1273 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  20786,
+                                        "seconds":  20.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-045",
+                                        "runKey":  "BMX-DQ-045",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_ON_NON_MEDAL_ROUND_PHASE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  662,
+                                        "seconds":  10.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-046",
+                                        "runKey":  "BMX-DQ-046",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NO_RANK_DATA_FOR_PARTICIPANTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  424,
+                                        "seconds":  13.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-047",
+                                        "runKey":  "BMX-DQ-047",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  10,
+                                        "findings":  9,
+                                        "eligible":  421,
+                                        "seconds":  2.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-048",
+                                        "runKey":  "BMX-DQ-048",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  118,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-049",
+                                        "runKey":  "BMX-DQ-049",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  810,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-050",
+                                        "runKey":  "BMX-DQ-050",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_NAME_CASE_INCONSISTENT",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  529,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-051",
+                                        "runKey":  "BMX-DQ-051",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  203,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-052",
+                                        "runKey":  "BMX-DQ-052",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration, 101 Duration, 501 Medal, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2686,
+                                        "findings":  2685,
+                                        "eligible":  27149,
+                                        "seconds":  3.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-053",
+                                        "runKey":  "BMX-DQ-053",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MEDAL_RANK_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  1623,
+                                        "seconds":  0.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-054",
+                                        "runKey":  "BMX-DQ-054",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_FULL_TIME_NOT_MONOTONIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  10,
+                                        "findings":  9,
+                                        "eligible":  49,
+                                        "seconds":  1.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-055",
+                                        "runKey":  "BMX-DQ-055",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANTS_DUPLICATE_IN_EVENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9353,
+                                        "seconds":  1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-056",
+                                        "runKey":  "BMX-DQ-056",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FULL_TIME_ARITHMETIC_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  49,
+                                        "seconds":  17.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-057",
+                                        "runKey":  "BMX-DQ-057",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_COMMENT_INVALID_OR_CONTRADICTED",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1426 Time, 1277 Medal, 1273 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  921,
+                                        "findings":  920,
+                                        "eligible":  1369,
+                                        "seconds":  13.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-058",
+                                        "runKey":  "BMX-DQ-058",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_DUPLICATE_ROWS",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9353,
+                                        "seconds":  3.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-059",
+                                        "runKey":  "BMX-DQ-059",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_DUPLICATE_ROWS",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  424,
+                                        "seconds":  13.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-060",
+                                        "runKey":  "BMX-DQ-060",
+                                        "parameters":  "",
+                                        "name":  "EVENT_STATUS_TIME_CONFLICT",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  9,
+                                        "findings":  8,
+                                        "eligible":  9499,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-061",
+                                        "runKey":  "BMX-DQ-061",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DUPLICATE_BY_METADATA",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9508,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-062",
+                                        "runKey":  "BMX-DQ-062",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NO_STAGES",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  56,
+                                        "findings":  55,
+                                        "eligible":  373,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-063",
+                                        "runKey":  "BMX-DQ-063",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_VALUE_BLANK",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  80870,
+                                        "seconds":  2.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-064",
+                                        "runKey":  "BMX-DQ-064",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_VALUE_BLANK",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  21150,
+                                        "seconds":  13.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-065",
+                                        "runKey":  "BMX-DQ-065",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NO_PARTICIPANTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  156,
+                                        "findings":  155,
+                                        "eligible":  9508,
+                                        "seconds":  0.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-066",
+                                        "runKey":  "BMX-DQ-066",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MEDAL_RANK_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  662,
+                                        "seconds":  13.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-067",
+                                        "runKey":  "BMX-DQ-067",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_UNEXPECTED_MEDAL_RELATED_FOR_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  8948,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-068",
+                                        "runKey":  "BMX-DQ-068",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MISSING_VENUE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  9509,
+                                        "findings":  9508,
+                                        "eligible":  9508,
+                                        "seconds":  3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-069",
+                                        "runKey":  "BMX-DQ-069",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9508,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-070",
+                                        "runKey":  "BMX-DQ-070",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 102 Points",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  286,
+                                        "seconds":  1.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-071",
+                                        "runKey":  "BMX-DQ-071",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  23,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-072",
+                                        "runKey":  "BMX-DQ-072",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_NAME_FORMAT_INVALID",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  26,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-073",
+                                        "runKey":  "BMX-DQ-073",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_NAME_SEASON_CONTRADICTS_DATES",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  318,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-074",
+                                        "runKey":  "BMX-DQ-074",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_YEAR_GAP",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  19,
+                                        "findings":  18,
+                                        "eligible":  38,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-075",
+                                        "runKey":  "BMX-DQ-075",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_EVENT_DISCIPLINE_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  23,
+                                        "findings":  22,
+                                        "eligible":  517,
+                                        "seconds":  0.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-076",
+                                        "runKey":  "BMX-DQ-076",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  10,
+                                        "findings":  9,
+                                        "eligible":  14,
+                                        "seconds":  1.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-077",
+                                        "runKey":  "BMX-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1273 Comment, 1429 Team",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  424,
+                                        "seconds":  23.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-078",
+                                        "runKey":  "BMX-DQ-078",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_FIELD_UNUSED_IN_TEAM_STATISTIC",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1429 Team",
+                                        "signal":  "Not applicable",
+                                        "expected":  "",
+                                        "verdict":  "Unchanged",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  424,
+                                        "seconds":  20,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-079",
+                                        "runKey":  "BMX-DQ-079",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_VALUE_BELONGS_TO_ANOTHER_FIELD",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  34766,
+                                        "seconds":  13.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-080",
+                                        "runKey":  "BMX-DQ-080",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  438,
+                                        "seconds":  0.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-081",
+                                        "runKey":  "BMX-DQ-081",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  437,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-082",
+                                        "runKey":  "BMX-DQ-082",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_DUPLICATE_IN_STATISTIC",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  424,
+                                        "seconds":  7.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-083",
+                                        "runKey":  "BMX-DQ-083",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_REFERENCE_OR_TYPE_INVALID",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9353,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-084",
+                                        "runKey":  "BMX-DQ-084",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_SCALAR_DUPLICATE_ROWS",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Setting: 1463 Start date, 1464 End date, 1470 Gender",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  438,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-085",
+                                        "runKey":  "BMX-DQ-085",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_UNEXPECTED_OWNER_TYPE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  438,
+                                        "seconds":  0.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-086",
+                                        "runKey":  "BMX-DQ-086",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_DISCIPLINE_STORAGE_MISMATCH",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9480,
+                                        "seconds":  5.9,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-087",
+                                        "runKey":  "BMX-DQ-087",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_DISCIPLINE_CONTRADICTS_LINKED_EVENT",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  437,
+                                        "seconds":  0.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-088",
+                                        "runKey":  "BMX-DQ-088",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration, 101 Duration, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  48,
+                                        "findings":  47,
+                                        "eligible":  8001,
+                                        "seconds":  4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-089",
+                                        "runKey":  "BMX-DQ-089",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_TYPE_MIXED",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  424,
+                                        "seconds":  13.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-090",
+                                        "runKey":  "BMX-DQ-090",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  8078,
+                                        "findings":  8077,
+                                        "eligible":  8233,
+                                        "seconds":  5.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-091",
+                                        "runKey":  "BMX-DQ-091",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_SEQUENCE_BROKEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  140,
+                                        "findings":  139,
+                                        "eligible":  9353,
+                                        "seconds":  1.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-092",
+                                        "runKey":  "BMX-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 101 Duration, 102 Points, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  116,
+                                        "findings":  115,
+                                        "eligible":  8267,
+                                        "seconds":  3.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-093",
+                                        "runKey":  "BMX-DQ-093",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1272 Duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  321,
+                                        "seconds":  13.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-094",
+                                        "runKey":  "BMX-DQ-094",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  1400,
+                                        "findings":  1399,
+                                        "eligible":  9353,
+                                        "seconds":  4.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-095",
+                                        "runKey":  "BMX-DQ-095",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_GENDER_CONTRADICTS_STAGE_ENTERED",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  2690,
+                                        "seconds":  0.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-096",
+                                        "runKey":  "BMX-DQ-096",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  1.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-097",
+                                        "runKey":  "BMX-DQ-097",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  425,
+                                        "findings":  424,
+                                        "eligible":  424,
+                                        "seconds":  13.8,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-098",
+                                        "runKey":  "BMX-DQ-098",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  1.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-099",
+                                        "runKey":  "BMX-DQ-099",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_GENDER_NOT_REFLECTED_IN_ITS_STAGES",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  50,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-100",
+                                        "runKey":  "BMX-DQ-100",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_RANK_SEQUENCE_BROKEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1429 Team; Setting: 1463 Start date",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  424,
+                                        "seconds":  14.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-101",
+                                        "runKey":  "BMX-DQ-101",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_NUMBER_DUPLICATE_IN_EVENT",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9353,
+                                        "seconds":  0.7,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-102",
+                                        "runKey":  "BMX-DQ-102",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MEDAL_AWARDED_AND_DECLARED_ON_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  8948,
+                                        "seconds":  0.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-103",
+                                        "runKey":  "BMX-DQ-103",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_YEAR_CLAIMED_BY_SPAN_AND_SINGLE_SEASON",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  55,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-104",
+                                        "runKey":  "BMX-DQ-104",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_EDITIONS_OVERLAP_IN_TIME",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  50,
+                                        "seconds":  0.2,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-105",
+                                        "runKey":  "BMX-DQ-105",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_TYPE_MIXED",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9353,
+                                        "seconds":  1.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-106",
+                                        "runKey":  "BMX-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  13.6,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-107",
+                                        "runKey":  "BMX-DQ-107",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_DECIDING_VALUE_WITHOUT_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 101 Duration, 104 Comment, 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  8014,
+                                        "seconds":  3.4,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-108",
+                                        "runKey":  "BMX-DQ-108",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_TYPE_CONTRADICTS_DISCIPLINE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9353,
+                                        "seconds":  1.5,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-109",
+                                        "runKey":  "BMX-DQ-109",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_ATHLETE_RANKING_DISAGREES_WITH_ITS_TEAM_TWIN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  8.1,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-110",
+                                        "runKey":  "BMX-DQ-110",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  1.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-111",
+                                        "runKey":  "BMX-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Audited nothing",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  13.3,
+                                        "status":  "OK"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-112",
+                                        "runKey":  "BMX-DQ-112",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_PARTICIPANT_ORGANIZATION_MISSING_THROUGHOUT",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  308,
+                                        "findings":  307,
+                                        "eligible":  307,
+                                        "seconds":  1.3,
+                                        "status":  "OK"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  119.9,
+                                   "valueRequests":  17,
+                                   "tabsConfirmed":  54,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  14.7,
+                                                  "planning the changes":  14.7,
+                                                  "adding and sizing tabs":  1.3,
+                                                  "hiding columns and colouring Rows":  6.7,
+                                                  "clearing stale rows":  18.2,
+                                                  "writing values":  57.2,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  1.7,
+                                                  "removing withdrawn rows":  0.1,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  4.7
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-DQ-001":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-002":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-003":  {
+                                                       "status":  "Monitor Only",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-004":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-005":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Aleksandar D."
+                                                   },
+                                    "BMX-DQ-006":  {
+                                                       "status":  "Reviewing",
+                                                       "checkBy":  "Lyuboslav"
+                                                   },
+                                    "BMX-DQ-007":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-008":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-009":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-010":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-011":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-012":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-013":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  "Aleksandar D."
+                                                   },
+                                    "BMX-DQ-014":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-015":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-016":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-017":  {
+                                                       "status":  "IT Fix",
+                                                       "checkBy":  "Aleksandar D."
+                                                   },
+                                    "BMX-DQ-018":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-019":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-020":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-021":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-022":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-023":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-024":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-025":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-026":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-027":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(Missing medals for World Cup events - there are no medals there? IF needed - It fix?)"
+                                                   },
+                                    "BMX-DQ-028":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-029":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-030":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(The whole sport is like that - IT Fix?)"
+                                                   },
+                                    "BMX-DQ-031":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-032":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-033":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(The whole sport is like that - IT Fix?)"
+                                                   },
+                                    "BMX-DQ-034":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-035":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-036":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-037":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(The whole sport is like that - IT Fix?)"
+                                                   },
+                                    "BMX-DQ-038":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(The whole sport is like that - IT Fix?)"
+                                                   },
+                                    "BMX-DQ-039":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-040":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-041":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "Aleksandar D."
+                                                   },
+                                    "BMX-DQ-042":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Vennie"
+                                                   },
+                                    "BMX-DQ-043":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Gabriel"
+                                                   },
+                                    "BMX-DQ-044":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-045":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-046":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-047":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Lyubomir"
+                                                   },
+                                    "BMX-DQ-048":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Lyubomir"
+                                                   },
+                                    "BMX-DQ-049":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Hristiyana"
+                                                   },
+                                    "BMX-DQ-050":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-051":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Lyubomir"
+                                                   },
+                                    "BMX-DQ-052":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(If the rule is no rank to DNS/DNF, IT to fix it as there are many rows here?)"
+                                                   },
+                                    "BMX-DQ-053":  {
+                                                       "status":  "Completed",
+                                                       "checkBy":  "Lyubomir"
+                                                   },
+                                    "BMX-DQ-054":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-055":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-056":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-057":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(same as DQ-052 - for IT?)"
+                                                   },
+                                    "BMX-DQ-058":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-059":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-060":  {
+                                                       "status":  "Reviewing",
+                                                       "checkBy":  "Aleksandar D."
+                                                   },
+                                    "BMX-DQ-061":  {
+                                                       "status":  "Completed",
+                                                       "checkBy":  "Vennie"
+                                                   },
+                                    "BMX-DQ-062":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-063":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-064":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-065":  {
+                                                       "status":  "Reviewing",
+                                                       "checkBy":  "Hristiyana"
+                                                   },
+                                    "BMX-DQ-066":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-067":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-068":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-069":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-070":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-071":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-072":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-073":  {
+                                                       "status":  "Completed",
+                                                       "checkBy":  "Vennie"
+                                                   },
+                                    "BMX-DQ-074":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-075":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Lyubomir"
+                                                   },
+                                    "BMX-DQ-076":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(This shoud be Monitor only or IT Fix?)"
+                                                   },
+                                    "BMX-DQ-077":  {
+                                                       "status":  "Completed",
+                                                       "checkBy":  "Vennie"
+                                                   },
+                                    "BMX-DQ-078":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-079":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-080":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-081":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-082":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-083":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-084":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-085":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-086":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-087":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-088":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-089":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-090":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-091":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-092":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-093":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-094":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(Many are Freestyle but out of Racing ones most are Overall/Classification where there are no time or duration because its points based and we havent entered points anywhere)"
+                                                   },
+                                    "BMX-DQ-095":  {
+                                                       "status":  "Completed",
+                                                       "checkBy":  "Vennie"
+                                                   },
+                                    "BMX-DQ-096":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-097":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-098":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(0 eligible)"
+                                                   },
+                                    "BMX-DQ-099":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-100":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-101":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-102":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-103":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-104":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-105":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-106":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(0 eligible)"
+                                                   },
+                                    "BMX-DQ-107":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-108":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-109":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(o eligible)"
+                                                   },
+                                    "BMX-DQ-110":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-111":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-112":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
                  }
              ],
     "sheetId":  "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE"
