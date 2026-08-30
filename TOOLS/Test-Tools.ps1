@@ -50,6 +50,19 @@ function Start-Group {
     # same Group/Name/Status shape Test-Package.ps1 prints.
     param([string]$Group, [string]$Name)
 
+    # Opening a group over an unclosed one used to be silent, and it threw the open group away
+    # whole: its cases had run and its findings were sitting in $script:Findings, and the reset
+    # below discarded them without ever adding a result line. The suite then reported PASS for
+    # everything it did print, which is the worst shape a test failure can take - not a red
+    # line, but a green one standing where a whole group used to be. Added 2026-08-30, after
+    # the Transport group was written without a Complete-Group and its three cases vanished
+    # from the report while still running and still passing.
+    if ($script:Group -and $script:GroupName) {
+        throw ("'{0} / {1}' was still open when '{2} / {3}' started. " -f `
+                $script:Group, $script:GroupName, $Group, $Name) +
+        'A group has to be closed with Complete-Group or its findings are discarded unreported.'
+    }
+
     $script:Group = $Group
     $script:GroupName = $Name
     $script:Findings = @()
@@ -62,6 +75,11 @@ function Complete-Group {
         Status   = $(if ($script:Findings.Count -gt 0) { 'FAIL' } else { 'PASS' })
         Findings = $script:Findings
     }
+    # Closed means closed, so the guard in Start-Group can tell an open group from a finished
+    # one. Without this every Start-Group after the first would throw.
+    $script:Group = ''
+    $script:GroupName = ''
+    $script:Findings = @()
 }
 
 # The last column each board writes, as a letter. Derived rather than written down: these tests
@@ -2441,6 +2459,71 @@ Complete-Group
 # split: the merge is where a permanent document can lose somebody's work, and a merge that
 # needs credentials to exercise is a merge nobody exercises.
 # --------------------------------------------------------------------------------------
+
+Start-Group 'Runner' 'Transport'
+
+Test-That 'the watchdog path keeps what it abandoned instead of dropping it' {
+    # The abandonment itself is right and stays: Stop would block on the very call that is
+    # stuck and Dispose waits for Stop, so a run that waited would hang on the statement it was
+    # trying to walk away from. What was wrong is that nothing kept the reference, so 'one
+    # thread and one dead socket until the process exits' could not be counted, confirmed or
+    # noticed if it started happening. Asserted from the source because reproducing a wedged
+    # socket needs a server that stops answering mid-response.
+    $source = Get-Content -LiteralPath (Join-Path $RepoRootPath 'TOOLS\Run-Query.ps1') -Raw
+    $body = [regex]::Match($source, '(?s)function Invoke-RemoteSql \{.*?\r?\n\}\r?\n')
+    Assert-True $body.Success 'Invoke-RemoteSql found'
+
+    Assert-True ($body.Value -match '(?s)BeginStop\(\$null, \$null\).*?\$script:AbandonedShells \+=.*?throw') `
+        'the shell is recorded between signalling the stop and throwing, or the run loses track of it'
+    Assert-True ($body.Value -match 'Shell = \$shell') 'the runspace itself is kept, not just a count'
+    Assert-True ($body.Value -match 'Label\s*=') 'and which statement it was'
+    # The normal path must still dispose. A leak there would be one per statement rather than
+    # one per wedge, and 2261 checks have run through it.
+    Assert-True ($body.Value -match 'finally \{ \$shell\.Dispose\(\) \}') `
+        'the normal path no longer disposes, which would leak once per statement'
+}
+
+Test-That 'the end of a run releases the abandoned connections that have come to rest' {
+    # Two real runspaces, one finished and one still going. The finished one can be disposed
+    # now for free; waiting on the other would hang the end of a run that had otherwise
+    # completed, which is the thing the abandonment exists to avoid.
+    $done = [powershell]::Create()
+    [void]$done.AddScript('1')
+    $handle = $done.BeginInvoke()
+    [void]$handle.AsyncWaitHandle.WaitOne([timespan]::FromSeconds(10))
+    [void]$done.EndInvoke($handle)
+
+    $busy = [powershell]::Create()
+    [void]$busy.AddScript('Start-Sleep -Seconds 30')
+    [void]$busy.BeginInvoke()
+
+    $script:AbandonedShells = @(
+        [pscustomobject]@{ Shell = $done; Label = 'Fixtureball-DQ-001'; At = (Get-Date) },
+        [pscustomobject]@{ Shell = $busy; Label = 'Fixtureball-DQ-002'; At = (Get-Date) }
+    )
+
+    try {
+        Close-AbandonedShells
+        Assert-Equal 1 @($script:AbandonedShells).Count `
+            'the finished runspace was not released, or the running one was waited on'
+        Assert-Equal 'Fixtureball-DQ-002' ([string]@($script:AbandonedShells)[0].Label) `
+            'the one still wedged is the one still held'
+    }
+    finally {
+        try { $busy.Stop() } catch { }
+        try { $busy.Dispose() } catch { }
+        $script:AbandonedShells = @()
+    }
+}
+
+Test-That 'a run with nothing abandoned says nothing about it' {
+    # It is a line the reader sees only when it means something. A run that abandoned nothing
+    # printing 0 of 0 would be one more line between them and the numbers they came for.
+    $script:AbandonedShells = @()
+    $said = @(Close-AbandonedShells 6>&1)
+    Assert-Equal 0 $said.Count 'nothing abandoned, so nothing printed'
+}
+Complete-Group
 
 Start-Group 'Runner' 'Live sheet merge'
 

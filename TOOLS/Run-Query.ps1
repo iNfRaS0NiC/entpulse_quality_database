@@ -1732,8 +1732,45 @@ catch {
 }
 '@
 
+# Statements the watchdog gave up on, and the runspace each one is still holding.
+#
+# The abandonment is deliberate and explained where it happens. What this adds is that it stops
+# being invisible: nothing counted it, so 'a thread and a socket until the process exits' was a
+# sentence in a comment rather than a number anybody could check. Measured over the 23126 check
+# rows recorded to 2026-08-30 it has never once fired - every one of the 325 failures came back
+# through the normal path and disposed - which is exactly why it needs counting rather than
+# rebuilding: a mechanism nobody can see is one nobody can tell has started misbehaving.
+$script:AbandonedShells = @()
+
+function Close-AbandonedShells {
+    # Called once, after every statement has run. A shell whose runspace has since come to rest
+    # can be disposed now for free, because Dispose only blocks while Stop is still waiting on
+    # the call that wedged. One still Running or Stopping is left exactly where it was: waiting
+    # on it here would hang the end of a run that had otherwise finished, which is the failure
+    # the abandonment exists to avoid in the first place.
+    if (@($script:AbandonedShells).Count -eq 0) { return }
+
+    $held = @($script:AbandonedShells)
+    $labels = @($held | ForEach-Object { [string]$_.Label })
+    $reclaimed = 0
+    $still = @()
+    foreach ($one in $held) {
+        $state = ''
+        try { $state = [string]$one.Shell.InvocationStateInfo.State } catch { $state = '' }
+        if ($state -eq 'Stopped' -or $state -eq 'Completed' -or $state -eq 'Failed') {
+            try { $one.Shell.Dispose(); $reclaimed++ } catch { $still += $one }
+        }
+        else { $still += $one }
+    }
+    $script:AbandonedShells = $still
+
+    Write-Host ('  Abandoned by the watchdog, so nothing was audited for: {0}' -f `
+            ($labels -join ', ')) -ForegroundColor Yellow
+    Write-Host ('  {0} of {1} connection(s) had since come to rest and were released; {2} left holding a thread and a socket until this process exits' -f `
+            $reclaimed, $held.Count, $still.Count) -ForegroundColor Yellow
+}
 function Invoke-RemoteSql {
-    param($Session, [string]$Statement)
+    param($Session, [string]$Statement, [string]$Label = '')
 
     $headers = @{
         'accept'           = 'application/json'
@@ -1761,6 +1798,14 @@ function Invoke-RemoteSql {
         # so the runspace is signalled asynchronously and then left behind. It holds one
         # thread and one dead socket until the process exits; the run carries on.
         [void]$shell.BeginStop($null, $null)
+        # Kept rather than dropped, so the end of the run can say how many there were and
+        # release the ones whose connections have since died. Holding the reference costs
+        # nothing the abandoned runspace was not already costing.
+        $script:AbandonedShells += [pscustomobject]@{
+            Shell = $shell
+            Label = $(if ($Label) { [string]$Label } else { 'a statement' })
+            At    = (Get-Date)
+        }
         throw ("No response after {0}s. The connection wedged rather than failing, " -f $limit) +
         'so the statement was abandoned. Nothing ran twice; re-run this check on its own.'
     }
@@ -1808,10 +1853,10 @@ function Get-ErrorDetail {
 
 function Invoke-SqlWithRetry {
     # Uses and refreshes $script:Session so a batch survives an expiring cookie.
-    param([string]$Statement)
+    param([string]$Statement, [string]$Label = '')
 
     try {
-        return Invoke-RemoteSql -Session $script:Session -Statement $Statement
+        return Invoke-RemoteSql -Session $script:Session -Statement $Statement -Label $Label
     }
     catch {
         $status = 0
@@ -1821,7 +1866,7 @@ function Invoke-SqlWithRetry {
             Write-Host "Session rejected (HTTP $status), logging in again..." -ForegroundColor DarkGray
             if (Test-Path $StatePath) { Remove-Item -LiteralPath $StatePath -Force }
             $script:Session = New-AuthenticatedSession
-            return Invoke-RemoteSql -Session $script:Session -Statement $Statement
+            return Invoke-RemoteSql -Session $script:Session -Statement $Statement -Label $Label
         }
 
         $detail = Get-ErrorDetail -ErrorRecord $_
@@ -1864,20 +1909,20 @@ function Invoke-ShardedSql {
     # Runs one id window, and halves it on the same failure rather than guessing a shard count
     # up front: the size that defeats the transport is a property of the data, not of the
     # statement, and it changes as the database grows.
-    param([string]$Statement, [long]$From, [long]$To, [int]$Depth = 0)
+    param([string]$Statement, [long]$From, [long]$To, [int]$Depth = 0, [string]$Label = '')
 
     $shard = Enable-ShardFilter -Text $Statement -From $From -To $To
 
     try {
-        return Get-ResultRows -Content (Invoke-SqlWithRetry -Statement $shard.Sql).Content
+        return Get-ResultRows -Content (Invoke-SqlWithRetry -Statement $shard.Sql -Label $Label).Content
     }
     catch {
         if (-not (Test-ResultTooLarge -Message $_.Exception.Message)) { throw }
         if ($Depth -ge $MaxShardDepth -or $From -ge $To) { throw }
 
         $mid = [long][math]::Floor(($From + $To) / 2)
-        $left = Invoke-ShardedSql -Statement $Statement -From $From -To $mid -Depth ($Depth + 1)
-        $right = Invoke-ShardedSql -Statement $Statement -From ($mid + 1) -To $To -Depth ($Depth + 1)
+        $left = Invoke-ShardedSql -Statement $Statement -From $From -To $mid -Depth ($Depth + 1) -Label $Label
+        $right = Invoke-ShardedSql -Statement $Statement -From ($mid + 1) -To $To -Depth ($Depth + 1) -Label $Label
         return Merge-ShardedRows -Parts @($left, $right)
     }
 }
@@ -1889,7 +1934,7 @@ function Get-StatementRows {
     param([string]$Statement, [string]$CheckId)
 
     try {
-        return Get-ResultRows -Content (Invoke-SqlWithRetry -Statement $Statement).Content
+        return Get-ResultRows -Content (Invoke-SqlWithRetry -Statement $Statement -Label $CheckId).Content
     }
     catch {
         if (-not (Test-ResultTooLarge -Message $_.Exception.Message)) { throw }
@@ -1911,7 +1956,7 @@ function Get-StatementRows {
 
         for ($lo = $bounds.Lo; $lo -le $bounds.Hi; $lo += $step) {
             $hi = [long][math]::Min($lo + $step - 1, $bounds.Hi)
-            $parts += , (Invoke-ShardedSql -Statement $Statement -From $lo -To $hi -Depth 1)
+            $parts += , (Invoke-ShardedSql -Statement $Statement -From $lo -To $hi -Depth 1 -Label $CheckId)
         }
 
         return Merge-ShardedRows -Parts $parts
@@ -6005,6 +6050,7 @@ if ($isBatch) {
         Write-Host ("  Skipped, so nothing was audited for: {0}" -f `
             ((@($skipped | ForEach-Object { [string]$_.RunKey })) -join ', ')) -ForegroundColor Yellow
     }
+    Close-AbandonedShells
 
     # Where the run's time went, in the three parts anybody asks about. The database figure is
     # the sum of what each statement reported, which is already on every line above; the document
