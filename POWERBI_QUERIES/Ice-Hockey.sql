@@ -1810,12 +1810,12 @@ SELECT
     -- Name - COMP.RANK_SETTINGS_MEDAL_SET_INVALID
     -- What it does: Finds medal-awarding Comp.Rank whose medal set does not match the places the ranking holds.
     CASE
--- What it does, stated in full: Finds Comp.Rank under a Golf template that awards medals
--- whose medal set does not follow the places its own Rank rows hold: a type missing, held by
--- more competitors than the place takes, held by fewer, or standing over a podium that never
--- reaches the place it belongs to.
-        -- Nothing to compare the medals with. The missing Rank is Golf-DQ-001's finding and
-        -- is not restated here; what this row says is that the medal set was not audited.
+-- What it does, stated in full: Finds Comp.Rank under an Ice Hockey template that awards
+-- medals whose medal set does not follow the places its own Rank rows hold: a type missing,
+-- held by more competitors than the place takes, held by fewer, or standing over a podium
+-- that never reaches the place it belongs to.
+        -- Nothing to compare the medals with. The missing Rank is Ice-Hockey-DQ-005's finding
+        -- and is not restated here; what this row says is that the medal set was not audited.
         WHEN x.ranked_holders = 0 THEN 'Medal_Set_Unreadable_Without_Rank'
         WHEN x.total_medal_count = 0 THEN 'No_Medals_At_All'
         -- A shared place removes the place below it, so a second gold beside a silver is a
