@@ -426,6 +426,23 @@ SELECT
 -- month are repaired by different people - and the date was a click into the tab away, on every
 -- row, every week. It identifies nothing, so the notes a reviewer has already left stay keyed
 -- to check_type and event_id and none of them is displaced by its arrival.
+-- Where the time goes, measured on Cycling 2026-08-30, its slowest sport at 55.2 seconds.
+-- The statement makes four wide passes and three of them are real: the value aggregation
+-- about 25 seconds, the tied-group aggregation about 15, coverage about 12, and the outer
+-- scan effectively nothing because the optimiser drives it from the small tied set. The
+-- Comment anti-probe costs about 3.3 seconds of each pass it sits in, and it sits in three.
+-- Coverage is the one that was pure waste and it is gone; the rest is what the question
+-- costs.
+--
+-- The value aggregation is the part that looks wrong and is not cheaply fixable. Cycling
+-- holds 440 tied groups over 1445 rows, and that aggregation builds 1134302 groups - every
+-- rank in the sport - to answer about the 440. Restricting it to the events holding a tied
+-- group is the obvious repair and it was measured on 2026-08-30: 27 seconds became 73. The
+-- restricting set has to be materialised, which loses the index path into result, the same
+-- way GLOBAL-DQ-111 records a new derived level costing more than the work it removed. The
+-- server takes no CTE, so the tied set cannot be computed once and read twice, and every
+-- other arrangement trades one wide pass for another. It is recorded here as tried and wrong
+-- rather than left as the next reader's good idea.
 FROM (
 SELECT
     CASE
@@ -578,16 +595,18 @@ SELECT
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count,
     1 AS sort_order
-FROM event_participants ep
-JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+-- Coverage asks whether a finished event holds one ranked participant, and EXISTS answers it
+-- by stopping at the first. Counting distinct events across every participation instead asked
+-- the whole per-participation question a second time to produce a single number: measured on
+-- Cycling 2026-08-30, 12.2 seconds of the statement's 57.5, returning the identical 9610. It
+-- drives from the event now, so the DISTINCT costs nothing and is kept because the coverage
+-- contract reads it. GLOBAL-DQ-111 made the same change on 2026-08-17 and called it the whole
+-- saving there.
+FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
 JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-JOIN result r ON r.event_participantsFK = ep.id
-     AND r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
-     AND r.del = 'no'
-     AND r.value REGEXP '^[1-9][0-9]*$'
-WHERE ep.del = 'no'
+WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.status_type = 'finished'
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
@@ -595,6 +614,15 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  AND EXISTS (
+      SELECT 1
+      FROM event_participants ep
+      JOIN result r ON r.event_participantsFK = ep.id
+           AND r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+           AND r.del = 'no'
+           AND r.value REGEXP '^[1-9][0-9]*$'
+      WHERE ep.eventFK = e.id AND ep.del = 'no'
+  )
 
 ORDER BY sort_order, affected_count DESC, event_id;
 
