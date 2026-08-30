@@ -434,9 +434,33 @@ function Get-QuerySourceFiles {
     return $files
 }
 
+function Get-CatalogueFingerprint {
+    # What the catalogue was parsed from, cheaply enough to check on every call: the number of
+    # source files, their total length and the newest write time. Stat calls, not reads.
+    $files = @(Get-QuerySourceFiles)
+    if ($files.Count -eq 0) { return '0' }
+    $length = (@($files | ForEach-Object { [long]$_.Length }) | Measure-Object -Sum).Sum
+    $newest = (@($files | ForEach-Object { $_.LastWriteTimeUtc.Ticks }) | Measure-Object -Maximum).Maximum
+    return ('{0}|{1}|{2}|{3}' -f $RepoRoot, $files.Count, $length, $newest)
+}
+
+$script:CheckCatalogueCache = @{}
+
 function Get-CheckCatalogue {
     # Every registered check, with the SQL body attached. Statements are separated by the
     # "-- ====..." banner lines used across the repo.
+    #
+    # Parsed once and kept, because a single -RunAll asks for the catalogue three times and
+    # re-reading all twenty-four SQL files costs about 0.4 seconds each time. The cache is keyed
+    # on the repository root and on what the files themselves look like, not on the root alone:
+    # Test-Tools.ps1 dot-sources this script once and then points $RepoRoot at a fixture
+    # catalogue and back, and rewrites SQL files between calls. A cache keyed on the root alone
+    # would hand the fixture's checks to the test that asked for the real ones.
+    $fingerprint = Get-CatalogueFingerprint
+    if ($script:CheckCatalogueCache.ContainsKey($fingerprint)) {
+        return $script:CheckCatalogueCache[$fingerprint]
+    }
+
     $catalogue = @()
 
     foreach ($f in Get-QuerySourceFiles) {
@@ -476,6 +500,7 @@ function Get-CheckCatalogue {
         }
     }
 
+    $script:CheckCatalogueCache[$fingerprint] = $catalogue
     return $catalogue
 }
 
@@ -3585,6 +3610,8 @@ function Save-RunSummaryCsv {
         Export-Csv -LiteralPath $Path -NoTypeInformation -Encoding UTF8
 }
 
+$script:RunLedgerCache = @{}
+
 function Get-LedgerPath {
     # $RepoRoot is read at call time rather than folded into a constant at load time, as every
     # other reader of a repository file does: pointing it at a fixture is how Test-Tools.ps1
@@ -3604,6 +3631,16 @@ function Read-RunLedger {
         return [pscustomobject]@{ sport = $Sport; ledgerVersion = $LedgerVersion; runs = @() }
     }
 
+    # Parsed once per run rather than once per caller. One run reads the sport's history three
+    # times over - the previous entry per check, the trend series, and again to append - and the
+    # largest ledger here is 2.4 MB, about 0.3 seconds of ConvertFrom-Json each time. The key
+    # carries the file's write time and length, so the copy is dropped the moment the file
+    # changes underneath it: Save-RunLedger rewrites it, and Test-Tools.ps1 rewrites fixtures
+    # between two reads in the same process.
+    $stamp = Get-Item -LiteralPath $path
+    $key = '{0}|{1}|{2}' -f $path, $stamp.LastWriteTimeUtc.Ticks, $stamp.Length
+    if ($script:RunLedgerCache.ContainsKey($key)) { return $script:RunLedgerCache[$key] }
+
     try {
         $ledger = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
     }
@@ -3616,6 +3653,7 @@ function Read-RunLedger {
     if ($null -eq $ledger.runs) {
         $ledger | Add-Member -NotePropertyName runs -NotePropertyValue @() -Force
     }
+    $script:RunLedgerCache[$key] = $ledger
     return $ledger
 }
 
