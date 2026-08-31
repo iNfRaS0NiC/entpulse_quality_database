@@ -358,6 +358,29 @@ audit, and `SUPPORT_PARTICIPANT_TYPE_LIST` has nothing to name. Three of the six
 instantiate it. This is the participant-role twin of the reasoning above rather than an empty
 population: `PERSON_ROLE_TYPE_LIST` for this sport is `'athlete'` alone for the same reason.
 
+**Three templates are `Not applicable` here because they say so themselves.** Each is written
+for head-to-head sports by the competition model rather than by reading any sport's rows, and
+this sport lines a field up and ranks it. None is assigned a CheckID and none reserves one;
+decided 2026-08-31. `GLOBAL-DQ-093 EVENT_RESULTS_MEDAL_SET_INVALID_FOR_MEDAL_ROUND` exists for a
+sport that decides bronze in its own match, so no single event holds the full medal set - here
+the final awards all three and `GLOBAL-DQ-037` is the check that fits. `GLOBAL-DQ-096
+EVENT_NAME_DOES_NOT_NAME_ITS_PARTICIPANTS` asks whether an event is named for its two sides, and
+a listing sport has nothing to put in such a name: every event here is named for its discipline.
+`GLOBAL-DQ-144 EVENT_RESULTS_RANK_STORED_BY_A_HEAD_TO_HEAD_SPORT` reports a Rank as a defect
+because a head-to-head event is two sides and a score; a Rank is this sport's whole
+classification.
+
+**`GLOBAL-DQ-127 EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK` was approved whole, and most of
+what it returns is the rules of cycling.** It returns 385 of 1044 events. Measured 2026-08-31
+over the 388 events where two riders hold one `101 Duration` under different ranks: 260 are
+Cross Country, 88 Marathon and 5 Cross Country Marathon, all mass-start disciplines where the
+sport gives a whole finishing group the time of the rider who led it and still ranks them in
+crossing order - the largest such group is 14 riders on one value. The remaining 35 are
+Downhill, where each rider starts alone and an identical time cannot be a real dead heat; there
+the largest group is 11 riders on one value, which is stored precision lost rather than eleven
+simultaneous runs. The user was given that split and took the check whole, so a reviewer meeting
+a Cross Country or Marathon row here is meeting the sport's own convention.
+
 <!-- MANUAL PASTE ZONE: 56 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
