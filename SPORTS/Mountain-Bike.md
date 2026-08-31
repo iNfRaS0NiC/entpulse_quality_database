@@ -381,6 +381,26 @@ the largest group is 11 riders on one value, which is stored precision lost rath
 simultaneous runs. The user was given that split and took the check whole, so a reviewer meeting
 a Cross Country or Marathon row here is meeting the sport's own convention.
 
+**The same 17 events are reported under two CheckIDs, and that was chosen rather than
+overlooked.** `Mountain-Bike-DQ-122 EVENT_RESULTS_REQUIRED_RESULT_LAYER_MISSING` declares
+`100 Rank` and `101 Duration` mandatory and reports 17 finished events holding a Rank with no
+Duration. `Mountain-Bike-DQ-066 EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE` already reports the
+same 17 as `DECIDING_VALUE_ABSENT_FROM_EVENT`. Declaring Rank alone would have made the check a
+guard returning nothing, and the user took the overlap knowingly on 2026-08-31. A reviewer
+closing one of these events should expect to meet it twice.
+
+**`MEDAL_TEMPLATE_ID_LIST` was measured across both medal layers, not one.** Speed Skating was
+measured on result type `501 Medal` alone and `GLOBAL-DQ-125
+COMP.RANK_MEDAL_AWARDED_OUTSIDE_MEDAL_TEMPLATE` reported 1380 rows there, because 23 of its
+national-championship templates award only through data type `1277 Medal` on the Comp.Rank
+side. This sport has the same shape in miniature: templates `12507` and `12508 World
+Championship Cross Country 1 (IOC)` carry no `501` on any event and 34 statistics each carrying
+`1277`. The list holds the 32 templates that record a medal today. Five that award medals in the
+world but record none here are deliberately out - `9462`, `9461` and `9454`, the Swiss national
+championships, and `11567` and `11568 Summer Youth Olympics`, which hold no edition at all - so
+the day one of them records a medal the check reports it and this list is what needs correcting.
+`Mountain-Bike-DQ-121` returns nothing today and is a guard.
+
 <!-- MANUAL PASTE ZONE: 56 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
