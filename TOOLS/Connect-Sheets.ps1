@@ -54,7 +54,11 @@ if ([string]::IsNullOrWhiteSpace($ClientId) -or [string]::IsNullOrWhiteSpace($Cl
 
 if (-not $Force -and -not [string]::IsNullOrWhiteSpace($env:EP_SHEETS_REFRESH_TOKEN)) {
     Write-Host 'A refresh token is already recorded. Nothing to do.' -ForegroundColor DarkGray
-    Write-Host 'Use -Force to replace it - only worth doing if it has stopped working.' -ForegroundColor DarkGray
+    Write-Host 'Use -Force to replace it - if it has stopped working, or to widen its scope.' -ForegroundColor DarkGray
+    # The one reason a working token needs replacing. A refresh grant does not carry a scope,
+    # so a token minted before a scope was added to $SheetsScope keeps the narrower grant for
+    # ever and nothing fails until something tries to use the new one. The board never will.
+    Write-Host ('  Scopes this package now asks for: ' + $Scope) -ForegroundColor DarkGray
     return
 }
 

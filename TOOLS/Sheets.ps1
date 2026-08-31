@@ -19,7 +19,14 @@
 
 $SheetsApiRoot = 'https://sheets.googleapis.com/v4/spreadsheets'
 $SheetsTokenUrl = 'https://oauth2.googleapis.com/token'
-$SheetsScope = 'https://www.googleapis.com/auth/spreadsheets'
+# The board, and the one message the package sends about it.
+#
+# Both scopes ride one authorisation. A refresh grant does not carry a scope - the access
+# token inherits whatever the refresh token was granted - so Get-SheetsAccessToken needs no
+# change and there is no second client, secret or token to renew. What it costs is a
+# re-consent: a refresh token minted before gmail.send was added here does not have it, and
+# Google refuses the send with a 403 whose message does not say so. See TOOLS/Notify.ps1.
+$SheetsScope = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send'
 
 # The title Google gives a spreadsheet nobody has named. The runner names the document while
 # it still reads exactly this, and never over a title somebody chose: a colleague who renames
@@ -2270,9 +2277,35 @@ function New-SheetsMergePlan {
                     Values   = @(, @($SheetsReopenedStatus))
                 }
                 $cells += 1
+                # Carried with the transition rather than looked up again afterwards, because
+                # the numbers that decided it are the numbers a reader has to be told. Findings
+                # and PrevFindings here are the open counts - the rows the reviewers dismissed
+                # are already out of them - and the rule above fired on exactly these. Taking
+                # them from the ledger instead, which is the raw count, would send a mail whose
+                # figures disagree with the board it points at, on precisely the checks where
+                # somebody has done the most work. Verdict is re-judged against the open count
+                # by Get-SheetsOpenCounts for the same reason.
+                #
+                # Sport, Name and What travel too. A notification carrying a bare CheckID asks
+                # the reader to look it up before they know whether it matters, and this is the
+                # one message in the package that reaches somebody who has not been reading a
+                # board. The repository's own rule is that an ID never travels without the name
+                # and a line of what the check asserts; What is that line.
                 $statusRenames += [pscustomobject]@{
                     CheckId = $runKey; From = $statusNow; To = $SheetsReopenedStatus
                     Why = ('it was {0} and this run returned {1} open finding(s)' -f $statusMeans, $openNow)
+                    Sport = [string]$entry.Sport
+                    Name = [string]$entry.Name
+                    What = [string]$entry.What
+                    Expected = [string]$entry.Expected
+                    PreviousFindings = $open.PrevFindings
+                    CurrentFindings = $openNow
+                    Verdict = [string]$open.Verdict
+                    # The tab, by title rather than by number. Nothing knows a tab's numeric id
+                    # until Google answers - see New-SheetsGidLink - so the title is what this
+                    # side can name, and Invoke-SheetsPlan hands back the map that turns it
+                    # into the id a link needs.
+                    TabTitle = $(if ($titleOf.ContainsKey($runKey)) { [string]$titleOf[$runKey] } else { '' })
                 }
             }
 
@@ -5308,6 +5341,10 @@ function Invoke-SheetsPlan {
         Written    = $writes.Count
         Tables     = $tablesApplied
         NotesSaved = [string]$notesSaved
+        # Every tab id this run can name, the document's own plus the ones just minted. Handed
+        # back because a caller outside this file - the reopen notification - needs to link to
+        # a tab, and this is the only place that knows what Google called it.
+        GidOf      = $gidOf
         NotesCount = [int]$noteCount
     }
 }

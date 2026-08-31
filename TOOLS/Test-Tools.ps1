@@ -5815,6 +5815,528 @@ Test-That 'a tab the document lacks is added before it is written to' {
 Complete-Group
 
 # --------------------------------------------------------------------------------------
+# Reopened notifications
+#
+# The transition is decided in Sheets.ps1 and the message is composed in Notify.ps1, and
+# neither of them sends anything, so all of this runs without a login for the same reason the
+# merge tests do. What is being defended here is that a message goes out exactly once per
+# transition, that it never goes out for a transition that is not a reopen, and that it names
+# the check rather than numbering it.
+# --------------------------------------------------------------------------------------
+
+Start-Group 'Runner' 'Reopen notifications'
+
+Test-That 'the reopen transition carries what a message has to say' {
+    # Looked up again afterwards, these would have to come from the ledger, which holds the
+    # statement's own count. The rule fires on the open count - the reviewers' dismissed rows
+    # already out of it - so a message built from the ledger would disagree with the board it
+    # points at, and it would disagree hardest on the checks somebody has worked on most.
+    $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-050' -Findings 4 -Eligible 900 -Verdict 'Regressed'))
+    $existing = [pscustomobject]@{
+        HasOverviewHeader = $true
+        OverviewRowOf = @{ 'Fixtureball-DQ-050' = 6 }
+        StatusOf = @{ 'Fixtureball-DQ-050' = 'Completed' }
+        TabOf = @{}
+        ResultRowsOf = @{}
+    }
+    $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+
+    $said = @($plan.StatusRenames | Where-Object { $_.To -eq 'Reopened' })
+    Assert-Equal 1 $said.Count 'one reopen'
+    Assert-Equal 'Fixtureball' $said[0].Sport 'the sport travels'
+    Assert-Equal 'NAME_Fixtureball-DQ-050' $said[0].Name 'and the name'
+    Assert-Equal 'a thing' $said[0].What 'and the line saying what it asserts'
+    Assert-Equal 'Zero' $said[0].Expected 'and the expectation that let it reopen at all'
+    Assert-Equal 4 $said[0].CurrentFindings 'the count that contradicted the closed word'
+    Assert-Equal 'Regressed' $said[0].Verdict 'and the verdict judged against the open count'
+}
+
+Test-That 'only a reopen becomes a notification' {
+    # StatusRenames is every status the run wrote. A check closing itself on two clean runs is
+    # in there too, and it is good news arriving on a board somebody reads anyway.
+    $renames = @(
+        [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+            Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+            CurrentFindings = 4; Verdict = 'Regressed' }
+        [pscustomobject]@{ CheckId = 'Fixtureball-DQ-051'; From = 'Reopened'; To = 'Completed'
+            Why = 'two clean runs' }
+        [pscustomobject]@{ CheckId = 'Fixtureball-DQ-052'; From = 'Fixed'; To = 'Completed'
+            Why = 'a superseded spelling' }
+    )
+    $events = @(New-ReopenNotification -Renames $renames -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+    Assert-Equal 1 $events.Count 'one message, not three'
+    Assert-Equal 'Fixtureball-DQ-050' $events[0].checkId 'and it is the reopen'
+}
+
+Test-That 'one transition is one message however often the run is repeated' {
+    # A board update that fails in transport is retried, and the second attempt writes the same
+    # Status cell and reports the same rename. The id is built from the run's own start rather
+    # than from now, so the retry produces the id that is already in the queue.
+    $renames = @([pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+            Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+            CurrentFindings = 4; Verdict = 'Regressed' })
+    $first = @(New-ReopenNotification -Renames $renames -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+    $again = @(New-ReopenNotification -Renames $renames -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+    Assert-Equal $first[0].notificationId $again[0].notificationId 'the same run gives the same id'
+
+    $queued = Add-NotifyEvent -Queue @() -Events $first
+    Assert-Equal 1 $queued.Added 'the first attempt queues it'
+    $repeat = Add-NotifyEvent -Queue $queued.Queue -Events $again
+    Assert-Equal 0 $repeat.Added 'the retry queues nothing'
+    Assert-Equal 1 @($repeat.Queue).Count 'and the queue still holds one'
+
+    $later = @(New-ReopenNotification -Renames $renames -RunId 'r' -StartedUtc '2026-09-01T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+    $next = Add-NotifyEvent -Queue $repeat.Queue -Events $later
+    Assert-Equal 1 $next.Added 'a later run that reopens it again is a new message'
+}
+
+Test-That 'the message names the check rather than numbering it' {
+    # The one thing this package sends to somebody who has not been reading a board. A subject
+    # carrying a bare CheckID asks its reader to go and look up whether it matters.
+    $events = @(New-ReopenNotification -Renames @(
+            [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+                Sport = 'Fixtureball'; Name = 'EVENT_RESULTS_MISSING_FOR_FINISHED'
+                What = 'a finished event with no result rows'; PreviousFindings = 0
+                CurrentFindings = 5; Verdict = 'Regressed' }
+        ) -RunId 'Fixtureball 31.08.2026 14-35-00' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+
+    $mail = Format-ReopenDigest -Events $events
+    Assert-True ($mail.Subject -like '*Fixtureball-DQ-050*') 'the subject carries the id'
+    Assert-True ($mail.Subject -like '*EVENT_RESULTS_MISSING_FOR_FINISHED*') 'and its name beside it'
+
+    # Four columns and a link, not four lines of prose. Asserted on both bodies because both
+    # are sent and a reader may be shown either.
+    foreach ($body in @($mail.Body, $mail.BodyHtml)) {
+        Assert-True ($body -like '*Fixtureball*') 'the sport is there'
+        Assert-True ($body -like '*Fixtureball-DQ-050*') 'and the id'
+        Assert-True ($body -like '*EVENT_RESULTS_MISSING_FOR_FINISHED*') 'and the name'
+        Assert-True ($body -like '*5*') 'and the row count'
+        Assert-True ($body -like '*No Issue / Change*') 'and which count it is quoting'
+    }
+    Assert-True ($mail.BodyHtml -like '*a finished event with no result rows*') 'the HTML says what it asserts'
+    Assert-True ($mail.BodyHtml -like '*docs.google.com/spreadsheets/d/ABC*') 'and carries somewhere to go'
+    Assert-True ($mail.BodyHtml -like '*>open<*') 'behind a word rather than as ninety characters of URL'
+}
+
+Test-That 'a row links to the check own tab, and to the board when it cannot' {
+    # A tab id is a number Google assigns and a link without it opens whichever tab the
+    # document was last on - which for a fifty-tab sport is the wrong one. The map arrives from
+    # Invoke-SheetsPlan because a tab created on this run has no id until Google answers.
+    $renames = @(
+        [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+            Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+            CurrentFindings = 4; Verdict = 'Regressed'; TabTitle = 'Fixtureball-DQ-050' }
+        [pscustomobject]@{ CheckId = 'Fixtureball-DQ-051'; From = 'Completed'; To = 'Reopened'
+            Sport = 'Fixtureball'; Name = 'NAME_B'; What = 'a thing'; PreviousFindings = 0
+            CurrentFindings = 7; Verdict = 'Regressed'; TabTitle = 'not on the board yet' }
+    )
+    $events = @(New-ReopenNotification -Renames $renames -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' `
+            -Sport 'Fixtureball' -SheetId 'ABC' -GidOf @{ 'Fixtureball-DQ-050' = 998877 })
+
+    Assert-Equal 998877 $events[0].tabGid 'the known tab keeps its id'
+    Assert-Equal $null $events[1].tabGid 'and the unknown one has none'
+    Assert-Equal 'https://docs.google.com/spreadsheets/d/ABC/edit#gid=998877' `
+        (Get-NotifyTabLink -SheetId 'ABC' -Gid $events[0].tabGid) 'so the first links to its own tab'
+    Assert-Equal 'https://docs.google.com/spreadsheets/d/ABC/edit' `
+        (Get-NotifyTabLink -SheetId 'ABC' -Gid $events[1].tabGid) 'and the second degrades to the board'
+    Assert-Equal '' (Get-NotifyTabLink -SheetId '' -Gid 1) 'with no document, there is no link at all'
+
+    # PowerShell variable names do not distinguish case, so a local named $gidOf inside a
+    # function taking -GidOf empties the map before reading it. That happened on 2026-08-31 and
+    # nothing failed: every link quietly fell back to the board.
+    Assert-True ($events[0].tabGid -ne $null) 'the map passed in is actually read'
+}
+
+Test-That 'several reopens arrive as one message' {
+    # Twenty mails is where somebody starts filtering the sender into a folder, which is the
+    # failure this whole feature exists to avoid arriving by a different door.
+    $renames = @(1..3 | ForEach-Object {
+            [pscustomobject]@{ CheckId = ('Fixtureball-DQ-05{0}' -f $_); From = 'Completed'; To = 'Reopened'
+                Sport = 'Fixtureball'; Name = ('NAME_{0}' -f $_); What = 'a thing'
+                PreviousFindings = 0; CurrentFindings = $_; Verdict = 'Regressed' }
+        })
+    $events = @(New-ReopenNotification -Renames $renames -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+    $mail = Format-ReopenDigest -Events $events
+    Assert-True ($mail.Subject -like '*3 checks on Fixtureball*') 'the subject counts them'
+    foreach ($n in 1..3) {
+        Assert-True ($mail.Body -like ('*Fixtureball-DQ-05{0}  NAME_{0}*' -f $n)) "and the body still names check $n"
+    }
+    Assert-Equal $null (Format-ReopenDigest -Events @()) 'and nothing at all is not a message'
+}
+
+Test-That 'the queue survives the disk and a damaged file does not end a run' {
+    # The queue is written after the board has been updated. A local file that will not parse
+    # costs a duplicate message; throwing here would cost the run that has already finished.
+    $path = Join-Path ([System.IO.Path]::GetTempPath()) ('notify-' + [guid]::NewGuid().ToString('N') + '.json')
+    try {
+        $events = @(New-ReopenNotification -Renames @(
+                [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+                    Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+                    CurrentFindings = 4; Verdict = 'Regressed' }
+            ) -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+
+        Assert-Equal 0 @(Read-NotifyQueue -Path $path).Count 'a queue that does not exist yet is empty'
+        [void](Save-NotifyQueue -Queue $events -Path $path)
+        $back = @(Read-NotifyQueue -Path $path)
+        Assert-Equal 1 $back.Count 'one message comes back'
+        Assert-Equal 'Fixtureball-DQ-050' $back[0].checkId 'as itself'
+        Assert-Equal 'QUEUED' $back[0].status 'still waiting to be sent'
+
+        Set-Content -LiteralPath $path -Value 'not json at all' -Encoding UTF8
+        Assert-Equal 0 @(Read-NotifyQueue -Path $path).Count 'a damaged queue reads as empty rather than throwing'
+    }
+    finally {
+        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    }
+}
+
+Test-That 'a check that was never meant to reach zero never notifies' {
+    # The gate is in Sheets.ps1 and this asserts the consequence, because it is the thing
+    # somebody will report as a bug: a Monitor check whose count jumped and no mail arrived.
+    # See output/Reopened_by_mistake.md for the eight rows that taught it.
+    foreach ($expectation in @('Non-zero', 'Residual', '')) {
+        $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-060' -Findings 1114 -Eligible 90000 -Verdict 'As expected'))
+        $summary[0].Expected = $expectation
+        $existing = [pscustomobject]@{
+            HasOverviewHeader = $true
+            OverviewRowOf = @{ 'Fixtureball-DQ-060' = 6 }
+            StatusOf = @{ 'Fixtureball-DQ-060' = 'Completed' }
+            TabOf = @{}
+            ResultRowsOf = @{}
+        }
+        $plan = New-SheetsMergePlan -Summary $summary -Collected @() -Existing $existing -OutputFolder 'x'
+        $events = @(New-ReopenNotification -Renames $plan.StatusRenames -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+        Assert-Equal 0 $events.Count "an expectation of '$expectation' sends nothing"
+    }
+}
+
+Test-That 'nothing is sent until somebody names a recipient' {
+    # The opt-in, and the whole of the safety in this feature. A board update is run by
+    # whoever is working on a sport; one that starts mailing a list the day it is merged is
+    # one that mails a list nobody agreed to.
+    Assert-Equal 0 @(Get-NotifyRecipients -Value '').Count 'an unset address is nobody'
+    Assert-Equal 0 @(Get-NotifyRecipients -Value '   ').Count 'and neither is whitespace'
+    $several = @(Get-NotifyRecipients -Value ' a@b.com ;c@d.com, e@f.com ')
+    Assert-Equal 3 $several.Count 'commas and semicolons both separate'
+    Assert-Equal 'a@b.com' $several[0] 'and the spaces come off'
+
+    $path = Join-Path ([System.IO.Path]::GetTempPath()) ('notify-' + [guid]::NewGuid().ToString('N') + '.json')
+    try {
+        $events = @(New-ReopenNotification -Renames @(
+                [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+                    Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+                    CurrentFindings = 4; Verdict = 'Regressed' }
+            ) -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+        [void](Save-NotifyQueue -Queue $events -Path $path)
+
+        $result = Invoke-NotifyDrain -Path $path -To @()
+        Assert-True $result.Skipped 'the drain says it did not send'
+        Assert-Equal 1 $result.Waiting 'and the message is still waiting'
+        Assert-Equal 'QUEUED' (@(Read-NotifyQueue -Path $path)[0].status) 'so it goes out when an address is set'
+    }
+    finally {
+        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    }
+}
+
+Test-That 'a dry run composes without sending and without marking' {
+    # What a first run should do, and what these tests do always. A drain that marked a
+    # message sent on a dry run would lose it: the record of having said a thing is the only
+    # defence against saying it twice, and it would be recording a thing nobody said.
+    $path = Join-Path ([System.IO.Path]::GetTempPath()) ('notify-' + [guid]::NewGuid().ToString('N') + '.json')
+    try {
+        $events = @(New-ReopenNotification -Renames @(
+                [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+                    Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+                    CurrentFindings = 4; Verdict = 'Regressed' }
+            ) -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+        [void](Save-NotifyQueue -Queue $events -Path $path)
+
+        $result = Invoke-NotifyDrain -Path $path -To @('someone@example.com') -DryRun
+        Assert-Equal 1 $result.Sent 'the dry run reports what it would have sent'
+        Assert-Equal 'QUEUED' (@(Read-NotifyQueue -Path $path)[0].status) 'and leaves it queued'
+    }
+    finally {
+        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    }
+}
+
+Test-That 'two runs are two messages and one run is one' {
+    # Grouped by run rather than drained flat. Twenty checks reopened by one board is one
+    # message; two boards that each reopened something are two, because folding them together
+    # would date the second one by the first one's run.
+    $path = Join-Path ([System.IO.Path]::GetTempPath()) ('notify-' + [guid]::NewGuid().ToString('N') + '.json')
+    try {
+        $queue = @()
+        foreach ($run in @('run-one', 'run-two')) {
+            $stamp = $(if ($run -eq 'run-one') { '2026-08-31T11:35:00Z' } else { '2026-09-01T11:35:00Z' })
+            $renames = @(1..2 | ForEach-Object {
+                    [pscustomobject]@{ CheckId = ('Fixtureball-DQ-0{0}{1}' -f $run.Length, $_)
+                        From = 'Completed'; To = 'Reopened'; Sport = 'Fixtureball'
+                        Name = ('NAME_{0}' -f $_); What = 'a thing'; PreviousFindings = 0
+                        CurrentFindings = $_; Verdict = 'Regressed' }
+                })
+            $queue += @(New-ReopenNotification -Renames $renames -RunId $run -StartedUtc $stamp -Sport 'Fixtureball' -SheetId 'ABC')
+        }
+        [void](Save-NotifyQueue -Queue $queue -Path $path)
+        Assert-Equal 4 @(Read-NotifyQueue -Path $path).Count 'four transitions across two runs'
+
+        $groups = @(@(Read-NotifyQueue -Path $path) | Group-Object { [string]$_.runId })
+        Assert-Equal 2 $groups.Count 'which the drain sends as two messages'
+        foreach ($group in $groups) {
+            $mail = Format-ReopenDigest -Events @($group.Group)
+            Assert-True ($mail.Subject -like '*2 checks*') 'each covering its own run'
+            foreach ($item in @($group.Group)) {
+                Assert-True ($mail.Body -like ('*{0}*' -f $item.checkId)) 'and naming its own checks'
+            }
+        }
+    }
+    finally {
+        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    }
+}
+
+Test-That 'the message is built as mail rather than as text' {
+    # A check name is ASCII and a sport name is ASCII, but a reviewer's status word arrives
+    # from a spreadsheet somebody else types into, and a message that mangles one character is
+    # a message whose numbers a reader then has to doubt.
+    $mime = New-NotifyMimeMessage -To @('a@b.com', 'c@d.com') -Subject 'DQ reopened: X' `
+        -Body "line one`nline two" -From 'sender@example.com'
+    Assert-True ($mime -like '*From: sender@example.com*') 'the sender is named when one is given'
+    Assert-True ($mime -like '*To: a@b.com, c@d.com*') 'recipients are comma separated'
+    Assert-True ($mime -like '*charset="UTF-8"*') 'the charset is declared'
+    Assert-True ($mime -like '*Content-Transfer-Encoding: base64*') 'and the body is encoded'
+
+    $split = $mime -split "`r`n`r`n", 2
+    Assert-Equal 2 $split.Count 'headers and body are separated by a blank line'
+    $decoded = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String(($split[1] -replace "`r`n", '')))
+    Assert-Equal "line one`nline two" $decoded 'and the body survives the encoding'
+
+    $noFrom = New-NotifyMimeMessage -To @('a@b.com') -Subject 'S' -Body 'B'
+    Assert-True ($noFrom -notlike '*From:*') 'no From header is written when none is configured'
+
+    # With an HTML body it becomes multipart/alternative, text first. The order is the
+    # specification's and it is not cosmetic: a client shows the last part it can render, so
+    # text first is what makes the HTML win where it is wanted and the text appear where it
+    # is not.
+    $both = New-NotifyMimeMessage -To @('a@b.com') -Subject 'S' -Body 'plain here' -BodyHtml '<p>rich here</p>'
+    Assert-True ($both -like '*multipart/alternative*') 'both bodies make it multipart'
+    $boundary = ''
+    if ($both -match 'boundary="([^"]+)"') { $boundary = $matches[1] }
+    Assert-True (-not [string]::IsNullOrWhiteSpace($boundary)) 'with a boundary declared'
+    Assert-True ($both -like "*--$boundary--*") 'and closed at the end'
+    $textAt = $both.IndexOf('text/plain')
+    $htmlAt = $both.IndexOf('text/html')
+    Assert-True ($textAt -ge 0 -and $htmlAt -ge 0) 'both parts are present'
+    Assert-True ($textAt -lt $htmlAt) 'and the text one comes first'
+    foreach ($piece in @('plain here', 'rich here')) {
+        $found = $false
+        foreach ($chunk in ($both -split "`r`n`r`n")) {
+            $clean = ($chunk -replace "`r`n", '') -replace '--.*$', ''
+            try {
+                if ([Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($clean)) -like "*$piece*") { $found = $true }
+            }
+            catch { }
+        }
+        Assert-True $found "the message carries '$piece'"
+    }
+
+    $url = ConvertTo-NotifyBase64Url -Text 'a?b>c'
+    Assert-True ($url -notlike '*+*' -and $url -notlike '*/*' -and $url -notlike '*=*') `
+        'the API alphabet has no plus, slash or padding'
+}
+
+Test-That 'an empty queue read back from disk does not become one empty message' {
+    # Found on 2026-08-31 by running the whole path instead of its pieces, which is why it is
+    # here as a case. PowerShell has two nothings: a function returning @() hands back
+    # AutomationNull, which an @() around it treats as empty - but bind that same value to a
+    # parameter and it is a plain $null, and @($null) is an array of one element that happens
+    # to be nothing. Every earlier case passed -Queue @() as a literal and so never saw it.
+    # The queue file came out holding `null` beside the real message, and the digest composed
+    # a paragraph about it: a blank line where the check's name goes, then "was blank with no
+    # recorded count; this run returned ".
+    $missing = Join-Path ([System.IO.Path]::GetTempPath()) ('notify-' + [guid]::NewGuid().ToString('N') + '.json')
+    $events = @(New-ReopenNotification -Renames @(
+            [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+                Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+                CurrentFindings = 4; Verdict = 'Regressed' }
+        ) -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+
+    $queued = Add-NotifyEvent -Queue (Read-NotifyQueue -Path $missing) -Events $events
+    Assert-Equal 1 $queued.Added 'one message is added'
+    Assert-Equal 1 @($queued.Queue).Count 'and the queue holds one, not one and a nothing'
+    foreach ($item in @($queued.Queue)) {
+        Assert-True ($null -ne $item) 'no element of the queue is nothing'
+    }
+
+    Assert-Equal 0 @(ConvertTo-NotifyList -Value $null).Count 'a bare null is no elements'
+    Assert-Equal 0 @(ConvertTo-NotifyList -Value @()).Count 'and so is an empty array'
+    Assert-Equal 1 @(ConvertTo-NotifyList -Value @($null, 'a')).Count 'and a null among values is dropped'
+}
+
+Test-That 'a queue file already holding a nothing comes back clean' {
+    # Written by the version that had the defect above. It heals on the next read rather than
+    # needing anybody to open the file, because the file is not evidence of anything and the
+    # alternative is a message about a check that does not exist.
+    $path = Join-Path ([System.IO.Path]::GetTempPath()) ('notify-' + [guid]::NewGuid().ToString('N') + '.json')
+    try {
+        Set-Content -LiteralPath $path -Encoding UTF8 -Value `
+            '{"queueVersion":1,"notifications":[null,{"notificationId":"x","checkId":"C","status":"QUEUED"}]}'
+        $back = @(Read-NotifyQueue -Path $path)
+        Assert-Equal 1 $back.Count 'the nothing is gone'
+        Assert-Equal 'C' $back[0].checkId 'and the message is not'
+    }
+    finally {
+        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    }
+}
+
+Test-That 'one reopen is described as one' {
+    # The second face of the same defect. A function returning a one-element array hands back
+    # the element, so a count taken straight off it is a count taken off a PSCustomObject -
+    # which produced a subject reading " checks on the Soccer board" with the number missing
+    # and the plural wording on a single check.
+    $events = @(New-ReopenNotification -Renames @(
+            [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+                Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+                CurrentFindings = 4; Verdict = 'Regressed' }
+        ) -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+
+    $mail = Format-ReopenDigest -Events $events
+    Assert-True ($mail.Body -like 'One check that a reviewer had closed*') 'the singular is used'
+    Assert-True ($mail.Body -notlike '* checks that*') 'and the plural is not'
+    Assert-True ($mail.Subject -like '*Fixtureball-DQ-050 NAME_A*') 'and one check is named in the subject'
+}
+
+Test-That 'the sport leads to its Overview and the row to its own tab' {
+    # Two links on one row, each on the thing it names. A reader who wants the sport and a
+    # reader who wants the one finding are two different readers, and neither should have to
+    # hunt for the other's target.
+    $renames = @(
+        [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+            Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+            CurrentFindings = 4; Verdict = 'Regressed'; TabTitle = 'TAB_A' }
+    )
+    $events = @(New-ReopenNotification -Renames $renames -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' `
+            -Sport 'Fixtureball' -SheetId 'ABC' -GidOf @{ 'Overview' = 55; 'TAB_A' = 66 })
+
+    Assert-Equal 55 $events[0].overviewGid 'the board front page is carried'
+    Assert-Equal 66 $events[0].tabGid 'and so is the check tab'
+
+    $mail = Format-ReopenDigest -Events $events
+    Assert-True ($mail.BodyHtml -like '*href="https://docs.google.com/spreadsheets/d/ABC/edit#gid=55"*>Fixtureball<*') `
+        'the sport is the link to Overview'
+    Assert-True ($mail.BodyHtml -like '*href="https://docs.google.com/spreadsheets/d/ABC/edit#gid=66"*>open<*') `
+        'and the row still opens its own tab'
+
+    # Plain text cannot hang a link on a word, so the address goes on its own line - once per
+    # board, not once per row.
+    Assert-True ($mail.Body -like '*Fixtureball: https://docs.google.com/spreadsheets/d/ABC/edit#gid=55*') `
+        'the text alternative names the board and its address'
+}
+
+Test-That 'one message carries several boards, each pointing at its own' {
+    # The reason the queue is drained on a schedule rather than at the end of a run: a board
+    # run covers one sport, so sending from inside it is one mail per sport. Held, they arrive
+    # as one list - and every row has to keep its own document, not the first one seen.
+    $soccer = @(New-ReopenNotification -Renames @(
+            [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+                Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+                CurrentFindings = 4; Verdict = 'Regressed'; TabTitle = 'TAB_A' }
+        ) -RunId 'r1' -StartedUtc '2026-08-31T06:00:00Z' -Sport 'Fixtureball' -SheetId 'AAA' `
+            -GidOf @{ 'Overview' = 1; 'TAB_A' = 2 })
+    $other = @(New-ReopenNotification -Renames @(
+            [pscustomobject]@{ CheckId = 'Otherball-DQ-010'; From = 'Clean'; To = 'Reopened'
+                Sport = 'Otherball'; Name = 'NAME_B'; What = 'a thing'; PreviousFindings = 0
+                CurrentFindings = 9; Verdict = 'Regressed'; TabTitle = 'TAB_B' }
+        ) -RunId 'r2' -StartedUtc '2026-08-31T07:00:00Z' -Sport 'Otherball' -SheetId 'BBB' `
+            -GidOf @{ 'Overview' = 3; 'TAB_B' = 4 })
+
+    $mail = Format-ReopenDigest -Events (@($soccer) + @($other))
+    Assert-True ($mail.Subject -like '*2 checks on 2 sports*') 'the subject counts both the checks and the boards'
+    Assert-True ($mail.Body -like '*Fixtureball*') 'both sports are listed'
+    Assert-True ($mail.Body -like '*Otherball*') 'both sports are listed'
+    Assert-True ($mail.Body -like '*Fixtureball: https://docs.google.com/spreadsheets/d/AAA/edit#gid=1*') `
+        'the first board keeps its own document'
+    Assert-True ($mail.Body -like '*Otherball: https://docs.google.com/spreadsheets/d/BBB/edit#gid=3*') `
+        'and the second keeps its own, not the first one seen'
+    Assert-True ($mail.BodyHtml -like '*spreadsheets/d/AAA/edit#gid=2*') 'and each row opens its own tab'
+    Assert-True ($mail.BodyHtml -like '*spreadsheets/d/BBB/edit#gid=4*') 'and each row opens its own tab'
+}
+
+Test-That 'the send endpoint is a real absolute address' {
+    # Two lines that no other case reaches. Every test of the sending half stops at -DryRun,
+    # which returns before the URL is touched, so an endpoint that had gone missing would pass
+    # the whole suite and fail on the first real send. It did, on 2026-08-31: a splice removed
+    # the constant along with the section comment above it, and the failure that surfaced was
+    # "This operation is not supported for a relative URI" from inside the Sheets transport.
+    Assert-True (-not [string]::IsNullOrWhiteSpace($NotifyGmailSendUrl)) 'the endpoint is set'
+    $uri = [Uri]$NotifyGmailSendUrl
+    Assert-True $uri.IsAbsoluteUri 'and absolute, which is what the address-family helper needs'
+    Assert-Equal 'https' $uri.Scheme 'over https'
+    Assert-True ($NotifyGmailSendUrl -like '*gmail.googleapis.com*') 'at the Gmail API'
+}
+
+Test-That 'the drain sends nothing when nobody has been named, taking the default' {
+    # The earlier case passed -To @() as a literal and so tested a path the runner never uses.
+    # The runner takes the default, which reads EP_NOTIFY_TO, and an unset variable arrives
+    # here as the same nothing that put a null in the queue.
+    $path = Join-Path ([System.IO.Path]::GetTempPath()) ('notify-' + [guid]::NewGuid().ToString('N') + '.json')
+    $was = $env:EP_NOTIFY_TO
+    try {
+        $env:EP_NOTIFY_TO = $null
+        $events = @(New-ReopenNotification -Renames @(
+                [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+                    Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+                    CurrentFindings = 4; Verdict = 'Regressed' }
+            ) -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+        [void](Save-NotifyQueue -Queue $events -Path $path)
+
+        $result = Invoke-NotifyDrain -Path $path
+        Assert-True $result.Skipped 'it says it sent nothing'
+        Assert-Equal 0 $result.Sent 'and sent nothing'
+        Assert-Equal 'QUEUED' (@(Read-NotifyQueue -Path $path)[0].status) 'and the message waits for an address'
+    }
+    finally {
+        $env:EP_NOTIFY_TO = $was
+        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    }
+}
+
+Test-That 'a failure is reported in the API own words, and advice is only given where it applies' {
+    # Found on the first live send, 2026-08-31. The first version read the status code and
+    # nothing else: it saw 403 and said the authorisation was missing gmail.send. That was true
+    # on the first attempt and false on the second, where the scope was present and the Gmail
+    # API was simply not enabled in the project - a different fix, in a different place, and
+    # Google's own body carried the URL that performs it. Advice invented from a status code is
+    # worse than none: it would have sent somebody to re-run the consent and replace a working
+    # refresh token for nothing.
+    $disabled = ConvertFrom-NotifyApiErrorBody -Text `
+        '{"error":{"code":403,"message":"Gmail API has not been used in project 1 before or it is disabled. Enable it by visiting https://console.developers.google.com/x then retry.","errors":[{"reason":"accessNotConfigured"}],"details":[{"reason":"SERVICE_DISABLED"}]}}'
+    Assert-True ($disabled.Message -like '*has not been used in project*') 'the API message comes through'
+    Assert-True ($disabled.Message -like '*console.developers.google.com*') 'with the link that fixes it'
+    Assert-Equal 'accessNotConfigured' $disabled.Reason 'and the reason it gave'
+    Assert-True (-not (Test-NotifyScopeProblem -Reason $disabled.Reason -Message $disabled.Message)) `
+        'and this is not the scope problem, so no consent advice is added'
+
+    $scopes = ConvertFrom-NotifyApiErrorBody -Text `
+        '{"error":{"code":403,"message":"Request had insufficient authentication scopes.","errors":[{"reason":"ACCESS_TOKEN_SCOPE_INSUFFICIENT"}]}}'
+    Assert-True (Test-NotifyScopeProblem -Reason $scopes.Reason -Message $scopes.Message) `
+        'the one cause whose fix is in this repository is still recognised'
+    Assert-True (Test-NotifyScopeProblem -Reason '' -Message 'Request had insufficient authentication scopes.') `
+        'and recognised from the message alone when no reason is given'
+
+    # A body that is not JSON, and no body at all. Neither may throw: this runs inside the
+    # handler for a failure that has already happened.
+    Assert-Equal 'not json at all' (ConvertFrom-NotifyApiErrorBody -Text 'not json at all').Message `
+        'an unparseable body is passed through as text'
+    Assert-Equal '' (ConvertFrom-NotifyApiErrorBody -Text '').Message 'and an empty one says nothing'
+    Assert-Equal '' (ConvertFrom-NotifyApiErrorBody -Text '').Reason 'with no reason invented for it'
+}
+
+Complete-Group
+
+# --------------------------------------------------------------------------------------
 # Approved DQ semantic regressions
 #
 # Test-Package.ps1 intentionally stops at static package consistency; it cannot execute the

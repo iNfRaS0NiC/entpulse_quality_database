@@ -1754,6 +1754,75 @@ answered as it now stands.
 which on a long-lived board is the accumulated debt arriving at once rather than anything going
 wrong.
 
+### Being told a check reopened, without opening the board
+
+`Reopened` is written into a column on a document, and the whole reason the word exists is that
+the check has stopped being somewhere anybody was going to look. So the run also says it out
+loud, and can send it.
+
+Every run that updates a board queues one message per check it moved to `Reopened`, and names
+each of them on screen whether or not anything is sent:
+
+```text
+  Reopened, and queued to notify: Soccer-DQ-023 EVENT_RESULTS_MISSING_FOR_FINISHED - was Completed, this run returned 5 open finding(s)
+```
+
+Nothing leaves the machine until an address is set. Add it to `TOOLS/secrets.local.ps1`, one
+address or several separated by commas or semicolons:
+
+```powershell
+$env:EP_NOTIFY_TO = 'dq-review@enetpulse.com'
+```
+
+Without it the messages stay queued and the run says how many are waiting. That is the opt-in:
+a board update is run by whoever is working on a sport, and a feature that starts mailing a list
+the day it is merged is one that mails a list nobody agreed to. Messages queued before the
+address was set go out on the first run after it is.
+
+| | |
+|---|---|
+| When it is sent | not by the run. A board run queues and says how many are waiting; `TOOLS/Send-Notifications.ps1` sends, twice a day from Task Scheduler. A board run covers one sport, so sending from inside it would be one mail per sport and a night across sixteen sports would be sixteen mails. Each drain covers everything queued since the last one, so no window has to be configured - the queue is the window |
+| What is sent | one message covering every check in it, as a list: sport, check, name, rows, and a link. Twenty reopens across four boards is one mail |
+| Where the two links go | the **sport** opens that board's `Overview`; the word at the end of the row opens the **check's own tab**. A reader who wants the sport and a reader who wants the one finding are two different readers |
+| What it looks like | text and HTML both, text first. A plain-text mail can only carry a naked URL, and a Google tab link is ninety characters that push the four columns off the screen; HTML gives the row a word to hang the link on. The text alternative is what a client refusing HTML shows and what a search over somebody's mail matches |
+| A tab it cannot name | links to the board instead. A tab id is a number Google assigns and one created on this very run has none until Google answers, so the link degrades rather than pointing at whichever tab the document was last left on |
+| What is never sent | anything that is not a reopen. A check closing itself on two clean runs, and a superseded spelling being brought up to date, are both in the same list the run reads and neither is news |
+| What a check that expects `Non-zero` sends | nothing, ever. The gate is the same `Expected` gate that governs the word itself, so a `Monitor` check whose count jumps is not a reopen and does not mail. This is the thing most likely to be reported as a fault |
+| Which numbers it quotes | the open ones, dismissals already subtracted, so the message and the board agree. A reviewer who has marked rows `No Issue / Change` sees the same count in both places, and the message says which count it is |
+| Sent twice | no. One transition is one message, keyed on the run's own start, so a board update retried after a transport failure does not mail again |
+| If sending fails | the message keeps its place and goes out on the next board run. After five attempts it is marked `FAILED` and left for somebody to look at |
+| What it can cost a run | nothing. By the time this happens the statements have run, the workbook is on disk and the document is current, and none of the three is worth an undelivered message |
+
+The queue is `TOOLS/notifications.local.json`, ignored by git under the same rule as the
+credentials beside it. It is a record of what has been said, not evidence of anything, and
+nothing may be cited from it.
+
+**The transport is the Gmail API on the credentials the board already uses.** A refresh grant
+does not carry a scope - the access token inherits whatever the refresh token was granted - so
+there is no second client, no second secret and nothing extra to renew. What it costs is one
+re-consent, because a refresh token minted before `gmail.send` was added to the scope keeps the
+narrower grant for ever:
+
+```powershell
+.\TOOLS\Connect-Sheets.ps1 -Force
+```
+
+The token is replaced only if the new consent succeeds, so a failed attempt leaves the board
+working. Until it is run, a send fails with a 403 whose own message does not say why; the runner
+adds the sentence that does.
+
+**The Gmail API has to be enabled in the same Google Cloud project as the Sheets API**, under
+**APIs and Services -> Library**. This is a separate thing from the scope and fails the same
+way - a 403 - so the two are easy to confuse. They are told apart by the reason Google returns:
+`ACCESS_TOKEN_SCOPE_INSUFFICIENT` is the consent, `SERVICE_DISABLED` is the project, and the
+runner prints Google's own message either way, which for the second carries the URL that turns
+it on. Measured on the first live send, 2026-08-31, where the scope was right and the API was
+off.
+
+One more consequence worth knowing before it is switched on: the mail goes out **as the
+authorised account**, so a reader sees it from a person rather than from an instrument - set
+`$env:EP_NOTIFY_FROM` to name the sender differently if the account permits it.
+
 ### The third: a check closed by coming back with nothing
 
 The mirror of `Reopened` and the same shape - one direction, and only where the run knows
@@ -2379,7 +2448,7 @@ else.
 
 ### What the suite costs, and where
 
-Two hundred and sixty-one of the cases run in process and take **ten seconds between them**.
+Three hundred and twenty of the cases run in process and take **ten seconds between them**.
 Everything else is the sixteen cases that copy the repository, break the copy in one specific
 way, and run `Test-Package.ps1` over it as a child process — that is the only honest way to
 test that a rule still bites, and it is also the whole of the suite's running time.
@@ -2416,5 +2485,10 @@ to revisit — and it will announce itself, because the first copy will have gon
 
 ## Not in git
 
-`TOOLS/secrets.local.ps1` and everything under `output/` are excluded by `.gitignore`.
-Never commit credentials, and never paste a session cookie into a tracked file.
+`TOOLS/secrets.local.ps1`, `TOOLS/notifications.local.json` and everything under `output/`
+are excluded by `.gitignore`. Never commit credentials, and never paste a session cookie into a
+tracked file.
+
+The notification queue is out for a different reason from the credentials: it is the record of
+what this machine has already said, so a second clone replaying it would send every message
+again. Losing it costs a duplicate mail and nothing else.

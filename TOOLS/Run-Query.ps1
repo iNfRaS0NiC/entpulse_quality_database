@@ -379,6 +379,12 @@ $script:RecentFindings = @{}
 # reaches the network. It is dot-sourced rather than run, so -DotSourceOnly picks it up too.
 . (Join-Path $PSScriptRoot 'Sheets.ps1')
 
+# What the run says out loud to somebody who is not looking at a board. Kept out of both files
+# above for the same reason they are kept apart: the queue and the wording are pure functions
+# over what a run already produced and are tested without a login, and nothing here may fail a
+# run. See TOOLS/Notify.ps1.
+. (Join-Path $PSScriptRoot 'Notify.ps1')
+
 # How far the audited population may move before a raw finding delta stops being comparable.
 # The database is corrected while it is being read, so small drift is the normal state and
 # flagging it would make the column noise; a population that moved by more than this makes
@@ -4624,6 +4630,57 @@ function Save-RunSheet {
         if ($sent.PSObject.Properties.Name -contains 'NotesSaved' -and $sent.NotesSaved) {
             Write-Host ("  {0} reviewer note(s) written down before the clear: {1}" -f `
                     $sent.NotesCount, $sent.NotesSaved) -ForegroundColor DarkGray
+        }
+
+        # A check a reviewer had closed has come back, and the board is the only place that
+        # says so. Queued here rather than where the transition is decided, and after the plan
+        # has been applied rather than before, because a message about a red cell that was
+        # never written is worse than no message: the reader goes to the board and finds the
+        # green chip the run failed to replace.
+        #
+        # Nothing in here may end the update. By this line the statements have run, the
+        # workbook is on disk and the document is current; a queue file that will not open is
+        # a message somebody does not get, and that is not worth any of the three.
+        try {
+            $reopened = New-ReopenNotification -Renames $plan.StatusRenames -RunId $stamp `
+                -StartedUtc $script:RunStartedUtc -Sport $Sport -SheetId $id `
+                -ReopenedWord $SheetsReopenedStatus `
+                -GidOf $(if ($sent.PSObject.Properties.Name -contains 'GidOf') { $sent.GidOf } else { $null })
+            if ($reopened.Count -gt 0) {
+                $queuePath = Get-NotifyQueuePath
+                $queued = Add-NotifyEvent -Queue (Read-NotifyQueue -Path $queuePath) -Events $reopened
+                if ($queued.Added -gt 0) {
+                    [void](Save-NotifyQueue -Queue $queued.Queue -Path $queuePath)
+                }
+                # Named, never counted. The whole argument for this feature is that a number
+                # tells a reader nothing about whether to stop what they are doing, and a run
+                # that queued a message without saying which check it was about would put the
+                # only copy of that answer in a file nobody opens.
+                foreach ($item in $reopened) {
+                    Write-Host ("  Reopened, and queued to notify: {0} {1} - was {2}, this run returned {3} open finding(s)" -f `
+                            $item.checkId, $item.name, $item.previousStatus, $item.currentFindings) `
+                        -ForegroundColor Yellow
+                }
+                if ($queued.Added -lt $reopened.Count) {
+                    Write-Host ("  {0} of them were already queued by an earlier attempt and are not queued twice" -f `
+                            ($reopened.Count - $queued.Added)) -ForegroundColor DarkGray
+                }
+            }
+
+            # The run queues and does not send. Sending is TOOLS/Send-Notifications.ps1, on a
+            # schedule, and the split is the point rather than a tidiness: a board run covers
+            # one sport, so sending here means one mail per sport, and a night across sixteen
+            # sports is sixteen mails. Held instead, they arrive as one list.
+            $pending = @(Read-NotifyQueue -Path $queuePath |
+                    Where-Object { [string]$_.status -eq $NotifyStatusQueued })
+            if ($pending.Count -gt 0) {
+                Write-Host ("  {0} notification(s) waiting to be sent; TOOLS\Send-Notifications.ps1 sends them" -f `
+                        $pending.Count) -ForegroundColor DarkGray
+            }
+        }
+        catch {
+            Write-Host ("  the reopen notification could not be queued and the run is unaffected: {0}" -f `
+                    $_.Exception.Message) -ForegroundColor Yellow
         }
 
         # What the update cost, and where. Kept for the run's closing line as well as printed

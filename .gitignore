@@ -3,3 +3,6 @@
 
 # Query result exports.
 output/
+
+# The local record of which notifications have already been sent.
+*.local.json
