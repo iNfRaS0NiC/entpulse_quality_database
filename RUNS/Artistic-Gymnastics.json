@@ -40026,6 +40026,588 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 31.08.2026 05-32-23",
+                     "startedUtc":  "2026-08-31T03:32:21Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 31.08.2026 05-32-23",
+                     "commit":  "b47231506852",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-046",
+                                        "runKey":  "Artistic-Gymnastics-DQ-046",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  4250,
+                                        "seconds":  31.6,
+                                        "status":  "OK",
+                                        "sqlHash":  "d89add3ae7d1"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-071",
+                                        "runKey":  "Artistic-Gymnastics-DQ-071",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment, 102 Points",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7828,
+                                        "seconds":  6.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "379ee62741f5"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-086",
+                                        "runKey":  "Artistic-Gymnastics-DQ-086",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 102 Points",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7827,
+                                        "seconds":  1.8,
+                                        "status":  "OK",
+                                        "sqlHash":  "ee817302cb19"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  28.6,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  12.9,
+                                                  "planning the changes":  3,
+                                                  "adding and sizing tabs":  1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  1.4,
+                                                  "writing values":  6.8,
+                                                  "confirming the rows arrived":  0.8,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Artistic-Gymnastics-DQ-001":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-002":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-003":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-004":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Nikolay"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-005":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-006":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Lyubomir"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-007":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-009":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Aleksandar D."
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-010":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-011":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-012":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-013":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Ivaylo Georgiev"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-014":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-015":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-016":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-017":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-018":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-019":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-020":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  "Ivaylo Georgiev"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-021":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Vennie"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-022":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Vennie"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-023":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Gabriel"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-024":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Vennie"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-025":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Simeon"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-026":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-027":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Vanin"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-028":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-029":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-030":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-031":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Nikolay"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-032":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-033":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-034":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-035":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-036":  {
+                                                                       "status":  "Reopened",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-037":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-038":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-039":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Simeon, Lyubomir,Gabriel,Teodor K"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-040":  {
+                                                                       "status":  "Reopened",
+                                                                       "checkBy":  "Vanin"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-041":  {
+                                                                       "status":  "Reopened",
+                                                                       "checkBy":  "Vennie"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-042":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Elena"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-043":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-044":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-045":  {
+                                                                       "status":  "Reopened",
+                                                                       "checkBy":  "Aleksandar P."
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-046":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Nikolay"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-047":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Lyubomir"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-048":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Teodor Dobrev"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-049":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-050":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Teodor Dobrev"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-051":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Lyudmila"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-052":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Hristiyana"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-053":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Hristiyana"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-054":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Hristiyana"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-055":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Hristiyana"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-056":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-057":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Teodor K"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-058":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-059":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Teodor K"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-060":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-061":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Vennie"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-062":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-063":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Ele]na"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-064":  {
+                                                                       "status":  "Skipped",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-065":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-066":  {
+                                                                       "status":  "Skipped",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-067":  {
+                                                                       "status":  "Monitor Only",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-068":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Lyudmila"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-069":  {
+                                                                       "status":  "Reopened",
+                                                                       "checkBy":  "Nikolay"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-070":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Lyudmila, Vanin, Teodor K, Aleksandar D., Elena, Hristiyana"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-071":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Vanin"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-072":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-073":  {
+                                                                       "status":  "Skipped",
+                                                                       "checkBy":  "Hristiyana"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-074":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-075":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-076":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-077":  {
+                                                                       "status":  "Skipped",
+                                                                       "checkBy":  "Aleksandar P."
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-078":  {
+                                                                       "status":  "Skipped",
+                                                                       "checkBy":  "Vennie"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-079":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Aleksandar P."
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-080":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Hristiyana"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-081":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Vennie"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-082":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-083":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-084":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-085":  {
+                                                                       "status":  "Skipped",
+                                                                       "checkBy":  "Vennie"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-086":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-087":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-088":  {
+                                                                       "status":  "Reopened",
+                                                                       "checkBy":  "Teodor K"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-089":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Vennie"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-090":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-091":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Lyudmila"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-092":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-093":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Teodor K"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-094":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-095":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-096":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Vennie"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-098":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Nikolay"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-099":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Elena"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-100":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-101":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Vanin"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-102":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Teodor K"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-103":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Aleksandar D."
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-104":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Aleksandar P."
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-105":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-106":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Teodor Dobrev"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-107":  {
+                                                                       "status":  "Reopened",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-108":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Vennie"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-109":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-110":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Aleksandar D."
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-111":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Hristiyana"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-112":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-113":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Teodor Dobrev"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-114":  {
+                                                                       "status":  "Completed",
+                                                                       "checkBy":  "Teodor K"
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-115":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-116":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-117":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-118":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-119":  {
+                                                                       "status":  "Not reviewed",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-120":  {
+                                                                       "status":  "Not reviewed",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-121":  {
+                                                                       "status":  "Not reviewed",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "Artistic-Gymnastics-DQ-122":  {
+                                                                       "status":  "Clean",
+                                                                       "checkBy":  ""
+                                                                   },
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"

@@ -36035,6 +36035,617 @@
                                                         "checkBy":  ""
                                                     }
                                 }
+                 },
+                 {
+                     "runId":  "Golf 31.08.2026 05-45-13",
+                     "startedUtc":  "2026-08-31T03:45:12Z",
+                     "output":  "D:\\SQL\u0027s Output\\Golf 31.08.2026 05-45-13",
+                     "commit":  "b47231506852+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-019",
+                                        "runKey":  "Golf-DQ-019",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 31 Strokes 1st round, 32 Strokes 2nd round, 33 Strokes 3rd round, 34 Strokes 4th round, 35 Strokes 5th round, 36 Par, 100 Rank, 526 Strokes points 1st round, 527 Strokes points 2nd round, 528 Strokes points 3rd round, 529 Strokes points 4th round, 540 Prize Money",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  24,
+                                        "findings":  23,
+                                        "eligible":  3193,
+                                        "seconds":  68.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "039e8b6575d9"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-083",
+                                        "runKey":  "Golf-DQ-083",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_INTEGER_FIELD_FRACTIONAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 31 Strokes 1st round, 32 Strokes 2nd round, 33 Strokes 3rd round, 34 Strokes 4th round, 35 Strokes 5th round, 36 Par",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  3193,
+                                        "seconds":  11.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "f33384550938"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-086",
+                                        "runKey":  "Golf-DQ-086",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment, 36 Par",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  127,
+                                        "findings":  126,
+                                        "eligible":  3189,
+                                        "seconds":  14.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "cf0d989ddfa2"
+                                    },
+                                    {
+                                        "checkId":  "Golf-DQ-122",
+                                        "runKey":  "Golf-DQ-122",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_ATHLETE_RANKING_DISAGREES_WITH_ITS_TEAM_TWIN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  19.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "c9454b3476fe"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  29.1,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  3,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  10.3,
+                                                  "planning the changes":  4,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  1.9,
+                                                  "writing values":  10.3,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  "Ivaylo Georgiev"
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  "Ivaylo Georgiev"
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  "Ivaylo Georgiev"
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  "Ivaylo Georgiev"
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  "Ivaylo Georgiev"
+                                                             },
+                                    "Golf-DQ-001":  {
+                                                        "status":  "IT Fix",
+                                                        "checkBy":  "Gabriel ,Simeon, Lyubomir, Aleksandar D.,Lyuboslav"
+                                                    },
+                                    "Golf-DQ-002":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-003":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-004":  {
+                                                        "status":  "Reviewing",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-005":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-006":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-007":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-008":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-009":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-010":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-011":  {
+                                                        "status":  "Skipped",
+                                                        "checkBy":  "Lyubomir, Hristiyana"
+                                                    },
+                                    "Golf-DQ-012":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-013":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-014":  {
+                                                        "status":  "Reopened",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-015":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-016":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Hristiyana"
+                                                    },
+                                    "Golf-DQ-017":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-018":  {
+                                                        "status":  "On Hold",
+                                                        "checkBy":  "Vanin"
+                                                    },
+                                    "Golf-DQ-019":  {
+                                                        "status":  "IT Fix",
+                                                        "checkBy":  "Hristiyana"
+                                                    },
+                                    "Golf-DQ-020":  {
+                                                        "status":  "IT Fix",
+                                                        "checkBy":  "Lyuboslav"
+                                                    },
+                                    "Golf-DQ-021":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-022":  {
+                                                        "status":  "Reviewing",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-023":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-024":  {
+                                                        "status":  "Monitor Only",
+                                                        "checkBy":  "Ivaylo Georgiev"
+                                                    },
+                                    "Golf-DQ-025":  {
+                                                        "status":  "Reviewing",
+                                                        "checkBy":  "Hristiyana,Simeon,Gabriel"
+                                                    },
+                                    "Golf-DQ-026":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Vanin"
+                                                    },
+                                    "Golf-DQ-027":  {
+                                                        "status":  "Reopened",
+                                                        "checkBy":  "Hristiyana"
+                                                    },
+                                    "Golf-DQ-028":  {
+                                                        "status":  "Reviewing",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-029":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  "Vanin"
+                                                    },
+                                    "Golf-DQ-030":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Vanin"
+                                                    },
+                                    "Golf-DQ-031":  {
+                                                        "status":  "Other Team",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-032":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-033":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Lyuboslav"
+                                                    },
+                                    "Golf-DQ-034":  {
+                                                        "status":  "Skipped",
+                                                        "checkBy":  "Ivaylo Georgiev, Hristiyana,Simeon,Gabriel, Lyubomir"
+                                                    },
+                                    "Golf-DQ-035":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Lyuboslav, Hristiyana"
+                                                    },
+                                    "Golf-DQ-036":  {
+                                                        "status":  "Monitor Only",
+                                                        "checkBy":  "Ivaylo Georgiev"
+                                                    },
+                                    "Golf-DQ-037":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Gabriel"
+                                                    },
+                                    "Golf-DQ-038":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Hristiyana"
+                                                    },
+                                    "Golf-DQ-039":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-040":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Lyuboslav"
+                                                    },
+                                    "Golf-DQ-041":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-042":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Lyuboslav"
+                                                    },
+                                    "Golf-DQ-043":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Lyuboslav"
+                                                    },
+                                    "Golf-DQ-045":  {
+                                                        "status":  "Reopened",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-046":  {
+                                                        "status":  "Deprecated",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-047":  {
+                                                        "status":  "Skipped",
+                                                        "checkBy":  "Hristiyana"
+                                                    },
+                                    "Golf-DQ-048":  {
+                                                        "status":  "Monitor Only",
+                                                        "checkBy":  "Ivaylo Georgiev"
+                                                    },
+                                    "Golf-DQ-049":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-050":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-051":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-052":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-053":  {
+                                                        "status":  "Monitor Only",
+                                                        "checkBy":  "Lyubomir"
+                                                    },
+                                    "Golf-DQ-054":  {
+                                                        "status":  "Monitor Only",
+                                                        "checkBy":  "Ivaylo Georgiev"
+                                                    },
+                                    "Golf-DQ-055":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Simeon"
+                                                    },
+                                    "Golf-DQ-056":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-057":  {
+                                                        "status":  "Monitor Only",
+                                                        "checkBy":  "Ivaylo Georgiev"
+                                                    },
+                                    "Golf-DQ-059":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Vanin"
+                                                    },
+                                    "Golf-DQ-060":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-061":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-062":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-063":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Ivaylo Georgiev"
+                                                    },
+                                    "Golf-DQ-064":  {
+                                                        "status":  "Skipped",
+                                                        "checkBy":  "Lyuboslav, Aleksandar D."
+                                                    },
+                                    "Golf-DQ-065":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-066":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-067":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Hristiyana"
+                                                    },
+                                    "Golf-DQ-068":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Hristiyana"
+                                                    },
+                                    "Golf-DQ-069":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Lyuboslav, Htristiyana"
+                                                    },
+                                    "Golf-DQ-070":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-071":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  "Vanin"
+                                                    },
+                                    "Golf-DQ-072":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-073":  {
+                                                        "status":  "Reopened",
+                                                        "checkBy":  "Lyubomir, Hristiyana"
+                                                    },
+                                    "Golf-DQ-074":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-075":  {
+                                                        "status":  "IT Fix",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-076":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-077":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-078":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Lyuboslav Tenev"
+                                                    },
+                                    "Golf-DQ-079":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-080":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-081":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-082":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-083":  {
+                                                        "status":  "IT Fix",
+                                                        "checkBy":  "Vanin"
+                                                    },
+                                    "Golf-DQ-084":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Hristiyana"
+                                                    },
+                                    "Golf-DQ-085":  {
+                                                        "status":  "Reopened",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-086":  {
+                                                        "status":  "Reviewing",
+                                                        "checkBy":  "Vanin"
+                                                    },
+                                    "Golf-DQ-087":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Simeon, Aleksandar D."
+                                                    },
+                                    "Golf-DQ-088":  {
+                                                        "status":  "IT Fix",
+                                                        "checkBy":  "Vanin"
+                                                    },
+                                    "Golf-DQ-089":  {
+                                                        "status":  "Monitor Only",
+                                                        "checkBy":  "Lyubomir"
+                                                    },
+                                    "Golf-DQ-090":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Vanin"
+                                                    },
+                                    "Golf-DQ-091":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-092":  {
+                                                        "status":  "Skipped",
+                                                        "checkBy":  "Lyubomir"
+                                                    },
+                                    "Golf-DQ-093":  {
+                                                        "status":  "Reopened",
+                                                        "checkBy":  "Lyubomir,Gabriel, Hristiyana"
+                                                    },
+                                    "Golf-DQ-094":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Hristiyana"
+                                                    },
+                                    "Golf-DQ-095":  {
+                                                        "status":  "Reviewing",
+                                                        "checkBy":  "Lyuboslav"
+                                                    },
+                                    "Golf-DQ-096":  {
+                                                        "status":  "Reviewing",
+                                                        "checkBy":  "Hristiyana"
+                                                    },
+                                    "Golf-DQ-097":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-099":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-100":  {
+                                                        "status":  "Reviewing",
+                                                        "checkBy":  "Lyuboslav"
+                                                    },
+                                    "Golf-DQ-101":  {
+                                                        "status":  "Monitor Only",
+                                                        "checkBy":  "Ivaylo Georgiev"
+                                                    },
+                                    "Golf-DQ-102":  {
+                                                        "status":  "Reopened",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-103":  {
+                                                        "status":  "Reopened",
+                                                        "checkBy":  "Aleksandar D., Lyuboslav, Lyubomir, Hristiyana"
+                                                    },
+                                    "Golf-DQ-104":  {
+                                                        "status":  "Reopened",
+                                                        "checkBy":  "Lyubomir, Hristiyana"
+                                                    },
+                                    "Golf-DQ-105":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Lyubomir, Aleksandar D."
+                                                    },
+                                    "Golf-DQ-106":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-107":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-108":  {
+                                                        "status":  "Reviewing",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-109":  {
+                                                        "status":  "IT Fix",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-110":  {
+                                                        "status":  "IT Fix",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-111":  {
+                                                        "status":  "On Hold",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-112":  {
+                                                        "status":  "IT Fix",
+                                                        "checkBy":  "Vanin"
+                                                    },
+                                    "Golf-DQ-113":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-114":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-115":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-116":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-117":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-118":  {
+                                                        "status":  "Skipped",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-119":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-120":  {
+                                                        "status":  "Completed",
+                                                        "checkBy":  "Aleksandar D."
+                                                    },
+                                    "Golf-DQ-121":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-122":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-123":  {
+                                                        "status":  "Clean",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-124":  {
+                                                        "status":  "Not reviewed",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-125":  {
+                                                        "status":  "Not reviewed",
+                                                        "checkBy":  ""
+                                                    },
+                                    "Golf-DQ-127":  {
+                                                        "status":  "Not reviewed",
+                                                        "checkBy":  ""
+                                                    }
+                                }
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"

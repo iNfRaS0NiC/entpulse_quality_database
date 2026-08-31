@@ -29938,6 +29938,709 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "BMX 31.08.2026 05-34-19",
+                     "startedUtc":  "2026-08-31T03:34:17Z",
+                     "output":  "D:\\SQL\u0027s Output\\BMX 31.08.2026 05-34-19",
+                     "commit":  "b47231506852+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-030",
+                                        "runKey":  "BMX-DQ-030",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FORMAT_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  7971,
+                                        "findings":  7970,
+                                        "eligible":  8014,
+                                        "seconds":  7.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "2b766d8e56dc"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-040",
+                                        "runKey":  "BMX-DQ-040",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment, 101 Duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  15,
+                                        "findings":  14,
+                                        "eligible":  9353,
+                                        "seconds":  2.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "32457cbeb93a"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-041",
+                                        "runKey":  "BMX-DQ-041",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  79,
+                                        "findings":  78,
+                                        "eligible":  424,
+                                        "seconds":  15.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "34dffba70c6e"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-054",
+                                        "runKey":  "BMX-DQ-054",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_FULL_TIME_NOT_MONOTONIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  10,
+                                        "findings":  9,
+                                        "eligible":  49,
+                                        "seconds":  1.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "b7c65a944aa1"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-070",
+                                        "runKey":  "BMX-DQ-070",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 102 Points",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  286,
+                                        "seconds":  1,
+                                        "status":  "OK",
+                                        "sqlHash":  "6b519285f756"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-096",
+                                        "runKey":  "BMX-DQ-096",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  1.1,
+                                        "status":  "OK",
+                                        "sqlHash":  "d0d33b8edeb7"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-098",
+                                        "runKey":  "BMX-DQ-098",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  1.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "fdd82839a554"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-106",
+                                        "runKey":  "BMX-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  17.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "6b31f313061d"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-109",
+                                        "runKey":  "BMX-DQ-109",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_ATHLETE_RANKING_DISAGREES_WITH_ITS_TEAM_TWIN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  19.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "0e9c1b292a79"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-110",
+                                        "runKey":  "BMX-DQ-110",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  1.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "8ba5e0be7752"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-111",
+                                        "runKey":  "BMX-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  8.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "af83fd7ea8e9"
+                                    },
+                                    {
+                                        "checkId":  "BMX-DQ-113",
+                                        "runKey":  "BMX-DQ-113",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_CLOCK_VALUE_COMPONENT_OUT_OF_RANGE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 101 Duration, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  1277,
+                                        "seconds":  2.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "bc0ad7d9cfe8"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  45.1,
+                                   "valueRequests":  6,
+                                   "tabsConfirmed":  4,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  7.5,
+                                                  "planning the changes":  2.7,
+                                                  "adding and sizing tabs":  3.1,
+                                                  "hiding columns and colouring Rows":  1.3,
+                                                  "clearing stale rows":  2.7,
+                                                  "writing values":  25.8,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.6
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-DQ-001":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-002":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-003":  {
+                                                       "status":  "Monitor Only",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-004":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-005":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Aleksandar D."
+                                                   },
+                                    "BMX-DQ-006":  {
+                                                       "status":  "Reviewing",
+                                                       "checkBy":  "Lyuboslav"
+                                                   },
+                                    "BMX-DQ-007":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-008":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-009":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-010":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-011":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-012":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-013":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  "Aleksandar D."
+                                                   },
+                                    "BMX-DQ-014":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-015":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-016":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-017":  {
+                                                       "status":  "IT Fix",
+                                                       "checkBy":  "Aleksandar D."
+                                                   },
+                                    "BMX-DQ-018":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-019":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-020":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-021":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-022":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-023":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-024":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-025":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-026":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-027":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(Missing medals for World Cup events - there are no medals there? IF needed - It fix?)"
+                                                   },
+                                    "BMX-DQ-028":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-029":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-030":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(The whole sport is like that - IT Fix?)"
+                                                   },
+                                    "BMX-DQ-031":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-032":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-033":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(The whole sport is like that - IT Fix?)"
+                                                   },
+                                    "BMX-DQ-034":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-035":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-036":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-037":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(The whole sport is like that - IT Fix?)"
+                                                   },
+                                    "BMX-DQ-038":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(The whole sport is like that - IT Fix?)"
+                                                   },
+                                    "BMX-DQ-039":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-040":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-041":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "Aleksandar D."
+                                                   },
+                                    "BMX-DQ-042":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Vennie"
+                                                   },
+                                    "BMX-DQ-043":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Gabriel"
+                                                   },
+                                    "BMX-DQ-044":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-045":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-046":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-047":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Lyubomir"
+                                                   },
+                                    "BMX-DQ-048":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Lyubomir"
+                                                   },
+                                    "BMX-DQ-049":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Hristiyana"
+                                                   },
+                                    "BMX-DQ-050":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-051":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Lyubomir"
+                                                   },
+                                    "BMX-DQ-052":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(If the rule is no rank to DNS/DNF, IT to fix it as there are many rows here?)"
+                                                   },
+                                    "BMX-DQ-053":  {
+                                                       "status":  "Completed",
+                                                       "checkBy":  "Lyubomir"
+                                                   },
+                                    "BMX-DQ-054":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-055":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-056":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-057":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(same as DQ-052 - for IT?)"
+                                                   },
+                                    "BMX-DQ-058":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-059":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-060":  {
+                                                       "status":  "Reviewing",
+                                                       "checkBy":  "Aleksandar D."
+                                                   },
+                                    "BMX-DQ-061":  {
+                                                       "status":  "Completed",
+                                                       "checkBy":  "Vennie"
+                                                   },
+                                    "BMX-DQ-062":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-063":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-064":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-065":  {
+                                                       "status":  "Reviewing",
+                                                       "checkBy":  "Hristiyana"
+                                                   },
+                                    "BMX-DQ-066":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-067":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-068":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-069":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-070":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-071":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-072":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-073":  {
+                                                       "status":  "Completed",
+                                                       "checkBy":  "Vennie"
+                                                   },
+                                    "BMX-DQ-074":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-075":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  "Lyubomir"
+                                                   },
+                                    "BMX-DQ-076":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(This shoud be Monitor only or IT Fix?)"
+                                                   },
+                                    "BMX-DQ-077":  {
+                                                       "status":  "Completed",
+                                                       "checkBy":  "Vennie"
+                                                   },
+                                    "BMX-DQ-078":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-079":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-080":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-081":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-082":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-083":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-084":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-085":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-086":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-087":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-088":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-089":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-090":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-091":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-092":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-093":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-094":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(Many are Freestyle but out of Racing ones most are Overall/Classification where there are no time or duration because its points based and we havent entered points anywhere)"
+                                                   },
+                                    "BMX-DQ-095":  {
+                                                       "status":  "Completed",
+                                                       "checkBy":  "Vennie"
+                                                   },
+                                    "BMX-DQ-096":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-097":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-098":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(0 eligible)"
+                                                   },
+                                    "BMX-DQ-099":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-100":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-101":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-102":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-103":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-104":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-105":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-106":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(0 eligible)"
+                                                   },
+                                    "BMX-DQ-107":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-108":  {
+                                                       "status":  "Clean",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-109":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  "(o eligible)"
+                                                   },
+                                    "BMX-DQ-110":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-111":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "BMX-DQ-112":  {
+                                                       "status":  "Not reviewed",
+                                                       "checkBy":  ""
+                                                   },
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
                  }
              ],
     "sheetId":  "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE"

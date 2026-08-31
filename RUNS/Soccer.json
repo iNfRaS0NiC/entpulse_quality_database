@@ -26919,6 +26919,1132 @@
                                                           "checkBy":  ""
                                                       }
                                 }
+                 },
+                 {
+                     "runId":  "Soccer 31.08.2026 05-52-30",
+                     "startedUtc":  "2026-08-31T03:52:29Z",
+                     "output":  "D:\\SQL\u0027s Output\\Soccer 31.08.2026 05-52-30",
+                     "commit":  "b47231506852+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-078",
+                                        "runKey":  "Soccer-DQ-078",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Monitor",
+                                        "expected":  "Non-zero",
+                                        "verdict":  "As expected",
+                                        "rows":  55,
+                                        "findings":  54,
+                                        "eligible":  286,
+                                        "seconds":  10.8,
+                                        "status":  "OK",
+                                        "sqlHash":  "cd79533737e7"
+                                    },
+                                    {
+                                        "checkId":  "Soccer-DQ-092",
+                                        "runKey":  "Soccer-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "",
+                                        "rows":  0,
+                                        "findings":  null,
+                                        "eligible":  null,
+                                        "seconds":  180.3,
+                                        "status":  "ERROR: The remote server returned an error: (504) Gateway Timeout.",
+                                        "sqlHash":  "7abbee0015eb"
+                                    },
+                                    {
+                                        "checkId":  "Soccer-DQ-094",
+                                        "runKey":  "Soccer-DQ-094",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  1.1,
+                                        "status":  "OK",
+                                        "sqlHash":  "58b056acca7b"
+                                    },
+                                    {
+                                        "checkId":  "Soccer-DQ-103",
+                                        "runKey":  "Soccer-DQ-103",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  8.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "8b701d309570"
+                                    },
+                                    {
+                                        "checkId":  "Soccer-DQ-106",
+                                        "runKey":  "Soccer-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_STORED_BY_A_HEAD_TO_HEAD_SPORT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  1.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "032a17d338ce"
+                                    },
+                                    {
+                                        "checkId":  "Soccer-DQ-107",
+                                        "runKey":  "Soccer-DQ-107",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  0.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "7a09f53ed893"
+                                    },
+                                    {
+                                        "checkId":  "Soccer-DQ-108",
+                                        "runKey":  "Soccer-DQ-108",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  8.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "be66e4d81f48"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  26.3,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  9.6,
+                                                  "planning the changes":  2,
+                                                  "adding and sizing tabs":  0.5,
+                                                  "hiding columns and colouring Rows":  1.4,
+                                                  "clearing stale rows":  1.9,
+                                                  "writing values":  8.5,
+                                                  "confirming the rows arrived":  0.8,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.9
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Soccer-DQ-001":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-002":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-003":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-004":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-005":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-006":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-007":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-008":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-009":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-010":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-011":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-012":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-013":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-014":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-015":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-016":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-017":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-018":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-019":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-020":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-021":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-022":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-023":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-024":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-025":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-026":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-027":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-028":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-029":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-030":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-031":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-032":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-033":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-034":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-035":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-036":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-037":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-038":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-039":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-040":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-041":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-042":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-043":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-044":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-045":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-046":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-047":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-048":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-049":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-050":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-051":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-052":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-053":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-054":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-055":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-056":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-057":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-058":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-059":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-060":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-061":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-062":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-063":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-064":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-065":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-066":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-067":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-068":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-069":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-070":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-071":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-072":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-073":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-074":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-075":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-076":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-077":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-078":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-079":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-080":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-081":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-082":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-083":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-084":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-085":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-086":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-087":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-088":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-089":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-090":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-091":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-092":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-093":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-094":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-095":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-096":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-097":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-098":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-099":  {
+                                                          "status":  "Monitor Only",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-100":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-101":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-102":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-103":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-104":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-105":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-106":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-107":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-108":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-109":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-110":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-111":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      }
+                                }
+                 },
+                 {
+                     "runId":  "31.08.2026 06-23-37",
+                     "startedUtc":  "2026-08-31T04:23:37Z",
+                     "output":  "",
+                     "commit":  "b47231506852+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-092",
+                                        "runKey":  "Soccer-DQ-092",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  52.1,
+                                        "status":  "OK",
+                                        "sqlHash":  "7abbee0015eb"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  23.2,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  8.9,
+                                                  "planning the changes":  2.2,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  1.3,
+                                                  "clearing stale rows":  1.2,
+                                                  "writing values":  6.9,
+                                                  "confirming the rows arrived":  0.9,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.9,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Soccer-DQ-001":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-002":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-003":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-004":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-005":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-006":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-007":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-008":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-009":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-010":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-011":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-012":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-013":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-014":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-015":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-016":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-017":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-018":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-019":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-020":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-021":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-022":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-023":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-024":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-025":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-026":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-027":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-028":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-029":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-030":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-031":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-032":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-033":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-034":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-035":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-036":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-037":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-038":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-039":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-040":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-041":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-042":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-043":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-044":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-045":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-046":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-047":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-048":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-049":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-050":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-051":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-052":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-053":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-054":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-055":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-056":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-057":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-058":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-059":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-060":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-061":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-062":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-063":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-064":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-065":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-066":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-067":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-068":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-069":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-070":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-071":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-072":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-073":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-074":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-075":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-076":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-077":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-078":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-079":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-080":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-081":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-082":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-083":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-084":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-085":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-086":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-087":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-088":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-089":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-090":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-091":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-092":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-093":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-094":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-095":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-096":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-097":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-098":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-099":  {
+                                                          "status":  "Monitor Only",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-100":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-101":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-102":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-103":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-104":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-105":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-106":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-107":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-108":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-109":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-110":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Soccer-DQ-111":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      }
+                                }
                  }
              ],
     "sheetId":  "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE"

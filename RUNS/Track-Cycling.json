@@ -14727,6 +14727,554 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "Track-Cycling 31.08.2026 06-00-09",
+                     "startedUtc":  "2026-08-31T04:00:07Z",
+                     "output":  "D:\\SQL\u0027s Output\\Track-Cycling 31.08.2026 06-00-09",
+                     "commit":  "b47231506852+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Track-Cycling-DQ-015",
+                                        "runKey":  "Track-Cycling-DQ-015",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  2.6,
+                                        "status":  "OK",
+                                        "sqlHash":  "3fe9db18f004"
+                                    },
+                                    {
+                                        "checkId":  "Track-Cycling-DQ-032",
+                                        "runKey":  "Track-Cycling-DQ-032",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  2.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "0b533e375a76"
+                                    },
+                                    {
+                                        "checkId":  "Track-Cycling-DQ-039",
+                                        "runKey":  "Track-Cycling-DQ-039",
+                                        "parameters":  "",
+                                        "name":  "EVENT_MIXED_TEAM_LINEUP_GENDER_BALANCE_UNEVEN",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  1.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "460a6e4f51b5"
+                                    },
+                                    {
+                                        "checkId":  "Track-Cycling-DQ-053",
+                                        "runKey":  "Track-Cycling-DQ-053",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FORMAT_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  3943,
+                                        "findings":  3942,
+                                        "eligible":  12626,
+                                        "seconds":  4.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "b716f39398d1"
+                                    },
+                                    {
+                                        "checkId":  "Track-Cycling-DQ-054",
+                                        "runKey":  "Track-Cycling-DQ-054",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment, 101 Duration, 102 Points",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  94,
+                                        "findings":  93,
+                                        "eligible":  19241,
+                                        "seconds":  6.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "b16801228a6b"
+                                    },
+                                    {
+                                        "checkId":  "Track-Cycling-DQ-060",
+                                        "runKey":  "Track-Cycling-DQ-060",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_FULL_TIME_NOT_MONOTONIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  9,
+                                        "seconds":  0.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "7bbc8e7d234d"
+                                    },
+                                    {
+                                        "checkId":  "Track-Cycling-DQ-064",
+                                        "runKey":  "Track-Cycling-DQ-064",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 102 Points, 222 Laps behind, 534 Classification Points",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  32,
+                                        "findings":  31,
+                                        "eligible":  19244,
+                                        "seconds":  2.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "930b0b9b7348"
+                                    },
+                                    {
+                                        "checkId":  "Track-Cycling-DQ-068",
+                                        "runKey":  "Track-Cycling-DQ-068",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_INTEGER_FIELD_FRACTIONAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 222 Laps behind, 534 Classification Points",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  19243,
+                                        "seconds":  2.1,
+                                        "status":  "OK",
+                                        "sqlHash":  "1a7e2cbb5a60"
+                                    },
+                                    {
+                                        "checkId":  "Track-Cycling-DQ-084",
+                                        "runKey":  "Track-Cycling-DQ-084",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  2.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "7fd0b9666931"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  25.5,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  4,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  6.3,
+                                                  "planning the changes":  1.4,
+                                                  "adding and sizing tabs":  0.4,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  1.5,
+                                                  "writing values":  13.4,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DQ-007":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      },
+                                    "Track-Cycling-DQ-001":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-002":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-003":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-004":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-005":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-006":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-007":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-008":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-009":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-010":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-011":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-012":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-013":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-014":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-015":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-016":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-017":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-018":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-019":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-020":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-021":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-022":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-023":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-024":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-025":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-026":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-027":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-028":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-029":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-030":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-031":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-032":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-033":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-034":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-035":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-036":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-037":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-038":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-039":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-040":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-041":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-042":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-043":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-044":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-045":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-046":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-047":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-048":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-049":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-050":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-051":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-052":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-053":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-054":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-055":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-056":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-057":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-058":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-059":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-060":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-061":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-062":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-063":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-064":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-065":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-066":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-067":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-068":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-069":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-070":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-071":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-072":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-073":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-074":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-075":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-076":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-077":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-078":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-079":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-080":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-081":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-082":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-083":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-084":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Track-Cycling-DQ-085":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
                  }
              ],
     "sheetId":  "1sGFr9ANBR5Y4bCFGmI7F4mZHUE2U8Que2JLccMrwBGk"
