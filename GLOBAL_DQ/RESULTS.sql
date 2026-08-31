@@ -4672,8 +4672,9 @@ SELECT
     COUNT(*) AS tied_groups,
     SUM(g.group_size) AS affected_participants,
     SUBSTRING(GROUP_CONCAT(
-        CONCAT('type ', g.result_type, ' = ', g.shared_value, ' -> ranks ', g.ranks_held)
-        ORDER BY g.shared_value SEPARATOR ' | '), 1, 200) AS tied_values,
+        CONCAT(COALESCE(g.result_type_name, 'unnamed type'), ' (', g.result_type, ') = ',
+               g.shared_value, ' -> ranks ', g.ranks_held)
+        ORDER BY g.shared_value SEPARATOR ' | '), 1, 300) AS tied_values,
     NULL AS eligible_count,
     0 AS sort_order
 -- What it does, stated in full: Finds an event where two competitors hold an identical value in
@@ -4698,6 +4699,10 @@ SELECT
 -- The audited object is the event. A tie ranked apart is one editorial decision about one race
 -- however many competitors it caught, and an event may hold several; `tied_groups`,
 -- `affected_participants` and `tied_values` carry the detail as named secondary columns.
+-- `tied_values` names the deciding field rather than numbering it - `Duration (101)`, not
+-- `type 101` - because a reader deciding whether a tie is real has to know which quantity tied,
+-- and a bare id makes that a lookup. Changed 2026-08-31 on Speed Skating's reading; the width
+-- went from 200 to 300 to hold the names.
 -- Measured on Swimming 2026-08-21: 337 tied groups over 288 events and 735 participations.
 -- Four competitors sharing 24.320 in event 5210387 were ranked 2, 3, 4 and 5.
 FROM (
@@ -4708,6 +4713,7 @@ FROM (
         tt.name AS template_name,
         t.name AS tournament_name,
         tv.result_typeFK AS result_type,
+        rtv.name AS result_type_name,
         tv.value AS shared_value,
         COUNT(DISTINCT ep.id) AS group_size,
         SUBSTRING(GROUP_CONCAT(DISTINCT rk.value
@@ -4726,6 +4732,7 @@ FROM (
                   AND TRIM(tv.value) <> ''
     LEFT JOIN result cm ON cm.event_participantsFK = ep.id AND cm.del = 'no'
                        AND cm.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+    LEFT JOIN result_type rtv ON rtv.id = tv.result_typeFK
     WHERE e.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
       AND e.status_type = 'finished'
@@ -4735,7 +4742,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
-    GROUP BY e.id, e.name, e.startdate, tt.name, t.name, tv.result_typeFK, tv.value
+    GROUP BY e.id, e.name, e.startdate, tt.name, t.name, tv.result_typeFK, rtv.name, tv.value
     HAVING COUNT(DISTINCT rk.value) > 1
 ) g
 GROUP BY g.event_id, g.event_name, g.event_startdate, g.template_name, g.tournament_name

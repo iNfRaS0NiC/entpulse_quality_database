@@ -12,7 +12,7 @@ correction is required.
 ## Identity and evidence
 
 - First discovery date: 2026-08-22
-- Latest evidence date: 2026-08-22
+- Latest evidence date: 2026-08-31
 - Verification boundary: the whole `GLOBAL-DISCOVERY` catalogue, 001 through 033, was run for
   this sport on 2026-08-22 and every statement returned. `-033` failed inside the chain
   because the runner substituted `PERSON_PARTICIPANT_TYPE_LIST` unquoted; it was re-run by
@@ -148,6 +148,19 @@ The two types are not a distinction the sport makes about the skaters; `6 Unknow
 absence of a stated lineup type rather than a second kind of membership. Which of the two a
 lineup lands in is an open question below.
 
+**A team's lineup is three skaters and often a fourth, and the discipline decides which.**
+Measured 2026-08-31 over the 4210 in-scope team participations that reach a lineup: Team Pursuit
+and Team Sprint run at 3 and 4, the 3000 and 5000 Metres Relays at 3, and the mixed relays at 2
+with a single participation at 5. The 3-and-4 pair is not a disagreement - three skaters race and
+a fourth is named as reserve - which is why `GLOBAL-DQ-068 EVENT_TEAM_LINEUP_SIZE_UNEVEN` reports
+161 events of 556 for this sport and is right about almost none of them. The size that carries a
+defect is the floor, not the spread, and `Speed-Skating-DQ-128` reads it.
+
+**Every lineup member is an athlete.** The sport holds no case of a lineup that exists and names
+nobody of that type, so a team participation takes one of two shapes and no third: no lineup at
+all, 112 participations over 29 events, which `GLOBAL-DQ-058` reports, or a lineup of between two
+and five athletes. A check for an empty-but-present lineup would have no population here.
+
 <!-- MANUAL PASTE ZONE: 19 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Event result types
@@ -179,6 +192,26 @@ Distances 2011, and are the other thing - a comment written into the duration co
 
 **`102 Points` is a duration by another name.** Both its value shapes are times, and it is
 stored on two events. The name of the result type and the content of its values disagree.
+
+**`557 Full-time duration` on a 500 Metres can be the sum of two runs rather than one race.**
+Found 2026-08-31 while reading times that looked impossible. Event 71386, the 2006 Olympic 500
+Metres, holds a whole field between 1:16 and 1:20 against a world record near 34 seconds, because
+that championship skated the distance twice and classified on the total; Manli Wang's 1:16.780 is
+her two runs added, not an error. 35 in-scope events store the 500 this way and every value in
+them is correct. A statement reading a 500 Metres time as a single race is wrong about those
+events, and a plausibility rule with an upper bound would report all 35 as defects. That is why
+`Speed-Skating-DQ-129` asks the fast direction only, and why the slow direction is recorded here
+as answered rather than left open.
+
+**`101 Duration` carries an absolute time for the leader and a signed gap for everyone behind**,
+which means a single wrong leader value corrupts the field around it rather than one row. Event
+1612040, the World Cup 1000 Metres at Salt Lake City on 2013-11-16, stores 16.460 for its leader,
+and because every other skater's gap is written against that value the whole field carries gaps
+above 50 seconds in a race of 67. Event 410847, the World Cup 1000 Metres at Erfurt on
+2007-12-16, stores 37.88 for its leader, a 500 Metres time in a 1000 Metres race. These two are
+what `Speed-Skating-DQ-129` reports. What makes them impossible rather than merely fast is the
+sport's own record: the quickest pace it has ever stored is 66.78 seconds per kilometre, the 1500
+Metres at 1:40.170, and every distance's own best sits above that.
 
 <!-- MANUAL PASTE ZONE: 19 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
