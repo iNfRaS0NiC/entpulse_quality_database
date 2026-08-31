@@ -253,6 +253,14 @@ only event name in the sport that names a format rather than a discipline.
 
 ## Confirmed sport-specific storage semantics
 
+**The whole sport is inside the client boundary, decided 2026-08-31.** UK Sport takes all 45
+tournament templates, so `OUT_OF_SCOPE_TEMPLATE_ID_LIST` is `0` by decision rather than by
+default and a run needs no narrowing. Two consequences worth stating, because they do not hold
+for the other sports in this package: a sport-wide count here is a client-scope count, and a
+board built from an unnarrowed run is the board the client sees. Soccer takes 28 templates of
+many and Speed Skating excludes 56 of 101, so a habit carried from either of them - reaching
+for `-TemplateIds`, or reading a sport-wide number as an overcount - is wrong here.
+
 **The leader carries a time and the field carries a gap, in `101 Duration`.** The convention is
 the one `DATABASE.md` records for the timed sports: one absolute value per event and a signed
 difference for everybody else. A statement reading this field as a race time is reading a gap on
@@ -331,6 +339,24 @@ EVENT_DURATION_FORMAT_MISMATCH_TO_RANK` reads the field the sport does fill and 
 deprecated field a sport should have stopped writing. It is live here: it is where this sport's
 Comp.Rank layer keeps a rider's time, and `DATA_TIME_TYPE_ID` points at it deliberately. The
 template's premise is false for this sport rather than its population empty.
+
+**Two more templates are `Not applicable` here, decided 2026-08-31 when the last five DQ
+categories were opened.** Neither is assigned a CheckID and neither reserves one.
+
+`GLOBAL-DQ-107 EVENT_SCOPE_CONTAINER_MISSING_FOR_FINISHED` asserts that a finished event holds
+a scope container - a period, a leg, a run - to hang its partial results on. This sport stores
+no scope layer at all: measured 2026-08-31, `GLOBAL-DISCOVERY-009` found no active event-scope
+container and the value side returned nothing either, on both layers. The template's mandatory
+`SCOPE_TYPE_ID` therefore has no value to take, and inventing one would point the check at a
+layer nobody has seen. Four of the sixteen documented sports instantiate it, and they are the
+four that keep periods.
+
+`GLOBAL-DQ-135 PARTICIPANT_COACH_OR_OFFICIAL_NO_PARTICIPATION_ANYWHERE` asserts that a coach or
+official carried in the registry appears somewhere in the competition. This sport's registry
+holds one person role, `athlete`, measured 2026-08-31 - there is no coach and no official row to
+audit, and `SUPPORT_PARTICIPANT_TYPE_LIST` has nothing to name. Three of the sixteen sports
+instantiate it. This is the participant-role twin of the reasoning above rather than an empty
+population: `PERSON_ROLE_TYPE_LIST` for this sport is `'athlete'` alone for the same reason.
 
 <!-- MANUAL PASTE ZONE: 56 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
