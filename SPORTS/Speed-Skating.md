@@ -92,6 +92,37 @@ excluding roughly a quarter of the population on purpose rather than as a formal
 One further template is empty without being mixed or IOC: `12341 World Junior Championships`
 male, one tournament, one stage, no events.
 
+`12339 World Championship` male and `12340 World Championship` female are empty in a different
+way, measured 2026-08-31: eight events each, and not one event participant under any of the
+sixteen. They hold no Comp.Rank statistic either. Both leave the client's scope under the
+boundary recorded below, so no check reads them, and the emptiness is recorded here rather
+than left to be rediscovered.
+
+**The client takes 15 of the sport's 36 competitions, and 45 of its 101 templates.** By the
+user's decision of 2026-08-31, which replaces the 2026-08-22 reading that the client took this
+sport whole. The 15 are Winter Olympics, Four Continents Championships, the three World
+Championship forms - Single Distances, Allround and Sprint - World Allround Junior
+Championships, World Cup, Junior World Cup, the three European Championship forms, Asian Winter
+Games, Asian Single Distance Championships, Asian World Allround Championships Qualifier and
+Youth Olympic Games. Each is taken in all three genders, which is why 15 competitions are 45
+templates. `SPORTS/params.json` `OUT_OF_SCOPE_TEMPLATE_ID_LIST` names the 56 that are excluded.
+
+**The 56 excluded templates are not one kind of thing.** 26 are the `(IOC)` mirrors, and every
+one of them mirrors a competition the client keeps - not a single IOC template belongs to a
+competition that was dropped, which is why the IOC exclusion here is a decision about the
+client's own competitions rather than about a discarded corner of the sport. 23 are national
+championships: Canada, Germany, Netherlands, NM (Norway), North American and USA. The remaining
+seven are `25 European Championship` mixed, the three `World Championship` templates, the two
+`World Junior Championships` templates and `10947 World Single Distance Junior Championships`.
+
+**On the event layer the boundary costs Norway and nothing else.** Measured 2026-08-31: the 56
+hold 481 events between them and 465 of those are the six gendered NM templates, leaving 4607
+events in scope. Every other excluded template is a shell that holds tournaments and no event.
+On the statistic layer the cost is the larger half - 5049 of the sport's 9593 Comp.Rank
+statistics leave scope and 4544 remain - because a national championship here carries
+statistics without carrying events. A statement reading this sport therefore narrows far more
+on statistics than the event counts suggest.
+
 <!-- MANUAL PASTE ZONE: 19 TABLES AND RELATIONS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Participant and lineup structure
@@ -442,6 +473,13 @@ The same mistake, in the same shape, made `GLOBAL-DQ-125` report 1380: `MEDAL_TE
 had been measured from `501 Medal` on events, and 23 templates award medals only through
 `1277 Medal` on the statistic. Both are corrected and both dropped to their real counts. Any
 parameter naming a round type or a medal-bearing template must be measured on both layers.
+
+`MEDAL_TEMPLATE_ID_LIST` was narrowed from 57 templates to 34 on 2026-08-31, when the client
+boundary above took the national championships out of scope. The 23 it lost are exactly the 23
+that award only through `1277 Medal`, so the parameter is now the event-medal half of what was
+measured and nothing still audited went with them. The rule the paragraph above states is not
+weakened by that: it is a rule about how a parameter is measured, not about which templates
+this client happens to take.
 
 **17 events carry `round_typeFK = 0`, which resolves to no round type at all.** They are one
 block, not a scattered defect: every one is `cancelled`, all sit in four stages, 879624
