@@ -400,13 +400,16 @@ closing one of these events should expect to meet it twice.
 measured on result type `501 Medal` alone and `GLOBAL-DQ-125
 COMP.RANK_MEDAL_AWARDED_OUTSIDE_MEDAL_TEMPLATE` reported 1380 rows there, because 23 of its
 national-championship templates award only through data type `1277 Medal` on the Comp.Rank
-side. This sport has the same shape in miniature: templates `12507` and `12508 World
+side. This sport had the same shape in miniature: templates `12507` and `12508 World
 Championship Cross Country 1 (IOC)` carry no `501` on any event and 34 statistics each carrying
-`1277`. The list holds the 32 templates that record a medal today. Five that award medals in the
-world but record none here are deliberately out - `9462`, `9461` and `9454`, the Swiss national
-championships, and `11567` and `11568 Summer Youth Olympics`, which hold no edition at all - so
-the day one of them records a medal the check reports it and this list is what needs correcting.
-`Mountain-Bike-DQ-121` returns nothing today and is a guard.
+`1277`, so a `501`-only measurement would have missed them entirely. Both then left the client
+boundary when it was narrowed later the same day, and the user chose to drop them from the list
+as well, which makes it name the medal competitions **inside** the boundary rather than every
+competition that awards a medal. It holds 30. Five more that award medals in the world record
+none here and are also out - `9462`, `9461` and `9454`, the Swiss national championships, and
+`11567` and `11568 Summer Youth Olympics`, which hold no edition at all. The day an in-scope
+competition records a medal under a template absent from the list, `Mountain-Bike-DQ-121` reports
+it and the list is what needs correcting. It returns nothing today and is a guard.
 
 <!-- MANUAL PASTE ZONE: 56 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
