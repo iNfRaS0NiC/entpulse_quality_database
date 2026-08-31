@@ -3278,3 +3278,128 @@ WHERE tt.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, overlapping_pairs DESC, template_id;
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-150
+    -- Name - TOURNAMENT_STAGE_DATE_RANGE_WIDER_THAN_ITS_EVENTS
+    -- What it does: Flags a stage declaring more whole calendar days than its events occupy, beyond the slack the sport's format allows.
+    CASE
+        WHEN x.empty_days_before > 0 AND x.empty_days_after > 0 THEN 'STAGE_RANGE_WIDE_AT_BOTH_ENDS'
+        WHEN x.empty_days_before > 0 THEN 'STAGE_RANGE_STARTS_TOO_EARLY'
+        ELSE 'STAGE_RANGE_ENDS_TOO_LATE'
+    END AS check_type,
+    x.tournament_stage_id,
+    x.tournament_stage_name,
+    x.template_name,
+    x.tournament_name,
+    x.stage_startdate,
+    x.stage_enddate,
+    x.event_count,
+    x.earliest_event_startdate,
+    x.latest_event_startdate,
+    x.empty_days_before,
+    x.empty_days_after,
+    NULL AS eligible_count
+-- What it does, stated in full: Finds a stage whose declared range contains its events and is
+-- still wider than them, counted in whole calendar days at each end. A stage is the container
+-- for the competition it names, and days it claims but never uses are days the calendar is
+-- wrong about.
+-- This is the other half of GLOBAL-DQ-004 and the two do not overlap. That one finds an event
+-- outside the stage and this one only judges a stage that already contains every one of its
+-- events, which is why a stage reported there is never reported here.
+-- STAGE_DATE_TOLERANCE_DAYS is how much unused width the sport's format allows, and it exists
+-- because one measure cannot serve every format. Most sports write a stage as the day or days
+-- their events are actually held, so 0 is correct for them and any unused day is a defect.
+-- Golf is the exception the parameter was measured on: a tournament runs Thursday to Sunday and
+-- the whole of it is stored as one event, so a correct four-day stage carries three unused days
+-- by construction. Measured 2026-08-31 across 5313 Golf stages, 5019 hold exactly one event and
+-- the arithmetic is exact for them - unused days are the span minus one - so a tolerance of 3
+-- is precisely the rule that a golf stage may not run longer than four days. It also spares a
+-- genuinely long stage whose events fill it, which a rule written on the span alone would not.
+-- Hours are not read at either end. A sport writing a stage as whole days, 00:00:00 to
+-- 23:59:59, differs from its events by hours while using every day it claims, and counting that
+-- as width would report the format instead of the defect. This is the same trap equality fell
+-- into before GLOBAL-DQ-004 was changed to containment on 2026-08-26.
+-- A stage or event with no date is not judged here at all; GLOBAL-DQ-005 owns the missing date.
+-- The audited object is the stage. Coverage counts every dated stage holding at least one dated
+-- event, whatever its width, so eligible does not move when the data is corrected.
+FROM (
+    SELECT
+        ts.id AS tournament_stage_id,
+        ts.name AS tournament_stage_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.startdate AS stage_startdate,
+        ts.enddate AS stage_enddate,
+        COUNT(DISTINCT e.id) AS event_count,
+        MIN(e.startdate) AS earliest_event_startdate,
+        MAX(e.startdate) AS latest_event_startdate,
+        DATEDIFF(DATE(MIN(e.startdate)), DATE(ts.startdate)) AS empty_days_before,
+        DATEDIFF(DATE(ts.enddate), DATE(MAX(e.startdate))) AS empty_days_after
+    FROM tournament_stage ts
+    JOIN tournament t
+      ON t.id = ts.tournamentFK
+     AND t.del = 'no'
+    JOIN tournament_template tt
+      ON tt.id = t.tournament_templateFK
+     AND tt.del = 'no'
+    JOIN event e
+      ON e.tournament_stageFK = ts.id
+     AND e.del = 'no'
+    WHERE ts.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      AND ts.startdate IS NOT NULL
+      AND ts.enddate IS NOT NULL
+      AND e.startdate IS NOT NULL
+    GROUP BY
+        ts.id,
+        ts.name,
+        tt.name,
+        t.name,
+        ts.startdate,
+        ts.enddate
+) x
+WHERE x.empty_days_before >= 0
+  AND x.empty_days_after >= 0
+  AND x.empty_days_before + x.empty_days_after > {{STAGE_DATE_TOLERANCE_DAYS}}
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    COUNT(DISTINCT ts.id) AS eligible_count
+FROM tournament_stage ts
+JOIN tournament t
+  ON t.id = ts.tournamentFK
+ AND t.del = 'no'
+JOIN tournament_template tt
+  ON tt.id = t.tournament_templateFK
+ AND tt.del = 'no'
+WHERE ts.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  AND ts.startdate IS NOT NULL
+  AND ts.enddate IS NOT NULL
+  AND EXISTS (
+      SELECT 1
+      FROM event e2
+      WHERE e2.tournament_stageFK = ts.id
+        AND e2.del = 'no'
+        AND e2.startdate IS NOT NULL
+  );
