@@ -411,6 +411,59 @@ none here and are also out - `9462`, `9461` and `9454`, the Swiss national champ
 competition records a medal under a template absent from the list, `Mountain-Bike-DQ-121` reports
 it and the list is what needs correcting. It returns nothing today and is a guard.
 
+**The remaining eighteen templates are `Not applicable`, decided 2026-08-31, and they group
+into five reasons rather than eighteen.** None is assigned a CheckID and none reserves one.
+With these, every one of the 150 GLOBAL templates has a verdict for this sport.
+
+*Five need a head-to-head competition model*, an event contested between exactly two entries.
+This sport lines a field up and ranks it, which is `DB-SEM-015`'s other model and not a
+population that happens to be small: `GLOBAL-DQ-083
+EVENT_PARTICIPANT_COUNT_NOT_A_FIELD_THE_SPORT_ENTERS`, which asks whether an event holds a
+number of entries the sport does not field; `GLOBAL-DQ-084 EVENT_RESULT_SCORE_TIED`, a drawn
+contest in a format admitting no draw; `GLOBAL-DQ-087
+EVENT_WINNER_RECORDED_IN_NEITHER_PLACE_THE_SPORT_KEEPS_IT` and `GLOBAL-DQ-088
+EVENT_WINNER_CONTRADICTS_SCORE`, both reading a winning side; and `GLOBAL-DQ-094
+EVENT_RESULTS_MEDAL_CONTRADICTS_SCORE`, a medal match decided on a pair of scores.
+
+*Six need the scope layer*, a score or a split stored period by period. Measured 2026-08-31 on
+both halves, this sport writes none: no active event-scope container and no value row.
+`GLOBAL-DQ-085 EVENT_SCOPE_PERIOD_SUM_MISMATCH_TOTAL`, `GLOBAL-DQ-086
+EVENT_SCOPE_PERIOD_VALUE_UNRECOGNISED`, `GLOBAL-DQ-089 EVENT_EXTRA_PERIOD_STATUS_MISMATCH`,
+`GLOBAL-DQ-091 EVENT_SCOPE_PERIOD_NOT_STORED_FOR_BOTH_SIDES`, `GLOBAL-DQ-092
+EVENT_SCOPE_PERIOD_SENTINEL_NOT_TRAILING` and `GLOBAL-DQ-102
+EVENT_SCOPE_RESULT_OWNER_EVENT_MISMATCH`.
+
+`GLOBAL-DQ-102` was the one worth arguing about and the argument is recorded rather than
+settled quietly. Its own text says a sport with no scope row has an empty scope rather than a
+clean one, which invites instantiating it as a sentinel the way the twelve organization checks
+were. What stops it is narrower: `SCOPE_TYPE_LIST` has nothing to name, because the sport
+writes no scope type at all, and a parameter invented to satisfy a statement points it at a
+layer nobody has measured. The user was given both readings on 2026-08-31 and took
+`Not applicable`. The day this sport writes a scope row, this is the first template to revisit.
+
+*Four need a score result type.* The sport's five result types are `100 Rank`, `101 Duration`,
+`104 Comment`, `222 Laps behind` and `501 Medal`, measured over the whole inventory by
+`GLOBAL-DISCOVERY-026 EVENT_RESULTS_VALUE_PATTERNS_SUMMARY`; not one of them is a count of
+scoring units, and what settles a place here is a clock. `GLOBAL-DQ-090
+EVENT_RESULT_MIRRORED_SCORE_TYPES_DISAGREE`, `GLOBAL-DQ-108
+EVENT_RESULTS_SCORE_NEGATIVE_OR_FRACTIONAL`, `GLOBAL-DQ-114
+EVENT_RESULTS_MIRROR_SCORE_WITHOUT_DECIDING_SCORE` and `GLOBAL-DQ-126
+EVENT_RESULTS_FINAL_SCORE_ON_UNFINISHED_EVENT`.
+
+*One needs teams in events.* `GLOBAL-DQ-068 EVENT_TEAM_LINEUP_SIZE_UNEVEN` measures an event's
+teams against each other and this sport fields none, which is the same fact that makes
+`Mountain-Bike-DQ-116 EVENT_LINEUP_ATHLETE_ASSIGNED_MORE_THAN_ONCE` a sentinel rather than an
+exclusion - that one reads a lineup relation the schema keeps and this one needs a team to
+compare.
+
+*Two are excluded by a rule rather than by structure*, and both rules are written into the
+templates themselves. `GLOBAL-DQ-116 EVENT_RESULTS_RANK_TIE_CONTRADICTED_BY_SCORE` says
+"Superseded by `GLOBAL-DQ-021` and not to be instantiated". `GLOBAL-DQ-117
+EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED_BY_SCORE` says a sport instantiates it or
+`GLOBAL-DQ-052`, never both, because the two read the same population; this sport stores a time
+on its result, which is what makes `GLOBAL-DQ-052` the stronger of the pair, and it is here as
+`Mountain-Bike-DQ-037`.
+
 <!-- MANUAL PASTE ZONE: 56 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
