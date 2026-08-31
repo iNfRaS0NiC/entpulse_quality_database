@@ -253,13 +253,20 @@ only event name in the sport that names a format rather than a discipline.
 
 ## Confirmed sport-specific storage semantics
 
-**The whole sport is inside the client boundary, decided 2026-08-31.** UK Sport takes all 45
-tournament templates, so `OUT_OF_SCOPE_TEMPLATE_ID_LIST` is `0` by decision rather than by
-default and a run needs no narrowing. Two consequences worth stating, because they do not hold
-for the other sports in this package: a sport-wide count here is a client-scope count, and a
-board built from an unnarrowed run is the board the client sees. Soccer takes 28 templates of
-many and Speed Skating excludes 56 of 101, so a habit carried from either of them - reaching
-for `-TemplateIds`, or reading a sport-wide number as an overcount - is wrong here.
+**UK Sport takes 34 of the sport's 45 templates, named on 2026-08-31.** The boundary was
+decided twice that day and the second decision governs: the whole sport was taken first, then
+eleven templates were named as not needed. Out are the cup and series competitions - `9453
+Marathon Series 1`, `9455 Swiss Bike Cup 1`, `9456 IXS European Downhill Cup 1` and `9463 IXS
+Swiss Downhill Cup 1` - the three Swiss national championships `9454`, `9461` and `9462`, and
+the four IOC-purpose templates `12507` and `12508 World Championship Cross Country 1 (IOC)` and
+`12509` and `12510 World Cup 1 (IOC)`. `9450` and `10365 World Cup 1`, the non-IOC pair, stay in
+and are the busiest competition the sport holds, so this is not a rule about series.
+
+The boundary is declared as `OUT_OF_SCOPE_TEMPLATE_ID_LIST`, so every statement subtracts the
+eleven and a template added to the sport later is in scope until somebody says otherwise. This
+is the opposite default from Handball, which declares `IN_SCOPE_TEMPLATE_ID_LIST` and cannot let
+a new competition drift in. Any count in this file taken before 2026-08-31 15:00 was measured
+across all 45 and is therefore an overcount.
 
 **The leader carries a time and the field carries a gap, in `101 Duration`.** The convention is
 the one `DATABASE.md` records for the timed sports: one absolute value per event and a signed
