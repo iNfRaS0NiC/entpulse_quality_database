@@ -24101,6 +24101,616 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "Speed-Skating 31.08.2026 09-18-37",
+                     "startedUtc":  "2026-08-31T07:18:36Z",
+                     "output":  "D:\\SQL\u0027s Output\\Speed-Skating 31.08.2026 09-18-37",
+                     "commit":  "6ba3e9461c2b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-116",
+                                        "runKey":  "Speed-Skating-DQ-116",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration, 101 Duration, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  543,
+                                        "findings":  542,
+                                        "eligible":  4245,
+                                        "seconds":  6.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "b6405e468161"
+                                    },
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-128",
+                                        "runKey":  "Speed-Skating-DQ-128",
+                                        "parameters":  "",
+                                        "name":  "EVENT_TEAM_LINEUP_BELOW_DISCIPLINE_SIZE",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  556,
+                                        "seconds":  0.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "0ab5706b201a"
+                                    },
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-129",
+                                        "runKey":  "Speed-Skating-DQ-129",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_DURATION_TOO_FAST_FOR_DISTANCE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 101 Duration, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  3209,
+                                        "seconds":  2.6,
+                                        "status":  "OK",
+                                        "sqlHash":  "7eeaaaff204e"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  23.4,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  3,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  7.1,
+                                                  "planning the changes":  5.1,
+                                                  "adding and sizing tabs":  1.6,
+                                                  "hiding columns and colouring Rows":  0.6,
+                                                  "clearing stale rows":  1.3,
+                                                  "writing values":  6.4,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.3,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "GLOBAL-DISCOVERY-018":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-020":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-022":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-024":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "GLOBAL-DISCOVERY-033":  {
+                                                                 "status":  "Monitor Only",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-001":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-002":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-003":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-004":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-005":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-006":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-007":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-008":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-009":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-010":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-011":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-012":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-013":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-014":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-015":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-016":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-017":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-018":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-019":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-020":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-021":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-022":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-023":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-024":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-025":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-026":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-027":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-028":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-029":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-030":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-031":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-032":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-033":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-034":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-035":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-036":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-037":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-038":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-039":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-040":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-041":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-042":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-043":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-044":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-045":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-046":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-047":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-048":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-049":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-050":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-051":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-052":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-053":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-054":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-055":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-056":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-057":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-058":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-059":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-060":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-061":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-062":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-063":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-064":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-065":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-066":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-067":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-068":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-069":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-070":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-071":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-072":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-073":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-074":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-075":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-076":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-077":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-078":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-079":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-080":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-081":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-082":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-083":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-084":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-085":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-086":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-087":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-088":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-089":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-090":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-091":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-092":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-093":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-094":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-095":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-096":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-097":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-098":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-099":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-100":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-101":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-102":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-103":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-104":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-105":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-106":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-107":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-108":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-109":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-110":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-111":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-112":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-113":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-114":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-115":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-116":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-117":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-118":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-119":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-120":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-121":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-122":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-123":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-124":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-125":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-126":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "Speed-Skating-DQ-127":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
                  }
              ],
     "sheetId":  "1CNFGr9KzNTGUtKJMn8vALWxHkL3x97JRtABs541iDPM"
