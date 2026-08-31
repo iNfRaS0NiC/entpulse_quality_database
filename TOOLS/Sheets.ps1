@@ -717,11 +717,30 @@ $SheetsRowReviewColumns = @('Review Status', 'Review Note')
 # makes adding one harmless, so the list stays as small as the evidence supports.
 #
 # Review Note is deliberately not constrained. It holds a sentence.
+#
+# No Issue / Change is green, the same green as Fixed, by the user's decision of 2026-08-31.
+# The two are different conclusions and the grey said so, but what a reviewer scanning a tab
+# needs from the colour is whether a row is closed, and both of these close it. In Progress is
+# the one that is still open and it keeps a colour of its own. The values remain distinct in
+# the cell and in the Review log, so nothing that counts them is affected: only the reading is.
 $SheetsRowReviewBands = @(
     [pscustomobject]@{ Value = 'Fixed'; Background = '#E6F4EA'; Colour = '#137333' }
-    [pscustomobject]@{ Value = 'No Issue / Change'; Background = '#F1F3F4'; Colour = '#5F6368' }
+    [pscustomobject]@{ Value = 'No Issue / Change'; Background = '#E6F4EA'; Colour = '#137333' }
     [pscustomobject]@{ Value = 'In Progress'; Background = '#E8F0FE'; Colour = '#1967D2' }
 )
+
+# Wide enough for the longest value the dropdown offers, plus the room the dropdown's own chip
+# and arrow take. Sized from the list rather than typed, so adding a value widens the column
+# with it instead of clipping in a way nobody notices until a reviewer misreads a cell.
+#
+# It exists because a result column is sized from its header alone, and here the header is the
+# short half: 'Review Status' is thirteen characters against 'No Issue / Change' at seventeen,
+# so the value arrived cut off. Raised the same way the identity block's widths are, never
+# lowered, so a board that already has more room keeps it.
+$SheetsRowReviewStatusColumnWidth = ((
+        $SheetsRowReviewBands | ForEach-Object { ([string]$_.Value).Length } |
+        Measure-Object -Maximum).Maximum * $SheetsResultColumnCharWidth) +
+$SheetsResultColumnPadding + 20
 
 # The one of the three that closes a finding without changing the data, and the reason Overview
 # needs to know about it at all.
@@ -773,6 +792,35 @@ $SheetsRowReviewDismissed = 'No Issue / Change'
 # two literals it was a silent failure waiting - correct the wording in one and the console goes
 # on reporting zero rows moved while the log fills up with them.
 $SheetsRowReviewMovedReason = 'the finding under that key came back reading differently'
+
+# What the board says back to a reviewer whose Fixed row is in the result again.
+#
+# Fixed is the one status that makes a prediction: the thing described is gone, so the row
+# should be too. When the row is still there the prediction failed, and until 2026-08-31 the
+# board said nothing about it - the status was carried over in silence if the reading was
+# identical, and thrown to the Review log if it was not. Either way the reviewer met their own
+# `Fixed` again with no idea why, and the second case cost them the conclusion as well.
+#
+# So a Fixed row that comes back keeps its status and the note is rewritten to say which of the
+# two happened. Identical means nothing was done to it. A different reading under the same key
+# means the object was corrected and something else about it is wrong now, which is a different
+# finding wearing the same key rather than the same one persisting.
+#
+# This is the deliberate exception to the rule above, by the user's decision of 2026-08-31, and
+# it is narrow on purpose: only Fixed, because only Fixed predicts its own disappearance. No
+# Issue / Change and In Progress assert nothing about the next run and still follow the rule.
+$SheetsRowReviewFixedValue = 'Fixed'
+$SheetsRowReviewFixedStillOpenNote = 'No Change'
+$SheetsRowReviewFixedMovedNote = 'Other issue for the same event'
+
+# The reviewer's own sentence, when one of the two above replaces it on the board.
+#
+# Overwritten there and kept here, so the cell answers "why is this back" while the Review log
+# goes on answering "what did anybody conclude about it". Dropping the sentence outright was
+# the other option and it loses the only record of a judgement somebody took the trouble to
+# write; keeping both in the cell grows it by a line on every run a row survives.
+$SheetsRowReviewNoteReplacedReason = 'the row was marked Fixed and came back, so its note was ' +
+'replaced on the board with why it is still there'
 
 # What each spelling written before the list existed meant. Applied wherever a note passes
 # through, so a cell reaches its new column already reading as one of the values above rather
@@ -1209,8 +1257,28 @@ function New-SheetsCarriedReview {
             # An empty fingerprint is not a mismatch: it means no reading was ever taken to
             # compare against, which happens only on the legacy path. Carried on the key, and
             # said so where $SheetsRowReviewMovedReason is declared.
-            if (-not [string]::IsNullOrEmpty([string]$one.Fingerprint) -and
-                $one.Fingerprint -ne $printOfRow[$at]) {
+            $moved = (-not [string]::IsNullOrEmpty([string]$one.Fingerprint) -and
+                $one.Fingerprint -ne $printOfRow[$at])
+
+            # Fixed is the exception, and $SheetsRowReviewFixedValue says why. The status is
+            # kept whichever way the reading went, and the note is rewritten to answer the
+            # question the reviewer is about to ask.
+            if ([string]$one.Review -eq $SheetsRowReviewFixedValue) {
+                $because = $(if ($moved) { $SheetsRowReviewFixedMovedNote }
+                    else { $SheetsRowReviewFixedStillOpenNote })
+                if (-not [string]::IsNullOrWhiteSpace([string]$one.Note) -and
+                    [string]$one.Note -ne $because) {
+                    $dropped += [pscustomobject]@{
+                        Key = $one.Key; Review = $one.Review; Note = $one.Note
+                        Why = $SheetsRowReviewNoteReplacedReason
+                    }
+                }
+                $review[$at] = [string]$one.Review
+                $note[$at] = [string]$because
+                continue
+            }
+
+            if ($moved) {
                 $dropped += [pscustomobject]@{
                     Key = $one.Key; Review = $one.Review; Note = $one.Note
                     Why = $SheetsRowReviewMovedReason
@@ -2921,6 +2989,15 @@ function New-SheetsMergePlan {
                     @{ Name = 'Trends'; Width = $SheetsTrendsColumnWidth })) {
                 $at = [array]::IndexOf($SheetsCheckTabColumns, [string]$sized.Name)
                 if ($at -ge 0) { $identityWidthOf[($at + 1)] = [int]$sized.Width }
+            }
+            # Review Status joins them, for the same reason and by the same mechanism: its
+            # header is shorter than the longest value its own dropdown offers, so sizing it
+            # from the header alone clipped 'No Issue / Change' in every cell that held it.
+            # The map raises a column and never lowers one, so a wider projected name beside
+            # it is untouched.
+            $reviewStatusColumn = $dataHeader.Count + 1
+            if ($identityWidthOf[$reviewStatusColumn] -lt $SheetsRowReviewStatusColumnWidth) {
+                $identityWidthOf[$reviewStatusColumn] = [int]$SheetsRowReviewStatusColumnWidth
             }
             foreach ($span in (Get-SheetsResultColumnWidths -Header $header `
                         -FirstColumnWidth $SheetsCheckTabFirstColumnWidth)) {

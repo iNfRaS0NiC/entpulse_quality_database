@@ -1899,8 +1899,19 @@ contain:
 | Value | Colour | Means |
 |---|---|---|
 | `Fixed` | green | corrected in the database |
-| `No Issue / Change` | grey | looked at — either not a defect, or nothing to change |
+| `No Issue / Change` | green | looked at — either not a defect, or nothing to change |
 | `In Progress` | blue | being worked on |
+
+`No Issue / Change` reads in the same green as `Fixed` from 2026-08-31. The two are different
+conclusions and the grey used to say so, but what a reviewer scanning a tab wants from a colour
+is whether a row is closed, and both of these close it. `In Progress` is the one that is still
+open and keeps a colour of its own. The values stay distinct in the cell and in the `Review
+log`, so nothing that counts them is affected — only the reading is.
+
+The column is also sized to hold `No Issue / Change` whole. Every other column of a result block
+is sized from its header, and here the header is the shorter half — thirteen characters against
+seventeen — so the longest value used to arrive clipped. The width is computed from the list, so
+adding a value widens the column with it.
 
 `No Issue / Change` carries both words because both were written and they turned out to mean
 one thing. 610 cells held five spellings of four ideas, and `no issue` appeared only on the
@@ -1930,6 +1941,34 @@ back saying something else and the sentence is untrue of it while the cell still
 The mechanism was already in production for `Fixed` and had fired: of the 991 `Fixed` marks that
 board has seen, 990 left the result on their own, one came back under the same key holding a
 different reading and was parked in the log, and none was inherited by a changed row.
+
+#### `Fixed` is the exception, and says why it is still there
+
+**A `Fixed` row that comes back keeps its mark, and its note is rewritten to say why.** By the
+user's decision of 2026-08-31. `Fixed` is the one value that makes a prediction — the thing
+described is gone, so the row should be too — and a row that is still in the result has refuted
+it. Before this the board said nothing about that: an identical reading carried the mark over in
+silence, and a changed one threw it to the log, so either way the reviewer met their own green
+row again with no idea why.
+
+| What the row did | `Review Status` | `Review Note` becomes |
+|---|---|---|
+| came back identical | stays `Fixed` | `No Change` |
+| came back reading differently | stays `Fixed` | `Other issue for the same event` |
+
+The second is the reading the rule above would have dropped. Under the same key, a different
+reading means the object was corrected and something else about it is wrong now — a different
+finding wearing the same key, rather than the same one persisting — and telling the reviewer
+that is worth more than clearing the cell.
+
+**The sentence it replaces goes to the `Review log`, not the bin.** The cell answers "why is this
+back" and the log goes on answering "what did anybody conclude about it", so nothing a reviewer
+took the trouble to write is lost. A `Fixed` row with no note of its own logs nothing, because
+nothing was replaced.
+
+The exception is narrow on purpose: only `Fixed`, because only `Fixed` predicts its own
+disappearance. `No Issue / Change` and `In Progress` assert nothing about the next run and
+follow the rule above unchanged.
 
 **A note with no reading behind it is carried on the key alone.** That is the one exception and
 it is deliberate: a note rescued out of `eligible_count` by the legacy path below was never read
@@ -2040,6 +2079,11 @@ scope that moved underneath them. Each dropped note is written down with the rea
 | the finding under that key came back reading differently | the row stayed, and says something else than it did |
 | more than one finding in this result carries this key | the note cannot be told which of them it is about |
 | the check was re-shaped | the columns the key is built from are not the ones the note was written against |
+| the row was marked `Fixed` and came back, so its note was replaced on the board | the mark stayed and the cell now says why the row is still there |
+
+The last of them is not a dropped conclusion. The row keeps its `Fixed` and the reviewer's
+sentence is kept here because the cell it sat in now holds `No Change` or `Other issue for the
+same event` instead; see `Fixed is the exception` above.
 
 The second is not a fix and must not read like one. `GLOBAL-DQ-030` went from one row per stray
 participant to one row per statistic on 2026-08-11, and its notes were keyed on a column the new

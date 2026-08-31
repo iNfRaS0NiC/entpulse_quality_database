@@ -4608,10 +4608,12 @@ Test-That 'an ambiguous key does not cost the notes of the findings around it' {
     Assert-Equal 1 @($carried.Dropped).Count 'only the ambiguous one is logged'
 }
 
-Test-That 'Fixed does not survive onto a finding that reads differently' {
+Test-That 'Fixed on a finding that reads differently says the object has another issue' {
     # Fixed says what was found is not there any more. A row that stays under the same key and
-    # comes back holding a different reading refutes that, and a green cell against a finding
-    # nobody has looked at is worse than an empty one.
+    # comes back holding a different reading half agrees: the thing described was corrected and
+    # something else about the same object is wrong now. Until 2026-08-31 the mark was thrown
+    # away here, which cost the reviewer their conclusion and told them nothing. It now stands,
+    # and the note says which of the two happened.
     $header = @('check_type', 'organization_id', 'organization_country', 'competitors')
     $rows = @([pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'
             organization_country = 'Ukraine'; competitors = '4'
@@ -4623,15 +4625,19 @@ Test-That 'Fixed does not survive onto a finding that reads differently' {
         })
     $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
 
-    Assert-Equal '' $carried.Review[0] 'the new reading comes back unreviewed'
-    Assert-Equal 1 @($carried.Dropped).Count 'and the old conclusion is logged rather than lost'
+    Assert-Equal 'Fixed' $carried.Review[0] 'the mark stands'
+    Assert-Equal 'Other issue for the same event' $carried.Note[0] 'and the note says why the row is back'
+    Assert-Equal 1 @($carried.Dropped).Count 'the sentence it replaced is logged rather than lost'
     Assert-Equal 'IT corrected the country' $carried.Dropped[0].Note 'with what the reviewer wrote'
-    Assert-True ($carried.Dropped[0].Why -like '*reading differently*') 'saying why it could not stand'
+    Assert-True ($carried.Dropped[0].Why -like '*replaced on the board*') 'saying why it was taken off'
 }
 
-Test-That 'Fixed stands while the row has not moved' {
+Test-That 'Fixed on a row that has not moved says nothing changed' {
     # The repair was reported and has not landed yet. Clearing the mark every run until it does
-    # would ask the reviewer the same question until they stopped answering.
+    # would ask the reviewer the same question until they stopped answering, so the mark stays.
+    # The note no longer does: a Fixed row that comes back identical is a prediction that
+    # failed, and since 2026-08-31 the cell says so instead of leaving the reviewer to work out
+    # why their own green row is in front of them again.
     $header = @('check_type', 'organization_id', 'organization_country', 'competitors')
     $values = @('ORG', '1611294', 'International', '4')
     $rows = @([pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'
@@ -4645,8 +4651,53 @@ Test-That 'Fixed stands while the row has not moved' {
     $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
 
     Assert-Equal 'Fixed' $carried.Review[0] 'the mark stays against the row it was made about'
-    Assert-Equal 'raised with IT' $carried.Note[0] 'and so does the note'
-    Assert-Equal 0 @($carried.Dropped).Count 'nothing is logged'
+    Assert-Equal 'No Change' $carried.Note[0] 'and the note says the fix has not landed'
+    Assert-Equal 1 @($carried.Dropped).Count 'the sentence it replaced is logged'
+    Assert-Equal 'raised with IT' $carried.Dropped[0].Note 'so nothing the reviewer wrote is lost'
+}
+
+Test-That 'a Fixed row with no note of its own logs nothing' {
+    # The note is written either way, but there is nothing to preserve, and a Review log filling
+    # up with empty rows is a log nobody reads.
+    $header = @('check_type', 'organization_id', 'organization_country', 'competitors')
+    $values = @('ORG', '1611294', 'International', '4')
+    $rows = @([pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'
+            organization_country = 'International'; competitors = '4'
+        })
+    $notes = @([pscustomobject]@{
+            Key = (Get-SheetsFindingKey -Row @('ORG', '1611294') -Columns @(0, 1))
+            Review = 'Fixed'; Note = ''
+            Fingerprint = (Get-SheetsRowFingerprint -Values $values)
+        })
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal 'Fixed' $carried.Review[0] 'the mark stays'
+    Assert-Equal 'No Change' $carried.Note[0] 'and the cell now says why'
+    Assert-Equal 0 @($carried.Dropped).Count 'with nothing logged, because nothing was replaced'
+}
+
+Test-That 'the Review Status column fits the longest value its dropdown offers' {
+    # The column is sized from its header everywhere else on the tab, and here the header is the
+    # short half - 'Review Status' against 'No Issue / Change' - so the value arrived clipped.
+    $longest = ($SheetsRowReviewBands | ForEach-Object { ([string]$_.Value).Length } |
+        Measure-Object -Maximum).Maximum
+    $fromHeader = ('Review Status'.Length * $SheetsResultColumnCharWidth) + $SheetsResultColumnPadding
+
+    Assert-True ($SheetsRowReviewStatusColumnWidth -gt $fromHeader) 'it is wider than the header asks for'
+    Assert-True ($SheetsRowReviewStatusColumnWidth -ge (($longest * $SheetsResultColumnCharWidth) +
+            $SheetsResultColumnPadding)) 'and wide enough for the longest value'
+}
+
+Test-That 'No Issue / Change reads as closed, the same as Fixed' {
+    # Both close a finding and the colour is what a reviewer scans; In Progress is the one that
+    # is still open and keeps a colour of its own.
+    $fixed = $SheetsRowReviewBands | Where-Object { $_.Value -eq 'Fixed' }
+    $dismissed = $SheetsRowReviewBands | Where-Object { $_.Value -eq 'No Issue / Change' }
+    $open = $SheetsRowReviewBands | Where-Object { $_.Value -eq 'In Progress' }
+
+    Assert-Equal $fixed.Background $dismissed.Background 'the same background'
+    Assert-Equal $fixed.Colour $dismissed.Colour 'and the same text colour'
+    Assert-True ($open.Background -ne $fixed.Background) 'while In Progress stays apart'
 }
 
 Test-That 'no conclusion survives onto a reading it was not reached about' {
