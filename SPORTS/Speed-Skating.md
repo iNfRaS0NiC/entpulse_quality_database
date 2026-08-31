@@ -152,9 +152,18 @@ lineup lands in is an open question below.
 Measured 2026-08-31 over the 4210 in-scope team participations that reach a lineup: Team Pursuit
 and Team Sprint run at 3 and 4, the 3000 and 5000 Metres Relays at 3, and the mixed relays at 2
 with a single participation at 5. The 3-and-4 pair is not a disagreement - three skaters race and
-a fourth is named as reserve - which is why `GLOBAL-DQ-068 EVENT_TEAM_LINEUP_SIZE_UNEVEN` reports
-161 events of 556 for this sport and is right about almost none of them. The size that carries a
-defect is the floor, not the spread, and `Speed-Skating-DQ-128` reads it.
+a fourth is named as reserve - so a spread of one is this sport's normal shape rather than a
+missing member. `GLOBAL-DQ-068 EVENT_TEAM_LINEUP_SIZE_UNEVEN` reported 161 events of 556 while it
+counted any spread at all, and was right about two of them. The sport now declares
+`LINEUP_SIZE_MIN_SPREAD` as 2, by the decision of 2026-08-31, and the check reports those two: the
+Mixed Gender Relay of 2024-12-07 where one team of five stands against fields of two, and the Team
+Pursuit of 2021-12-04 where the USA entered two against fields of three and four.
+
+The two checks read opposite ends of the same measurement and neither replaces the other.
+`Speed-Skating-DQ-128` reads the floor a discipline is skated with and finds a team too small to
+have raced; `GLOBAL-DQ-068` reads the spread inside one event and finds a squad out of line with
+the field, including one that is too large. The Team Pursuit above is reported by both. The Mixed
+Gender Relay is reported only by the spread, because five skaters is not below any floor.
 
 **Every lineup member is an athlete.** The sport holds no case of a lineup that exists and names
 nobody of that type, so a team participation takes one of two shapes and no third: no lineup at

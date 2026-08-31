@@ -704,7 +704,7 @@ WHERE y.lineup_male > 0
 SELECT
     -- CheckID - GLOBAL-DQ-068
     -- Name - EVENT_TEAM_LINEUP_SIZE_UNEVEN
-    -- What it does: Flags team events where the teams have different lineup sizes.
+    -- What it does: Flags team events where the teams differ in lineup size by at least the sport's declared spread.
     CASE
         WHEN x.max_size - x.min_size = 1 THEN 'EVENT_TEAM_LINEUP_SIZE_SHORT_BY_ONE'
         ELSE 'EVENT_TEAM_LINEUP_SIZE_SHORT_BY_MORE'
@@ -722,6 +722,13 @@ SELECT
     0 AS sort_order
 -- What it does, stated in full: Finds events whose teams do not all field the same number of
 -- lineup members, separating a shortfall of one member from a larger one.
+-- LINEUP_SIZE_MIN_SPREAD is how far apart two teams must be before the difference is worth
+-- reporting, and it exists because one sport's noise is another's defect. At 1, the default and
+-- what every sport carried before 2026-08-31, any difference at all is a finding. A sport that
+-- names a reserve alongside the skaters who race needs 2, because a squad of 3 beside a squad of
+-- 4 is then the normal shape rather than a missing member: Speed Skating measured 161 findings of
+-- 556 at 1, of which 159 were that pair, and 2 at a spread of 2. Raising it never hides a team
+-- that is short by more than the sport's own reserve convention allows.
 FROM (
     SELECT
         b.event_id,
@@ -762,7 +769,7 @@ FROM (
     GROUP BY b.event_id, b.event_name, b.event_startdate, b.stage_name, b.tournament_template_name
 ) x
 WHERE x.teams_measured > 1
-  AND x.max_size > x.min_size
+  AND x.max_size - x.min_size >= {{LINEUP_SIZE_MIN_SPREAD}}
 
 UNION ALL
 
