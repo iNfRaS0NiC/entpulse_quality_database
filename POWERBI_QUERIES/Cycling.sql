@@ -82,7 +82,11 @@ UNION ALL
 SELECT
     'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT op.participantFK) AS eligible_count,
+    COUNT(DISTINCT p.id) AS eligible_count,
+-- Counts the windowed object's own key, so the shardable rule can see what this statement
+-- cuts on. It counted op.participantFK until 2026-08-31 - the same number by construction,
+-- since the join is p.id = op.participantFK - and the rule could not read it: its pattern was
+-- lower-case only against a case-sensitive regex. See GLOBAL-DQ-135 for the full account.
     1 AS sort_order
 FROM object_participants op
 JOIN participant p ON p.id = op.participantFK AND p.del = 'no'

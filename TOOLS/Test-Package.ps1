@@ -692,7 +692,18 @@ foreach ($s in ($dqStatements + $globalDq)) {
         }
     }
 
-    $counted = @([regex]::Matches($s.Sql, 'COUNT\(DISTINCT\s+([a-z_0-9.]+)\)') | ForEach-Object { $_.Groups[1].Value })
+    # [A-Za-z_0-9.] and not [a-z_0-9.]. PowerShell's -match is case-insensitive and
+    # [regex]::Matches is not, so a lower-case class here meant every counted key carrying a
+    # capital never matched at all - the pattern stopped at the first upper-case letter, the
+    # closing bracket failed, and the rule passed the statement without reading it. Every
+    # ...FK slipped it silently, which is the worst way for a validator to fail: not a wrong
+    # answer but no answer, reported as a pass. Noticed 2026-08-30 while GLOBAL-DQ-030 was
+    # being rewritten: this rule failed that statement on its id windows, and reading why
+    # showed that its COUNT(DISTINCT sp.participantFK) had never been read at all. Widened
+    # 2026-08-31. It surfaced three statements at once, all of them counting
+    # op.participantFK where they window on participant, and all three were corrected to
+    # count p.id rather than the rule relaxed.
+    $counted = @([regex]::Matches($s.Sql, 'COUNT\(DISTINCT\s+([A-Za-z_0-9.]+)\)') | ForEach-Object { $_.Groups[1].Value })
     foreach ($key in $counted) {
         $tail = ($key -split '\.')[-1]
         if ($tail -ne 'id' -and $tail -ne "${object}_id") {

@@ -1759,7 +1759,15 @@ UNION ALL
 SELECT
     'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT op.participantFK) AS eligible_count,
+    COUNT(DISTINCT p.id) AS eligible_count,
+-- Counts the windowed object's own key. It used to count op.participantFK, which is the same
+-- number by construction - the join below is p.id = op.participantFK - and reads as a
+-- different object to anything checking the statement. TOOLS/Test-Package.ps1 requires a
+-- shardable statement to count what its id window cuts on, so that summing the shards is
+-- exact, and could not see this one at all: its pattern was [a-z_0-9.] against a .NET regex,
+-- which is case-sensitive, so every counted key carrying a capital - every ...FK - slipped the
+-- rule silently. Widened 2026-08-31, which surfaced this statement and two more. Nothing about
+-- the result moved: both forms return 22764 on Cycling in the same query, difference 0.
     1 AS sort_order
 FROM object_participants op
 JOIN participant p ON p.id = op.participantFK AND p.del = 'no'
