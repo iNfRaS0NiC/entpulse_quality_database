@@ -27,6 +27,7 @@ mechanisms from `DATABASE.md`.
 | 55 | Track-Cycling | Listing (individual and team) | `SPORTS/Track-Cycling.md` | In progress | 2026-08-26 | Track Cycling |
 | 7 | Biathlon | Listing (individual and team) | `SPORTS/Biathlon.md` | In progress | 2026-08-27 | Biathlon |
 | 20 | Handball | H2H (team) | `SPORTS/Handball.md` | In progress | 2026-08-28 | Handball |
+| 56 | Mountain-Bike | Listing (individual) | `SPORTS/Mountain-Bike.md` | In progress | 2026-08-31 | Mountain Bike |
 
 <!-- MANUAL PASTE ZONE: SPORT INDEX — insert approved additions immediately before this marker; do not move or delete it. -->
 

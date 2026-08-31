@@ -50,6 +50,16 @@ most often needed:
   it asserts. The same holds for the database: an id travels with the name of the thing it
   identifies — template, tournament, status, round type, participant — because a decision made
   against a bare number is a decision made blind.
+  **The abbreviated form is worse than the full one and is never used.** `-052` and `-057` say
+  less than `GLOBAL-DQ-052` and cost the reader the lookup as well; a number stripped of its
+  prefix is not shorthand, it is the identifier with the only part that placed it removed.
+  Write `GLOBAL-DQ-052 EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED — a rider marked DNF who
+  carries a time` and then, in that same passage, `-052` is still not available: the next
+  question, table or option starts again from the name, because a reader meets one of them
+  without having read the last.
+  This binds hardest where it is easiest to drop — a question put to the user. Anyone being
+  asked to approve, exclude or reclassify a check is being asked about what it asserts, and a
+  row that offers a number is asking them to agree to something they have not been told.
 - After writing, report exactly which files, CheckIDs and rules changed.
 - Load only what the current sport and query domain need. Never load every sport file or
   every SQL file; `README.md` defines the minimal context profiles.
