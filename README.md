@@ -65,6 +65,7 @@ rediscovering it for the next client would cost what it cost the first time.
 | `TOOLS/README.md` | Query-runner setup, command set, output shapes and troubleshooting |
 | `TOOLS/Run-Query.ps1` | Executes registered statements against the Content Query Builder |
 | `TOOLS/Sheets.ps1` | What a run writes into the live per-sport Google Sheet, and what it must not touch |
+| `TOOLS/sheet-registry.json` | Which Google Sheets document holds each sport's live board, and which of those carry the `Run requests` tab. The ledger remembered this until 2026-09-01 and is now only a fallback |
 | `TOOLS/Connect-Sheets.ps1` | One-time Google authorisation for that document |
 | `TOOLS/Test-Package.ps1` | Static package, registry and SQL-shape validation |
 | `TOOLS/Test-Tools.ps1` | Behavioural tests for the two scripts above |

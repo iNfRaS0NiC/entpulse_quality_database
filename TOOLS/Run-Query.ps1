@@ -4564,13 +4564,111 @@ $script:SheetSeconds = 0.0
 # the board instead is what led to the wrong answer - Last run holds the run BEFORE this one,
 # so a board naming yesterday is exactly what a successful run today produces.
 $script:SheetOutcome = $null
+$script:SheetRegistryCache = $null
+
+function Get-SheetRegistry {
+    # TOOLS/sheet-registry.json owns which document holds which sport's board. Read once and
+    # kept, because a batch asks for it at the end of every run and the file does not move
+    # underneath one.
+    #
+    # A missing or unreadable file is not fatal. The mapping also survives in each sport's
+    # ledger, where it lived until 2026-09-01, so a run can still find its document and say
+    # that it had to; a run that cannot reach its board is a worse outcome than a run that
+    # reaches it by the old route and mentions it.
+    if ($null -ne $script:SheetRegistryCache) { return $script:SheetRegistryCache }
+
+    $path = Join-Path $PSScriptRoot 'sheet-registry.json'
+    $table = @{}
+    if (Test-Path -LiteralPath $path) {
+        try {
+            $parsed = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json
+            if ($parsed -and $parsed.PSObject.Properties.Name -contains 'sports') {
+                foreach ($property in $parsed.sports.PSObject.Properties) {
+                    $table[$property.Name] = $property.Value
+                }
+            }
+        }
+        catch {
+            Write-Host ('  {0} could not be read, so each sport''s document is taken from its ledger instead: {1}' -f `
+                    $path, $_.Exception.Message) -ForegroundColor Yellow
+        }
+    }
+
+    $script:SheetRegistryCache = $table
+    return $table
+}
+
+function Get-SportSheetId {
+    <#
+        The document id for one sport, from the file that owns the mapping.
+
+        The order is deliberate. An explicit -SheetId wins, because a person naming a document
+        on the command line means it. Then TOOLS/sheet-registry.json. Then, only for a sport
+        with no row there, the sheetId the sport's ledger remembers - and that route says so
+        out loud, because it is the one this file was written to replace.
+
+        Where both are present and disagree, the registry wins and the disagreement is
+        reported rather than resolved silently: one of the two documents is the board people
+        are reading, and a run that quietly wrote to the other would be very hard to notice.
+    #>
+    param([string]$Sport, [string]$Explicit)
+
+    if (-not [string]::IsNullOrWhiteSpace($Explicit)) { return $Explicit }
+    if ([string]::IsNullOrWhiteSpace($Sport)) { return '' }
+
+    $registry = Get-SheetRegistry
+    $registered = ''
+    if ($registry.ContainsKey($Sport)) {
+        $entry = $registry[$Sport]
+        if ($entry -and $entry.PSObject.Properties.Name -contains 'spreadsheetId') {
+            $registered = [string]$entry.spreadsheetId
+        }
+    }
+
+    $remembered = ''
+    $ledger = Read-RunLedger -Sport $Sport
+    if ($ledger -and $ledger.PSObject.Properties.Name -contains 'sheetId') {
+        $remembered = [string]$ledger.sheetId
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($registered)) {
+        if (-not [string]::IsNullOrWhiteSpace($remembered) -and $remembered -ne $registered) {
+            Write-Host ('  {0} names document {1} and the ledger remembers {2}; the registry is the owner, so that is the one being written' -f `
+                    $Sport, $registered, $remembered) -ForegroundColor Yellow
+        }
+        return $registered
+    }
+
+    if (-not [string]::IsNullOrWhiteSpace($remembered)) {
+        Write-Host ('  {0} has no row in TOOLS/sheet-registry.json, so its document was taken from the ledger. Add the row.' -f $Sport) `
+            -ForegroundColor Yellow
+        return $remembered
+    }
+
+    return ''
+}
+
+function Get-RunRequestSports {
+    # The sports whose document carries the Run requests tab. TOOLS/Watch-SheetRequests.ps1
+    # polls these and nothing else, so a board that has not been set up costs it no calls.
+    $registry = Get-SheetRegistry
+    $names = @()
+    foreach ($name in @($registry.Keys)) {
+        $entry = $registry[$name]
+        if ($entry -and $entry.PSObject.Properties.Name -contains 'runRequests' -and $entry.runRequests) {
+            $names += $name
+        }
+    }
+    return @($names | Sort-Object)
+}
 
 function Save-RunSheet {
     <#
         Bring the sport's live document up to date with this run.
 
-        The sheet id is given once with -SheetId and kept in the sport's ledger afterwards, so
-        a periodic run needs nothing but -RunAll. A run that mixes sports updates nothing: the
+        Which document belongs to the sport is TOOLS/sheet-registry.json's to say, so a
+        periodic run needs nothing but -RunAll; -SheetId overrides it and the sport's ledger is
+        the fallback for a sport with no row yet. A run that mixes sports updates nothing: the
         document is per sport, and there is no honest way to guess which of two sports a mixed
         run belongs in.
 
@@ -4584,11 +4682,7 @@ function Save-RunSheet {
     if ($TestRun -or $NoSheet) { return $null }
     if ($Sport -in @('MIXED', 'AD-HOC', 'GLOBAL', '')) { return $null }
 
-    $id = $SheetId
-    if ([string]::IsNullOrWhiteSpace($id)) {
-        $ledger = Read-RunLedger -Sport $Sport
-        if ($ledger -and $ledger.PSObject.Properties.Name -contains 'sheetId') { $id = [string]$ledger.sheetId }
-    }
+    $id = Get-SportSheetId -Sport $Sport -Explicit $SheetId
     if ([string]::IsNullOrWhiteSpace($id)) { return $null }
 
     # Before the try, so a failure inside it can still say how long it had been going.

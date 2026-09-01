@@ -1,0 +1,70 @@
+{
+    "_about": "Which Google Sheets document holds each sport's live board. This file owns that mapping. It was seeded on 2026-09-01 from the sheetId each RUNS/<Sport>.json had remembered, and from that day the ledger is no longer where the answer is looked up: RUNS/ is a record of what a run returned and CLAUDE.md forbids citing it, so a worker validating a request against it would make a run record load-bearing. TOOLS/Run-Query.ps1 reads this file first and falls back to the ledger only for a sport that has no row here, saying so when it does. A sport is added here the first time its board is published.",
+    "_runRequests": "Whether that document carries the 'Run requests' tab and its Apps Script, which is what lets a reviewer ask for a single check to be re-run from the board. TOOLS/Watch-SheetRequests.ps1 polls only the documents where this is true, so a sport that has not been set up yet costs the worker nothing. Soccer is being deployed first and alone: the first deploy is scopes, permissions and an approval, and each one after it is about fifteen minutes.",
+    "sports": {
+        "Artistic-Gymnastics": {
+            "spreadsheetId": "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris",
+            "runRequests": false
+        },
+        "BMX": {
+            "spreadsheetId": "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE",
+            "runRequests": false
+        },
+        "Biathlon": {
+            "spreadsheetId": "1eQNoYSY_1jbTh0hzFa6CiSXkCuTo4ceolGt8qDxKUr4",
+            "runRequests": false
+        },
+        "Curling": {
+            "spreadsheetId": "1zv6UoQOdEVR-SNJSakLy7xWVo1fh-jsL8Y-7mybcC3g",
+            "runRequests": false
+        },
+        "Cycling": {
+            "spreadsheetId": "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs",
+            "runRequests": false
+        },
+        "Equestrian": {
+            "spreadsheetId": "15DvzC1TLzhMB9bXeyy-2OUa0Xmfo0Mn84-isqYSs9cU",
+            "runRequests": false
+        },
+        "Golf": {
+            "spreadsheetId": "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM",
+            "runRequests": false
+        },
+        "Handball": {
+            "spreadsheetId": "1AUVNbf1U-OZO6V2VZZ9QbMBBaxMtzdWjsACfML_9sQI",
+            "runRequests": false
+        },
+        "Ice-Hockey": {
+            "spreadsheetId": "1Vy0mfddOI9cWkWEpeM7oA12BTDuvUB-nevFZwQANn94",
+            "runRequests": false
+        },
+        "Modern-Pentathlon": {
+            "spreadsheetId": "1kWKqdBc2ZD1AYcMEzGUmZHzgjfEgnLyf8AfbCvkxuKs",
+            "runRequests": false
+        },
+        "Mountain-Bike": {
+            "spreadsheetId": "1-ewyxEyctKW1q_fWwwy0qYff5Y7XN7njFra2IjwSo-M",
+            "runRequests": false
+        },
+        "Soccer": {
+            "spreadsheetId": "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE",
+            "runRequests": false
+        },
+        "Speed-Skating": {
+            "spreadsheetId": "1CNFGr9KzNTGUtKJMn8vALWxHkL3x97JRtABs541iDPM",
+            "runRequests": false
+        },
+        "Swimming": {
+            "spreadsheetId": "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g",
+            "runRequests": false
+        },
+        "Track-Cycling": {
+            "spreadsheetId": "1sGFr9ANBR5Y4bCFGmI7F4mZHUE2U8Que2JLccMrwBGk",
+            "runRequests": false
+        },
+        "Triathlon": {
+            "spreadsheetId": "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0",
+            "runRequests": false
+        }
+    }
+}

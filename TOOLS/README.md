@@ -2424,6 +2424,40 @@ A batch inherits the cost constraints in `WORKFLOW.md`. Running the whole catalo
 large sport can time out check by check; narrow the scope in the statement rather than
 expecting the runner to compensate.
 
+## Which document a sport writes to
+
+`TOOLS/sheet-registry.json` owns the mapping from a sport to its live Google Sheets document.
+
+```json
+    "Soccer": {
+        "spreadsheetId": "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE",
+        "runRequests": false
+    }
+```
+
+The id was remembered in `RUNS/<Sport>.json` until 2026-09-01, and a run still falls back to
+it for a sport with no row yet - saying so, because that is the route this file replaces.
+`RUNS/` is a record of what a run returned and nothing may be cited from it, so anything that
+has to *decide* where to write reads the registry instead of the ledger.
+
+Resolution order, and it is short on purpose:
+
+1. `-SheetId` on the command line, because somebody naming a document means it;
+2. `TOOLS/sheet-registry.json`;
+3. the sport's ledger, with a line asking for the row to be added.
+
+Where the registry and the ledger disagree, the registry wins and the disagreement is printed.
+One of the two is the board people are reading, and a run that quietly wrote to the other
+would be very hard to notice.
+
+`runRequests` says whether that document carries the `Run requests` tab and its Apps Script,
+which is what lets a reviewer ask for one check to be re-run from the board. It is `false`
+everywhere today; Soccer is being set up first and alone, because the first deploy is scopes,
+permissions and an approval and each one after it is about fifteen minutes.
+
+A sport gets its row the first time its board is published. `TOOLS/Test-Tools.ps1` fails if a
+sport indexed in `SPORTS.md` has no row here.
+
 ## One run at a time on the machine
 
 Every run that sends a statement takes a machine-wide lock first, whoever started it: the

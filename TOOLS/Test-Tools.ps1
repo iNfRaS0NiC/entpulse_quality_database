@@ -2616,6 +2616,72 @@ finally {
 Complete-Group
 
 # --------------------------------------------------------------------------------------
+# Which document belongs to which sport
+# --------------------------------------------------------------------------------------
+
+Start-Group 'Runner' 'Sheet registry'
+
+# The cache is the injection point: Get-SheetRegistry reads TOOLS/sheet-registry.json once and
+# keeps it, so seeding the cache exercises the resolution order without a fixture file and
+# without the tests depending on which documents happen to be registered today.
+$registryCacheBefore = $script:SheetRegistryCache
+try {
+    $script:SheetRegistryCache = @{
+        'Fixtureball'  = [pscustomobject]@{ spreadsheetId = 'DOC-FIXTUREBALL'; runRequests = $true }
+        'Fixtureborg'  = [pscustomobject]@{ spreadsheetId = 'DOC-FIXTUREBORG'; runRequests = $false }
+    }
+
+    Test-That 'the registry says which document a sport writes to' {
+        Assert-Equal 'DOC-FIXTUREBALL' (Get-SportSheetId -Sport 'Fixtureball') 'the registered document'
+    }
+
+    Test-That 'an explicit -SheetId wins over the registry' {
+        # Somebody naming a document on the command line means it, usually to publish a board
+        # somewhere else once. The registry must not quietly redirect that.
+        Assert-Equal 'GIVEN-ON-THE-COMMAND-LINE' `
+            (Get-SportSheetId -Sport 'Fixtureball' -Explicit 'GIVEN-ON-THE-COMMAND-LINE') 'the explicit id'
+    }
+
+    Test-That 'a sport in neither the registry nor a ledger writes to no document at all' {
+        # Not an error and not a guess: Save-RunSheet returns without touching anything, which
+        # is what should happen for a sport whose board has never been published.
+        Assert-Equal '' (Get-SportSheetId -Sport 'Nosuchsportball') 'no document'
+    }
+
+    Test-That 'only the documents carrying the Run requests tab are named' {
+        $deployed = @(Get-RunRequestSports)
+        Assert-Equal 1 $deployed.Count 'one document is set up'
+        Assert-Equal 'Fixtureball' $deployed[0] 'and it is the one flagged'
+    }
+}
+finally { $script:SheetRegistryCache = $registryCacheBefore }
+
+Test-That 'the shipped registry parses and covers every documented sport' {
+    # The guard that matters over time: a sport opened and published without a row here would
+    # fall back to its ledger, which is the route this file exists to replace. It fails the day
+    # the seventeenth sport is added and nobody registers its board.
+    $registryPath = Join-Path $PSScriptRoot 'sheet-registry.json'
+    Assert-True (Test-Path -LiteralPath $registryPath) 'TOOLS/sheet-registry.json should exist'
+
+    $registry = Get-Content -LiteralPath $registryPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $registered = @($registry.sports.PSObject.Properties.Name)
+
+    $indexed = @(Get-Content -LiteralPath (Join-Path (Split-Path -Parent $PSScriptRoot) 'SPORTS.md') |
+        ForEach-Object {
+            if ($_ -match '^\|\s*\d+\s*\|\s*([A-Za-z0-9.\-]+)\s*\|') { $Matches[1] }
+        })
+    Assert-True ($indexed.Count -ge 16) "SPORTS.md should list the documented sports, found $($indexed.Count)"
+
+    foreach ($sport in $indexed) {
+        Assert-True ($registered -contains $sport) "$sport has no row in TOOLS/sheet-registry.json"
+        $id = [string]$registry.sports.$sport.spreadsheetId
+        Assert-True ($id.Length -gt 20) "$sport should name a document, got '$id'"
+    }
+}
+
+Complete-Group
+
+# --------------------------------------------------------------------------------------
 # The live per-sport document
 #
 # Sheets.ps1 sends nothing, so all of this runs without a login. That is the point of the
