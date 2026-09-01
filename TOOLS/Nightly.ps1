@@ -312,10 +312,12 @@ function Save-NightlyState {
             } else { [string]$value })
         $document.lastRunAt | Add-Member -NotePropertyName ([string]$key) -NotePropertyValue $text -Force
     }
-    # Written without a byte order mark. Set-Content -Encoding UTF8 emits one on Windows
-    # PowerShell 5.1, and the package forbids them - Test-Package.ps1 failed on this very file
-    # the first time it was written. The same call Connect-Sheets.ps1 uses for the same reason.
-    [IO.File]::WriteAllText($Path, ($document | ConvertTo-Json -Depth 6),
+    # Written without a byte order mark and with a final newline. Set-Content -Encoding UTF8
+    # emits a BOM on Windows PowerShell 5.1 and WriteAllText ends without a newline, and the
+    # package forbids both - Test-Package.ps1 failed on this very file twice, once for each.
+    # It scans the working tree, so a local file being git-ignored does not exempt it.
+    # The same call Connect-Sheets.ps1 uses, for the first of the two reasons.
+    [IO.File]::WriteAllText($Path, (($document | ConvertTo-Json -Depth 6) + "`r`n"),
         (New-Object Text.UTF8Encoding $false))
     return $Path
 }

@@ -1790,12 +1790,17 @@ address was set go out on the first run after it is.
 | What a check that expects `Non-zero` sends | nothing, ever. The gate is the same `Expected` gate that governs the word itself, so a `Monitor` check whose count jumps is not a reopen and does not mail. This is the thing most likely to be reported as a fault |
 | Which numbers it quotes | the open ones, dismissals already subtracted, so the message and the board agree. A reviewer who has marked rows `No Issue / Change` sees the same count in both places, and the message says which count it is |
 | Sent twice | no. One transition is one message, keyed on the run's own start, so a board update retried after a transport failure does not mail again |
+| Already dealt with | not sent. The queue is written when a run finds something and is a file from then on, so it cannot know that somebody worked through the rows during the day. The board is asked again at sending time and only checks it still calls `Reopened` go out; the rest are named on screen and marked sent, because they were raised and answered. Measured the first day it ran: six of nineteen BMX checks had already been answered by the afternoon drain |
+| If the board cannot be read | everything sends. A board that will not read, a check the board does not carry, a status that comes back blank - all send. A network fault that silenced an alarm would be the worst failure here, because it is silent and looks exactly like a quiet night |
 | If sending fails | the message keeps its place and goes out on the next board run. After five attempts it is marked `FAILED` and left for somebody to look at |
 | What it can cost a run | nothing. By the time this happens the statements have run, the workbook is on disk and the document is current, and none of the three is worth an undelivered message |
 
 The queue is `TOOLS/notifications.local.json`, ignored by git under the same rule as the
 credentials beside it. It is a record of what has been said, not evidence of anything, and
-nothing may be cited from it.
+nothing may be cited from it. **Being ignored by git does not exempt it from the package
+rules** - `Test-Package.ps1` scans the working tree, and this file failed it twice before that
+sank in: once for the byte order mark `Set-Content -Encoding UTF8` writes on Windows PowerShell
+5.1, and once for the final newline `WriteAllText` does not.
 
 **The transport is the Gmail API on the credentials the board already uses.** A refresh grant
 does not carry a scope - the access token inherits whatever the refresh token was granted - so

@@ -114,9 +114,10 @@ function Save-NotifyQueue {
         notifications = @(ConvertTo-NotifyList -Value $Queue)
     }
     $json = $document | ConvertTo-Json -Depth 8
-    # No byte order mark: Set-Content -Encoding UTF8 writes one on Windows PowerShell 5.1
-    # and the package forbids them. See Save-NightlyState, which failed the validator on it.
-    [IO.File]::WriteAllText($Path, $json, (New-Object Text.UTF8Encoding $false))
+    # No byte order mark and a final newline: the package forbids a file without either, and
+    # it scans the working tree rather than only what git tracks. See Save-NightlyState, which
+    # failed the validator on both in turn.
+    [IO.File]::WriteAllText($Path, ($json + "`r`n"), (New-Object Text.UTF8Encoding $false))
     return $Path
 }
 
@@ -825,6 +826,106 @@ function Send-NotifyMail {
     return [pscustomobject]@{ Sent = $true; DryRun = $false; MessageId = [string]$response.id }
 }
 
+function Get-NotifyBoardStatus {
+    <#
+        What the board says about each check right now, keyed by CheckID.
+
+        One read of `Overview!B:I` - the CheckID column through the Status column, eight columns
+        of a board that can carry a hundred tabs and tens of thousands of result rows. Reading
+        the document whole to answer one question would cost about nine seconds a sport, and
+        this costs a fraction of it.
+
+        Returns an empty map on any failure, and the caller reads that as "cannot tell" rather
+        than as "nothing is reopened". A drain that suppressed messages because the network
+        hiccuped would be the worst failure this package could have: silent, and indisguishable
+        from a quiet night.
+    #>
+    param([string]$SheetId)
+
+    $map = @{}
+    if ([string]::IsNullOrWhiteSpace($SheetId)) { return $map }
+
+    $statusAt = [array]::IndexOf($SheetsOverviewColumns, 'Status') - [array]::IndexOf($SheetsOverviewColumns, 'CheckID')
+    $path = '{0}/values/{1}' -f $SheetId, [uri]::EscapeDataString('Overview!B:I')
+    $response = Invoke-SheetsApiWithRetry -Method Get -Path $path -What 'reading the board status'
+
+    foreach ($row in @($response.values)) {
+        if ($null -eq $row -or @($row).Count -eq 0) { continue }
+        $id = ([string]$row[0]).Trim()
+        if ($id -notmatch '^[A-Za-z][A-Za-z\-]*-DQ-\d+$') { continue }
+        $status = ''
+        if (@($row).Count -gt $statusAt) { $status = ([string]$row[$statusAt]).Trim() }
+        $map[$id] = $status
+    }
+    return $map
+}
+
+function Select-NotifyStillOpen {
+    <#
+        The queued messages a board still agrees with.
+
+        A message is queued at the moment a run writes the board, and the queue is a file. If
+        somebody works through the rows during the day and puts the status back, the queue does
+        not know: it answers "what did the run find", and the drain would send a list of things
+        already dealt with. Noise is what makes a person stop opening the mail, and this feature
+        has no value at all once that happens.
+
+        So the board is asked again at sending time, and only checks it still calls `Reopened`
+        go out. The ones it does not are marked sent rather than dropped, because they were
+        raised and answered - the record of having said a thing is what stops it being said
+        twice, and a message nobody needed to receive was still resolved.
+
+        **It fails open.** A board that cannot be read, a check the board does not carry, a
+        status that comes back blank - all send. The alternative is a network fault that
+        silences an alarm and looks exactly like a quiet night.
+    #>
+    param($Events, [string]$ReopenedWord = 'Reopened', $BoardStatus)
+
+    $items = @(ConvertTo-NotifyList -Value $Events)
+    if ($items.Count -eq 0) {
+        return [pscustomobject]@{ Send = @(); Settled = @() }
+    }
+
+    # -BoardStatus is how this is exercised without a login: a map of document id to what that
+    # board says. Given one, nothing here reaches the network, which is the same split
+    # Sheets.ps1 makes between deciding and sending.
+    $statusOf = @{}
+    if ($null -ne $BoardStatus) {
+        foreach ($key in @($BoardStatus.Keys)) { $statusOf[[string]$key] = $BoardStatus[$key] }
+    }
+    else {
+        foreach ($sheetId in @($items | ForEach-Object { [string]$_.sheetId } |
+                    Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)) {
+            try { $statusOf[$sheetId] = Get-NotifyBoardStatus -SheetId $sheetId }
+            catch {
+                Write-Host ("  the board {0} could not be read, so its messages are sent unchecked: {1}" -f `
+                        $sheetId, $_.Exception.Message) -ForegroundColor Yellow
+                $statusOf[$sheetId] = @{}
+            }
+        }
+    }
+
+    $send = @()
+    $settled = @()
+    foreach ($item in $items) {
+        $board = $null
+        $sheetId = [string]$item.sheetId
+        if ($statusOf.ContainsKey($sheetId)) { $board = $statusOf[$sheetId] }
+
+        # Anything the board cannot answer sends. Only a status it gives, that is not the word
+        # this message is about, settles one.
+        if ($null -eq $board -or -not $board.ContainsKey([string]$item.checkId)) { $send += $item; continue }
+        $now = [string]$board[[string]$item.checkId]
+        if ([string]::IsNullOrWhiteSpace($now)) { $send += $item; continue }
+        if ($now -eq $ReopenedWord) { $send += $item; continue }
+
+        $item | Add-Member -NotePropertyName settledAs -NotePropertyValue $now -Force
+        $settled += $item
+    }
+
+    return [pscustomobject]@{ Send = @($send); Settled = @($settled) }
+}
+
 function Invoke-NotifyDrain {
     <#
         Send what is queued and write down that it was sent.
@@ -861,6 +962,28 @@ function Invoke-NotifyDrain {
         Write-Host ("  {0} reopen notification(s) are queued and unsent: EP_NOTIFY_TO is not set in TOOLS\secrets.local.ps1" -f `
                 $waiting.Count) -ForegroundColor DarkGray
         return [pscustomobject]@{ Sent = 0; Failed = 0; Waiting = $waiting.Count; Skipped = $true }
+    }
+
+    # Asked again at sending time, because the queue answers what a run found and the board
+    # answers what is still open. See Select-NotifyStillOpen.
+    $checked = Select-NotifyStillOpen -Events $waiting
+    foreach ($item in @($checked.Settled)) {
+        $item.status = $NotifyStatusSent
+        $item | Add-Member -NotePropertyName sentUtc `
+            -NotePropertyValue ((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')) -Force
+        # Named, never counted. A message that was raised and then answered by somebody working
+        # through the board is the good case, and it is worth seeing that the two agree.
+        Write-Host ("  {0} {1} is {2} on the board now and is not sent" -f `
+                $item.checkId, $item.name, $item.settledAs) -ForegroundColor DarkGray
+    }
+    $waiting = @($checked.Send)
+    if ($waiting.Count -eq 0) {
+        if (-not $DryRun) { [void](Save-NotifyQueue -Queue $queue -Path $Path) }
+        return [pscustomobject]@{
+            Sent = 0; Failed = 0
+            Waiting = @($queue | Where-Object { [string]$_.status -eq $NotifyStatusQueued }).Count
+            Skipped = $false
+        }
     }
 
     $sent = 0

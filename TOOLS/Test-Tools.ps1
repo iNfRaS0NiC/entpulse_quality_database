@@ -6350,6 +6350,61 @@ Test-That 'the banner survives a client that cannot draw a gradient' {
     Assert-True ($mail.BodyHtml -like '*border-radius:12px;*text-align:center*') 'and so does the one in the count'
 }
 
+Test-That 'a message the board no longer agrees with is not sent' {
+    # The queue is written when a run finds something and is a file from then on. If somebody
+    # works through the rows during the day and puts the status back, the queue does not know:
+    # it answers "what did the run find", and the drain would send a list of things already
+    # dealt with. Measured on the real BMX board the first day this ran - six of nineteen had
+    # already been answered by the time the afternoon drain came round.
+    $events = @(New-ReopenNotification -Renames @(
+            [pscustomobject]@{ CheckId = 'F-DQ-001'; From = 'Completed'; To = 'Reopened'; Sport = 'Fixtureball'
+                Name = 'STILL_OPEN'; What = 'a thing'; PreviousFindings = 0; CurrentFindings = 4; Verdict = 'Regressed' }
+            [pscustomobject]@{ CheckId = 'F-DQ-002'; From = 'Clean'; To = 'Reopened'; Sport = 'Fixtureball'
+                Name = 'ANSWERED'; What = 'a thing'; PreviousFindings = 0; CurrentFindings = 9; Verdict = 'Regressed' }
+            [pscustomobject]@{ CheckId = 'F-DQ-003'; From = 'Completed'; To = 'Reopened'; Sport = 'Fixtureball'
+                Name = 'BEING_READ'; What = 'a thing'; PreviousFindings = 0; CurrentFindings = 2; Verdict = 'Regressed' }
+        ) -RunId 'r' -StartedUtc '2026-09-01T06:00:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+
+    # The board answers for all three: one is still red, one was closed, one is being read.
+    $board = @{ 'F-DQ-001' = 'Reopened'; 'F-DQ-002' = 'Completed'; 'F-DQ-003' = 'Reviewing' }
+    $result = Select-NotifyStillOpen -Events $events -BoardStatus @{ 'ABC' = $board }
+
+    Assert-Equal 1 @($result.Send).Count 'only the one the board still calls Reopened is sent'
+    Assert-Equal 'F-DQ-001' $result.Send[0].checkId 'and it is that one'
+    Assert-Equal 2 @($result.Settled).Count 'the other two are settled rather than dropped'
+    Assert-True (@($result.Settled | ForEach-Object { $_.settledAs }) -contains 'Completed') `
+        'and each records what the board now says'
+    Assert-True (@($result.Settled | ForEach-Object { $_.settledAs }) -contains 'Reviewing') `
+        'including a status that is neither open nor closed'
+}
+
+Test-That 'a board that cannot be read sends rather than silences' {
+    # The worst failure this package could have would be silent and would look exactly like a
+    # quiet night. So every uncertainty sends: a board that will not read, a check the board
+    # does not carry, a status that comes back blank.
+    $events = @(New-ReopenNotification -Renames @(
+            [pscustomobject]@{ CheckId = 'F-DQ-001'; From = 'Completed'; To = 'Reopened'; Sport = 'Fixtureball'
+                Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0; CurrentFindings = 4; Verdict = 'Regressed' }
+            [pscustomobject]@{ CheckId = 'F-DQ-002'; From = 'Completed'; To = 'Reopened'; Sport = 'Fixtureball'
+                Name = 'NAME_B'; What = 'a thing'; PreviousFindings = 0; CurrentFindings = 4; Verdict = 'Regressed' }
+        ) -RunId 'r' -StartedUtc '2026-09-01T06:00:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+
+    # A board that answered with nothing at all - which is what a failed read leaves behind.
+    $unread = Select-NotifyStillOpen -Events $events -BoardStatus @{ 'ABC' = @{} }
+    Assert-Equal 2 @($unread.Send).Count 'a board that says nothing sends everything'
+    Assert-Equal 0 @($unread.Settled).Count 'and settles nothing'
+
+    # A board that answers for one check with a blank cell and does not carry the other.
+    $partial = Select-NotifyStillOpen -Events $events -BoardStatus @{ 'ABC' = @{ 'F-DQ-001' = '' } }
+    Assert-Equal 2 @($partial.Send).Count 'a blank status and an absent row both send'
+
+    # And a document the map has no entry for at all.
+    $missing = Select-NotifyStillOpen -Events $events -BoardStatus @{ 'OTHER' = @{ 'F-DQ-001' = 'Completed' } }
+    Assert-Equal 2 @($missing.Send).Count 'a board that was never read sends everything'
+
+    Assert-Equal 0 @((Select-NotifyStillOpen -Events @()).Send).Count 'and nothing queued is nothing to send'
+}
+
 Test-That 'the send endpoint is a real absolute address' {
     # Two lines that no other case reaches. Every test of the sending half stops at -DryRun,
     # which returns before the URL is touched, so an endpoint that had gone missing would pass
