@@ -273,6 +273,95 @@ function ConvertTo-NotifyHtmlText {
     return ([string]$Text).Replace('&', '&amp;').Replace('<', '&lt;').Replace('>', '&gt;').Replace('"', '&quot;')
 }
 
+# The company's own palette, read off enetpulse.com on 2026-08-31.
+#
+# --bs-primary is #CA1744 and the theme carries #a21236 as its pressed variant, #0f0f0f as
+# body text, #646464 as secondary and #f8f8f8 as the light ground. Taken whole rather than
+# borrowing the red alone: a brand colour dropped into somebody else's greys looks like a
+# mistake, and these five were chosen to sit together.
+#
+# The status word does NOT use them - see Get-NotifyStatusColour. The chrome of the message
+# belongs to the company; the word `Reopened` belongs to the board, and a reader who follows
+# this message should meet the same chip they just saw in it.
+$NotifyBrandRed = '#CA1744'
+$NotifyBrandRedDark = '#a21236'
+$NotifyBrandInk = '#0f0f0f'
+$NotifyBrandGrey = '#646464'
+$NotifyBrandLight = '#f8f8f8'
+$NotifyBrandRule = '#dee2e6'
+$NotifyBrandTint = '#fdeaef'
+
+function Get-NotifyStamp {
+    <#
+        When this message was composed, in Central European time and labelled with the zone
+        actually in force.
+
+        Not UTC, because nobody reading it works in UTC and a reader who has to add two hours
+        before knowing whether a report is fresh is a reader who stops checking. Not the
+        sending machine's local time either: the scheduled task may one day run somewhere else,
+        and a timestamp whose meaning depends on which machine sent it is worse than no
+        timestamp.
+
+        The label follows the date. Central Europe is CET for part of the year and CEST for the
+        rest, and writing one of them all year round is wrong for half of it - by exactly the
+        hour somebody would be trying to reconcile.
+
+        Falls back to the machine's own offset where the zone is not installed, which is what a
+        non-Windows host would hit.
+    #>
+    param([datetime]$MomentUtc = (Get-Date).ToUniversalTime())
+
+    $format = 'yyyy-MM-dd HH:mm:ss'
+    $culture = [Globalization.CultureInfo]::InvariantCulture
+
+    $zone = $null
+    foreach ($id in @('Central European Standard Time', 'Europe/Berlin')) {
+        try { $zone = [TimeZoneInfo]::FindSystemTimeZoneById($id); break } catch { $zone = $null }
+    }
+
+    if ($null -eq $zone) {
+        $local = $MomentUtc.ToLocalTime()
+        $offset = [TimeZoneInfo]::Local.GetUtcOffset($local)
+        return ('{0} UTC{1}{2:00}:{3:00}' -f $local.ToString($format, $culture),
+            $(if ($offset.Ticks -lt 0) { '-' } else { '+' }),
+            [math]::Abs($offset.Hours), [math]::Abs($offset.Minutes))
+    }
+
+    $moment = [TimeZoneInfo]::ConvertTimeFromUtc([datetime]::SpecifyKind($MomentUtc, [DateTimeKind]::Utc), $zone)
+    $label = $(if ($zone.IsDaylightSavingTime($moment)) { 'CEST' } else { 'CET' })
+    return ('{0} {1}' -f $moment.ToString($format, $culture), $label)
+}
+
+function Get-NotifyStatusColour {
+    <#
+        The colours the board gives the word this message is about.
+
+        Read from $SheetsStatusBands rather than copied, so the mail and the chip cannot drift
+        apart. A reviewer opening the board from this message should meet the same red they
+        just saw in it; two reds that were once the same and are now nearly the same is worse
+        than either, because it reads as two different things.
+
+        Falls back to the values that band holds today, so Notify.ps1 dot-sourced on its own -
+        which is how half the tests take it - still has colours.
+    #>
+    param([string]$Status = 'Reopened')
+
+    $background = '#FAD2CF'
+    $foreground = '#B31412'
+
+    $bands = $null
+    try { $bands = Get-Variable -Name 'SheetsStatusBands' -ValueOnly -ErrorAction Stop } catch { $bands = $null }
+    foreach ($band in @($bands)) {
+        if ($null -eq $band) { continue }
+        if ([string]$band.Value -ne $Status) { continue }
+        if (-not [string]::IsNullOrWhiteSpace([string]$band.Background)) { $background = [string]$band.Background }
+        if (-not [string]::IsNullOrWhiteSpace([string]$band.Colour)) { $foreground = [string]$band.Colour }
+        break
+    }
+
+    return [pscustomobject]@{ Background = $background; Foreground = $foreground }
+}
+
 function Format-ReopenDigest {
     <#
         Subject, and both bodies, for one message covering these events.
@@ -282,123 +371,211 @@ function Format-ReopenDigest {
         exists for. What a reader wants at the moment the message arrives is which sport, which
         check, what it asserts and how big it is; the reasoning belongs on the board.
 
-        Two bodies, because the link has to be discreet. A plain-text mail can only carry a
-        naked URL, and a Google tab link is ninety characters that push the row off the screen
-        and bury the four columns that matter. HTML gives the row a word to hang the link on.
-        The text alternative is sent as well and is not decoration: it is what a client that
-        refuses HTML shows, and what a reader searching their mail matches against.
+        Grouped by board rather than repeating the sport down a column. One message can cover
+        four sports, and a Sport cell repeated eleven times is eleven readings of a word the
+        reader already has. The sport becomes a heading instead, and the heading is the link to
+        that board's Overview - which leaves the rows carrying only what differs between them.
 
-        Several reopens go in one message. A run that moves twenty checks would otherwise
-        arrive as twenty mails, and the second one is where somebody starts filtering the
-        sender into a folder - which is the failure this whole file exists to avoid, arriving
-        by a different door.
+        Two bodies. HTML is what nearly everyone sees and is where the links can sit on words
+        rather than sprawl as ninety characters of URL. The text alternative is not decoration:
+        it is what a client refusing HTML shows, what a preview line quotes, and what a search
+        over somebody's mail matches. Both say the same things in the same order.
     #>
     param($Events)
 
     $items = @(ConvertTo-NotifyList -Value $Events)
     if ($items.Count -eq 0) { return $null }
 
-    $sports = @($items | ForEach-Object { [string]$_.sport } |
-            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
-    $where = $(if ($sports.Count -eq 1) { $sports[0] } else { ('{0} sports' -f $sports.Count) })
+    # Board by board, in the order the boards first appear, and the checks inside a board in
+    # the order the run named them. Nothing is sorted: a run reports its checks in CheckID
+    # order already, and re-sorting here would make two messages about the same board disagree
+    # about where a row is.
+    $boards = @()
+    $index = @{}
+    foreach ($item in $items) {
+        $sport = [string]$item.sport
+        if (-not $index.ContainsKey($sport)) {
+            $index[$sport] = $boards.Count
+            $boards += [pscustomobject]@{
+                Sport    = $sport
+                Overview = (Get-NotifyTabLink -SheetId ([string]$item.sheetId) -Gid $item.overviewGid)
+                Items    = @()
+            }
+        }
+        $boards[$index[$sport]].Items += $item
+    }
 
-    if ($items.Count -eq 1) {
-        $subject = ('DQ reopened: {0} {1}' -f [string]$items[0].checkId, [string]$items[0].name).Trim()
+    # The subject says what happened and how much of it, in that order. Written out rather than
+    # abbreviated: this is the one thing the package sends to somebody who is not reading a
+    # board, and "DQ" is a word only the people already inside this work use.
+    #
+    # The count is what follows, not a check name. One check's name would fit and four would
+    # not, and a subject whose shape changes with the number is a subject a reader cannot scan
+    # in a list of thirty. The name is the first thing in the body instead.
+    $sportCount = $boards.Count
+    $noun = $(if ($items.Count -eq 1) { 'check' } else { 'checks' })
+    if ($sportCount -eq 1) {
+        $subject = ('Data Quality Issues - Reopened: {0} {1} on {2}' -f $items.Count, $noun, $boards[0].Sport)
     }
     else {
-        $subject = ('DQ reopened: {0} checks on {1}' -f $items.Count, $where)
+        $subject = ('Data Quality Issues - Reopened: {0} {1} on {2} sports' -f $items.Count, $noun, $sportCount)
     }
 
     $opening = $(if ($items.Count -eq 1) {
-            'One check that a reviewer had closed has returned findings.'
+            'check that a reviewer had closed has returned findings'
         }
         else {
-            '{0} checks that reviewers had closed have returned findings.' -f $items.Count
+            'checks that reviewers had closed have returned findings'
         })
 
     # ----- the text alternative
-    $lines = @($opening, '')
-    $widths = @{ Sport = 5; Check = 5; Name = 4 }
-    foreach ($item in $items) {
-        $widths.Sport = [math]::Max($widths.Sport, ([string]$item.sport).Length)
-        $widths.Check = [math]::Max($widths.Check, ([string]$item.checkId).Length)
-        $widths.Name = [math]::Max($widths.Name, ([string]$item.name).Length)
-    }
-    $format = '{0,-' + $widths.Sport + '}  {1,-' + $widths.Check + '}  {2,-' + $widths.Name + '}  {3,6}'
-    $lines += ($format -f 'Sport', 'Check', 'Name', 'Rows')
-    $lines += ($format -f ('-' * $widths.Sport), ('-' * $widths.Check), ('-' * $widths.Name), '------')
-    foreach ($item in $items) {
-        $lines += ($format -f [string]$item.sport, [string]$item.checkId, [string]$item.name,
-            [string]$item.currentFindings)
-    }
-    $lines += ''
+    #
+    # The same things in the same order as the HTML, in the one shape plain text can hold. The
+    # count is a word here rather than a badge, and the banner is a line rather than a block,
+    # but nothing is said in one body that is not said in the other.
+    $lines = @(
+        'DATA QUALITY'
+        'Reopened Checks'
+        ('Generated: {0}' -f (Get-NotifyStamp))
+        ''
+        ('{0} {1}' -f $items.Count, $opening)
+    )
+    foreach ($board in $boards) {
+        $lines += ''
+        $lines += ('{0}  ({1} check{2})' -f $board.Sport, @($board.Items).Count,
+            $(if (@($board.Items).Count -eq 1) { '' } else { 's' }))
+        if (-not [string]::IsNullOrWhiteSpace($board.Overview)) { $lines += ('  {0}' -f $board.Overview) }
 
-    # One Overview address per board. Plain text cannot hang a link on a word, so the HTML puts
-    # it on the sport's name and this puts it here, once per sport rather than once per row.
-    $seen = @{}
-    foreach ($item in $items) {
-        $sport = [string]$item.sport
-        if ($seen.ContainsKey($sport)) { continue }
-        $seen[$sport] = $true
-        $board = Get-NotifyTabLink -SheetId ([string]$item.sheetId) -Gid $item.overviewGid
-        if (-not [string]::IsNullOrWhiteSpace($board)) {
-            $lines += ('{0}: {1}' -f $sport, $board)
+        $checkWidth = 5
+        $nameWidth = 4
+        foreach ($item in @($board.Items)) {
+            $checkWidth = [math]::Max($checkWidth, ([string]$item.checkId).Length)
+            $nameWidth = [math]::Max($nameWidth, ([string]$item.name).Length)
+        }
+        $format = '  {0,-' + $checkWidth + '}  {1,-' + $nameWidth + '}  {2,6}'
+        $lines += ($format -f 'Check', 'Name', 'Rows')
+        foreach ($item in @($board.Items)) {
+            $lines += ($format -f [string]$item.checkId, [string]$item.name, [string]$item.currentFindings)
         }
     }
-    if ($seen.Count -gt 0) { $lines += '' }
+    $lines += ''
     $lines += 'Rows are open findings: rows already marked No Issue / Change are not in them.'
 
     # ----- the HTML body
-    $rows = @()
-    foreach ($item in $items) {
-        $link = Get-NotifyTabLink -SheetId ([string]$item.sheetId) -Gid $item.tabGid
-        $open = $(if ([string]::IsNullOrWhiteSpace($link)) { '' }
-            else {
-                '<a href="{0}" style="color:#5f6368;text-decoration:none">open</a>' -f (ConvertTo-NotifyHtmlText -Text $link)
-            })
+    #
+    # Inline styles only, and tables for structure. A mail client is not a browser: a <style>
+    # block is stripped by several of them and flexbox is laid out by none, so a design that
+    # needs either arrives as a stack of unstyled lines. Everything here degrades to something
+    # readable when a rule is ignored.
+    #
+    # The gradient is written over a solid background-color rather than instead of one. Outlook
+    # on the desktop renders with Word, which ignores CSS gradients entirely - given only the
+    # gradient it paints nothing and the banner arrives as white text on white. The solid brand
+    # red underneath is what it falls back to, and every other client paints over it.
+    $band = Get-NotifyStatusColour -Status 'Reopened'
+    $generated = Get-NotifyStamp
 
-        # Two links on one row, each on the thing it names. The sport is the board, so it goes
-        # to that board's Overview; the row is one check, so its trailing word goes to that
-        # check's own tab. A reader who wants the sport and a reader who wants the finding are
-        # two different readers and neither should have to hunt for the other's target.
-        $overview = Get-NotifyTabLink -SheetId ([string]$item.sheetId) -Gid $item.overviewGid
-        $sportCell = ConvertTo-NotifyHtmlText -Text ([string]$item.sport)
-        if (-not [string]::IsNullOrWhiteSpace($overview)) {
-            $sportCell = '<a href="{0}" style="color:#202124">{1}</a>' -f `
-                (ConvertTo-NotifyHtmlText -Text $overview), $sportCell
+    $sections = @()
+    foreach ($board in $boards) {
+        # The sport is a band across the table rather than a heading above it, so the columns
+        # stay one set for the whole message and a reader compares rows down the page instead
+        # of re-reading a header per board.
+        $heading = ConvertTo-NotifyHtmlText -Text $board.Sport
+        if (-not [string]::IsNullOrWhiteSpace($board.Overview)) {
+            $heading = '<a href="{0}" style="color:{1};text-decoration:none">{2} &rsaquo;</a>' -f `
+                (ConvertTo-NotifyHtmlText -Text $board.Overview), $NotifyBrandRed, $heading
         }
-        $what = $(if ([string]::IsNullOrWhiteSpace([string]$item.what)) { '' }
-            else {
-                '<div style="color:#5f6368;font-size:12px">{0}</div>' -f (ConvertTo-NotifyHtmlText -Text ([string]$item.what))
-            })
-        $rows += ('<tr>' +
-            '<td style="padding:6px 14px 6px 0;white-space:nowrap">{0}</td>' +
-            '<td style="padding:6px 14px 6px 0;white-space:nowrap">{1}</td>' +
-            '<td style="padding:6px 14px 6px 0">{2}{3}</td>' +
-            '<td style="padding:6px 14px 6px 0;text-align:right;white-space:nowrap">{4}</td>' +
-            '<td style="padding:6px 0;white-space:nowrap">{5}</td>' +
-            '</tr>') -f
-            $sportCell,
-            (ConvertTo-NotifyHtmlText -Text ([string]$item.checkId)),
-            (ConvertTo-NotifyHtmlText -Text ([string]$item.name)),
-            $what,
-            (ConvertTo-NotifyHtmlText -Text ([string]$item.currentFindings)),
-            $open
+        $sections += ('<tr><td colspan="4" style="background:{0};padding:9px 14px;' +
+            'border-top:1px solid {1};border-bottom:1px solid {1};' +
+            'font-size:13px;font-weight:700;letter-spacing:.4px;color:{2}">{3}' +
+            '<span style="float:right;font-weight:400;font-size:12px;color:{4}">{5}</span>' +
+            '</td></tr>') -f
+            $NotifyBrandTint, $NotifyBrandRule, $NotifyBrandRed, $heading, $NotifyBrandGrey,
+            ('{0} check{1}' -f @($board.Items).Count, $(if (@($board.Items).Count -eq 1) { '' } else { 's' }))
+
+        $stripe = $false
+        foreach ($item in @($board.Items)) {
+            $stripe = -not $stripe
+            $shade = $(if ($stripe) { '#ffffff' } else { $NotifyBrandLight })
+            $link = Get-NotifyTabLink -SheetId ([string]$item.sheetId) -Gid $item.tabGid
+            $open = $(if ([string]::IsNullOrWhiteSpace($link)) { '' }
+                else {
+                    ('<a href="{0}" style="display:inline-block;padding:3px 10px;border-radius:11px;' +
+                     'background:#eceff1;color:{1};font-size:11px;font-weight:700;letter-spacing:.4px;' +
+                     'text-decoration:none;white-space:nowrap">OPEN</a>') -f `
+                        (ConvertTo-NotifyHtmlText -Text $link), $NotifyBrandInk
+                })
+            $what = $(if ([string]::IsNullOrWhiteSpace([string]$item.what)) { '' }
+                else {
+                    '<div style="color:{0};font-size:12px;line-height:16px;padding-top:3px">{1}</div>' -f `
+                        $NotifyBrandGrey, (ConvertTo-NotifyHtmlText -Text ([string]$item.what))
+                })
+
+            $sections += ('<tr style="background:{0}">' +
+                '<td style="padding:11px 14px;vertical-align:top;white-space:nowrap">' +
+                '<span style="display:inline-block;padding:3px 10px;border-radius:11px;background:#eceff1;' +
+                'color:{1};font-family:Consolas,Menlo,monospace;font-size:12px">{2}</span></td>' +
+                '<td style="padding:11px 14px 11px 0;vertical-align:top">' +
+                '<div style="font-weight:600;color:{1};font-size:13px">{3}</div>{4}</td>' +
+                '<td style="padding:11px 14px 11px 0;vertical-align:top;text-align:right;white-space:nowrap">' +
+                '<span style="display:inline-block;min-width:26px;padding:3px 10px;border-radius:11px;' +
+                'background:{5};color:{6};font-size:13px;font-weight:700;text-align:center">{7}</span></td>' +
+                '<td style="padding:11px 14px 11px 0;vertical-align:top;text-align:right;white-space:nowrap">{8}</td>' +
+                '</tr>') -f
+                $shade,
+                $NotifyBrandInk,
+                (ConvertTo-NotifyHtmlText -Text ([string]$item.checkId)),
+                (ConvertTo-NotifyHtmlText -Text ([string]$item.name)),
+                $what,
+                $NotifyBrandTint,
+                $NotifyBrandRed,
+                (ConvertTo-NotifyHtmlText -Text ([string]$item.currentFindings)),
+                $open
+        }
     }
 
-    $html = ('<div style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;font-size:14px;color:#202124">' +
-        '<p style="margin:0 0 14px 0">{0}</p>' +
-        '<table cellspacing="0" cellpadding="0" style="border-collapse:collapse;font-size:13px">' +
-        '<tr style="text-align:left;color:#5f6368;border-bottom:1px solid #dadce0">' +
-        '<th style="padding:0 14px 6px 0;font-weight:600">Sport</th>' +
-        '<th style="padding:0 14px 6px 0;font-weight:600">Check</th>' +
-        '<th style="padding:0 14px 6px 0;font-weight:600">Name</th>' +
-        '<th style="padding:0 14px 6px 0;font-weight:600;text-align:right">Rows</th>' +
-        '<th style="padding:0 0 6px 0;font-weight:600"></th>' +
-        '</tr>{1}</table>' +
-        '<p style="margin:16px 0 0 0;color:#5f6368;font-size:12px">' +
-        'Rows are open findings: rows already marked No Issue / Change are not in them.</p>' +
-        '</div>') -f (ConvertTo-NotifyHtmlText -Text $opening), ($rows -join '')
+    $html = ('<div style="font-family:Poppins,-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;' +
+        'font-size:14px;color:' + $NotifyBrandInk + ';max-width:820px">' +
+
+        # the banner
+        '<table cellspacing="0" cellpadding="0" border="0" width="100%" style="border-collapse:collapse">' +
+        '<tr><td style="background-color:' + $NotifyBrandRed + ';' +
+        'background-image:linear-gradient(120deg,' + $NotifyBrandRed + ' 0%,' + $NotifyBrandRedDark + ' 55%,#6f0b23 100%);' +
+        'border-radius:10px;padding:22px 24px;color:#ffffff">' +
+        '<div style="font-size:11px;font-weight:700;letter-spacing:1.6px;color:#f6c3ce">DATA QUALITY</div>' +
+        '<div style="font-size:23px;font-weight:700;padding:6px 0 4px 0">Reopened Checks</div>' +
+        '<div style="font-size:12px;color:#fbe4ea">Generated: {3}</div>' +
+        '</td></tr></table>' +
+
+        # the count, in the board's own colours for the word this is about
+        '<table cellspacing="0" cellpadding="0" border="0" width="100%" ' +
+        'style="border-collapse:collapse;margin:18px 0 0 0"><tr>' +
+        '<td style="padding:0 10px 0 0;vertical-align:middle;white-space:nowrap">' +
+        '<span style="display:inline-block;min-width:22px;padding:4px 11px;border-radius:12px;' +
+        'background:{4};color:{5};font-size:14px;font-weight:700;text-align:center">{0}</span></td>' +
+        '<td style="vertical-align:middle;font-size:16px;color:' + $NotifyBrandInk + '">{1}</td>' +
+        '</tr></table>' +
+        '<div style="border-bottom:1px solid ' + $NotifyBrandRule + ';margin:14px 0 0 0"></div>' +
+
+        # the table
+        '<table cellspacing="0" cellpadding="0" border="0" width="100%" ' +
+        'style="border-collapse:collapse;margin:0 0 18px 0;font-size:13px">' +
+        '<tr style="background:#f1f3f4;color:' + $NotifyBrandGrey + ';text-align:left">' +
+        '<th style="padding:9px 14px;font-weight:700;font-size:11px;letter-spacing:.6px">CHECK</th>' +
+        '<th style="padding:9px 14px 9px 0;font-weight:700;font-size:11px;letter-spacing:.6px">NAME</th>' +
+        '<th style="padding:9px 14px 9px 0;font-weight:700;font-size:11px;letter-spacing:.6px;text-align:right">ROWS</th>' +
+        '<th style="padding:9px 14px 9px 0"></th>' +
+        '</tr>{2}</table>' +
+
+        '<div style="color:' + $NotifyBrandGrey + ';font-size:12px;border-top:1px solid ' + $NotifyBrandRule + ';padding-top:12px">' +
+        'Rows are open findings &mdash; rows already marked No Issue / Change are not counted.</div>' +
+        '</div>') -f
+        $items.Count,
+        (ConvertTo-NotifyHtmlText -Text $opening),
+        ($sections -join ''),
+        $generated,
+        $band.Background,
+        $band.Foreground
 
     return [pscustomobject]@{
         Subject  = $subject

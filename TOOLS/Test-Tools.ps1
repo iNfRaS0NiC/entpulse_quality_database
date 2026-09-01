@@ -5901,8 +5901,9 @@ Test-That 'the message names the check rather than numbering it' {
         ) -RunId 'Fixtureball 31.08.2026 14-35-00' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
 
     $mail = Format-ReopenDigest -Events $events
-    Assert-True ($mail.Subject -like '*Fixtureball-DQ-050*') 'the subject carries the id'
-    Assert-True ($mail.Subject -like '*EVENT_RESULTS_MISSING_FOR_FINISHED*') 'and its name beside it'
+    Assert-True ($mail.Subject -like 'Data Quality Issues - Reopened:*') 'the subject says what happened'
+    Assert-True ($mail.Subject -like '*1 check on Fixtureball*') 'and how much of it, on which board'
+    Assert-True ($mail.Subject -notlike '*DQ reopened*') 'in words a reader outside this work uses'
 
     # Four columns and a link, not four lines of prose. Asserted on both bodies because both
     # are sent and a reader may be shown either.
@@ -5915,7 +5916,7 @@ Test-That 'the message names the check rather than numbering it' {
     }
     Assert-True ($mail.BodyHtml -like '*a finished event with no result rows*') 'the HTML says what it asserts'
     Assert-True ($mail.BodyHtml -like '*docs.google.com/spreadsheets/d/ABC*') 'and carries somewhere to go'
-    Assert-True ($mail.BodyHtml -like '*>open<*') 'behind a word rather than as ninety characters of URL'
+    Assert-True ($mail.BodyHtml -like '*>open*<*') 'behind a word rather than as ninety characters of URL'
 }
 
 Test-That 'a row links to the check own tab, and to the board when it cannot' {
@@ -5957,7 +5958,7 @@ Test-That 'several reopens arrive as one message' {
         })
     $events = @(New-ReopenNotification -Renames $renames -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
     $mail = Format-ReopenDigest -Events $events
-    Assert-True ($mail.Subject -like '*3 checks on Fixtureball*') 'the subject counts them'
+    Assert-True ($mail.Subject -like 'Data Quality Issues - Reopened: 3 checks on Fixtureball') 'the subject counts them'
     foreach ($n in 1..3) {
         Assert-True ($mail.Body -like ('*Fixtureball-DQ-05{0}  NAME_{0}*' -f $n)) "and the body still names check $n"
     }
@@ -6203,9 +6204,11 @@ Test-That 'one reopen is described as one' {
         ) -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
 
     $mail = Format-ReopenDigest -Events $events
-    Assert-True ($mail.Body -like 'One check that a reviewer had closed*') 'the singular is used'
-    Assert-True ($mail.Body -notlike '* checks that*') 'and the plural is not'
-    Assert-True ($mail.Subject -like '*Fixtureball-DQ-050 NAME_A*') 'and one check is named in the subject'
+    Assert-True ($mail.Body -like '*1 check that a reviewer had closed has returned findings*') `
+        'the singular is used, and the sentence agrees with it'
+    Assert-True ($mail.Body -notlike '*checks that reviewers*') 'the plural is not'
+    Assert-True ($mail.Subject -like '*1 check on Fixtureball*') 'the subject counts one, in the singular'
+    Assert-True ($mail.Subject -notlike '*1 checks*') 'and does not say one checks'
 }
 
 Test-That 'the sport leads to its Overview and the row to its own tab' {
@@ -6224,15 +6227,16 @@ Test-That 'the sport leads to its Overview and the row to its own tab' {
     Assert-Equal 66 $events[0].tabGid 'and so is the check tab'
 
     $mail = Format-ReopenDigest -Events $events
-    Assert-True ($mail.BodyHtml -like '*href="https://docs.google.com/spreadsheets/d/ABC/edit#gid=55"*>Fixtureball<*') `
+    Assert-True ($mail.BodyHtml -like '*href="https://docs.google.com/spreadsheets/d/ABC/edit#gid=55"*>Fixtureball*<*') `
         'the sport is the link to Overview'
-    Assert-True ($mail.BodyHtml -like '*href="https://docs.google.com/spreadsheets/d/ABC/edit#gid=66"*>open<*') `
+    Assert-True ($mail.BodyHtml -like '*href="https://docs.google.com/spreadsheets/d/ABC/edit#gid=66"*>open*<*') `
         'and the row still opens its own tab'
 
-    # Plain text cannot hang a link on a word, so the address goes on its own line - once per
-    # board, not once per row.
-    Assert-True ($mail.Body -like '*Fixtureball: https://docs.google.com/spreadsheets/d/ABC/edit#gid=55*') `
-        'the text alternative names the board and its address'
+    # Plain text cannot hang a link on a word, so the address goes under the board's heading -
+    # once per board, not once per row.
+    Assert-True ($mail.Body -like '*Fixtureball*') 'the text alternative names the board'
+    Assert-True ($mail.Body -like '*https://docs.google.com/spreadsheets/d/ABC/edit#gid=55*') `
+        'and gives its address'
 }
 
 Test-That 'one message carries several boards, each pointing at its own' {
@@ -6253,15 +6257,70 @@ Test-That 'one message carries several boards, each pointing at its own' {
             -GidOf @{ 'Overview' = 3; 'TAB_B' = 4 })
 
     $mail = Format-ReopenDigest -Events (@($soccer) + @($other))
-    Assert-True ($mail.Subject -like '*2 checks on 2 sports*') 'the subject counts both the checks and the boards'
+    Assert-True ($mail.Subject -like 'Data Quality Issues - Reopened: 2 checks on 2 sports') 'the subject counts both the checks and the boards'
     Assert-True ($mail.Body -like '*Fixtureball*') 'both sports are listed'
     Assert-True ($mail.Body -like '*Otherball*') 'both sports are listed'
-    Assert-True ($mail.Body -like '*Fixtureball: https://docs.google.com/spreadsheets/d/AAA/edit#gid=1*') `
-        'the first board keeps its own document'
-    Assert-True ($mail.Body -like '*Otherball: https://docs.google.com/spreadsheets/d/BBB/edit#gid=3*') `
+    Assert-True ($mail.Body -like '*spreadsheets/d/AAA/edit#gid=1*') 'the first board keeps its own document'
+    Assert-True ($mail.Body -like '*spreadsheets/d/BBB/edit#gid=3*') `
         'and the second keeps its own, not the first one seen'
+
+    # Grouped, so the sport is a heading rather than a column repeated down the page.
+    Assert-True ($mail.Body -like '*Fixtureball  (1 check)*') 'each board heads its own section'
+    Assert-True ($mail.Body -like '*Otherball  (1 check)*') 'each board heads its own section'
     Assert-True ($mail.BodyHtml -like '*spreadsheets/d/AAA/edit#gid=2*') 'and each row opens its own tab'
     Assert-True ($mail.BodyHtml -like '*spreadsheets/d/BBB/edit#gid=4*') 'and each row opens its own tab'
+}
+
+Test-That 'the report says when it was made, in a zone that is labelled honestly' {
+    # Not UTC: nobody reading this works in it, and a reader who has to add two hours before
+    # knowing whether a report is fresh stops checking. Not the sending machine's local time
+    # either - the scheduled task may one day run somewhere else, and a timestamp whose meaning
+    # depends on who sent it is worse than none.
+    #
+    # The label follows the date, which is the whole reason this is a function. Central Europe
+    # is CET for part of the year and CEST for the rest, and one of them written all year round
+    # is wrong for half of it, by exactly the hour somebody would be trying to reconcile.
+    $summer = Get-NotifyStamp -MomentUtc ([datetime]::SpecifyKind([datetime]'2026-07-01T12:00:00', [DateTimeKind]::Utc))
+    $winter = Get-NotifyStamp -MomentUtc ([datetime]::SpecifyKind([datetime]'2026-01-01T12:00:00', [DateTimeKind]::Utc))
+
+    Assert-True ($summer -like '*CEST') 'July is summer time'
+    Assert-True ($winter -like '*CET') 'January is not'
+    Assert-True ($summer -like '2026-07-01 14:00:00*') 'and summer is two hours ahead of UTC'
+    Assert-True ($winter -like '2026-01-01 13:00:00*') 'while winter is one'
+    Assert-True ($summer -notlike '*UTC*') 'the word UTC does not appear on a CET stamp'
+
+    $mail = Format-ReopenDigest -Events @(New-ReopenNotification -Renames @(
+            [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+                Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+                CurrentFindings = 4; Verdict = 'Regressed'; TabTitle = 'TAB_A' }
+        ) -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+    foreach ($body in @($mail.Body, $mail.BodyHtml)) {
+        Assert-True ($body -like '*Generated:*') 'both bodies say when the report was made'
+        Assert-True ($body -like '*DATA QUALITY*') 'and both carry the same heading'
+    }
+}
+
+Test-That 'the banner survives a client that cannot draw a gradient' {
+    # Outlook on the desktop renders with Word, which ignores CSS gradients entirely. Given
+    # only the gradient it paints nothing, and the banner arrives as white text on white. The
+    # solid brand red is written first so that client has something to fall back to.
+    $mail = Format-ReopenDigest -Events @(New-ReopenNotification -Renames @(
+            [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+                Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+                CurrentFindings = 4; Verdict = 'Regressed'; TabTitle = 'TAB_A' }
+        ) -RunId 'r' -StartedUtc '2026-08-31T11:35:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+
+    $solidAt = $mail.BodyHtml.IndexOf('background-color:#CA1744')
+    $gradientAt = $mail.BodyHtml.IndexOf('background-image:linear-gradient')
+    Assert-True ($solidAt -ge 0) 'a solid colour is declared'
+    Assert-True ($gradientAt -ge 0) 'and a gradient over it'
+    Assert-True ($solidAt -lt $gradientAt) 'with the solid one first, which is the fallback'
+
+    # A number sitting off-centre in a pill was the first thing anybody noticed about this
+    # design. The cell around it is right-aligned and the pill has a minimum width, so without
+    # this the short counts hug one edge and the long ones fill it.
+    Assert-True ($mail.BodyHtml -like '*border-radius:11px;*text-align:center*') 'the row pill centres its number'
+    Assert-True ($mail.BodyHtml -like '*border-radius:12px;*text-align:center*') 'and so does the one in the count'
 }
 
 Test-That 'the send endpoint is a real absolute address' {
