@@ -497,9 +497,13 @@ after parameters change rather than assumed to be settled.
 `GLOBAL-DQ-040` is the substantial one, 178 of 254 finals, and 175 of those 178 are a single
 shape - `COMP.RANK_EVENT_SCOPE_UNDETERMINABLE`. They do not say a final has no ranking; they say
 which ranking covers which event cannot be determined, because the phase is absent on all 327
-statistics and `1471 Event id` is present on only 79. `Handball-DQ-075` reports that same gap
-from the statistic's side, and these two are deliberately not one check: the audited object is
-the event here and the statistic there, and a correction made on one does not clear the other.
+statistics and `1471 Event id` is present on only 79. `Handball-DQ-076
+COMP.RANK_RESULTS_MISSING_PHASE` reports that same gap from the statistic's side, and these two
+are deliberately not one check: the audited object is the event here and the statistic there,
+and a correction made on one does not clear the other. It read `Handball-DQ-075` until
+2026-09-01, which is the neighbouring row and a different question - that one is
+`COMP.RANK_RESULTS_NO_RANK_DATA_FOR_PARTICIPANTS`, a missing place rather than a missing phase,
+and it is named in its own right further up this file.
 Only 3 of the 178 are a tournament genuinely holding no Comp.Rank at all.
 
 **Five band-3 templates stay blocked**, each on a parameter this opening did not confirm:
