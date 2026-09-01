@@ -190,7 +190,7 @@ ORDER BY sort_order, total_participations DESC, participant_id;
 SELECT
     -- CheckID - GLOBAL-DQ-008
     -- Name - PARTICIPANT_MISSING_PROFILE_FIELDS
-    -- What it does: Flags active event participants missing a name or country, or people missing a first name or last name.
+    -- What it does: Flags active event participants missing a name or a country.
     'Missing_Profile_Field' AS check_type,
     p.id AS participant_id,
     p.name AS participant_name,
@@ -198,7 +198,7 @@ SELECT
     (
         SELECT c.name
 -- What it does, stated in full: Finds participants taking part in at least one event that
--- are missing a name or a country, or - for people only - a first or last name.
+-- are missing a name or a country.
         FROM country c
         WHERE c.id = p.countryFK
           AND c.del = 'no'
@@ -210,27 +210,7 @@ SELECT
             FROM country c
             WHERE c.id = p.countryFK
               AND c.del = 'no'
-        ), 'country', NULL),
-        IF(p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}}) AND NOT EXISTS (
-            SELECT 1
-            FROM language fn
-            WHERE fn.object = 'participant'
-              AND fn.objectFK = p.id
-              AND fn.language_typeFK = 7
-              AND fn.del = 'no'
-              AND fn.name IS NOT NULL
-              AND TRIM(fn.name) <> ''
-        ), 'first_name', NULL),
-        IF(p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}}) AND NOT EXISTS (
-            SELECT 1
-            FROM language ln
-            WHERE ln.object = 'participant'
-              AND ln.objectFK = p.id
-              AND ln.language_typeFK = 8
-              AND ln.del = 'no'
-              AND ln.name IS NOT NULL
-              AND TRIM(ln.name) <> ''
-        ), 'last_name', NULL)
+        ), 'country', NULL)
     ) AS missing_fields,
     NULL AS eligible_count
 FROM participant p
@@ -260,26 +240,6 @@ WHERE p.del = 'no'
           WHERE c.id = p.countryFK
             AND c.del = 'no'
       )
-      OR (p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}}) AND NOT EXISTS (
-          SELECT 1
-          FROM language fn
-          WHERE fn.object = 'participant'
-            AND fn.objectFK = p.id
-            AND fn.language_typeFK = 7
-            AND fn.del = 'no'
-            AND fn.name IS NOT NULL
-            AND TRIM(fn.name) <> ''
-      ))
-      OR (p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}}) AND NOT EXISTS (
-          SELECT 1
-          FROM language ln
-          WHERE ln.object = 'participant'
-            AND ln.objectFK = p.id
-            AND ln.language_typeFK = 8
-            AND ln.del = 'no'
-            AND ln.name IS NOT NULL
-            AND TRIM(ln.name) <> ''
-      ))
   )
 
 UNION ALL
@@ -2288,3 +2248,255 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, events DESC, tournament_id;
+
+-- ================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-151
+    -- Name - PARTICIPANT_MISSING_SPLIT_NAME
+    -- What it does: Flags people carrying no first name or no last name beside the name they display under.
+    'Missing_Split_Name' AS check_type,
+    x.participant_id,
+    x.participant_name,
+    x.participant_type,
+    (
+        SELECT c.name
+-- What it does, stated in full: Finds people missing the first name or the last name that
+-- the display name is composed from, reached either through the sport registry or through
+-- any of the three participation paths: an event participant row, a lineup place or a
+-- Comp.Rank row.
+        FROM country c
+        WHERE c.id = x.countryFK
+          AND c.del = 'no'
+    ) AS participant_country,
+    CONCAT_WS(', ',
+        IF(NOT EXISTS (
+            SELECT 1
+            FROM language fn
+            WHERE fn.object = 'participant'
+              AND fn.objectFK = x.participant_id
+              AND fn.language_typeFK = 7
+              AND fn.del = 'no'
+              AND fn.name IS NOT NULL
+              AND TRIM(fn.name) <> ''
+        ), 'first_name', NULL),
+        IF(NOT EXISTS (
+            SELECT 1
+            FROM language ln
+            WHERE ln.object = 'participant'
+              AND ln.objectFK = x.participant_id
+              AND ln.language_typeFK = 8
+              AND ln.del = 'no'
+              AND ln.name IS NOT NULL
+              AND TRIM(ln.name) <> ''
+        ), 'last_name', NULL)
+    ) AS missing_fields,
+    x.event_participations,
+    x.lineup_participations,
+    x.statistic_participations,
+    x.total_participations,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- The split name is stored in `language`, one row per field per participant: object
+-- 'participant', language_typeFK 7 for the first name and 8 for the last. `participant.name`
+-- is the display name and is a separate value the admin composes from those two, so a person
+-- can carry a name that reads correctly and hold neither field behind it - which is the state
+-- this reports. Ice Hockey participant 968134 was exactly that on 2026-09-01: `Xavier
+-- Bourgault` in the name, nothing in 7 or 8.
+--
+-- It exists because GLOBAL-DQ-008 PARTICIPANT_MISSING_PROFILE_FIELDS asked this question over
+-- a population that cannot contain a person in half the sports here. That check audits
+-- participants entered into events, filtered by EVENT_PARTICIPANT_TYPE_LIST, while its two
+-- split-name tests were guarded by PERSON_PARTICIPANT_TYPE_LIST. In a sport whose event
+-- participant is the team - Soccer, Ice Hockey, Handball and Curling all declare
+-- EVENT_PARTICIPANT_TYPE_LIST as 'team' - the two lists do not intersect and the tests could
+-- never fire. The scale of the blindness, measured 2026-09-01: of Soccer's 366 307 registered
+-- athletes exactly 16 are ever event participants, and 228 881 are reachable through a lineup.
+-- The tests were removed from GLOBAL-DQ-008 on the same day and live here, over the population
+-- GLOBAL-DQ-007 established, so the question is asked wherever a person can be reached.
+--
+-- A person reaches a sport by three different mechanisms and no sport uses all three the same
+-- way: one enters athletes directly on the event, one enters teams and carries the athletes in
+-- lineups, and one carries them only in the Comp.Rank statistic. Reading a single path leaves
+-- the check covering nothing in the sports that use another, which reads as clean data when it
+-- means the statement never looked. All three are read, and the sport registry is read beside
+-- them so that a registered person who has never taken part is still audited: a name never
+-- split on somebody nobody has entered yet is the cheapest moment to fix it. The registry
+-- carries no relation to a template, so the people half of this check is sport-wide by
+-- construction and the client boundary narrows only the three participation branches - the
+-- same shape GLOBAL-DQ-135 records for the same reason.
+--
+-- The three counts are projected separately rather than summed only, because which path a
+-- person is on tells the reader where to go and fix the record. The Comp.Rank path is marked
+-- optional, in the findings branch and the coverage branch together, so a sport opened without
+-- that layer runs the other three rather than losing the check.
+--
+-- **A missing first name is not everywhere a defect, and the sport decides.** Measured
+-- 2026-09-01 over the sixteen documented sports, 13 266 Soccer athletes hold no first name and
+-- 4 hold no last name; the busiest of those - Koke, Marcelo, Pepe, Casemiro, Marquinhos,
+-- Neymar, Isco - are single-name players whose last_name holds the whole name, and that is the
+-- convention working rather than 13 266 broken records. Filtering on the display name holding
+-- a space does not rescue it either: 3 419 remain and Alex Sandro is among them. A missing
+-- last name has no such reading and totalled 585 across those sports - Swimming 543, Golf 35,
+-- Soccer 4, Handball 2, Track Cycling 1, and nothing anywhere else. Both fields are asserted
+-- here because the template states the invariant; whether a sport can carry it is settled when
+-- that sport instantiates it, and a sport whose people are named by one word must record that
+-- convention in its sport file rather than instantiate this and read its own naming as damage.
+FROM (
+    SELECT
+        p.id AS participant_id,
+        p.name AS participant_name,
+        p.type AS participant_type,
+        p.countryFK,
+        SUM(u.ev) AS event_participations,
+        SUM(u.lu) AS lineup_participations,
+        SUM(u.st) AS statistic_participations,
+        SUM(u.ev) + SUM(u.lu) + SUM(u.st) AS total_participations
+    FROM (
+        SELECT ep.participantFK AS participant_id, 1 AS ev, 0 AS lu, 0 AS st
+        FROM event_participants ep
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        WHERE ep.del = 'no'
+          AND tt.sportFK = {{SPORT_ID}}
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+
+        UNION ALL
+
+        SELECT l.participantFK, 0, 1, 0
+        FROM lineup l
+        JOIN event_participants ep ON ep.id = l.event_participantsFK AND ep.del = 'no'
+        JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        WHERE l.del = 'no'
+          AND tt.sportFK = {{SPORT_ID}}
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+
+        -- STATISTIC BRANCH BEGIN
+        UNION ALL
+
+        SELECT sp.participantFK, 0, 0, 1
+        FROM statistic_participants{{SHARD_ID}} sp
+        JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+             AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+        JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        WHERE sp.del = 'no'
+          AND s.object_typeFK = 3
+          AND tt.sportFK = {{SPORT_ID}}
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+        -- STATISTIC BRANCH END
+
+        -- REGISTRY BRANCH BEGIN
+        UNION ALL
+
+        SELECT op.participantFK, 0, 0, 0
+        FROM object_participants op
+        WHERE op.object = 'sport'
+          AND op.objectFK = {{SPORT_ID}}
+          AND op.del = 'no'
+        -- REGISTRY BRANCH END
+    ) u
+    JOIN participant p ON p.id = u.participant_id AND p.del = 'no'
+    WHERE p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
+      -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
+    GROUP BY p.id, p.name, p.type, p.countryFK
+) x
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM language fn
+    WHERE fn.object = 'participant'
+      AND fn.objectFK = x.participant_id
+      AND fn.language_typeFK = 7
+      AND fn.del = 'no'
+      AND fn.name IS NOT NULL
+      AND TRIM(fn.name) <> ''
+)
+   OR NOT EXISTS (
+    SELECT 1
+    FROM language ln
+    WHERE ln.object = 'participant'
+      AND ln.objectFK = x.participant_id
+      AND ln.language_typeFK = 8
+      AND ln.del = 'no'
+      AND ln.name IS NOT NULL
+      AND TRIM(ln.name) <> ''
+)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT y.participant_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT ep.participantFK AS participant_id
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+
+    UNION ALL
+
+    SELECT l.participantFK
+    FROM lineup l
+    JOIN event_participants ep ON ep.id = l.event_participantsFK AND ep.del = 'no'
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE l.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+
+    -- STATISTIC BRANCH BEGIN
+    UNION ALL
+
+    SELECT sp.participantFK
+    FROM statistic_participants{{SHARD_ID}} sp
+    JOIN statistic s ON s.id = sp.statisticFK AND s.del = 'no'
+         AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE sp.del = 'no'
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    -- STATISTIC BRANCH END
+
+    -- REGISTRY BRANCH BEGIN
+    UNION ALL
+
+    SELECT op.participantFK
+    FROM object_participants op
+    WHERE op.object = 'sport'
+      AND op.objectFK = {{SPORT_ID}}
+      AND op.del = 'no'
+    -- REGISTRY BRANCH END
+) y
+JOIN participant p ON p.id = y.participant_id AND p.del = 'no'
+WHERE p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
+  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
+
+ORDER BY sort_order, total_participations DESC, participant_id;

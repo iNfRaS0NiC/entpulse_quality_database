@@ -949,15 +949,19 @@ unchanged. Seven hold findings:
 | `Cycling-DQ-052` | `GLOBAL-DQ-002` TOURNAMENT_STAGE_MISSING_AGE_CLASS | 4 / 3528 | `Flandrien 0.0 Classic`, `Tour of Istanbul`, `Tour of Holland`, `Summer Paralympics` |
 | `Cycling-DQ-054` | `GLOBAL-DQ-006` EVENT_MISSING_ROUND_TYPE | 51 / 10578 | all of them `round_typeFK = 0`, the unnamed round already recorded above |
 | `Cycling-DQ-055` | `GLOBAL-DQ-007` PARTICIPANT_MISSING_DATE_OF_BIRTH | 723 / 21973 | see below |
-| `Cycling-DQ-056` | `GLOBAL-DQ-008` PARTICIPANT_MISSING_PROFILE_FIELDS | 4 / 19736 | `Peloton`, `Warseno`, `Habibullah` and `Fitriyani`, each missing `first_name` - the last three are single-name riders from Indonesia and Pakistan |
 | `Cycling-DQ-058` | `GLOBAL-DQ-013` TEMPLATE_MISSING_SET_SUBSET_GENDER_NAME | **42 / 44** | one field, not four: `tournament_subset` is empty on almost every template in the sport |
 | `Cycling-DQ-059` | `GLOBAL-DQ-015` EVENT_SETTINGS_MISSING_DISCIPLINE | 12 / 10578 | mostly the 2026 season, and the same twelve events the discipline census left uncovered |
 | `Cycling-DQ-061` and `-062` | `GLOBAL-DQ-022` and `-023` | 3 and 4 / 1795 | the same three Grand Tour statistics - `Tour de France` 2004 and 2025, `Giro d'Italia` 2025 - plus `Giro del Trentino` 2015 on the discipline |
+| `Cycling-DQ-121` | `GLOBAL-DQ-151` PARTICIPANT_MISSING_SPLIT_NAME | 4 / 21995 | `Peloton`, `Warseno`, `Habibullah` and `Fitriyani`, each missing `first_name` - the last three are single-name riders from Indonesia and Pakistan. **These four were read here as `Cycling-DQ-056` until 2026-09-01**, when `GLOBAL-DQ-008` gave up the split-name question and `GLOBAL-DQ-151` took it over a population that reaches a person through the sport registry as well as through participation. The rows did not move because anything was repaired: `-056` now returns 0 of 19724 and `-121` returns these same four of 21995, and the wider eligible count is the registry being read |
 
-Seven return nothing today over real populations and are instantiated on that basis:
+Eight return nothing today over real populations and are instantiated on that basis:
 `Cycling-DQ-053` (`GLOBAL-DQ-005`, 3528 stages), `-057` (`-011`, 1795), `-060` (`-016`, 10578),
 `-063` (`-032`, 1736), `-064` (`-037`, 592), `-065` (`-069`, **1246372 result values**) and
-`-066` (`-070`, 181997).
+`-066` (`-070`, 181997). The eighth is `Cycling-DQ-056`, carrying
+`GLOBAL-DQ-008 PARTICIPANT_MISSING_PROFILE_FIELDS` over 19724 entered riders: it asked about the
+split first and last name until 2026-09-01 and returned the four rows now listed against
+`Cycling-DQ-121`, and what it still asserts - a name and a country on every rider entered - Cycling
+fills throughout.
 
 **723 riders of 21973 carry no date of birth, and the row says which of them matter.**
 `Cycling-DQ-055` carries `GLOBAL-DQ-007` whole. At 3.3 per cent this is a gap rather than a
