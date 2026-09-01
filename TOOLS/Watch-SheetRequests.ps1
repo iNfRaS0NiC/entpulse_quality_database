@@ -395,11 +395,81 @@ function Get-RunOutcome {
     return [pscustomobject]@{ Findings = $findings; Eligible = $eligible; Verdict = $verdict; RunId = $runId }
 }
 
+function Test-RunQueryAlive {
+    <#
+        Whether a Run-Query.ps1 is running on this machine right now.
+
+        Asked before a RUNNING request is put back on the queue. A worker restarted while a
+        run is still going - the service bounced, somebody started a second worker - would
+        otherwise queue a request whose run is about to finish and write DONE over the top of
+        it, and the reader would see one request run twice with no way to tell which figure
+        belongs to which.
+
+        Matched on the command line rather than on a stored PID, because the run this worker
+        started is gone with the worker that started it and the one that matters is any run at
+        all: the lock is machine-wide, so a second run cannot be in flight beside it.
+    #>
+    try {
+        $running = @(Get-CimInstance Win32_Process -Filter "Name = 'powershell.exe'" -ErrorAction Stop |
+            Where-Object { $_.CommandLine -like '*Run-Query.ps1*' -and $_.ProcessId -ne $PID })
+        return ($running.Count -gt 0)
+    }
+    catch {
+        # A machine that will not answer the question is treated as busy. Leaving a request
+        # RUNNING costs a person clicking again; queueing one whose run is live costs a
+        # duplicate nobody can untangle from the sheet.
+        Write-Host ('  could not tell whether a run is in flight, so nothing was recovered this time: {0}' -f `
+                $_.Exception.Message) -ForegroundColor Yellow
+        return $true
+    }
+}
+
 if ($DotSourceOnly) { return }
 
 # --------------------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------------------
+
+# ----- the log ---------------------------------------------------------------------------
+#
+# Start-Transcript rather than lines written by hand, for the reason Invoke-NightlyRun.ps1
+# gives: most of what is worth keeping is printed by Run-Query in the child process, and a
+# transcript captures the host. A worker that has been up for a week and refused something at
+# three in the morning is otherwise a story nobody can reconstruct.
+#
+# The plan said RUNS/worker/<date>.log. It goes to TOOLS/worker.local.log instead, beside
+# nightly.local.log: RUNS/ holds run ledgers and one .gitignore rule already covers *.local.log,
+# and `.log` is outside the set Test-Package.ps1 scans, so nothing has an opinion about its bytes.
+
+$logStarted = $false
+
+function Stop-WorkerLog {
+    if (-not $script:logStarted) { return }
+    $script:logStarted = $false
+    try { [void](Stop-Transcript) } catch { }
+}
+
+if (-not $NoLog -and -not $WhatIf) {
+    if ([string]::IsNullOrWhiteSpace($LogPath)) { $LogPath = Join-Path $PSScriptRoot 'worker.local.log' }
+    try {
+        $existing = Get-Item -LiteralPath $LogPath -ErrorAction SilentlyContinue
+        if ($existing -and $existing.Length -gt 5MB) {
+            Move-Item -LiteralPath $LogPath -Destination ($LogPath + '.1') -Force
+        }
+    }
+    catch { }
+
+    # A log must never stop the worker. If the file cannot be opened it still runs, and says so
+    # where somebody watching would see it.
+    try {
+        [void](Start-Transcript -LiteralPath $LogPath -Append -ErrorAction Stop)
+        $logStarted = $true
+    }
+    catch {
+        Write-Host ('  the log at {0} could not be opened, so this session leaves no record: {1}' -f `
+                $LogPath, $_.Exception.Message) -ForegroundColor Yellow
+    }
+}
 
 $registry = Get-SheetRegistryFile
 
@@ -419,6 +489,7 @@ if ($sports.Count -eq 0) {
     else {
         Write-Host "No document has runRequests = true in TOOLS/sheet-registry.json, so there is nothing to watch." -ForegroundColor Yellow
     }
+    Stop-WorkerLog
     exit 0
 }
 
@@ -428,29 +499,59 @@ if ($WhatIf) { Write-Host "  -WhatIf: reading and reporting, running nothing." -
 
 # ----- what a crash left behind -----------------------------------------------------------
 #
-# A request left RUNNING is one this worker was in the middle of when it stopped. The run was
-# its own process and is gone with it, and DQ statements are read-only, so putting it back on
-# the queue costs a re-run and never a wrong write.
+# A request left RUNNING is one a worker was in the middle of when it stopped. Its run was its
+# own process and went with it, and DQ statements are read-only, so putting it back on the
+# queue costs a re-run and never a wrong write.
+#
+# Unless a run is still in flight. A worker restarted while one is going - the service bounced,
+# a second worker started by hand - would otherwise queue a request whose run is about to write
+# DONE over the top of it, and the sheet would show one request run twice with no way to tell
+# which figure belongs to which. So the question is asked of the machine and not of the sheet.
 
 if (-not $WhatIf) {
+    $runInFlight = Test-RunQueryAlive
+    if ($runInFlight) {
+        Write-Host '  a run is in flight, so anything left RUNNING is left where it is' -ForegroundColor DarkGray
+    }
     foreach ($board in $sports) {
         $stranded = @((Read-RequestQueue -SpreadsheetId $board.SpreadsheetId) | Where-Object { $_.Status -eq 'RUNNING' })
         foreach ($request in $stranded) {
+            if ($runInFlight) {
+                Write-Host ("  {0} is RUNNING and a run is in flight; leaving it alone" -f `
+                        $request.RequestId) -ForegroundColor DarkGray
+                continue
+            }
             Write-Host ("  {0} was left RUNNING by an interrupted worker; returning it to the queue" -f `
                     $request.RequestId) -ForegroundColor Yellow
             Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $request.RequestId -Values @{
-                Status = 'QUEUED'
-                Error  = 'Recovered after an interruption and queued again.'
+                Status    = 'QUEUED'
+                StartedAt = ''
+                Error     = ('Recovered after an interruption at ' + (Get-Date).ToString('dd.MM.yyyy HH:mm:ss') + ' and queued again.')
             }
         }
     }
 }
 
 $handled = 0
+
+# Re-read when the registry file changes, and not on a timer. A worker that has been up since
+# Monday must not still be refusing a check approved on Tuesday, and must not re-parse 1882
+# rows every thirty seconds to find that out.
 $approved = Get-ApprovedCheckIds
+$approvedStamp = (Get-Item -LiteralPath (Join-Path $RepoRoot 'POWERBI_REGISTRY.md')).LastWriteTimeUtc
 
 while ($true) {
     $didSomething = $false
+
+    try {
+        $stamp = (Get-Item -LiteralPath (Join-Path $RepoRoot 'POWERBI_REGISTRY.md')).LastWriteTimeUtc
+        if ($stamp -ne $approvedStamp) {
+            $approved = Get-ApprovedCheckIds
+            $approvedStamp = $stamp
+            Write-Host ('  POWERBI_REGISTRY.md changed; {0} CheckID(s) now known' -f $approved.Count) -ForegroundColor DarkGray
+        }
+    }
+    catch { }
 
     foreach ($board in $sports) {
         $rows = @()
@@ -561,3 +662,4 @@ while ($true) {
 }
 
 Write-Host ""
+Stop-WorkerLog

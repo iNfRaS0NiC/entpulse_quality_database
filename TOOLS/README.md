@@ -2532,6 +2532,36 @@ Rows are addressed by `Request ID` and the tab is re-read immediately before eve
 writers share it: the Apps Script appends while the worker updates, and a row that moved under
 a stale index means one person's status written over another person's request.
 
+### After a crash
+
+A request left `RUNNING` is one a worker was in the middle of when it stopped, and is queued
+again at startup with that written into its `Error` cell.
+
+**Unless a run is still in flight.** The worker asks the machine, not the sheet: if any
+`Run-Query.ps1` is alive, anything `RUNNING` is left where it is. A worker restarted while a
+run is going - the service bounced, a second worker started by hand - would otherwise queue a
+request whose run is about to write `DONE` over the top of it, and the sheet would show one
+request run twice with no way to tell which figure belongs to which. A machine that will not
+answer the question is treated as busy, because leaving a request `RUNNING` costs a person
+clicking again while queueing a live one costs a duplicate nobody can untangle.
+
+`QUEUED` requests need no recovery: nothing deletes them, and a reboot loses none.
+
+### The log
+
+`TOOLS/worker.local.log`, a transcript, rotated into `.1` past 5 MB. It sits beside
+`nightly.local.log` rather than under `RUNS/worker/` as the plan first guessed: `RUNS/` holds
+run ledgers, one `.gitignore` rule already covers `*.local.log`, and `.log` is outside the set
+`Test-Package.ps1` scans. `-LogPath` moves it, `-NoLog` turns it off, and `-WhatIf` writes none.
+
+Most of what is worth keeping is printed by `Run-Query.ps1` in the child process, which a
+transcript captures. A worker that has been up for a week and refused something at three in
+the morning is otherwise a story nobody can reconstruct.
+
+`POWERBI_REGISTRY.md` is re-read when the file changes rather than on a timer, so a worker up
+since Monday does not still refuse a check approved on Tuesday, and does not re-parse 1882 rows
+every thirty seconds to find that out.
+
 ### Deploying it on a document
 
 ```powershell
