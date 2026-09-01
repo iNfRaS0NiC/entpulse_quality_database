@@ -1943,6 +1943,68 @@ Test-That 'a run can update a board without being recorded as one' {
     Assert-Equal 1 $written.Count 'the same run records when the switch is off'
 }
 
+Test-That 'a partial run records the reviewers word only for the checks it ran' {
+    # Measured on Soccer 2026-09-01: a one-check run occupied 512 lines, of which 468 were the
+    # review block holding the reviewer's word on all 116 of the sport's checks rather than the
+    # one that ran. At the 50-80 clicks a day the sheet run queue is being built for, that is
+    # 41,000 lines a day against 4,200, in a file that is in git. A complete run still snapshots
+    # everything, because there the snapshot is true.
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'SPORT_AUTHORED'; What = 'a thing'; Expected = 'Zero' }
+    $summary = @(New-RunSummaryRow -Job $job -Rows 4 -Seconds 1 -Status 'OK' -Eligible 900 -Findings 3)
+
+    $snapshot = @{
+        'Fixtureball-DQ-001' = [pscustomobject]@{ status = 'Clean'; checkBy = 'ivo' }
+        'Fixtureball-DQ-002' = [pscustomobject]@{ status = 'Completed'; checkBy = 'ivo' }
+        'Fixtureball-DQ-003' = [pscustomobject]@{ status = 'Monitor Only'; checkBy = '' }
+    }
+
+    $wasSnapshot = $script:SheetReviewSnapshot
+    $wasRunAll = $RunAll
+    $wasMax = $MaxChecks
+    try {
+        $script:SheetReviewSnapshot = $snapshot
+
+        # Partial: not -RunAll at all.
+        $script:RunAll = $false
+        $script:MaxChecks = 0
+        $written = @(Save-RunLedger -Summary $summary -Output 'Fixtureball 01.01.2026 09-00-00')
+        $ledger = Get-Content -LiteralPath $written[0] -Raw -Encoding UTF8 | ConvertFrom-Json
+        $review = $ledger.runs[-1].review
+        Assert-Equal 1 @($review.PSObject.Properties.Name).Count 'only the check that ran is recorded'
+        Assert-Equal 'Completed' ([string]$review.'Fixtureball-DQ-002'.status) 'and it keeps its status'
+
+        # Complete: the whole catalogue, uncapped.
+        $script:RunAll = $true
+        $script:MaxChecks = 0
+        $written = @(Save-RunLedger -Summary $summary -Output 'Fixtureball 02.01.2026 09-00-00')
+        $ledger = Get-Content -LiteralPath $written[0] -Raw -Encoding UTF8 | ConvertFrom-Json
+        $review = $ledger.runs[-1].review
+        Assert-Equal 3 @($review.PSObject.Properties.Name).Count 'a complete run snapshots the whole board'
+
+        # -RunAll asked for, but capped, is not complete: it was never asked for the rest.
+        $script:RunAll = $true
+        $script:MaxChecks = 1
+        $written = @(Save-RunLedger -Summary $summary -Output 'Fixtureball 03.01.2026 09-00-00')
+        $ledger = Get-Content -LiteralPath $written[0] -Raw -Encoding UTF8 | ConvertFrom-Json
+        Assert-Equal 1 @($ledger.runs[-1].review.PSObject.Properties.Name).Count `
+            'a capped -RunAll records only what it ran'
+
+        # And the point of the whole thing: a check the last run did not touch keeps the status
+        # an earlier complete run recorded, which is what the nightly selector reads.
+        $state = Get-NightlyLedgerState -Ledger $ledger
+        Assert-Equal 'Completed' ([string]$state['Fixtureball-DQ-002'].ReviewStatus) `
+            'the check that ran carries its own status'
+    }
+    finally {
+        $script:SheetReviewSnapshot = $wasSnapshot
+        $script:RunAll = $wasRunAll
+        $script:MaxChecks = $wasMax
+    }
+}
+
 Test-That 'a run is appended to the sport ledger, newest last' {
     $ledgerDir = Join-Path $fixtureRoot 'RUNS'
     if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }

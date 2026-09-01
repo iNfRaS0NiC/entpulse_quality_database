@@ -4159,6 +4159,15 @@ function New-LedgerCheckEntry {
 # and Check By is nowhere else at all.
 $script:SheetReviewSnapshot = [ordered]@{}
 
+function Test-RunWasComplete {
+    # A run is complete when it was asked for the sport's whole approved catalogue and nothing
+    # capped it. Two places need the answer - the board merge, which may only mark checks a
+    # complete run did not produce, and the ledger, which may only snapshot the whole board's
+    # review from one. They had the expression written out twice until 2026-09-01; one function
+    # so a change to what "complete" means cannot reach one caller and miss the other.
+    return ($RunAll -and $MaxChecks -le 0)
+}
+
 function Save-RunLedger {
     # Append this run to RUNS/<Sport>.json, one file per sport, newest last so a git diff of
     # the file is the run that was just added and nothing else.
@@ -4228,10 +4237,27 @@ function Save-RunLedger {
             $run | Add-Member -NotePropertyName sheet -NotePropertyValue $script:SheetOutcome
         }
 
+        # A complete run snapshots the whole board, because there the snapshot is true. A
+        # partial one records only the checks it ran, and this is the difference between a
+        # one-check run costing 512 lines and costing 52: measured 2026-09-01 on Soccer, the
+        # check itself was 21 lines, the sheet block 23, the scaffolding 12 - and `review` 468,
+        # because it held the reviewer's word on all 116 Soccer checks rather than the one that
+        # ran. At the 50-80 clicks a day the sheet run queue is being built for, the difference
+        # is 41,000 lines a day against 4,200, in a file that is in git.
+        #
+        # Nothing loses a status by this. Get-NightlyLedgerState walks the ledger forward and
+        # looks up `review.<checkId>` for the check in hand, falling back to the last status it
+        # knew when a run's block does not carry that check - it was written that way for
+        # narrowed re-runs, which already wrote no block at all.
         if ($script:SheetReviewSnapshot -and $script:SheetReviewSnapshot.Count -gt 0) {
+            $wasComplete = Test-RunWasComplete
+            $inThisRun = @{}
+            foreach ($entry in @($group.Group)) { $inThisRun[[string]$entry.CheckId] = $true }
+
             $mine = [ordered]@{}
             foreach ($checkId in @($script:SheetReviewSnapshot.Keys)) {
                 if ((Get-SportFromCheckId -CheckId $checkId) -ne $sport) { continue }
+                if (-not $wasComplete -and -not $inThisRun.ContainsKey([string]$checkId)) { continue }
                 $mine[$checkId] = $script:SheetReviewSnapshot[$checkId]
             }
             if ($mine.Count -gt 0) {
@@ -4607,8 +4633,9 @@ function Save-RunSheet {
         # A run is complete when it was asked for the sport's whole approved catalogue and
         # nothing capped it. Only such a run may mark the checks it did not produce; anything
         # narrower was never asked for them. A skipped check is not affected either way - it
-        # has a summary row of its own and reports SKIPPED.
-        $complete = ($RunAll -and $MaxChecks -le 0)
+        # has a summary row of its own and reports SKIPPED. Test-RunWasComplete owns the
+        # expression, because Save-RunLedger asks the same question about the review snapshot.
+        $complete = Test-RunWasComplete
 
         # The same stamp the ledger files a run under, so a row in the review log can be traced
         # to the run that dropped the note and to the output folder that run left behind.
