@@ -58,7 +58,7 @@
         },
         "Soccer": {
             "spreadsheetId": "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE",
-            "runRequests": false
+            "runRequests": true
         },
         "Speed-Skating": {
             "spreadsheetId": "1CNFGr9KzNTGUtKJMn8vALWxHkL3x97JRtABs541iDPM",

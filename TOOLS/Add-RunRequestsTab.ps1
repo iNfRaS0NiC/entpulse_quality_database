@@ -81,7 +81,7 @@ $Columns = @(
     @{ Name = 'CheckID'; Width = 150 },
     @{ Name = 'Requested by'; Width = 210 },
     @{ Name = 'Requested at'; Width = 150 },
-    @{ Name = 'Status'; Width = 90 },
+    @{ Name = 'Status'; Width = 90; Align = 'CENTER' },
     @{ Name = 'Started at'; Width = 150 },
     @{ Name = 'Finished at'; Width = 150 },
     @{ Name = 'Run ID'; Width = 210 },
@@ -175,8 +175,18 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
                             @{
                                 userEnteredValue  = @{ stringValue = $_.Name }
                                 userEnteredFormat = @{
-                                    textFormat      = @{ bold = $true }
-                                    backgroundColor = @{ red = 0.94; green = 0.94; blue = 0.94 }
+                                    # The crimson the board's own Overview header wears, read off
+                                    # the document rather than guessed, so the queue looks like
+                                    # part of the board and not like something bolted to it.
+                                    backgroundColor    = @{ red = 0.792; green = 0.09; blue = 0.267 }
+                                    horizontalAlignment = $(if ($_.Align) { $_.Align } else { 'LEFT' })
+                                    verticalAlignment  = 'MIDDLE'
+                                    textFormat         = @{
+                                        bold            = $true
+                                        fontFamily      = 'Roboto'
+                                        fontSize        = 10
+                                        foregroundColor = @{ red = 1; green = 1; blue = 1 }
+                                    }
                                 }
                             }
                         }) })
@@ -199,6 +209,21 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
         }
     }
 
+    # A column that declares an alignment gets it on its rows as well as its header, or the
+    # header sits centred over a left-hand stack of words. Status is the only one so far: its
+    # value comes from a fixed set of six, and centred it reads as a badge rather than as a
+    # sentence that happens to be short.
+    for ($i = 0; $i -lt $Columns.Count; $i++) {
+        if (-not $Columns[$i].Align) { continue }
+        $requests += @{
+            repeatCell = @{
+                range  = @{ sheetId = $existingSheetId; startRowIndex = 1; startColumnIndex = $i; endColumnIndex = $i + 1 }
+                cell   = @{ userEnteredFormat = @{ horizontalAlignment = [string]$Columns[$i].Align } }
+                fields = 'userEnteredFormat.horizontalAlignment'
+            }
+        }
+    }
+
     # The three timestamps read as times rather than as numbers, which is the difference
     # between a person seeing when a run started and seeing 45901.6.
     foreach ($column in @(3, 5, 6)) {
@@ -212,7 +237,111 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
     }
 
     [void](Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $requests })
-    Write-Host "  header, widths and time formats written" -ForegroundColor DarkGray
+    Write-Host "  header, widths, alignment and time formats written" -ForegroundColor DarkGray
+}
+
+# ----- colour ----------------------------------------------------------------------------
+#
+# A queue is read at a glance or it is not read at all: the eye should find the one red row
+# without reading twelve columns. Status carries the colour because it is the only cell whose
+# value is a state, and a whole row is tinted only for ERROR, which is the one a person has to
+# do something about.
+#
+# Both the banding and the rules are removed before they are added. Sheets appends rather than
+# replaces, so running this script twice on a document would otherwise leave two bands and
+# twelve rules stacked on the same cells.
+
+if (-not $WhatIf -and $null -ne $existingSheetId) {
+    $tidy = @()
+
+    $current = Invoke-SheetsApiWithRetry -Method GET -Path ("$SpreadsheetId" +
+        '?fields=sheets(properties.sheetId,bandedRanges,conditionalFormats)')
+    foreach ($sheet in @($current.sheets)) {
+        if ([int]$sheet.properties.sheetId -ne $existingSheetId) { continue }
+
+        if ($null -ne $sheet.bandedRanges) {
+            foreach ($band in @($sheet.bandedRanges)) {
+                $tidy += @{ deleteBanding = @{ bandedRangeId = [int]$band.bandedRangeId } }
+            }
+        }
+        if ($null -ne $sheet.conditionalFormats) {
+            # Backwards: each delete shifts the indexes of the rules after it.
+            for ($i = @($sheet.conditionalFormats).Count - 1; $i -ge 0; $i--) {
+                $tidy += @{ deleteConditionalFormatRule = @{ sheetId = $existingSheetId; index = $i } }
+            }
+        }
+    }
+
+    $tidy += @{
+        addBanding = @{
+            bandedRange = @{
+                range          = @{ sheetId = $existingSheetId; startRowIndex = 1 }
+                rowProperties  = @{
+                    firstBandColor  = @{ red = 1; green = 1; blue = 1 }
+                    secondBandColor = @{ red = 0.976; green = 0.976; blue = 0.980 }
+                }
+            }
+        }
+    }
+
+    # Status, one colour per state, in the order a request moves through them.
+    $states = @(
+        @{ Word = 'QUEUED';    Back = @(0.925, 0.937, 0.953); Fore = @(0.30, 0.35, 0.42) },
+        @{ Word = 'WAITING';   Back = @(1.000, 0.949, 0.800); Fore = @(0.55, 0.42, 0.00) },
+        @{ Word = 'RUNNING';   Back = @(0.816, 0.886, 0.973); Fore = @(0.05, 0.28, 0.63) },
+        @{ Word = 'DONE';      Back = @(0.851, 0.918, 0.827); Fore = @(0.11, 0.37, 0.13) },
+        @{ Word = 'ERROR';     Back = @(0.957, 0.780, 0.765); Fore = @(0.64, 0.11, 0.07) },
+        @{ Word = 'CANCELLED'; Back = @(0.937, 0.937, 0.937); Fore = @(0.50, 0.50, 0.50) }
+    )
+
+    foreach ($state in $states) {
+        $tidy += @{
+            addConditionalFormatRule = @{
+                index = 0
+                rule  = @{
+                    ranges      = @(@{
+                            sheetId          = $existingSheetId
+                            startRowIndex    = 1
+                            startColumnIndex = 4
+                            endColumnIndex   = 5
+                        })
+                    booleanRule = @{
+                        condition = @{ type = 'TEXT_EQ'; values = @(@{ userEnteredValue = $state.Word }) }
+                        format    = @{
+                            backgroundColor = @{ red = $state.Back[0]; green = $state.Back[1]; blue = $state.Back[2] }
+                            textFormat      = @{
+                                bold            = $true
+                                foregroundColor = @{ red = $state.Fore[0]; green = $state.Fore[1]; blue = $state.Fore[2] }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    # The whole row for a failure, faintly. A refusal is the one row somebody has to act on,
+    # and its reason is twelve columns to the right of the status that announces it.
+    $tidy += @{
+        addConditionalFormatRule = @{
+            index = 0
+            rule  = @{
+                ranges      = @(@{
+                        sheetId          = $existingSheetId
+                        startRowIndex    = 1
+                        startColumnIndex = 0
+                        endColumnIndex   = $Columns.Count
+                    })
+                booleanRule = @{
+                    condition = @{ type = 'CUSTOM_FORMULA'; values = @(@{ userEnteredValue = '=$E2="ERROR"' }) }
+                    format    = @{ backgroundColor = @{ red = 0.996; green = 0.949; blue = 0.941 } }
+                }
+            }
+        }
+    }
+
+    [void](Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $tidy })
+    Write-Host '  banded, and Status coloured per state with a failed row tinted whole' -ForegroundColor DarkGray
 }
 
 # ----- the boundary that actually holds --------------------------------------------------
@@ -272,11 +401,32 @@ if ($Register) {
         Write-Host ("  {0} has no row in the registry, so nothing was recorded. Add the row first." -f $Sport) -ForegroundColor Yellow
     }
     else {
-        $registry.sports.$Sport.runRequests = $true
-        $json = $registry | ConvertTo-Json -Depth 8
-        [IO.File]::WriteAllText($RegistryPath, ($json -replace "`r`n", "`n") + "`n", (New-Object Text.UTF8Encoding($false)))
-        Write-Host "  recorded: the worker will poll this document" -ForegroundColor Green
+        # One flag, edited in place, and never a reserialise of the whole file. Windows
+        # PowerShell 5.1's ConvertTo-Json replaces every apostrophe and angle bracket with its
+        # numeric escape and reindents to its own style, so setting this one boolean through it
+        # rewrote all eighty lines and left the three prose _about fields unreadable. Measured
+        # on the first real -Register, Soccer, 2026-09-01. This file is read by people as well
+        # as by scripts, so its formatting is part of it.
+        $raw = Get-Content -LiteralPath $RegistryPath -Raw -Encoding UTF8
+        # [^}] and not . - a sport's block contains no brace of its own, and a lazy dot walked
+        # straight past this sport's "runRequests": true into the next sport's false and flipped
+        # that one instead. Caught on Soccer 2026-09-01, having turned on Speed-Skating, which
+        # has no queue tab: the worker would have polled a document with nothing to read.
+        $pattern = '("' + [regex]::Escape($Sport) + '"\s*:\s*\{[^}]*?"runRequests"\s*:\s*)false'
+        $rx = New-Object Text.RegularExpressions.Regex($pattern)
+
+        if (-not $rx.IsMatch($raw)) {
+            Write-Host ("  {0} already has runRequests = true; the file was left alone." -f $Sport) -ForegroundColor DarkGray
+        }
+        else {
+            $updated = $rx.Replace($raw, '${1}true', 1)
+            [IO.File]::WriteAllText($RegistryPath, $updated, (New-Object Text.UTF8Encoding($false)))
+            Write-Host "  recorded: the worker will poll this document" -ForegroundColor Green
+        }
     }
+}
+elseif ($registry.sports.PSObject.Properties.Name -contains $Sport -and $registry.sports.$Sport.runRequests) {
+    Write-Host '  already registered; the worker polls this document' -ForegroundColor DarkGray
 }
 else {
     Write-Host ("  not registered. The worker ignores this document until " +
