@@ -3,7 +3,7 @@
     "_runRequests": "Whether that document carries the 'Run requests' tab and its Apps Script, which is what lets a reviewer ask for a single check to be re-run from the board. TOOLS/Watch-SheetRequests.ps1 polls only the documents where this is true, so a sport that has not been set up yet costs the worker nothing. Soccer is being deployed first and alone: the first deploy is scopes, permissions and an approval, and each one after it is about fifteen minutes.",
     "_requesters": "Who may ask for a run from a board, decided 2026-09-01. 'allowed' is the list of accounts whose click the worker will act on; 'owner' is the one account that may ask for a whole sport with the reserved *SPORT* CheckID, and while it is empty every *SPORT* request is refused, which is the safe way round. Widening the list is editing 'allowed' here and nothing else. **This list guards against a mistake, not against intent**: 'Requested by' is a cell, so anybody with edit access to the tab can type somebody else's address into it as easily as a CheckID. The boundary that actually holds is edit access - a protected range on the Run requests tab with the Apps Script deployed to execute as the owner, so the button still appends for everybody allowed to click it while nobody can type into the tab by hand.",
     "requesters": {
-        "owner": "",
+        "owner": "igeorgiev@enetpulse.com",
         "allowed": [
             "zgeorgieva@enetpulse.com",
             "vanin.neykov@enetpulse.com",
