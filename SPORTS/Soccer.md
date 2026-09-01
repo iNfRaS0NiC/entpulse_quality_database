@@ -27,8 +27,7 @@ correction is required.
 
 Soccer is the first documented sport whose client scope is narrower than the sport. The
 database carries the sport's full league population; the client's interest is a fixed set of
-28 `tournament_template` rows, and every narrowed statement is run with `-TemplateIds` over
-exactly those:
+28 `tournament_template` rows:
 
 | Competition | Templates |
 |---|---|
@@ -60,6 +59,22 @@ eligible population of every statistic check rather than inside it with no findi
 
 A narrowed check's `eligible_count` is therefore read against these templates. A count far
 below the sport's own population is the scope working, not a misdirected scope.
+
+**The boundary is a declared parameter since 2026-09-01, and no longer a habit.** The 28 ids
+above are `IN_SCOPE_TEMPLATE_ID_LIST` in `SPORTS/params.json`, which the runner turns into the
+complement before anything is sent, and each of the sport's own statements in
+`POWERBI_QUERIES/Soccer.sql` carries the same 28 in every branch that can reach a template.
+Until that date the sport declared `OUT_OF_SCOPE_TEMPLATE_ID_LIST` as `0 nothing excluded:
+this sport is taken whole` - a sentence this section already contradicted - and the boundary
+existed only as `-TemplateIds` typed at the prompt, so a run launched without it audited the
+world's leagues and said nothing about having done so.
+
+Two things follow. `-TemplateIds` is no longer needed to bound a Soccer run and is now a
+drill-down: the commented marker is kept beside each boundary line, so `-TemplateIds 76`
+still narrows to one competition inside the client's 28. And the inclusion is the right way
+round here for the reason `TOOLS/README.md` gives - the sport gains leagues constantly, and
+under an exclusion list each new one would arrive inside the client's boundary with nobody
+deciding it.
 
 **Two checks audit the sport registry and cannot be narrowed at all.** `-TemplateIds` works by
 activating a template filter the statement already carries, and the registry has no template

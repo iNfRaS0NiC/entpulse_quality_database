@@ -46,6 +46,7 @@ JOIN (
     WHERE ep.del = 'no'
       AND tt2.sportFK = 1
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      AND t2.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
       -- AND t2.tournament_templateFK = <tournament_template_id>
     GROUP BY ep.eventFK
 ) x ON x.event_id = e.id AND x.score_count = 2 AND x.distinct_scores = 1
@@ -64,6 +65,7 @@ WHERE e.del = 'no'
         AND pr.del = 'no'
   )
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -96,6 +98,7 @@ JOIN (
     WHERE ep.del = 'no'
       AND tt2.sportFK = 1
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      AND t2.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
       -- AND t2.tournament_templateFK = <tournament_template_id>
     GROUP BY ep.eventFK
 ) x ON x.event_id = e.id AND x.score_count = 2
@@ -111,6 +114,7 @@ WHERE e.del = 'no'
         AND pr.del = 'no'
   )
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -178,6 +182,7 @@ FROM (
       AND e.status_type = 'finished'
       AND tt.sportFK = 1
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -212,6 +217,7 @@ WHERE e.del = 'no'
   AND e.status_type = 'finished'
   AND tt.sportFK = 1
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -279,6 +285,7 @@ FROM (
       AND e.status_type = 'finished'
       AND tt.sportFK = 1
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -318,6 +325,7 @@ FROM (
       AND e.status_type = 'finished'
       AND tt.sportFK = 1
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -400,6 +408,7 @@ FROM (
           WHERE ep2.eventFK = e.id AND ep2.del = 'no'
       )
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -438,6 +447,7 @@ WHERE e.del = 'no'
       WHERE ep2.eventFK = e.id AND ep2.del = 'no'
   )
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -492,6 +502,7 @@ FROM (
       AND e.status_type = 'finished'
       AND tt.sportFK = 1
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -526,6 +537,7 @@ FROM (
       AND e.status_type = 'finished'
       AND tt.sportFK = 1
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -600,6 +612,7 @@ FROM (
           AND e.status_type = 'finished'
           AND tt.sportFK = 1
           AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+          AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
@@ -637,6 +650,7 @@ WHERE e.del = 'no'
       WHERE ep2.eventFK = e.id AND ep2.del = 'no'
   )
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -695,6 +709,7 @@ FROM (
     WHERE e.del = 'no'
       AND tt.sportFK = 1
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -722,6 +737,7 @@ JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = 1
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -782,6 +798,7 @@ FROM (
       AND s.object_typeFK = 3
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
       -- AND t.tournament_templateFK = <tournament_template_id>
     GROUP BY s.id, s.name, sp.id, p.id, p.name, tt.name, t.name
 ) x
@@ -813,6 +830,7 @@ WHERE s.del = 'no'
   AND s.object_typeFK = 3
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, statistic_id, participant_name;
@@ -871,6 +889,7 @@ WHERE e.del = 'no'
      OR r.result_typeFK NOT IN (4, 6)
   )
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -894,6 +913,7 @@ JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = 1
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
@@ -963,6 +983,7 @@ FROM (
     WHERE e.del = 'no'
       AND tt.sportFK = 1
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
@@ -998,6 +1019,7 @@ JOIN event_scope_detail esd ON esd.event_scopeFK = es.id AND esd.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = 1
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+  AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
