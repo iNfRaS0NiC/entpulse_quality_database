@@ -232,6 +232,7 @@ param(
     # Skip the live document for this run, and write only the workbook. For a run that is real
     # enough to record but that should not reach the people reading the sheet.
     [switch]$NoSheet,
+    [switch]$NoLedger,
 
     # Dot-source the file for its functions and stop before Main. TOOLS/Test-Tools.ps1 uses
     # it to exercise selection, parameter expansion, the parser and the workbook writer
@@ -384,6 +385,11 @@ $script:RecentFindings = @{}
 # over what a run already produced and are tested without a login, and nothing here may fail a
 # run. See TOOLS/Notify.ps1.
 . (Join-Path $PSScriptRoot 'Notify.ps1')
+
+# Which checks a nightly pass would run, and what it may cost. Kept apart for the reason the
+# two files above are: the rule is where the defects live and it has to be exercisable against
+# sixteen real ledgers without a login. See TOOLS/Nightly.ps1.
+. (Join-Path $PSScriptRoot 'Nightly.ps1')
 
 # How far the audited population may move before a raw finding delta stops being comparable.
 # The database is corrected while it is being read, so small drift is the normal state and
@@ -4166,7 +4172,19 @@ function Save-RunLedger {
     # anything but the sport cannot be read by the next run of that sport.
     param($Summary, [string]$Output, [string]$SheetId)
 
-    if ($TestRun) { return @() }
+    # -TestRun leaves no trace at all. -NoLedger is narrower and exists for one caller: the
+    # nightly pass, which updates a board every night and would otherwise add about 29,000
+    # lines a night to sixteen files that are in git. It writes the board, because a reviewer
+    # who follows the notification should meet the red chip rather than a green one it has just
+    # contradicted; it does not write here, because the ledger is the record of full runs and a
+    # subset measured overnight is not one.
+    #
+    # What that costs is worth naming rather than discovering. The next run still compares
+    # against the last recorded run, so a night's numbers are not what the morning's board is
+    # read against - which is correct for `Prev findings` and slightly weakens one rule: the
+    # guard that closes `Reopened` only after two clean runs counts recorded runs, so it counts
+    # full boards rather than nights.
+    if ($TestRun -or $NoLedger) { return @() }
 
     $recordable = @($Summary | Where-Object {
             -not [string]::IsNullOrWhiteSpace([string]$_.CheckId) -and

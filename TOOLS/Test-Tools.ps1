@@ -1916,6 +1916,33 @@ Test-That 'the run summary carries findings, eligible and the expectation' {
     Assert-Equal 4 $row.ExpectedResidual 'residual count'
 }
 
+Test-That 'a run can update a board without being recorded as one' {
+    # -NoLedger, added 2026-09-01 for the nightly pass. It updates a board every night, because
+    # a reviewer who follows the notification should meet the red chip rather than a green one
+    # the message has just contradicted - but a subset measured overnight is not a full run, and
+    # recording it would add about 29,000 lines a night to sixteen files that are in git.
+    #
+    # Narrower than -TestRun on purpose: that one leaves no trace anywhere, including the board.
+    $ledgerDir = Join-Path $fixtureRoot 'RUNS'
+    if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
+
+    $job = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-002'; Name = 'SPORT_AUTHORED'; What = 'a thing'; Expected = 'Zero' }
+    $summary = @(New-RunSummaryRow -Job $job -Rows 4 -Seconds 1 -Status 'OK' -Eligible 900 -Findings 3)
+
+    $was = $NoLedger
+    try {
+        $script:NoLedger = $true
+        $written = @(Save-RunLedger -Summary $summary -Output 'Fixtureball 01.01.2026 09-00-00')
+        Assert-Equal 0 $written.Count 'nothing is written'
+        Assert-True (-not (Test-Path -LiteralPath $ledgerDir)) 'and no ledger is created'
+    }
+    finally { $script:NoLedger = $was }
+
+    # And without it the same call records normally, so the switch is what decided it.
+    $written = @(Save-RunLedger -Summary $summary -Output 'Fixtureball 01.01.2026 09-00-00')
+    Assert-Equal 1 $written.Count 'the same run records when the switch is off'
+}
+
 Test-That 'a run is appended to the sport ledger, newest last' {
     $ledgerDir = Join-Path $fixtureRoot 'RUNS'
     if (Test-Path -LiteralPath $ledgerDir) { Remove-Item -LiteralPath $ledgerDir -Recurse -Force }
@@ -6391,6 +6418,259 @@ Test-That 'a failure is reported in the API own words, and advice is only given 
         'an unparseable body is passed through as text'
     Assert-Equal '' (ConvertFrom-NotifyApiErrorBody -Text '').Message 'and an empty one says nothing'
     Assert-Equal '' (ConvertFrom-NotifyApiErrorBody -Text '').Reason 'with no reason invented for it'
+}
+
+Complete-Group
+
+# --------------------------------------------------------------------------------------
+# The nightly pass
+#
+# Selection only. Nothing here runs a statement or opens a connection: the whole point of
+# keeping the rule in Nightly.ps1 is that it can be exercised against real ledgers, and the
+# defects it can have are all defects of choosing.
+# --------------------------------------------------------------------------------------
+
+Start-Group 'Runner' 'Nightly selection'
+
+function New-NightlyLedger {
+    # One sport's ledger, in the shape RUNS/<Sport>.json holds.
+    param([string]$Sport = 'Fixtureball', $Runs)
+
+    return [pscustomobject]@{ sport = $Sport; ledgerVersion = 1; runs = @($Runs) }
+}
+
+function New-NightlyRun {
+    param([string]$RunId = 'r1', $Checks, $Review)
+
+    $run = [pscustomobject]@{ runId = $RunId; startedUtc = '2026-09-01T00:00:00Z'; checks = @($Checks) }
+    if ($null -ne $Review) { $run | Add-Member -NotePropertyName review -NotePropertyValue $Review }
+    return $run
+}
+
+function New-NightlyCheck {
+    param([string]$CheckId, [int]$Findings = 0, [int]$Eligible = 100, [string]$Expected = 'Zero',
+        [double]$Seconds = 1.0, [string]$Status = 'OK')
+
+    return [pscustomobject]@{
+        checkId = $CheckId; runKey = $CheckId; name = "NAME_$CheckId"; expected = $Expected
+        findings = $Findings; eligible = $Eligible; seconds = $Seconds; status = $Status
+        signal = 'Actionable'; sqlHash = 'abc'
+    }
+}
+
+Test-That 'only a closed check with a conclusion to contradict is run at night' {
+    # Four conditions, and each is here because dropping it breaks the pass in a different
+    # direction: an open check is already in front of the reviewer, an empty population says
+    # nothing every night for a reason that is not the data, a Monitor check never reaches
+    # zero, and a status nobody has put a conclusion on has no conclusion to disprove.
+    $review = [pscustomobject]@{}
+    $checks = @()
+    foreach ($case in @(
+            @{ Id = 'F-DQ-001'; F = 0; E = 100; Exp = 'Zero'; St = 'Clean'; Want = $true }
+            @{ Id = 'F-DQ-002'; F = 0; E = 100; Exp = 'Zero'; St = 'Completed'; Want = $true }
+            @{ Id = 'F-DQ-003'; F = 0; E = 100; Exp = 'Zero'; St = 'Reopened'; Want = $true }
+            @{ Id = 'F-DQ-004'; F = 7; E = 100; Exp = 'Zero'; St = 'Clean'; Want = $false }
+            @{ Id = 'F-DQ-005'; F = 0; E = 0; Exp = 'Zero'; St = 'Clean'; Want = $false }
+            @{ Id = 'F-DQ-006'; F = 0; E = 100; Exp = 'Non-zero'; St = 'Monitor Only'; Want = $false }
+            @{ Id = 'F-DQ-007'; F = 0; E = 100; Exp = 'Zero'; St = 'On Hold'; Want = $false }
+            @{ Id = 'F-DQ-008'; F = 0; E = 100; Exp = 'Zero'; St = 'IT Fix'; Want = $false }
+            @{ Id = 'F-DQ-009'; F = 0; E = 100; Exp = 'Zero'; St = 'Other Team'; Want = $false }
+            @{ Id = 'F-DQ-010'; F = 0; E = 100; Exp = 'Zero'; St = 'Not reviewed'; Want = $false }
+            @{ Id = 'F-DQ-011'; F = 0; E = 100; Exp = 'Zero'; St = ''; Want = $false }
+            @{ Id = 'F-DQ-012'; F = 0; E = 100; Exp = 'Zero'; St = 'Skipped'; Want = $false }
+        )) {
+        $checks += (New-NightlyCheck -CheckId $case.Id -Findings $case.F -Eligible $case.E -Expected $case.Exp)
+        $review | Add-Member -NotePropertyName $case.Id -NotePropertyValue ([pscustomobject]@{ status = $case.St })
+    }
+
+    $ledger = New-NightlyLedger -Runs @((New-NightlyRun -Checks $checks -Review $review))
+    $picked = @((Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy).Checks |
+            ForEach-Object { $_.CheckId })
+
+    Assert-Equal 3 $picked.Count 'three of the twelve are worth a night'
+    foreach ($id in @('F-DQ-001', 'F-DQ-002', 'F-DQ-003')) {
+        Assert-True ($picked -contains $id) "$id is run"
+    }
+    foreach ($id in @('F-DQ-004', 'F-DQ-005', 'F-DQ-006', 'F-DQ-007', 'F-DQ-008', 'F-DQ-009', 'F-DQ-010', 'F-DQ-011', 'F-DQ-012')) {
+        Assert-True ($picked -notcontains $id) "$id is not"
+    }
+}
+
+Test-That 'a superseded spelling of a status still counts as the status it means' {
+    # The same map the board renames by. Left out, a check a reviewer closed years ago as
+    # `Fixed` would be silently dropped from every night - and dropped quietly, which is the
+    # only way this kind of defect ever shows up.
+    $review = [pscustomobject]@{
+        'F-DQ-001' = [pscustomobject]@{ status = 'Fixed' }
+        'F-DQ-002' = [pscustomobject]@{ status = 'No issue' }
+        'F-DQ-003' = [pscustomobject]@{ status = 'For IT' }
+    }
+    $ledger = New-NightlyLedger -Runs @((New-NightlyRun -Review $review -Checks @(
+                    (New-NightlyCheck -CheckId 'F-DQ-001'), (New-NightlyCheck -CheckId 'F-DQ-002'),
+                    (New-NightlyCheck -CheckId 'F-DQ-003'))))
+    $picked = @((Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy).Checks |
+            ForEach-Object { $_.CheckId })
+    Assert-True ($picked -contains 'F-DQ-001') 'Fixed means Completed'
+    Assert-True ($picked -contains 'F-DQ-002') 'No issue means Clean'
+    Assert-True ($picked -notcontains 'F-DQ-003') 'For IT means IT Fix, which is somebody else'
+}
+
+Test-That 'a later run without a review block does not erase what the last board knew' {
+    # A narrowed re-run carries no review block. Taking the newest run's absence as a blank
+    # status would drop every check the day after anybody re-ran one, and the measurement it
+    # brought - which is newer and wanted - would take the reviewer's word down with it.
+    $ledger = New-NightlyLedger -Runs @(
+        (New-NightlyRun -RunId 'board' -Checks @((New-NightlyCheck -CheckId 'F-DQ-001' -Findings 4)) `
+                -Review ([pscustomobject]@{ 'F-DQ-001' = [pscustomobject]@{ status = 'Completed' } }))
+        (New-NightlyRun -RunId 'rerun' -Checks @((New-NightlyCheck -CheckId 'F-DQ-001' -Findings 0)))
+    )
+    $state = Get-NightlyLedgerState -Ledger $ledger
+    Assert-Equal 0 $state['F-DQ-001'].Findings 'the newer measurement wins'
+    Assert-Equal 'Completed' $state['F-DQ-001'].ReviewStatus 'and the reviewer word is carried forward'
+
+    $picked = @((Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy).Checks)
+    Assert-Equal 1 $picked.Count 'so the check is still a candidate'
+}
+
+Test-That 'a run that failed is passed over rather than believed' {
+    # Import-PreviousRunEntries does the same and for the same reason: comparing against an
+    # error says nothing, and the reading anybody wants is against the last time the check
+    # produced a number - which may be two runs ago.
+    $ledger = New-NightlyLedger -Runs @(
+        (New-NightlyRun -RunId 'good' -Checks @((New-NightlyCheck -CheckId 'F-DQ-001' -Findings 0)) `
+                -Review ([pscustomobject]@{ 'F-DQ-001' = [pscustomobject]@{ status = 'Clean' } }))
+        (New-NightlyRun -RunId 'bad' -Checks @((New-NightlyCheck -CheckId 'F-DQ-001' -Findings 99 -Status 'ERROR: timed out')))
+    )
+    $state = Get-NightlyLedgerState -Ledger $ledger
+    Assert-Equal 0 $state['F-DQ-001'].Findings 'the failure did not overwrite the last real number'
+    Assert-Equal 1 @((Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy).Checks).Count `
+        'and the check is still a candidate'
+}
+
+Test-That 'the budget takes the cheapest first and keeps a slice for the rest' {
+    # A frozen threshold in seconds rots the way a frozen list of CheckIDs does. A budget does
+    # not: as sports accumulate the effective ceiling falls on its own, in the order the cost
+    # table says to give things up in. And the reserved slice is what stops the expensive tail
+    # from being invisible between full boards.
+    $review = [pscustomobject]@{}
+    $checks = @()
+    foreach ($n in 1..10) {
+        $id = 'F-DQ-{0:D3}' -f $n
+        $checks += (New-NightlyCheck -CheckId $id -Seconds ($n * 10))
+        $review | Add-Member -NotePropertyName $id -NotePropertyValue ([pscustomobject]@{ status = 'Clean' })
+    }
+    $ledger = New-NightlyLedger -Runs @((New-NightlyRun -Checks $checks -Review $review))
+
+    # 550s of work. A 100s budget keeps 85s for the cheapest and 15s for rotation, which buys
+    # the 10s check twice over - so the cheapest two run and one tail check comes round.
+    $sel = Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy -BudgetSeconds 100
+    Assert-True ($sel.Checks.Count -lt 10) 'the budget bites'
+    Assert-True ($sel.Seconds -le 100) 'and it is not exceeded'
+    Assert-True (@($sel.Checks | ForEach-Object { $_.CheckId }) -contains 'F-DQ-001') 'the cheapest is in'
+    Assert-True ($sel.Deferred -gt 0) 'and what did not fit is counted rather than lost'
+
+    # With room for everything, nothing is deferred and nothing is run twice.
+    $all = Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy -BudgetSeconds 100000
+    Assert-Equal 10 $all.Checks.Count 'a budget nothing exceeds takes everything'
+    Assert-Equal 0 $all.Deferred 'and defers nothing'
+    Assert-Equal 10 (@($all.Checks | ForEach-Object { $_.CheckId } | Select-Object -Unique)).Count `
+        'each check once, never twice'
+}
+
+Test-That 'the expensive tail comes round by least recently run' {
+    # Cheapest-first alone means the costly closed checks are never seen between full boards.
+    # Which one the slice buys has to be the one waiting longest, or the rotation sweeps the
+    # same corner for ever.
+    $review = [pscustomobject]@{}
+    # Proportions matter, and the first version of this case got them wrong: a slice smaller
+    # than the cheapest deferred check buys nothing, and the case then proved only that. Three
+    # cheap checks fill the main pass, two costly ones are deferred, and what is left of the
+    # budget affords exactly one of them.
+    $checks = @()
+    foreach ($pair in @(@('F-DQ-001', 10), @('F-DQ-002', 10), @('F-DQ-003', 10),
+            @('F-DQ-004', 100), @('F-DQ-005', 100))) {
+        $checks += (New-NightlyCheck -CheckId $pair[0] -Seconds $pair[1])
+        $review | Add-Member -NotePropertyName $pair[0] -NotePropertyValue ([pscustomobject]@{ status = 'Clean' })
+    }
+    $ledger = New-NightlyLedger -Runs @((New-NightlyRun -Checks $checks -Review $review))
+
+    # F-DQ-004 ran yesterday, F-DQ-005 last month. Both are in the tail; the older one goes.
+    $seen = @{
+        'Fixtureball|F-DQ-004' = (Get-Date).AddDays(-1)
+        'Fixtureball|F-DQ-005' = (Get-Date).AddDays(-30)
+    }
+    $sel = Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy -BudgetSeconds 150 -LastRunAt $seen
+    $picked = @($sel.Checks | ForEach-Object { $_.CheckId })
+    Assert-True ($sel.Seconds -le 150) 'the budget still holds'
+    Assert-True ($picked -contains 'F-DQ-005') 'the one waiting longest is the one bought'
+    Assert-True ($picked -notcontains 'F-DQ-004') 'and not the one that ran yesterday'
+    Assert-True ($picked -contains 'F-DQ-001') 'and the cheap ones ran as well'
+}
+
+Test-That 'the rotation remembers when each check last ran' {
+    # One thing crosses midnight, and it is not in RUNS/. The ledger is the record of full runs
+    # and is in git; a nightly pass writing there would change sixteen files every night in a
+    # repository nobody would be committing them to.
+    #
+    # What the state does NOT hold is what the last night found. That was here until
+    # 2026-09-01 and belongs to the board instead: a check the night writes to `Reopened` is no
+    # longer `Clean` or `Completed`, so the next night cannot reopen it and no second message
+    # is possible. Keeping a copy of that rule here would have been a second thing to keep true.
+    $path = Join-Path ([System.IO.Path]::GetTempPath()) ('nightly-' + [guid]::NewGuid().ToString('N') + '.json')
+    try {
+        Assert-Equal 0 (Read-NightlyState -Path $path).LastRunAt.Count 'a first night starts empty'
+
+        $state = Read-NightlyState -Path $path
+        $state.LastRunAt[(Get-NightlyKey -Sport 'Fixtureball' -Entry ([pscustomobject]@{ RunKey = 'F-DQ-001' }))] =
+            [datetime]'2026-09-01T02:00:00Z'
+        [void](Save-NightlyState -State $state -Path $path)
+
+        $back = Read-NightlyState -Path $path
+        Assert-Equal 1 $back.LastRunAt.Count 'the check is recorded as having run'
+        Assert-True ($back.LastRunAt.ContainsKey('Fixtureball|F-DQ-001')) 'under sport and run key'
+        Assert-True (-not ((Get-Content -LiteralPath $path -Raw) -like '*lastFindings*')) `
+            'and nothing else is kept'
+
+        Set-Content -LiteralPath $path -Value 'not json at all' -Encoding UTF8
+        Assert-Equal 0 (Read-NightlyState -Path $path).LastRunAt.Count `
+            'a damaged state reads as empty rather than ending the pass'
+    }
+    finally {
+        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    }
+}
+
+Test-That 'a check keyed by its run key, not only its CheckID' {
+    # A narrowed check carries its parameters in the run key, and two narrowings of the same
+    # check are two measurements. Keyed on the CheckID alone, the rotation would treat them as
+    # one and one of them would never come round.
+    Assert-Equal 'Soccer|Soccer-DQ-001' `
+        (Get-NightlyKey -Sport 'Soccer' -Entry ([pscustomobject]@{ RunKey = 'Soccer-DQ-001'; CheckId = 'Soccer-DQ-001' })) `
+        'the run key is what identifies it'
+    Assert-Equal 'Soccer|Soccer-DQ-001 [TEMPLATE_ID=7]' `
+        (Get-NightlyKey -Sport 'Soccer' -Entry ([pscustomobject]@{ RunKey = 'Soccer-DQ-001 [TEMPLATE_ID=7]'; CheckId = 'Soccer-DQ-001' })) `
+        'so a narrowed run is its own entry'
+    Assert-Equal 'Soccer|Soccer-DQ-001' `
+        (Get-NightlyKey -Sport 'Soccer' -Entry ([pscustomobject]@{ CheckId = 'Soccer-DQ-001' })) `
+        'and the CheckID stands in when there is no run key'
+}
+
+Test-That 'the same ledgers choose the same checks twice' {
+    # A selector whose output moves without its input moving cannot be tested, and cannot be
+    # explained to somebody comparing two mornings' mail.
+    $review = [pscustomobject]@{}
+    $checks = @()
+    foreach ($n in 1..8) {
+        $id = 'F-DQ-{0:D3}' -f $n
+        $checks += (New-NightlyCheck -CheckId $id -Seconds 5)
+        $review | Add-Member -NotePropertyName $id -NotePropertyValue ([pscustomobject]@{ status = 'Clean' })
+    }
+    $ledger = New-NightlyLedger -Runs @((New-NightlyRun -Checks $checks -Review $review))
+    $first = @((Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy -BudgetSeconds 20).Checks |
+            ForEach-Object { $_.CheckId })
+    $again = @((Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy -BudgetSeconds 20).Checks |
+            ForEach-Object { $_.CheckId })
+    Assert-Equal ($first -join ',') ($again -join ',') 'the same input gives the same night'
 }
 
 Complete-Group

@@ -2323,6 +2323,68 @@ any of it a structural finding. A finding still enters the repository only throu
 `PREPARE_DOC_UPDATE` sequence in `WORKFLOW.md`, and a coverage count still does not belong in
 `DATABASE.md` or a sport file. What the ledger is for is the next run, not the next document.
 
+## The nightly pass
+
+A run every night across the opened sports whose only job is to notice that something which was
+clean has stopped being clean, soon after it happens rather than whenever somebody next runs a
+full board.
+
+```powershell
+.\TOOLS\Invoke-NightlyRun.ps1 -WhatIf     # choose and report, run nothing
+.\TOOLS\Invoke-NightlyRun.ps1             # every sport with a ledger
+.\TOOLS\Invoke-NightlyRun.ps1 -Sport Curling
+```
+
+**It selects rather than narrows.** Only a check that is currently closed can newly fire: one
+already returning findings is already open on the board and in front of whoever is reviewing it,
+so running it again tonight tells nobody anything. Narrowing the *scope* was measured and
+rejected - on Cycling, current-year against the whole board was 21m13s against 9m28s, 55 per
+cent saved, but 47 of 125 checks gained under 0.2 seconds each and a narrowed run returning zero
+proves nothing outside its window. Selection saves far more and costs nothing.
+
+| | |
+|---|---|
+| What runs | a check whose last recorded run returned zero findings over an `eligible_count` above zero, whose expectation is `Zero`, whose status was `OK`, and whose reviewer status is `Clean`, `Completed` or `Reopened` |
+| Why those three statuses | each is a conclusion a result can contradict. `Not reviewed` and a blank cell carry no conclusion; `On Hold`, `IT Fix` and `Other Team` are waiting on somebody else; `Monitor Only` expects a count for ever; `Skipped` and `Deprecated` are out of the reading. Measured first: only one check in the package is both handed off and closed, so the filter costs nothing against those and exists for the two that matter |
+| Where the status comes from | `run.review` in the ledger, written from what the board held when the last run read it. It is **not live**: a status changed this morning is not seen until the next board run |
+| How much runs | as much as fits a budget of database time, cheapest first, with a slice kept for the expensive tail by least recently run. 4.5 hours by default |
+| Why a budget and not a threshold | a threshold in seconds rots the way a hardcoded list of CheckIDs does. Under a budget the effective ceiling falls on its own as sports accumulate, in the order the cost table says to give things up in |
+
+Today that is **779 checks and about 67 minutes** of database time across sixteen sports, plus
+roughly a minute a sport writing boards. The ceiling binds on nothing yet; it starts binding at
+around 26 sports once the review has closed most of what is currently open.
+
+### It writes to the board
+
+A check the pass finds is written `Reopened` by the same rule a full run uses, and the
+notification goes out through the machinery that already exists - see **Being told a check
+reopened** above. That is deliberate on two counts. A reviewer who follows the message meets the
+red chip rather than a green one the message has just contradicted. And "report this once" is
+then a consequence rather than a second rule to keep true: a check written `Reopened` is no
+longer `Clean` or `Completed`, so the next night cannot reopen it again.
+
+A partial run is safe on a board by construction. Every whole-board behaviour in
+`New-SheetsMergePlan` is gated on `-Complete`, which only a `-RunAll` run sets; rows the pass did
+not run keep the last full run's numbers rather than being blanked, marked or removed.
+
+**It does not write to `RUNS/`.** The pass runs with `-NoLedger`, which is narrower than
+`-TestRun`: the board is updated, the ledger is not. Measured on the first pilot, a nightly run
+of 20 checks added 747 lines to one sport's ledger - about 29,000 lines and a megabyte a night
+across sixteen sports, in files that are in git. What that costs is worth knowing rather than
+discovering: the next run still compares against the last *recorded* run, so a night's numbers
+are not what the morning's board is read against, and the guard that closes `Reopened` after two
+clean runs counts recorded runs, which means full boards rather than nights.
+
+### What it leaves behind
+
+`TOOLS/nightly.local.json`, ignored by git under the same rule as the credentials beside it. It
+holds one thing: when each check last ran at night, so the rotation moves through the expensive
+tail instead of sweeping the same corner of it. Losing it costs a rotation that starts again from
+the cheapest, which is what the first night does anyway.
+
+A sport that fails does not end the pass, and its checks stay in the rotation rather than being
+recorded as done. One broken board must not silence fifteen others.
+
 ## Batch behaviour
 
 More than one matched CheckID switches to batch mode.

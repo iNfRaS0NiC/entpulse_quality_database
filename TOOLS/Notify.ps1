@@ -114,7 +114,9 @@ function Save-NotifyQueue {
         notifications = @(ConvertTo-NotifyList -Value $Queue)
     }
     $json = $document | ConvertTo-Json -Depth 8
-    Set-Content -LiteralPath $Path -Value $json -Encoding UTF8
+    # No byte order mark: Set-Content -Encoding UTF8 writes one on Windows PowerShell 5.1
+    # and the package forbids them. See Save-NightlyState, which failed the validator on it.
+    [IO.File]::WriteAllText($Path, $json, (New-Object Text.UTF8Encoding $false))
     return $Path
 }
 
