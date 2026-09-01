@@ -2721,6 +2721,236 @@ Test-That 'a whole-sport request is refused while the registry names no owner' {
 Complete-Group
 
 # --------------------------------------------------------------------------------------
+# What a board may ask for
+#
+# Watch-SheetRequests.ps1 is dot-sourced with -DotSourceOnly, so nothing here reaches a
+# document, a database or a shell. That is the point of the split: the validation is where a
+# cell somebody typed could otherwise become a command, and a check that needs a login to
+# exercise is a check nobody exercises.
+# --------------------------------------------------------------------------------------
+
+. (Join-Path $PSScriptRoot 'Watch-SheetRequests.ps1') -DotSourceOnly
+
+Start-Group 'Runner' 'Sheet run requests'
+
+# A catalogue of its own rather than the real registry, so a case says what it is about and
+# does not move when a sport gains a check. One real-file case follows at the end.
+$requestCatalogue = @{
+    'Fixtureball-DQ-001' = [pscustomobject]@{ Sport = 'Fixtureball'; Status = 'Approved' }
+    'Fixtureball-DQ-002' = [pscustomobject]@{ Sport = 'Fixtureball'; Status = 'Approved' }
+    'Fixtureball-DQ-003' = [pscustomobject]@{ Sport = 'Fixtureball'; Status = 'Deprecated' }
+    'Fixtureborg-DQ-001' = [pscustomobject]@{ Sport = 'Fixtureborg'; Status = 'Approved' }
+}
+
+$requestRegistry = [pscustomobject]@{
+    requesters = [pscustomobject]@{
+        owner   = 'owner@example.com'
+        allowed = @('reviewer@example.com', 'second.reviewer@example.com')
+    }
+}
+
+$noOwnerRegistry = [pscustomobject]@{
+    requesters = [pscustomobject]@{
+        owner   = ''
+        allowed = @('reviewer@example.com')
+    }
+}
+
+function New-TestRequest {
+    param([string]$Id, [string]$CheckId, [string]$By = 'reviewer@example.com', [string]$Status = 'QUEUED', [int]$Row = 2)
+    return [pscustomobject]@{
+        RowNumber = $Row; RequestId = $Id; CheckId = $CheckId
+        RequestedBy = $By; RequestedAt = ''; Status = $Status; RunId = ''
+    }
+}
+
+function Test-Request {
+    param($Request, [string]$Sport = 'Fixtureball', $Ahead = @(), $Registry = $null)
+    if (-not $Registry) { $Registry = $requestRegistry }
+    return (Test-RequestAcceptable -Request $Request -Sport $Sport -Approved $requestCatalogue `
+            -Registry $Registry -OpenRequests $Ahead)
+}
+
+Test-That 'one approved check for this sport runs' {
+    $verdict = Test-Request (New-TestRequest 'REQ-1' 'Fixtureball-DQ-001')
+    Assert-True $verdict.Ok "should be accepted, got: $($verdict.Why)"
+    Assert-Equal 'Fixtureball-DQ-001' $verdict.CheckId 'the check that would run'
+    Assert-True (-not $verdict.RunAll) 'a single check must not set -RunAll'
+}
+
+Test-That 'a cell holding two CheckIDs is refused, and named as one check at a time' {
+    # The defect this exists for: a cell is free text, and two IDs separated by a comma is the
+    # cheapest way to turn one approved request into a batch nobody approved.
+    $verdict = Test-Request (New-TestRequest 'REQ-2' 'Fixtureball-DQ-001, Fixtureball-DQ-002')
+    Assert-True (-not $verdict.Ok) 'two IDs must be refused'
+    Assert-True ($verdict.Why -like '*one CheckID*') "the reason should say why, got: $($verdict.Why)"
+}
+
+Test-That 'a wildcard is refused' {
+    $verdict = Test-Request (New-TestRequest 'REQ-3' 'Fixtureball-DQ-*')
+    Assert-True (-not $verdict.Ok) 'a pattern must be refused'
+}
+
+Test-That 'a switch typed into the cell is refused' {
+    # -RunAll in the CheckID cell is the whole-sport run asked for without the owner-only rule.
+    foreach ($typed in @('Fixtureball-DQ-001 -RunAll', '-RunAll', 'Fixtureball-DQ-001 -NoSheet')) {
+        $verdict = Test-Request (New-TestRequest 'REQ-4' $typed)
+        Assert-True (-not $verdict.Ok) "'$typed' must be refused"
+    }
+}
+
+Test-That 'a file path is refused' {
+    foreach ($typed in @('..\\..\\payload.sql', 'C:\\temp\\anything.ps1', 'GLOBAL_DQ/PARTICIPANTS.sql')) {
+        $verdict = Test-Request (New-TestRequest 'REQ-5' $typed)
+        Assert-True (-not $verdict.Ok) "'$typed' must be refused"
+    }
+}
+
+Test-That 'raw SQL is refused' {
+    $verdict = Test-Request (New-TestRequest 'REQ-6' 'SELECT 1 FROM sport')
+    Assert-True (-not $verdict.Ok) 'a statement in the cell must be refused'
+}
+
+Test-That 'a check belonging to another sport is refused, and says whose it is' {
+    $verdict = Test-Request (New-TestRequest 'REQ-7' 'Fixtureborg-DQ-001')
+    Assert-True (-not $verdict.Ok) "another sport's check must be refused"
+    Assert-True ($verdict.Why -like '*Fixtureborg*') "the reason should name the sport, got: $($verdict.Why)"
+}
+
+Test-That 'a deprecated check is refused' {
+    $verdict = Test-Request (New-TestRequest 'REQ-8' 'Fixtureball-DQ-003')
+    Assert-True (-not $verdict.Ok) 'a deprecated check must be refused'
+    Assert-True ($verdict.Why -like '*Deprecated*') "the reason should say so, got: $($verdict.Why)"
+}
+
+Test-That 'an unknown CheckID is refused' {
+    $verdict = Test-Request (New-TestRequest 'REQ-9' 'Fixtureball-DQ-999')
+    Assert-True (-not $verdict.Ok) 'an ID the package does not know must be refused'
+}
+
+Test-That 'an account not on the list is refused, and told how to be added' {
+    $verdict = Test-Request (New-TestRequest 'REQ-10' 'Fixtureball-DQ-001' 'stranger@example.com')
+    Assert-True (-not $verdict.Ok) 'an unlisted account must be refused'
+    Assert-True ($verdict.Why -like '*requesters.allowed*') "the reason should say where the list is, got: $($verdict.Why)"
+}
+
+Test-That 'a request with no requester is refused' {
+    $verdict = Test-Request (New-TestRequest 'REQ-11' 'Fixtureball-DQ-001' '')
+    Assert-True (-not $verdict.Ok) 'a row with no requester was not asked for through the menu'
+}
+
+Test-That 'the account is matched whatever its case and spacing' {
+    # Sheets returns what somebody typed, and an address that differs by a capital letter is
+    # the same person. Refusing it would be a mistake nobody could diagnose from the sheet.
+    $verdict = Test-Request (New-TestRequest 'REQ-12' 'Fixtureball-DQ-001' '  Reviewer@Example.com ')
+    Assert-True $verdict.Ok "should be accepted, got: $($verdict.Why)"
+}
+
+Test-That 'the same check queued twice is refused the second time' {
+    $ahead = @(New-TestRequest 'REQ-13' 'Fixtureball-DQ-001' 'reviewer@example.com' 'QUEUED' 2)
+    $verdict = Test-Request (New-TestRequest 'REQ-14' 'Fixtureball-DQ-001' 'reviewer@example.com' 'QUEUED' 3) -Ahead $ahead
+    Assert-True (-not $verdict.Ok) 'the second must be refused'
+    Assert-True ($verdict.Why -like '*already queued*') "the reason should say so, got: $($verdict.Why)"
+}
+
+Test-That 'a request is judged against what is ahead of it and never against what came after' {
+    # The queue running backwards: judged against the whole open set, the oldest request loses
+    # to a whole-sport run somebody added underneath it a minute ago. Nothing is ahead of the
+    # first row, so it runs.
+    $verdict = Test-Request (New-TestRequest 'REQ-15' 'Fixtureball-DQ-001' 'reviewer@example.com' 'QUEUED' 2) -Ahead @()
+    Assert-True $verdict.Ok "the oldest request should run, got: $($verdict.Why)"
+}
+
+Test-That 'a check behind a whole-sport run is refused, because that run will cover it' {
+    $ahead = @(New-TestRequest 'REQ-16' '*SPORT*' 'owner@example.com' 'RUNNING' 2)
+    $verdict = Test-Request (New-TestRequest 'REQ-17' 'Fixtureball-DQ-001' 'reviewer@example.com' 'QUEUED' 3) -Ahead $ahead
+    Assert-True (-not $verdict.Ok) 'a check behind a whole-sport run must be refused'
+    Assert-True ($verdict.Why -like '*whole-sport*') "the reason should say so, got: $($verdict.Why)"
+}
+
+Test-That 'a whole-sport run asked for by the owner runs, and is the only thing that sets -RunAll' {
+    $verdict = Test-Request (New-TestRequest 'REQ-18' '*SPORT*' 'owner@example.com')
+    Assert-True $verdict.Ok "the owner should be allowed, got: $($verdict.Why)"
+    Assert-True $verdict.RunAll 'a whole-sport request sets -RunAll'
+    Assert-Equal '*SPORT*' $verdict.CheckId 'the reserved token travels as itself, never as a list'
+}
+
+Test-That 'a whole-sport run asked for by anybody else is refused' {
+    $verdict = Test-Request (New-TestRequest 'REQ-19' '*SPORT*' 'reviewer@example.com')
+    Assert-True (-not $verdict.Ok) 'a reviewer must not be able to run the whole sport'
+    Assert-True ($verdict.Why -like "*owner's*") "the reason should say whose it is, got: $($verdict.Why)"
+}
+
+Test-That 'a whole-sport run is refused outright while no owner is recorded' {
+    # Fails closed. It is the one request that runs every check against the production
+    # database, so an unrecorded owner must refuse it rather than fall back to the list.
+    $verdict = Test-Request (New-TestRequest 'REQ-20' '*SPORT*' 'owner@example.com') -Registry $noOwnerRegistry
+    Assert-True (-not $verdict.Ok) 'no owner means no whole-sport run'
+    Assert-True ($verdict.Why -like '*production database*') "the reason should say what is at stake, got: $($verdict.Why)"
+}
+
+Test-That 'a second whole-sport run is refused while one is already on the queue' {
+    $ahead = @(New-TestRequest 'REQ-21' '*SPORT*' 'owner@example.com' 'RUNNING' 2)
+    $verdict = Test-Request (New-TestRequest 'REQ-22' '*SPORT*' 'owner@example.com' 'QUEUED' 3) -Ahead $ahead
+    Assert-True (-not $verdict.Ok) 'one whole-sport run at a time'
+}
+
+Test-That 'the queue is read into rows, header skipped and blanks ignored' {
+    $values = @(
+        @('Request ID', 'CheckID', 'Requested by', 'Requested at', 'Status'),
+        @('REQ-A', 'Fixtureball-DQ-001', 'reviewer@example.com', '', 'queued'),
+        @(),
+        @('', '', '', '', ''),
+        @('REQ-B', 'Fixtureball-DQ-002', 'reviewer@example.com', '', 'DONE')
+    )
+    $rows = @(ConvertTo-RequestRows -Values $values)
+    Assert-Equal 2 $rows.Count 'only the rows carrying a Request ID'
+    Assert-Equal 2 $rows[0].RowNumber 'the first request is on sheet row 2'
+    Assert-Equal 5 $rows[1].RowNumber 'and the second on row 5, past the blanks'
+    Assert-Equal 'QUEUED' $rows[0].Status 'the status is read whatever case it was typed in'
+}
+
+Test-That 'what the run returned is read back out of what it printed' {
+    # Taken from the runner's own sentence rather than re-derived, so the sheet says exactly
+    # what the console said - which is the thing somebody will compare it against.
+    $output = @(
+        'Query: Fixtureball-DQ-001  SOME_CHECK',
+        'Rows: 21   Elapsed: 16,1s',
+        'New: 20 finding(s) of 27858 eligible, expected Zero',
+        'Written: D:\SQL''s Output\Fixtureball 01.09.2026 16-30-00'
+    ) -join "`n"
+
+    $outcome = Get-RunOutcome -Output $output
+    Assert-Equal '20' $outcome.Findings 'findings'
+    Assert-Equal '27858' $outcome.Eligible 'eligible'
+    Assert-Equal 'New' $outcome.Verdict 'the verdict word the runner chose'
+    Assert-Equal 'Fixtureball 01.09.2026 16-30-00' $outcome.RunId 'the run folder is the run id'
+}
+
+Test-That 'a run that printed no count leaves the cells empty rather than guessing' {
+    $outcome = Get-RunOutcome -Output 'Query: Fixtureball-DQ-001  SOME_CHECK'
+    Assert-Equal '' $outcome.Findings 'no findings figure'
+    Assert-Equal '' $outcome.Eligible 'no eligible figure'
+    Assert-Equal '' $outcome.Verdict 'no verdict'
+}
+
+Test-That 'every CheckID the real registry approves is one this validation would accept' {
+    # The shape rule and the package have to agree. A CheckID the registry approves but the
+    # pattern refuses would be a check nobody could ask for, and it would be found by a
+    # reviewer clicking rather than here.
+    $real = Get-ApprovedCheckIds
+    Assert-True ($real.Count -gt 100) "the registry should have been read, got $($real.Count) rows"
+
+    $bad = @()
+    foreach ($checkId in @($real.Keys)) {
+        if ($checkId -notmatch '^[A-Za-z][A-Za-z0-9.\-]*-DQ-\d{1,4}$') { $bad += $checkId }
+    }
+    Assert-Equal 0 $bad.Count ("CheckIDs the request pattern would refuse: " + ($bad -join ', '))
+}
+
+Complete-Group
+
+# --------------------------------------------------------------------------------------
 # The live per-sport document
 #
 # Sheets.ps1 sends nothing, so all of this runs without a login. That is the point of the

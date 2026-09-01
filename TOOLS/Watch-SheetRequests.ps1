@@ -209,12 +209,13 @@ function Test-RequestAcceptable {
         return (Refuse 'No requester recorded, so this was not asked for through the DQ menu.')
     }
     $isOwner = ($owner -ne '' -and $requestedBy -eq $owner)
-    if (-not $isOwner -and $allowed -notcontains $requestedBy) {
-        return (Refuse ("$requestedBy is not on the list of accounts that may ask for a run. " +
-                "Add it to requesters.allowed in TOOLS/sheet-registry.json."))
-    }
 
     # ----- the whole sport, which is the owner's alone ----------------------------------
+    #
+    # Decided before the allowed list rather than after it, because a whole-sport run is
+    # authorised by being the owner and never by being on that list. Read in the other order
+    # it was, and a request made while no owner is recorded was refused as 'not on the list' -
+    # true, useless, and pointing at the wrong file to fix.
     if ($checkId -eq $WholeSportToken) {
         if ([string]::IsNullOrWhiteSpace($owner)) {
             return (Refuse ('No owner is recorded in TOOLS/sheet-registry.json, so a whole-sport ' +
@@ -231,6 +232,12 @@ function Test-RequestAcceptable {
             }
         }
         return [pscustomobject]@{ Ok = $true; Why = ''; RunAll = $true; CheckId = $WholeSportToken }
+    }
+
+    # ----- who is asking, for an ordinary check ------------------------------------------
+    if (-not $isOwner -and $allowed -notcontains $requestedBy) {
+        return (Refuse ("$requestedBy is not on the list of accounts that may ask for a run. " +
+                "Add it to requesters.allowed in TOOLS/sheet-registry.json."))
     }
 
     # ----- one CheckID, and nothing that is not one -------------------------------------
