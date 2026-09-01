@@ -2970,6 +2970,70 @@ Test-That 'every CheckID the real registry approves is one this validation would
     Assert-Equal 0 $bad.Count ("CheckIDs the request pattern would refuse: " + ($bad -join ', '))
 }
 
+
+# ----- which documents a pass reads -------------------------------------------------------
+#
+# The Drive pre-filter is a saving laid over the polling loop, and the way it fails is silent:
+# it reports nothing changed, which is what a quiet minute looks like too. These cases are
+# about the three answers that are "read everything anyway", because those are what keep a
+# missed change costing a delay instead of a request nobody ever answers.
+
+$pollBoards = @(
+    [pscustomobject]@{ Name = 'Fixtureball'; SpreadsheetId = 'SHEET-A' },
+    [pscustomobject]@{ Name = 'Fixtureborg'; SpreadsheetId = 'SHEET-B' },
+    [pscustomobject]@{ Name = 'Fixtureball-B'; SpreadsheetId = 'SHEET-C' }
+)
+
+Test-That 'only the documents Drive named are read' {
+    $picked = Select-BoardsToPoll -Boards $pollBoards -ChangedIds @{ 'SHEET-B' = 'x' } `
+        -PassNumber 3 -FullSweepPasses 10
+    Assert-Equal 1 @($picked.Boards).Count 'one board changed, so one board is read'
+    Assert-Equal 'Fixtureborg' $picked.Boards[0].Name 'and it is the one Drive named'
+    Assert-True (-not $picked.Swept) 'a filtered pass is not a sweep'
+}
+
+Test-That 'nothing changed reads nothing, which is the whole point' {
+    $picked = Select-BoardsToPoll -Boards $pollBoards -ChangedIds @{} -PassNumber 3 -FullSweepPasses 10
+    Assert-Equal 0 @($picked.Boards).Count 'an idle pass costs the one Drive query and no reads'
+}
+
+Test-That 'the first pass reads everything, having nothing to compare against' {
+    $picked = Select-BoardsToPoll -Boards $pollBoards -ChangedIds @{} -PassNumber 1 -FullSweepPasses 10
+    Assert-Equal 3 @($picked.Boards).Count 'every board on the first pass'
+    Assert-True $picked.Swept 'and it counts as a sweep'
+}
+
+Test-That 'every tenth pass reads everything whatever Drive said' {
+    # The one that bounds a missed change to fifteen minutes instead of for ever.
+    $picked = Select-BoardsToPoll -Boards $pollBoards -ChangedIds @{} -PassNumber 10 -FullSweepPasses 10
+    Assert-Equal 3 @($picked.Boards).Count 'the sweep ignores the pre-filter entirely'
+    Assert-Equal 'full sweep' $picked.Why 'and says so'
+    Assert-True $picked.Swept 'a sweep is a sweep'
+}
+
+Test-That 'Drive failing to answer reads everything, because null is not empty' {
+    # The defect this exists for: $null and @{} are both falsy-looking, and reading "I do not
+    # know" as "nothing changed" leaves every request at QUEUED with nothing in any log.
+    $picked = Select-BoardsToPoll -Boards $pollBoards -ChangedIds $null -PassNumber 3 -FullSweepPasses 10
+    Assert-Equal 3 @($picked.Boards).Count 'not knowing means reading them all'
+    Assert-Equal 'Drive could not say' $picked.Why 'and the reason is named'
+}
+
+Test-That 'FullSweepPasses 1 turns the pre-filter off entirely' {
+    $picked = Select-BoardsToPoll -Boards $pollBoards -ChangedIds @{ 'SHEET-B' = 'x' } `
+        -PassNumber 7 -FullSweepPasses 1
+    Assert-Equal 3 @($picked.Boards).Count 'every board every pass, as before the pre-filter'
+}
+
+Test-That 'a document Drive named that is not being watched is ignored' {
+    # Drive answers for the whole account. Somebody editing an unrelated spreadsheet must not
+    # put a board into the pass, and must not keep one out of it either.
+    $picked = Select-BoardsToPoll -Boards $pollBoards `
+        -ChangedIds @{ 'SOMEONE-ELSES-SHEET' = 'x'; 'SHEET-C' = 'x' } -PassNumber 3 -FullSweepPasses 10
+    Assert-Equal 1 @($picked.Boards).Count 'only the watched one'
+    Assert-Equal 'Fixtureball-B' $picked.Boards[0].Name 'and it is the right one'
+}
+
 Complete-Group
 
 # --------------------------------------------------------------------------------------

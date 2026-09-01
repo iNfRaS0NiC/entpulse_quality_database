@@ -26,7 +26,30 @@
     .ps1 without a BOM as ANSI, so a literal em dash would arrive mojibaked and fail to parse.
 
 .PARAMETER IntervalSeconds
-    How long to wait between passes when there was nothing to do. Default 30.
+    How long to wait between passes when there was nothing to do. Default 90.
+
+    A pass costs one Sheets read per registered document, so the interval is what decides the
+    idle cost of the whole system: at 30 seconds and sixteen boards it is 32 reads a minute
+    against a documented per-user limit of 60, before a single request has been answered. 90
+    seconds thirds that and costs a reviewer at most a minute and a half of waiting, which is
+    the trade the owner chose on 2026-09-01 - the work is not that urgent.
+
+    Since the same day that per-document cost is paid only by the documents that changed. One
+    Drive query a pass names them, so an idle pass is one request whatever the number of
+    boards, and the interval is no longer what a hundredth board would break. See
+    -FullSweepPasses, which is what keeps that an optimisation rather than a risk.
+
+.PARAMETER FullSweepPasses
+    How often to read every registered document regardless of what Drive said. Default 10,
+    which at the default interval is a full sweep every fifteen minutes. 1 disables the Drive
+    pre-filter entirely and reads every board every pass, which is what this did before
+    2026-09-01.
+
+    The Drive pre-filter is a saving and never the correctness boundary. It depends on Drive's
+    clock agreeing with this machine's and on a change having propagated by the time it is
+    asked about, and if either fails it reports nothing changed - which is indistinguishable
+    from nothing having changed. The sweep is what turns "a request is lost" into "a request
+    waits at most fifteen minutes", and that is the whole reason it exists.
 
 .PARAMETER Once
     One pass and stop, rather than running until it is stopped.
@@ -52,7 +75,9 @@
 #>
 [CmdletBinding()]
 param(
-    [int]$IntervalSeconds = 30,
+    [int]$IntervalSeconds = 90,
+    [ValidateRange(1, 1000)]
+    [int]$FullSweepPasses = 10,
     [switch]$Once,
     [string]$Sport,
     [int]$MaxRequests = 0,
@@ -282,6 +307,44 @@ function Test-RequestAcceptable {
 # --------------------------------------------------------------------------------------
 # Talking to the document
 # --------------------------------------------------------------------------------------
+
+function Select-BoardsToPoll {
+    <#
+        Which documents this pass reads, out of the ones being watched.
+
+        Pure, and separate from the query that feeds it, because this is where the saving could
+        turn into a lost request and that decision has to be testable without a login. Four
+        answers, and three of them are "all of them":
+
+          - the first pass has no baseline to compare against;
+          - every FullSweepPasses-th pass, whatever Drive said, because the pre-filter can be
+            wrong in the one direction that is silent - reporting no change when there was one -
+            and a sweep bounds that to one interval times FullSweepPasses instead of for ever;
+          - a pass where Drive could not answer. $null is "I do not know" and never "nothing
+            changed"; reading them all is the honest reading of not knowing;
+          - otherwise, only the documents Drive named.
+    #>
+    param(
+        $Boards,
+        # id -> modifiedTime, or $null when Drive could not answer.
+        $ChangedIds,
+        [int]$PassNumber,
+        [int]$FullSweepPasses
+    )
+
+    if ($PassNumber -le 1) {
+        return [pscustomobject]@{ Boards = @($Boards); Why = 'first pass'; Swept = $true }
+    }
+    if ($FullSweepPasses -le 1 -or ($PassNumber % $FullSweepPasses) -eq 0) {
+        return [pscustomobject]@{ Boards = @($Boards); Why = 'full sweep'; Swept = $true }
+    }
+    if ($null -eq $ChangedIds) {
+        return [pscustomobject]@{ Boards = @($Boards); Why = 'Drive could not say'; Swept = $true }
+    }
+
+    $picked = @($Boards | Where-Object { $ChangedIds.ContainsKey([string]$_.SpreadsheetId) })
+    return [pscustomobject]@{ Boards = $picked; Why = 'changed on Drive'; Swept = $false }
+}
 
 function Read-RequestQueue {
     param([string]$SpreadsheetId)
@@ -547,8 +610,25 @@ $handled = 0
 $approved = Get-ApprovedCheckIds
 $approvedStamp = (Get-Item -LiteralPath (Join-Path $RepoRoot 'POWERBI_REGISTRY.md')).LastWriteTimeUtc
 
+# ----- the Drive pre-filter ----------------------------------------------------------------
+#
+# How far back each change query looks, past the moment the previous one was asked. This machine
+# writes the window from its own clock and Google writes modifiedTime from its; a machine a
+# minute fast would otherwise ask about a moment that has not happened yet and be told, quite
+# correctly, that nothing has changed. Two minutes covers ordinary drift and costs one extra
+# read of a board that did change, because a board only reappears in the window if it moved.
+# Drift larger than this is caught by the full sweep and reported, not absorbed.
+$DriveOverlapSeconds = 120
+
+$pass = 0
+$driveSince = (Get-Date).ToUniversalTime().AddSeconds(-$DriveOverlapSeconds)
+$driveOff = $false            # said once, not every ninety seconds
+$driveProved = $false         # the first answer is worth one line: it proves the scope is there
+$flaggedSinceSweep = @{}      # what Drive named since the last full sweep, for the check below
+
 while ($true) {
     $didSomething = $false
+    $pass++
 
     try {
         $stamp = (Get-Item -LiteralPath (Join-Path $RepoRoot 'POWERBI_REGISTRY.md')).LastWriteTimeUtc
@@ -560,7 +640,45 @@ while ($true) {
     }
     catch { }
 
-    foreach ($board in $sports) {
+    # One request that decides what the rest of the pass costs. Skipped when the pre-filter is
+    # off, and on a pass that is going to sweep anyway - asking Drive to name what we are about
+    # to read regardless is a request spent on nothing.
+    $changed = $null
+    $sweepDue = ($FullSweepPasses -le 1 -or $pass -le 1 -or ($pass % $FullSweepPasses) -eq 0)
+    if (-not $sweepDue) {
+        $asked = (Get-Date).ToUniversalTime()
+        try {
+            $changed = Get-DriveSpreadsheetsModifiedSince -Since $driveSince
+            $driveSince = $asked.AddSeconds(-$DriveOverlapSeconds)
+            foreach ($id in $changed.Keys) { $flaggedSinceSweep[$id] = $true }
+            if (-not $driveProved) {
+                # A missing scope is otherwise invisible: the worker keeps working, only slower,
+                # and nothing says the saving never started. One line at startup says it did.
+                Write-Host ('  Drive change queries are live; an idle pass is one request rather than {0}' -f `
+                        $sports.Count) -ForegroundColor DarkGray
+                $driveProved = $true
+            }
+            if ($driveOff) {
+                Write-Host '  Drive is answering change queries again; back to reading only what moved' -ForegroundColor DarkGray
+                $driveOff = $false
+            }
+        }
+        catch {
+            # A pass loses its saving and nothing else. Said once, because a worker that has
+            # been up since Monday must not write the same line nine hundred times.
+            $changed = $null
+            if (-not $driveOff) {
+                Write-Host ("  Drive could not say what changed, so every board is being read this " +
+                    "pass and the next ones: {0}" -f $_.Exception.Message) -ForegroundColor Yellow
+                $driveOff = $true
+            }
+        }
+    }
+
+    $selection = Select-BoardsToPoll -Boards $sports -ChangedIds $changed `
+        -PassNumber $pass -FullSweepPasses $FullSweepPasses
+
+    foreach ($board in $selection.Boards) {
         $rows = @()
         try { $rows = Read-RequestQueue -SpreadsheetId $board.SpreadsheetId }
         catch {
@@ -569,6 +687,19 @@ while ($true) {
         }
 
         $open = @($rows | Where-Object { $OpenStatuses -contains $_.Status })
+
+        # What the pre-filter would have cost. On a sweep, a board holding open work that no
+        # change query has named since the last sweep is the pre-filter having been wrong in the
+        # one direction that is silent. Once is the race between the last query and this sweep;
+        # repeatedly is a clock or a scope, and it is the difference between a saving and a
+        # request nobody answers.
+        if ($selection.Swept -and $pass -gt 1 -and $FullSweepPasses -gt 1 -and -not $driveOff `
+                -and $open.Count -gt 0 -and -not $flaggedSinceSweep.ContainsKey($board.SpreadsheetId)) {
+            Write-Host ("  the sweep found open work on {0} that no Drive change query had named. " +
+                "Once is the race between the two; repeatedly means the pre-filter is not seeing " +
+                "changes, and -FullSweepPasses 1 turns it off." -f $board.Name) -ForegroundColor Yellow
+        }
+
         $next = @($open | Where-Object { $_.Status -eq 'QUEUED' -or $_.Status -eq 'WAITING' })[0]
         if (-not $next) { continue }
 
@@ -686,6 +817,9 @@ while ($true) {
         $handled++
         $didSomething = $true
     }
+
+    # The window closes with the sweep that checked it, not with the pass that filled it.
+    if ($selection.Swept) { $flaggedSinceSweep = @{} }
 
     if ($Once) { break }
     if ($MaxRequests -gt 0 -and $handled -ge $MaxRequests) {

@@ -2268,9 +2268,17 @@ $env:EP_SHEETS_CLIENT_SECRET = 'GOCSPX-....'
 ```
 
 They come from **APIs and Services -> Credentials -> Create credentials -> OAuth client ID**,
-with application type **Desktop app**, in a project that has the **Google Sheets API**
-enabled. A Desktop client accepts any loopback port without registering it, so nothing in the
-console has to match anything here.
+with application type **Desktop app**, in a project that has the **Google Sheets API**, the
+**Gmail API** and the **Google Drive API** enabled. A Desktop client accepts any loopback port
+without registering it, so nothing in the console has to match anything here.
+
+Three APIs because `$SheetsScope` asks for three scopes in one consent: the board, the one
+notification the package sends, and the change query the run-request worker uses to avoid
+reading every board every pass. Enabling an API and consenting to its scope are separate steps
+and each fails on its own: a scope consented against a disabled API returns `SERVICE_DISABLED`,
+and an enabled API without the scope returns `Request had insufficient authentication scopes`.
+Only Sheets is needed to run a check and write a board; the other two each disable one feature
+and nothing else.
 
 **Set the OAuth consent screen to `Internal`, not `External`.** An External app sits in
 `Testing` status, and Google expires its refresh tokens after seven days — so the runner would
@@ -2508,6 +2516,59 @@ request waiting, runs it, and writes back what it returned.
 .\TOOLS\Watch-SheetRequests.ps1 -Once -WhatIf   # read the queue, decide, run nothing
 .\TOOLS\Watch-SheetRequests.ps1                 # until it is stopped
 ```
+
+It polls **every 90 seconds**, and a pass costs one Sheets read per document it actually reads.
+At 30 seconds and sixteen boards that was 32 reads a minute against a documented per-user limit
+of 60, before a single request had been answered; 90 seconds thirds it and costs a reviewer at
+most a minute and a half.
+
+That cost still grew with the number of boards, and a hundred of them at 90 seconds is 67 reads
+a minute and over the limit. So a pass no longer reads every document. It asks Drive one
+question first - which spreadsheets in this account have changed since the last time it asked -
+and reads only the boards named in the answer. An idle pass is **one request whatever the number
+of boards**, and the ceiling stops being a board count.
+
+Drive is asked and not Sheets because Drive can answer for the whole account at once. Its query
+language has no `id` field, so the question cannot name the sixteen documents; it asks for every
+spreadsheet modified since a moment and `Watch-SheetRequests.ps1` intersects that with the
+registry. Over a 90-second window that is a handful of files or none. Somebody editing an
+unrelated spreadsheet costs nothing, because a document that is not in the registry is dropped.
+
+**The pre-filter is a saving and never the boundary.** It can be wrong in one direction only,
+and that direction is silent: reporting nothing changed looks exactly like nothing having
+changed. Two things keep that from turning into a request nobody answers:
+
+- **the full sweep.** Every tenth pass reads every board regardless, so a change the filter
+  missed waits fifteen minutes rather than for ever. `-FullSweepPasses` sets it; `1` turns the
+  pre-filter off and restores the old behaviour exactly.
+- **not knowing is not nothing.** A Drive query that fails - no scope, no network, or more
+  changed files than one page holds - makes the pass read every board and say so once. The
+  worker degrades to what it did before, and never to silence.
+
+A sweep that finds open work on a board no change query had named prints a line saying so. Once
+is the race between the last query and the sweep. Repeatedly is a real signal - a clock that
+disagrees with Google's by more than the two-minute overlap, or a scope that went away - and the
+answer is `-FullSweepPasses 1` until it is understood.
+
+Adding a board costs one more read only on the passes where that board changed, and a full sweep
+every ten. It never costs another worker.
+
+### The scope this needs
+
+`drive.metadata.readonly`, added to `$SheetsScope` in `TOOLS/Sheets.ps1` on 2026-09-01. It reads
+when a file changed and **cannot open one**: no board content is reachable with it.
+
+It rides the same authorisation as `spreadsheets` and `gmail.send`, so there is no second
+client, secret or token. But a refresh grant carries the scopes it was consented with, so a
+token minted before that line does not have this one, and Google refuses with a 403 that says
+`Request had insufficient authentication scopes` without naming which. One re-consent fixes it:
+
+```powershell
+.\TOOLS\Connect-Sheets.ps1 -Force
+```
+
+Until that is done the worker still works. It logs the refusal once and reads every board every
+pass, which is exactly what it did before this existed.
 
 It enforces what the menu merely shapes, because a person with edit access could type into the
 tab directly. A CheckID must match one approved ID exactly - no pattern, no list, no wildcard,

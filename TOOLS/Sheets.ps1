@@ -18,15 +18,24 @@
 #>
 
 $SheetsApiRoot = 'https://sheets.googleapis.com/v4/spreadsheets'
+# Drive answers one question this package asks - which files have changed - and shares the
+# Sheets authorisation to do it. A second root and not a second client.
+$DriveApiRoot = 'https://www.googleapis.com/drive/v3'
 $SheetsTokenUrl = 'https://oauth2.googleapis.com/token'
-# The board, and the one message the package sends about it.
+# The board, the one message the package sends about it, and one question asked of Drive.
 #
-# Both scopes ride one authorisation. A refresh grant does not carry a scope - the access
+# All three scopes ride one authorisation. A refresh grant does not carry a scope - the access
 # token inherits whatever the refresh token was granted - so Get-SheetsAccessToken needs no
 # change and there is no second client, secret or token to renew. What it costs is a
 # re-consent: a refresh token minted before gmail.send was added here does not have it, and
 # Google refuses the send with a 403 whose message does not say so. See TOOLS/Notify.ps1.
-$SheetsScope = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send'
+#
+# drive.metadata.readonly is metadata and never content: it can list a file and read when it
+# was last modified, and it cannot open one. It is here for Get-DriveSpreadsheetsModifiedSince,
+# which is what stops the run-request worker's idle cost growing with the number of boards.
+# Without it the worker still works and simply reads every board every pass, so a token minted
+# before this line is a slower worker and not a broken one.
+$SheetsScope = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive.metadata.readonly'
 
 # The title Google gives a spreadsheet nobody has named. The runner names the document while
 # it still reads exactly this, and never over a title somebody chose: a colleague who renames
@@ -3625,10 +3634,14 @@ function Invoke-SheetsApi {
     param(
         [string]$Method,
         [string]$Path,
-        $Body
+        $Body,
+        # Which API. Defaults to Sheets; $DriveApiRoot is the only other one, and it rides the
+        # same access token because $SheetsScope asks for both in one consent.
+        [string]$Root
     )
 
-    $uri = "$SheetsApiRoot/$Path"
+    $base = $(if ($Root) { $Root } else { $SheetsApiRoot })
+    $uri = "$base/$Path"
     Set-SheetsAddressFamily -Uri $uri
     $headers = @{ Authorization = 'Bearer ' + (Get-SheetsAccessToken) }
 
@@ -3675,7 +3688,10 @@ function Invoke-SheetsApi {
         # able to call itself the first.
         try { $script:SheetsHostsSeen[([Uri]$uri).Host] = $true } catch { }
 
-        throw "Sheets API $Method $Path failed: $detail$context"
+        # Named for the API that actually refused it. A Drive failure reported as a Sheets
+        # failure sends the reader to the wrong scope and the wrong quota.
+        $api = $(if ($Root -eq $DriveApiRoot) { 'Drive' } else { 'Sheets' })
+        throw "$api API $Method $Path failed: $detail$context"
     }
 }
 
@@ -3772,11 +3788,11 @@ function Invoke-SheetsApiWithRetry {
         re-address them itself before calling again. Only callers writing a whole block by
         position use this.
     #>
-    param([string]$Method, [string]$Path, $Body, [string]$What = '')
+    param([string]$Method, [string]$Path, $Body, [string]$What = '', [string]$Root)
 
     $last = ''
     for ($attempt = 1; $attempt -le $SheetsRetryAttempts; $attempt++) {
-        try { return (Invoke-SheetsApi -Method $Method -Path $Path -Body $Body) }
+        try { return (Invoke-SheetsApi -Method $Method -Path $Path -Body $Body -Root $Root) }
         catch {
             $last = [string]$_.Exception.Message
             if (-not (Test-SheetsTransportFailure -Message $last)) { throw }
@@ -3790,6 +3806,70 @@ function Invoke-SheetsApiWithRetry {
         }
     }
     throw $last
+}
+
+function Get-DriveSpreadsheetsModifiedSince {
+    <#
+        Which spreadsheets in this account have changed since a moment, in one request.
+
+        The run-request worker polls a queue tab per board. That is one Sheets read per
+        document per pass and it is the whole idle cost of the system, which means the cost
+        grows with the number of boards: sixteen at ninety seconds is 11 reads a minute against
+        a documented per-user limit of 60, and a hundred boards is 67 and over it. This is the
+        way out of that. Drive answers "which files moved" for the whole account in a single
+        call, so the idle cost stops depending on how many boards there are and the worker
+        reads only the documents somebody actually touched.
+
+        Drive's query language has no queryable `id` field, so a list of ids cannot be asked
+        about directly. This asks for every spreadsheet modified since the moment given and
+        leaves the caller to intersect the answer with its own registry. Over a ninety-second
+        window that is a handful of files or none.
+
+        It throws rather than returning something empty when it cannot answer - no scope, no
+        network, or more changed files than one page holds. All three mean the same thing to a
+        caller, and it is never "nothing changed": a caller that read those as an empty set
+        would skip every board and leave a request at QUEUED for ever. The contract is that a
+        failure here costs a pass its saving and nothing else.
+
+        The scope is drive.metadata.readonly, which reads when a file changed and cannot open
+        it. A refresh token minted before that scope was added to $SheetsScope fails here with
+        a 403 that does not mention scopes; TOOLS/Connect-Sheets.ps1 -Force re-consents.
+    #>
+    param(
+        [Parameter(Mandatory = $true)]
+        [datetime]$Since,
+        [int]$PageSize = 1000
+    )
+
+    # Google's clock, not this machine's, decides modifiedTime. The caller widens the window to
+    # absorb the difference; this only formats what it was given.
+    $stamp = $Since.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ss.fffZ')
+
+    $q = "mimeType = 'application/vnd.google-apps.spreadsheet' and trashed = false " +
+    "and modifiedTime > '$stamp'"
+
+    $path = 'files?' + ((@(
+                'q=' + [uri]::EscapeDataString($q)
+                'fields=' + [uri]::EscapeDataString('nextPageToken,files(id,modifiedTime)')
+                'pageSize=' + [int]$PageSize
+            )) -join '&')
+
+    $answer = Invoke-SheetsApiWithRetry -Method GET -Path $path -Root $DriveApiRoot `
+        -What 'the Drive change query'
+
+    if ($answer.nextPageToken) {
+        # One page or no answer. A truncated list looks exactly like a complete one and would
+        # silently drop whichever boards fell off the end.
+        throw ("Drive returned more than $PageSize changed spreadsheets for this window, so the " +
+            'answer is incomplete and cannot be used to decide which documents to skip.')
+    }
+
+    $changed = @{}
+    foreach ($file in @($answer.files)) {
+        if ($null -eq $file) { continue }
+        $changed[[string]$file.id] = [string]$file.modifiedTime
+    }
+    return $changed
 }
 
 function Read-SheetReviewNotes {
