@@ -28045,6 +28045,267 @@
                                                           "checkBy":  ""
                                                       }
                                 }
+                 },
+                 {
+                     "runId":  "01.09.2026 17-18-36",
+                     "startedUtc":  "2026-09-01T15:18:36Z",
+                     "output":  "",
+                     "commit":  "cf789d9adc5e+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-030",
+                                        "runKey":  "Soccer-DQ-030",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_PROFILE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  702,
+                                        "seconds":  1.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "6bfaf54fb348"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  18.3,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  2,
+                                   "phases":  {
+                                                  "reading the document":  5,
+                                                  "planning the changes":  2.2,
+                                                  "adding and sizing tabs":  0,
+                                                  "putting the board tabs in front":  0.5,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  1.3,
+                                                  "writing values":  6.6,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Soccer-DQ-030":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      }
+                                }
+                 },
+                 {
+                     "runId":  "01.09.2026 17-20-49",
+                     "startedUtc":  "2026-09-01T15:20:49Z",
+                     "output":  "",
+                     "commit":  "cf789d9adc5e+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-030",
+                                        "runKey":  "Soccer-DQ-030",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_PROFILE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  702,
+                                        "seconds":  1.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "6bfaf54fb348"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  18.1,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  5.3,
+                                                  "planning the changes":  2.2,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.7,
+                                                  "clearing stale rows":  1.2,
+                                                  "writing values":  6.9,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Soccer-DQ-030":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      }
+                                }
+                 },
+                 {
+                     "runId":  "01.09.2026 17-21-13",
+                     "startedUtc":  "2026-09-01T15:21:13Z",
+                     "output":  "",
+                     "commit":  "cf789d9adc5e+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-030",
+                                        "runKey":  "Soccer-DQ-030",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_PROFILE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  702,
+                                        "seconds":  1.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "6bfaf54fb348"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  16.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  4.8,
+                                                  "planning the changes":  2.2,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.7,
+                                                  "clearing stale rows":  1.4,
+                                                  "writing values":  6.2,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Soccer-DQ-030":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      }
+                                }
+                 },
+                 {
+                     "runId":  "01.09.2026 17-22-30",
+                     "startedUtc":  "2026-09-01T15:22:30Z",
+                     "output":  "",
+                     "commit":  "cf789d9adc5e+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-030",
+                                        "runKey":  "Soccer-DQ-030",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_PROFILE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  702,
+                                        "seconds":  1.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "6bfaf54fb348"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  16.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  4.5,
+                                                  "planning the changes":  2.2,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  1.3,
+                                                  "writing values":  6.1,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.7
+                                              }
+                               },
+                     "review":  {
+                                    "Soccer-DQ-030":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      }
+                                }
+                 },
+                 {
+                     "runId":  "01.09.2026 17-23-44",
+                     "startedUtc":  "2026-09-01T15:23:44Z",
+                     "output":  "",
+                     "commit":  "cf789d9adc5e+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-030",
+                                        "runKey":  "Soccer-DQ-030",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_PROFILE_FIELDS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  702,
+                                        "seconds":  1.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "6bfaf54fb348"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  16.8,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  4.6,
+                                                  "planning the changes":  2.1,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.7,
+                                                  "clearing stale rows":  1.2,
+                                                  "writing values":  6.1,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.6,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Soccer-DQ-030":  {
+                                                          "status":  "Clean",
+                                                          "checkBy":  ""
+                                                      }
+                                }
                  }
              ],
     "sheetId":  "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE"

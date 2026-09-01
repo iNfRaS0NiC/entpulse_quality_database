@@ -388,9 +388,16 @@ function Get-RunOutcome {
         $eligible = $match.Groups['eligible'].Value
     }
 
+    # A single run names itself on a `Run <Sport> dd.MM.yyyy HH-mm-ss` line, which is what the
+    # ledger entry is keyed by; a batch is identified by the folder it wrote. Both are read,
+    # the explicit name first, so a reader can find the entry either way.
     $runId = ''
-    $folder = [regex]::Match($Output, '(?m)Written:\s+(?<path>.+)$')
-    if ($folder.Success) { $runId = Split-Path -Leaf ($folder.Groups['path'].Value.Trim()) }
+    $named = [regex]::Match($Output, '(?m)^Run (?<name>.+?)\s*$')
+    if ($named.Success) { $runId = $named.Groups['name'].Value.Trim() }
+    else {
+        $folder = [regex]::Match($Output, '(?m)Written:\s+(?<path>.+)$')
+        if ($folder.Success) { $runId = Split-Path -Leaf ($folder.Groups['path'].Value.Trim()) }
+    }
 
     return [pscustomobject]@{ Findings = $findings; Eligible = $eligible; Verdict = $verdict; RunId = $runId }
 }
@@ -583,11 +590,29 @@ while ($true) {
                     Error      = $verdict.Why
                 }
             }
+            # A refusal is a request handled. Counting only the runs made -MaxRequests unable
+            # to stop on a queue of refusals, which is exactly the queue an acceptance session
+            # stages.
+            $handled++
             $didSomething = $true
             continue
         }
 
         $label = if ($verdict.RunAll) { "the whole $($board.Name) board" } else { $verdict.CheckId }
+
+        # Everyone else waiting for the same check. Two people clicking the same row within a
+        # minute is the ordinary case, not the awkward one, and it must cost one run: the second
+        # request is not refused - it is answered with the same figures, because the check did
+        # run and it ran for both of them. Collected before the run, because the queue moves.
+        $companions = @($open | Where-Object {
+                $_.RequestId -ne $next.RequestId -and $_.CheckId -eq $next.CheckId -and
+                ($_.Status -eq 'QUEUED' -or $_.Status -eq 'WAITING')
+            })
+        if ($companions.Count -gt 0) {
+            Write-Host ("    {0} other request(s) asked for the same check and will share this run" -f `
+                    $companions.Count) -ForegroundColor DarkGray
+        }
+
         Write-Host ("  {0} {1}: running {2}" -f $board.Name, $next.RequestId, $label) -ForegroundColor Green
 
         if ($WhatIf) {
@@ -638,7 +663,7 @@ while ($true) {
         else {
             Write-Host ("    done: {0} finding(s) of {1} eligible, {2}" -f `
                     $outcome.Findings, $outcome.Eligible, $outcome.Verdict) -ForegroundColor DarkGray
-            Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $next.RequestId -Values @{
+            $done = @{
                 Status     = 'DONE'
                 FinishedAt = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss')
                 RunId      = $outcome.RunId
@@ -646,6 +671,15 @@ while ($true) {
                 Eligible   = $outcome.Eligible
                 Verdict    = $outcome.Verdict
                 Error      = ''
+            }
+            Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $next.RequestId -Values $done
+
+            foreach ($companion in $companions) {
+                $shared = @{}
+                foreach ($key in $done.Keys) { $shared[$key] = $done[$key] }
+                $shared['Error'] = ('Answered by ' + $next.RequestId + ', which ran the same check.')
+                Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $companion.RequestId -Values $shared
+                $handled++
             }
         }
 

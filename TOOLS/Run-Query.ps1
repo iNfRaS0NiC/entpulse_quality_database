@@ -6638,6 +6638,13 @@ if ($singleRow.Verdict) {
             $against) -ForegroundColor $verdictColour
 }
 if ($singleLedger.Count -gt 0) {
+    # Named as well as recorded. A batch is identifiable by the folder it wrote and a single
+    # run wrote none, so until 2026-09-01 there was nothing to point a reader at: the Sheets
+    # worker had an empty Run ID cell for every request it completed. The name is the run's own
+    # start time in the form a batch folder uses, which is what the ledger entry is keyed by.
+    $runName = '{0} {1}' -f $(if ($script:RunSportName) { $script:RunSportName } else { 'Run' }),
+        $script:RunStartedUtc.ToLocalTime().ToString('dd.MM.yyyy HH-mm-ss')
+    Write-Host ("Run {0}" -f $runName) -ForegroundColor DarkGray
     Write-Host ("Recorded in {0}" -f ($singleLedger -join ', ')) -ForegroundColor DarkGray
 }
 

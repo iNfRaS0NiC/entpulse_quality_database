@@ -2927,6 +2927,28 @@ Test-That 'what the run returned is read back out of what it printed' {
     Assert-Equal 'Fixtureball 01.09.2026 16-30-00' $outcome.RunId 'the run folder is the run id'
 }
 
+Test-That 'a single run is identified by the name it prints for itself' {
+    # A batch is identifiable by the folder it wrote; a single run wrote none, so until
+    # 2026-09-01 the Run ID cell was empty on every request the worker completed. The runner
+    # now names the run in the form the ledger entry is keyed by, and this reads it back.
+    $output = @(
+        'Query: Soccer-DQ-030  PARTICIPANT_MISSING_PROFILE_FIELDS',
+        'Clean: 0 finding(s) of 702 eligible, expected Zero',
+        'Run Soccer 01.09.2026 17-22-30',
+        'Recorded in RUNS/Soccer.json'
+    ) -join "`n"
+
+    $outcome = Get-RunOutcome -Output $output
+    Assert-Equal 'Soccer 01.09.2026 17-22-30' $outcome.RunId 'the run names itself'
+    Assert-Equal '0' $outcome.Findings 'findings'
+    Assert-Equal 'Clean' $outcome.Verdict 'the verdict'
+}
+
+Test-That 'a batch is still identified by the folder it wrote' {
+    $output = 'Written: D:\SQL''s Output\Soccer 01.09.2026 09-00-00'
+    Assert-Equal 'Soccer 01.09.2026 09-00-00' (Get-RunOutcome -Output $output).RunId 'the folder is the run id'
+}
+
 Test-That 'a run that printed no count leaves the cells empty rather than guessing' {
     $outcome = Get-RunOutcome -Output 'Query: Fixtureball-DQ-001  SOME_CHECK'
     Assert-Equal '' $outcome.Findings 'no findings figure'
