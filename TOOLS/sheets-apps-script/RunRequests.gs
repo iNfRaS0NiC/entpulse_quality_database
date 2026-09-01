@@ -113,6 +113,19 @@ function looksLikeOneCheckId_(value) {
   return /^[A-Za-z][A-Za-z0-9.\-]*-DQ-\d{1,4}$/.test(value);
 }
 
+/**
+ * The moment, written the way the worker writes its own timestamps.
+ *
+ * A string and not a Date. appendRow replaces the cell's number format with a bare DATE_TIME
+ * whose pattern is empty, so a Date arrives rendered in the spreadsheet's default order while
+ * Started at and Finished at - written as text by the worker - read dd.MM.yyyy beside it.
+ * Measured on the Soccer board 2026-09-01: 9/1/2026 next to 01.09.2026 in the same row, which
+ * is exactly the pair that gets read as the ninth of January.
+ */
+function stamp_() {
+  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy HH:mm:ss');
+}
+
 function newRequestId_() {
   return 'REQ-' + Utilities.formatDate(new Date(), 'UTC', 'yyyyMMdd-HHmmss') + '-' +
     Utilities.getUuid().substring(0, 4).toUpperCase();
@@ -144,7 +157,7 @@ function append_(checkId, user) {
 
   var requestId = newRequestId_();
   sheet.appendRow([
-    requestId, checkId, user, new Date(), 'QUEUED', '', '', '', '', '', '', ''
+    requestId, checkId, user, stamp_(), 'QUEUED', '', '', '', '', '', '', ''
   ]);
 
   var ahead = 0;
@@ -248,6 +261,6 @@ function cancelSelectedRequest() {
   }
 
   sheet.getRange(row, 5).setValue('CANCELLED');
-  sheet.getRange(row, 7).setValue(new Date());
+  sheet.getRange(row, 7).setValue(stamp_());
   sheet.getRange(row, 12).setValue('Cancelled by ' + user);
 }
