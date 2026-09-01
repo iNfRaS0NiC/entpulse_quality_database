@@ -2547,6 +2547,27 @@ clicking again while queueing a live one costs a duplicate nobody can untangle.
 
 `QUEUED` requests need no recovery: nothing deletes them, and a reboot loses none.
 
+### Keeping it running
+
+```powershell
+.\TOOLS\Register-WorkerTask.ps1 -Show     # what this package has put on the machine
+.\TOOLS\Register-WorkerTask.ps1 -WhatIf   # what would be registered
+.\TOOLS\Register-WorkerTask.ps1           # register it
+.\TOOLS\Register-WorkerTask.ps1 -Remove   # take it off again
+```
+
+`EP DQ sheet run requests`, joining the three tasks already there. **At logon and not at
+boot**: the worker needs the database over the VPN and the Google refresh token from
+`TOOLS/secrets.local.ps1`, both of which belong to a logged-in session, and a boot task would
+spend its first minutes failing to reach either and writing those failures into request rows.
+
+It restarts a minute after any failure and refuses a second instance of itself. That is not a
+guarantee of one worker - a second one started by hand is outside Task Scheduler's knowledge -
+and it is not meant to be: the machine-wide run lock is what keeps two runs apart.
+
+Registering it costs nothing while no board is set up, because the worker polls only documents
+whose registry row has `runRequests = true`.
+
 ### The log
 
 `TOOLS/worker.local.log`, a transcript, rotated into `.1` past 5 MB. It sits beside
