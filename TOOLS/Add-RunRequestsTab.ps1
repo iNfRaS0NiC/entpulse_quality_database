@@ -77,19 +77,41 @@ $RegistryPath = Join-Path $PSScriptRoot 'sheet-registry.json'
 # by row index, so this order is a convenience for the reader rather than a contract - but the
 # Apps Script appends positionally, so the two files have to agree and this is where it is written.
 $Columns = @(
-    @{ Name = 'Request ID'; Width = 190 },
+    @{ Name = 'Request ID'; Width = 175 },
     @{ Name = 'CheckID'; Width = 150 },
-    @{ Name = 'Requested by'; Width = 210 },
+    # What the ID asserts, beside the ID. CLAUDE.md's rule that a CheckID never travels alone
+    # binds hardest on a row somebody is deciding about, and cancelling a request offering a
+    # bare Soccer-DQ-087 is deciding blind. The Apps Script fills it from Overview at the
+    # moment of the click so it is never briefly empty; the worker fills it if that failed.
+    @{ Name = 'Check name'; Width = 330 },
+    @{ Name = 'Requested by'; Width = 200 },
     @{ Name = 'Requested at'; Width = 150 },
     @{ Name = 'Status'; Width = 90; Align = 'CENTER' },
     @{ Name = 'Started at'; Width = 150 },
     @{ Name = 'Finished at'; Width = 150 },
     @{ Name = 'Run ID'; Width = 210 },
-    @{ Name = 'Findings'; Width = 80 },
-    @{ Name = 'Eligible'; Width = 80 },
+    @{ Name = 'Findings'; Width = 85; Align = 'CENTER' },
+    # What the board showed before this run, and the arithmetic between them. Both come out of
+    # the sentence the runner already prints for a single re-run - "Improved: 4 finding(s) of
+    # 27858 eligible, expected Zero (was 11, run Soccer 01.09.2026 19-31-04)" - so neither
+    # costs a read. Verdict beside them is the board's own word for the same movement.
+    @{ Name = 'Findings before'; Width = 110; Align = 'CENTER' },
+    @{ Name = 'Change'; Width = 95; Align = 'CENTER' },
+    @{ Name = 'Eligible'; Width = 90; Align = 'CENTER' },
     @{ Name = 'Verdict'; Width = 120 },
     @{ Name = 'Error'; Width = 420 }
 )
+
+function Get-ColumnIndex {
+    # Zero-based, by name. Every request below addresses a column through this rather than by
+    # a number written twice: two columns were inserted into the middle of this list on
+    # 2026-09-01, and every hardcoded index would have moved silently.
+    param([string]$Name)
+    for ($i = 0; $i -lt $Columns.Count; $i++) {
+        if ($Columns[$i].Name -eq $Name) { return $i }
+    }
+    throw "There is no column called '$Name' in this script's column list."
+}
 
 function Read-Registry {
     if (-not (Test-Path -LiteralPath $RegistryPath)) {
@@ -163,6 +185,70 @@ else {
     }
 }
 
+# ----- a tab written before a column existed ----------------------------------------------
+#
+# The header is rewritten below whatever happens. On a tab that already holds rows that is not
+# enough on its own: writing "Check name" over what used to be "Requested by" leaves every
+# existing row one column out of step with the header describing it, and the worker addresses
+# cells by column name. So a column that is missing is inserted, which shifts the rows with it,
+# before anything is written.
+#
+# Only insertion, and only in order. A header that has the right names in the wrong order, or a
+# name this script does not know, is somebody else's edit or a layout this script is too old to
+# understand, and both are reported rather than guessed at.
+
+if (-not $WhatIf -and $null -ne $existingSheetId) {
+    $headerRange = [uri]::EscapeDataString("$QueueSheetName!1:1")
+    $headerRead = Invoke-SheetsApiWithRetry -Method GET -Path "$SpreadsheetId/values/$headerRange"
+    $actual = @()
+    if ($headerRead.values -and @($headerRead.values).Count -gt 0) {
+        $actual = @(@($headerRead.values)[0] | ForEach-Object { ([string]$_).Trim() })
+    }
+
+    if ($actual.Count -gt 0) {
+        $unknown = @($actual | Where-Object { $_ -and -not ($Columns.Name -contains $_) })
+        if ($unknown.Count -gt 0) {
+            throw ("The '$QueueSheetName' tab has column(s) this script does not know: " +
+                ($unknown -join ', ') + ". Nothing was changed. Either somebody added them by " +
+                'hand, or this script is older than the tab.')
+        }
+
+        $inserts = @()
+        $working = [Collections.ArrayList]@($actual)
+        for ($i = 0; $i -lt $Columns.Count; $i++) {
+            $want = [string]$Columns[$i].Name
+            if ($i -lt $working.Count -and $working[$i] -eq $want) { continue }
+            if ($working -contains $want) {
+                throw ("The '$QueueSheetName' tab has '$want' at column " +
+                    ([int]($working.IndexOf($want)) + 1) + ' where this script expects column ' +
+                    ($i + 1) + '. Reordering a column would move the rows under it, so nothing ' +
+                    'was changed.')
+            }
+            $inserts += @{
+                insertDimension = @{
+                    range        = @{
+                        sheetId    = $existingSheetId
+                        dimension  = 'COLUMNS'
+                        startIndex = $i
+                        endIndex   = $i + 1
+                    }
+                    # The new column takes the tab's plain format, not a copy of its neighbour's.
+                    inheritFromBefore = $false
+                }
+            }
+            [void]$working.Insert($i, $want)
+        }
+
+        if ($inserts.Count -gt 0) {
+            [void](Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId`:batchUpdate" `
+                    -Body @{ requests = $inserts })
+            Write-Host ("  inserted {0} new column(s), shifting the existing rows with them: {1}" -f `
+                    $inserts.Count, ((0..($Columns.Count - 1) | Where-Object { -not ($actual -contains $Columns[$_].Name) } |
+                        ForEach-Object { $Columns[$_].Name }) -join ', ')) -ForegroundColor Green
+        }
+    }
+}
+
 # ----- header, widths, formats ----------------------------------------------------------
 
 if (-not $WhatIf -and $null -ne $existingSheetId) {
@@ -226,7 +312,7 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
 
     # The three timestamps read as times rather than as numbers, which is the difference
     # between a person seeing when a run started and seeing 45901.6.
-    foreach ($column in @(3, 5, 6)) {
+    foreach ($column in @((Get-ColumnIndex 'Requested at'), (Get-ColumnIndex 'Started at'), (Get-ColumnIndex 'Finished at'))) {
         $requests += @{
             repeatCell = @{
                 range  = @{ sheetId = $existingSheetId; startRowIndex = 1; startColumnIndex = $column; endColumnIndex = $column + 1 }
@@ -302,8 +388,8 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
                     ranges      = @(@{
                             sheetId          = $existingSheetId
                             startRowIndex    = 1
-                            startColumnIndex = 4
-                            endColumnIndex   = 5
+                            startColumnIndex = (Get-ColumnIndex 'Status')
+                            endColumnIndex   = (Get-ColumnIndex 'Status') + 1
                         })
                     booleanRule = @{
                         condition = @{ type = 'TEXT_EQ'; values = @(@{ userEnteredValue = $state.Word }) }
@@ -333,7 +419,10 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
                         endColumnIndex   = $Columns.Count
                     })
                 booleanRule = @{
-                    condition = @{ type = 'CUSTOM_FORMULA'; values = @(@{ userEnteredValue = '=$E2="ERROR"' }) }
+                    # The Status column's own letter, derived rather than typed: this was $E
+                    # until two columns were inserted to its left.
+                    condition = @{ type = 'CUSTOM_FORMULA'; values = @(@{
+                                userEnteredValue = ('=${0}2="ERROR"' -f [char]([int][char]'A' + (Get-ColumnIndex 'Status'))) }) }
                     format    = @{ backgroundColor = @{ red = 0.996; green = 0.949; blue = 0.941 } }
                 }
             }

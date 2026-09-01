@@ -107,21 +107,37 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 # silently converts it to a string, and every property read off it is then empty. Measured
 # 2026-09-01, where it showed as a 404 on a GET with no document id in the path.
 
-# The columns as Add-RunRequestsTab.ps1 writes them, one-based, because a Sheets A1 range is
-# one-based and converting twice is how a status lands in the wrong cell.
-$Column = @{
-    RequestId   = 1
-    CheckId     = 2
-    RequestedBy = 3
-    RequestedAt = 4
-    Status      = 5
-    StartedAt   = 6
-    FinishedAt  = 7
-    RunId       = 8
-    Findings    = 9
-    Eligible    = 10
-    Verdict     = 11
-    Error       = 12
+# The columns as Add-RunRequestsTab.ps1 writes them: the name this script calls a column by,
+# against the header text the tab actually carries. Order matters - it is the fallback layout
+# for a tab whose header cannot be read - but the position is read off row 1 wherever one can
+# be, because two columns were inserted into the middle of this list on 2026-09-01 and a
+# worker counting from a fixed list would have written every status one column to the left of
+# the header describing it.
+$ColumnTitle = [ordered]@{
+    RequestId      = 'Request ID'
+    CheckId        = 'CheckID'
+    CheckName      = 'Check name'
+    RequestedBy    = 'Requested by'
+    RequestedAt    = 'Requested at'
+    Status         = 'Status'
+    StartedAt      = 'Started at'
+    FinishedAt     = 'Finished at'
+    RunId          = 'Run ID'
+    Findings       = 'Findings'
+    FindingsBefore = 'Findings before'
+    Change         = 'Change'
+    Eligible       = 'Eligible'
+    Verdict        = 'Verdict'
+    Error          = 'Error'
+}
+
+# One-based, because a Sheets A1 range is one-based and converting twice is how a status lands
+# in the wrong cell.
+$Column = @{}
+$columnPosition = 1
+foreach ($key in $ColumnTitle.Keys) {
+    $Column[$key] = $columnPosition
+    $columnPosition++
 }
 
 $OpenStatuses = @('QUEUED', 'WAITING', 'RUNNING')
@@ -141,28 +157,73 @@ function ConvertTo-RequestRows {
     #>
     param($Values)
 
-    $rows = @()
     $all = @($Values)
+    $at = Get-QueueColumnMap -Values $all
+
+    $rows = @()
     for ($i = 1; $i -lt $all.Count; $i++) {
         $cells = @($all[$i])
         if ($cells.Count -eq 0) { continue }
 
-        function Cell { param($Index) if ($cells.Count -ge $Index) { [string]$cells[$Index - 1] } else { '' } }
+        # $Index -ge 1 matters: at 0, $cells[$Index - 1] is $cells[-1], which in PowerShell is
+        # the last element rather than an error - the Error column read as the Request ID.
+        function Cell { param($Index) if ($Index -ge 1 -and $cells.Count -ge $Index) { [string]$cells[$Index - 1] } else { '' } }
 
-        $requestId = (Cell $Column.RequestId).Trim()
+        $requestId = (Cell $at.RequestId).Trim()
         if ([string]::IsNullOrWhiteSpace($requestId)) { continue }
 
         $rows += [pscustomobject]@{
             RowNumber   = $i + 1
             RequestId   = $requestId
-            CheckId     = (Cell $Column.CheckId).Trim()
-            RequestedBy = (Cell $Column.RequestedBy).Trim()
-            RequestedAt = (Cell $Column.RequestedAt).Trim()
-            Status      = (Cell $Column.Status).Trim().ToUpperInvariant()
-            RunId       = (Cell $Column.RunId).Trim()
+            CheckId     = (Cell $at.CheckId).Trim()
+            CheckName   = (Cell $at.CheckName).Trim()
+            RequestedBy = (Cell $at.RequestedBy).Trim()
+            RequestedAt = (Cell $at.RequestedAt).Trim()
+            Status      = (Cell $at.Status).Trim().ToUpperInvariant()
+            RunId       = (Cell $at.RunId).Trim()
         }
     }
     return $rows
+}
+
+function Get-QueueColumnMap {
+    <#
+        Where each column is on this particular tab, one-based and keyed the way this script
+        names them.
+
+        Read off row 1 of the values in hand rather than counted from $Column, so a tab that has
+        gained a column - or has not gained one yet - is addressed as it actually is. $Column is
+        the fallback, and it is only reached for a header this cannot read at all, which is a
+        tab written by nothing and a case the caller will fail on anyway.
+
+        Pure, and takes the values rather than a document, because everything that decides where
+        a status gets written has to be exercisable without a login.
+    #>
+    param($Values)
+
+    $map = @{}
+    foreach ($key in $ColumnTitle.Keys) { $map[$key] = [int]$Column[$key] }
+
+    $all = @($Values)
+    if ($all.Count -eq 0) { return $map }
+
+    $header = @($all[0])
+    $seen = @{}
+    for ($c = 0; $c -lt $header.Count; $c++) {
+        $title = ([string]$header[$c]).Trim()
+        if ($title) { $seen[$title] = $c + 1 }
+    }
+    if ($seen.Count -eq 0) { return $map }
+
+    foreach ($key in @($ColumnTitle.Keys)) {
+        $title = [string]$ColumnTitle[$key]
+        if ($seen.ContainsKey($title)) { $map[$key] = [int]$seen[$title] }
+        # 0 for a column this tab has not got. Never the position it would have had, and never
+        # a neighbour's: a write to the wrong column succeeds and is wrong, which is the one
+        # outcome worth going out of the way to make impossible.
+        else { $map[$key] = 0 }
+    }
+    return $map
 }
 
 function Get-SheetRegistryFile {
@@ -174,7 +235,8 @@ function Get-SheetRegistryFile {
 
 function Get-ApprovedCheckIds {
     <#
-        Every CheckID POWERBI_REGISTRY.md records as Approved, with the sport it belongs to.
+        Every CheckID POWERBI_REGISTRY.md records as Approved, with the sport it belongs to and
+        what it asserts.
 
         Read from the registry file rather than from the SQL, because what a request may name
         is what is approved for a sport, and a Deprecated row keeps its ID for ever. Read once
@@ -188,8 +250,10 @@ function Get-ApprovedCheckIds {
         $cells = @($line -split '\|')
         if ($cells.Count -lt 9) { continue }
         $sport = $cells[2].Trim()
+        # | CheckID | Sport | Family | Category | Object | Name | Query file | Status |
+        $name = $cells[6].Trim()
         $status = $cells[8].Trim()
-        $table[$checkId] = [pscustomobject]@{ Sport = $sport; Status = $status }
+        $table[$checkId] = [pscustomobject]@{ Sport = $sport; Name = $name; Status = $status }
     }
     return $table
 }
@@ -349,7 +413,9 @@ function Select-BoardsToPoll {
 function Read-RequestQueue {
     param([string]$SpreadsheetId)
 
-    $range = [uri]::EscapeDataString("$QueueSheetName!A1:L2000")
+    # A1:Z and not A1:L. The tab was twelve columns wide until 2026-09-01 and is fifteen now;
+    # Z leaves room for the next few without this being the line that has to be remembered.
+    $range = [uri]::EscapeDataString("$QueueSheetName!A1:Z2000")
     $response = Invoke-SheetsApiWithRetry -Method GET -Path "$SpreadsheetId/values/$range"
     return (ConvertTo-RequestRows -Values $response.values)
 }
@@ -368,7 +434,11 @@ function Set-RequestCells {
         [hashtable]$Values
     )
 
-    $rows = Read-RequestQueue -SpreadsheetId $SpreadsheetId
+    $range = [uri]::EscapeDataString("$QueueSheetName!A1:Z2000")
+    $response = Invoke-SheetsApiWithRetry -Method GET -Path "$SpreadsheetId/values/$range"
+    $rows = ConvertTo-RequestRows -Values $response.values
+    $at = Get-QueueColumnMap -Values $response.values
+
     $row = @($rows | Where-Object { $_.RequestId -eq $RequestId })[0]
     if (-not $row) {
         Write-Host ("  request {0} is no longer on the tab, so nothing was written back" -f $RequestId) -ForegroundColor Yellow
@@ -377,7 +447,15 @@ function Set-RequestCells {
 
     $data = @()
     foreach ($name in $Values.Keys) {
-        $index = [int]$Column[$name]
+        $index = [int]$at[$name]
+        if ($index -lt 1) {
+            # The tab predates this column. Said rather than written somewhere else, and said
+            # with the fix, because the row is otherwise correct and nobody would look.
+            Write-Host ("  this board has no '{0}' column yet, so that figure was not written. " +
+                "Run .\TOOLS\Add-RunRequestsTab.ps1 -Sport <Sport> to add it." -f `
+                    $ColumnTitle[$name]) -ForegroundColor Yellow
+            continue
+        }
         $letter = [char]([int][char]'A' + $index - 1)
         $data += @{
             range  = "$QueueSheetName!$letter$($row.RowNumber)"
@@ -443,12 +521,31 @@ function Get-RunOutcome {
     $findings = ''
     $eligible = ''
     $verdict = ''
+    $before = ''
+    $change = ''
 
     $match = [regex]::Match($Output, '(?m)^\s*(?<verdict>[A-Za-z][A-Za-z ]*?):\s+(?<findings>\d+)\s+finding\(s\) of (?<eligible>\d+) eligible')
     if ($match.Success) {
         $verdict = $match.Groups['verdict'].Value.Trim()
         $findings = $match.Groups['findings'].Value
         $eligible = $match.Groups['eligible'].Value
+    }
+
+    # What the run before this one found, out of the same sentence: the runner already prints
+    # "(was 11, run Soccer 01.09.2026 19-31-04)" for a single re-run, so the figure a reviewer
+    # wants to compare against costs no read and cannot disagree with the console.
+    #
+    # The runner appends ", which ran a different statement" when the two runs did not execute
+    # the same SQL. That is carried into the Change cell rather than dropped, because a delta
+    # across a rewritten statement is not a delta - it is two different questions answered.
+    $was = [regex]::Match($Output, '\(was (?<before>\d+), run (?<run>[^)]*)\)(?<rewritten>, which ran a different statement)?')
+    if ($was.Success) {
+        $before = $was.Groups['before'].Value
+        if ($findings -ne '') {
+            $delta = [int]$findings - [int]$before
+            $change = $(if ($delta -gt 0) { '+' + $delta } else { [string]$delta })
+            if ($was.Groups['rewritten'].Success) { $change += ' (different statement)' }
+        }
     }
 
     # A single run names itself on a `Run <Sport> dd.MM.yyyy HH-mm-ss` line, which is what the
@@ -462,7 +559,10 @@ function Get-RunOutcome {
         if ($folder.Success) { $runId = Split-Path -Leaf ($folder.Groups['path'].Value.Trim()) }
     }
 
-    return [pscustomobject]@{ Findings = $findings; Eligible = $eligible; Verdict = $verdict; RunId = $runId }
+    return [pscustomobject]@{
+        Findings = $findings; Eligible = $eligible; Verdict = $verdict; RunId = $runId
+        FindingsBefore = $before; Change = $change
+    }
 }
 
 function Test-RunQueryAlive {
@@ -751,11 +851,26 @@ while ($true) {
             continue
         }
 
-        Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $next.RequestId -Values @{
+        $starting = @{
             Status    = 'RUNNING'
             StartedAt = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss')
             Error     = ''
         }
+
+        # The name the Apps Script could not find, or a row appended before the column existed.
+        # Written at the start rather than at the end, because the whole point of it is to be
+        # readable while the thing is running.
+        if (-not $next.CheckName) {
+            $known = $approved[$next.CheckId]
+            if ($next.CheckId -eq $WholeSportToken) {
+                $starting['CheckName'] = 'every approved check for this sport'
+            }
+            elseif ($known -and $known.Name) {
+                $starting['CheckName'] = $known.Name
+            }
+        }
+
+        Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $next.RequestId -Values $starting
 
         $result = Invoke-RequestedRun -Verdict $verdict -Sport $board.Name
 
@@ -792,16 +907,19 @@ while ($true) {
             }
         }
         else {
-            Write-Host ("    done: {0} finding(s) of {1} eligible, {2}" -f `
-                    $outcome.Findings, $outcome.Eligible, $outcome.Verdict) -ForegroundColor DarkGray
+            $movement = $(if ($outcome.FindingsBefore -ne '') { ', was ' + $outcome.FindingsBefore } else { '' })
+            Write-Host ("    done: {0} finding(s) of {1} eligible, {2}{3}" -f `
+                    $outcome.Findings, $outcome.Eligible, $outcome.Verdict, $movement) -ForegroundColor DarkGray
             $done = @{
-                Status     = 'DONE'
-                FinishedAt = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss')
-                RunId      = $outcome.RunId
-                Findings   = $outcome.Findings
-                Eligible   = $outcome.Eligible
-                Verdict    = $outcome.Verdict
-                Error      = ''
+                Status         = 'DONE'
+                FinishedAt     = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss')
+                RunId          = $outcome.RunId
+                Findings       = $outcome.Findings
+                FindingsBefore = $outcome.FindingsBefore
+                Change         = $outcome.Change
+                Eligible       = $outcome.Eligible
+                Verdict        = $outcome.Verdict
+                Error          = ''
             }
             Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $next.RequestId -Values $done
 

@@ -2486,6 +2486,38 @@ read from `A2` on a check tab or from column B of the selected `Overview` row. `
 sport` is the owner's alone and writes the single reserved token `*SPORT*` rather than a list,
 so the cell stays one value and the machine maps that value to `-RunAll` itself.
 
+A row carries fifteen columns, and three of them exist because a number on its own decides
+nothing:
+
+- **`Check name`** sits beside `CheckID`. The Apps Script fills it at the moment of the click,
+  reading it off the board's own `Overview` so the name written into the queue is the same
+  string the reviewer is looking at one tab away; the worker fills it from
+  `POWERBI_REGISTRY.md` if that came back empty. Cancelling a request that offers a bare
+  `Soccer-DQ-087` is deciding blind, which is the thing `CLAUDE.md` says a question may never
+  ask somebody to do.
+- **`Findings before`** and **`Change`** are what the run before this one found, and the
+  arithmetic between them. Both come out of the sentence the runner already prints for a single
+  re-run - `Improved: 4 finding(s) of 27858 eligible, expected Zero (was 11, run Soccer
+  01.09.2026 19-31-04)` - so neither costs a read and neither can disagree with the console. A
+  check with nothing to compare against leaves both empty rather than writing `0`, because
+  having no previous run is not the same as having found nothing. Where the two runs did not
+  execute the same SQL, `Change` says `(different statement)`: a delta across a rewritten
+  statement is two questions answered, not a movement. `Verdict` beside them is the board's own
+  word for the same thing - `Improved`, `Regressed`, `Unchanged`, `Scope moved`.
+
+Clicking also lands the person on the `Run requests` tab. That is the whole of what "open it
+when the run finishes" can be: an installable trigger runs detached from anybody's browser, so
+nothing can pull a viewer's screen minutes later when the run actually ends. Landing there at
+the click is better than that anyway - the row updates in place as the worker writes it, so
+`QUEUED` to `RUNNING` to `DONE` happens under their eyes without anybody navigating anywhere.
+
+**No file addresses a column by number.** `Add-RunRequestsTab.ps1` owns the names, and the
+other two look them up in row 1 of the tab - the Apps Script through `columnIndex_`, the worker
+through `Get-QueueColumnMap`. Two columns were inserted into the middle of this layout on
+2026-09-01; every hardcoded index would have moved silently, and the failure would have been a
+status written one column to the left of the header describing it rather than an error.
+`Test-Tools.ps1` fails if the three files stop agreeing about a name.
+
 ### The part that is a boundary, and the part that is not
 
 `Requested by` is a cell. Anybody with edit access to the tab can type somebody else's address
@@ -2655,6 +2687,14 @@ Then, in the browser: paste `RunRequests.gs` and `appsscript.json` into Extensio
 Script, and add an **installable** `onOpen` trigger owned by the owner account - a simple
 trigger runs as the viewer and would not be able to write a protected tab. Reload the document
 and the `DQ` menu appears.
+
+**On a document that already has the tab, paste the script before running the script above.**
+That order is safe in a way the other one is not. The Apps Script finds its columns by name, so
+a new version works unchanged on a tab that has not gained the columns yet - it simply leaves
+them out. An old version on a migrated tab does the opposite: it appends by position, and its
+values land one column to the left of the headers describing them. Nothing is damaged either
+way, because a row whose `Status` cell ends up empty is one the worker never picks up, but it
+is a row somebody has to delete.
 
 Only when that works, run again with `-Register`, which sets `runRequests` to true and is what
 makes the worker poll the document. The order matters: a registered document with no menu is a

@@ -31,10 +31,37 @@ var ALLOWED = [
   'venelin@enetpulse.com'
 ];
 
-var HEADERS = [
-  'Request ID', 'CheckID', 'Requested by', 'Requested at', 'Status',
-  'Started at', 'Finished at', 'Run ID', 'Findings', 'Eligible', 'Verdict', 'Error'
-];
+/**
+ * Where a column is, by its header text.
+ *
+ * Read off row 1 rather than counted, because the two files that write this tab have to agree
+ * about its shape and only one of them can be redeployed by editing a file. Two columns were
+ * inserted into the middle of the layout on 2026-09-01; every positional index in this script
+ * would have moved silently, and the failure would have been a status written into the wrong
+ * cell rather than an error.
+ *
+ * Returns a zero-based index, or -1.
+ */
+function columnIndex_(sheet, name) {
+  var width = sheet.getLastColumn();
+  if (width < 1) { return -1; }
+  var header = sheet.getRange(1, 1, 1, width).getValues()[0];
+  for (var i = 0; i < header.length; i++) {
+    if (String(header[i] || '').trim() === name) { return i; }
+  }
+  return -1;
+}
+
+/** One-based, and it throws rather than writing into a column it guessed at. */
+function columnNumber_(sheet, name) {
+  var index = columnIndex_(sheet, name);
+  if (index < 0) {
+    throw new Error(
+      'The "' + QUEUE_SHEET + '" tab has no "' + name + '" column. It is created by ' +
+      'TOOLS/Add-RunRequestsTab.ps1, which also adds columns to a tab written before they existed.');
+  }
+  return index + 1;
+}
 
 function onOpen() {
   SpreadsheetApp.getUi()
@@ -94,7 +121,8 @@ function selectedCheckId_() {
   var name = sheet.getName();
 
   if (name === QUEUE_SHEET) {
-    return String(sheet.getRange(sheet.getActiveCell().getRow(), 2).getValue() || '').trim();
+    return String(sheet.getRange(sheet.getActiveCell().getRow(),
+      columnNumber_(sheet, 'CheckID')).getValue() || '').trim();
   }
   if (name === 'Overview') {
     var row = sheet.getActiveCell().getRow();
@@ -131,11 +159,63 @@ function newRequestId_() {
     Utilities.getUuid().substring(0, 4).toUpperCase();
 }
 
+/**
+ * What a CheckID asserts, taken off the board it is on.
+ *
+ * Overview already carries every check's name against its ID, so this needs no registry and no
+ * second tab to maintain: the name written into the queue is the same string the reviewer is
+ * looking at one tab away. A check tab is read too, for a click made from one whose row has not
+ * reached Overview.
+ *
+ * Empty when it cannot be found, which is not an error. The worker fills the cell from
+ * POWERBI_REGISTRY.md when it picks the request up, so a blank here is at worst brief.
+ */
+function checkNameFor_(checkId) {
+  if (!checkId || checkId === WHOLE_SPORT) { return ''; }
+  var book = SpreadsheetApp.getActiveSpreadsheet();
+
+  var overview = book.getSheetByName('Overview');
+  if (overview) {
+    try {
+      var idColumn = 0, nameColumn = 0;
+      var width = overview.getLastColumn();
+      var header = overview.getRange(1, 1, 1, width).getValues()[0];
+      for (var c = 0; c < header.length; c++) {
+        var title = String(header[c] || '').trim();
+        if (title === 'CheckID') { idColumn = c; }
+        if (title === 'Check Name') { nameColumn = c; }
+      }
+      if (nameColumn > 0) {
+        var rows = overview.getRange(2, 1, Math.max(overview.getLastRow() - 1, 1), width).getValues();
+        for (var r = 0; r < rows.length; r++) {
+          if (String(rows[r][idColumn] || '').trim() === checkId) {
+            return String(rows[r][nameColumn] || '').trim();
+          }
+        }
+      }
+    } catch (e) { }
+  }
+
+  // A check tab carries its own identity in row 1 and row 2.
+  try {
+    var tab = book.getActiveSheet();
+    if (String(tab.getRange('A2').getValue() || '').trim() === checkId) {
+      return String(tab.getRange('B2').getValue() || '').trim();
+    }
+  } catch (e) { }
+
+  return '';
+}
+
 function alreadyOpen_(sheet, checkId) {
+  var idColumn = columnIndex_(sheet, 'CheckID');
+  var statusColumn = columnIndex_(sheet, 'Status');
+  if (idColumn < 0 || statusColumn < 0) { return false; }
+
   var values = sheet.getDataRange().getValues();
   for (var i = 1; i < values.length; i++) {
-    var id = String(values[i][1] || '').trim();
-    var status = String(values[i][4] || '').trim().toUpperCase();
+    var id = String(values[i][idColumn] || '').trim();
+    var status = String(values[i][statusColumn] || '').trim().toUpperCase();
     if (status !== 'QUEUED' && status !== 'WAITING' && status !== 'RUNNING') { continue; }
     if (id === checkId) { return true; }
     // A whole-sport run repaints every check, so anything queued behind it is already asked
@@ -145,35 +225,71 @@ function alreadyOpen_(sheet, checkId) {
   return false;
 }
 
+/** The ID and what it asserts, which is the only form either of them is ever offered in. */
+function describe_(checkId, name) {
+  if (checkId === WHOLE_SPORT) { return 'every approved check for this sport'; }
+  return name ? checkId + ' - ' + name : checkId;
+}
+
 function append_(checkId, user) {
   var sheet = queueSheet_();
+
+  var name = checkId === WHOLE_SPORT ? 'every approved check for this sport'
+    : checkNameFor_(checkId);
+
   if (alreadyOpen_(sheet, checkId)) {
     SpreadsheetApp.getUi().alert(
       checkId === WHOLE_SPORT
         ? 'A run is already queued for this sport. Wait for it to finish.'
-        : checkId + ' is already queued or running. Wait for it to finish.');
+        : describe_(checkId, name) + ' is already queued or running. Wait for it to finish.');
     return;
   }
 
   var requestId = newRequestId_();
-  sheet.appendRow([
-    requestId, checkId, user, stamp_(), 'QUEUED', '', '', '', '', '', '', ''
-  ]);
 
+  // Built by header name and not as a fixed list, so a column added to the tab lands where the
+  // header says rather than one place to the left of it.
+  var width = Math.max(sheet.getLastColumn(), 1);
+  var row = [];
+  for (var c = 0; c < width; c++) { row.push(''); }
+  row[columnNumber_(sheet, 'Request ID') - 1] = requestId;
+  row[columnNumber_(sheet, 'CheckID') - 1] = checkId;
+  row[columnNumber_(sheet, 'Requested by') - 1] = user;
+  row[columnNumber_(sheet, 'Requested at') - 1] = stamp_();
+  row[columnNumber_(sheet, 'Status') - 1] = 'QUEUED';
+
+  var nameColumn = columnIndex_(sheet, 'Check name');
+  if (nameColumn >= 0) { row[nameColumn] = name; }
+
+  sheet.appendRow(row);
+
+  var statusColumn = columnIndex_(sheet, 'Status');
   var ahead = 0;
   var values = sheet.getDataRange().getValues();
   for (var i = 1; i < values.length; i++) {
-    var status = String(values[i][4] || '').trim().toUpperCase();
+    var status = String(values[i][statusColumn] || '').trim().toUpperCase();
     if (status === 'QUEUED' || status === 'WAITING' || status === 'RUNNING') { ahead++; }
   }
+
+  // Land them on the queue rather than leaving them on the tab they clicked from. This is the
+  // whole of what "open it when the script finishes" can be: an installable trigger runs
+  // detached from anybody's browser, so nothing can pull a viewer's screen minutes later when
+  // the run actually ends. Landing here at the click is better than that anyway - the row
+  // updates in place as the worker writes it, so QUEUED to RUNNING to DONE happens under their
+  // eyes without anybody navigating anywhere.
+  SpreadsheetApp.getActiveSpreadsheet().setActiveSheet(sheet);
+  sheet.setActiveRange(sheet.getRange(sheet.getLastRow(), 1));
 
   // What is ahead, not only the position. A board refresh takes about thirteen minutes for a
   // mid-sized sport, and a bare "Position 2" does not explain the wait to the person waiting.
   var note = ahead <= 1
-    ? 'It will start within a minute unless the machine is busy.'
+    ? 'The machine looks for new requests every 90 seconds, so it starts within about that.'
     : 'Position ' + ahead + '. Something is running ahead of it; a whole-sport refresh takes ' +
       'around fifteen minutes.';
-  SpreadsheetApp.getUi().alert('Queued ' + checkId + '.\n\n' + note + '\n\nRequest ' + requestId);
+  SpreadsheetApp.getUi().alert(
+    'Queued ' + describe_(checkId, name) + '.\n\n' + note +
+    '\n\nThis tab is now open, and the row updates itself as the run goes.' +
+    '\n\nRequest ' + requestId);
 }
 
 function requestThisCheck() {
@@ -253,14 +369,15 @@ function cancelSelectedRequest() {
     return;
   }
 
-  var status = String(sheet.getRange(row, 5).getValue() || '').trim().toUpperCase();
+  var statusCell = columnNumber_(sheet, 'Status');
+  var status = String(sheet.getRange(row, statusCell).getValue() || '').trim().toUpperCase();
   if (status !== 'QUEUED' && status !== 'WAITING') {
     SpreadsheetApp.getUi().alert(
       'Only a QUEUED or WAITING request can be cancelled. This one is ' + (status || 'blank') + '.');
     return;
   }
 
-  sheet.getRange(row, 5).setValue('CANCELLED');
-  sheet.getRange(row, 7).setValue(stamp_());
-  sheet.getRange(row, 12).setValue('Cancelled by ' + user);
+  sheet.getRange(row, statusCell).setValue('CANCELLED');
+  sheet.getRange(row, columnNumber_(sheet, 'Finished at')).setValue(stamp_());
+  sheet.getRange(row, columnNumber_(sheet, 'Error')).setValue('Cancelled by ' + user);
 }

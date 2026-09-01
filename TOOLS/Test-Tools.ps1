@@ -2971,6 +2971,113 @@ Test-That 'every CheckID the real registry approves is one this validation would
 }
 
 
+# ----- where a column is ------------------------------------------------------------------
+#
+# Three files write this tab - Add-RunRequestsTab.ps1 shapes it, RunRequests.gs appends to it,
+# Watch-SheetRequests.ps1 updates it - and only one of them can be corrected by editing a file.
+# Two columns were inserted into the middle of the layout on 2026-09-01, so what these cases
+# are about is the failure that has no error: a status written one column to the left of the
+# header describing it.
+
+$queueHeader = @('Request ID', 'CheckID', 'Check name', 'Requested by', 'Requested at', 'Status',
+    'Started at', 'Finished at', 'Run ID', 'Findings', 'Findings before', 'Change', 'Eligible',
+    'Verdict', 'Error')
+
+Test-That 'a column is found where the header says, not where the script counted' {
+    $map = Get-QueueColumnMap -Values @(, $queueHeader)
+    Assert-Equal 6 $map.Status 'Status is the sixth column now'
+    Assert-Equal 3 $map.CheckName 'the name sits beside the ID'
+    Assert-Equal 15 $map.Error 'and Error is last'
+}
+
+Test-That 'a tab written before a column existed reports 0 for it, never a neighbour' {
+    # The defect this exists for: falling back to the declared position would put Findings
+    # before into the Eligible column of an old tab, and a wrong figure written confidently is
+    # worse than a figure not written.
+    $old = @('Request ID', 'CheckID', 'Requested by', 'Requested at', 'Status',
+        'Started at', 'Finished at', 'Run ID', 'Findings', 'Eligible', 'Verdict', 'Error')
+    $map = Get-QueueColumnMap -Values @(, $old)
+    Assert-Equal 0 $map.CheckName 'a column that is not there has no position'
+    Assert-Equal 0 $map.FindingsBefore 'nor this one'
+    Assert-Equal 5 $map.Status 'while the columns that are there are found where they are'
+    Assert-Equal 10 $map.Eligible 'including the ones after the gap'
+}
+
+Test-That 'rows are read through the header, so an inserted column moves the values with it' {
+    $values = @(
+        $queueHeader,
+        @('REQ-1', 'Fixtureball-DQ-001', 'What it asserts', 'reviewer@example.com',
+            '01.09.2026 10:00:00', 'QUEUED', '', '', '', '', '', '', '', '', '')
+    )
+    $rows = @(ConvertTo-RequestRows -Values $values)
+    Assert-Equal 1 $rows.Count 'one request'
+    Assert-Equal 'Fixtureball-DQ-001' $rows[0].CheckId 'the CheckID'
+    Assert-Equal 'What it asserts' $rows[0].CheckName 'the name beside it'
+    Assert-Equal 'QUEUED' $rows[0].Status 'and the status, which is the cell that moved'
+}
+
+Test-That 'the three files agree about what the columns are called' {
+    # Add-RunRequestsTab.ps1 owns the names. The other two look columns up by those strings, so
+    # a rename that reaches only one of them is a silent write into the wrong cell.
+    $tabSource = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Add-RunRequestsTab.ps1') -Raw
+    $declared = @([regex]::Matches($tabSource, "@\{ Name = '(?<name>[^']+)'") |
+        ForEach-Object { $_.Groups['name'].Value })
+    Assert-True ($declared.Count -ge 15) "Add-RunRequestsTab.ps1 should declare the columns, found $($declared.Count)"
+
+    foreach ($title in @($ColumnTitle.Values)) {
+        Assert-True ($declared -contains $title) "the worker asks for a column called '$title'"
+    }
+
+    $gs = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'sheets-apps-script\RunRequests.gs') -Raw
+    $asked = @([regex]::Matches($gs, "column(?:Number|Index)_\(sheet, '(?<name>[^']+)'\)") |
+        ForEach-Object { $_.Groups['name'].Value } | Sort-Object -Unique)
+    Assert-True ($asked.Count -gt 0) 'the Apps Script should look columns up by name'
+    foreach ($title in $asked) {
+        Assert-True ($declared -contains $title) "the Apps Script asks for a column called '$title'"
+    }
+}
+
+# ----- what the run said it found, and what it found last time ----------------------------
+
+Test-That 'the previous count is taken from the sentence the runner already prints' {
+    $output = @'
+Improved: 4 finding(s) of 27858 eligible, expected Zero (was 11, run Soccer 01.09.2026 19-31-04)
+Run Soccer 01.09.2026 20-14-02
+'@
+    $outcome = Get-RunOutcome -Output $output
+    Assert-Equal '4' $outcome.Findings 'what it found now'
+    Assert-Equal '11' $outcome.FindingsBefore 'what it found before'
+    Assert-Equal '-7' $outcome.Change 'and the arithmetic between them'
+    Assert-Equal 'Improved' $outcome.Verdict "the board's own word for the same movement"
+    Assert-Equal 'Soccer 01.09.2026 20-14-02' $outcome.RunId 'the run that produced it'
+}
+
+Test-That 'more findings than last time reads as a signed increase' {
+    $output = 'Regressed: 30 finding(s) of 27858 eligible, expected Zero (was 11, run Soccer 01.09.2026 19-31-04)'
+    $outcome = Get-RunOutcome -Output $output
+    Assert-Equal '+19' $outcome.Change 'a rise carries its sign, or +19 and 19 read the same'
+}
+
+Test-That 'a delta across a rewritten statement says so rather than standing alone' {
+    # Two runs of different SQL are two questions, not a movement. The runner knows because it
+    # records the fingerprint; dropping that here would turn "we changed the check" into
+    # "the data improved".
+    $output = ('Improved: 4 finding(s) of 27858 eligible, expected Zero ' +
+        '(was 11, run Soccer 01.09.2026 19-31-04), which ran a different statement')
+    $outcome = Get-RunOutcome -Output $output
+    Assert-Equal '11' $outcome.FindingsBefore 'the figure is still read'
+    Assert-True ($outcome.Change -like '*different statement*') "and carried with its warning, got: $($outcome.Change)"
+}
+
+Test-That 'a first run of a check leaves the previous columns empty rather than guessing zero' {
+    # Nothing to compare against is not the same as having found nothing last time, and a 0
+    # in that cell would read as a check that was clean and has broken.
+    $outcome = Get-RunOutcome -Output 'New: 20 finding(s) of 27858 eligible, expected Zero'
+    Assert-Equal '20' $outcome.Findings 'what it found'
+    Assert-Equal '' $outcome.FindingsBefore 'and no previous figure invented'
+    Assert-Equal '' $outcome.Change 'nor a change computed from one'
+}
+
 # ----- which documents a pass reads -------------------------------------------------------
 #
 # The Drive pre-filter is a saving laid over the polling loop, and the way it fails is silent:
