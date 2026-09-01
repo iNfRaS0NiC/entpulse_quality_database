@@ -2458,6 +2458,67 @@ permissions and an approval and each one after it is about fifteen minutes.
 A sport gets its row the first time its board is published. `TOOLS/Test-Tools.ps1` fails if a
 sport indexed in `SPORTS.md` has no row here.
 
+## Asking for a run from a board
+
+A sport's document can carry a `Run requests` tab and a `DQ` menu, so a reviewer looking at a
+finding can ask for that check to be re-run without a shell. The click writes one row; the
+machine does the rest.
+
+| Piece | Where |
+|---|---|
+| The menu and what it appends | `TOOLS/sheets-apps-script/RunRequests.gs`, pasted into the document's Apps Script project |
+| Its scopes | `TOOLS/sheets-apps-script/appsscript.json` |
+| Creating and protecting the tab | `TOOLS/Add-RunRequestsTab.ps1 -Sport <Sport>` |
+| Who may ask | `requesters` in `TOOLS/sheet-registry.json` |
+| Which documents carry it | `runRequests` in the same file |
+
+The script holds no SQL, no credentials and no execution logic. It appends one row and stops.
+`Run this check` writes one full CheckID - `Soccer-DQ-023`, never `DQ-023` and never a list -
+read from `A2` on a check tab or from column B of the selected `Overview` row. `Run the whole
+sport` is the owner's alone and writes the single reserved token `*SPORT*` rather than a list,
+so the cell stays one value and the machine maps that value to `-RunAll` itself.
+
+### The part that is a boundary, and the part that is not
+
+`Requested by` is a cell. Anybody with edit access to the tab can type somebody else's address
+into it as easily as a CheckID, so **the allowed list guards against a mistake and not against
+intent**. What holds is edit access: `Add-RunRequestsTab.ps1` puts a protected range over the
+whole tab with no other editors, and the Apps Script is deployed to execute as the owner. The
+button then still appends for everybody allowed to click it, and nobody can write the queue by
+hand.
+
+Verify it rather than trust the script's own word - the first run on Soccer reported a
+protection it had not created, because an absent `protectedRanges` field is `$null` and
+`@($null).Count` is 1 in PowerShell:
+
+```powershell
+Invoke-SheetsApiWithRetry -Method GET -Path ("$id" + '?fields=sheets(properties.title,protectedRanges)')
+```
+
+`requesters.owner` is empty until it is filled in, and while it is empty every `*SPORT*`
+request is refused. That is the safe way round: it is the one request that sets `-RunAll`
+against the production database.
+
+### Deploying it on a document
+
+```powershell
+.\TOOLS\Add-RunRequestsTab.ps1 -Sport Soccer -WhatIf   # say what it would do
+.\TOOLS\Add-RunRequestsTab.ps1 -Sport Soccer           # create and protect the tab
+```
+
+Then, in the browser: paste `RunRequests.gs` and `appsscript.json` into Extensions > Apps
+Script, and add an **installable** `onOpen` trigger owned by the owner account - a simple
+trigger runs as the viewer and would not be able to write a protected tab. Reload the document
+and the `DQ` menu appears.
+
+Only when that works, run again with `-Register`, which sets `runRequests` to true and is what
+makes the worker poll the document. The order matters: a registered document with no menu is a
+queue nobody can add to, and a worker polling it for nothing.
+
+The board updater leaves this tab alone by construction. `TOOLS/Sheets.ps1` removes exactly one
+tab ever - `Sheet1`, and only while it is still empty - plus the tab of a check withdrawn from
+the registry.
+
 ## One run at a time on the machine
 
 Every run that sends a statement takes a machine-wide lock first, whoever started it: the

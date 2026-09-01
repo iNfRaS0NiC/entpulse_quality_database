@@ -2679,6 +2679,45 @@ Test-That 'the shipped registry parses and covers every documented sport' {
     }
 }
 
+Test-That 'the Apps Script allows exactly the accounts the registry allows' {
+    # The list lives twice by necessity: the .gs runs in Google and cannot read a file in this
+    # repository, so it carries a copy and the worker enforces the original. Two copies drift,
+    # and the drift that matters is the quiet one - an account added here and not there keeps
+    # clicking a button that does nothing, or clicks one the machine then refuses.
+    $registryPath = Join-Path $PSScriptRoot 'sheet-registry.json'
+    $registry = Get-Content -LiteralPath $registryPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    $allowed = @($registry.requesters.allowed | ForEach-Object { ([string]$_).ToLowerInvariant() } | Sort-Object)
+
+    $scriptPath = Join-Path $PSScriptRoot 'sheets-apps-script\RunRequests.gs'
+    Assert-True (Test-Path -LiteralPath $scriptPath) 'the Apps Script source should be in the repository'
+    $source = Get-Content -LiteralPath $scriptPath -Raw
+
+    $match = [regex]::Match($source, 'var\s+ALLOWED\s*=\s*\[(?<body>[^\]]*)\]')
+    Assert-True $match.Success 'the Apps Script should declare an ALLOWED list'
+    $inScript = @([regex]::Matches($match.Groups['body'].Value, "'(?<mail>[^']+)'") |
+        ForEach-Object { $_.Groups['mail'].Value.ToLowerInvariant() } | Sort-Object)
+
+    Assert-Equal ($allowed -join ', ') ($inScript -join ', ') 'the two copies of the allowed list'
+}
+
+Test-That 'a whole-sport request is refused while the registry names no owner' {
+    # Fails closed on purpose. *SPORT* is the one request that sets -RunAll against the
+    # production database, so an empty owner must refuse it rather than fall back to anybody
+    # on the allowed list.
+    $registryPath = Join-Path $PSScriptRoot 'sheet-registry.json'
+    $registry = Get-Content -LiteralPath $registryPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    Assert-True ($registry.requesters.PSObject.Properties.Name -contains 'owner') 'the registry should carry an owner field'
+
+    $owner = [string]$registry.requesters.owner
+    $allowed = @($registry.requesters.allowed)
+    if ([string]::IsNullOrWhiteSpace($owner)) {
+        Assert-True $true 'no owner is recorded yet, so *SPORT* is refused'
+    }
+    else {
+        Assert-True ($allowed -notcontains $owner) 'the owner is allowed by being the owner, not by being on the list twice'
+    }
+}
+
 Complete-Group
 
 # --------------------------------------------------------------------------------------
