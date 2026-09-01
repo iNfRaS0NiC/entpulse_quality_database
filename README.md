@@ -68,6 +68,7 @@ rediscovering it for the next client would cost what it cost the first time.
 | `TOOLS/sheet-registry.json` | Which Google Sheets document holds each sport's live board, and which of those carry the `Run requests` tab. The ledger remembered this until 2026-09-01 and is now only a fallback |
 | `TOOLS/sheets-apps-script/RunRequests.gs` | The `DQ` menu on a sport's board: what a reviewer's click appends to the `Run requests` queue, and who may click it |
 | `TOOLS/Add-RunRequestsTab.ps1` | Creates that queue tab on a document and protects it, which is the boundary the allowed list is not |
+| `TOOLS/Watch-SheetRequests.ps1` | Runs what reviewers ask for from their boards, and what it refuses to run |
 | `TOOLS/Connect-Sheets.ps1` | One-time Google authorisation for that document |
 | `TOOLS/Test-Package.ps1` | Static package, registry and SQL-shape validation |
 | `TOOLS/Test-Tools.ps1` | Behavioural tests for the two scripts above |

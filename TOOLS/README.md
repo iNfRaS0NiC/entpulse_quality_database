@@ -2499,6 +2499,39 @@ Invoke-SheetsApiWithRetry -Method GET -Path ("$id" + '?fields=sheets(properties.
 request is refused. That is the safe way round: it is the one request that sets `-RunAll`
 against the production database.
 
+### The worker
+
+`TOOLS/Watch-SheetRequests.ps1` reads every registered document's queue, takes the oldest
+request waiting, runs it, and writes back what it returned.
+
+```powershell
+.\TOOLS\Watch-SheetRequests.ps1 -Once -WhatIf   # read the queue, decide, run nothing
+.\TOOLS\Watch-SheetRequests.ps1                 # until it is stopped
+```
+
+It enforces what the menu merely shapes, because a person with edit access could type into the
+tab directly. A CheckID must match one approved ID exactly - no pattern, no list, no wildcard,
+no second word - and belong to the sport whose document asked. `*SPORT*` is the one exception
+and is mapped to `-RunAll` here rather than assembled from anything the sheet said; it is
+refused unless the requester is `requesters.owner`, and refused outright while that is empty.
+**No cell ever reaches a shell.** Every refusal is written into the request's `Error` cell in
+the words the person who clicked will read.
+
+A request is judged against what is **ahead of it** in the queue and never against what came
+after. Judged against the whole open set, the oldest request loses to a whole-sport run
+somebody added underneath it a minute ago, which is the queue running backwards.
+
+Each run is its own `powershell.exe`. The run lock is a file handle, so a killed child
+releases it and a killed worker leaves nothing locked. Exit code 75 from the lock is not a
+failure: the request goes back as `WAITING` carrying the reason the lock printed, so the
+person watching sees what is ahead of them. A request left `RUNNING` by a crash is returned to
+the queue at startup, with that written into its `Error` cell - DQ statements are read-only, so
+a re-run costs time and never a wrong write.
+
+Rows are addressed by `Request ID` and the tab is re-read immediately before every write. Two
+writers share it: the Apps Script appends while the worker updates, and a row that moved under
+a stale index means one person's status written over another person's request.
+
 ### Deploying it on a document
 
 ```powershell
