@@ -754,8 +754,11 @@ while ($true) {
             if (-not $driveProved) {
                 # A missing scope is otherwise invisible: the worker keeps working, only slower,
                 # and nothing says the saving never started. One line at startup says it did.
-                Write-Host ('  Drive change queries are live; an idle pass is one request rather than {0}' -f `
-                        $sports.Count) -ForegroundColor DarkGray
+                $saving = $(if ($sports.Count -gt 1) {
+                        'one request rather than {0} reads' -f $sports.Count
+                    }
+                    else { 'one request whatever the number of boards' })
+                Write-Host ('  Drive change queries are live; an idle pass costs ' + $saving) -ForegroundColor DarkGray
                 $driveProved = $true
             }
             if ($driveOff) {
