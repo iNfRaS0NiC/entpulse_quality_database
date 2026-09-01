@@ -37,6 +37,20 @@
 .PARAMETER WhatIf
     Choose and report without running anything. What a first look should do.
 
+.PARAMETER LogPath
+    Where the pass writes what it printed. `TOOLS/nightly.local.log` by default, appended.
+
+    The pass runs unattended from Task Scheduler, which captures nothing, and it runs with
+    -NoLedger, so RUNS/ holds no record of it either. Without this file a night leaves no
+    trace at all: a sport that failed, a check that timed out at the gateway, the seconds each
+    statement cost - none of it is anywhere the next morning, and a broken night is
+    indistinguishable from a quiet one. The board is not the answer, because a partial run
+    leaves the rows it could not run holding the last full run's numbers.
+
+.PARAMETER NoLog
+    Run without writing the log. -WhatIf never writes one: it is a look at the selection, not
+    a pass, and a log of passes is worth more for holding only passes.
+
 .EXAMPLE
     .\TOOLS\Invoke-NightlyRun.ps1 -WhatIf
 
@@ -48,7 +62,9 @@ param(
     [string[]]$Sport,
     [double]$BudgetMinutes = 270,
     [switch]$WhatIf,
-    [switch]$Quiet
+    [switch]$Quiet,
+    [string]$LogPath,
+    [switch]$NoLog
 )
 
 $ErrorActionPreference = 'Stop'
@@ -60,8 +76,55 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 $LedgerDir = Join-Path $RepoRoot 'RUNS'
 $RunQuery = Join-Path $PSScriptRoot 'Run-Query.ps1'
 
+# ----- the log ------------------------------------------------------------------------------
+#
+# Start-Transcript rather than lines written by hand, because what is worth keeping is mostly
+# printed by Run-Query rather than here: the per-check line with its rows and seconds, the
+# parameters it resolved, the sheet it wrote. Those go to the host, which a transcript captures
+# and the `| Out-Null` below does not touch.
+#
+# The name follows nightly.local.json beside it, so one .gitignore rule covers both. `.log` is
+# outside the set Test-Package.ps1 scans, so nothing here has an opinion about its bytes.
+
+$logStarted = $false
+
+function Stop-NightlyLog {
+    # Called before every exit. Transcription is flushed as it goes, so a process killed
+    # mid-pass still leaves everything up to that moment; this only writes the footer.
+    if (-not $script:logStarted) { return }
+    $script:logStarted = $false
+    try { [void](Stop-Transcript) } catch { }
+}
+
+if (-not $NoLog -and -not $WhatIf) {
+    if ([string]::IsNullOrWhiteSpace($LogPath)) {
+        $LogPath = Join-Path $PSScriptRoot 'nightly.local.log'
+    }
+    # About 850 lines a night, so roughly 30 MB a year on a laptop that keeps this file for
+    # ever. One rotation bounds it at two files without needing anything to tidy up.
+    try {
+        $existing = Get-Item -LiteralPath $LogPath -ErrorAction SilentlyContinue
+        if ($existing -and $existing.Length -gt 5MB) {
+            Move-Item -LiteralPath $LogPath -Destination ($LogPath + '.1') -Force
+        }
+    }
+    catch { }
+
+    # A log must never stop a pass. If the file cannot be opened the night still runs, and says
+    # so where somebody watching would see it.
+    try {
+        [void](Start-Transcript -LiteralPath $LogPath -Append -ErrorAction Stop)
+        $logStarted = $true
+    }
+    catch {
+        Write-Host ("  the log at {0} could not be opened, so this pass leaves no record: {1}" -f `
+                $LogPath, $_.Exception.Message) -ForegroundColor Yellow
+    }
+}
+
 if (-not (Test-Path -LiteralPath $LedgerDir)) {
     Write-Host "No RUNS/ directory at $LedgerDir - nothing has been run yet." -ForegroundColor Yellow
+    Stop-NightlyLog
     exit 0
 }
 
@@ -82,6 +145,7 @@ foreach ($file in @(Get-ChildItem -LiteralPath $LedgerDir -Filter '*.json' | Sor
 
 if ($ledgers.Count -eq 0) {
     Write-Host 'No sport ledgers matched.' -ForegroundColor Yellow
+    Stop-NightlyLog
     exit 0
 }
 
@@ -103,6 +167,7 @@ if (-not $Quiet) {
 
 if ($selection.Checks.Count -eq 0) {
     Write-Host 'Nothing to run.' -ForegroundColor DarkGray
+    Stop-NightlyLog
     exit 0
 }
 
@@ -169,6 +234,8 @@ Write-Host ("Nightly pass finished: {0} check(s) over {1} sport(s) in {2:n1} min
 # sends it at the next scheduled drain. One mechanism, one wording, whichever run noticed.
 if ($failed.Count -gt 0) {
     Write-Host ("  {0} sport(s) failed: {1}" -f $failed.Count, ($failed -join ', ')) -ForegroundColor Yellow
+    Stop-NightlyLog
     exit 1
 }
+Stop-NightlyLog
 exit 0

@@ -6,3 +6,7 @@ output/
 
 # The local record of which notifications have already been sent.
 *.local.json
+
+# The nightly pass log, and the one file it rotates into.
+*.local.log
+*.local.log.1

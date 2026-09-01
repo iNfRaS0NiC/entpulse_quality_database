@@ -2390,6 +2390,21 @@ the cheapest, which is what the first night does anyway.
 A sport that fails does not end the pass, and its checks stay in the rotation rather than being
 recorded as done. One broken board must not silence fifteen others.
 
+And `TOOLS/nightly.local.log`, appended each pass and ignored by git under the same rule. Added
+2026-09-01, because until then a night left **no trace at all**: Task Scheduler captures nothing,
+`-NoLedger` means `RUNS/` is not written, and the board is no help because a partial run leaves
+the rows it could not run holding the last full run's numbers. A sport that failed, a statement
+that timed out at the gateway, the seconds each one cost - none of it was anywhere the next
+morning, and a broken night read exactly like a quiet one.
+
+It is a `Start-Transcript`, not lines written by hand, because most of what is worth keeping is
+printed by `Run-Query.ps1` rather than by the pass: the per-check line with its rows and seconds,
+the parameters it resolved, the board it wrote. Those go to the host, which a transcript captures
+and the pass's `| Out-Null` does not touch. `-WhatIf` writes none - it is a look at the selection
+rather than a pass - and `-NoLog` turns it off. A log that cannot be opened is reported and the
+night runs anyway. At about 850 lines a night the file rotates once past 5 MB, into
+`nightly.local.log.1`, which bounds it at two files and roughly two months.
+
 ## Batch behaviour
 
 More than one matched CheckID switches to batch mode.
