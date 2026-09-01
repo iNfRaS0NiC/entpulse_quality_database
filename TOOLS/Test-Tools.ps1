@@ -2546,6 +2546,76 @@ Test-That 'an unreadable ledger is reported rather than overwritten' {
 Complete-Group
 
 # --------------------------------------------------------------------------------------
+# The machine-wide run lock
+# --------------------------------------------------------------------------------------
+
+Start-Group 'Runner' 'Run lock'
+
+# The lock is a real file handle rather than a timestamp somebody has to expire, so these
+# cases exercise the handle: taken, refused while held, readable by the refused caller, and
+# free again once released. EP_QB_LOCK keeps every one of them off the machine's own lock.
+$lockPathBefore = $env:EP_QB_LOCK
+$env:EP_QB_LOCK = Join-Path ([IO.Path]::GetTempPath()) ('ep-lock-test-{0}.lock' -f ([guid]::NewGuid().ToString('N')))
+
+try {
+    Test-That 'the lock is taken, and says what is running' {
+        Assert-True (Open-RunLock -What 'a full board refresh of Fixtureball, 127 check(s)' -WaitSeconds 5) 'the first run should get the lock'
+        $holder = Read-RunLockHolder -Path (Get-RunLockPath)
+        Assert-True ($null -ne $holder) 'the holder should be readable while the lock is held'
+        Assert-Equal 'a full board refresh of Fixtureball, 127 check(s)' ([string]$holder.what) 'what the holder is doing'
+        Assert-Equal $PID ([int]$holder.pid) 'the holding process'
+    }
+
+    Test-That 'a second run is refused while the first holds it' {
+        # File sharing is per handle and not per process, so this is the same refusal a second
+        # powershell.exe gets. -NoWait is the Sheets worker's path: the reason, not the wait.
+        Assert-True (-not (Open-RunLock -What 'a batch of 12 check(s) on Fixtureball' -NoWait)) 'the second run must not get the lock'
+    }
+
+    Test-That 'the refused run is told what it is waiting for, in words a person can act on' {
+        $described = Format-RunLockHolder -Holder $script:RunLockBlockedBy
+        Assert-True ($described -like '*full board refresh of Fixtureball*') "the reason should name the work, got: $described"
+        Assert-True ($described -like '*running for*') "the reason should say how long it has been going, got: $described"
+    }
+
+    Test-That 'waiting gives up at its deadline rather than hanging' {
+        $started = Get-Date
+        Assert-True (-not (Open-RunLock -What 'a batch of 3 check(s) on Fixtureball' -WaitSeconds 0)) 'a zero wait should give up'
+        Assert-True (((Get-Date) - $started).TotalSeconds -lt 5) 'a zero wait should not sleep'
+    }
+
+    Test-That 'releasing the lock lets the next run take it' {
+        Close-RunLock
+        Assert-True (Open-RunLock -What 'Fixtureball-DQ-001 FIRST_TEMPLATE' -WaitSeconds 5) 'the next run should get the lock'
+        $holder = Read-RunLockHolder -Path (Get-RunLockPath)
+        Assert-Equal 'Fixtureball-DQ-001 FIRST_TEMPLATE' ([string]$holder.what) 'the new holder should have replaced the old description'
+        Close-RunLock
+    }
+
+    Test-That 'Close-RunLock on a run that holds nothing is not an error' {
+        Close-RunLock
+        Close-RunLock
+        Assert-True $true 'closing twice should be silent'
+    }
+
+    Test-That 'a holder that described nothing still reads as something in the way' {
+        $described = Format-RunLockHolder -Holder $null
+        Assert-True ($described.Length -gt 0) 'an undescribed holder still needs words'
+        Assert-True ($described -notlike '*running for*') 'nothing is known about when it started'
+    }
+}
+finally {
+    Close-RunLock
+    if (Test-Path -LiteralPath $env:EP_QB_LOCK) {
+        Remove-Item -LiteralPath $env:EP_QB_LOCK -Force -ErrorAction SilentlyContinue
+    }
+    if ($null -eq $lockPathBefore) { Remove-Item Env:\EP_QB_LOCK -ErrorAction SilentlyContinue }
+    else { $env:EP_QB_LOCK = $lockPathBefore }
+}
+
+Complete-Group
+
+# --------------------------------------------------------------------------------------
 # The live per-sport document
 #
 # Sheets.ps1 sends nothing, so all of this runs without a login. That is the point of the

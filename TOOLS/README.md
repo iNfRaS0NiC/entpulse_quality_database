@@ -2424,6 +2424,41 @@ A batch inherits the cost constraints in `WORKFLOW.md`. Running the whole catalo
 large sport can time out check by check; narrow the scope in the statement rather than
 expecting the runner to compensate.
 
+## One run at a time on the machine
+
+Every run that sends a statement takes a machine-wide lock first, whoever started it: the
+owner's shell, a scheduled task, the nightly pass, the Sheets worker. Two runs that overlap
+do not merely compete for the server - they write the same board and append to the same
+ledger, and whichever finishes second silently wins.
+
+The lock is a file under `%LOCALAPPDATA%\entpulse-qbun.lock`, held open for writing while
+the run lasts. A second run is refused by the operating system rather than by a timestamp, so
+there is no stale lock to break by hand and nothing to clean up: when the process ends, by
+exit or by kill or by a reboot, Windows drops the handle and the lock is gone with it. The
+file itself stays on disk between runs and what it then contains is the last holder's
+description, which nothing reads - a description is only consulted when an open was refused.
+
+A waiting run says what it is waiting for and how long that has been going:
+
+```text
+  waiting for a full board refresh of Soccer, 113 check(s) (process 29080, running for 4m 12s)
+  the machine is free; starting
+```
+
+| Switch | Effect |
+|---|---|
+| *(none)* | Wait up to `-LockWaitSeconds`, which defaults to 2700. Waiting behind a board refresh is the normal case - a mid-sized sport takes about 13 minutes - not a fault |
+| `-NoWait` | Do not wait. Print who holds it and exit **75**, which is `EX_TEMPFAIL`: a caller reads it as *busy, ask again* rather than as a failed run |
+| `-LockWaitSeconds <n>` | How long to wait before giving up, which also exits 75 |
+| `-NoLock` | Take no lock. For reading rows out of a statement while a refresh is under way. It does not make two runs safe to overlap; it says this one accepts that risk |
+
+`-Info`, `-History`, `-ListChecks` and `-DryRun` are outside the lock and stay free while a
+refresh runs. None of them sends a statement, writes a result, touches the document or
+appends to the ledger, so refusing them the catalogue would cost more than it protects.
+
+`EP_QB_LOCK` overrides the path, which is what the tool tests use to stay off the machine's
+own lock.
+
 ## Authentication
 
 Resolved in this order:

@@ -48,6 +48,13 @@
     Each run writes into its own folder under "D:\SQL's Output", named for the sport and the
     run time. EP_QB_OUTPUT overrides the root; -OutDir and -OutFile override it entirely.
 
+    Only one run is live on the machine at a time, whoever started it. The lock is a file
+    held open for writing under %LOCALAPPDATA%\entpulse-qb; a second run waits for it and says
+    what it is waiting for, and nothing has to be cleaned up because the handle dies with the
+    process. -Info, -History, -ListChecks and -DryRun are outside it and stay free. -NoWait
+    refuses to wait and exits 75 instead, which is what the Sheets worker reads as WAITING;
+    -LockWaitSeconds sets how long a waiting run waits, and -NoLock skips the lock entirely.
+
     Credentials are never stored in this file. They are read from the environment:
         EP_QB_EMAIL     login email
         EP_QB_PASSWORD  login password
@@ -234,6 +241,19 @@ param(
     [switch]$NoSheet,
     [switch]$NoLedger,
 
+    # Run without taking the machine-wide lock. For a reader that only wants rows out of a
+    # statement while a board refresh is under way, and for a caller that already holds it.
+    # It does not make two runs safe to overlap; it says this one accepts that risk.
+    [switch]$NoLock,
+
+    # Do not wait for the lock: if another run holds it, say who and stop. The Sheets worker
+    # uses this to write WAITING and a reason into the request row instead of blocking.
+    [switch]$NoWait,
+
+    # How long to wait for the lock before giving up. The default covers a full board refresh
+    # of the largest sport, because waiting behind one is the normal case rather than a fault.
+    [int]$LockWaitSeconds = 2700,
+
     # Dot-source the file for its functions and stop before Main. TOOLS/Test-Tools.ps1 uses
     # it to exercise selection, parameter expansion, the parser and the workbook writer
     # without a login or a statement. Nothing in a normal run passes it.
@@ -241,6 +261,11 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+# The machine-wide run lock: the open handle while this run holds it, and what was in the
+# way when it could not. Both are read by Main and by TOOLS/Test-Tools.ps1.
+$script:RunLockStream = $null
+$script:RunLockBlockedBy = $null
 
 # What the run was aimed at, which a GLOBAL CheckID cannot say for itself. Main resolves this
 # to the repository slug before any output is built. Read by Get-SportFromCheckId for the
@@ -5134,6 +5159,160 @@ function Save-RunWorkbook {
 }
 
 # --------------------------------------------------------------------------------------
+# The machine-wide run lock
+# --------------------------------------------------------------------------------------
+#
+# One run at a time on this machine, whoever started it: the Sheets worker, the owner's
+# shell, a scheduled task, another script. Two runs that overlap do not merely compete for
+# the server - they write the same board and append to the same ledger, and the second one
+# to finish silently wins.
+#
+# The lock is a file held open for writing with FileShare::Read. Anybody else asking to
+# write it is refused by the operating system, and anybody may read it, which is how a
+# waiting run finds out what it is waiting for. Nothing has to be cleaned up: when the
+# process dies, by exit or by kill or by a reboot, Windows drops the handle and the lock is
+# gone with it. There is no timestamp to expire and no stale lock to break by hand, which
+# are the two failure modes a lock file usually brings with it.
+
+function Get-RunLockPath {
+    # Outside the repository on purpose. It is machine state, not package state, and a lock
+    # inside TOOLS would be one more file the validator has to know to ignore.
+    if ($env:EP_QB_LOCK) { return $env:EP_QB_LOCK }
+
+    $root = $env:LOCALAPPDATA
+    if ([string]::IsNullOrWhiteSpace($root)) { $root = [IO.Path]::GetTempPath() }
+    $dir = Join-Path $root 'entpulse-qb'
+    if (-not (Test-Path -LiteralPath $dir)) {
+        [void](New-Item -ItemType Directory -Path $dir -Force)
+    }
+    return (Join-Path $dir 'run.lock')
+}
+
+function Read-RunLockHolder {
+    # Reads the description the holder wrote. FileShare::ReadWrite on this side, because the
+    # holder's own handle is a writing one and a reader that does not share writing is
+    # refused by the same rule that keeps the second runner out.
+    param([string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) { return $null }
+    $text = ''
+    try {
+        $stream = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+        try {
+            $reader = New-Object IO.StreamReader($stream)
+            $text = $reader.ReadToEnd()
+        }
+        finally { $stream.Dispose() }
+    }
+    catch { return $null }
+
+    if ([string]::IsNullOrWhiteSpace($text)) { return $null }
+    try { return ($text | ConvertFrom-Json) } catch { return $null }
+}
+
+function Format-RunLockHolder {
+    # One line a person can act on: what is running, since when, and by which process. The
+    # Apps Script confirmation and the worker's WAITING reason are both built from this, so
+    # it says the work rather than the switches - "a full board refresh of Soccer" tells the
+    # reader how long to expect to wait; "-RunAll" does not.
+    param($Holder)
+
+    if (-not $Holder) { return 'another run, which did not say what it was' }
+
+    $what = [string]$Holder.what
+    if ([string]::IsNullOrWhiteSpace($what)) { $what = 'another run' }
+
+    $since = ''
+    try {
+        $started = [datetime]::Parse([string]$Holder.startedUtc, [Globalization.CultureInfo]::InvariantCulture,
+            [Globalization.DateTimeStyles]::AdjustToUniversal -bor [Globalization.DateTimeStyles]::AssumeUniversal)
+        $seconds = ((Get-Date).ToUniversalTime() - $started).TotalSeconds
+        if ($seconds -ge 0) { $since = ', running for ' + (Format-RunDuration -Seconds $seconds) }
+    }
+    catch { $since = '' }
+
+    return ('{0} (process {1}{2})' -f $what, $Holder.pid, $since)
+}
+
+function Open-RunLock {
+    # Takes the lock, or reports who has it. Returns $true when this run may proceed.
+    #
+    # -NoWait is the Sheets worker's path: it wants the reason, not the wait, so it can write
+    # WAITING into the request row and come back. Everything else waits, because waiting
+    # behind a board refresh is the normal case - 13 minutes for a mid-sized sport, measured
+    # on Mountain Bike - and a run that failed instead would read as the feature being broken.
+    param(
+        [string]$What,
+        [int]$WaitSeconds = 2700,
+        [switch]$NoWait
+    )
+
+    $script:RunLockBlockedBy = $null
+    $path = Get-RunLockPath
+    $deadline = (Get-Date).AddSeconds([math]::Max(0, $WaitSeconds))
+    $announced = $false
+    $stream = $null
+
+    while ($true) {
+        try {
+            $stream = [IO.File]::Open($path, [IO.FileMode]::OpenOrCreate, [IO.FileAccess]::Write, [IO.FileShare]::Read)
+            break
+        }
+        catch [IO.IOException] {
+            $holder = Read-RunLockHolder -Path $path
+            $script:RunLockBlockedBy = $holder
+            $description = Format-RunLockHolder -Holder $holder
+
+            if ($NoWait) {
+                Write-Host ('  the machine is already running {0}, so this run was not started' -f $description) -ForegroundColor Yellow
+                return $false
+            }
+            if ((Get-Date) -ge $deadline) {
+                Write-Host ('  gave up waiting for {0}' -f $description) -ForegroundColor Yellow
+                return $false
+            }
+            if (-not $announced) {
+                Write-Host ('  waiting for {0}' -f $description) -ForegroundColor Yellow
+                $announced = $true
+            }
+            Start-Sleep -Seconds 3
+        }
+    }
+
+    $holder = [ordered]@{
+        pid        = $PID
+        startedUtc = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+        what       = $What
+        host       = $env:COMPUTERNAME
+    }
+    try {
+        $bytes = [Text.Encoding]::UTF8.GetBytes(($holder | ConvertTo-Json -Compress))
+        $stream.SetLength(0)
+        $stream.Write($bytes, 0, $bytes.Length)
+        $stream.Flush()
+    }
+    catch {
+        # The lock is held either way; only the description failed. A waiter then reads it as
+        # "another run, which did not say what it was", which is worse than a name and better
+        # than letting a second run through.
+        Write-Host ('  the run lock was taken but could not be described: {0}' -f $_.Exception.Message) -ForegroundColor DarkGray
+    }
+
+    $script:RunLockStream = $stream
+    if ($announced) { Write-Host '  the machine is free; starting' -ForegroundColor DarkGray }
+    return $true
+}
+
+function Close-RunLock {
+    # Called at the end of a run. Not required for correctness - the handle dies with the
+    # process - but a run invoked in-process rather than as its own powershell.exe would
+    # otherwise hold the machine until that session exited.
+    if (-not $script:RunLockStream) { return }
+    try { $script:RunLockStream.Dispose() } catch { }
+    $script:RunLockStream = $null
+}
+
+# --------------------------------------------------------------------------------------
 # Main
 # --------------------------------------------------------------------------------------
 
@@ -5835,6 +6014,33 @@ if ($isBatch -and $OutFile -and -not $isWorkbook) {
     throw "-OutFile takes a single check because column layouts differ per check. Use -OutDir, or -Format xlsx to collect every check into one workbook."
 }
 
+# ----- the machine-wide lock -----------------------------------------------------------
+
+# Taken here rather than at the top of Main, so that -Info, -History, -ListChecks and -DryRun
+# stay free while a board refresh is under way: none of them sends a statement, writes a file,
+# touches the document or appends to the ledger, and refusing a reader the catalogue would be
+# a lock that costs more than it protects.
+if (-not $NoLock) {
+    $sportLabel = if ($ResolvedSportSlug) { $ResolvedSportSlug } else { 'no sport named' }
+    $lockWhat = if ($RunAll -and $MaxChecks -le 0) {
+        'a full board refresh of {0}, {1} check(s)' -f $sportLabel, $jobs.Count
+    }
+    elseif ($isBatch) {
+        'a batch of {0} check(s) on {1}' -f $jobs.Count, $sportLabel
+    }
+    else {
+        '{0} {1}' -f $jobs[0].CheckId, $jobs[0].Name
+    }
+
+    if (-not (Open-RunLock -What $lockWhat -WaitSeconds $LockWaitSeconds -NoWait:$NoWait)) {
+        # Not an error. The caller asked not to wait, or waited as long as it was willing to,
+        # and Open-RunLock has already said what is in the way. Exit code 75 is EX_TEMPFAIL:
+        # the Sheets worker reads it as WAITING rather than ERROR, so a queued request is put
+        # back rather than marked failed for having been asked at a busy moment.
+        exit 75
+    }
+}
+
 # ----- session -------------------------------------------------------------------------
 
 # -Sport has to reach the database to discover its parameters and to work out the client
@@ -6266,6 +6472,7 @@ if ($isBatch) {
     if ($writing -ge 0.5) { $split += ('files {0}' -f (Format-RunDuration -Seconds $writing)) }
     Write-Host ("Elapsed {0}: {1}" -f (Format-RunDuration -Seconds $wall), ($split -join ', ')) `
         -ForegroundColor DarkGray
+    Close-RunLock
     return
 }
 
@@ -6371,6 +6578,7 @@ if ($OutFile) {
     }
 
     Write-Host "Written: $OutFile" -ForegroundColor DarkGray
+    Close-RunLock
     return
 }
 
@@ -6386,3 +6594,5 @@ switch ($Format) {
         $rows | Select-Object -First $Preview | Format-Table -AutoSize
     }
 }
+
+Close-RunLock
