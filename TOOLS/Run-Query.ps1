@@ -5397,6 +5397,24 @@ function Open-RunLock {
     return $true
 }
 
+# Release the lock when the run does not reach its own end.
+#
+# A terminating error unwinds the script without touching Close-RunLock, and the FileStream
+# then waits on a finaliser that runs whenever the garbage collector decides to. In its own
+# powershell.exe that costs nothing, because the process is going anyway. The nightly pass is
+# the case that made it matter: it calls this script in-process, once per sport, sixteen times
+# in a row. Measured 2026-09-01 - one sport throwing left the lock held, and every sport after
+# it would have waited out the whole 2700-second default, which is a pass that never ends.
+#
+# A trap at script scope, so it covers everything whatever order it runs in, and `break`
+# rethrows rather than swallowing: the caller must still see what failed. A `catch` in an inner
+# scope still wins, which is what keeps TOOLS/Test-Tools.ps1 - which dot-sources this file -
+# handling its own errors as it always did.
+trap {
+    Close-RunLock
+    break
+}
+
 function Close-RunLock {
     # Called at the end of a run. Not required for correctness - the handle dies with the
     # process - but a run invoked in-process rather than as its own powershell.exe would
