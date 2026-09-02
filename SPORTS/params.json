@@ -599,6 +599,7 @@
         }
     },
     "Soccer": {
+        "_clientScopeForm": "in-scope",
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 1,
         "RESULT_RANK_TYPE_ID": 100,

@@ -271,6 +271,11 @@ $script:RunLockBlockedBy = $null
 # to the repository slug before any output is built. Read by Get-SportFromCheckId for the
 # workbook's Sport column and the run folder name.
 $script:RunSportName = ''
+# How this run puts the client boundary to the database, and the ids the in-scope form uses.
+# Script scope because the decision is made once, where the boundary is resolved, and read per
+# statement where each one is narrowed.
+$script:ClientScopeForm = 'complement'
+$script:ClientScopeInScopeIds = @()
 
 # When this invocation began, stamped once so every ledger entry a run writes carries the
 # same moment however long the run took. UTC because the ledger is tracked in git and read on
@@ -2041,7 +2046,35 @@ $NotApplicableKey = '_notApplicable'
 $CheckSignalKey = '_checkSignal'
 $ExpectedKey = '_expected'
 $NamesKey = '_names'
-$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesKey)
+$ClientScopeFormKey = '_clientScopeForm'
+$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesKey,
+    $ClientScopeFormKey)
+
+# Which way round a sport's client boundary is put to the database. Both forms select the same
+# rows - the excluded ids are the exact complement of the taken ones within the sport - so this
+# chooses a query plan and never a scope.
+#
+#   complement  AND t.tournament_templateFK NOT IN (<the ids the client does not take>)
+#   in-scope    the same, plus AND t.tournament_templateFK IN (<the ids it does take>)
+#
+# `complement` is the default and stays the default. It is not the worse of the two: it is what
+# Handball's boundary was written as after five rewrites, and putting the in-scope form to
+# Handball-DQ-062 COMP.RANK_TEAM_ATHLETE_COUNT_GAP_BEYOND_SQUAD_VARIATION turns a 14.0 s
+# statement into a gateway timeout. Measured 2026-09-02.
+#
+# `in-scope` exists for the opposite case, which is a client taking a small fraction of a large
+# sport. Soccer takes 28 of 934 templates, so the complement is 906 ids and nothing can seek an
+# index through "everything except these 906": both
+# Soccer-DQ-073 EVENT_SETTINGS_DISCIPLINE_STORAGE_MISMATCH and
+# Soccer-DQ-052 COMP.RANK_ATHLETE_TEAM_MISSING_OR_INVALID timed out at 180 s in the first
+# nightly pass and came back at 0.6 s and 8.0 s with the in-scope form added. Measured the same
+# day, on the same machine, against the same data.
+#
+# It is declared per sport and never inferred. A threshold on the ratio would be two
+# measurements fitted into a rule, and it would move a sport's plan silently on the day its
+# template count drifted past the line. A sport switches because somebody ran it both ways.
+$ClientScopeForms = @('complement', 'in-scope')
+$ClientScopeInScopeForm = 'in-scope'
 
 # What a recorded signal may say. Actionable is the default and is never recorded: writing it
 # down for every check would make the block a second copy of the registry. Deprecated is
@@ -2814,6 +2847,42 @@ function Confirm-RunnerSession {
     if ($Relogin -and (Test-Path $StatePath)) { Remove-Item -LiteralPath $StatePath -Force }
     if (-not $Relogin) { $script:Session = Restore-SessionState }
     if ($null -eq $script:Session) { $script:Session = New-AuthenticatedSession }
+}
+
+function Get-ClientScopeForm {
+    <#
+        Which way round this sport puts its client boundary, out of SPORTS/params.json.
+
+        Declared and never inferred, and `complement` whenever the sport says nothing. Both
+        forms select the same rows; see $ClientScopeForms for the two measurements that make
+        this a per-sport declaration rather than a rule.
+
+        Reads the file itself rather than the resolved parameter table, because this is not a
+        parameter: no statement declares a {{...}} token for it, and the loader drops every key
+        beginning with an underscore before the table is built.
+    #>
+    param([string]$SportName)
+
+    if ([string]::IsNullOrWhiteSpace($SportName)) { return 'complement' }
+
+    $path = Join-Path $RepoRoot 'SPORTS\params.json'
+    if (-not (Test-Path -LiteralPath $path)) { return 'complement' }
+
+    try { $params = Get-Content -LiteralPath $path -Raw -Encoding UTF8 | ConvertFrom-Json }
+    catch { return 'complement' }
+
+    $entry = $params.PSObject.Properties | Where-Object { $_.Name -eq $SportName }
+    if (-not $entry) { return 'complement' }
+
+    $declared = $entry.Value.PSObject.Properties | Where-Object { $_.Name -eq $ClientScopeFormKey }
+    if (-not $declared) { return 'complement' }
+
+    $value = ([string]$declared.Value).Trim()
+    if ($ClientScopeForms -notcontains $value) {
+        throw ("SPORTS/params.json gives $SportName a $ClientScopeFormKey of '$value'. It has to " +
+            'be one of: ' + ($ClientScopeForms -join ', ') + '.')
+    }
+    return $value
 }
 
 function Resolve-ClientBoundary {
@@ -5892,6 +5961,28 @@ if ($sportIdentity) {
     # Resolve-ClientBoundary returns nothing and the value it already has stands.
     $derived = Resolve-ClientBoundary -Values $paramTable
     if ($null -ne $derived) { $paramTable[$ClientScopeParameter] = $derived }
+
+    # Which way round the boundary goes to the database. Only meaningful where the sport named
+    # what it takes: a sport that wrote the exclusion list by hand has no in-scope list to put
+    # in front of it, and asking for one would be inventing a boundary rather than reading one.
+    # $ResolvedSportSlug and never $Sport. The slug is what keys SPORTS/params.json, and it is
+    # resolved whether the sport was given with -Sport or taken from the CheckID - which is how
+    # the nightly pass and the Sheets worker both run. Read from $Sport this returned
+    # 'complement' for every run that named a check rather than a sport, and did so silently.
+    $script:ClientScopeForm = Get-ClientScopeForm -SportName $ResolvedSportSlug
+    if ($script:ClientScopeForm -eq $ClientScopeInScopeForm) {
+        if ($paramTable.ContainsKey($InScopeParameter)) {
+            $script:ClientScopeInScopeIds = @([string]$paramTable[$InScopeParameter] -split ',' |
+                ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ })
+            Write-Host ("  {0,-30} in-scope: the boundary also goes in as IN ({1} template(s))" -f `
+                    $ClientScopeFormKey, $script:ClientScopeInScopeIds.Count) -ForegroundColor DarkGray
+        }
+        else {
+            Write-Host ("  {0,-30} in-scope was declared, but this sport names {1} rather than {2}, so there is no in-scope list to use" -f `
+                    $ClientScopeFormKey, $ClientScopeParameter, $InScopeParameter) -ForegroundColor Yellow
+            $script:ClientScopeForm = 'complement'
+        }
+    }
     Write-Host ''
 }
 
@@ -5959,6 +6050,21 @@ foreach ($job in $jobs) {
             continue
         }
         $job.Sql = $narrowed.Sql
+    }
+    elseif ($script:ClientScopeForm -eq $ClientScopeInScopeForm -and
+        $script:ClientScopeInScopeIds.Count -gt 0) {
+        # The same marker, filled with the sport's whole in-scope list, and on a different
+        # contract from -TemplateIds above. That one narrows, so a statement it cannot narrow is
+        # stopped rather than run wide and reported as narrow. This one narrows nothing: the ids
+        # it adds are the exact complement of the ones NOT IN already excludes, so the rows are
+        # the same either way and only the plan differs. A statement with no marker is therefore
+        # left exactly as it is, not skipped - it is already correct, merely slower.
+        #
+        # -TemplateIds wins where both could apply. A person who named templates is asking a
+        # narrower question than the client boundary, and answering the wider one instead would
+        # report a scope they did not ask for.
+        $wide = Enable-TemplateFilter -Text $job.Sql -TemplateIds $script:ClientScopeInScopeIds
+        if ($wide.Activated -gt 0) { $job.Sql = $wide.Sql }
     }
 
     # A statement marking no optional registry branch is run unchanged rather than skipped.

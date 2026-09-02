@@ -46,7 +46,13 @@ $NotApplicableKey = '_notApplicable'
 $CheckSignalKey = '_checkSignal'
 $ExpectedKey = '_expected'
 $NamesKey = '_names'
-$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesKey)
+# Which way round a sport puts its client boundary. Not a parameter - no statement declares a
+# token for it - so it belongs with the other blocks that are about the sport rather than for
+# the SQL. TOOLS/Run-Query.ps1 declares the same name and the pair of files is the contract.
+$ClientScopeFormKey = '_clientScopeForm'
+$ClientScopeForms = @('complement', 'in-scope')
+$ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesKey,
+    $ClientScopeFormKey)
 
 # The client's boundary, expressed as the templates it does not take. README.md owns why the
 # client is a boundary of its own; this is the value every statement that can carry one reads.
@@ -1568,8 +1574,10 @@ if (Test-Path -LiteralPath $paramsPath) {
             }
             else {
                 $templateSql = [regex]::Replace($template.Sql,
-                    '(?ms)^[ 	]*--[ 	]*STATISTIC BRANCH BEGIN[ 	]*?
-.*?^[ 	]*--[ 	]*STATISTIC BRANCH END[ 	]*?
+                    '(?ms)^[ 	]*--[ 	]*STATISTIC BRANCH BEGIN[ 	]*
+?
+.*?^[ 	]*--[ 	]*STATISTIC BRANCH END[ 	]*
+?
 ', '')
                 $needed = @([regex]::Matches($templateSql, '\{\{([A-Z_]+)\}\}') |
                         ForEach-Object { $_.Groups[1].Value } | Select-Object -Unique)

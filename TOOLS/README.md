@@ -2704,6 +2704,65 @@ The board updater leaves this tab alone by construction. `TOOLS/Sheets.ps1` remo
 tab ever - `Sheet1`, and only while it is still empty - plus the tab of a check withdrawn from
 the registry.
 
+## Which way round the client boundary goes to the database
+
+A sport that names what its client takes has that turned into an exclusion list: the runner
+computes the complement against the sport's templates as they are now, and every statement
+that can reach a template sends `NOT IN (<the ids the client does not take>)`.
+
+That is the right shape for most sports and the wrong one for a client taking a small slice of
+a large sport. Soccer takes **28 of 934** templates, so the complement is **906 ids**, and
+nothing can seek an index through "everything except these 906": the tournaments of the whole
+sport are walked and each one tested against the list.
+
+`_clientScopeForm` in `SPORTS/params.json` chooses between the two:
+
+| Value | What is sent |
+|---|---|
+| `complement` | `NOT IN (<the ids the client does not take>)` alone. The default, and what every sport does unless it says otherwise |
+| `in-scope` | The same, **plus** `IN (<the ids it does take>)` |
+
+**Both select identical rows.** The excluded ids are the exact complement of the taken ones
+within the sport, so this chooses a query plan and never a scope. Coverage is unaffected, and
+the `in-scope` form is an addition rather than a replacement - the `NOT IN` stays exactly where
+it was.
+
+Nothing in any `.sql` file changes. The runner fills the in-scope list through the same
+commented template filter `-TemplateIds` uses, and every one of the 148 statements carrying the
+boundary already has that marker.
+
+### Why it is declared and not worked out
+
+Measured on 2026-09-02, on one machine against one database:
+
+| Check | `complement` | `in-scope` |
+|---|---|---|
+| `Soccer-DQ-073 EVENT_SETTINGS_DISCIPLINE_STORAGE_MISMATCH` | timeout at 180 s | **0.6 s** |
+| `Soccer-DQ-052 COMP.RANK_ATHLETE_TEAM_MISSING_OR_INVALID` | timeout at 180 s | **8.6 s** |
+| `Handball-DQ-062 COMP.RANK_TEAM_ATHLETE_COUNT_GAP_BEYOND_SQUAD_VARIATION` | **15.6 s, 23 rows** | timeout |
+
+The same form rescues one sport and destroys another, and Handball's is not an accident: its
+boundary was written as the complement after five rewrites, for exactly this reason. Soccer
+takes 3% of its templates and Handball 24%.
+
+So a threshold on the ratio would be two measurements fitted into a rule, and it would move a
+sport's plan silently the day its template count drifted past the line. **A sport switches
+because somebody ran it both ways**, and the value records that they did.
+
+### The two contracts, which are not the same
+
+`-TemplateIds` narrows: it answers a question about the templates a person named, so a
+statement it cannot narrow is **stopped** rather than run wide and reported as though it were
+narrow.
+
+`in-scope` narrows nothing, so a statement with no marker is **left as it is** - already
+correct, merely slower. And `-TemplateIds` wins wherever both could apply, because somebody who
+named templates is asking a narrower question than the client boundary.
+
+The form is read against the sport slug the run resolved, which is filled whether the sport came
+from `-Sport` or from the CheckID. Read from `-Sport` alone it would work by hand and silently
+do nothing under the nightly pass and the Sheets worker, which name checks rather than sports.
+
 ## One run at a time on the machine
 
 Every run that sends a statement takes a machine-wide lock first, whoever started it: the

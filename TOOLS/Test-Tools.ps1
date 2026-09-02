@@ -2619,6 +2619,128 @@ Complete-Group
 # Which document belongs to which sport
 # --------------------------------------------------------------------------------------
 
+Start-Group 'Runner' 'Client scope form'
+
+# Which way round a sport's client boundary is put to the database. Both forms select the same
+# rows, so nothing here is about scope; it is about a plan that decides whether two Soccer
+# checks return in a second or time out at three minutes, and whether Handball's still runs.
+
+# $RepoRoot is the fixture root by this point in the harness, and Get-ClientScopeForm reads
+# SPORTS/params.json underneath it. Every case below that asks about a real sport points it at
+# the real repository first, which is the assignment used a few groups above for the same
+# reason; it is local to the case. Without it these two read a fixture and passed or failed on
+# whatever the fixture happened to say.
+
+Test-That 'a sport that says nothing gets the complement, which is what every sport did before' {
+    $RepoRoot = $RealRepoRoot
+    Assert-Equal 'complement' (Get-ClientScopeForm -SportName 'Fixtureball') 'an unknown sport'
+    Assert-Equal 'complement' (Get-ClientScopeForm -SportName '') 'no sport at all'
+}
+
+Test-That 'Soccer declares the in-scope form, and it is spelt the way the runner expects' {
+    # Not a general assertion about Soccer - an assertion that the one sport switched so far is
+    # readable by the code that reads it. A typo here is silent: the run works and stays slow.
+    $RepoRoot = $RealRepoRoot
+    Assert-Equal 'in-scope' (Get-ClientScopeForm -SportName 'Soccer') 'Soccer'
+}
+
+Test-That 'Handball keeps the complement, because the in-scope form times its check out' {
+    $RepoRoot = $RealRepoRoot
+    # Handball-DQ-062 COMP.RANK_TEAM_ATHLETE_COUNT_GAP_BEYOND_SQUAD_VARIATION runs in 15.6s as
+    # it is and gateway-times-out with the in-scope form added; its boundary was written as the
+    # complement after five rewrites. This case exists so that switching Handball has to be a
+    # decision somebody takes against a measurement, not an edit that passes quietly.
+    Assert-Equal 'complement' (Get-ClientScopeForm -SportName 'Handball') 'Handball'
+}
+
+Test-That 'a value that is neither form is refused rather than treated as the default' {
+    # The defect this exists for: a misspelt value read as "complement" leaves a sport slow with
+    # nothing anywhere saying so, which is the failure this whole change was chasing.
+    $RepoRoot = $RealRepoRoot
+    $params = Join-Path $RepoRootPath 'SPORTS\params.json'
+    $original = [IO.File]::ReadAllText($params)
+    try {
+        $broken = $original -replace '"_clientScopeForm": "in-scope"', '"_clientScopeForm": "inscope"'
+        Assert-True ($broken -ne $original) 'the fixture should have changed something'
+        [IO.File]::WriteAllText($params, $broken)
+
+        $threw = $false
+        try { [void](Get-ClientScopeForm -SportName 'Soccer') } catch { $threw = $true }
+        Assert-True $threw 'an unknown form should stop the run'
+    }
+    finally { [IO.File]::WriteAllText($params, $original) }
+}
+
+Test-That 'every declared form is one the runner knows' {
+    # Read from the file rather than from a list here, so a sport switched later is covered by
+    # this case without anybody remembering to add it.
+    $params = Get-Content -LiteralPath (Join-Path $RepoRootPath 'SPORTS\params.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    foreach ($sport in $params.PSObject.Properties) {
+        $declared = $sport.Value.PSObject.Properties | Where-Object { $_.Name -eq '_clientScopeForm' }
+        if (-not $declared) { continue }
+        Assert-True (@('complement', 'in-scope') -contains [string]$declared.Value) `
+            "$($sport.Name) declares a form the runner knows, got '$($declared.Value)'"
+    }
+}
+
+Test-That 'every branch carrying the client boundary has a marker for the form to fill' {
+    # Per branch and not per statement, and sliced per statement before that. A UNION branch is
+    # its own scope: if the findings half gets the in-scope list and the COVERAGE half does not,
+    # the two still select the same rows - the added ids are the complement of the excluded ones
+    # - but the coverage half keeps the plan that timed out, and the check is half fixed with
+    # nothing saying so.
+    #
+    # The first version of this case cut the whole file on every top-level SELECT, so its pieces
+    # ran across statement boundaries and it reported GLOBAL-DQ-001 and GLOBAL-DQ-010 as gaps
+    # that were not there. 298 branches carry the boundary today and all 298 have the marker.
+    # Both patterns allow for a carriage return before the end of line, as $TemplateFilterMarker
+    # in Run-Query.ps1 does and for the same reason: the .sql files are CRLF, and in .NET
+    # multiline mode the end-of-line anchor matches before the newline while a space-or-tab
+    # class will not eat the return in front of it. Without that allowance this found 2
+    # top-level SELECTs in HIERARCHY.sql rather than 72, and reported 134 bounded branches
+    # rather than 298 - a scan that passed for most of what it was meant to check by never
+    # seeing it.
+    $marker = '(?m)^[ \t]*--[ \t]*AND[ \t]+\w+\.(id|tournament_templateFK)[ \t]*=[ \t]*<tournament_template_id>[ \t]*\r?$'
+    $topSelect = '(?m)^SELECT[ \t]*\r?$'
+    $gaps = @()
+    $carrying = 0
+
+    $files = @(Get-ChildItem -LiteralPath (Join-Path $RepoRootPath 'GLOBAL_DQ') -Filter *.sql) +
+    @(Get-ChildItem -LiteralPath (Join-Path $RepoRootPath 'POWERBI_QUERIES') -Filter *.sql)
+
+    foreach ($file in $files) {
+        $text = Get-Content -LiteralPath $file.FullName -Raw
+
+        # A statement starts at a top-level SELECT whose identity header follows it; anything
+        # else at that level is a UNION branch of the statement already open.
+        $starts = @([regex]::Matches($text, $topSelect) | ForEach-Object { $_.Index })
+        $heads = @($starts | Where-Object {
+                $text.Substring($_, [math]::Min(400, $text.Length - $_)) -match '--\s*CheckID\s*-\s*(\S+)'
+            })
+
+        for ($n = 0; $n -lt $heads.Count; $n++) {
+            $from = $heads[$n]
+            $to = $(if ($n + 1 -lt $heads.Count) { $heads[$n + 1] } else { $text.Length })
+            $statement = $text.Substring($from, $to - $from)
+            $checkId = [regex]::Match($statement, '--\s*CheckID\s*-\s*(\S+)').Groups[1].Value
+
+            $cuts = @(@([regex]::Matches($statement, $topSelect) | ForEach-Object { $_.Index }) + $statement.Length)
+            for ($b = 0; $b -lt $cuts.Count - 1; $b++) {
+                $branch = $statement.Substring($cuts[$b], $cuts[$b + 1] - $cuts[$b])
+                if ($branch -notmatch 'OUT_OF_SCOPE_TEMPLATE_ID_LIST') { continue }
+                $carrying++
+                if ($branch -notmatch $marker) { $gaps += ('{0} branch {1}' -f $checkId, ($b + 1)) }
+            }
+        }
+    }
+
+    Assert-True ($carrying -gt 250) "the scan should find the boundary in most branches, found $carrying"
+    Assert-Equal 0 $gaps.Count `
+        "branch(es) carrying the client boundary with no template filter to fill: $($gaps -join '; ')"
+}
+
+Complete-Group
+
 Start-Group 'Runner' 'Sheet registry'
 
 # The cache is the injection point: Get-SheetRegistry reads TOOLS/sheet-registry.json once and
