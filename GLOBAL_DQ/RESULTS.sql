@@ -1537,6 +1537,19 @@ SELECT
 -- What it does, stated in full: Finds events in the sport's timed disciplines where a
 -- participant's full time does not equal the leader's full time plus their own gap, beyond
 -- the sport's tolerance.
+-- **The leader block is scoped to the sport, from 2026-09-02.** Until then it grouped every
+-- rank-1 finisher carrying a full time anywhere in the database and the join then threw almost
+-- all of it away, so the cost had nothing to do with how much the sport stores: Track Cycling
+-- audits 9 events and spent 20.3 seconds doing it, and Cycling audits none at all and spent
+-- 16.3. Measured 2026-09-02 across all seven instantiations, with identical findings and
+-- identical coverage in every one: Track Cycling 20.3s to 1.4, BMX 18.8 to 5.0, Speed Skating
+-- 21.0 to 7.0, Biathlon 23.9 to 10.4, Triathlon 22.1 to 8.7, Swimming 43.3 to 34.5, and Cycling
+-- 16.3 to 15.0 - that last one barely moves because its time is in the coverage branch, which
+-- has no such block and asks for the leader through a correlated EXISTS instead.
+-- Only the scope changed and not the shape. Replacing the block with an EXISTS was not tried
+-- here on purpose: the same substitution turned Equestrian-DQ-092 from 1.5 seconds into a
+-- gateway timeout on 2026-09-01, and a derived table and a correlated probe are not
+-- interchangeable just because they select the same rows.
 FROM (
     SELECT e.id AS event_id, e.name AS event_name, e.startdate AS event_startdate, tt.name AS tournament_template_name,
            ep.id AS event_participants_id, p.name AS participant_name,
@@ -1595,6 +1608,15 @@ FROM (
                END) AS leader_secs
         FROM event_participants ep2
         JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+        -- Narrowed to the sport, and only to the sport. Without these three joins the block
+        -- groups every rank-1 finisher in the database - all sports, all seasons - and the
+        -- result is then joined away against nine events. It is not narrowed by template or
+        -- season as well: the block only has to cover the outer scope, and a superset costs
+        -- nothing while a subset would silently drop leaders.
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+             AND tt2.sportFK = {{SPORT_ID}}
         JOIN result rr2 ON rr2.event_participantsFK = ep2.id AND rr2.result_typeFK = {{RESULT_RANK_TYPE_ID}} AND rr2.del = 'no'
         JOIN result rf2 ON rf2.event_participantsFK = ep2.id AND rf2.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} AND rf2.del = 'no'
         WHERE ep2.del = 'no' AND TRIM(rr2.value) = '1'
