@@ -4888,12 +4888,34 @@ function Save-RunSheet {
         # workbook is on disk and the document is current; a queue file that will not open is
         # a message somebody does not get, and that is not worth any of the three.
         try {
+            # Resolved before the branch, not inside it. It was assigned only where a reopen had
+            # been found, and the pending count below reads it either way: a run that reopened
+            # nothing passed $null to Read-NotifyQueue, threw, and was caught into the yellow
+            # line that says the notification could not be queued - on every quiet run, which is
+            # most of them. A real failure to queue read exactly the same, so the one line that
+            # would have reported it was already crying wolf.
+            $queuePath = Get-NotifyQueuePath
+
+            $renamedToReopened = @($plan.StatusRenames |
+                    Where-Object { [string]$_.To -eq $SheetsReopenedStatus }).Count
             $reopened = New-ReopenNotification -Renames $plan.StatusRenames -RunId $stamp `
                 -StartedUtc $script:RunStartedUtc -Sport $Sport -SheetId $id `
                 -ReopenedWord $SheetsReopenedStatus `
                 -GidOf $(if ($sent.PSObject.Properties.Name -contains 'GidOf') { $sent.GidOf } else { $null })
+
+            # The board write and the message are two steps and either can happen without the
+            # other. On 2026-09-02 Ice-Hockey-DQ-114 EVENT_PARTICIPANT_ORGANIZATION_MISSING was
+            # written Reopened on the board by the 09:16 run and no event reached the queue, and
+            # nothing anywhere said so - the run's own output carried no line that could have
+            # been missed, because there was none to print. Said out loud whenever the two
+            # numbers disagree, so the next occurrence is a line in a log rather than a week of
+            # reading files backwards.
+            if ($renamedToReopened -ne $reopened.Count) {
+                Write-Host ("  {0} row(s) were written Reopened but {1} notification(s) were built from them" -f `
+                        $renamedToReopened, $reopened.Count) -ForegroundColor Yellow
+            }
+
             if ($reopened.Count -gt 0) {
-                $queuePath = Get-NotifyQueuePath
                 $queued = Add-NotifyEvent -Queue (Read-NotifyQueue -Path $queuePath) -Events $reopened
                 if ($queued.Added -gt 0) {
                     [void](Save-NotifyQueue -Queue $queued.Queue -Path $queuePath)

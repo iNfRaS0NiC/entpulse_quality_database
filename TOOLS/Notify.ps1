@@ -384,7 +384,7 @@ function Format-ReopenDigest {
         it is what a client refusing HTML shows, what a preview line quotes, and what a search
         over somebody's mail matches. Both say the same things in the same order.
     #>
-    param($Events)
+    param($Events, [string]$Headline, [string]$OpeningLine)
 
     $items = @(ConvertTo-NotifyList -Value $Events)
     if ($items.Count -eq 0) { return $null }
@@ -424,7 +424,21 @@ function Format-ReopenDigest {
         $subject = ('Data Quality Issues - Reopened: {0} {1} on {2} sports' -f $items.Count, $noun, $sportCount)
     }
 
-    $opening = $(if ($items.Count -eq 1) {
+    # Two sentences the caller may replace, and nothing else. The daily sweep sends the same
+    # layout about a different fact - what a board says right now, rather than what a run just
+    # changed - and a standing list described as a transition would tell the reader something
+    # untrue about every row on it. Everything below is shared, because the reader wants the
+    # same four things either way: which sport, which check, what it asserts and how big it is.
+    #
+    # The parameter is $OpeningLine and not $Opening, for the reason New-ReopenNotification
+    # records against $GidOf: PowerShell variable names do not distinguish case, so a local
+    # $opening **is** a parameter named $Opening, and the default below would overwrite the
+    # caller's argument before anything could read it. Written that way first, on 2026-09-02,
+    # and it failed exactly as described - the subject changed and the sentence under it did
+    # not, which is the kind of half-working that takes a dry run to notice.
+    if (-not [string]::IsNullOrWhiteSpace($Headline)) { $subject = $Headline }
+    $opening = $(if (-not [string]::IsNullOrWhiteSpace($OpeningLine)) { $OpeningLine }
+        elseif ($items.Count -eq 1) {
             'check that a reviewer had closed has returned findings'
         }
         else {
@@ -858,6 +872,153 @@ function Get-NotifyBoardStatus {
         $map[$id] = $status
     }
     return $map
+}
+
+function Get-NotifyBoardReopened {
+    <#
+        Every check a board currently calls `Reopened`, in the shape the queue and the digest
+        already use.
+
+        This asks the board what is open rather than remembering what a run said, and the two
+        are not the same thing. A run queues one event at the moment it writes the word, so a
+        transition that is written but not queued is lost silently - which is what happened to
+        Ice-Hockey-DQ-114 EVENT_PARTICIPANT_ORGANIZATION_MISSING on 2026-09-02: the board carried
+        `Reopened` from the 09:16 run and the queue never heard of it. Read from the board
+        instead, the same row is found the next afternoon whatever went wrong at the moment it
+        was written. The queue keeps its own job - it says what *changed*, which a sweep cannot -
+        and this is the floor under it.
+
+        Read by header name, never by column letter. The Overview layout has taken two new
+        columns since it was written and will take more; a positional read would have gone on
+        working and reported the wrong cell, which is the failure mode this whole file exists
+        to avoid.
+
+        One read per board, plus one for the Overview tab id so the heading can link to it.
+        Failure is thrown rather than swallowed: a sweep is the safety net, and a net that
+        reports nothing when it cannot see is worse than no net. The caller decides.
+    #>
+    param([string]$SheetId, [string]$Sport)
+
+    if ([string]::IsNullOrWhiteSpace($SheetId)) { return @() }
+
+    $path = '{0}/values/{1}' -f $SheetId, [uri]::EscapeDataString('Overview!A:X')
+    $response = Invoke-SheetsApiWithRetry -Method Get -Path $path -What ("reading $Sport's board")
+
+    # The Overview's own tab id, for the heading link. One extra read, and a board whose id
+    # cannot be read still reports its checks - the heading falls back to the document.
+    $overviewGid = $null
+    try {
+        $meta = Invoke-SheetsApiWithRetry -Method Get -What ("finding $Sport's Overview tab") `
+            -Path ("$SheetId" + '?fields=sheets.properties.title,sheets.properties.sheetId')
+        foreach ($sheet in @($meta.sheets)) {
+            if ([string]$sheet.properties.title -eq 'Overview') { $overviewGid = $sheet.properties.sheetId }
+        }
+    }
+    catch { $overviewGid = $null }
+
+    return @(Select-NotifyReopenedRows -Values $response.values -Sport $Sport `
+            -SheetId $SheetId -OverviewGid $overviewGid)
+}
+
+function Select-NotifyReopenedRows {
+    <#
+        The `Reopened` rows out of an Overview's raw values, in the shape the digest uses.
+
+        Split from the fetching so it can be tested against a handful of rows without a login,
+        which is the same reason New-SheetsMergePlan is handed its history rather than reading
+        the ledger itself. Everything that decides anything is here; the caller only fetches.
+
+        Read by header name, never by column letter. The Overview layout has taken two new
+        columns since this file was written and will take more; a positional read would have
+        gone on working and reported the wrong cell.
+    #>
+    param($Values, [string]$Sport, [string]$SheetId, $OverviewGid)
+
+    $events = @()
+    $rows = @($Values)
+    if ($rows.Count -lt 2) { return $events }
+
+    $header = @($rows[0] | ForEach-Object { ([string]$_).Trim() })
+    $columnOf = @{}
+    for ($i = 0; $i -lt $header.Count; $i++) {
+        if (-not [string]::IsNullOrWhiteSpace($header[$i]) -and -not $columnOf.ContainsKey($header[$i])) {
+            $columnOf[$header[$i]] = $i
+        }
+    }
+    foreach ($needed in 'CheckID', 'Status') {
+        if (-not $columnOf.ContainsKey($needed)) {
+            throw ("$Sport's Overview has no '$needed' column, so it cannot be swept.")
+        }
+    }
+
+    $cellOf = {
+        param($Row, [string]$Name)
+        if (-not $columnOf.ContainsKey($Name)) { return '' }
+        $at = $columnOf[$Name]
+        if (@($Row).Count -le $at) { return '' }
+        return ([string]$Row[$at]).Trim()
+    }
+
+    for ($r = 1; $r -lt $rows.Count; $r++) {
+        $row = @($rows[$r])
+        $id = & $cellOf $row 'CheckID'
+        if ($id -notmatch '^[A-Za-z][A-Za-z\-]*-DQ-\d+$') { continue }
+        if ((& $cellOf $row 'Status') -ne $SheetsReopenedStatus) { continue }
+
+        # `Findings` is the open count - the rows reviewers dismissed are already out of it -
+        # and `Rows` is the raw result. The message quotes the open count, so that it agrees
+        # with the board it points at. See the comment beside $SheetsReopenedStatus.
+        $findings = & $cellOf $row 'Findings'
+        if ([string]::IsNullOrWhiteSpace($findings)) { $findings = & $cellOf $row 'Rows' }
+
+        $events += [pscustomobject]@{
+            notificationId   = ('sweep:{0}' -f $id)
+            checkId          = $id
+            sport            = $(if ([string]::IsNullOrWhiteSpace($Sport)) { & $cellOf $row 'Sport' } else { $Sport })
+            name             = & $cellOf $row 'Check Name'
+            what             = & $cellOf $row 'What it does'
+            previousStatus   = ''
+            newStatus        = $SheetsReopenedStatus
+            previousFindings = & $cellOf $row 'Prev findings'
+            currentFindings  = $findings
+            verdict          = & $cellOf $row 'Verdict'
+            checkBy          = & $cellOf $row 'Check By'
+            lastRun          = & $cellOf $row 'Last run'
+            runId            = ''
+            sheetId          = $SheetId
+            tabGid           = $null
+            overviewGid      = $OverviewGid
+            queuedUtc        = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+            status           = $NotifyStatusQueued
+            attempts         = 0
+        }
+    }
+    return @($events)
+}
+
+function Get-NotifySweepBoards {
+    <#
+        Sport and document id for every board the registry knows, in name order.
+
+        TOOLS/sheet-registry.json owns which document belongs to which sport, and this reads it
+        rather than the ledger: a sport whose board exists but which has not been run today
+        still has rows somebody closed and reopened, and the sweep is about the board's state
+        and not about what ran.
+    #>
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) { $Path = Join-Path $PSScriptRoot 'sheet-registry.json' }
+    if (-not (Test-Path -LiteralPath $Path)) {
+        throw "TOOLS/sheet-registry.json not found. It owns which document belongs to which sport."
+    }
+    $registry = Get-Content -LiteralPath $Path -Raw -Encoding UTF8 | ConvertFrom-Json
+    $boards = @()
+    foreach ($name in @($registry.sports.PSObject.Properties.Name | Sort-Object)) {
+        $id = [string]$registry.sports.$name.spreadsheetId
+        if ([string]::IsNullOrWhiteSpace($id)) { continue }
+        $boards += [pscustomobject]@{ Sport = $name; SheetId = $id }
+    }
+    return @($boards)
 }
 
 function Select-NotifyStillOpen {

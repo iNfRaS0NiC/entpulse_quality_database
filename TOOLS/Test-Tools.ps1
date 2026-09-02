@@ -7305,6 +7305,97 @@ Complete-Group
 # defects it can have are all defects of choosing.
 # --------------------------------------------------------------------------------------
 
+Test-That 'the sweep takes the Reopened rows and leaves the rest' {
+    # The afternoon pass asks the board what is open rather than remembering what a run wrote,
+    # because a transition can reach the board and not the queue - Ice-Hockey-DQ-114 did exactly
+    # that on 2026-09-02. Everything the message needs comes off the row.
+    $values = @(
+        @('Sport', 'CheckID', 'Object', 'Check Name', 'Priority', 'Category', 'What it does', 'Rows', 'Status', 'Check By', 'Comment', 'Time Spent (minutes)', 'Signal', 'Signal reason', 'Expected', 'Findings', 'All findings', 'Eligible', 'Prev findings', 'Prev eligible', 'Change', 'Verdict'),
+        @('Fixtureball', 'Fixtureball-DQ-050', 'Event', 'NAME_A', '3', 'CAT', 'asserts a thing', '9', 'Reopened', 'Vanin', '', '', 'Actionable', '', 'Zero', '4', '9', '900', '0', '900', '4', 'Regressed'),
+        @('Fixtureball', 'Fixtureball-DQ-051', 'Event', 'NAME_B', '3', 'CAT', 'asserts another', '2', 'Completed'),
+        @('Fixtureball', 'Fixtureball-DQ-052', 'Event', 'NAME_C', '3', 'CAT', 'asserts a third', '7', 'Not reviewed'),
+        @('Fixtureball', 'not-a-check-id', 'Event', 'NAME_D', '3', 'CAT', 'noise', '1', 'Reopened')
+    )
+    $found = @(Select-NotifyReopenedRows -Values $values -Sport 'Fixtureball' -SheetId 'ABC' -OverviewGid 42)
+
+    Assert-Equal 1 $found.Count 'only the Reopened row, and only a real CheckID'
+    Assert-Equal 'Fixtureball-DQ-050' $found[0].checkId 'the id'
+    Assert-Equal 'NAME_A' $found[0].name 'the name travels, because an id alone asks the reader to look it up'
+    Assert-Equal 'asserts a thing' $found[0].what 'and the line saying what it asserts'
+    Assert-Equal 'Regressed' $found[0].verdict 'the verdict'
+    Assert-Equal 42 $found[0].overviewGid 'the tab the heading links to'
+    # The open count, not the raw one. Rows says 9 and Findings says 4 because five were
+    # dismissed; a message quoting 9 would disagree with the board it points at.
+    Assert-Equal '4' $found[0].currentFindings 'the open count and not the raw row count'
+}
+
+Test-That 'the sweep reads by header name, so a moved column cannot misreport' {
+    # Two columns were inserted into the middle of the Run requests tab on 2026-09-01 and every
+    # positional index would have moved silently. The same layout drift reaches Overview, and a
+    # sweep that reported the wrong cell would be worse than one that failed.
+    $values = @(
+        @('Status', 'What it does', 'CheckID', 'Findings', 'Check Name'),
+        @('Reopened', 'asserts a thing', 'Fixtureball-DQ-050', '4', 'NAME_A'),
+        @('Clean', 'asserts another', 'Fixtureball-DQ-051', '0', 'NAME_B')
+    )
+    $found = @(Select-NotifyReopenedRows -Values $values -Sport 'Fixtureball' -SheetId 'ABC' -OverviewGid 1)
+
+    Assert-Equal 1 $found.Count 'one row found through a layout it has never seen'
+    Assert-Equal 'Fixtureball-DQ-050' $found[0].checkId 'the id, from wherever the header says it is'
+    Assert-Equal 'NAME_A' $found[0].name 'and the name'
+    Assert-Equal '4' $found[0].currentFindings 'and the count'
+}
+
+Test-That 'a board without the columns it needs is refused rather than read as empty' {
+    # Failing open is the rule everywhere else in this file - a board that cannot be read still
+    # sends - and it is the wrong rule here. An Overview with no Status column would report no
+    # Reopened rows on every sweep and look exactly like a board somebody had cleared.
+    $values = @(
+        @('Sport', 'CheckID', 'Check Name'),
+        @('Fixtureball', 'Fixtureball-DQ-050', 'NAME_A')
+    )
+    $threw = $false
+    try { [void](Select-NotifyReopenedRows -Values $values -Sport 'Fixtureball' -SheetId 'ABC' -OverviewGid 1) }
+    catch { $threw = $true }
+    Assert-True $threw 'a missing Status column stops the sweep for that board'
+
+    Assert-Equal 0 @(Select-NotifyReopenedRows -Values @() -Sport 'Fixtureball' -SheetId 'ABC' -OverviewGid 1).Count 'an empty board is not an error'
+}
+
+Test-That 'the sweep can say what it is about without rewriting the digest' {
+    # The layout is shared and the two sentences are not: the drain reports a transition and the
+    # sweep reports a standing list, and calling the second one "has returned findings" would be
+    # untrue of every row on it.
+    #
+    # The parameter is $OpeningLine because PowerShell variable names do not distinguish case:
+    # named $Opening, the function's own local $opening **was** it, and the default overwrote the
+    # caller's argument before anything read it. Written that way first on 2026-09-02, and the
+    # symptom was a subject that changed above a sentence that did not.
+    $events = @(
+        [pscustomobject]@{ checkId = 'Fixtureball-DQ-050'; sport = 'Fixtureball'; name = 'NAME_A'
+            what = 'asserts a thing'; currentFindings = 4; sheetId = 'ABC'; overviewGid = 1; tabGid = $null }
+    )
+    $default = Format-ReopenDigest -Events $events
+    Assert-True ($default.Body -match 'has returned findings') 'the drain keeps its wording'
+
+    $swept = Format-ReopenDigest -Events $events -Headline 'Open: 1 check' `
+        -OpeningLine 'check is marked Reopened and is waiting to be looked at'
+    Assert-Equal 'Open: 1 check' $swept.Subject 'the subject is the caller of the sweep'
+    Assert-True ($swept.Body -match 'waiting to be looked at') 'and so is the sentence under it'
+    Assert-True (-not ($swept.Body -match 'has returned findings')) 'the transition wording is gone, not doubled'
+}
+
+Test-That 'every board in the registry is swept, and each is named' {
+    # Read from the registry rather than from the ledger: a sport nobody ran today still has rows
+    # somebody reopened last week, and the sweep is about what the board says now.
+    $boards = @(Get-NotifySweepBoards -Path (Join-Path $RepoRootPath 'TOOLS\sheet-registry.json'))
+    Assert-True ($boards.Count -ge 1) 'the registry yields boards'
+    foreach ($board in $boards) {
+        Assert-True (-not [string]::IsNullOrWhiteSpace($board.Sport)) 'each carries its sport'
+        Assert-True (-not [string]::IsNullOrWhiteSpace($board.SheetId)) 'and the document it lives in'
+    }
+}
+
 Start-Group 'Runner' 'Nightly selection'
 
 function New-NightlyLedger {
