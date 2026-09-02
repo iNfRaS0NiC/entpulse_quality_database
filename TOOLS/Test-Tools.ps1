@@ -2619,6 +2619,44 @@ Complete-Group
 # Which document belongs to which sport
 # --------------------------------------------------------------------------------------
 
+# ----- the two clocks on a request row ----------------------------------------------------
+
+Test-That 'a request stamped in the future is caught, because that row reads backwards' {
+    # The Soccer board showed Requested at 21:36:02 beside Started at 20:36:30 on 2026-09-01:
+    # appsscript.json declared Europe/Sofia while the document and the machine were both
+    # Europe/Paris. A person found it by reading a row, which is the wrong way to find it.
+    $ahead = (Get-Date).AddHours(1).ToString('dd.MM.yyyy HH:mm:ss')
+    Assert-True (-not (Test-RequestStampSane -RequestedAt $ahead)) 'an hour ahead should be caught'
+}
+
+Test-That 'an ordinary stamp is believed, including one a few seconds ahead' {
+    # The tolerance is what keeps this from firing on the ordinary case: the Apps Script stamps
+    # the row, and the worker reads it up to a poll later, so the two are seconds apart and
+    # either way round.
+    Assert-True (Test-RequestStampSane -RequestedAt ((Get-Date).ToString('dd.MM.yyyy HH:mm:ss'))) 'now'
+    Assert-True (Test-RequestStampSane -RequestedAt ((Get-Date).AddMinutes(-30).ToString('dd.MM.yyyy HH:mm:ss'))) 'half an hour ago'
+    Assert-True (Test-RequestStampSane -RequestedAt ((Get-Date).AddSeconds(20).ToString('dd.MM.yyyy HH:mm:ss'))) 'twenty seconds ahead'
+}
+
+Test-That 'a stamp this machine cannot read is believed rather than reported as a clock fault' {
+    # An unreadable cell is a different defect. Reporting it here would send the reader after a
+    # time zone when what they have is a corrupted row.
+    Assert-True (Test-RequestStampSane -RequestedAt '') 'empty'
+    Assert-True (Test-RequestStampSane -RequestedAt 'yesterday afternoon') 'not a date at all'
+    Assert-True (Test-RequestStampSane -RequestedAt '9/1/2026 19:30:26') 'the other date order'
+}
+
+Test-That 'the Apps Script takes its stamp from the document and not from the manifest' {
+    # Two places for one answer is what drifted. appsscript.json still declares a zone, because
+    # triggers and logs use it, but nothing in RunRequests.gs may read it.
+    $gs = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'sheets-apps-script\RunRequests.gs') -Raw
+    Assert-True ($gs -match 'getSpreadsheetTimeZone') 'stamp_ should take the document zone'
+    Assert-True ($gs -notmatch 'getScriptTimeZone') 'and must not read the manifest zone'
+
+    $manifest = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'sheets-apps-scriptppsscript.json') -Raw | ConvertFrom-Json
+    Assert-Equal 'Europe/Paris' ([string]$manifest.timeZone) 'the manifest zone should match the machine and the documents'
+}
+
 Start-Group 'Runner' 'Client scope form'
 
 # Which way round a sport's client boundary is put to the database. Both forms select the same

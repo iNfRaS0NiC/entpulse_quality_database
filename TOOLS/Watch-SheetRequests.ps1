@@ -142,6 +142,9 @@ foreach ($key in $ColumnTitle.Keys) {
 
 $OpenStatuses = @('QUEUED', 'WAITING', 'RUNNING')
 
+# Said once per worker, not once per request: two clocks an hour apart are one fault.
+$script:StampWarned = $false
+
 # --------------------------------------------------------------------------------------
 # Reading the queue
 # --------------------------------------------------------------------------------------
@@ -371,6 +374,37 @@ function Test-RequestAcceptable {
 # --------------------------------------------------------------------------------------
 # Talking to the document
 # --------------------------------------------------------------------------------------
+
+function Test-RequestStampSane {
+    <#
+        Whether a request claims to have been made in the future.
+
+        The board carries two clocks. `Requested at` is written by the Apps Script in the
+        document's zone; `Started at` and `Finished at` are written here in the machine's. While
+        those agree the row reads in order, and when they do not it reads as a run that finished
+        before it was asked for - which is what the Soccer board showed on 2026-09-01, an hour
+        out, because appsscript.json declared Europe/Sofia while the document and the machine
+        were both Europe/Paris.
+
+        That was found by a person reading a row, which is the wrong way to find it. This is the
+        cheap check that would have said it on the first request: no zone arithmetic, no mapping
+        of IANA names onto the Windows ones PowerShell 5.1 can resolve - just the symptom.
+
+        Returns $true for a stamp this machine can believe. A stamp it cannot parse is believed:
+        an unreadable cell is a different fault and not this one to report.
+    #>
+    param([string]$RequestedAt, [int]$ToleranceMinutes = 5)
+
+    if ([string]::IsNullOrWhiteSpace($RequestedAt)) { return $true }
+
+    $parsed = [datetime]::MinValue
+    $ok = [datetime]::TryParseExact($RequestedAt.Trim(), 'dd.MM.yyyy HH:mm:ss',
+        [Globalization.CultureInfo]::InvariantCulture,
+        [Globalization.DateTimeStyles]::None, [ref]$parsed)
+    if (-not $ok) { return $true }
+
+    return ($parsed -le (Get-Date).AddMinutes($ToleranceMinutes))
+}
 
 function Select-BoardsToPoll {
     <#
@@ -845,6 +879,16 @@ while ($true) {
         if ($companions.Count -gt 0) {
             Write-Host ("    {0} other request(s) asked for the same check and will share this run" -f `
                     $companions.Count) -ForegroundColor DarkGray
+        }
+
+        if (-not (Test-RequestStampSane -RequestedAt $next.RequestedAt) -and -not $script:StampWarned) {
+            # Once per worker. The row is still run - the clocks disagreeing says nothing about
+            # whether the check should execute - but the board is showing a run that starts
+            # before it was asked for, and nobody reading it would guess why.
+            Write-Host ("  {0} says it was requested at {1}, which is ahead of this machine's clock. " +
+                "The document's time zone and this machine's have drifted apart; the run is fine, " +
+                "the row will read out of order." -f $next.RequestId, $next.RequestedAt) -ForegroundColor Yellow
+            $script:StampWarned = $true
         }
 
         Write-Host ("  {0} {1}: running {2}" -f $board.Name, $next.RequestId, $label) -ForegroundColor Green

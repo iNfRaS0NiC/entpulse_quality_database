@@ -149,9 +149,18 @@ function looksLikeOneCheckId_(value) {
  * Started at and Finished at - written as text by the worker - read dd.MM.yyyy beside it.
  * Measured on the Soccer board 2026-09-01: 9/1/2026 next to 01.09.2026 in the same row, which
  * is exactly the pair that gets read as the ninth of January.
+ *
+ * The document's zone and not the script's. getScriptTimeZone() returns what appsscript.json
+ * declares, which is a second place for the answer to live and drifted from the first one
+ * immediately: the manifest said Europe/Sofia while the document and the machine were both
+ * Europe/Paris, so every request was stamped an hour ahead and the board showed runs starting
+ * before they were asked for - Requested at 21:36:02 beside Started at 20:36:30 on the Soccer
+ * board, 2026-09-01. The spreadsheet's own zone is the frame everything else on the board is
+ * already in, and it cannot disagree with itself.
  */
 function stamp_() {
-  return Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM.yyyy HH:mm:ss');
+  var zone = SpreadsheetApp.getActiveSpreadsheet().getSpreadsheetTimeZone();
+  return Utilities.formatDate(new Date(), zone, 'dd.MM.yyyy HH:mm:ss');
 }
 
 function newRequestId_() {

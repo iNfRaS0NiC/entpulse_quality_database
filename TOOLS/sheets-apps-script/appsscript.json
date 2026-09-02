@@ -1,5 +1,6 @@
 {
-    "timeZone": "Europe/Sofia",
+    "_timeZone": "Europe/Paris matches the documents and the machine that runs the checks. Nothing in RunRequests.gs reads this - stamp_() takes the document's own zone - because a manifest value is a second place for the answer to live and this one had already drifted an hour from the first.",
+    "timeZone": "Europe/Paris",
     "dependencies": {},
     "exceptionLogging": "STACKDRIVER",
     "runtimeVersion": "V8",
