@@ -1614,7 +1614,10 @@ function Get-SheetsOpenCounts {
 
         # The series is rebuilt from its points rather than edited as a string: the colouring
         # is per point and comes from the direction between neighbours, and a point that reads
-        # ERR is not a measurement and must stay the word it is.
+        # ERR or SKIP is not a measurement and must stay the word it is. The shift below tests
+        # the value with TryParse rather than against a list of words, so a new non-numeric
+        # token passes through untouched - which is how SKIP arrived on 2026-09-02 without
+        # anything here needing to know about it.
         $points = @($Entry.TrendPoints)
         if ($points.Count -gt 1) {
             $shifted = @()

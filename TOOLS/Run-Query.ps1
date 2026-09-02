@@ -3807,7 +3807,15 @@ function New-RunSummaryRow {
     $points += [pscustomobject]@{
         Stamp = $script:RunStartedUtc.ToLocalTime()
         Value = $(
-            if (-not $ran) { 'ERR' }
+            # A skip and a failure are separate words, because they are separate facts and a
+            # reviewer acts on them differently. Both were written ERR until 2026-09-02, and
+            # Soccer-DQ-080 PARTICIPANT_NO_PARTICIPATION_ANYWHERE is what that cost: recorded
+            # `Out of client scope` and deliberately never run, its trend read ERR four times
+            # over and looked like an outage nobody had noticed. Neither is a measurement, so
+            # both still take the level colour and neither is what the next point is compared
+            # against.
+            if ($Status -like 'SKIPPED*') { 'SKIP' }
+            elseif (-not $ran) { 'ERR' }
             elseif ($null -eq $Findings) { '-' }
             else { [string][int]$Findings })
     }
@@ -4005,7 +4013,10 @@ function Import-RecentFindings {
                 $status = [string]$check.status
                 $recent[$key] += [pscustomobject]@{
                     Stamp = $stamp
-                    Value = $(if ($status -like 'ERROR*' -or $status -like 'SKIPPED*' -or $null -eq $check.findings) {
+                    Value = $(if ($status -like 'SKIPPED*') {
+                            'SKIP'
+                        }
+                        elseif ($status -like 'ERROR*' -or $null -eq $check.findings) {
                             'ERR'
                         }
                         else { [string][int]$check.findings })
@@ -4067,10 +4078,12 @@ function New-TrendSeries {
         without the reader subtracting anything. Only the number is coloured; the timestamp
         beside it is context and stays as it is.
 
-        A run that failed contributes ERR and is not a measurement, so it takes the level
-        colour and does not become the thing the next point is compared against: a check that
-        read 5, errored, then read 3 has gone down by two, and saying otherwise would make an
-        outage look like progress.
+        A run that failed contributes ERR, and one the runner skipped contributes SKIP. Neither
+        is a measurement, so both take the level colour and neither becomes the thing the next
+        point is compared against: a check that read 5, errored, then read 3 has gone down by
+        two, and saying otherwise would make an outage look like progress. They are two words
+        rather than one because they are two facts - a failure is something to fix and a skip
+        is something that was never asked - and a reader given only ERR cannot tell which.
 
         Returns the offsets rather than the formatting, because where a number starts is a fact
         about the string and which green to use is not.
