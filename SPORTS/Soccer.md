@@ -78,9 +78,22 @@ deciding it.
 
 **Two checks audit the sport registry and cannot be narrowed at all.** `-TemplateIds` works by
 activating a template filter the statement already carries, and the registry has no template
-relation: a person is registered to the sport, not to a competition. The runner reports this
-honestly - `SKIPPED: not narrowable` - but the console counts only `ERROR` as failure, so a
-skipped check reads there as one that passed. Read the ledger, not the console.
+relation: a person is registered to the sport, not to a competition. Narrowing the statement
+another way was looked for and does not exist: the three `NOT EXISTS` branches do reach a
+template, but filtering them to the client's 28 would report a participant who plays only outside
+them as having no participation anywhere, which is false. Narrowing a check that asserts an
+absence turns the absence into an absence-within-the-filter, and there is no filter that can sit
+on the population instead, because a participant with no participation has no competition to be
+judged against. Checked 2026-09-02.
+
+The runner reports the skip honestly - `SKIPPED: not narrowable` - and so does the console, from
+2026-08-30. Until then it counted only `ERROR` as failure and a skipped check read there as one
+that had passed; this file said so and told the reader to use the ledger instead, and went on
+saying it after the fix. The `Done:` line now counts skips separately from failures and names
+them in yellow, the run announces them grouped by reason before it starts, and the summary table
+carries the status on the row. The live board had the mirror of the same fault until 2026-09-02:
+its `Trends` column wrote both a skip and a failure as `ERR`, so a check nobody had asked for
+read as a run of outages. A skip now reads `SKIP` there.
 
 `Soccer-DQ-096 PARTICIPANT_COACH_OR_OFFICIAL_NO_PARTICIPATION_ANYWHERE` is therefore run on its
 own, without `-TemplateIds`. Measured 2026-08-30 it costs 46 seconds and returns 3678 of 16344,
