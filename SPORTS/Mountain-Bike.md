@@ -307,24 +307,33 @@ the decision rests on what the 220 rows turned out to hold rather than on a stru
 lacks, and the candidate stays available if the stage model is ever read differently. Decided
 2026-08-31.
 
-**Six approved checks return `eligible_count = 0`, and every one is a sentinel rather than a
-misdirected scope.** `GLOBAL-DQ-130 EVENT_PARTICIPANT_ORGANIZATION_MISSING` scopes by design
-only on tournaments that fill the organization somewhere, and this sport fills it nowhere - the
-fact is reported at its own grain by `GLOBAL-DQ-147
-TOURNAMENT_PARTICIPANT_ORGANIZATION_MISSING_THROUGHOUT`, which returns all 399 tournaments.
-`GLOBAL-DQ-132` and `GLOBAL-DQ-146
+**Five approved checks return `eligible_count = 0`, and every one is a sentinel rather than a
+misdirected scope.** `GLOBAL-DQ-132` and `GLOBAL-DQ-146
 EVENT_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR` (and `_DETAIL`), and
 `GLOBAL-DQ-136` and `GLOBAL-DQ-145` for the same rule on the Comp.Rank side, have no
 organization to contradict anything. `GLOBAL-DQ-143
 COMP.RANK_ATHLETE_RANKING_DISAGREES_WITH_ITS_TEAM_TWIN` has no team twin because the sport
 fields no team in any event, which is a data state and not a structural absence: the registry
-carries team-typed participants and the shard would hold them. All six were approved on
+carries team-typed participants and the shard would hold them. All five were approved on
 2026-08-31 to hold the invariant for the day the field is filled.
 
-**The organization gap is reported at two grains on purpose.** `GLOBAL-DQ-147` returns 399 of
-399 tournaments and `GLOBAL-DQ-131 COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING` returns 818 of
-818 statistics, which is one absence said 1217 times. Both were approved on 2026-08-31 with
-that overlap stated, so that the Comp.Rank layer can be seen apart from the event layer.
+**A sixth check was counted among them until 2026-09-02, and it was the other case.**
+`GLOBAL-DQ-130 EVENT_PARTICIPANT_ORGANIZATION_MISSING` was recorded here as a sentinel because
+it returned an eligible population of 0. It was a misdirected scope, which is what `POWERBI.md`
+names as the alternative: between 2026-08-29 and that date the statement admitted only
+tournaments filling the organization somewhere within them, in its coverage branch as well as
+its findings branch, so a sport filling it nowhere had both collapse to nothing. The exclusion
+decided what to report from the current population, which is what this package forbids
+everywhere else, and the check now returns 840 findings of 840 events - every event in the
+boundary. The reading that made this a sentinel was the exclusion and never this sport's data.
+
+**The organization gap is reported at three grains on purpose.** `GLOBAL-DQ-130` returns 840 of
+840 events, `GLOBAL-DQ-147` 399 of 399 tournaments and
+`GLOBAL-DQ-131 COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING` 818 of 818 statistics, which is one
+absence said 2057 times. The tournament and Comp.Rank grains were approved on 2026-08-31 with
+that overlap stated, so that the Comp.Rank layer can be seen apart from the event layer; the
+event grain is where the ids to correct it by are, and it carries no names for the reason
+`GLOBAL_DQ/README.md` records against the template.
 
 **Four templates are `Not applicable` here, and each for its own reason.** None is assigned a
 CheckID and none reserves one; decided 2026-08-31. All four read a structure this sport does
