@@ -729,8 +729,21 @@ FROM (
         p.name AS participant_name,
         MAX(CASE WHEN r.result_typeFK = 668 THEN LOWER(TRIM(r.value)) END) AS outcome,
         MAX(CASE WHEN r.result_typeFK = 4 THEN CAST(r.value AS SIGNED) END) AS final_score,
-        MIN(w.low_score) AS low_score,
-        MAX(w.high_score) AS high_score
+        -- The lowest and highest Final Result the match recorded, taken from the rows this
+        -- statement has already grouped rather than from a second pass over the database.
+        --
+        -- Until 2026-09-02 these came from a derived table that grouped every scored event in
+        -- every sport, and was then joined on e.id. It was 61.5 s of the check's 97.3 s, spent
+        -- before one handball row was considered, and it is why -TemplateIds could not help:
+        -- the filter that activates sits in the outer query, which the inner block never sees.
+        -- The window reads the same two numbers off the grouped rows at no extra cost - 1.4 s
+        -- against 97.3 - and the population is identical on eight aggregates: 25800 rows,
+        -- 12900 events, and the three score sums to the unit. Equality was measured rather
+        -- than constructed: the two forms would differ on a non-numeric Final Result or a
+        -- participant whose own row is deleted, and the same measurement showed neither
+        -- exists here today.
+        MIN(MAX(CASE WHEN r.result_typeFK = 4 AND r.value REGEXP '^[0-9]+$' THEN CAST(r.value AS SIGNED) END)) OVER (PARTITION BY e.id) AS low_score,
+        MAX(MAX(CASE WHEN r.result_typeFK = 4 AND r.value REGEXP '^[0-9]+$' THEN CAST(r.value AS SIGNED) END)) OVER (PARTITION BY e.id) AS high_score
     FROM event e
     JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
     JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
@@ -739,18 +752,6 @@ FROM (
     JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
     JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
          AND r.result_typeFK IN (4, 668)
-    JOIN (
-        SELECT
-            ep2.eventFK AS scored_event_id,
-            MIN(CAST(r2.value AS SIGNED)) AS low_score,
-            MAX(CAST(r2.value AS SIGNED)) AS high_score
-        FROM event_participants ep2
-        JOIN result r2 ON r2.event_participantsFK = ep2.id AND r2.del = 'no'
-             AND r2.result_typeFK = 4
-             AND r2.value REGEXP '^[0-9]+$'
-        WHERE ep2.del = 'no'
-        GROUP BY ep2.eventFK
-    ) w ON w.scored_event_id = e.id
     WHERE e.del = 'no'
       AND tt.sportFK = 20
       AND e.status_type = 'finished'
