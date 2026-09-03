@@ -2925,10 +2925,15 @@ function New-TestRequest {
 }
 
 function Test-Request {
-    param($Request, [string]$Sport = 'Fixtureball', $Ahead = @(), $Registry = $null)
+    # $Approvals is what the owner-only tab holds. Left alone it approves the request under
+    # test, so that a case about who may ask, or about two runs at once, is not quietly also a
+    # case about the approvals tab. The gate has its own cases, which pass $null and @()
+    # themselves.
+    param($Request, [string]$Sport = 'Fixtureball', $Ahead = @(), $Registry = $null, $Approvals = 'auto')
     if (-not $Registry) { $Registry = $requestRegistry }
+    if ($Approvals -is [string] -and $Approvals -eq 'auto') { $Approvals = @([string]$Request.RequestId) }
     return (Test-RequestAcceptable -Request $Request -Sport $Sport -Approved $requestCatalogue `
-            -Registry $Registry -OpenRequests $Ahead)
+            -Registry $Registry -OpenRequests $Ahead -WholeSportApprovals $Approvals)
 }
 
 Test-That 'one approved check for this sport runs' {
@@ -3035,10 +3040,34 @@ Test-That 'a whole-sport run asked for by the owner runs, and is the only thing 
     Assert-Equal '*SPORT*' $verdict.CheckId 'the reserved token travels as itself, never as a list'
 }
 
-Test-That 'a whole-sport run asked for by anybody else is refused' {
+Test-That 'a whole-sport run asked for by a reviewer runs once the owner has approved it' {
+    # Changed 2026-09-03. It used to be refused on `Requested by`, which never authorised
+    # anything: every allowed account edits the queue tab and can write that cell. Asking is
+    # open to the list; approving is the owner's, and the approvals tab is what enforces it.
     $verdict = Test-Request (New-TestRequest 'REQ-19' '*SPORT*' 'reviewer@example.com')
-    Assert-True (-not $verdict.Ok) 'a reviewer must not be able to run the whole sport'
-    Assert-True ($verdict.Why -like "*owner's*") "the reason should say whose it is, got: $($verdict.Why)"
+    Assert-True $verdict.Ok "an approved request should run whoever asked, got: $($verdict.Why)"
+    Assert-True $verdict.RunAll 'and it is still the thing that sets -RunAll'
+}
+
+Test-That 'a reviewer''s whole-sport request waits for the owner rather than failing' {
+    # Held, not refused, and the distinction is the whole feature: a request marked ERROR ninety
+    # seconds after it was asked for is one the owner can no longer approve.
+    $verdict = Test-Request (New-TestRequest 'REQ-19b' '*SPORT*' 'reviewer@example.com') -Approvals @()
+    Assert-True (-not $verdict.Ok) 'it must not run yet'
+    Assert-True $verdict.Pending 'and it must be held rather than refused'
+    Assert-True ($verdict.Why -like '*Waiting for the owner*') "the reason should say what it waits for, got: $($verdict.Why)"
+}
+
+Test-That 'somebody not on the list at all cannot ask for a whole-sport run, approved or not' {
+    # Refused outright and not held. Holding it would put a request from an account nobody
+    # recognises in front of the owner as something to approve, which is the wrong question.
+    $unapproved = Test-Request (New-TestRequest 'REQ-19c' '*SPORT*' 'stranger@example.com') -Approvals @()
+    Assert-True (-not $unapproved.Ok) 'an account off the list must be refused'
+    Assert-True (-not $unapproved.Pending) 'and refused outright, not left waiting for an approval'
+    Assert-True ($unapproved.Why -like '*not on the list*') "the reason should say so, got: $($unapproved.Why)"
+
+    $approved = Test-Request (New-TestRequest 'REQ-19d' '*SPORT*' 'stranger@example.com') -Approvals @('REQ-19d')
+    Assert-True (-not $approved.Ok) 'and an approval does not put them on the list'
 }
 
 Test-That 'a whole-sport run is refused outright while no owner is recorded' {
@@ -3053,6 +3082,41 @@ Test-That 'a second whole-sport run is refused while one is already on the queue
     $ahead = @(New-TestRequest 'REQ-21' '*SPORT*' 'owner@example.com' 'RUNNING' 2)
     $verdict = Test-Request (New-TestRequest 'REQ-22' '*SPORT*' 'owner@example.com' 'QUEUED' 3) -Ahead $ahead
     Assert-True (-not $verdict.Ok) 'one whole-sport run at a time'
+}
+
+Test-That 'a whole-sport row carrying the owner address but no approval does not run' {
+    # The reason the approvals tab exists. Every allowed account is an editor of `Run requests`,
+    # because a menu item runs as whoever clicked it and the tab has to take their writes; so
+    # any of them can type the owner's address into `Requested by`. This is that row, and the
+    # owner-only tab is the only thing between it and -RunAll against production.
+    $verdict = Test-Request (New-TestRequest 'REQ-23' '*SPORT*' 'owner@example.com') -Approvals @()
+    Assert-True (-not $verdict.Ok) 'an unapproved whole-sport row must not run however it is addressed'
+    Assert-True ($verdict.Why -like "*$('Run approvals')*") "the reason should name the tab, got: $($verdict.Why)"
+}
+
+Test-That 'an approval for a different request does not carry across' {
+    # An approval is per Request ID and not a standing permission, so yesterday's approved run
+    # cannot authorise a row somebody appends today.
+    $verdict = Test-Request (New-TestRequest 'REQ-24' '*SPORT*' 'owner@example.com') -Approvals @('REQ-99', 'REQ-100')
+    Assert-True (-not $verdict.Ok) 'only this request ID counts'
+    Assert-True $verdict.Pending 'and it waits, because the owner may still approve this one'
+}
+
+Test-That 'a board with no approvals tab refuses a whole-sport run, and says how to fix it' {
+    # $null is the absent tab and @() is a tab holding nothing, and the two need different
+    # advice: one wants a tab created, the other wants the menu used. Collapsed into "not
+    # approved", the first sends somebody hunting for a button their document has not got.
+    $verdict = Test-Request (New-TestRequest 'REQ-25' '*SPORT*' 'owner@example.com') -Approvals $null
+    Assert-True (-not $verdict.Ok) 'no tab means no whole-sport run'
+    Assert-True ($verdict.Why -like '*Add-RunRequestsTab*') "the reason should name the script that makes it, got: $($verdict.Why)"
+}
+
+Test-That 'an ordinary check needs no approval, on a board that has no approvals tab at all' {
+    # The gate must not leak. A single check is authorised by the allowed list and always was;
+    # making it wait for an approvals tab would break every board the moment this shipped.
+    $verdict = Test-Request (New-TestRequest 'REQ-26' 'Fixtureball-DQ-001' 'reviewer@example.com') -Approvals $null
+    Assert-True $verdict.Ok "a single check must not be gated on approvals, got: $($verdict.Why)"
+    Assert-True (-not $verdict.RunAll) 'and still must not set -RunAll'
 }
 
 Test-That 'the queue is read into rows, header skipped and blanks ignored' {

@@ -1,20 +1,30 @@
 <#
 .SYNOPSIS
-    Create the "Run requests" tab on a sport's live board, and protect it.
+    Create the "Run requests" and "Run approvals" tabs on a sport's live board, and protect
+    each for the accounts that have to write it.
 
 .DESCRIPTION
-    One tab per sport document, holding the queue a reviewer's click writes into and the
-    worker reads. This script creates it, formats it, protects it, and records in
-    TOOLS/sheet-registry.json that the document now carries it.
+    Two tabs per sport document: the queue a reviewer's click writes into and the worker reads,
+    and the approvals tab that authorises a whole-sport run. This script creates both, formats
+    the queue, protects each of them, and records in TOOLS/sheet-registry.json that the
+    document now carries the queue.
 
-    The protection is the point, not the decoration. TOOLS/sheets-apps-script/RunRequests.gs
-    validates who is clicking, but "Requested by" is a cell: anybody with edit access to the
-    tab could type somebody else's address into it as easily as a CheckID, so an allowlist
-    keyed on it guards against a mistake and not against intent. The boundary that holds is
-    edit access. This adds a protected range over the whole tab with no other editors, which
-    leaves the tab writable by the owner and by anything running as the owner - the Apps
-    Script, deployed to execute as the owner, and the worker on the owner's machine - and by
-    nobody else. Reviewers keep the button and lose the keyboard.
+    The protection is the point, not the decoration - but it protects less than this file used
+    to claim. A menu item in a container-bound Apps Script runs as the person who clicked it.
+    There is no "execute as the owner" for one, whatever an installable onOpen trigger does for
+    onOpen itself, so a queue tab with the owner as its only editor is a queue tab whose button
+    throws "You are trying to edit a protected cell or object" for everybody else. It did, on
+    Soccer, 2026-09-03, and the claim had stood in this file since it was written.
+
+    So "Run requests" lists the owner and every requesters.allowed account as editors. That
+    still keeps out anybody the document is merely shared with, and it no longer proves
+    "Requested by": that cell is now a claim one of a few named accounts can write, and the
+    worker reads it as a claim.
+
+    "Run approvals" is where the boundary went. It carries the owner as its only editor, the DQ
+    menu records a Request ID there before queueing a whole-sport row, and the worker runs
+    *SPORT* only for an ID it finds there. A check inside RunRequests.gs could not do this job,
+    because anybody who can write the queue tab reaches it without calling that file at all.
 
     Nothing here runs a statement or touches a check tab. The board updater leaves this tab
     alone by construction: TOOLS/Sheets.ps1 removes exactly one tab ever, Sheet1 while it is
@@ -71,6 +81,8 @@ $SecretsPath = Join-Path $PSScriptRoot 'secrets.local.ps1'
 if (Test-Path -LiteralPath $SecretsPath) { . $SecretsPath }
 
 $QueueSheetName = 'Run requests'
+# Kept in step with the same name in TOOLS/Watch-SheetRequests.ps1, which reads it.
+$ApprovalSheetName = 'Run approvals'
 $RegistryPath = Join-Path $PSScriptRoot 'sheet-registry.json'
 
 # The columns the plan names, in its order. The worker addresses rows by Request ID and never
@@ -441,7 +453,8 @@ if ($Unprotected) {
         "cell anybody can type into.") -ForegroundColor Yellow
 }
 elseif ($WhatIf) {
-    Write-Host "  would protect the whole tab, leaving the owner as its only editor" -ForegroundColor DarkGray
+    Write-Host ("  would protect the whole tab, with the owner and the {0} allowed account(s) as " +
+        "its editors" -f @($registry.requesters.allowed).Count) -ForegroundColor DarkGray
 }
 elseif ($null -ne $existingSheetId) {
     $already = $false
@@ -461,22 +474,111 @@ elseif ($null -ne $existingSheetId) {
         Write-Host "  the tab is already protected; leaving the existing protection alone" -ForegroundColor Yellow
     }
     else {
-        # No `users` and no `domainUsersCanEdit`: the owner stays the only editor, and so does
-        # anything running as the owner. That is exactly the Apps Script deployed to execute as
-        # the owner, which is what lets the button keep working for the people who may click it.
+        # Every allowed account is an editor here, and that is not a weakening of the boundary
+        # but the only shape it can take. A menu item runs as the person who clicked it - there
+        # is no "execute as the owner" for one, whatever an installable onOpen trigger does for
+        # onOpen itself - so a tab the owner alone may edit is a tab whose button fails for
+        # everybody else. It did, with "You are trying to edit a protected cell or object", on
+        # Soccer 2026-09-03.
+        #
+        # What the tab still keeps out is every account not on the list, including anybody the
+        # document is merely shared with. What it no longer proves is `Requested by`, which is
+        # now a claim one of five accounts can write. The whole-sport gate moved to
+        # `Run approvals` below for exactly that reason.
+        $queueEditors = @(@($registry.requesters.owner) + @($registry.requesters.allowed) |
+                Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
         $protect = @{
             addProtectedRange = @{
                 protectedRange = @{
                     range         = @{ sheetId = $existingSheetId }
-                    description   = 'The DQ run queue. Written by the DQ menu and by the runner on the owner machine.'
+                    description   = 'The DQ run queue. Appended by the DQ menu as the person clicking it, and by the runner on the owner machine.'
                     warningOnly   = $false
                     requestingUserCanEdit = $true
-                    editors       = @{ domainUsersCanEdit = $false }
+                    editors       = @{ users = $queueEditors; domainUsersCanEdit = $false }
                 }
             }
         }
         [void](Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = @($protect) })
-        Write-Host "  protected: the owner is the only editor, so the tab is reachable through the button and not by hand" -ForegroundColor Green
+        Write-Host ("  protected: {0} account(s) may write it, and nobody else" -f $queueEditors.Count) -ForegroundColor Green
+    }
+}
+
+# ----- the one tab the owner keeps to themselves -------------------------------------------
+#
+# A whole-sport run costs about fifteen minutes, holds the machine lock for all of it and
+# repaints a board, so it is the one request that is the owner's alone. It cannot be gated by
+# `Requested by`, which every account on the queue's editor list can now type, nor by a check
+# inside RunRequests.gs, which anybody who can write the queue tab bypasses by not calling it.
+#
+# So it is gated by a write nobody else is permitted to make. The DQ menu records the Request ID
+# here before it queues the row; the worker runs *SPORT* only for an ID it finds here. The
+# protection is the authorisation, and there is no code path around it.
+
+if ($Unprotected) {
+    Write-Host "  -Unprotected: no approvals tab either, so no whole-sport run can be authorised" -ForegroundColor Yellow
+}
+elseif ($WhatIf) {
+    Write-Host "  would create '$ApprovalSheetName', protected with the owner as its only editor" -ForegroundColor DarkGray
+}
+else {
+    $book = Invoke-SheetsApiWithRetry -Method GET -Path ("$SpreadsheetId" + '?fields=sheets(properties(sheetId,title),protectedRanges)')
+    $approvalSheetId = $null
+    $approvalProtected = $false
+    foreach ($sheet in @($book.sheets)) {
+        if ([string]$sheet.properties.title -ne $ApprovalSheetName) { continue }
+        $approvalSheetId = [int]$sheet.properties.sheetId
+        if ($null -ne $sheet.protectedRanges -and @($sheet.protectedRanges).Count -gt 0) {
+            $approvalProtected = $true
+        }
+    }
+
+    if ($null -eq $approvalSheetId) {
+        $made = Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId`:batchUpdate" -Body @{
+            requests = @(@{ addSheet = @{ properties = @{
+                            title          = $ApprovalSheetName
+                            gridProperties = @{ rowCount = 1000; columnCount = 3; frozenRowCount = 1 }
+                        } } })
+        }
+        $approvalSheetId = [int]$made.replies[0].addSheet.properties.sheetId
+        Write-Host "  created '$ApprovalSheetName'" -ForegroundColor Green
+    }
+    else {
+        Write-Host "  '$ApprovalSheetName' is already there" -ForegroundColor DarkGray
+    }
+
+    # Written every time and not only on creation, so a tab left half-made by an interrupted
+    # run is finished by the next one rather than staying headerless for ever. Three cells of
+    # RAW over three cells that already say the same thing costs nothing.
+    #
+    # values:batchUpdate, as everything else here writes. A POST to /values/{range} is only a
+    # route as :append; plain, it is not one, and Google answers with the HTML of its 404 page
+    # rather than an API error - which is a puzzling thing to find in a console. Measured here
+    # on Soccer, 2026-09-03.
+    [void](Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId/values:batchUpdate" -Body @{
+            valueInputOption = 'RAW'
+            data             = @(@{
+                    range  = "$ApprovalSheetName!A1:C1"
+                    values = @(, @('Request ID', 'Approved at', 'Approved by'))
+                })
+        })
+
+    if ($approvalProtected) {
+        Write-Host "  its protection is already set; leaving it alone" -ForegroundColor Yellow
+    }
+    else {
+        # No `users` here, deliberately, and this is the one place that stays that way: the
+        # owner is the only editor, so the only account that can approve a whole-sport run is
+        # the one running the machine that would perform it.
+        [void](Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId`:batchUpdate" -Body @{
+            requests = @(@{ addProtectedRange = @{ protectedRange = @{
+                            range                 = @{ sheetId = $approvalSheetId }
+                            description           = 'Whole-sport approvals. The owner is the only editor, and that is what authorises a *SPORT* run.'
+                            warningOnly           = $false
+                            requestingUserCanEdit = $true
+                            editors               = @{ domainUsersCanEdit = $false }
+                        } } })
+        })
+        Write-Host "  protected: the owner alone, which is what makes it an approval" -ForegroundColor Green
     }
 }
 
@@ -526,7 +628,8 @@ Write-Host ""
 Write-Host "Next, by hand and in the browser:" -ForegroundColor Cyan
 Write-Host "  1. Extensions > Apps Script, paste TOOLS/sheets-apps-script/RunRequests.gs" -ForegroundColor DarkGray
 Write-Host "  2. Project Settings > show appsscript.json, paste the one beside it" -ForegroundColor DarkGray
-Write-Host "  3. Deploy > Test deployments is not enough: the trigger has to run as the owner." -ForegroundColor DarkGray
-Write-Host "     Add an installable onOpen trigger owned by the owner account." -ForegroundColor DarkGray
-Write-Host "  4. Reload the document and check the DQ menu appears." -ForegroundColor DarkGray
+Write-Host "  3. Reload the document and check the DQ menu appears." -ForegroundColor DarkGray
+Write-Host "     A simple onOpen builds the menu for anybody who may open the document; no" -ForegroundColor DarkGray
+Write-Host "     installable trigger is needed, and one would not change who a menu item runs as." -ForegroundColor DarkGray
+Write-Host "  4. Each colleague authorises the script once, on their first click." -ForegroundColor DarkGray
 Write-Host ""

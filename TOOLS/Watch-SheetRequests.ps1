@@ -11,9 +11,16 @@
     this enforces it, because a person with edit access could type into the tab directly. A
     CheckID has to match one known ID exactly - not a pattern, not a list, no wildcard, no
     comma, no second word. The reserved token *SPORT* is the single exception and maps to
-    -RunAll here rather than being assembled from anything the sheet said; it is refused unless
-    the requester is the owner recorded in TOOLS/sheet-registry.json, and refused outright
-    while no owner is recorded. No cell ever reaches a shell.
+    -RunAll here rather than being assembled from anything the sheet said. No cell ever reaches
+    a shell.
+
+    Anybody on requesters.allowed may ask for a whole-sport run; only the owner's approval lets
+    one start. The approval is a Request ID in the "Run approvals" tab, which is protected with
+    the owner as its only editor, so the authorisation is a write Google permits to one account
+    rather than a check any of this could be talked out of. "Requested by" authorises nothing:
+    every allowed account can edit the queue tab, so that cell is a claim. An unapproved
+    whole-sport request is left WAITING rather than failed - it has not been turned down, only
+    not yet read - and the requests behind it carry on running past it.
 
     Each run is its own powershell.exe. That is what makes an interrupted worker safe: the run
     lock is a file handle, so a killed child releases it, and a request left RUNNING by a
@@ -96,6 +103,11 @@ $SecretsPath = Join-Path $PSScriptRoot 'secrets.local.ps1'
 if (Test-Path -LiteralPath $SecretsPath) { . $SecretsPath }
 
 $QueueSheetName = 'Run requests'
+# Protected with the owner as its only editor, which is the whole of the whole-sport gate.
+# `Run requests` lists every allowed account as an editor - a menu item runs as whoever
+# clicked it, so it could not be otherwise - and that makes `Requested by` a claim anybody on
+# the list can write. A Request ID in this tab is the one thing they cannot.
+$ApprovalSheetName = 'Run approvals'
 $WholeSportToken = '*SPORT*'
 $RegistryPath = Join-Path $PSScriptRoot 'sheet-registry.json'
 $RunQuery = Join-Path $PSScriptRoot 'Run-Query.ps1'
@@ -281,10 +293,18 @@ function Test-RequestAcceptable {
         [string]$Sport,
         $Approved,
         $Registry,
-        $OpenRequests
+        $OpenRequests,
+        # Request IDs the owner approved, from the tab only the owner can write. $null means the
+        # board has no such tab; an empty array means it has one and this request is not in it.
+        $WholeSportApprovals = $null
     )
 
-    function Refuse { param([string]$Why) return [pscustomobject]@{ Ok = $false; Why = $Why; RunAll = $false; CheckId = '' } }
+    # Refused and held are different answers and the caller acts on them differently: a refusal
+    # is final and lands in the Error cell as ERROR, a hold leaves the row WAITING for somebody
+    # to decide. Collapsing the second into the first is what makes an approvable request
+    # unapprovable, because it is marked failed before anyone has read it.
+    function Refuse { param([string]$Why) return [pscustomobject]@{ Ok = $false; Pending = $false; Why = $Why; RunAll = $false; CheckId = '' } }
+    function Hold { param([string]$Why) return [pscustomobject]@{ Ok = $false; Pending = $true; Why = $Why; RunAll = $false; CheckId = '' } }
 
     $checkId = [string]$Request.CheckId
     $requestedBy = ([string]$Request.RequestedBy).Trim().ToLowerInvariant()
@@ -314,16 +334,40 @@ function Test-RequestAcceptable {
                     'run cannot be authorised. It is the one request that runs every check against ' +
                     'the production database.'))
         }
-        if (-not $isOwner) {
-            return (Refuse 'A whole-sport run is the owner''s to ask for. Use "Run this check" for one check.')
+        # Anybody on the list may ask for one; only the owner's approval lets it run. Until
+        # 2026-09-03 this compared `Requested by` against the owner and called that the rule,
+        # which it never was: every account on the list is an editor of `Run requests` - a menu
+        # item runs as whoever clicked it, so the tab has to take their writes - and any of them
+        # could type that cell. The cell is a claim. `Run approvals` is not.
+        if (-not $isOwner -and $allowed -notcontains $requestedBy) {
+            return (Refuse ("$requestedBy is not on the list of accounts that may ask for a run. " +
+                    'Add it to requesters.allowed in TOOLS/sheet-registry.json.'))
         }
+
+        if ($null -eq $WholeSportApprovals) {
+            return (Refuse ("This board has no '$ApprovalSheetName' tab, so a whole-sport run " +
+                    'cannot be authorised. Run .\TOOLS\Add-RunRequestsTab.ps1 -Sport ' + $Sport +
+                    ' to create it; it is protected for the owner alone.'))
+        }
+
+        # Held rather than refused: an unapproved request is one the owner has not looked at
+        # yet, not one they have turned down, and a row marked ERROR ninety seconds after it was
+        # asked for cannot then be approved. The caller leaves it WAITING and takes the next
+        # request, so a whole-sport row waiting for a decision does not hold up the single
+        # checks behind it.
+        if (@($WholeSportApprovals) -notcontains [string]$Request.RequestId) {
+            return (Hold ("Waiting for the owner to approve it. Whole-sport runs are approved " +
+                    "from the DQ menu, which records the Request ID in '$ApprovalSheetName' - the " +
+                    'one tab the owner alone can write.'))
+        }
+
         foreach ($open in @($OpenRequests)) {
             if ($open.RequestId -eq $Request.RequestId) { continue }
             if ($open.CheckId -eq $WholeSportToken) {
                 return (Refuse 'A whole-sport run is already on the queue.')
             }
         }
-        return [pscustomobject]@{ Ok = $true; Why = ''; RunAll = $true; CheckId = $WholeSportToken }
+        return [pscustomobject]@{ Ok = $true; Pending = $false; Why = ''; RunAll = $true; CheckId = $WholeSportToken }
     }
 
     # ----- who is asking, for an ordinary check ------------------------------------------
@@ -368,7 +412,7 @@ function Test-RequestAcceptable {
         }
     }
 
-    return [pscustomobject]@{ Ok = $true; Why = ''; RunAll = $false; CheckId = $checkId }
+    return [pscustomobject]@{ Ok = $true; Pending = $false; Why = ''; RunAll = $false; CheckId = $checkId }
 }
 
 # --------------------------------------------------------------------------------------
@@ -452,6 +496,44 @@ function Read-RequestQueue {
     $range = [uri]::EscapeDataString("$QueueSheetName!A1:Z2000")
     $response = Invoke-SheetsApiWithRetry -Method GET -Path "$SpreadsheetId/values/$range"
     return (ConvertTo-RequestRows -Values $response.values)
+}
+
+function Read-WholeSportApprovals {
+    <#
+        Every Request ID the owner has approved for a whole-sport run, on one board.
+
+        Returns $null when the tab is absent, and an array - possibly empty - when it is there.
+        The two are different answers and the caller says so differently: a board with no tab
+        needs one created, a board with a tab and no matching row has an unapproved request.
+        Collapsing them into "not approved" would send somebody looking for an approval button
+        on a document that has none.
+
+        Read fresh each time it is needed, and needed only when a *SPORT* row is next. It is
+        one extra request against a rare case, rather than a request every pass for a tab that
+        is empty on almost every board.
+    #>
+    param([string]$SpreadsheetId)
+
+    $range = [uri]::EscapeDataString("$ApprovalSheetName!A1:C1000")
+    try {
+        $response = Invoke-SheetsApiWithRetry -Method GET -Path "$SpreadsheetId/values/$range" `
+            -What 'reading the whole-sport approvals'
+    }
+    catch {
+        # Sheets answers a missing tab with 400, and there is no cheaper way to ask. Anything
+        # else - a network fault, a revoked token - must not read as "no tab", because that
+        # would turn a transport problem into a permanent refusal with the wrong advice on it.
+        if ($_.Exception.Message -match '400') { return $null }
+        throw
+    }
+
+    $ids = @()
+    $rows = @($response.values)
+    for ($i = 1; $i -lt $rows.Count; $i++) {
+        $id = ([string]@($rows[$i])[0]).Trim()
+        if (-not [string]::IsNullOrWhiteSpace($id)) { $ids += $id }
+    }
+    return @($ids)
 }
 
 function Set-RequestCells {
@@ -837,17 +919,72 @@ while ($true) {
                 "changes, and -FullSweepPasses 1 turns it off." -f $board.Name) -ForegroundColor Yellow
         }
 
-        $next = @($open | Where-Object { $_.Status -eq 'QUEUED' -or $_.Status -eq 'WAITING' })[0]
+        $candidates = @($open | Where-Object { $_.Status -eq 'QUEUED' -or $_.Status -eq 'WAITING' })
+        if ($candidates.Count -eq 0) { continue }
+
+        # A whole-sport request the owner has not approved yet is held, not run and not failed,
+        # and the queue steps over it. Held rather than taken in turn because it may wait for
+        # hours: a request nobody has looked at must not stop the single checks behind it, and
+        # the alternative - failing it after ninety seconds - makes an approvable request
+        # impossible to approve.
+        #
+        # The tab is read once per pass and only when a *SPORT* row is actually open, which on
+        # almost every board is never. An absent tab is not a hold: it can never be approved, so
+        # it goes on to be refused with the sentence that says which script creates it.
+        $held = @{}
+        $approvals = $null
+        $wholeSportOpen = @($candidates | Where-Object { $_.CheckId -eq $WholeSportToken })
+        if ($wholeSportOpen.Count -gt 0) {
+            $approvals = Read-WholeSportApprovals -SpreadsheetId $board.SpreadsheetId
+            if ($null -ne $approvals) {
+                foreach ($pending in $wholeSportOpen) {
+                    if (@($approvals) -contains [string]$pending.RequestId) { continue }
+                    $held[[string]$pending.RequestId] = $true
+                    # Written once, on the way into WAITING. A worker up since Monday must not
+                    # rewrite the same two cells every ninety seconds for a request nobody has
+                    # got round to.
+                    if ($pending.Status -ne 'WAITING' -and -not $WhatIf) {
+                        Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $pending.RequestId -Values @{
+                            Status = 'WAITING'
+                            Error  = "Waiting for the owner to approve it, in '$ApprovalSheetName'."
+                        }
+                        Write-Host ("  {0} {1}: held, waiting for the owner to approve a whole-sport run" -f `
+                                $board.Name, $pending.RequestId) -ForegroundColor DarkGray
+                    }
+                }
+            }
+        }
+
+        $next = @($candidates | Where-Object { -not $held.ContainsKey([string]$_.RequestId) })[0]
         if (-not $next) { continue }
 
         # Only what is ahead of it in the queue. A request is refused for duplicating an
         # earlier one, never for duplicating a later one: judged against the whole open set,
         # the oldest request loses to a *SPORT* somebody added underneath it a minute ago,
         # which is the queue running backwards. Row order is append order.
-        $ahead = @($open | Where-Object { $_.RowNumber -lt $next.RowNumber })
+        #
+        # Held rows are not ahead of anything. An unapproved whole-sport request would otherwise
+        # be a whole-sport run in the eyes of the check behind it, and every single check on the
+        # board would be refused for sitting behind a run that is not happening.
+        $ahead = @($open | Where-Object {
+                $_.RowNumber -lt $next.RowNumber -and -not $held.ContainsKey([string]$_.RequestId) })
 
         $verdict = Test-RequestAcceptable -Request $next -Sport $board.Name -Approved $approved `
-            -Registry $registry -OpenRequests $ahead
+            -Registry $registry -OpenRequests $ahead -WholeSportApprovals $approvals
+
+        # A held request should have been stepped over above and never reach here. It is caught
+        # anyway, because the cost of being wrong is a request marked failed that somebody was
+        # about to approve, and ERROR is not a state the owner can approve their way out of.
+        if (-not $verdict.Ok -and $verdict.Pending) {
+            Write-Host ("  {0} {1}: held - {2}" -f $board.Name, $next.RequestId, $verdict.Why) -ForegroundColor DarkGray
+            if (-not $WhatIf -and $next.Status -ne 'WAITING') {
+                Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $next.RequestId -Values @{
+                    Status = 'WAITING'
+                    Error  = $verdict.Why
+                }
+            }
+            continue
+        }
 
         if (-not $verdict.Ok) {
             Write-Host ("  {0} {1}: refused - {2}" -f $board.Name, $next.RequestId, $verdict.Why) -ForegroundColor Yellow

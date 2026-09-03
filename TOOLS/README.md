@@ -2476,15 +2476,17 @@ machine does the rest.
 |---|---|
 | The menu and what it appends | `TOOLS/sheets-apps-script/RunRequests.gs`, pasted into the document's Apps Script project |
 | Its scopes | `TOOLS/sheets-apps-script/appsscript.json` |
-| Creating and protecting the tab | `TOOLS/Add-RunRequestsTab.ps1 -Sport <Sport>` |
+| Creating and protecting both tabs | `TOOLS/Add-RunRequestsTab.ps1 -Sport <Sport>` |
+| Who may approve a whole-sport run | the `Run approvals` tab, whose only editor is the owner |
 | Who may ask | `requesters` in `TOOLS/sheet-registry.json` |
 | Which documents carry it | `runRequests` in the same file |
 
 The script holds no SQL, no credentials and no execution logic. It appends one row and stops.
 `Run this check` writes one full CheckID - `Soccer-DQ-023`, never `DQ-023` and never a list -
-read from `A2` on a check tab or from column B of the selected `Overview` row. `Run the whole
-sport` is the owner's alone and writes the single reserved token `*SPORT*` rather than a list,
-so the cell stays one value and the machine maps that value to `-RunAll` itself.
+read from `A2` on a check tab or from column B of the selected `Overview` row. `Ask for the
+whole sport` writes the single reserved token `*SPORT*` rather than a list, so the cell stays
+one value and the machine maps that value to `-RunAll` itself. Anybody on the list may ask for
+one; only the owner may approve it, and until they do it sits on the queue.
 
 A row carries fifteen columns, and three of them exist because a number on its own decides
 nothing:
@@ -2522,10 +2524,62 @@ status written one column to the left of the header describing it rather than an
 
 `Requested by` is a cell. Anybody with edit access to the tab can type somebody else's address
 into it as easily as a CheckID, so **the allowed list guards against a mistake and not against
-intent**. What holds is edit access: `Add-RunRequestsTab.ps1` puts a protected range over the
-whole tab with no other editors, and the Apps Script is deployed to execute as the owner. The
-button then still appends for everybody allowed to click it, and nobody can write the queue by
-hand.
+intent**.
+
+This section said until 2026-09-03 that edit access was the boundary, because
+`Add-RunRequestsTab.ps1` protected the tab with the owner as its only editor and the Apps Script
+was "deployed to execute as the owner". **There is no such deployment for a menu item.** A menu
+item in a container-bound script runs as the person who clicked it, whatever an installable
+`onOpen` trigger does for `onOpen` itself, so the arrangement described here could not have
+worked and did not: a colleague clicking `Run this check` on Soccer got *You are trying to edit a
+protected cell or object*. The claim had stood since the tab was built, and nothing tested it
+because the owner is the only person who had clicked.
+
+So `Run requests` now lists the owner and every `requesters.allowed` account as editors of its
+protected range. That still keeps out anybody the document is merely shared with, which is most
+of the people who can open a board. It does not make `Requested by` true, and the worker treats
+that cell as a claim.
+
+**The whole sport is gated separately, because it is the expensive request.** `-RunAll` costs
+about fifteen minutes, holds the machine lock throughout and repaints a board. Anybody on the
+list may ask for one - that is a change of 2026-09-03, and it lost nothing, because the rule it
+replaced compared `Requested by` against the owner and any of the five accounts could type that
+cell. Only the owner may approve one.
+
+`Run approvals` is a second tab with the owner as its only editor. The owner's own click records
+the Request ID there as it queues; everybody else's row waits until the owner uses `Approve
+selected request`. The worker runs `*SPORT*` only for a Request ID it finds in that tab. The
+authorisation is a write Google permits to one account, not a check in a script - a check in
+`RunRequests.gs` decides nothing, because anybody who can write the queue tab reaches it without
+calling that file at all.
+
+**`RunRequests.gs` cannot work out who the owner is, and must not try.** `Session.getEffectiveUser()`
+is the account a script is *running under*, and a menu item runs as whoever clicked it, so it
+returns the clicker every time. Code that read it as "the owner" was comparing somebody against
+themselves: `mayRequest_` returned true for anyone who could open the document, and the
+whole-sport path sent every colleague down the owner's branch to collide with the protected tab
+and be told, in a box, that nothing had been queued. Measured 2026-09-03, on the first click by
+somebody other than the owner - which is also why it had never shown before.
+
+The file now carries the owner's address as a constant, `OWNER`, kept in step with
+`requesters.owner`, and it decides **wording only**. Whether a request is approved is decided by
+whether the write into `Run approvals` succeeds. If that constant ever goes stale, one dialog
+says the wrong thing and nothing else changes: the request still queues, and still waits for
+whoever actually holds the tab.
+
+**An unapproved whole-sport request is held, not failed, and it does not block the queue.** Two
+things follow from a request that may wait hours for a person. It stays `WAITING` rather than
+becoming `ERROR`, because a row marked failed ninety seconds after it was asked for is one the
+owner can no longer approve; and the worker steps over it and runs the requests behind it,
+because otherwise one unanswered request would stop every single check on that board. The status
+is written once, on the way into `WAITING`, not on every pass.
+
+A single check needs no approval and never did. The gate is on the one request that is
+expensive, and nowhere else.
+
+A board with no `Run approvals` tab refuses every whole-sport request, and says to run
+`Add-RunRequestsTab.ps1` rather than saying "not approved": an absent tab and an empty one are
+different problems and only one of them has a button to press.
 
 Verify it rather than trust the script's own word - the first run on Soccer reported a
 protection it had not created, because an absent `protectedRanges` field is `$null` and
