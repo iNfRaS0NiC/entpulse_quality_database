@@ -2777,10 +2777,11 @@ the only record there is.
 | `EP DQ nightly pass` | daily 21:00 | `Invoke-NightlyRun.ps1` - "The nightly pass" above owns it |
 | `EP DQ sheet run requests` | at logon, and every 15 min | `Watch-SheetRequests.ps1` - polls every 90s; "Asking for a run from a board" owns it |
 
-All four run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File` with the repository as the
-working directory, as the owner under `InteractiveToken`, `IgnoreNew` so a second trigger cannot
-start a duplicate, and `StartWhenAvailable` so a run missed while the machine was off happens
-when it comes back. `WakeToRun` is false on all of them: a sleeping laptop is not woken at 21:00,
+All four run as the owner under `InteractiveToken`, with the repository as the working directory,
+`IgnoreNew` so a second trigger cannot start a duplicate, and `StartWhenAvailable` so a run missed
+while the machine was off happens when it comes back. Three invoke `powershell.exe -NoProfile
+-ExecutionPolicy Bypass -File` directly; the watcher goes through `conhost.exe --headless`, for
+the reason below. `WakeToRun` is false on all of them: a sleeping laptop is not woken at 21:00,
 the nightly starts when somebody opens the lid, and a night the machine spent shut is a night
 that did not run.
 
@@ -2835,6 +2836,18 @@ And a `LogonTrigger` **must keep its `<UserId>`**: without one it means any user
 machine-wide for the same reason and refused the same way. Dropping it while rewriting the block
 cost a delete and a restore, and the error it gives is `Access is denied` with nothing to say
 which element caused it.
+
+**What killed it was probably a window nobody meant to be there.** The action carried
+`-WindowStyle Hidden` and the watcher ran in a visible Windows Terminal tab regardless, because
+`-WindowStyle` governs a window `powershell.exe` owns and Windows Terminal, while it is the
+default terminal application, owns that window instead. The flag was a no-op, and an endless loop
+spent its days behind a close button. Closing that tab stops the pipeline and the process exits
+**0** - `TerminatingError(): "The pipeline has been stopped."` in `worker.local.log` and exit code
+0 in Task Scheduler, which is exactly the pair that kept `RestartOnFailure` sitting still. The
+task now runs `conhost.exe --headless powershell.exe ...`, which gives the loop no window rather
+than a window asked politely to hide. Changing the machine's default terminal application would
+make the flag work too, and was rejected: it would change every console the owner opens in order
+to fix one that should never have had a window.
 
 **Renaming one is not an edit.** Task Scheduler has no rename: the task is exported, registered
 again under the new name and the old one unregistered, and its run history starts from nothing.
