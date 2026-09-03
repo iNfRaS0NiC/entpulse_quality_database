@@ -1781,7 +1781,7 @@ address was set go out on the first run after it is.
 
 | | |
 |---|---|
-| When it is sent | not by the run. A board run queues and says how many are waiting; `TOOLS/Send-Notifications.ps1` sends, twice a day from Task Scheduler. A board run covers one sport, so sending from inside it would be one mail per sport and a night across sixteen sports would be sixteen mails. Each drain covers everything queued since the last one, so no window has to be configured - the queue is the window |
+| When it is sent | not by the run. A board run queues and says how many are waiting; `TOOLS/Send-Notifications.ps1` sends, each morning from Task Scheduler. A board run covers one sport, so sending from inside it would be one mail per sport and a night across sixteen sports would be sixteen mails. Each drain covers everything queued since the last one, so no window has to be configured - the queue is the window. The afternoon task reads the boards instead of the queue; "Scheduled tasks on this machine" has both |
 | What is sent | one message covering every check in it, as a list: sport, check, name, rows, and a link. Twenty reopens across four boards is one mail |
 | Where the two links go | the **sport** opens that board's `Overview`; the word at the end of the row opens the **check's own tab**. A reader who wants the sport and a reader who wants the one finding are two different readers |
 | What it looks like | text and HTML both, text first. A plain-text mail can only carry a naked URL, and a Google tab link is ninety characters that push the four columns off the screen; HTML gives the row a word to hang the link on. The text alternative is what a client refusing HTML shows and what a search over somebody's mail matches |
@@ -2763,6 +2763,68 @@ The form is read against the sport slug the run resolved, which is filled whethe
 from `-Sport` or from the CheckID. Read from `-Sport` alone it would work by hand and silently
 do nothing under the nightly pass and the Sheets worker, which name checks rather than sports.
 
+## Scheduled tasks on this machine
+
+Four tasks run this package unattended. **None of them is in git.** Task Scheduler holds them,
+the laptop holds Task Scheduler, and nothing in the repository creates, checks or repairs them -
+so a machine rebuilt from a clone has every tool here and no schedule at all. This section is
+the only record there is.
+
+| Task | Trigger | What it runs |
+|---|---|---|
+| `EP DQ reopen queue` | daily 07:00 | `Send-Notifications.ps1 -Quiet` - drains the queue: what the night **changed** |
+| `EP DQ reopen sweep` | daily 14:00 | `Send-Notifications.ps1 -Sweep -Quiet` - reads every board: what **stands open** |
+| `EP DQ nightly pass` | daily 21:00 | `Invoke-NightlyRun.ps1` - "The nightly pass" above owns it |
+| `EP DQ sheet run requests` | at logon, no time limit | `Watch-SheetRequests.ps1` - polls every 90s; "Asking for a run from a board" owns it |
+
+All four run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File` with the repository as the
+working directory, as the owner under `InteractiveToken`, `IgnoreNew` so a second trigger cannot
+start a duplicate, and `StartWhenAvailable` so a run missed while the machine was off happens
+when it comes back. `WakeToRun` is false on all of them: a sleeping laptop is not woken at 21:00,
+the nightly starts when somebody opens the lid, and a night the machine spent shut is a night
+that did not run.
+
+**Why the notifications are two tasks rather than one task twice.** They answer different
+questions and read different things. The queue drain reports what *changed*, which only a run
+can know, and it is the only one that can say a check was `Completed` yesterday and is not
+today. The sweep reports what *stands open*, which only the board can say, and it re-finds
+anything the first one lost. Both are needed because the first one can lose things: a run
+queues its event at the moment it writes the word `Reopened`, so a transition that reaches the
+board and not the queue is invisible to the drain for ever.
+`Ice-Hockey-DQ-114 EVENT_PARTICIPANT_ORGANIZATION_MISSING` did exactly that on 2026-09-02 - the
+board carried `Reopened` from the 09:16 run and the queue never heard of it - and the sweep
+built the next day found it on its first pass. **The root cause of that loss is still not
+known.** The sweep is the floor under it, not the fix for it.
+
+**The hours are the machine's clock, which is an hour behind Bulgarian time.** The machine runs
+on `Romance Standard Time`; Bulgaria is one zone east, and the two shift for summer time on the
+same date, so the gap is one hour all year and a fixed trigger keeps a fixed Bulgarian hour.
+Read the table as 08:00, 15:00 and 22:00 for a reader in Sofia. The first two were chosen as
+Bulgarian hours and set an hour back to land on them; the nightly's 21:00 was chosen on the
+machine's own clock and left there.
+
+**A task name carries no hour, and neither does its description.** The trigger is the one place
+the hour lives, and a second copy of it in the name is a second thing to move. The pair was
+called `EP DQ reopen notifications 08` and `... 15` while the only difference between them was
+when they ran; when the afternoon one changed job on 2026-09-02 the name and the description
+both went stale in the same hour - the name still said `notifications`, the description still
+described draining a queue that task no longer reads - and the hours were moved the next day
+without either needing to be touched. Name a task by what it does; let Task Scheduler's own
+column say when.
+
+**They run only while the owner is logged on.** `InteractiveToken` is deliberate - the runs need
+the cached Sheets token and the session in `%LOCALAPPDATA%`, which belong to that profile - and
+the cost is that a locked screen is fine and a logged-out machine is not. The database is
+reached over the VPN, so a night with the VPN down fails the statements rather than the task.
+
+**Renaming one is not an edit.** Task Scheduler has no rename: the task is exported, registered
+again under the new name and the old one unregistered, and its run history starts from nothing.
+Everything else carries over in the XML. `Set-ScheduledTask` changes an action or a trigger in
+place; only the name needs the longer path.
+
+All four take the machine lock described next, so none of them can overlap another, or the
+owner's own shell.
+
 ## One run at a time on the machine
 
 Every run that sends a statement takes a machine-wide lock first, whoever started it: the
@@ -2770,7 +2832,7 @@ owner's shell, a scheduled task, the nightly pass, the Sheets worker. Two runs t
 do not merely compete for the server - they write the same board and append to the same
 ledger, and whichever finishes second silently wins.
 
-The lock is a file under `%LOCALAPPDATA%\entpulse-qbun.lock`, held open for writing while
+The lock is a file under `%LOCALAPPDATA%\entpulse-qb\run.lock`, held open for writing while
 the run lasts. A second run is refused by the operating system rather than by a timestamp, so
 there is no stale lock to break by hand and nothing to clean up: when the process ends, by
 exit or by kill or by a reboot, Windows drops the handle and the lock is gone with it. The
