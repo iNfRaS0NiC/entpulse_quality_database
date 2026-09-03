@@ -457,6 +457,16 @@ $XlsxNumericTypes = @([int], [long], [double], [decimal], [single], [int16], [ui
 $XlsxInvariant = [Globalization.CultureInfo]::InvariantCulture
 $XlsxCellLimit = 32767
 
+# A tab this big is not read, only scrolled past - Soccer-DQ-080 PARTICIPANT_NO_PARTICIPATION_
+# ANYWHERE put 140,844 rows on one sheet on 2026-09-03 and the sheet alone cost minutes to
+# build. Local only: a manual re-run of one check never reaches Save-RunWorkbook at all (it
+# takes the single-run path, Format defaults to table), so this never stands between a person
+# and the full result they asked for by name - only a whole-board sweep is capped, because
+# that is the one nobody is reading 140,000 rows out of anyway. The live document's own tab
+# cap, $SheetsMaxRowsPerCheck in Sheets.ps1, is a separate number for a separate reason and is
+# untouched by this one.
+$XlsxMaxRowsPerCheck = 15000
+
 # --------------------------------------------------------------------------------------
 # Query resolution
 # --------------------------------------------------------------------------------------
@@ -3278,21 +3288,31 @@ function Get-CellXml {
     if ($null -eq $Value) { return '' }
 
     $styleAttribute = if ($Style -gt 0) { ' s="{0}"' -f $Style } else { '' }
+    $type = $Value.GetType()
 
-    # No cached <v>: the value is whatever the other sheet holds when the file is opened,
-    # and a stale cached one would be shown until something forced a recalculation.
-    # Get-WorkbookXml sets fullCalcOnLoad so the reader computes it on open.
-    if ($Value.PSObject.TypeNames -contains 'Xlsx.Formula') {
-        if ([string]::IsNullOrEmpty($Value.Formula)) { return '' }
-        return '<c r="{0}"{1}><f>{2}</f></c>' -f `
-            $Reference, $styleAttribute, (ConvertTo-XmlText -Text $Value.Formula)
-    }
-
-    if ($XlsxNumericTypes -contains $Value.GetType()) {
+    # Numeric and string are almost every cell a check returns, checked here by CLR type so
+    # the common case never touches .PSObject.TypeNames - which, for a value nothing has
+    # wrapped yet, means building the adapter and walking the type's inheritance chain. Over
+    # a sheet the size of Soccer-DQ-080 (140,844 rows) that walk was paid on every cell for a
+    # formula wrapper that appears on a handful of them across the whole workbook.
+    if ($XlsxNumericTypes -contains $type) {
         # Invariant formatting, or a bg-BG decimal comma would make Excel read
         # the number as text.
         return '<c r="{0}"{1}><v>{2}</v></c>' -f `
             $Reference, $styleAttribute, [string]::Format($XlsxInvariant, '{0}', $Value)
+    }
+
+    # No cached <v>: the value is whatever the other sheet holds when the file is opened,
+    # and a stale cached one would be shown until something forced a recalculation.
+    # Get-WorkbookXml sets fullCalcOnLoad so the reader computes it on open.
+    #
+    # $type -ne [string] first: New-XlsxFormula always returns a PSCustomObject and a plain
+    # string never carries the 'Xlsx.Formula' type name, so this guard changes nothing about
+    # which cells match - it only stops a string cell from reaching the PSObject check at all.
+    if ($type -ne [string] -and $Value.PSObject.TypeNames -contains 'Xlsx.Formula') {
+        if ([string]::IsNullOrEmpty($Value.Formula)) { return '' }
+        return '<c r="{0}"{1}><f>{2}</f></c>' -f `
+            $Reference, $styleAttribute, (ConvertTo-XmlText -Text $Value.Formula)
     }
 
     $raw = [string]$Value
@@ -3311,11 +3331,15 @@ function Get-CellXml {
 function Get-StylesXml {
     # The smallest style sheet Excel accepts. Font 1 is the blue underline that makes a
     # navigation cell read as a link; the two fills and the border are mandatory entries.
+    # Style 2 is bold dark red, for the one line that says a tab was capped. It has to read as
+    # a warning rather than as a fourth ordinary row, because it sits where the eye lands first
+    # on a tab it might otherwise take for the whole result.
     return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
     '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">' +
-    '<fonts count="2">' +
+    '<fonts count="3">' +
     '<font><sz val="11"/><name val="Calibri"/></font>' +
     '<font><u/><color rgb="FF0563C1"/><sz val="11"/><name val="Calibri"/></font>' +
+    '<font><b/><color rgb="FFC00000"/><sz val="11"/><name val="Calibri"/></font>' +
     '</fonts>' +
     '<fills count="2">' +
     '<fill><patternFill patternType="none"/></fill>' +
@@ -3323,9 +3347,10 @@ function Get-StylesXml {
     '</fills>' +
     '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>' +
     '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>' +
-    '<cellXfs count="2">' +
+    '<cellXfs count="3">' +
     '<xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/>' +
     '<xf numFmtId="0" fontId="1" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
+    '<xf numFmtId="0" fontId="2" fillId="0" borderId="0" xfId="0" applyFont="1"/>' +
     '</cellXfs>' +
     '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>' +
     '</styleSheet>'
@@ -3376,6 +3401,17 @@ function Save-Workbook {
                         $columns += $property.Name
                     }
                 }
+            }
+
+            # Column letters and the name->position map, computed once per sheet rather than
+            # once per cell. A-Z arithmetic and a dynamic property lookup are cheap once; a
+            # 140,844-row sheet (Soccer-DQ-080, 2026-09-03) pays for either a million times
+            # over if it sits inside the row loop instead of outside it.
+            $columnLetters = [string[]]::new($columns.Count)
+            $columnIndex = @{}
+            for ($c = 0; $c -lt $columns.Count; $c++) {
+                $columnLetters[$c] = Get-ExcelColumnName -Index ($c + 1)
+                $columnIndex[$columns[$c]] = $c
             }
 
             $xml = New-Object Text.StringBuilder
@@ -3447,25 +3483,48 @@ function Save-Workbook {
                     [void]$xml.Append((Get-CellXml -Reference 'A3' -Value 'Return to Overview' -Style 1))
                     [void]$xml.Append('</row>')
                 }
+
+                # Row 4 is the blank separator above the result table - blank because nobody
+                # had anything to put there before. A check whose tab was capped does: this is
+                # the one place a reader meets the tab before the numbers, so it is where a
+                # missing 125,844 rows has to be said, not in a console line nobody but the run
+                # itself ever reads again.
+                if ($sheet.Note) {
+                    [void]$xml.Append('<row r="4">')
+                    [void]$xml.Append((Get-CellXml -Reference 'A4' -Value $sheet.Note -Style 2))
+                    [void]$xml.Append('</row>')
+                }
             }
 
             $rowNumber = if ($headerRow) { 5 } else { 1 }
 
             [void]$xml.Append(('<row r="{0}">' -f $rowNumber))
             for ($c = 0; $c -lt $columns.Count; $c++) {
-                $ref = (Get-ExcelColumnName -Index ($c + 1)) + $rowNumber
+                $ref = $columnLetters[$c] + $rowNumber
                 [void]$xml.Append((Get-CellXml -Reference $ref -Value $columns[$c]))
             }
             [void]$xml.Append('</row>')
 
+            # One pass over each row's own properties rather than one dynamic property get per
+            # cell: $row.($columns[$c]) resolves a member by name through PowerShell's adapter
+            # every time it runs, and the row loop was calling it $columns.Count times per row
+            # whether or not the row actually carried that many properties. $values is rebuilt
+            # to all-null on every row, never reused, so a row shorter than $columns cannot
+            # carry the previous row's leftovers into the slots it does not have.
             foreach ($row in $rows) {
                 $rowNumber++
                 [void]$xml.Append(('<row r="{0}">' -f $rowNumber))
 
+                $values = [object[]]::new($columns.Count)
+                foreach ($property in $row.PSObject.Properties) {
+                    $idx = $columnIndex[$property.Name]
+                    if ($null -ne $idx) { $values[$idx] = $property.Value }
+                }
+
                 for ($c = 0; $c -lt $columns.Count; $c++) {
-                    $ref = (Get-ExcelColumnName -Index ($c + 1)) + $rowNumber
-                    $style = if ($linked.ContainsKey($ref)) { 1 } else { 0 }
-                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $row.($columns[$c]) -Style $style))
+                    $ref = $columnLetters[$c] + $rowNumber
+                    $style = if ($linked.Count -gt 0 -and $linked.ContainsKey($ref)) { 1 } else { 0 }
+                    [void]$xml.Append((Get-CellXml -Reference $ref -Value $values[$c] -Style $style))
                 }
 
                 [void]$xml.Append('</row>')
@@ -5318,17 +5377,34 @@ function Save-RunWorkbook {
             }
             else { '' })
 
+        # Capped on the tab alone. $item.Rows itself is only read here, never reassigned, so
+        # Save-RunSheet - called after this with the same $Collected - still sees every row
+        # this check returned; the live document's own cap is a different number for a
+        # different reason and this must not tighten it by accident.
+        $tabRows = @(Remove-CoverageRows -Rows $item.Rows)
+        $tabTotal = $tabRows.Count
+        $tabCapped = $tabTotal -gt $XlsxMaxRowsPerCheck
+        if ($tabCapped) { $tabRows = $tabRows[0..($XlsxMaxRowsPerCheck - 1)] }
+
         # Parameters is appended rather than inserted: C2 is where the jump to the statement
         # lives, and moving SQL Used off C would move the link with it.
         $sheet = [pscustomobject]@{
             Name   = $tabOf[$itemRunKey]
-            Rows   = (Remove-CoverageRows -Rows $item.Rows)
+            Rows   = $tabRows
             Header = @($item.Job.CheckId, $item.Job.Name, 'SQL',
                 (Get-CheckPriority -Category $itemCategory), $itemCategory,
                 $item.Job.What, '', '',
                 $(if ($item.Job.Signal) { $item.Job.Signal } else { 'Actionable' }),
                 [string]$item.Job.SignalReason, $itemParameters)
             BackTo = $overviewName
+            # Overview still shows the true count - it is read from Findings, computed before
+            # any of this - so a capped tab and its own summary row never disagree about how
+            # much this check found. Only the list of rows on the tab is short of it.
+            Note   = $(if ($tabCapped) {
+                    'Capped at {0} of {1} rows for {2} ({3}). Run it on its own, outside a whole-board sweep, to see the rest.' -f `
+                        $XlsxMaxRowsPerCheck, $tabTotal, $itemRunKey, $item.Job.Name
+                }
+                else { $null })
         }
 
         if ($sqlSheet -and $sqlSheet.Anchor.ContainsKey($itemRunKey)) {

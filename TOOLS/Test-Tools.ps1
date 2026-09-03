@@ -1378,6 +1378,100 @@ Test-That 'an over-long cell is truncated before it reaches Excel' {
     Assert-True ($xml -match 'truncated') 'the value should be marked truncated'
 }
 
+Test-That 'a formula value still writes an f element, not inline text' {
+    # Get-CellXml checks numeric and string first now, for speed on an ordinary sheet - a
+    # formula must still reach its own branch rather than falling through to inlineStr.
+    $xml = Get-CellXml -Reference 'A1' -Value (New-XlsxFormula -Formula '=SUM(A2:A9)')
+    Assert-True ($xml -match '<f>=SUM\(A2:A9\)</f>') "expected an f element, got: $xml"
+    Assert-True ($xml -notmatch 'inlineStr') 'a formula cell must not be written as inline text'
+}
+
+Test-That 'an empty formula writes no cell at all' {
+    Assert-Equal '' (Get-CellXml -Reference 'A1' -Value (New-XlsxFormula -Formula '')) 'nothing to write'
+}
+
+Test-That 'a row missing an earlier row''s column still lands its own values correctly' {
+    # Save-Workbook unions columns across rows because a later row may carry a key the first
+    # one lacked. The row loop reads each row's own properties once and places them by name,
+    # so a short row must not inherit a previous row's values in the slots it does not have.
+    $path = Join-Path $FixtureRoot 'union.xlsx'
+    $sheets = @([pscustomobject]@{ Name = 'U'; Rows = @(
+                [pscustomobject]@{ a = 1; b = 'first' },
+                [pscustomobject]@{ a = 2; b = 'second'; c = 'only on row two' }
+            )
+        })
+    Save-Workbook -Sheets $sheets -Path $path
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem | Out-Null
+    $zip = [IO.Compression.ZipFile]::OpenRead($path)
+    try {
+        $entry = $zip.GetEntry('xl/worksheets/sheet1.xml')
+        $reader = New-Object IO.StreamReader($entry.Open())
+        try { $xml = $reader.ReadToEnd() } finally { $reader.Dispose() }
+    }
+    finally { $zip.Dispose() }
+
+    Assert-True ($xml -match '<row r="1">.*?<c r="A1"[^>]*><is><t[^>]*>a</t></is></c><c r="B1"[^>]*><is><t[^>]*>b</t></is></c><c r="C1"[^>]*><is><t[^>]*>c</t></is></c>') `
+        'the header names all three unioned columns'
+    Assert-True ($xml -match '<row r="2">(?:(?!</row>).)*<v>1</v>(?:(?!</row>).)*first(?:(?!</row>).)*</row>') `
+        'row one carries its own values'
+    Assert-True ($xml -match '<row r="2">(?:(?!<row).)*</row><row r="3">') 'row one has no C cell at all'
+    Assert-True ($xml -match 'only on row two') 'row two carries the column only it has'
+}
+
+Test-That 'a check tab over the row cap is capped, noted, and the live document keeps every row' {
+    # Soccer-DQ-080 PARTICIPANT_NO_PARTICIPATION_ANYWHERE put 140,844 rows on one tab on
+    # 2026-09-03. $Collected is shared with Save-RunSheet, called after this with the same
+    # reference, so the cap has to land on the tab Save-RunWorkbook writes and nowhere upstream
+    # of it - the live document's own cap is a different number for a different reason.
+    $bigRows = 1..20000 | ForEach-Object { [pscustomobject]@{ check_type = 'X'; id = $_ } }
+    $bigJob = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-901'; Name = 'BIG_CHECK'; What = 'w'; Signal = 'Actionable'; SignalReason = '' }
+    $collected = @([pscustomobject]@{ Job = $bigJob; Rows = $bigRows; Eligible = 20000 })
+    $summary = @((New-RunSummaryRow -Job $bigJob -Rows 20000 -Seconds 1.0 -Status 'OK' -Eligible 20000 -Findings 20000))
+
+    $path = Join-Path $FixtureRoot 'capped.xlsx'
+    Save-RunWorkbook -Summary $summary -Collected $collected -Path $path | Out-Null
+
+    Assert-Equal 20000 $collected[0].Rows.Count 'Save-RunSheet must still see every row this check returned'
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem | Out-Null
+    $zip = [IO.Compression.ZipFile]::OpenRead($path)
+    try {
+        $overviewXml = (New-Object IO.StreamReader(($zip.GetEntry('xl/worksheets/sheet1.xml')).Open())).ReadToEnd()
+        $tabXml = (New-Object IO.StreamReader(($zip.GetEntry('xl/worksheets/sheet2.xml')).Open())).ReadToEnd()
+    }
+    finally { $zip.Dispose() }
+
+    Assert-True ($overviewXml -match '20000') 'Overview keeps the true, uncapped count'
+    Assert-True ($overviewXml -notmatch '15000') 'and never shows the cap as if it were the finding count'
+
+    Assert-True ($tabXml -match '<row r="4">.*?s="2".*?</row>') 'the capped tab carries a styled notice in row 4'
+    Assert-True ($tabXml -match 'Capped at 15000 of 20000.*?Fixtureball-DQ-901.*?BIG_CHECK') `
+        'the notice names both the CheckID and the check, never the ID alone'
+    $lastRow = [regex]::Matches($tabXml, '<row r="(\d+)">') | Select-Object -Last 1
+    Assert-Equal '15005' $lastRow.Groups[1].Value 'exactly 15,000 data rows follow the five identity rows'
+}
+
+Test-That 'a check at or under the row cap is written whole, with no notice' {
+    $smallRows = 1..3 | ForEach-Object { [pscustomobject]@{ check_type = 'X'; id = $_ } }
+    $smallJob = [pscustomobject]@{ CheckId = 'Fixtureball-DQ-902'; Name = 'SMALL_CHECK'; What = 'w'; Signal = 'Actionable'; SignalReason = '' }
+    $collected = @([pscustomobject]@{ Job = $smallJob; Rows = $smallRows; Eligible = 3 })
+    $summary = @((New-RunSummaryRow -Job $smallJob -Rows 3 -Seconds 0.1 -Status 'OK' -Eligible 3 -Findings 3))
+
+    $path = Join-Path $FixtureRoot 'uncapped.xlsx'
+    Save-RunWorkbook -Summary $summary -Collected $collected -Path $path | Out-Null
+
+    Add-Type -AssemblyName System.IO.Compression.FileSystem | Out-Null
+    $zip = [IO.Compression.ZipFile]::OpenRead($path)
+    try {
+        $tabXml = (New-Object IO.StreamReader(($zip.GetEntry('xl/worksheets/sheet2.xml')).Open())).ReadToEnd()
+    }
+    finally { $zip.Dispose() }
+
+    Assert-True ($tabXml -notmatch '<row r="4">') 'row 4 stays the blank separator it always was'
+    Assert-True ($tabXml -notmatch 'Capped') 'and no notice is written for a check nothing was cut from'
+}
+
 Test-That 'the SQL sheet keeps a statement on its own lines' {
     $entries = @(
         [pscustomobject]@{ CheckId = 'GLOBAL-DQ-001'; Name = 'FIRST'; Sql = "SELECT 1`nFROM t;" },
@@ -3312,8 +3406,11 @@ Test-That 'progress is read from the last line the runner printed' {
     $note = Get-RunProgress -Output "[34/113] Soccer-DQ-052  rows=5  2,4s  OK" -Started $started `
         -Now (Get-Date)
     Assert-True ($note -like '34 of 113*') "the count, got: $note"
-    Assert-True ($note -like '*Soccer-DQ-052*') 'and where it has got to'
     Assert-True ($note -like '*min left*') 'and an estimate from this run''s own pace'
+    # The CheckID it happens to be on is deliberately absent. It was there on the first live
+    # run, doubled the column width, and named a check that had already finished by the time
+    # anybody read it. Dropped 2026-09-03 while a whole-sport run was going.
+    Assert-True (-not ($note -like '*Soccer-DQ-052*')) "no CheckID in the note, got: $note"
 }
 
 Test-That 'progress says nothing for a run of one check' {
@@ -3323,12 +3420,75 @@ Test-That 'progress says nothing for a run of one check' {
             -Started (Get-Date).AddMinutes(-1)) 'a single check reports no progress'
 }
 
-Test-That 'the last progress line wins, and a finished run drops the estimate' {
+Test-That 'a check that runs for minutes says so instead of looking wedged' {
+    # Soccer 2026-09-03: Soccer-DQ-080 PARTICIPANT_NO_PARTICIPATION_ANYWHERE - a player who
+    # appears in no event anywhere - took 5 min 18 s of a 14-minute board refresh and froze the
+    # cell at "79 of 118". A frozen count is what a dead worker looks like too, and it was read
+    # as one. The clock is the only thing in the note that separates them.
+    $now = Get-Date
+    $note = Get-RunProgress -Output "[79/118] Soccer-DQ-079  rows=1  0,4s  OK" `
+        -Started $now.AddMinutes(-9) -Now $now -DoneSince $now.AddMinutes(-5)
+    Assert-True ($note -like '79 of 118, on one for 5 min') "the clock, got: $note"
+    Assert-True (-not ($note -like '*left*')) 'and not an estimate that stopped moving'
+    Assert-True (-not ($note -like '*Soccer-DQ*')) "still no CheckID, got: $note"
+}
+
+Test-That 'a count that is merely moving slowly keeps its estimate' {
+    # The clock is for a stall and not for a slow run. Below the threshold the note is what it
+    # was, because two numbers in a narrow column is one too many when neither is news.
+    $now = Get-Date
+    $note = Get-RunProgress -Output "[79/118] Soccer-DQ-079  rows=1  0,4s  OK" `
+        -Started $now.AddMinutes(-9) -Now $now -DoneSince $now.AddSeconds(-40)
+    Assert-True ($note -like '*min left*') "the estimate, got: $note"
+    Assert-True (-not ($note -like '*on one*')) 'and no clock under the threshold'
+}
+
+Test-That 'the stall clock floors rather than rounds' {
+    # It is a measurement standing beside an estimate. Saying 3 min at 2 min 40 would claim
+    # more than was measured, and being the honest half is the whole point of the clock.
+    $now = Get-Date
+    $note = Get-RunProgress -Output "[5/50] X-DQ-005  rows=1  0,4s  OK" `
+        -Started $now.AddMinutes(-10) -Now $now -DoneSince $now.AddSeconds(-160)
+    Assert-True ($note -like '*on one for 2 min') "floored to 2, got: $note"
+}
+
+Test-That 'the stall clock stays off until the caller has a first count' {
+    # DoneSince unset is the first pass of every run, before any line exists to be stalled on.
+    $note = Get-RunProgress -Output "[3/50] X-DQ-003  rows=1  0,4s  OK" `
+        -Started (Get-Date).AddMinutes(-30) -Now (Get-Date)
+    Assert-True (-not ($note -like '*on one*')) "no clock without a DoneSince, got: $note"
+}
+
+Test-That 'the done count is read on its own for the stall clock' {
+    # The note cannot say of itself that it stopped changing, so the caller counts separately
+    # and both read the one pattern.
+    Assert-Equal 0 (Get-RunDoneCount -Output 'Run Soccer 03.09.2026 14-55-11') 'nothing printed yet'
+    $output = "[1/3] A-DQ-001  rows=0  1,0s  OK`n[3/3] A-DQ-003  rows=0  1,0s  OK"
+    Assert-Equal 3 (Get-RunDoneCount -Output $output) 'the last line wins here too'
+}
+
+Test-That 'the last progress line wins, and a finished run says what it is still doing' {
+    # Nothing is left to estimate once every check has printed, but the run is not over: the
+    # board write is minutes on Soccer and the runner prints nothing between its last check and
+    # its exit. A row reading "118 of 118" with no other word is a row that looks finished
+    # while the document is still being changed under whoever is reading it.
     $started = (Get-Date).AddMinutes(-10)
     $output = "[1/3] A-DQ-001  rows=0  1,0s  OK`n[3/3] A-DQ-003  rows=0  1,0s  OK"
     $note = Get-RunProgress -Output $output -Started $started -Now (Get-Date)
     Assert-True ($note -like '3 of 3*') "the latest line, got: $note"
     Assert-True (-not ($note -like '*left*')) 'nothing is left to estimate'
+    Assert-Equal '3 of 3, writing the board' $note 'and the phase that is left instead'
+}
+
+Test-That 'the last check still gets the stall clock, not the board write' {
+    # The board write starts one line later than a reader expects. While the final check is on
+    # the database the count is one short of the total, so it is the stall clock that covers it
+    # - measured on Soccer 2026-09-03, GLOBAL-DISCOVERY-033 PARTICIPANT_DUPLICATE_CANDIDATES_BY_NAME
+    # - possible duplicate people by name - ran 2 min 17 s as the last of 118.
+    $now = Get-Date
+    $note = Get-RunProgress -Output "[117/118] X-DQ-117  rows=1  0,4s  OK" `
+        -Started $now.AddMinutes(-20) -Now $now -DoneSince $now.AddSeconds(-137)
+    Assert-Equal '117 of 118, on one for 2 min' $note "the last check is not the write, got: $note"
 }
 
 # ----- what the run said it found, and what it found last time ----------------------------

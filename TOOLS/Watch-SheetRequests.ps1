@@ -616,6 +616,25 @@ function Read-SharedText {
     catch { return '' }
 }
 
+# The runner's per-check line, and the one place its shape is written down. The progress note
+# and the stall clock both read it, so they can never disagree about which check the run is on.
+$Script:CheckLinePattern = '(?m)^\[(?<done>\d+)/(?<total>\d+)\]\s+(?<check>\S+)'
+
+function Get-RunDoneCount {
+    <#
+        How many checks the runner has printed a line for, and nothing else.
+
+        The stall clock needs this apart from the note. A note cannot say of itself that it has
+        stopped changing, and the caller is the only thing that watches the same run twice.
+        Zero for output with no line in it yet, which is the first half-minute of every run.
+    #>
+    param([string]$Output)
+
+    $found = [regex]::Matches([string]$Output, $Script:CheckLinePattern)
+    if ($found.Count -eq 0) { return 0 }
+    return [int]$found[$found.Count - 1].Groups['done'].Value
+}
+
 function Get-RunProgress {
     <#
         How far a run has got, from the line the runner already prints for every check:
@@ -634,20 +653,47 @@ function Get-RunProgress {
         It swings, because checks differ by a factor of a hundred, so it is offered as "about"
         and never as a time.
     #>
-    param([string]$Output, [datetime]$Started, [datetime]$Now = (Get-Date))
+    param([string]$Output, [datetime]$Started, [datetime]$Now = (Get-Date),
+        [datetime]$DoneSince = [datetime]::MinValue, [int]$StallSeconds = 120)
 
-    $found = [regex]::Matches([string]$Output, '(?m)^\[(?<done>\d+)/(?<total>\d+)\]\s+(?<check>\S+)')
+    $found = [regex]::Matches([string]$Output, $Script:CheckLinePattern)
     if ($found.Count -eq 0) { return '' }
 
     $last = $found[$found.Count - 1]
     $done = [int]$last.Groups['done'].Value
     $total = [int]$last.Groups['total'].Value
-    $check = [string]$last.Groups['check'].Value
     if ($total -le 1 -or $done -le 0) { return '' }
 
+    # The CheckID the run happens to be on is not in the note. It was, on the first live run,
+    # and it made the column twice as wide for a name that has changed by the time anybody has
+    # read it - the row it names is already finished. The count and the estimate are what the
+    # question was.
     $note = '{0} of {1}' -f $done, $total
-    if ($check) { $note += ' ({0})' -f $check }
-    if ($done -ge $total) { return $note }
+
+    # Every check has printed its line and the run has not exited, so what is left is the board
+    # write. That is minutes on a board the size of Soccer, and the runner prints nothing at all
+    # between its last check and its exit - so without this the count sits at its maximum and
+    # the row reads as finished while the document is still being changed under the reader.
+    #
+    # Safe to say unconditionally, because this is only ever called while the process is alive.
+    # The cell a finished run keeps is built from the tally further down and never from here.
+    if ($done -ge $total) { return $note + ', writing the board' }
+
+    # A check that runs for minutes freezes the count, and a frozen count is precisely what a
+    # wedged run looks like from the outside. Measured on Soccer 2026-09-03: Soccer-DQ-080
+    # PARTICIPANT_NO_PARTICIPATION_ANYWHERE - a player who appears in no event anywhere - took
+    # 5 min 18 s of a 14-minute board refresh, 38 per cent of it inside one statement, and for
+    # all of it the cell said 79 of 118 and nothing more. The clock is what tells a reader the
+    # worker is alive; the estimate cannot, because it is the thing that stopped moving.
+    #
+    # Floored, never rounded. It is a measurement and not the estimate beside it, so it says
+    # the smaller true number rather than the nearer one.
+    if ($DoneSince -gt [datetime]::MinValue) {
+        $stalled = ($Now - $DoneSince).TotalSeconds
+        if ($stalled -ge $StallSeconds) {
+            return $note + (', on one for {0} min' -f [int][math]::Floor($stalled / 60))
+        }
+    }
 
     $elapsed = ($Now - $Started).TotalSeconds
     if ($elapsed -le 0) { return $note }
@@ -753,12 +799,23 @@ function Invoke-RequestedRun {
     # than the interval therefore writes once, not five times.
     $lastNote = ''
     $lastWrite = [datetime]::MinValue
+    $lastDone = -1
+    $doneSince = $started
     while (-not $process.HasExited) {
         Start-Sleep -Seconds 3
         if (-not $OnProgress) { continue }
+
+        # The count is sampled every pass, the cell written at most once per -ProgressSeconds.
+        # Reading a local file costs nothing and the stall clock is only honest if it sees the
+        # count move when it moves; sampling it at the write interval would report a check as
+        # half a minute slower than it was.
+        $text = Read-SharedText -Path $output
+        $done = Get-RunDoneCount -Output $text
+        if ($done -ne $lastDone) { $lastDone = $done; $doneSince = Get-Date }
+
         if (((Get-Date) - $lastWrite).TotalSeconds -lt $ProgressSeconds) { continue }
 
-        $note = Get-RunProgress -Output (Read-SharedText -Path $output) -Started $started
+        $note = Get-RunProgress -Output $text -Started $started -DoneSince $doneSince
         if ([string]::IsNullOrWhiteSpace($note) -or $note -eq $lastNote) { continue }
         try { & $OnProgress $note } catch {
             Write-Host ("  progress could not be written: {0}" -f $_.Exception.Message) -ForegroundColor DarkGray
@@ -1223,8 +1280,11 @@ while ($true) {
             Set-RequestCells -SpreadsheetId $boardId -RequestId $requestId -Values @{ Progress = $Note }
         }.GetNewClosure()
 
+        # Only a whole-sport run reports progress. A single check is a minute at most, so the
+        # cell would be filled and emptied before anybody read it, and "1 of 1" answers a
+        # question nobody asked. The owner's call, 2026-09-03, watching the first live one.
         $result = Invoke-RequestedRun -Verdict $verdict -Sport $board.Name `
-            -OnProgress $(if ($WhatIf) { $null } else { $reportProgress })
+            -OnProgress $(if ($WhatIf -or -not $verdict.RunAll) { $null } else { $reportProgress })
 
         if ($result.ExitCode -eq 75) {
             # The machine is busy, which is not this request's fault. Back on the queue with
@@ -1279,7 +1339,7 @@ while ($true) {
             Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $next.RequestId -Values @{
                 Status     = 'ERROR'
                 FinishedAt = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss')
-                Progress   = $(if ($tally.Total -gt 0) { '{0} of {1} done, in {2}' -f ($tally.Total - $tally.Failed), $tally.Total, $took } else { '' })
+                Progress   = $(if ($verdict.RunAll -and $tally.Total -gt 0) { '{0} of {1} done, in {2}' -f ($tally.Total - $tally.Failed), $tally.Total, $took } else { '' })
                 Error      = $message
             }
         }
@@ -1291,14 +1351,13 @@ while ($true) {
             # answer "was that quick?", and a run where a few checks failed among many is worth
             # seeing without opening the workbook.
             $progress = ''
-            if ($tally.Total -gt 1) {
+            if ($verdict.RunAll -and $tally.Total -gt 1) {
                 $progress = '{0} of {1} in {2}' -f $tally.Total, $tally.Total, $took
                 if ($tally.Failed -gt 0) {
                     $progress = '{0} of {1} in {2}, {3} failed' -f `
                         ($tally.Total - $tally.Failed), $tally.Total, $took, $tally.Failed
                 }
             }
-            elseif ($tally.Total -eq 1) { $progress = $took }
 
             $done = @{
                 Status         = 'DONE'
