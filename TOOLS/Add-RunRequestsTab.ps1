@@ -107,7 +107,10 @@ $Columns = @(
     # Status keeps its single word. It carries conditional formatting keyed on the exact text
     # and the worker matches it exactly, so a count appended to it would cost the row its
     # colour and take the request out of the worker's own open set.
-    @{ Name = 'Progress'; Width = 260 },
+    # 260 while the note carried the CheckID it was on. That was dropped after the first live
+    # run - the name is stale by the time anybody reads it - and the widest thing left is
+    # "113 of 113 in 15 min, 4 failed".
+    @{ Name = 'Progress'; Width = 175; Align = 'CENTER' },
     @{ Name = 'Started at'; Width = 150 },
     @{ Name = 'Finished at'; Width = 150 },
     @{ Name = 'Run ID'; Width = 210 },
@@ -331,6 +334,25 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
         }
     }
 
+    # Progress is the one column whose text is bold. The row's colour already says which state
+    # the request is in, so what a reader wants next is the figure - and it is a number sitting
+    # among fifteen columns of words. Bold on the Status word was what this replaced: it shouted
+    # the one thing the colour had already said, and left the number to be hunted for.
+    $requests += @{
+        repeatCell = @{
+            range  = @{
+                sheetId          = $existingSheetId
+                startRowIndex    = 1
+                startColumnIndex = (Get-ColumnIndex 'Progress')
+                endColumnIndex   = (Get-ColumnIndex 'Progress') + 1
+            }
+            cell   = @{ userEnteredFormat = @{ textFormat = @{ bold = $true } } }
+            # Named to the single property. Anything broader would take the header's own bold
+            # with it, because the header is written by a different request to this same range.
+            fields = 'userEnteredFormat.textFormat.bold'
+        }
+    }
+
     # The three timestamps read as times rather than as numbers, which is the difference
     # between a person seeing when a run started and seeing 45901.6.
     foreach ($column in @((Get-ColumnIndex 'Requested at'), (Get-ColumnIndex 'Started at'), (Get-ColumnIndex 'Finished at'))) {
@@ -351,8 +373,9 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
 #
 # A queue is read at a glance or it is not read at all: the eye should find the one red row
 # without reading twelve columns. Status carries the colour because it is the only cell whose
-# value is a state, and a whole row is tinted only for ERROR, which is the one a person has to
-# do something about.
+# value is a state, and the three states somebody is actually scanning for - DONE, ERROR and
+# RUNNING - tint the whole row as well. A tint on one cell in sixteen is found by reading, not
+# by glancing, which is the whole thing it was for.
 #
 # Both the banding and the rules are removed before they are added. Sheets appends rather than
 # replaces, so running this script twice on a document would otherwise leave two bands and
@@ -391,15 +414,53 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
         }
     }
 
-    # Status, one colour per state, in the order a request moves through them.
+    # Status, one colour per state, in the order a request moves through them. Row says whether
+    # the state also tints its whole row: the three a person scans the queue for do, and the
+    # three that are only bookkeeping - queued, waiting, cancelled - keep to their own cell.
+    #
+    # A tinted row is the same colour as its Status cell and not a paler version of it, so the
+    # two cannot disagree about where the row begins. ERROR is #f4c6c3.
     $states = @(
-        @{ Word = 'QUEUED';    Back = @(0.925, 0.937, 0.953); Fore = @(0.30, 0.35, 0.42) },
-        @{ Word = 'WAITING';   Back = @(1.000, 0.949, 0.800); Fore = @(0.55, 0.42, 0.00) },
-        @{ Word = 'RUNNING';   Back = @(0.816, 0.886, 0.973); Fore = @(0.05, 0.28, 0.63) },
-        @{ Word = 'DONE';      Back = @(0.851, 0.918, 0.827); Fore = @(0.11, 0.37, 0.13) },
-        @{ Word = 'ERROR';     Back = @(0.957, 0.780, 0.765); Fore = @(0.64, 0.11, 0.07) },
-        @{ Word = 'CANCELLED'; Back = @(0.937, 0.937, 0.937); Fore = @(0.50, 0.50, 0.50) }
+        @{ Word = 'QUEUED';    Back = @(0.925, 0.937, 0.953); Fore = @(0.30, 0.35, 0.42); Row = $false },
+        @{ Word = 'WAITING';   Back = @(1.000, 0.949, 0.800); Fore = @(0.55, 0.42, 0.00); Row = $false },
+        @{ Word = 'RUNNING';   Back = @(0.816, 0.886, 0.973); Fore = @(0.05, 0.28, 0.63); Row = $true },
+        @{ Word = 'DONE';      Back = @(0.851, 0.918, 0.827); Fore = @(0.11, 0.37, 0.13); Row = $true },
+        @{ Word = 'ERROR';     Back = @(0.957, 0.776, 0.765); Fore = @(0.64, 0.11, 0.07); Row = $true },
+        @{ Word = 'CANCELLED'; Back = @(0.937, 0.937, 0.937); Fore = @(0.50, 0.50, 0.50); Row = $false }
     )
+
+    # The row rules are added before the Status ones so that they end up underneath them. Every
+    # rule here is inserted at index 0, so the last one added sits on top - and a rule on top
+    # claims the properties it names. Status keeps its own cell, the row rule takes the other
+    # fifteen columns, and nothing depends on how Sheets resolves two rules over one cell: they
+    # claim the same colour, and only the Status rule claims a text colour at all.
+    #
+    # The Status column's own letter, derived rather than typed: this was $E until two columns
+    # were inserted to its left.
+    $statusLetter = [char]([int][char]'A' + (Get-ColumnIndex 'Status'))
+
+    foreach ($state in @($states | Where-Object { $_.Row })) {
+        $tidy += @{
+            addConditionalFormatRule = @{
+                index = 0
+                rule  = @{
+                    ranges      = @(@{
+                            sheetId          = $existingSheetId
+                            startRowIndex    = 1
+                            startColumnIndex = 0
+                            endColumnIndex   = $Columns.Count
+                        })
+                    booleanRule = @{
+                        condition = @{ type = 'CUSTOM_FORMULA'; values = @(@{
+                                    userEnteredValue = ('=${0}2="{1}"' -f $statusLetter, $state.Word) }) }
+                        format    = @{
+                            backgroundColor = @{ red = $state.Back[0]; green = $state.Back[1]; blue = $state.Back[2] }
+                        }
+                    }
+                }
+            }
+        }
+    }
 
     foreach ($state in $states) {
         $tidy += @{
@@ -416,8 +477,9 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
                         condition = @{ type = 'TEXT_EQ'; values = @(@{ userEnteredValue = $state.Word }) }
                         format    = @{
                             backgroundColor = @{ red = $state.Back[0]; green = $state.Back[1]; blue = $state.Back[2] }
+                            # No bold here any more. It belongs to Progress alone, and a Status
+                            # word that is both coloured and bold says its one thing twice.
                             textFormat      = @{
-                                bold            = $true
                                 foregroundColor = @{ red = $state.Fore[0]; green = $state.Fore[1]; blue = $state.Fore[2] }
                             }
                         }
@@ -427,31 +489,12 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
         }
     }
 
-    # The whole row for a failure, faintly. A refusal is the one row somebody has to act on,
-    # and its reason is twelve columns to the right of the status that announces it.
-    $tidy += @{
-        addConditionalFormatRule = @{
-            index = 0
-            rule  = @{
-                ranges      = @(@{
-                        sheetId          = $existingSheetId
-                        startRowIndex    = 1
-                        startColumnIndex = 0
-                        endColumnIndex   = $Columns.Count
-                    })
-                booleanRule = @{
-                    # The Status column's own letter, derived rather than typed: this was $E
-                    # until two columns were inserted to its left.
-                    condition = @{ type = 'CUSTOM_FORMULA'; values = @(@{
-                                userEnteredValue = ('=${0}2="ERROR"' -f [char]([int][char]'A' + (Get-ColumnIndex 'Status'))) }) }
-                    format    = @{ backgroundColor = @{ red = 0.996; green = 0.949; blue = 0.941 } }
-                }
-            }
-        }
-    }
+    # The faint ERROR row this replaced was #fef2f0 - a tint so light that the row it marked
+    # still had to be found by reading the Status column, which is the step it existed to save.
 
     [void](Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $tidy })
-    Write-Host '  banded, and Status coloured per state with a failed row tinted whole' -ForegroundColor DarkGray
+    Write-Host ('  banded, Status coloured per state, and the whole row tinted for {0}' -f `
+        ((@($states | Where-Object { $_.Row } | ForEach-Object { $_.Word })) -join ', ')) -ForegroundColor DarkGray
 }
 
 # ----- the boundary that actually holds --------------------------------------------------
