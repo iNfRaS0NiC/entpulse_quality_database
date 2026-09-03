@@ -3204,14 +3204,15 @@ Test-That 'every CheckID the real registry approves is one this validation would
 # header describing it.
 
 $queueHeader = @('Request ID', 'CheckID', 'Check name', 'Requested by', 'Requested at', 'Status',
-    'Started at', 'Finished at', 'Run ID', 'Findings', 'Findings before', 'Change', 'Eligible',
-    'Verdict', 'Error')
+    'Progress', 'Started at', 'Finished at', 'Run ID', 'Findings', 'Findings before', 'Change',
+    'Eligible', 'Verdict', 'Error')
 
 Test-That 'a column is found where the header says, not where the script counted' {
     $map = Get-QueueColumnMap -Values @(, $queueHeader)
     Assert-Equal 6 $map.Status 'Status is the sixth column now'
+    Assert-Equal 7 $map.Progress 'Progress sits beside it, which is where somebody looks'
     Assert-Equal 3 $map.CheckName 'the name sits beside the ID'
-    Assert-Equal 15 $map.Error 'and Error is last'
+    Assert-Equal 16 $map.Error 'and Error is last'
 }
 
 Test-That 'a tab written before a column existed reports 0 for it, never a neighbour' {
@@ -3231,7 +3232,7 @@ Test-That 'rows are read through the header, so an inserted column moves the val
     $values = @(
         $queueHeader,
         @('REQ-1', 'Fixtureball-DQ-001', 'What it asserts', 'reviewer@example.com',
-            '01.09.2026 10:00:00', 'QUEUED', '', '', '', '', '', '', '', '', '')
+            '01.09.2026 10:00:00', 'QUEUED', '', '', '', '', '', '', '', '', '', '')
     )
     $rows = @(ConvertTo-RequestRows -Values $values)
     Assert-Equal 1 $rows.Count 'one request'
@@ -3259,6 +3260,75 @@ Test-That 'the three files agree about what the columns are called' {
     foreach ($title in $asked) {
         Assert-True ($declared -contains $title) "the Apps Script asks for a column called '$title'"
     }
+}
+
+# ----- how far a run has got, and whether it got anywhere ---------------------------------
+
+Test-That 'a run whose every check failed is not a run that found nothing' {
+    # Soccer, 2026-09-03: a whole-sport request ran 27 minutes with the API's TLS listener down,
+    # every check failed to connect, and the row was written DONE with empty figures - which on
+    # a board is indistinguishable from a clean sport. Emptiness cannot be the signal, because a
+    # -RunAll prints no findings sentence even when it succeeds; the per-check status can.
+    $output = @'
+Running 113 checks into D:\out\Soccer.xlsx
+[1/113] Soccer-DQ-001  rows=0  3,8s  ERROR: Unable to connect to the remote server
+[2/113] Soccer-DQ-002  rows=0  3,9s  ERROR: Unable to connect to the remote server
+'@
+    $tally = Get-RunCheckTally -Output $output
+    Assert-Equal 2 $tally.Total 'both attempts counted'
+    Assert-Equal 2 $tally.Failed 'both failed'
+    Assert-True $tally.AllFailed 'so the run did nothing at all'
+    Assert-True ($tally.FirstError -like '*Soccer-DQ-001*') "and it names the first one, got: $($tally.FirstError)"
+    Assert-True ($tally.FirstError -like '*Unable to connect*') 'with the reason'
+}
+
+Test-That 'a run where some checks failed is still a run' {
+    # The other half, and the one that must not regress: three of four worked, so the board is
+    # updated and the failure is reported beside it rather than instead of it.
+    $output = @'
+[1/4] Soccer-DQ-001  rows=5  2,4s  OK
+[2/4] Soccer-DQ-002  rows=0  1,1s  OK
+[3/4] Soccer-DQ-003  rows=0  4,1s  ERROR: statement timed out
+[4/4] Soccer-DQ-004  rows=2  0,9s  OK
+'@
+    $tally = Get-RunCheckTally -Output $output
+    Assert-Equal 4 $tally.Total 'four attempts'
+    Assert-Equal 1 $tally.Failed 'one failure'
+    Assert-True (-not $tally.AllFailed) 'which is not a failed run'
+}
+
+Test-That 'nothing parseable is not read as failure' {
+    # Silence is not evidence. A run whose output this cannot read must keep the behaviour it
+    # had, because marking a good run ERROR is the worse of the two mistakes.
+    $tally = Get-RunCheckTally -Output 'Run Soccer 03.09.2026 13-06-29'
+    Assert-Equal 0 $tally.Total 'nothing counted'
+    Assert-True (-not $tally.AllFailed) 'and nothing concluded'
+}
+
+Test-That 'progress is read from the last line the runner printed' {
+    # The seconds carry a decimal comma on this machine, because the runner formats them for the
+    # locale. A pattern expecting a point matches nothing and the cell stays empty all run.
+    $started = (Get-Date).AddMinutes(-6)
+    $note = Get-RunProgress -Output "[34/113] Soccer-DQ-052  rows=5  2,4s  OK" -Started $started `
+        -Now (Get-Date)
+    Assert-True ($note -like '34 of 113*') "the count, got: $note"
+    Assert-True ($note -like '*Soccer-DQ-052*') 'and where it has got to'
+    Assert-True ($note -like '*min left*') 'and an estimate from this run''s own pace'
+}
+
+Test-That 'progress says nothing for a run of one check' {
+    # "1 of 1" tells a reader what the status already told them, and an estimate over a single
+    # sample is not an estimate.
+    Assert-Equal '' (Get-RunProgress -Output "[1/1] Soccer-DQ-025  rows=4  12,0s  OK" `
+            -Started (Get-Date).AddMinutes(-1)) 'a single check reports no progress'
+}
+
+Test-That 'the last progress line wins, and a finished run drops the estimate' {
+    $started = (Get-Date).AddMinutes(-10)
+    $output = "[1/3] A-DQ-001  rows=0  1,0s  OK`n[3/3] A-DQ-003  rows=0  1,0s  OK"
+    $note = Get-RunProgress -Output $output -Started $started -Now (Get-Date)
+    Assert-True ($note -like '3 of 3*') "the latest line, got: $note"
+    Assert-True (-not ($note -like '*left*')) 'nothing is left to estimate'
 }
 
 # ----- what the run said it found, and what it found last time ----------------------------

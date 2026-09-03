@@ -99,6 +99,15 @@ $Columns = @(
     @{ Name = 'Requested by'; Width = 200 },
     @{ Name = 'Requested at'; Width = 150 },
     @{ Name = 'Status'; Width = 90; Align = 'CENTER' },
+    # How far a run has got, written while it is still running. Beside Status because that is
+    # where somebody looks when they want to know whether to keep waiting, and RUNNING on its
+    # own answers that for about five seconds. A whole-board refresh is fifteen minutes, and a
+    # word that does not change for fifteen minutes is indistinguishable from a wedged one.
+    #
+    # Status keeps its single word. It carries conditional formatting keyed on the exact text
+    # and the worker matches it exactly, so a count appended to it would cost the row its
+    # colour and take the request out of the worker's own open set.
+    @{ Name = 'Progress'; Width = 260 },
     @{ Name = 'Started at'; Width = 150 },
     @{ Name = 'Finished at'; Width = 150 },
     @{ Name = 'Run ID'; Width = 210 },

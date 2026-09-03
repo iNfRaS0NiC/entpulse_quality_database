@@ -2488,7 +2488,7 @@ whole sport` writes the single reserved token `*SPORT*` rather than a list, so t
 one value and the machine maps that value to `-RunAll` itself. Anybody on the list may ask for
 one; only the owner may approve it, and until they do it sits on the queue.
 
-A row carries fifteen columns, and three of them exist because a number on its own decides
+A row carries sixteen columns, and four of them exist because a number on its own decides
 nothing:
 
 - **`Check name`** sits beside `CheckID`. The Apps Script fills it at the moment of the click,
@@ -2506,6 +2506,25 @@ nothing:
   execute the same SQL, `Change` says `(different statement)`: a delta across a rewritten
   statement is two questions answered, not a movement. `Verdict` beside them is the board's own
   word for the same thing - `Improved`, `Regressed`, `Unchanged`, `Scope moved`.
+- **`Progress`** is how far a run has got, written while it is still going. `RUNNING` answers
+  "is it working?" for about five seconds; a whole-board refresh is fifteen minutes, and a word
+  that has not changed in fifteen minutes looks exactly like a wedged run. The cell reads
+  `34 of 113 (Soccer-DQ-052), about 9 min left` during, and `113 of 113 in 14 min` after, so the
+  row also answers "was that quick?" once it has stopped moving. A run of one check writes
+  nothing while it goes - `1 of 1` says less than the status does - and its duration afterwards.
+
+  It comes from the line the runner already prints for every check,
+  `[34/113] Soccer-DQ-052  rows=5  2.4s  OK`, read out of the child's log while the child is
+  still writing it. That needs `FileShare::ReadWrite`; an ordinary read is refused, because the
+  redirected stdout handle is open. The estimate is this run's own pace and nothing else -
+  elapsed divided by checks done - and it is offered as "about" because checks differ in cost by
+  a factor of a hundred. It is not taken from `RUNS/<Sport>.json`: that file records what a run
+  returned and nothing may be cited from it.
+
+  The log is polled every three seconds and the cell written at most every thirty, and only when
+  the count has moved. `Status` keeps its single word: it carries conditional formatting keyed on
+  the exact text and the worker matches it exactly, so a count appended to it would cost the row
+  its colour and take the request out of the worker's own open set.
 
 Clicking also lands the person on the `Run requests` tab. That is the whole of what "open it
 when the run finishes" can be: an installable trigger runs detached from anybody's browser, so
@@ -2602,6 +2621,19 @@ request waiting, runs it, and writes back what it returned.
 .\TOOLS\Watch-SheetRequests.ps1 -Once -WhatIf   # read the queue, decide, run nothing
 .\TOOLS\Watch-SheetRequests.ps1                 # until it is stopped
 ```
+
+**A run whose every check failed is written `ERROR`, not `DONE`.** The two used to be the same
+row. On 2026-09-03 a whole-sport request ran for 27 minutes while the API's TLS listener was
+down, every check failed to connect, the runner exited 0, and the request was recorded `DONE`
+with empty `Findings` and `Eligible` - which is exactly what a clean sport looks like from a
+board.
+
+Emptiness cannot be the signal, because a `-RunAll` prints no findings sentence even when it
+works: that sentence belongs to a single re-run. What separates them is the status on each
+per-check line, so the worker tallies those. All failed and it is an `ERROR` carrying the first
+failure's own words; some failed and the run stands, with `Progress` saying how many did. Where
+nothing at all could be parsed, the old behaviour stands - guessing failure from silence would
+mark good runs broken, which is the worse of the two mistakes.
 
 It polls **every 90 seconds**, and a pass costs one Sheets read per document it actually reads.
 At 30 seconds and sixteen boards that was 32 reads a minute against a documented per-user limit

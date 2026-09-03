@@ -132,6 +132,7 @@ $ColumnTitle = [ordered]@{
     RequestedBy    = 'Requested by'
     RequestedAt    = 'Requested at'
     Status         = 'Status'
+    Progress       = 'Progress'
     StartedAt      = 'Started at'
     FinishedAt     = 'Finished at'
     RunId          = 'Run ID'
@@ -589,6 +590,132 @@ function Set-RequestCells {
 # Running one
 # --------------------------------------------------------------------------------------
 
+function Read-SharedText {
+    <#
+        A file another process is holding open for writing.
+
+        Get-Content cannot: the child's redirected stdout handle denies the ordinary read, and
+        the failure is an exception rather than an empty string. FileShare::ReadWrite is the
+        whole of the fix - it says this reader accepts that the file is changing under it, which
+        for a progress line is exactly true and exactly harmless.
+
+        Returns '' rather than throwing. Progress is the least important thing this worker does,
+        and a run must not fail because its own progress could not be read.
+    #>
+    param([string]$Path)
+
+    if (-not (Test-Path -LiteralPath $Path)) { return '' }
+    try {
+        $stream = [IO.File]::Open($Path, [IO.FileMode]::Open, [IO.FileAccess]::Read, [IO.FileShare]::ReadWrite)
+        try {
+            $reader = New-Object IO.StreamReader($stream)
+            try { return $reader.ReadToEnd() } finally { $reader.Dispose() }
+        }
+        finally { $stream.Dispose() }
+    }
+    catch { return '' }
+}
+
+function Get-RunProgress {
+    <#
+        How far a run has got, from the line the runner already prints for every check:
+
+            [34/113] Soccer-DQ-052  rows=5  2.4s  OK
+
+        Read from the last such line rather than counted, so a run that skipped checks is
+        reported as the runner sees it and not as this function guesses.
+
+        Empty for a run of one check. `1 of 1` tells a reader nothing they cannot see from the
+        status, and an estimate over a single sample is not an estimate.
+
+        The estimate is this run's own pace and nothing else - elapsed divided by what is done.
+        Not the recorded durations in RUNS/<Sport>.json: that file is a record of what a run
+        returned and nothing may be cited from it, and a board is the last place to start.
+        It swings, because checks differ by a factor of a hundred, so it is offered as "about"
+        and never as a time.
+    #>
+    param([string]$Output, [datetime]$Started, [datetime]$Now = (Get-Date))
+
+    $found = [regex]::Matches([string]$Output, '(?m)^\[(?<done>\d+)/(?<total>\d+)\]\s+(?<check>\S+)')
+    if ($found.Count -eq 0) { return '' }
+
+    $last = $found[$found.Count - 1]
+    $done = [int]$last.Groups['done'].Value
+    $total = [int]$last.Groups['total'].Value
+    $check = [string]$last.Groups['check'].Value
+    if ($total -le 1 -or $done -le 0) { return '' }
+
+    $note = '{0} of {1}' -f $done, $total
+    if ($check) { $note += ' ({0})' -f $check }
+    if ($done -ge $total) { return $note }
+
+    $elapsed = ($Now - $Started).TotalSeconds
+    if ($elapsed -le 0) { return $note }
+    $remaining = ($elapsed / $done) * ($total - $done)
+    if ($remaining -lt 60) { $note += ', under a minute left' }
+    else { $note += ', about {0} min left' -f [int][math]::Round($remaining / 60) }
+    return $note
+}
+
+function Get-RunCheckTally {
+    <#
+        How many checks the run attempted and how many of them failed, from the per-check line:
+
+            [34/113] Soccer-DQ-052  rows=5  2.4s  OK
+            [35/113] Soccer-DQ-053  rows=0  3.8s  ERROR: Unable to connect to the remote server
+
+        This is the only honest way to tell a whole-sport run that did nothing from one that
+        found nothing. A -RunAll prints no "N finding(s) of M eligible" sentence at all - that
+        one belongs to a single re-run - so an empty Findings cell is its normal state, and a
+        worker that read emptiness as failure would mark every successful board refresh ERROR.
+        What separates them is the status on each line.
+
+        Measured on Soccer 2026-09-03: a whole-sport request ran for 27 minutes with the API's
+        TLS listener down, every check failed to connect, and the row was written DONE with
+        empty figures - indistinguishable, to a reader, from a clean board.
+
+        The seconds are matched loosely because the runner formats them for the machine's
+        locale, and this one writes 2,4s rather than 2.4s.
+    #>
+    param([string]$Output)
+
+    $lines = [regex]::Matches([string]$Output,
+        '(?m)^\[(?<done>\d+)/(?<total>\d+)\]\s+(?<check>\S+)\s+rows=(?<rows>\S*)\s+[\d.,]+s\s+(?<status>.*)$')
+
+    $total = 0
+    $failed = 0
+    $firstError = ''
+    foreach ($line in $lines) {
+        $total++
+        $status = ([string]$line.Groups['status'].Value).Trim()
+        if ($status -like 'ERROR*') {
+            $failed++
+            if (-not $firstError) {
+                $firstError = '{0}: {1}' -f $line.Groups['check'].Value, $status
+            }
+        }
+    }
+
+    return [pscustomobject]@{
+        Total      = $total
+        Failed     = $failed
+        FirstError = $firstError
+        AllFailed  = ($total -gt 0 -and $failed -eq $total)
+    }
+}
+
+function Get-RunDuration {
+    <#
+        What the whole thing took, for the cell to keep once it has stopped moving. A row that
+        says only DONE cannot answer "was that quick?", which is the question asked next.
+    #>
+    param([datetime]$Started, [datetime]$Finished)
+
+    $seconds = ($Finished - $Started).TotalSeconds
+    if ($seconds -lt 90) { return '{0}s' -f [int][math]::Round($seconds) }
+    return '{0} min' -f [int][math]::Round($seconds / 60)
+}
+
 function Invoke-RequestedRun {
     <#
         One request, in its own powershell.exe.
@@ -601,8 +728,14 @@ function Invoke-RequestedRun {
 
         Exit code 75 is the run lock saying the machine is busy. That is not a failure and the
         request goes back to the queue as WAITING with the reason the lock printed.
+
+        -Wait was dropped on 2026-09-03 so that the log can be read while it is being written.
+        A whole-board refresh is about fifteen minutes, and for all of it the row said RUNNING
+        and nothing else - which answers neither "how far" nor "how much longer", and is what a
+        wedged run looks like too. OnProgress is handed each new line to write; the run does not
+        depend on it, and a progress write that throws must never cost the run.
     #>
-    param($Verdict, [string]$Sport)
+    param($Verdict, [string]$Sport, [scriptblock]$OnProgress, [int]$ProgressSeconds = 30)
 
     $arguments = @('-NoProfile', '-File', $RunQuery)
     if ($Verdict.RunAll) { $arguments += @('-Sport', $Sport, '-RunAll') }
@@ -610,16 +743,39 @@ function Invoke-RequestedRun {
     $arguments += @('-NoWait')
 
     $output = Join-Path ([IO.Path]::GetTempPath()) ('ep-request-{0}.log' -f ([guid]::NewGuid().ToString('N')))
-    $process = Start-Process -FilePath 'powershell.exe' -ArgumentList $arguments -PassThru -Wait `
+    $started = Get-Date
+    $process = Start-Process -FilePath 'powershell.exe' -ArgumentList $arguments -PassThru `
         -NoNewWindow -RedirectStandardOutput $output
 
-    $text = ''
-    try { $text = Get-Content -LiteralPath $output -Raw -ErrorAction SilentlyContinue } catch { }
+    # Poll the log often and the document rarely. Reading a local file every three seconds costs
+    # nothing; writing a cell is a Sheets request, so it is paid at most once per
+    # -ProgressSeconds and only when the count has actually moved. A check that takes longer
+    # than the interval therefore writes once, not five times.
+    $lastNote = ''
+    $lastWrite = [datetime]::MinValue
+    while (-not $process.HasExited) {
+        Start-Sleep -Seconds 3
+        if (-not $OnProgress) { continue }
+        if (((Get-Date) - $lastWrite).TotalSeconds -lt $ProgressSeconds) { continue }
+
+        $note = Get-RunProgress -Output (Read-SharedText -Path $output) -Started $started
+        if ([string]::IsNullOrWhiteSpace($note) -or $note -eq $lastNote) { continue }
+        try { & $OnProgress $note } catch {
+            Write-Host ("  progress could not be written: {0}" -f $_.Exception.Message) -ForegroundColor DarkGray
+        }
+        $lastNote = $note
+        $lastWrite = Get-Date
+    }
+    $process.WaitForExit()
+
+    $text = Read-SharedText -Path $output
     Remove-Item -LiteralPath $output -Force -ErrorAction SilentlyContinue
 
     return [pscustomobject]@{
         ExitCode = [int]$process.ExitCode
         Output   = [string]$text
+        Started  = $started
+        Finished = Get-Date
     }
 }
 
@@ -1038,6 +1194,7 @@ while ($true) {
         $starting = @{
             Status    = 'RUNNING'
             StartedAt = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss')
+            Progress  = ''
             Error     = ''
         }
 
@@ -1056,7 +1213,18 @@ while ($true) {
 
         Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $next.RequestId -Values $starting
 
-        $result = Invoke-RequestedRun -Verdict $verdict -Sport $board.Name
+        # The progress cell, written while the run is still going. The closure captures what it
+        # needs from this iteration; a failure inside it is swallowed by Invoke-RequestedRun,
+        # because a run must not die of its own progress report.
+        $boardId = $board.SpreadsheetId
+        $requestId = $next.RequestId
+        $reportProgress = {
+            param([string]$Note)
+            Set-RequestCells -SpreadsheetId $boardId -RequestId $requestId -Values @{ Progress = $Note }
+        }.GetNewClosure()
+
+        $result = Invoke-RequestedRun -Verdict $verdict -Sport $board.Name `
+            -OnProgress $(if ($WhatIf) { $null } else { $reportProgress })
 
         if ($result.ExitCode -eq 75) {
             # The machine is busy, which is not this request's fault. Back on the queue with
@@ -1069,6 +1237,7 @@ while ($true) {
             Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $next.RequestId -Values @{
                 Status    = 'WAITING'
                 StartedAt = ''
+                Progress  = ''
                 Error     = $reason
             }
             $didSomething = $true
@@ -1076,6 +1245,29 @@ while ($true) {
         }
 
         $outcome = Get-RunOutcome -Output $result.Output
+        $tally = Get-RunCheckTally -Output $result.Output
+        $took = Get-RunDuration -Started $result.Started -Finished $result.Finished
+
+        # A run whose every check failed exited 0 and was written DONE with empty figures, which
+        # on the board is what a clean sport looks like. Only a positive count flips it: the
+        # tally has to have seen checks and have seen all of them fail. Where nothing could be
+        # parsed at all, the old behaviour stands, because guessing failure from silence would
+        # mark a perfectly good run as broken.
+        if ($result.ExitCode -eq 0 -and $tally.AllFailed) {
+            $message = 'Every check failed. {0}' -f $(if ($tally.FirstError) { $tally.FirstError } else { 'See the worker log.' })
+            if ($message.Length -gt 480) { $message = $message.Substring(0, 480) }
+
+            Write-Host ("    {0} of {0} check(s) failed: {1}" -f $tally.Total, $tally.FirstError) -ForegroundColor Red
+            Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $next.RequestId -Values @{
+                Status     = 'ERROR'
+                FinishedAt = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss')
+                Progress   = '{0} of {0} failed, in {1}' -f $tally.Total, $took
+                Error      = $message
+            }
+            $handled++
+            $didSomething = $true
+            continue
+        }
 
         if ($result.ExitCode -ne 0) {
             $message = 'The run failed. See the worker log.'
@@ -1087,6 +1279,7 @@ while ($true) {
             Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $next.RequestId -Values @{
                 Status     = 'ERROR'
                 FinishedAt = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss')
+                Progress   = $(if ($tally.Total -gt 0) { '{0} of {1} done, in {2}' -f ($tally.Total - $tally.Failed), $tally.Total, $took } else { '' })
                 Error      = $message
             }
         }
@@ -1094,9 +1287,23 @@ while ($true) {
             $movement = $(if ($outcome.FindingsBefore -ne '') { ', was ' + $outcome.FindingsBefore } else { '' })
             Write-Host ("    done: {0} finding(s) of {1} eligible, {2}{3}" -f `
                     $outcome.Findings, $outcome.Eligible, $outcome.Verdict, $movement) -ForegroundColor DarkGray
+            # What it came to, kept once it has stopped moving. A row saying only DONE cannot
+            # answer "was that quick?", and a run where a few checks failed among many is worth
+            # seeing without opening the workbook.
+            $progress = ''
+            if ($tally.Total -gt 1) {
+                $progress = '{0} of {1} in {2}' -f $tally.Total, $tally.Total, $took
+                if ($tally.Failed -gt 0) {
+                    $progress = '{0} of {1} in {2}, {3} failed' -f `
+                        ($tally.Total - $tally.Failed), $tally.Total, $took, $tally.Failed
+                }
+            }
+            elseif ($tally.Total -eq 1) { $progress = $took }
+
             $done = @{
                 Status         = 'DONE'
                 FinishedAt     = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss')
+                Progress       = $progress
                 RunId          = $outcome.RunId
                 Findings       = $outcome.Findings
                 FindingsBefore = $outcome.FindingsBefore
