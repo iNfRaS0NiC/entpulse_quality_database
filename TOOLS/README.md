@@ -2775,7 +2775,7 @@ the only record there is.
 | `EP DQ reopen queue` | daily 07:00 | `Send-Notifications.ps1 -Quiet` - drains the queue: what the night **changed** |
 | `EP DQ reopen sweep` | daily 14:00 | `Send-Notifications.ps1 -Sweep -Quiet` - reads every board: what **stands open** |
 | `EP DQ nightly pass` | daily 21:00 | `Invoke-NightlyRun.ps1` - "The nightly pass" above owns it |
-| `EP DQ sheet run requests` | at logon, no time limit | `Watch-SheetRequests.ps1` - polls every 90s; "Asking for a run from a board" owns it |
+| `EP DQ sheet run requests` | at logon, and every 15 min | `Watch-SheetRequests.ps1` - polls every 90s; "Asking for a run from a board" owns it |
 
 All four run `powershell.exe -NoProfile -ExecutionPolicy Bypass -File` with the repository as the
 working directory, as the owner under `InteractiveToken`, `IgnoreNew` so a second trigger cannot
@@ -2816,6 +2816,25 @@ column say when.
 the cached Sheets token and the session in `%LOCALAPPDATA%`, which belong to that profile - and
 the cost is that a locked screen is fine and a logged-out machine is not. The database is
 reached over the VPN, so a night with the VPN down fails the statements rather than the task.
+
+**A watcher that dies stays dead unless something restarts it.** `EP DQ sheet run requests` is an
+endless loop, and until 2026-09-03 the logon was its only trigger. It was killed on 2026-09-02 at
+08:34 and was still dead twenty-five hours later, with a request queued against the Soccer board
+that nothing was going to run. Two things hid that. `RestartOnFailure` is set to 999 attempts a
+minute apart and never fired, because Windows restarts a task that ends in failure and this one
+exited **0** - for a loop that should never end, the quietest exit is the only one nothing
+catches. And the logon trigger is rarer than it sounds: the machine had been up since 12 August
+and last logged on on 26 August, so "at logon" meant about once every three weeks. A locked
+screen is not a logon, and neither is waking from sleep.
+
+The repair needed no new code, because `MultipleInstances` is already `IgnoreNew`: a second
+trigger every fifteen minutes starts the watcher when it is dead and is ignored when it is alive.
+Two things about that block need care, both measured on 2026-09-03. A `BootTrigger` is
+machine-wide and an administrator registers it, so it cannot be added from an ordinary session.
+And a `LogonTrigger` **must keep its `<UserId>`**: without one it means any user's logon, which is
+machine-wide for the same reason and refused the same way. Dropping it while rewriting the block
+cost a delete and a restore, and the error it gives is `Access is denied` with nothing to say
+which element caused it.
 
 **Renaming one is not an edit.** Task Scheduler has no rename: the task is exported, registered
 again under the new name and the old one unregistered, and its run history starts from nothing.
