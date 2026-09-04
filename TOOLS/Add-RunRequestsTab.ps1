@@ -56,7 +56,9 @@
     plan is explicit is not a boundary, so the script says so when it is used.
 
 .PARAMETER WhatIf
-    Say what would be sent, send nothing.
+    Read the document, report what would be written to it, and write nothing. It reads because
+    the report is otherwise the same for a board that already carries both tabs and one that
+    has never been touched, which is the only question a dry run is asked.
 
 .EXAMPLE
     .\TOOLS\Add-RunRequestsTab.ps1 -Sport Soccer -WhatIf
@@ -127,11 +129,16 @@ if ($All) {
     # last of them - Triathlon, 2026-09-04, a 429 after the transport had already retried
     # twice. The work itself is slower than this pause, so the cost is a few seconds and the
     # alternative is a run that fails at the far end for no reason to do with the document.
+    #
+    # -WhatIf is paced too, and was exempted until 2026-09-04 on the reasoning that a run
+    # sending nothing costs nothing. It never did cost nothing and now plainly does not: a dry
+    # run reads the document it is reporting on, which is four or five requests a sport, and
+    # sixteen of those unpaced is the same 429 with none of the work to show for it.
     $paceSeconds = 5
     $failed = @()
     $first = $true
     foreach ($name in $everySport) {
-        if (-not $first -and -not $WhatIf) { Start-Sleep -Seconds $paceSeconds }
+        if (-not $first) { Start-Sleep -Seconds $paceSeconds }
         $first = $false
         Write-Host ""
         try { & $PSCommandPath -Sport $name @forward }
@@ -147,7 +154,7 @@ if ($All) {
         exit 1
     }
     Write-Host ("-All finished: {0} sport(s), no failures" -f $everySport.Count) -ForegroundColor Green
-    Write-Host "The worker reads the sport list once, at startup. Restart it to pick up anything new here." -ForegroundColor Yellow
+    Write-Host "The worker re-reads sheet-registry.json when it changes, so anything registered here is picked up on its next pass." -ForegroundColor DarkGray
     exit 0
 }
 
@@ -227,23 +234,30 @@ Write-Host ""
 Write-Host ("{0} -> {1}" -f $Sport, $SpreadsheetId) -ForegroundColor Cyan
 
 # ----- what is there already ------------------------------------------------------------
+#
+# Read whether or not this is a dry run. -WhatIf skipped every read until 2026-09-04, on the
+# reasoning that a run which sends nothing needs to look at nothing, and the result was a dry
+# run that answered for a document it had never opened: every board came back as "would
+# create", including the fourteen already carrying both tabs. A dry run whose report is the
+# same for a finished board and an untouched one is not a dry run, it is the help text.
+#
+# A GET is not a change. What -WhatIf owes the reader is that it writes nothing, and that is
+# kept below at each write rather than by refusing to look.
 
 $existingSheetId = $null
-$title = ''
-if (-not $WhatIf) {
-    $book = Invoke-SheetsApiWithRetry -Method GET -Path ("$SpreadsheetId" + '?fields=properties.title,sheets.properties')
-    $title = [string]$book.properties.title
-    foreach ($sheet in @($book.sheets)) {
-        if ([string]$sheet.properties.title -eq $QueueSheetName) {
-            $existingSheetId = [int]$sheet.properties.sheetId
-        }
+$book = Invoke-SheetsApiWithRetry -Method GET -Path ("$SpreadsheetId" + '?fields=properties.title,sheets.properties')
+$title = [string]$book.properties.title
+foreach ($sheet in @($book.sheets)) {
+    if ([string]$sheet.properties.title -eq $QueueSheetName) {
+        $existingSheetId = [int]$sheet.properties.sheetId
     }
-    Write-Host ("  document: {0}" -f $title) -ForegroundColor DarkGray
 }
+Write-Host ("  document: {0}" -f $title) -ForegroundColor DarkGray
 
 if ($null -ne $existingSheetId) {
-    Write-Host ("  '{0}' is already there (sheet {1}); leaving it and its rows alone." -f `
-            $QueueSheetName, $existingSheetId) -ForegroundColor Yellow
+    $verb = if ($WhatIf) { 'would leave' } else { 'leaving' }
+    Write-Host ("  '{0}' is already there (sheet {1}); {2} it and its rows alone." -f `
+            $QueueSheetName, $existingSheetId, $verb) -ForegroundColor Yellow
 }
 else {
     # ----- create it --------------------------------------------------------------------
@@ -266,6 +280,7 @@ else {
     if ($WhatIf) {
         Write-Host ("  would create '{0}' with {1} columns and a frozen header" -f `
                 $QueueSheetName, $Columns.Count) -ForegroundColor DarkGray
+        Write-Host ("  would then write its header, widths, banding and Status colours") -ForegroundColor DarkGray
     }
     else {
         $created = Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId`:batchUpdate" `
@@ -287,7 +302,7 @@ else {
 # name this script does not know, is somebody else's edit or a layout this script is too old to
 # understand, and both are reported rather than guessed at.
 
-if (-not $WhatIf -and $null -ne $existingSheetId) {
+if ($null -ne $existingSheetId) {
     $headerRange = [uri]::EscapeDataString("$QueueSheetName!1:1")
     $headerRead = Invoke-SheetsApiWithRetry -Method GET -Path "$SpreadsheetId/values/$headerRange"
     $actual = @()
@@ -329,12 +344,21 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
             [void]$working.Insert($i, $want)
         }
 
-        if ($inserts.Count -gt 0) {
+        $newColumns = ((0..($Columns.Count - 1) | Where-Object { -not ($actual -contains $Columns[$_].Name) } |
+                ForEach-Object { $Columns[$_].Name }) -join ', ')
+
+        if ($inserts.Count -eq 0) {
+            Write-Host ("  its {0} columns are the ones this script expects, in order" -f $actual.Count) -ForegroundColor DarkGray
+        }
+        elseif ($WhatIf) {
+            Write-Host ("  would insert {0} new column(s), shifting the existing rows with them: {1}" -f `
+                    $inserts.Count, $newColumns) -ForegroundColor DarkGray
+        }
+        else {
             [void](Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId`:batchUpdate" `
                     -Body @{ requests = $inserts })
             Write-Host ("  inserted {0} new column(s), shifting the existing rows with them: {1}" -f `
-                    $inserts.Count, ((0..($Columns.Count - 1) | Where-Object { -not ($actual -contains $Columns[$_].Name) } |
-                        ForEach-Object { $Columns[$_].Name }) -join ', ')) -ForegroundColor Green
+                    $inserts.Count, $newColumns) -ForegroundColor Green
         }
     }
 }
@@ -433,6 +457,12 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
 
     [void](Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = $requests })
     Write-Host "  header, widths, alignment and time formats written" -ForegroundColor DarkGray
+}
+elseif ($WhatIf -and $null -ne $existingSheetId) {
+    # Rewritten on every run and not only on creation, so this one is honest about a tab that
+    # already exists: the header is overwritten either way, and saying nothing here would read
+    # as "nothing to do" on the tab where there is in fact a write.
+    Write-Host "  would rewrite the header, column widths, alignment and time formats" -ForegroundColor DarkGray
 }
 
 # ----- colour ----------------------------------------------------------------------------
@@ -562,6 +592,9 @@ if (-not $WhatIf -and $null -ne $existingSheetId) {
     Write-Host ('  banded, Status coloured per state, and the whole row tinted for {0}' -f `
         ((@($states | Where-Object { $_.Row } | ForEach-Object { $_.Word })) -join ', ')) -ForegroundColor DarkGray
 }
+elseif ($WhatIf -and $null -ne $existingSheetId) {
+    Write-Host "  would replace the banding and the Status colour rules with the same ones again" -ForegroundColor DarkGray
+}
 
 # ----- the boundary that actually holds --------------------------------------------------
 
@@ -570,13 +603,16 @@ if ($Unprotected) {
         "list then guards against a mistake and not against intent, because 'Requested by' is a " +
         "cell anybody can type into.") -ForegroundColor Yellow
 }
-elseif ($WhatIf) {
+elseif ($null -eq $existingSheetId) {
+    # Only reachable under -WhatIf. Without it the tab was created a few lines up and carries
+    # an id by now, so there is no protection to read and the plan is the whole answer.
+    #
     # Parenthesised before -f on purpose: the operator binds tighter than +, so without them
     # the format applies to the second fragment alone and the first keeps a literal {0}.
     Write-Host ((("  would protect the whole tab, with the owner and the {0} allowed account(s) " +
                     "as its editors") -f @($registry.requesters.allowed).Count)) -ForegroundColor DarkGray
 }
-elseif ($null -ne $existingSheetId) {
+else {
     $already = $false
     $protection = Invoke-SheetsApiWithRetry -Method GET -Path ("$SpreadsheetId" + '?fields=sheets(properties.sheetId,protectedRanges)')
     foreach ($sheet in @($protection.sheets)) {
@@ -591,7 +627,12 @@ elseif ($null -ne $existingSheetId) {
     }
 
     if ($already) {
-        Write-Host "  the tab is already protected; leaving the existing protection alone" -ForegroundColor Yellow
+        $verb = if ($WhatIf) { 'would leave' } else { 'leaving' }
+        Write-Host ("  the tab is already protected; {0} the existing protection alone" -f $verb) -ForegroundColor Yellow
+    }
+    elseif ($WhatIf) {
+        Write-Host ((("  would protect the whole tab, with the owner and the {0} allowed account(s) " +
+                        "as its editors") -f @($registry.requesters.allowed).Count)) -ForegroundColor DarkGray
     }
     else {
         # Every allowed account is an editor here, and that is not a weakening of the boundary
@@ -637,14 +678,13 @@ elseif ($null -ne $existingSheetId) {
 if ($Unprotected) {
     Write-Host "  -Unprotected: no approvals tab either, so no whole-sport run can be authorised" -ForegroundColor Yellow
 }
-elseif ($WhatIf) {
-    Write-Host "  would create '$ApprovalSheetName', protected with the owner as its only editor" -ForegroundColor DarkGray
-}
 else {
-    $book = Invoke-SheetsApiWithRetry -Method GET -Path ("$SpreadsheetId" + '?fields=sheets(properties(sheetId,title),protectedRanges)')
+    # Named apart from the $book read at the top of the script, which asked for different
+    # fields and is not what this branch wants.
+    $approvalBook = Invoke-SheetsApiWithRetry -Method GET -Path ("$SpreadsheetId" + '?fields=sheets(properties(sheetId,title),protectedRanges)')
     $approvalSheetId = $null
     $approvalProtected = $false
-    foreach ($sheet in @($book.sheets)) {
+    foreach ($sheet in @($approvalBook.sheets)) {
         if ([string]$sheet.properties.title -ne $ApprovalSheetName) { continue }
         $approvalSheetId = [int]$sheet.properties.sheetId
         if ($null -ne $sheet.protectedRanges -and @($sheet.protectedRanges).Count -gt 0) {
@@ -652,7 +692,10 @@ else {
         }
     }
 
-    if ($null -eq $approvalSheetId) {
+    if ($null -eq $approvalSheetId -and $WhatIf) {
+        Write-Host "  would create '$ApprovalSheetName', protected with the owner as its only editor" -ForegroundColor DarkGray
+    }
+    elseif ($null -eq $approvalSheetId) {
         $made = Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId`:batchUpdate" -Body @{
             requests = @(@{ addSheet = @{ properties = @{
                             title          = $ApprovalSheetName
@@ -674,16 +717,32 @@ else {
     # route as :append; plain, it is not one, and Google answers with the HTML of its 404 page
     # rather than an API error - which is a puzzling thing to find in a console. Measured here
     # on Soccer, 2026-09-03.
-    [void](Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId/values:batchUpdate" -Body @{
-            valueInputOption = 'RAW'
-            data             = @(@{
-                    range  = "$ApprovalSheetName!A1:C1"
-                    values = @(, @('Request ID', 'Approved at', 'Approved by'))
-                })
-        })
+    if ($WhatIf) {
+        if ($null -ne $approvalSheetId) {
+            Write-Host "  would rewrite its three headings, as every run does" -ForegroundColor DarkGray
+        }
+    }
+    else {
+        [void](Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId/values:batchUpdate" -Body @{
+                valueInputOption = 'RAW'
+                data             = @(@{
+                        range  = "$ApprovalSheetName!A1:C1"
+                        values = @(, @('Request ID', 'Approved at', 'Approved by'))
+                    })
+            })
+    }
 
     if ($approvalProtected) {
-        Write-Host "  its protection is already set; leaving it alone" -ForegroundColor Yellow
+        $verb = if ($WhatIf) { 'would leave' } else { 'leaving' }
+        Write-Host ("  its protection is already set; {0} it alone" -f $verb) -ForegroundColor Yellow
+    }
+    elseif ($WhatIf) {
+        # Only when the tab is there and unprotected. A tab that does not exist yet was already
+        # reported as "would create ..., protected with the owner as its only editor" above, and
+        # saying it twice reads as two separate things happening.
+        if ($null -ne $approvalSheetId) {
+            Write-Host "  would protect it with the owner as its only editor" -ForegroundColor DarkGray
+        }
     }
     else {
         # No `users` here, deliberately, and this is the one place that stays that way: the
@@ -705,7 +764,13 @@ else {
 # ----- record it -------------------------------------------------------------------------
 
 if ($Register) {
-    if ($WhatIf) {
+    if ($WhatIf -and ($registry.sports.PSObject.Properties.Name -contains $Sport) -and $registry.sports.$Sport.runRequests) {
+        Write-Host ("  {0} already has runRequests = true; the file would be left alone." -f $Sport) -ForegroundColor DarkGray
+    }
+    elseif ($WhatIf -and -not ($registry.sports.PSObject.Properties.Name -contains $Sport)) {
+        Write-Host ("  {0} has no row in the registry, so nothing would be recorded. Add the row first." -f $Sport) -ForegroundColor Yellow
+    }
+    elseif ($WhatIf) {
         Write-Host "  would set runRequests = true for $Sport in TOOLS/sheet-registry.json" -ForegroundColor DarkGray
     }
     elseif (-not ($registry.sports.PSObject.Properties.Name -contains $Sport)) {
