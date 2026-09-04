@@ -110,8 +110,8 @@ absent) so the runner works from any directory under a short name:
 ```powershell
 $EntpulseQueryRunner = 'D:\path\to\entpulse_quality_database\TOOLS\Run-Query.ps1'
 
-function cqb {
-    $env:EP_QB_COMMAND = 'cqb'
+function dqc {
+    $env:EP_QB_COMMAND = 'dqc'
     if ($args.Count -ge 1 -and "$($args[0])" -eq 'info') {
         & $EntpulseQueryRunner -Info
         return

@@ -213,7 +213,7 @@ param(
     # the sport in the prefix.
     [string]$History,
 
-    # Prints the full command set. The cqb wrapper maps a bare "info" onto this.
+    # Prints the full command set. The dqc wrapper maps a bare "info" onto this.
     [switch]$Info,
 
     [switch]$Relogin,
@@ -5651,7 +5651,7 @@ if ($Info) {
         Write-Host $Explains -ForegroundColor DarkGray
     }
 
-    Write-Host "`nContent Query Builder runner" -ForegroundColor Green
+    Write-Host "`nData quality checks runner" -ForegroundColor Green
     Write-Host "  server    $BaseUrl" -ForegroundColor DarkGray
     Write-Host "  script    $PSCommandPath" -ForegroundColor DarkGray
     Write-Host "  checks    $($catalogue.Count) in $sources" -ForegroundColor DarkGray
