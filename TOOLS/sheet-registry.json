@@ -17,6 +17,10 @@
             "spreadsheetId": "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris",
             "runRequests": true
         },
+        "BMX-Freestyle": {
+            "spreadsheetId": "1hdz_Kjs0xsPBAaPL_r0HkAAFT_C7x9pAJTWZXBCvOvg",
+            "runRequests": false
+        },
         "BMX-Racing": {
             "spreadsheetId": "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE",
             "runRequests": true
