@@ -12,13 +12,19 @@ correction is required.
 ## Identity and evidence
 
 - First discovery date: 2026-08-27
-- Latest evidence date: 2026-08-27
-- Verification boundary: the sport was opened **without the Comp.Rank layer**, by the standing
-  decision of 2026-08-26 that a sport is documented from its event results first and its
-  ranking afterwards, because the ranking is generated from those results. `GLOBAL-DISCOVERY`
-  `-015`, `-016`, `-017`, `-024`, `-025`, `-028` through `-031` and `-033` were therefore not
-  run, and every statistics area below is `Not checked` rather than `Not applicable`: the
-  structure is there and has not been read. The rest of the non-statistics catalogue ran whole.
+- Latest evidence date: 2026-09-04
+- Verification boundary: the sport was opened on 2026-08-27 **without the Comp.Rank layer**, by
+  the standing decision of 2026-08-26 that a sport is documented from its event results first
+  and its ranking afterwards, because the ranking is generated from those results. **That
+  boundary was lifted for this sport on 2026-09-04 by the user's decision**, and the layer was
+  read: `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-028`, `-030` and `-031` ran that day, and
+  `-028` ran once per data type rather than chained to the busiest, so the value inventory is
+  coverage rather than a sample. `-025` and `-029`, the two drill-downs, were not run. The
+  pause itself is not lifted for the other sports, and the ranking here is still generated from
+  event results that colleagues are correcting, so a count taken today moves.
+  `-024` and `-033` were never inside the boundary: both are census statements that ride along
+  with every run of this sport, as the `DUPLICATE_RECORD` and `PATTERNS` section below records.
+  The rest of the non-statistics catalogue ran whole.
   `-026` was run by hand for **every one of the ten result types the sport uses**, not chained,
   so the result inventory is coverage rather than a sample. The four detail statements `-019`,
   `-021`, `-023` and `-027` were not run: their summaries answered the structural question on
@@ -38,7 +44,7 @@ correction is required.
 | Properties | Used | Four owner objects: `event`, `event_participants`, `participant`, `tournament_stage` |
 | object_relation | Used | Six active source/target combinations |
 | object_discipline | Used | One discipline vocabulary, on events and on tournament-owned statistics |
-| Statistics | Not checked | Deliberately not read; see the verification boundary |
+| Statistics | Used | Comp.Rank on the tournament, one pair, twelve data fields; read 2026-09-04 |
 | Reference values | Used | Event statuses, stage country, age class |
 | Other tables | Not checked | |
 
@@ -209,13 +215,56 @@ of competitor. The same vocabulary is attached to tournament-owned statistics.
 
 | statistic_typeFK | Owner type | Participant shard | Data shard | Fields/config | Evidence |
 |---:|---:|---:|---:|---|---|
+| 11 | 3 `tournament` | `statistic_participants11` | `statistic_data11` | `statistic_config`: `1463 Start date`, `1464 End date`, `1470 Gender`, `1471 Event id`. `statistic_data11`: `1270 Rank`, `1271 Points`, `1272 Duration`, `1273 Comment`, `1277 Medal`, `1426 Time`, `1427 Time Difference`, `1429 Team`, `1453 Missed Shots`, `1454 Additional Shots`, `1455 Leg Times`, `1465 Organization` | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-028`, `-030`, `-031`, 2026-09-04 |
 
-`Not checked`, deliberately and by the decision recorded in the verification boundary above.
-Tournament-owned statistics exist for this sport and carry disciplines — that much is
-visible from `object_discipline`, which was run — but no statistics discovery query was run,
-no field inventory was taken, and no statistic parameter is recorded in `SPORTS/params.json`.
-This is an unread layer, not an absent one, and nothing here may be treated as evidence that
-the sport does or does not use a given statistic shape.
+**One statistic type, one owner level, and no second pair.** `GLOBAL-DISCOVERY-015` returned a
+single row: Comp.Rank on the tournament. There was nothing to choose between, so no choice was
+made. 4236 statistics exist.
+
+**Thirteen statistics carry no `statistic_config` row at all.** Measured 2026-09-04: 4236
+statistics against 4223 configurations. `1463 Start date` and `1464 End date` are present on
+every one of the 4223; `1470 Gender` and `1471 Event id` on 2847 of them. Whether the thirteen
+are a defect or a shape the sport allows is not settled here.
+
+**12 of the 42 declared data types are used.** The other 30 are declared in
+`statistic_data_type` and carry no row for this sport — `1274 Laps Behind`, `1276 Pair`,
+`1278 Qualification rank`, `1403 Penalties`, `1428 Wind` and the rest. Absence here is a data
+state, not a structural absence: the type exists and the shard would hold it.
+`GLOBAL-DISCOVERY-031` reports `1463 Start date`, `1464 End date`, `1470 Gender` and
+`1471 Event id` among the unused, which is an artefact of what it compares: it reads the data
+shard alone, and those four live in `statistic_config`. They are used, and `-017` is what shows
+it.
+
+**Value shapes in `statistic_data11`, measured 2026-09-04 across every used type, one run of
+`GLOBAL-DISCOVERY-028` per type rather than the busiest three:**
+
+| Data type | Shapes |
+|---|---|
+| `1270 Rank` | A bare integer, and one empty value |
+| `1271 Points` | An integer; 24 decimals over two statistics; and 14 values reading `LPD` on one |
+| `1272 Duration` | `M:SS.h` dominant, `H:MM:SS.h` on six statistics, and one `S.h` |
+| `1273 Comment` | The non-finish vocabulary, plus a team name on the relay statistics |
+| `1277 Medal` | `gold`, `silver`, `bronze`, and no fourth value |
+| `1426 Time` | `M:SS.h` dominant, `H:MM:SS.h` next, and two values carrying no minute |
+| `1427 Time Difference` | `+M:SS.h` dominant, `+S.h` next, unsigned forms on roughly 4 200 values, one `+H:MM:SS.h`, and one negative |
+| `1429 Team`, `1465 Organization` | A bare integer, a `participant.id` |
+| `1453 Missed Shots`, `1454 Additional Shots` | A bare integer, no other shape |
+| `1455 Leg Times` | `M:SS.h`, on one statistic |
+
+**The Comp.Rank comment vocabulary is not the event layer's.** Measured 2026-09-04 over 30
+patterns. It holds `DSQ` beside `Disqualified` and `FF #` beside `FF#`, and
+`SPORTS/params.json` `RESULT_COMMENT_VALUE_LIST` — which governs the event-results layer —
+holds neither the spaced form nor `DSQ`. It also holds eighteen values of the form
+`<Country> Youth`, four values each on one relay statistic each, which are team names rather
+than statuses. A check reusing the event layer's list against this layer would report the
+divergence as a defect without that being what it asserts.
+
+**The statistic name is heavily fragmented.** 663 distinct digit-normalised patterns over the
+4236 statistics, measured 2026-09-04. Three generations sit side by side: the bare discipline
+(`10 km Sprint Male`), the same with an `(athletes)` suffix on the relays
+(`4 x 7.5 km Relay Male (athletes)`), and a long form carrying the whole competition
+(`Open European Championships 10 km Pursuit Female - Competition Ranking`). `Relay Female` and
+`Relay Male` appear with no distance at all.
 
 <!-- MANUAL PASTE ZONE: 7 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -346,7 +395,9 @@ that a period is stored for both sides of a match and a listing sport has no two
 **Twelve templates are `Not checked` and none is `Not applicable`.** `GLOBAL-DQ-009`, `-010`,
 `-030`, `-040`, `-042`, `-101`, `-103`, `-105`, `-106`, `-113`, `-115` and `-136` all need a
 Comp.Rank parameter, and that layer was deliberately left unread. The structure exists and
-the pause is expected to lift.
+the pause is expected to lift. **The layer was read on 2026-09-04 and the three parameters
+now exist**, so what these twelve wait on is no longer a missing value but an approval: each
+is still `Not checked` because no one has approved it, and none has become `Not applicable`.
 **The next two DQ categories were opened on 2026-08-27** — `WRONG_RESULTS` and
 `MISSING_VALUES`, the second and third priority bands. Of their 58 templates that do not
 read the Comp.Rank layer, 42 are instantiated as `Biathlon-DQ-017` through `-058`, fifteen
@@ -795,6 +846,12 @@ own opening with its own file, parameters and CheckIDs rather than an addition h
 results that are being corrected now, so reading it today would document something about to
 be rebuilt. Fifty-six templates wait on it across all eight categories, plus `GLOBAL-DQ-007`,
 and every one of them stays `Not checked` rather than `Not applicable`.
+
+**That paragraph is history, and it was overtaken on 2026-09-04.** The user lifted the pause
+for this sport on that date and the layer was read; the Statistics section above records what
+it holds. The reason the pause was called still stands — the event results are still being
+corrected, so a count taken from the ranking today moves — and the fifty-six templates are
+still `Not checked`, now for want of an approval rather than for want of a parameter.
 
 **`Biathlon-DQ-061` was extended to the relay disciplines at a ceiling of 40**, the same day
 and on the strength of the answer to question 11. Findings are unchanged at 4 and the
