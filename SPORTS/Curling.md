@@ -329,7 +329,7 @@ ids rather than the one the sport uses most.
 Round types 38, 39, 40 and 41 resolve to `round_type` rows named `1`, `2`, `3` and `4`, all
 non-knockout with a bracket size of `0`. They occur inside a single stage and halve in event
 count from one to the next, so they are consecutive rounds of one progression. This agrees
-with the reading `SPORTS/BMX.md` records for `38` and extends it to the rest of the family.
+with the reading `SPORTS/BMX-Racing.md` records for `38` and extends it to the rest of the family.
 
 Every active event resolves to a `finished` status type, under four status descriptions:
 Finished, Finished AEI, Finished after awarded win and Finished AET. No not-started or in-play

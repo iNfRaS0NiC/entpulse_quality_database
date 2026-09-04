@@ -1,8 +1,27 @@
-# SPORT: BMX (sport_id=58)
+# SPORT: BMX Racing (sport_id=58, disciplines 429 Racing and 776 Time Trial)
 
-This file is the canonical structural record for BMX. It contains only confirmed
+This file is the canonical structural record for BMX Racing. It contains only confirmed
 sport-specific usage, meanings, identifiers, evidence boundaries and open structural
 questions. Global database mechanisms belong in `../DATABASE.md`.
+
+**This sport is two of the three disciplines under `sport.id = 58`, not the whole of it.**
+The database calls 58 `BMX` and contests Racing (429), Time Trial (776) and Freestyle (430).
+Racing and Time Trial are one sport to anybody reading a board and Freestyle is another, which
+is what `SPORTS/BMX-Freestyle.md` documents. They shared one file, one board and one set of
+CheckIDs until 2026-09-04; on that day the slug became `BMX-Racing` and every check moved with
+it, keeping its number - `BMX-DQ-043` became `BMX-Racing-DQ-043`. No CheckID was renumbered,
+deleted or reused.
+
+The boundary is carried by `DISCIPLINE_ID_LIST` in `SPORTS/params.json` and reaches the
+database through the commented discipline filter every statement that can reach a discipline
+carries. `TOOLS/README.md` owns the mechanism and `POWERBI.md` the query contract.
+
+Eighteen checks carry no such filter and audit `sport.id` 58 whole. Every one of them looks
+for an object with **no** participation - a template with no tournaments, a tournament with no
+stages, a stage with no events, a person who never competed - so a filter running through that
+participation would remove exactly the rows the check exists to find. They are confined by the
+client template list instead, and the run names them in yellow on every execution rather than
+leaving the reader to work it out.
 
 For additions, insert approved content immediately before the exact active
 `MANUAL PASTE ZONE` marker in the destination subsection. Keep the marker unchanged
@@ -65,7 +84,7 @@ separate, already-confirmed direct column.
 
 `101 Duration` carries the sport's times and follows the leader/gap convention, but it
 stores them as bare seconds with no colon: `+0.038` for a gap, `98.455` for a leader. This
-is what `BMX-DQ-030` exists for, the colon-tolerant global shape being too loose here.
+is what `BMX-Racing-DQ-030` exists for, the colon-tolerant global shape being too loose here.
 
 `557 Full-time duration` is the opposite case. It is present but effectively unused: 421
 participant rows across 9 events, against 61 463 rows in 7 994 events for `101`. Its values
@@ -216,13 +235,13 @@ statement excludes — the absence `NUMERIC_DATA_TYPE_LIST` already records. Aud
 superseded field is not an endorsement of it; 321 statistics hold 6 171 duration values there
 and anything reading this sport's Comp.Rank times reads them from `1272`.
 
-**The Comp.Rank organization is not filled at all, and `BMX-DQ-106` is a sentinel because of it.** Measured 2026-08-25 this sport holds 424 tournament-owned Comp.Rank records over 21 150 ranked participations and **not one** carries an Organization value on the statistic data type the sport declares for it.
+**The Comp.Rank organization is not filled at all, and `BMX-Racing-DQ-106` is a sentinel because of it.** Measured 2026-08-25 this sport holds 424 tournament-owned Comp.Rank records over 21 150 ranked participations and **not one** carries an Organization value on the statistic data type the sport declares for it.
 
-That makes `BMX-DQ-106 COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR` return an `eligible_count` of 0. It is the second of the two things a zero can be - a correct scope over a population that is legitimately empty today, not a misdirected one - and the measurement above is what settles which. The check asks whether the organization that is there is the right one; there is none to ask about. `BMX-DQ-097` is what reports the absence itself.
+That makes `BMX-Racing-DQ-106 COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR` return an `eligible_count` of 0. It is the second of the two things a zero can be - a correct scope over a population that is legitimately empty today, not a misdirected one - and the measurement above is what settles which. The check asks whether the organization that is there is the right one; there is none to ask about. `BMX-Racing-DQ-097` is what reports the absence itself.
 
 It is instantiated rather than left off on the ruling of 2026-08-25 that the field is expected to be populated, and the day it is, this is the check that reads what arrives. Four of the twelve documented sports already fill it - Artistic Gymnastics, Triathlon, Golf and Ice Hockey - and those four are exactly the four that carried this check before today.
 
-**`BMX-DQ-109 COMP.RANK_ATHLETE_RANKING_DISAGREES_WITH_ITS_TEAM_TWIN` audits nothing, and that
+**`BMX-Racing-DQ-109 COMP.RANK_ATHLETE_RANKING_DISAGREES_WITH_ITS_TEAM_TWIN` audits nothing, and that
 is a sentinel rather than a misdirected scope.** Instantiated 2026-08-27 with
 `GLOBAL-DQ-143`, it returns `eligible_count = 0`. The reason is measured and not assumed:
 of this sport’s 632 tournament-owned Comp.Rank rankings, **not one** carries `(athletes)`
@@ -354,5 +373,5 @@ A BMX event's Rank sequence may legitimately exceed its own participant count wh
 - Whether BMX `event.round_typeFK=0` (unmapped to any `round_type` row) is an intended sentinel value for "not assigned", or represents bad/legacy data — not yet confirmed.
 - Some BMX Comp.Rank statistics (statistic_typeFK=11, object_typeFK=3) have no reliable path to a discipline: neither `statistic_config` Event id (1471) → event → `object_discipline`, nor a direct `object_discipline` relation (owner type=83) on the statistic itself, is guaranteed to exist. A statistic can be fully discipline-orphaned from both mechanisms (confirmed example: statistic_id=166712, name "Female Park"). Discipline-scoped checks and analysis for BMX Comp.Rank statistics must not assume either path is universal.
 - Whether the sentinel Rank value paired with a `DNS` or `DNF` comment follows a fixed rule is not confirmed. Observed values do not resolve to one: in event 5124031 `DNF` maps to `7` and `DNS` to `10` within an eight-participant heat. Until the rule is confirmed, a check must recognise a non-finishing participant by the presence of an active comment, never by the rank value itself.
-- Which convention `101 Duration` is meant to follow. `BMX-DQ-030` encodes a leader and a set of `+` gaps, and the stored data is the opposite: absolute times for every placing, with the gap shape in 26 events out of 7 994 (see "What shape `101 Duration` is actually written in"). Either the check states a convention the sport does not keep, or the sport has drifted from one it was meant to keep, and the two call for opposite corrections. Raised 2026-08-12; a notation check for the same field is held behind this answer, because the rule for writing a minute or more cannot be stated before the shape it applies to is settled.
+- Which convention `101 Duration` is meant to follow. `BMX-Racing-DQ-030` encodes a leader and a set of `+` gaps, and the stored data is the opposite: absolute times for every placing, with the gap shape in 26 events out of 7 994 (see "What shape `101 Duration` is actually written in"). Either the check states a convention the sport does not keep, or the sport has drifted from one it was meant to keep, and the two call for opposite corrections. Raised 2026-08-12; a notation check for the same field is held behind this answer, because the rule for writing a minute or more cannot be stated before the shape it applies to is settled.
 <!-- MANUAL PASTE ZONE: 58 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

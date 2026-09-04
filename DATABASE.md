@@ -1149,7 +1149,7 @@ Three things this rule is not:
   disciplines are separate competitions that each resolve the same way is not.
 - **It does not follow from one `sport` row.** A single `sport.id` can carry two editorially
   distinct sports across its disciplines, and each is classified on its own condition. Where
-  that happens the sport file records the split; `SPORTS/BMX.md` is the confirmed case.
+  that happens the sport file records the split; `SPORTS/BMX-Racing.md` is the confirmed case.
 
 `SPORTS.md` records the model per sport. A model is recorded only once the sport file
 documents the evidence for it, on the same terms as any other confirmed structure.

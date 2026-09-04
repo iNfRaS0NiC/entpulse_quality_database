@@ -12,7 +12,7 @@ mechanisms from `DATABASE.md`.
 
 | Sport ID | Sport | Competition model | Structural file | Structural status | Last evidence date | Database sport name |
 |---:|---|---|---|---|---|---|
-| 58 | BMX | Listing (individual) | `SPORTS/BMX.md` | In progress | 2026-07-22 | BMX |
+| 58 | BMX-Racing | Listing (individual) | `SPORTS/BMX-Racing.md` | In progress | 2026-07-22 | BMX |
 | 50 | Triathlon | Listing (individual and team) | `SPORTS/Triathlon.md` | In progress | 2026-07-30 | Triathlon |
 | 10 | Curling | H2H (team) | `SPORTS/Curling.md` | In progress | 2026-08-01 | Curling |
 | 40 | Artistic-Gymnastics | Listing (individual and team) | `SPORTS/Artistic-Gymnastics.md` | In progress | 2026-08-04 | Artistic Gymnastics |

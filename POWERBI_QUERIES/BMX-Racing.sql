@@ -1,5 +1,5 @@
 SELECT
-    -- CheckID - BMX-DQ-030
+    -- CheckID - BMX-Racing-DQ-030
     -- Name - EVENT_DURATION_FORMAT_MISMATCH_TO_RANK
     -- What it does: Flags Duration values that break this rule: rank 1 has the full time, and lower ranks have a plus-prefixed gap with no colon.
     'Duration_Format_Mismatch_Events' AS check_type,

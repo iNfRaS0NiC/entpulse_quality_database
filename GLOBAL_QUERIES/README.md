@@ -171,6 +171,12 @@ Their reusable purposes are represented by `GLOBAL-DISCOVERY-018` through
 That renumbering is not a precedent. `POWERBI.md` now forbids renumbering, deleting or
 reusing an assigned CheckID; a deprecated check keeps its row and its ID.
 
+The `BMX-DQ-` above is left spelled as it was. The sport's slug became `BMX-Racing` on
+2026-09-04 when `sport.id` 58 was separated into the two sports it holds, and every live check
+moved with it - `BMX-DQ-023` became `BMX-Racing-DQ-023`, number unchanged. Rewriting the
+identities in this paragraph would say the retirement happened to checks that did not exist
+under those names at the time, and the old spelling now points at nothing else.
+
 ## Manual registry-rule additions
 
 Registry-policy changes are inserted immediately before the marker below.
