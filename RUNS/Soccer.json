@@ -38566,6 +38566,110 @@
                                                           "checkBy":  ""
                                                       }
                                 }
+                 },
+                 {
+                     "runId":  "04.09.2026 07-50-51",
+                     "startedUtc":  "2026-09-04T05:50:51Z",
+                     "output":  "",
+                     "commit":  "eed9cb49cb4d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-074",
+                                        "runKey":  "Soccer-DQ-074",
+                                        "parameters":  "",
+                                        "name":  "EVENT_LINEUP_ATHLETE_ASSIGNED_MORE_THAN_ONCE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  20,
+                                        "findings":  19,
+                                        "eligible":  2650,
+                                        "seconds":  1.1,
+                                        "status":  "OK",
+                                        "sqlHash":  "855cbc1af43c"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  47,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  13.6,
+                                                  "planning the changes":  12.6,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.4,
+                                                  "clearing stale rows":  7.5,
+                                                  "writing values":  10.1,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Soccer-DQ-074":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      }
+                                }
+                 },
+                 {
+                     "runId":  "04.09.2026 08-01-04",
+                     "startedUtc":  "2026-09-04T06:01:04Z",
+                     "output":  "",
+                     "commit":  "eed9cb49cb4d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-074",
+                                        "runKey":  "Soccer-DQ-074",
+                                        "parameters":  "",
+                                        "name":  "EVENT_LINEUP_ATHLETE_ASSIGNED_MORE_THAN_ONCE",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  20,
+                                        "findings":  19,
+                                        "eligible":  2650,
+                                        "seconds":  0.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "855cbc1af43c"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  23.4,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  6.8,
+                                                  "planning the changes":  2.6,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.6,
+                                                  "clearing stale rows":  1.2,
+                                                  "writing values":  10.7,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Soccer-DQ-074":  {
+                                                          "status":  "Not reviewed",
+                                                          "checkBy":  ""
+                                                      }
+                                }
                  }
              ],
     "sheetId":  "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE"
