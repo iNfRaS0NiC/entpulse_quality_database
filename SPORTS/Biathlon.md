@@ -1130,6 +1130,47 @@ sport's tie convention to be confirmed first: skip-after-tie is what ranking spo
 sport ranking densely would report its normal shape as a defect. Neither has been measured here.
 
 
+## The last two Comp.Rank templates, approved on 2026-09-04
+
+Both were held back on 2026-09-04 for want of a parameter, and both were measured the same day
+before being numbered. The layer is now complete: 48 of 48 templates.
+
+| CheckID | Template and what it asserts | Findings | Eligible |
+|---|---|---:|---:|
+| `Biathlon-DQ-135` | `GLOBAL-DQ-125 COMP.RANK_MEDAL_AWARDED_OUTSIDE_MEDAL_TEMPLATE` - a medal under a competition that does not award them | 0 | 0 |
+| `Biathlon-DQ-136` | `GLOBAL-DQ-134 COMP.RANK_RESULTS_RANK_SEQUENCE_BROKEN` - places that do not run 1, 2, 3 with ties skipping what they consume | 8 | 2285 |
+
+**`Biathlon-DQ-135` is a sentinel and the reason needs stating carefully, because its zero is
+made by its own parameter.** The COVERAGE branch counts statistics whose template is *not* in
+`MEDAL_TEMPLATE_ID_LIST`, so a list naming every template the sport uses leaves that population
+empty. All thirty are named by the user's decision of 2026-09-04, on the ground that every
+competition here does award medals - the Olympics, the world, European, junior and youth
+championships, and the World Cup, where the first three of each race are decorated. The zero
+therefore says "no competition sits outside the medal list", which is a true statement about
+today and not a scope pointing at nothing. The check speaks the day a thirty-first template
+appears holding medals without being added to the list, which is exactly what the template was
+written for.
+
+The list was drawn from the templates that hold medals today, and `GLOBAL_DQ/README.md` warns
+against precisely that - it says the list states which competitions award medals and is not read
+off the data, because a template that awards them and holds none yet still belongs in it. The
+measurement and the intent happened to agree here, all thirty being real medal competitions, but
+the list stands on the second and would need revisiting if a competition were added that awards
+none.
+
+**`Biathlon-DQ-136` rests on two things measured before it was written.** The entry size is
+`1, 2, 3, 4` - one row for a plain relay statistic and every individual race, two for the Single
+Mixed relay, three for the junior and youth three-leg relays, four for the standard and mixed
+ones - and in the `(athletes)` variant the squad agrees with the leg count named in the statistic
+on 10171 places against 81 that do not. The sport also skips a place after a tie, on 1149 of 1152
+tied places, which is the convention the template requires confirmed before it will read a
+ranking correctly. The three places that rank densely instead are candidate findings of their
+own rather than a second convention.
+
+Its eight findings are gaps in the sequence, two of them at the Sochi 2014 Olympics and three
+under the World Cup.
+
+
 ## Open questions
 
 Thirteen questions were raised while this sport was opened. **Nine were measured and closed
