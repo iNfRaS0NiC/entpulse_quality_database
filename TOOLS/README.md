@@ -96,7 +96,7 @@ This reads only local `.sql` files, so it proves the catalogue is found before a
 credential is used. Then run one real statement:
 
 ```powershell
-.\TOOLS\Run-Query.ps1 BMX-DQ-003
+.\TOOLS\Run-Query.ps1 BMX-Racing-DQ-003
 ```
 
 If the machine has no `D:` drive, set `EP_QB_OUTPUT` to where results should be written
@@ -132,16 +132,16 @@ the account in use. The summary:
 | Form | Effect |
 |---|---|
 | `-ListChecks` | Every CheckID with its name, source file and line |
-| `-ListChecks BMX-DQ-0*` | The same list, filtered by wildcard |
-| `-History BMX-DQ-003` | Every recorded run of a check, oldest first |
-| `-Sport BMX` | Discover the structural parameters and fill them in |
+| `-ListChecks BMX-Racing-DQ-0*` | The same list, filtered by wildcard |
+| `-History BMX-Racing-DQ-003` | Every recorded run of a check, oldest first |
+| `-Sport BMX-Racing` | Discover the structural parameters and fill them in |
 | `-Sport "Water Polo"` | Accept the exact database name or documented repository slug |
 | `-SportSlug Water-Polo -DatabaseSportName "Water Polo"` | State both identities explicitly while opening a sport |
-| `-Sport BMX -RunAll` | Everything approved for one sport, plus the patterns, in one workbook |
+| `-Sport BMX-Racing -RunAll` | Everything approved for one sport, plus the patterns, in one workbook |
 | `-Sport X -RunAll -IncludeUnapproved` | Discovery only for a genuinely undocumented sport: runs the GLOBAL catalogue against it |
-| `BMX-DQ-003` | One check to the screen |
-| `BMX-DQ-001,BMX-DQ-005` | A chosen few |
-| `BMX-DQ-*` | Every match; more than one switches to batch mode |
+| `BMX-Racing-DQ-003` | One check to the screen |
+| `BMX-Racing-DQ-001,BMX-Racing-DQ-005` | A chosen few |
+| `BMX-Racing-DQ-*` | Every match; more than one switches to batch mode |
 | `-MaxChecks 10` | Cap how many matched checks actually run |
 | `-Chain` | Also run the drill-downs, filled from the summaries the same run produced |
 | `-ChainTop 3,2` | How many values to pursue per chain level; default 3 then 2 |
@@ -166,10 +166,10 @@ the account in use. The summary:
 
 **A sport check takes no parameters.** `POWERBI_QUERIES/<SportSlug>.sql` statements are
 approved against one confirmed sport and carry its numeric ID directly, so
-`BMX-DQ-003` runs on its own:
+`BMX-Racing-DQ-003` runs on its own:
 
 ```powershell
-.\TOOLS\Run-Query.ps1 BMX-DQ-003
+.\TOOLS\Run-Query.ps1 BMX-Racing-DQ-003
 ```
 
 `GLOBAL-DISCOVERY-NNN` and `GLOBAL-DQ-NNN` statements declare `{{...}}` tokens, because a
@@ -472,7 +472,7 @@ It then discovers the parameters that are structural facts and fills them in, so
 has never been queried needs one command:
 
 ```powershell
-.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-* -Sport BMX -Format xlsx
+.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-* -Sport BMX-Racing -Format xlsx
 ```
 
 `-Sport` resolves parameters from three sources, widest trust last:
@@ -486,7 +486,7 @@ heuristic. When nothing discoverable is still missing, no discovery query is sen
 a documented sport runs its templates without a single extra round trip:
 
 ```powershell
-.\TOOLS\Run-Query.ps1 GLOBAL-DQ-* -Sport BMX -Format xlsx
+.\TOOLS\Run-Query.ps1 GLOBAL-DQ-* -Sport BMX-Racing -Format xlsx
 ```
 
 Discovery, when it does run, is three lookups against the database, none of them assumed:
@@ -518,7 +518,7 @@ They appear in the workbook's Overview as `SKIPPED`, so a run never reads as ful
 of the catalogue. Run them afterwards with the value chosen from its summary:
 
 ```powershell
-.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-019 -Sport BMX -Params ROUND_TYPE_ID=5
+.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-019 -Sport BMX-Racing -Params ROUND_TYPE_ID=5
 ```
 
 An explicit `-SportId` or `-Params` always overrides a discovered value. Skipping applies
@@ -531,7 +531,7 @@ Picking every one of those eight values by hand is a dozen further commands, eac
 a result read in between. `-Chain` does that walk inside one run:
 
 ```powershell
-.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-* -Sport BMX -Chain -Format xlsx
+.\TOOLS\Run-Query.ps1 GLOBAL-DISCOVERY-* -Sport BMX-Racing -Chain -Format xlsx
 ```
 
 Nothing here is inferred about which summary feeds which drill-down. `GLOBAL_QUERIES` already
@@ -753,10 +753,10 @@ than on it. A sentinel whose invariant is population-wide writes `Non-zero` itse
 check may.
 
 ```json
-"BMX": {
+"BMX-Racing": {
   "SPORT_ID": 58,
   "_expected": {
-    "BMX-DQ-014": {
+    "BMX-Racing-DQ-014": {
       "expect": "Residual",
       "residual": 12,
       "reason": "twelve historical rows predate the source that would fix them; the sport file names them"
@@ -788,7 +788,7 @@ A DQ finding is read against the names and round types the sport actually uses, 
 `-WithPatterns` carries both in one workbook:
 
 ```powershell
-.\TOOLS\Run-Query.ps1 GLOBAL-DQ-* -Sport BMX -WithPatterns -Format xlsx
+.\TOOLS\Run-Query.ps1 GLOBAL-DQ-* -Sport BMX-Racing -WithPatterns -Format xlsx
 ```
 
 Which statements qualify is derived from their parameters rather than listed by ID: every
@@ -894,7 +894,7 @@ The default. The header line names the check, and only the first `-Preview` rows
 
 Every row is prefixed with `check_id` and `check_name`, because a flat file has nowhere
 else to record which check produced it. Files are named after the CheckID —
-`BMX-DQ-003.csv`.
+`BMX-Racing-DQ-003.csv`.
 
 ### Workbook
 
@@ -924,7 +924,7 @@ check as it completes, costing milliseconds instead of a whole workbook.
 
 | Sport | CheckID | Object | Check Name | Priority | Category | What it does | Rows | Status | Check By | Comment | Signal | Signal reason |
 |---|---|---|---|---|---|---|---:|---|---|---|---|---|
-| BMX | BMX-DQ-001 | Participant | PARTICIPANT_MISSING_DATE_OF_BIRTH | 3 Missing value | MISSING_VALUES | Finds active participants of the selected types that … | 1064 | Not reviewed | | `='PARTICIPANT_MISSING…'!G2` | Monitor | Population-wide absence … |
+| BMX | BMX-Racing-DQ-001 | Participant | PARTICIPANT_MISSING_DATE_OF_BIRTH | 3 Missing value | MISSING_VALUES | Finds active participants of the selected types that … | 1064 | Not reviewed | | `='PARTICIPANT_MISSING…'!G2` | Monitor | Population-wide absence … |
 
 `Comment` at K is the one computed cell in the workbook: a formula reading `G2` on the check
 tab that row links to. The comment is therefore written once, on the tab, beside the rows
@@ -1092,7 +1092,7 @@ is legitimately empty today, and both want a person. So the runner reads the val
 those checks on the console when a run finishes:
 
 ```text
-2 check(s) audited nothing - eligible_count is 0, which is never clean data: BMX-DQ-014, BMX-DQ-031
+2 check(s) audited nothing - eligible_count is 0, which is never clean data: BMX-Racing-DQ-014, BMX-Racing-DQ-031
 ```
 
 A check that failed or was skipped is never seeded closed either, whatever its signal — it
@@ -1107,7 +1107,7 @@ Then one tab per check:
 ```text
      A                B                   C          D                E                F                G          H          I          J                K
 1    Check ID         Check Name          SQL Used   Priority         Category         What it does     Comment    Check By   Signal     Signal reason    Parameters
-2    BMX-DQ-001       PARTICIPANT_MIS...  SQL        3 Missing value  MISSING_VALUES   Finds active ...                       Monitor    Population-wide…
+2    BMX-Racing-DQ-001       PARTICIPANT_MIS...  SQL        3 Missing value  MISSING_VALUES   Finds active ...                       Monitor    Population-wide…
 3    Return to Overview
 4
 5    check_type       participant_id      participant_name   ...
@@ -1197,7 +1197,7 @@ Results are kept outside the working copy. Every run gets its own folder, named 
 sport and the moment it started:
 
 ```text
-D:\SQL's Output\BMX 26.07.2026 09-09-47\BMX.xlsx
+D:\SQL's Output\BMX-Racing 26.07.2026 09-09-47\BMX-Racing.xlsx
 D:\SQL's Output\GLOBAL 26.07.2026 09-10-24\GLOBAL-DISCOVERY-001.csv
 D:\SQL's Output\MIXED 26.07.2026 09-10-25\...
 ```
@@ -1221,16 +1221,16 @@ workbook beside the new one and compare by eye, check by check.
 
 ```json
 {
-  "sport": "BMX",
+  "sport": "BMX-Racing",
   "ledgerVersion": 1,
   "runs": [
     {
-      "runId": "BMX 07.08.2026 09-09-47",
+      "runId": "BMX-Racing 07.08.2026 09-09-47",
       "startedUtc": "2026-08-07T06:09:47Z",
-      "output": "D:\\SQL's Output\\BMX 07.08.2026 09-09-47",
+      "output": "D:\\SQL's Output\\BMX-Racing 07.08.2026 09-09-47",
       "commit": "883eb473e1e6",
       "checks": [
-        { "checkId": "BMX-DQ-001", "runKey": "BMX-DQ-001", "parameters": "",
+        { "checkId": "BMX-Racing-DQ-001", "runKey": "BMX-Racing-DQ-001", "parameters": "",
           "name": "PARTICIPANT_MISSING_DATE_OF_BIRTH", "category": "MISSING_VALUES",
           "signal": "Monitor", "expected": "Non-zero",
           "rows": 1065, "findings": 1064, "eligible": 12043,
@@ -1432,15 +1432,15 @@ is not the sport's periodic pass — those are not the sport's history, and a ru
 itself as one moves the baseline every later run is read against.
 
 ```powershell
-.\TOOLS\Run-Query.ps1 -Sport BMX -RunAll -TestRun
+.\TOOLS\Run-Query.ps1 -Sport BMX-Racing -RunAll -TestRun
 ```
 
 The run executes normally and its verdicts are still computed against the last recorded run,
 because a test is worth more when it says what moved. What it does not do is record: nothing
-is appended to `RUNS/BMX.json`, so the next real run still compares against the last real one.
+is appended to `RUNS/BMX-Racing.json`, so the next real run still compares against the last real one.
 
 **Results are still written**, because a run nobody can read proves nothing. The folder is
-named `TEST BMX 08.08.2026 14-22-05`, so it can be deleted on sight rather than by
+named `TEST BMX-Racing 08.08.2026 14-22-05`, so it can be deleted on sight rather than by
 remembering which of ten folders were real. `-OutDir` and `-OutFile` still override the whole
 scheme, and a run given one of those is named whatever it was told.
 
@@ -2448,6 +2448,34 @@ it for a sport with no row yet - saying so, because that is the route this file 
 `RUNS/` is a record of what a run returned and nothing may be cited from it, so anything that
 has to *decide* where to write reads the registry instead of the ledger.
 
+### A sport that is documented and not published yet
+
+```json
+    "BMX-Freestyle": {
+        "spreadsheetId": "",
+        "published": false,
+        "runRequests": false
+    }
+```
+
+`published: false` is how a sport says it has no board rather than saying nothing. It was added
+on 2026-09-04, when BMX-Freestyle was separated from BMX-Racing and written up in full before
+anybody had made it a document. A run for such a sport writes no board and says which sport and
+why, instead of quietly producing nothing.
+
+**No sport is in that state today.** BMX-Freestyle was, for about an hour of the same afternoon,
+and then got its document. The example above is kept because the state it describes recurs every
+time a sport is opened and is the honest way to record the gap, not because anything is sitting
+in it now.
+
+The guard this relaxes is unchanged where it matters. `TOOLS/Test-Tools.ps1` still requires a
+row here for every sport `SPORTS.md` lists, so a sport somebody forgot to register still fails;
+what it no longer requires is a document a deliberately unpublished sport does not have. An
+unpublished row must name no document and must not be polled for run requests, and both are
+checked.
+
+Omit `published`, or set it true, and the row means what it always did.
+
 Resolution order, and it is short on purpose:
 
 1. `-SheetId` on the command line, because somebody naming a document means it;
@@ -2848,6 +2876,67 @@ named templates is asking a narrower question than the client boundary.
 The form is read against the sport slug the run resolved, which is filled whether the sport came
 from `-Sport` or from the CheckID. Read from `-Sport` alone it would work by hand and silently
 do nothing under the nightly pass and the Sheets worker, which name checks rather than sports.
+
+## When a sport is one discipline of a database sport
+
+`sport.id` 58 is called BMX and holds three disciplines. Two of them, Racing and Time Trial,
+are one sport to anybody reading a board; the third, Freestyle, is another. A check anchored
+on the sport alone reports all three together, which is how the two came to share a board and
+a set of CheckIDs. `SPORTS/BMX-Racing.md` owns that fact and `SPORTS/BMX-Freestyle.md` the
+other half of it.
+
+A sport that is a slice rather than the whole declares which slice in `SPORTS/params.json`:
+
+```json
+"DISCIPLINE_ID_LIST": "429, 776"
+```
+
+Every other sport declares nothing, reaches none of this, and sends every statement exactly as
+it is written. That is the point of the mechanism: the boundary costs only the sport that
+needs one.
+
+### The marker, and why it carries the whole predicate
+
+The runner activates a commented line, the way it already does for the client boundary and for
+the id window:
+
+```sql
+  -- AND EXISTS (SELECT 1 FROM object_discipline od WHERE od.object_typeFK = 5 AND od.objectFK = e.id AND od.disciplineFK IN (<discipline_ids>) AND od.del = 'no')
+```
+
+Only `<discipline_ids>` is substituted. Everything else is sent verbatim, which is deliberate:
+unlike a template, there is no one path from an audited object to its discipline.
+
+| Audited object | How it reaches a discipline |
+|---|---|
+| Event, event results | directly, `object_discipline` owner type 5 |
+| Statistic | owner type 83, or through `statistic_config` Event id to the event |
+| Tournament stage, tournament | only through their events |
+| Template | through the events under it |
+| Participant | through the events the person took part in |
+
+A marker naming a column and an alias would make the runner decide which of those a statement
+means. The statement already knows, so the author writes the path and the runner fills in the
+ids. The alias inside the marker has to be free within that statement, since nothing checks it
+for collisions.
+
+### What a statement without a marker does
+
+It runs unchanged, and the run says so by name:
+
+```
+Not confined to this sport's disciplines, so run across the whole database sport - 3: BMX-Racing-DQ-014, ...
+```
+
+This is the same contract the in-scope form of the client boundary has, and deliberately not
+the one `-TemplateIds` has. `-TemplateIds` stops a statement it cannot narrow, because somebody
+asked a narrow question and a wide answer would be a false one. Here, most of the package audits
+something no discipline reaches, so refusing those would empty a batch to make a point about the
+few that do.
+
+The warning is yellow because it is not a tidy-up note. Every check it names ran across the
+whole database sport while the board it writes to says one discipline of it, and nothing
+downstream can tell afterwards.
 
 ## Scheduled tasks on this machine
 

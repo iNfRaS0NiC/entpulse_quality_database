@@ -75,7 +75,7 @@
     Runs the whole BMX catalogue into one workbook under "D:\SQL's Output".
 
 .EXAMPLE
-    .\TOOLS\Run-Query.ps1 GLOBAL-DQ-* -Sport BMX -WithPatterns -Format xlsx
+    .\TOOLS\Run-Query.ps1 GLOBAL-DQ-* -Sport BMX-Racing -WithPatterns -Format xlsx
     The sport's DQ templates plus every PATTERNS.sql statement whose parameters -Sport can
     supply, in one workbook, so a finding can be read against the names and round types
     actually in use. A drill-down needs a value picked out of a summary and is left out.
@@ -276,6 +276,11 @@ $script:RunSportName = ''
 # statement where each one is narrowed.
 $script:ClientScopeForm = 'complement'
 $script:ClientScopeInScopeIds = @()
+
+# The disciplines this run is confined to, empty for every sport that is a whole sport. Read
+# per statement where each one is narrowed, like the boundary above. A sport declaring none
+# reaches none of this and its statements go to the database exactly as they are written.
+$script:DisciplineIds = @()
 
 # When this invocation began, stamped once so every ledger entry a run writes carries the
 # same moment however long the run took. UTC because the ledger is tracked in git and read on
@@ -778,18 +783,32 @@ function Resolve-SportIdentity {
 
         # A supplied pair that points at two different documented rows is an error worth
         # naming, not an undocumented sport to derive afresh.
+        # A pair is right when one row carries both halves of it, and wrong when the index knows
+        # each half but never together. Read row-by-row and not half-by-half: comparing the
+        # first row that matches the database name against the supplied slug was correct while
+        # a database sport had exactly one slug, and refused a valid pair the day one had two -
+        # BMX holds BMX-Racing and BMX-Freestyle, and 'BMX-Freestyle' / 'BMX' was rejected as a
+        # contradiction because BMX-Racing happened to be the row it looked at.
         $slugMatch = @($entries | Where-Object { $_.Slug -ieq $SportSlugValue })
         $databaseMatch = @($entries | Where-Object { $_.DatabaseName -ieq $DatabaseSportNameValue })
-        if ($SportSlugValue -and $DatabaseSportNameValue -and
-            (($slugMatch.Count -gt 0 -and $slugMatch[0].DatabaseName -ine $DatabaseSportNameValue) -or
-             ($databaseMatch.Count -gt 0 -and $databaseMatch[0].Slug -ine $SportSlugValue))) {
+        $pairMatch = @($entries | Where-Object {
+                $_.Slug -ieq $SportSlugValue -and $_.DatabaseName -ieq $DatabaseSportNameValue
+            })
+        if ($SportSlugValue -and $DatabaseSportNameValue -and $pairMatch.Count -eq 0 -and
+            ($slugMatch.Count -gt 0 -or $databaseMatch.Count -gt 0)) {
             throw "Sport identity '$SportSlugValue' / '$DatabaseSportNameValue' contradicts the mapping in SPORTS.md."
         }
     }
 
     $matches = @($matches | Group-Object Slug | ForEach-Object { $_.Group[0] })
     if ($matches.Count -gt 1) {
-        throw "Sport identity is ambiguous in SPORTS.md; pass both -SportSlug and -DatabaseSportName."
+        # Name them. Since 2026-09-04 the ordinary way to reach this is a database sport that
+        # holds two repository sports - BMX is Racing and Freestyle - and the person who typed
+        # the name is one word away from what they meant. A message that says only "ambiguous"
+        # sends them to SPORTS.md to look up something this line already knows.
+        throw ("Sport identity is ambiguous in SPORTS.md: " +
+            (@($matches | ForEach-Object { "$($_.Slug) (database sport '$($_.DatabaseName)')" }) -join ', ') +
+            ". Name one of those slugs with -Sport, or pass both -SportSlug and -DatabaseSportName.")
     }
     if ($matches.Count -eq 1) {
         return [pscustomobject]@{
@@ -1457,6 +1476,46 @@ function Enable-TemplateFilter {
     return [pscustomobject]@{ Sql = $activated; Activated = $found.Count }
 }
 
+# One sport in the database that is two sports editorially, which is what this marker exists
+# for. BMX is `sport.id` 58 and holds Racing, Time Trial and Freestyle; the first two are one
+# sport to a reader and the third is another, and a check anchored on the sport alone reports
+# all three as one. `SPORTS/BMX-Racing.md` owns that fact.
+#
+# The marker carries the whole predicate rather than a column and an alias, because unlike a
+# template there is no single path from an audited object to its discipline. An event owns one
+# directly (`object_discipline`, owner type 5); a statistic owns one at owner type 83 or reaches
+# it through `statistic_config` Event id; a stage, a tournament and a template reach it only
+# through their events. A marker naming a column would need the runner to know which of those
+# a statement is auditing, and the statement already knows. So the author writes the path and
+# the runner fills in the ids and takes the comment off.
+#
+# Only `<discipline_ids>` is substituted. Everything else inside the comment is sent verbatim,
+# which is also why a statement's marker has to use an alias that is free within it.
+$DisciplineFilterMarker =
+'(?m)^([ \t]*)--[ \t]*(AND[ \t]+EXISTS[ \t]*\(.*<discipline_ids>.*\))[ \t]*\r?$'
+
+function Enable-DisciplineFilter {
+    # Activates every discipline filter in the statement and reports how many it found.
+    #
+    # On the same contract as the in-scope form of the client boundary and not the same as
+    # -TemplateIds: a statement carrying no marker is left exactly as it is rather than
+    # skipped. Most statements in the package audit something no discipline reaches - a
+    # participant registry, a template inventory - and refusing them would empty a batch to
+    # make a point about the ones that do. What a missing marker costs is reported by the
+    # caller, once, rather than being silently correct.
+    param([string]$Text, [int[]]$DisciplineIds)
+
+    $found = [regex]::Matches($Text, $DisciplineFilterMarker)
+    $list = ($DisciplineIds -join ', ')
+
+    $activated = [regex]::Replace($Text, $DisciplineFilterMarker, {
+            param($m)
+            '{0}{1}' -f $m.Groups[1].Value, $m.Groups[2].Value.Replace('<discipline_ids>', $list)
+        })
+
+    return [pscustomobject]@{ Sql = $activated; Activated = $found.Count }
+}
+
 # The id window a statement can be cut into. WORKFLOW.md separates two ways scope failure
 # arrives, and this marker answers the second: not a statement too slow, but a result the
 # transport cannot carry whole. Soccer's registry holds close to 400 000 audited people and
@@ -2044,6 +2103,11 @@ $DiscoverableParameters = @('SPORT_ID', 'STATISTIC_TYPE_ID', 'STATISTIC_OWNER_TY
 # contract: what the sport file may say, and what every statement ends up reading.
 $ClientScopeParameter = 'OUT_OF_SCOPE_TEMPLATE_ID_LIST'
 $InScopeParameter = 'IN_SCOPE_TEMPLATE_ID_LIST'
+
+# The disciplines a sport is confined to. Declared only by a sport that is a slice of a
+# database sport rather than the whole of one; absent everywhere else, which is what tells
+# this runner to send every statement unchanged.
+$DisciplineParameter = 'DISCIPLINE_ID_LIST'
 
 # The named keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
 # _notApplicable holds the parameters the sport is documented as unable to supply, mapped to
@@ -4764,6 +4828,15 @@ function Get-SportSheetId {
         if ($entry -and $entry.PSObject.Properties.Name -contains 'spreadsheetId') {
             $registered = [string]$entry.spreadsheetId
         }
+        # Said out loud, because the alternative is a run that quietly writes no board and a
+        # person who assumes it did. A sport is documented before it is published, and the
+        # registry records which of the two it is rather than leaving the row out.
+        if ($entry -and $entry.PSObject.Properties.Name -contains 'published' -and
+            -not [bool]$entry.published) {
+            Write-Host ('  {0} is documented but not published yet, so this run writes no board. TOOLS/sheet-registry.json says so.' -f $Sport) `
+                -ForegroundColor Yellow
+            return ''
+        }
     }
 
     $remembered = ''
@@ -5697,14 +5770,14 @@ if ($Info) {
     Write-Host '  relation: it is skipped, never run wide and reported as though narrow.' -ForegroundColor DarkGray
 
     Write-Section 'OPEN A NEW SPORT'
-    Write-Line "$Entry GLOBAL-DISCOVERY-* -Sport BMX -Format xlsx" 'discover the parameters, then run'
+    Write-Line "$Entry GLOBAL-DISCOVERY-* -Sport BMX-Racing -Format xlsx" 'discover the parameters, then run'
     Write-Host '  -Sport resolves the sport ID, the statistic type and owner, and probes' -ForegroundColor DarkGray
     Write-Host '  for the physical shard. Statements needing a value picked from a summary' -ForegroundColor DarkGray
     Write-Host '  result are listed and skipped, never guessed. An explicit -SportId or' -ForegroundColor DarkGray
     Write-Host '  -Params wins over a discovered value.' -ForegroundColor DarkGray
 
     Write-Section 'FOLLOW THE DRILL-DOWNS TOO'
-    Write-Line "$Entry GLOBAL-DISCOVERY-* -Sport BMX -Chain -Format xlsx" 'summaries and their details, one command'
+    Write-Line "$Entry GLOBAL-DISCOVERY-* -Sport BMX-Racing -Chain -Format xlsx" 'summaries and their details, one command'
     Write-Line '-ChainTop 3,2' 'values per level; default 3 then 2'
     Write-Line '-ChainMax 40' 'ceiling on chained statements for the run'
     Write-Host '  A skipped drill-down names its own source: GLOBAL_QUERIES writes' -ForegroundColor DarkGray
@@ -5716,7 +5789,7 @@ if ($Info) {
     Write-Host '  not pursued keeps a SKIPPED row of its own in the Overview.' -ForegroundColor DarkGray
 
     Write-Section 'PATTERNS ALONGSIDE A RUN'
-    Write-Line "$Entry GLOBAL-DQ-* -Sport BMX -WithPatterns -Format xlsx" 'DQ plus the patterns'
+    Write-Line "$Entry GLOBAL-DQ-* -Sport BMX-Racing -WithPatterns -Format xlsx" 'DQ plus the patterns'
     Write-Host '  Adds every PATTERNS.sql statement whose parameters -Sport can supply:' -ForegroundColor DarkGray
     Write-Host '  the round-type and name-pattern summaries. A drill-down is left out,' -ForegroundColor DarkGray
     Write-Host '  its value being one you pick out of a summary and run separately.' -ForegroundColor DarkGray
@@ -6094,6 +6167,20 @@ if ($sportIdentity) {
             $script:ClientScopeForm = 'complement'
         }
     }
+
+    # Read from the same table the statements are expanded from, so a sport confined to part of
+    # a database sport is confined by the file that documents it and not by a switch somebody
+    # has to remember. A sport that declares nothing here is the whole of its database sport
+    # and every statement goes out as written.
+    if ($paramTable.ContainsKey($DisciplineParameter)) {
+        $script:DisciplineIds = @([string]$paramTable[$DisciplineParameter] -split ',' |
+            ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ })
+        if ($script:DisciplineIds.Count -gt 0) {
+            Write-Host ("  {0,-30} this sport is {1} discipline(s) of a larger database sport: {2}" -f `
+                    $DisciplineParameter, $script:DisciplineIds.Count,
+                    ($script:DisciplineIds -join ', ')) -ForegroundColor DarkGray
+        }
+    }
     Write-Host ''
 }
 
@@ -6104,6 +6191,12 @@ if ($PSBoundParameters.ContainsKey('SportId')) { $paramTable['SPORT_ID'] = $Spor
 $skipped = @()
 $runnable = @()
 $registryTrimmed = @()
+# Statements this run could not confine to the sport's disciplines, because they carry no
+# marker. Collected rather than counted so the report can name them: on a sport that is a
+# slice of a database sport, each one is a check reporting the neighbouring sport's rows as
+# though they were this sport's, and knowing which is the difference between reading the
+# board and trusting it.
+$disciplineUnmarked = @()
 
 $notApplicable = @{}
 if ($sportIdentity) { $notApplicable = Get-SportNotApplicable -SportName $ResolvedSportSlug }
@@ -6176,6 +6269,15 @@ foreach ($job in $jobs) {
         # report a scope they did not ask for.
         $wide = Enable-TemplateFilter -Text $job.Sql -TemplateIds $script:ClientScopeInScopeIds
         if ($wide.Activated -gt 0) { $job.Sql = $wide.Sql }
+    }
+
+    # After the template filters and never instead of them. The two answer different questions
+    # - which tournaments the client takes, and which disciplines this sport is - and a sport
+    # can need both at once, as BMX-Racing does.
+    if ($script:DisciplineIds.Count -gt 0) {
+        $confined = Enable-DisciplineFilter -Text $job.Sql -DisciplineIds $script:DisciplineIds
+        if ($confined.Activated -gt 0) { $job.Sql = $confined.Sql }
+        else { $disciplineUnmarked += $job.CheckId }
     }
 
     # A statement marking no optional registry branch is run unchanged rather than skipped.
@@ -6271,6 +6373,13 @@ if ($skipped.Count -gt 0) {
     Write-Host ''
 }
 
+if ($disciplineUnmarked.Count -gt 0) {
+    # Yellow and named, because this is not a tidy-up note. Every statement listed here ran
+    # across the whole database sport while the board it writes to says one discipline of it,
+    # and nothing downstream can tell the difference afterwards.
+    Write-Host ("Not confined to this sport's disciplines, so run across the whole database sport - {0}: {1}" -f `
+            $disciplineUnmarked.Count, ($disciplineUnmarked -join ', ')) -ForegroundColor Yellow
+}
 if ($registryTrimmed.Count -gt 0) {
     Write-Host ("Registry branch dropped from {0}: {1}" -f $registryTrimmed.Count, ($registryTrimmed -join ', ')) -ForegroundColor DarkGray
     Write-Host ''

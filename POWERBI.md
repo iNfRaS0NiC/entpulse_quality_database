@@ -492,6 +492,51 @@ unchanged. Where the exclusion leaves a check with nothing to audit, the sport r
 `Out of client scope` rather than deprecating the CheckID — `TOOLS/README.md` owns that word,
 `README.md` owns why the client is a boundary at all.
 
+## The discipline boundary
+
+A second boundary, on the sports where a `sport.id` holds more than one sport. `sport.id` 58 is
+called BMX and contests Racing, Time Trial and Freestyle; the first two are one sport to a
+reader of a board and the third is another. A statement anchored on the sport alone reports all
+three as one, which is what `SPORTS/BMX-Racing.md` and `SPORTS/BMX-Freestyle.md` were separated
+to stop.
+
+Where it goes depends on which kind of statement carries it, and the reason is the same one the
+client boundary gives: a boundary has to survive to whoever executes the statement.
+
+**A GLOBAL template carries a commented marker**, which `TOOLS/Run-Query.ps1` activates for a
+sport declaring `DISCIPLINE_ID_LIST` and leaves alone for every other sport:
+
+```sql
+  -- AND EXISTS (SELECT 1 FROM object_discipline od WHERE od.object_typeFK = 5 AND od.objectFK = e.id AND od.disciplineFK IN (<discipline_ids>) AND od.del = 'no')
+```
+
+That is not the weaker half of the client boundary's rule. A template holding `{{...}}` cannot
+be executed by anybody as it stands, so the runner is the only path out of it, and what the
+runner publishes - to the board, and from there to PowerBI - is the expanded and activated text.
+A boundary written into a template would reach exactly the same executions and would also reach
+the fifteen sports that are whole sports, each of which would then pay a join for a boundary
+it does not have.
+
+**A sport statement writes the predicate out**, ids and all, exactly as it writes out the
+client boundary and for the same reason: it holds no placeholder, so it can be run straight from
+`POWERBI_QUERIES/<SportSlug>.sql` by a person who never went through the runner.
+
+Rules:
+
+- **every branch that can reach a discipline carries it**, findings and coverage alike, or
+  `eligible_count` is counted over a population the findings never saw;
+- **the path is written by the statement, not by the runner**. There is no single route from an
+  audited object to its discipline: an event owns one at `object_discipline` owner type 5, a
+  statistic at owner type 83 or through `statistic_config` Event id, and a stage, tournament,
+  template or participant only through their events. The statement knows which it audits;
+- **a statement that cannot reach a discipline carries neither**, and audits the database sport
+  whole. The run names it in yellow and the sport file says so, because that check's board is
+  then reporting the neighbouring sport's rows as this sport's;
+- **the alias inside a marker must be free in that statement**. Nothing checks it.
+
+Sports that are the whole of their database sport declare no `DISCIPLINE_ID_LIST`, reach none of
+this, and are sent unchanged. `TOOLS/README.md` owns the mechanism.
+
 ## Mandatory scope-limiting contract
 
 Every approved query must include at least one safe commented filter suitable for
