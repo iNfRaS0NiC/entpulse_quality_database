@@ -992,6 +992,144 @@ reach 11 are all in finals, where 20 is the correct ceiling and they stay clean.
 closed for the day a qualification value arrives that no qualification could have produced.
 <!-- MANUAL PASTE ZONE: 7 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
+## Ten Comp.Rank checks, approved on 2026-09-04
+
+The layer was read the same day and every candidate was run and read before it was numbered.
+All ten are GLOBAL templates instantiated through the registry, none is an authored sport
+statement, and all ten are `Actionable`. Measured 2026-09-04, in each check's own scope — which
+excludes the IOC-purpose templates, the twenty-five out-of-scope templates and the seasons
+before 2004:
+
+| CheckID | Template and what it asserts | Findings | Eligible |
+|---|---|---:|---:|
+| `Biathlon-DQ-089` | `GLOBAL-DQ-011 COMP.RANK_SETTINGS_MISSING_START_OR_END_DATE` — a ranking with no configured start or end date | 0 | 2849 |
+| `Biathlon-DQ-090` | `GLOBAL-DQ-012 COMP.RANK_RESULTS_RANK_INVALID_OR_MISSING` — a Rank that is missing without a Comment, or is not a positive integer | 2 | 2799 |
+| `Biathlon-DQ-091` | `GLOBAL-DQ-028 COMP.RANK_RESULTS_TIME_DIFFERENCE_FORMAT_MISMATCH_TO_RANK` — the leader/gap convention broken | 4 | 2799 |
+| `Biathlon-DQ-092` | `GLOBAL-DQ-035 COMP.RANK_SETTINGS_MISSING_CORE_FIELDS` — a ranking with no name, Gender setting, country or city, or a placeholder country | 2849 | 2849 |
+| `Biathlon-DQ-093` | `GLOBAL-DQ-057 COMP.RANK_RESULTS_COMMENT_INVALID_OR_CONTRADICTED` — a Comment outside the status vocabulary, or one marking a competitor unclassified while a Rank, Time or Medal is stored | 118 | 14113 |
+| `Biathlon-DQ-094` | `GLOBAL-DQ-070 COMP.RANK_RESULTS_VALUE_BLANK` — a data row stored with an empty value | 0 | 178768 |
+| `Biathlon-DQ-095` | `GLOBAL-DQ-077 COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC` — a numeric field holding something that is not a number | 0 | 2799 |
+| `Biathlon-DQ-096` | `GLOBAL-DQ-099 COMP.RANK_VALUE_BELONGS_TO_ANOTHER_FIELD` — a value that belongs to a different field than the one holding it | 0 | 793308 |
+| `Biathlon-DQ-097` | `GLOBAL-DQ-121 COMP.RANK_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT` — a comma for a decimal point, or differing decimal places | 0 | 2799 |
+| `Biathlon-DQ-098` | `GLOBAL-DQ-131 COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING` — a ranked competitor with no organization | 2799 | 2799 |
+
+**`Biathlon-DQ-092` reports 2849 of 2849, and 2847 of those rows say one thing: no city.**
+Only two say `gender`, and no row anywhere is missing a name or a country. This is one storage
+habit reported 2847 times rather than 2847 defects, and it is the shape Cycling already met -
+`GLOBAL-DQ-035` reports 1795 of 1795 there, every row `city` and nothing else. That sport's
+review settled it on 2026-08-17: the column is simply not filled and it should be. The same
+reading is taken here, by the user's decision of 2026-09-04, which is also why the two `gender`
+rows are worth having - nothing else in the package reports them.
+
+**`Biathlon-DQ-098` reports 2799 of 2799.** Fourteen of the sixteen documented sports already
+carry this template and every one of them is `Approved`; an unfilled organization is a defect
+rather than a structural absence, and this is where it is said.
+
+**`Biathlon-DQ-093` splits in two.** 107 rows are `COMMENT_INVALID_VALUE` and they are exactly
+the divergence measured that day: 24 values reading `dsq`, which `disqualified` already spells,
+and 83 written `ff N` with a space, which `ff1` to `ff45` already spell. The other 11 are
+`COMMENT_NO_RESULT_WITH_RANK` - a competitor marked as not finishing who nonetheless carries a
+rank - and that is a different defect from a spelling, found only because the check was run.
+
+**`Biathlon-DQ-095` returns nothing, and the defect it looks for exists.** Fourteen values
+reading `LPD` sit in the numeric `1271 Points` field, all of them on one statistic - 254476,
+`4 x 6 km Relay Mixed (athletes)`, season 2023 - under template `12568 World Championships
+(IOC)`, which is an IOC template and is also in `OUT_OF_SCOPE_TEMPLATE_ID_LIST`. The check is
+outside it on both counts. Its `eligible_count` is 2799 rather than 0, so this is a correct
+scope over clean data and not a misdirected one.
+
+## Thirty-six more Comp.Rank checks, approved the same day
+
+The rest of the layer, run and read on 2026-09-04 before any of it was numbered. Three
+parameters were written first, each with one reading and each the same value in every sport
+that declares it: `DATA_TEAM_TYPE_ID` 1429, `CONFIG_EVENT_ID_TYPE_ID` 1471 and
+`DATA_DEPRECATED_DURATION_TYPE_ID` 1272. All thirty-six ran, none failed, none was skipped.
+All are GLOBAL templates instantiated through the registry and all are `Actionable`.
+
+| CheckID | Template and family | Findings | Eligible |
+|---|---|---:|---:|
+| `Biathlon-DQ-099` | `GLOBAL-DQ-010 COMP.RANK_NO_PARTICIPANTS` | 50 | 2849 |
+| `Biathlon-DQ-100` | `GLOBAL-DQ-022 COMP.RANK_SETTINGS_MISSING_AGE_CLASS` | 2 | 2849 |
+| `Biathlon-DQ-101` | `GLOBAL-DQ-023 COMP.RANK_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN` | 2 | 2849 |
+| `Biathlon-DQ-102` | `GLOBAL-DQ-024 COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_STAGE` | 29 | 2847 |
+| `Biathlon-DQ-103` | `GLOBAL-DQ-025 COMP.RANK_SETTINGS_DATE_RANGE_MISMATCH_EVENTS` | 8 | 2847 |
+| `Biathlon-DQ-104` | `GLOBAL-DQ-026 COMP.RANK_SETTINGS_MEDAL_SET_INVALID` | 3 | 2849 |
+| `Biathlon-DQ-105` | `GLOBAL-DQ-027 COMP.RANK_RESULTS_MEDAL_INVALID_VALUE` | 0 | 12535 |
+| `Biathlon-DQ-106` | `GLOBAL-DQ-029 COMP.RANK_RESULTS_DEPRECATED_DURATION_USED` | 0 | 2849 |
+| `Biathlon-DQ-107` | `GLOBAL-DQ-030 COMP.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT` | 10 | 2799 |
+| `Biathlon-DQ-108` | `GLOBAL-DQ-031 COMP.RANK_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE` | 0 | 172172 |
+| `Biathlon-DQ-109` | `GLOBAL-DQ-032 COMP.RANK_RESULTS_NO_RANK_DATA_FOR_PARTICIPANTS` | 0 | 2799 |
+| `Biathlon-DQ-110` | `GLOBAL-DQ-033 COMP.RANK_RESULTS_MISSING_PHASE` | 1 | 2799 |
+| `Biathlon-DQ-111` | `GLOBAL-DQ-040 EVENT_FINAL_WITHOUT_COMP.RANK` | 188 | 2506 |
+| `Biathlon-DQ-112` | `GLOBAL-DQ-041 COMP.RANK_RESULTS_MEDAL_ON_NON_MEDAL_ROUND_PHASE` | 0 | 12535 |
+| `Biathlon-DQ-113` | `GLOBAL-DQ-042 EVENT_FINAL_PARTICIPANT_NOT_IN_COMP.RANK` | 12 | 2284 |
+| `Biathlon-DQ-114` | `GLOBAL-DQ-044 COMP.RANK_RESULTS_GENDER_MISMATCH` | 8 | 2799 |
+| `Biathlon-DQ-115` | `GLOBAL-DQ-046 COMP.RANK_RESULTS_TIME_FULL_TIME_MISMATCH_TO_RANK` | 627 | 2799 |
+| `Biathlon-DQ-116` | `GLOBAL-DQ-051 COMP.RANK_NAME_FORMAT_INVALID` | 42 | 545 |
+| `Biathlon-DQ-117` | `GLOBAL-DQ-060 COMP.RANK_RESULTS_DUPLICATE_ROWS` | 0 | 2799 |
+| `Biathlon-DQ-118` | `GLOBAL-DQ-064 COMP.RANK_ATHLETE_TEAM_MISSING_OR_INVALID` | 0 | 38565 |
+| `Biathlon-DQ-119` | `GLOBAL-DQ-065 COMP.RANK_TEAM_ATHLETE_COUNT_UNEVEN` | 37 | 514 |
+| `Biathlon-DQ-120` | `GLOBAL-DQ-066 COMP.RANK_TEAM_GENDER_BALANCE_UNEVEN` | 2 | 148 |
+| `Biathlon-DQ-121` | `GLOBAL-DQ-072 COMP.RANK_RESULTS_MEDAL_RANK_MISMATCH` | 3 | 12535 |
+| `Biathlon-DQ-122` | `GLOBAL-DQ-095 COMP.RANK_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT` | 0 | 2799 |
+| `Biathlon-DQ-123` | `GLOBAL-DQ-098 COMP.RANK_TEAM_FIELD_UNUSED_IN_TEAM_STATISTIC` | 0 | 2278 |
+| `Biathlon-DQ-124` | `GLOBAL-DQ-100 COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT` | 36 | 2847 |
+| `Biathlon-DQ-125` | `GLOBAL-DQ-101 COMP.RANK_SETTINGS_EVENT_ID_INVALID_OR_OUTSIDE_TOURNAMENT` | 0 | 2847 |
+| `Biathlon-DQ-126` | `GLOBAL-DQ-103 COMP.RANK_PARTICIPANT_DUPLICATE_IN_STATISTIC` | 0 | 2799 |
+| `Biathlon-DQ-127` | `GLOBAL-DQ-105 COMP.RANK_SETTINGS_SCALAR_DUPLICATE_ROWS` | 0 | 2849 |
+| `Biathlon-DQ-128` | `GLOBAL-DQ-106 COMP.RANK_UNEXPECTED_OWNER_TYPE` | 0 | 2849 |
+| `Biathlon-DQ-129` | `GLOBAL-DQ-110 COMP.RANK_DISCIPLINE_CONTRADICTS_LINKED_EVENT` | 40 | 2847 |
+| `Biathlon-DQ-130` | `GLOBAL-DQ-113 COMP.RANK_PARTICIPANT_TYPE_MIXED` | 0 | 2799 |
+| `Biathlon-DQ-131` | `GLOBAL-DQ-115 COMP.RANK_PARTICIPANT_REFERENCE_INVALID` | 0 | 178768 |
+| `Biathlon-DQ-132` | `GLOBAL-DQ-136 COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR` | 0 | 0 |
+| `Biathlon-DQ-133` | `GLOBAL-DQ-143 COMP.RANK_ATHLETE_RANKING_DISAGREES_WITH_ITS_TEAM_TWIN` | 6 | 514 |
+| `Biathlon-DQ-134` | `GLOBAL-DQ-145 COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL` | 0 | 0 |
+
+**`Biathlon-DQ-115` was the only one over the 200-row gate, and the reading that would have
+excused it is wrong.** `GLOBAL-DQ-046` returns 627 statistics of 2799, and 611 of them are
+relays, which invites the conclusion that a relay leg simply carries no individual time. It
+does not hold. Measured 2026-09-04 across the same scope: individual statistics lack a Time on
+38 of 124 348 ranked entries, which is nothing, and relays lack one on 5564 of 37 518 in the
+`(athletes)` form and 1490 of 10 306 in the plain form - about one in seven. Relays do store
+individual times in 85 per cent of their entries, so a relay entry holding a Rank and no Time
+is a gap rather than the way this sport writes relays. The check is `Actionable` on that
+measurement.
+
+**`Biathlon-DQ-111` reports 188 and splits in two.** 104 are `TOURNAMENT_HAS_NO_COMP_RANK`, a
+tournament carrying no ranking at all, and 84 are `FINAL_EVENT_NOT_IN_ANY_COMP_RANK`, a final
+absent from every ranking that does exist. They are different repairs and the check separates
+them itself.
+
+**`Biathlon-DQ-132` and `Biathlon-DQ-134` are sentinels, and are recorded as such.** Both read
+`GLOBAL-DQ-136` and `GLOBAL-DQ-145`, which ask whether a ranked competitor's organization
+contradicts their country, and both return `eligible_count = 0`. That zero is the second of the
+two things a zero can be - a correct scope over a population that is legitimately empty today,
+not a misdirected one - and what settles it is `Biathlon-DQ-098`, which reports the organization
+missing on 2799 of 2799. There is no organization for these two to disagree with. The day the
+field is filled is the day they start reading it.
+
+**`Biathlon-DQ-108` audits 172 172 ranked records and finds nothing.** `GLOBAL-DQ-031` asks
+whether a place sits above the size of the field it was awarded in, at this sport's
+`RANK_MAX_PLAUSIBLE` of 250, and no place anywhere in the layer does. Lowering the ceiling would
+not find more; the field would have to reach it first.
+
+**Fifteen of the thirty-six return nothing today** - `Biathlon-DQ-105` through `-110` in part,
+and `-112`, `-117`, `-118`, `-122`, `-123`, `-125` through `-128`, `-130` and `-131`. Each holds
+an invariant the layer currently satisfies, and none has an `eligible_count` of zero, so every
+one of them is a correct scope over clean data rather than a scope pointing at nothing.
+
+**Two Comp.Rank templates are deliberately not instantiated, and neither is `Not applicable`.**
+`GLOBAL-DQ-125 COMP.RANK_MEDAL_AWARDED_OUTSIDE_MEDAL_TEMPLATE` needs `MEDAL_TEMPLATE_ID_LIST`,
+which states which tournament templates are medal competitions. It is deliberately not a
+round-type list - the template's own prerequisite says `MEDAL_ROUND_TYPE_LIST` holds in the
+direction "a medal may only appear here" and fails in the direction "these competitions award
+medals" - and it is not read off the data, since a template that awards medals and holds none
+today still belongs in it. `GLOBAL-DQ-134 COMP.RANK_RESULTS_RANK_SEQUENCE_BROKEN` needs
+`COMP_RANK_ENTRY_SIZE_LIST`, how many participant rows make up one place, and also requires the
+sport's tie convention to be confirmed first: skip-after-tie is what ranking sports store, and a
+sport ranking densely would report its normal shape as a defect. Neither has been measured here.
+
+
 ## Open questions
 
 Thirteen questions were raised while this sport was opened. **Nine were measured and closed
