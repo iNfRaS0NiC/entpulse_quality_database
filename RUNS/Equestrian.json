@@ -30908,6 +30908,58 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "02.09.2026 09-12-57",
+                     "startedUtc":  "2026-09-02T07:12:57Z",
+                     "output":  "",
+                     "commit":  "15030a1aa286+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Equestrian-DQ-111",
+                                        "runKey":  "Equestrian-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  5528,
+                                        "findings":  5527,
+                                        "eligible":  5527,
+                                        "seconds":  2.8,
+                                        "status":  "OK",
+                                        "sqlHash":  "00af31e5a09e"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  40.3,
+                                   "valueRequests":  6,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  10,
+                                                  "planning the changes":  8.9,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  1.1,
+                                                  "clearing stale rows":  9.1,
+                                                  "writing values":  9.8,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Equestrian-DQ-111":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          }
+                                }
                  }
              ],
     "sheetId":  "15DvzC1TLzhMB9bXeyy-2OUa0Xmfo0Mn84-isqYSs9cU"

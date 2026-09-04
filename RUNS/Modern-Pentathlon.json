@@ -29875,6 +29875,58 @@
                                                                      "checkBy":  ""
                                                                  }
                                 }
+                 },
+                 {
+                     "runId":  "02.09.2026 09-16-39",
+                     "startedUtc":  "2026-09-02T07:16:39Z",
+                     "output":  "",
+                     "commit":  "15030a1aa286+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-105",
+                                        "runKey":  "Modern-Pentathlon-DQ-105",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  10034,
+                                        "findings":  10033,
+                                        "eligible":  10033,
+                                        "seconds":  4.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "aae50962014b"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  47.9,
+                                   "valueRequests":  7,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  8.4,
+                                                  "planning the changes":  8.1,
+                                                  "adding and sizing tabs":  1,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  11.7,
+                                                  "writing values":  16.1,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Modern-Pentathlon-DQ-105":  {
+                                                                     "status":  "Not reviewed",
+                                                                     "checkBy":  ""
+                                                                 }
+                                }
                  }
              ],
     "sheetId":  "1kWKqdBc2ZD1AYcMEzGUmZHzgjfEgnLyf8AfbCvkxuKs"

@@ -11648,6 +11648,79 @@
                                                             "checkBy":  ""
                                                         }
                                 }
+                 },
+                 {
+                     "runId":  "Handball 02.09.2026 09-15-06",
+                     "startedUtc":  "2026-09-02T07:15:04Z",
+                     "output":  "D:\\SQL\u0027s Output\\Handball 02.09.2026 09-15-06",
+                     "commit":  "15030a1aa286+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-083",
+                                        "runKey":  "Handball-DQ-083",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  13099,
+                                        "findings":  13098,
+                                        "eligible":  13098,
+                                        "seconds":  9.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "66f9637905aa"
+                                    },
+                                    {
+                                        "checkId":  "Handball-DQ-114",
+                                        "runKey":  "Handball-DQ-114",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_OUTCOME_WORD_CONTRADICTS_FINAL_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 668 Event outcome, 4 Final Result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  12900,
+                                        "seconds":  1.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "9c2b864f87f0"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  43.9,
+                                   "valueRequests":  7,
+                                   "tabsConfirmed":  2,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  8.2,
+                                                  "planning the changes":  6.3,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  13.8,
+                                                  "writing values":  13.3,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-083":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        },
+                                    "Handball-DQ-114":  {
+                                                            "status":  "Clean",
+                                                            "checkBy":  ""
+                                                        }
+                                }
                  }
              ],
     "sheetId":  "1AUVNbf1U-OZO6V2VZZ9QbMBBaxMtzdWjsACfML_9sQI"

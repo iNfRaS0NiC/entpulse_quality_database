@@ -41259,6 +41259,110 @@
                                                               "checkBy":  ""
                                                           }
                                 }
+                 },
+                 {
+                     "runId":  "02.09.2026 08-34-19",
+                     "startedUtc":  "2026-09-02T06:34:19Z",
+                     "output":  "",
+                     "commit":  "64d5b9358c1c+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-114",
+                                        "runKey":  "Ice-Hockey-DQ-114",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7018,
+                                        "seconds":  11.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "0a290aaf886f"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  28.6,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  5.5,
+                                                  "planning the changes":  5.2,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  6.7,
+                                                  "writing values":  8.4,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.7
+                                              }
+                               },
+                     "review":  {
+                                    "Ice-Hockey-DQ-114":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          }
+                                }
+                 },
+                 {
+                     "runId":  "02.09.2026 09-16-03",
+                     "startedUtc":  "2026-09-02T07:16:03Z",
+                     "output":  "",
+                     "commit":  "15030a1aa286+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-114",
+                                        "runKey":  "Ice-Hockey-DQ-114",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  7,
+                                        "findings":  6,
+                                        "eligible":  7024,
+                                        "seconds":  0.6,
+                                        "status":  "OK",
+                                        "sqlHash":  "f4b995b9a2d0"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  32.5,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  8.6,
+                                                  "planning the changes":  8.3,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  4.9,
+                                                  "writing values":  8.3,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Ice-Hockey-DQ-114":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          }
+                                }
                  }
              ],
     "sheetId":  "1Vy0mfddOI9cWkWEpeM7oA12BTDuvUB-nevFZwQANn94"

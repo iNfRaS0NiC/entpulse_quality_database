@@ -35103,6 +35103,58 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "02.09.2026 09-10-37",
+                     "startedUtc":  "2026-09-02T07:10:37Z",
+                     "output":  "",
+                     "commit":  "15030a1aa286+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Curling-DQ-104",
+                                        "runKey":  "Curling-DQ-104",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  17522,
+                                        "findings":  17521,
+                                        "eligible":  17521,
+                                        "seconds":  5.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "7868ef100904"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  59.2,
+                                   "valueRequests":  9,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  9.5,
+                                                  "planning the changes":  8.8,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  18.4,
+                                                  "writing values":  19.2,
+                                                  "confirming the rows arrived":  0.5,
+                                                  "colouring the trend":  0.6,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.7
+                                              }
+                               },
+                     "review":  {
+                                    "Curling-DQ-104":  {
+                                                           "status":  "Not reviewed",
+                                                           "checkBy":  ""
+                                                       }
+                                }
                  }
              ],
     "sheetId":  "1zv6UoQOdEVR-SNJSakLy7xWVo1fh-jsL8Y-7mybcC3g"

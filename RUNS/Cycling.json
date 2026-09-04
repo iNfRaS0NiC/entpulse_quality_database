@@ -32991,6 +32991,110 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "02.09.2026 09-11-50",
+                     "startedUtc":  "2026-09-02T07:11:50Z",
+                     "output":  "",
+                     "commit":  "15030a1aa286+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-102",
+                                        "runKey":  "Cycling-DQ-102",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  9620,
+                                        "findings":  9619,
+                                        "eligible":  9619,
+                                        "seconds":  11.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "fc64db7a2df0"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  48.9,
+                                   "valueRequests":  7,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  14.8,
+                                                  "planning the changes":  7.1,
+                                                  "adding and sizing tabs":  1,
+                                                  "hiding columns and colouring Rows":  0.7,
+                                                  "clearing stale rows":  12,
+                                                  "writing values":  10.7,
+                                                  "confirming the rows arrived":  0.8,
+                                                  "colouring the trend":  0.8,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Cycling-DQ-102":  {
+                                                           "status":  "Not reviewed",
+                                                           "checkBy":  ""
+                                                       }
+                                }
+                 },
+                 {
+                     "runId":  "02.09.2026 10-18-33",
+                     "startedUtc":  "2026-09-02T08:18:33Z",
+                     "output":  "",
+                     "commit":  "0545edceeb72+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-087",
+                                        "runKey":  "Cycling-DQ-087",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FULL_TIME_ARITHMETIC_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration, 557 Full-time duration",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Sentinel",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  0,
+                                        "seconds":  17.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "38587a1a0893"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  23.2,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  10.8,
+                                                  "planning the changes":  2.7,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.6,
+                                                  "clearing stale rows":  1.2,
+                                                  "writing values":  6.3,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Cycling-DQ-087":  {
+                                                           "status":  "Not reviewed",
+                                                           "checkBy":  ""
+                                                       }
+                                }
                  }
              ],
     "sheetId":  "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs"

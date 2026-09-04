@@ -4676,6 +4676,58 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "02.09.2026 09-17-37",
+                     "startedUtc":  "2026-09-02T07:17:37Z",
+                     "output":  "",
+                     "commit":  "15030a1aa286+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Mountain-Bike-DQ-069",
+                                        "runKey":  "Mountain-Bike-DQ-069",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  841,
+                                        "findings":  840,
+                                        "eligible":  840,
+                                        "seconds":  0.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "e2c837355267"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  28.4,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  8.4,
+                                                  "planning the changes":  7.6,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.6,
+                                                  "clearing stale rows":  4.2,
+                                                  "writing values":  6,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Mountain-Bike-DQ-069":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
                  }
              ],
     "sheetId":  "1-ewyxEyctKW1q_fWwwy0qYff5Y7XN7njFra2IjwSo-M"

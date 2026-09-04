@@ -36646,6 +36646,58 @@
                                                         "checkBy":  ""
                                                     }
                                 }
+                 },
+                 {
+                     "runId":  "02.09.2026 09-13-44",
+                     "startedUtc":  "2026-09-02T07:13:44Z",
+                     "output":  "",
+                     "commit":  "15030a1aa286+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Golf-DQ-109",
+                                        "runKey":  "Golf-DQ-109",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  15599,
+                                        "findings":  15598,
+                                        "eligible":  16167,
+                                        "seconds":  7.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "4b6978e2af75"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  64.5,
+                                   "valueRequests":  9,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  14.6,
+                                                  "planning the changes":  11.1,
+                                                  "adding and sizing tabs":  0.5,
+                                                  "hiding columns and colouring Rows":  0.7,
+                                                  "clearing stale rows":  19.3,
+                                                  "writing values":  16.6,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Golf-DQ-109":  {
+                                                        "status":  "IT Fix",
+                                                        "checkBy":  ""
+                                                    }
+                                }
                  }
              ],
     "sheetId":  "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM"

@@ -15098,6 +15098,110 @@
                                                             "checkBy":  ""
                                                         }
                                 }
+                 },
+                 {
+                     "runId":  "02.09.2026 09-19-27",
+                     "startedUtc":  "2026-09-02T07:19:27Z",
+                     "output":  "",
+                     "commit":  "15030a1aa286+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-074",
+                                        "runKey":  "Swimming-DQ-074",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  45189,
+                                        "findings":  45188,
+                                        "eligible":  45188,
+                                        "seconds":  19,
+                                        "status":  "OK",
+                                        "sqlHash":  "dd8958a19c2c"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  86,
+                                   "valueRequests":  15,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  9,
+                                                  "planning the changes":  8.5,
+                                                  "adding and sizing tabs":  0.5,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  39.2,
+                                                  "writing values":  26.3,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.6
+                                              }
+                               },
+                     "review":  {
+                                    "Swimming-DQ-074":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "02.09.2026 10-19-48",
+                     "startedUtc":  "2026-09-02T08:19:48Z",
+                     "output":  "",
+                     "commit":  "0545edceeb72+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Swimming-DQ-041",
+                                        "runKey":  "Swimming-DQ-041",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FULL_TIME_ARITHMETIC_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  18,
+                                        "findings":  17,
+                                        "eligible":  41147,
+                                        "seconds":  34.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "de4128ea5520"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  19.4,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  7.3,
+                                                  "planning the changes":  1.6,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.6,
+                                                  "clearing stale rows":  0.8,
+                                                  "writing values":  6.2,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  1.9,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Swimming-DQ-041":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        }
+                                }
                  }
              ],
     "sheetId":  "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g"

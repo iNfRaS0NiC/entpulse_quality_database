@@ -43517,6 +43517,110 @@
                                                              "checkBy":  ""
                                                          }
                                 }
+                 },
+                 {
+                     "runId":  "02.09.2026 09-22-37",
+                     "startedUtc":  "2026-09-02T07:22:37Z",
+                     "output":  "",
+                     "commit":  "15030a1aa286+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-102",
+                                        "runKey":  "Triathlon-DQ-102",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  84,
+                                        "findings":  83,
+                                        "eligible":  3688,
+                                        "seconds":  2.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "b3b2de611f2c"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  37.7,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  10.6,
+                                                  "planning the changes":  7.5,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  1.4,
+                                                  "clearing stale rows":  5.2,
+                                                  "writing values":  8.4,
+                                                  "confirming the rows arrived":  2,
+                                                  "colouring the trend":  1.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.7
+                                              }
+                               },
+                     "review":  {
+                                    "Triathlon-DQ-102":  {
+                                                             "status":  "Reopened",
+                                                             "checkBy":  "Lyudmila"
+                                                         }
+                                }
+                 },
+                 {
+                     "runId":  "02.09.2026 10-21-02",
+                     "startedUtc":  "2026-09-02T08:21:02Z",
+                     "output":  "",
+                     "commit":  "0545edceeb72+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-052",
+                                        "runKey":  "Triathlon-DQ-052",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FULL_TIME_ARITHMETIC_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3662,
+                                        "seconds":  10.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "bd4a23478a22"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  20.1,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  5.9,
+                                                  "planning the changes":  2.8,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.7,
+                                                  "clearing stale rows":  1.3,
+                                                  "writing values":  7.8,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Triathlon-DQ-052":  {
+                                                             "status":  "Reopened",
+                                                             "checkBy":  "Lyubomir"
+                                                         }
+                                }
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"

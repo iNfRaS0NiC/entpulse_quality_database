@@ -15275,6 +15275,110 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "02.09.2026 09-21-30",
+                     "startedUtc":  "2026-09-02T07:21:30Z",
+                     "output":  "",
+                     "commit":  "15030a1aa286+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Track-Cycling-DQ-015",
+                                        "runKey":  "Track-Cycling-DQ-015",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  19246,
+                                        "findings":  19245,
+                                        "eligible":  19245,
+                                        "seconds":  4.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "93a81ca3f505"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  53.2,
+                                   "valueRequests":  9,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  8.2,
+                                                  "planning the changes":  5.3,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  5.7,
+                                                  "clearing stale rows":  18.3,
+                                                  "writing values":  14.1,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Track-Cycling-DQ-015":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
+                 },
+                 {
+                     "runId":  "02.09.2026 10-20-43",
+                     "startedUtc":  "2026-09-02T08:20:43Z",
+                     "output":  "",
+                     "commit":  "0545edceeb72+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Track-Cycling-DQ-071",
+                                        "runKey":  "Track-Cycling-DQ-071",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FULL_TIME_ARITHMETIC_MISMATCH",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  9,
+                                        "seconds":  1.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "29aebe4cfbce"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  17.3,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  6.7,
+                                                  "planning the changes":  1.3,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.6,
+                                                  "clearing stale rows":  1.2,
+                                                  "writing values":  5.9,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Track-Cycling-DQ-071":  {
+                                                                 "status":  "Clean",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
                  }
              ],
     "sheetId":  "1sGFr9ANBR5Y4bCFGmI7F4mZHUE2U8Que2JLccMrwBGk"
