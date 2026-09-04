@@ -832,6 +832,63 @@ Test-That 'an already active filter is not activated twice' {
     Assert-True ($twice.Sql -match [regex]::Escape('IN (44)')) 'the first list should stand'
 }
 
+Test-That 'the discipline filter is activated in every branch that carries the marker' {
+    # Same reason the template filter has to reach both branches: a findings branch confined to
+    # one discipline beside a coverage branch that is not would report a share of a population
+    # the findings never looked at.
+    $sql = @"
+FROM event e
+WHERE e.del = 'no'
+  -- AND EXISTS (SELECT 1 FROM object_discipline od WHERE od.object_typeFK = 5 AND od.objectFK = e.id AND od.disciplineFK IN (<discipline_ids>) AND od.del = 'no')
+UNION ALL
+FROM event e2
+WHERE e2.del = 'no'
+  -- AND EXISTS (SELECT 1 FROM object_discipline od2 WHERE od2.object_typeFK = 5 AND od2.objectFK = e2.id AND od2.disciplineFK IN (<discipline_ids>) AND od2.del = 'no')
+"@
+    $out = Enable-DisciplineFilter -Text $sql -DisciplineIds @(429, 776)
+
+    Assert-Equal 2 $out.Activated 'both markers should be activated'
+    Assert-Equal 2 ([regex]::Matches($out.Sql, [regex]::Escape('disciplineFK IN (429, 776)')).Count) `
+        'both branches should carry the same list'
+    Assert-True ($out.Sql -notmatch '<discipline_ids>') 'no marker should survive'
+    Assert-True ($out.Sql -match '(?m)^  AND EXISTS') 'the marker indentation should be kept'
+}
+
+Test-That 'the discipline path is taken from the statement, not built by the runner' {
+    # There is no single path from an audited object to its discipline. An event owns one at
+    # owner type 5; a statistic owns one at 83; a stage reaches one only through its events.
+    # The statement knows which of those it is auditing and the runner does not, so whatever
+    # the marker spells out has to arrive verbatim with only the ids filled in.
+    $sql = "  -- AND EXISTS (SELECT 1 FROM object_discipline od WHERE od.object_typeFK = 83 AND od.objectFK = s.id AND od.disciplineFK IN (<discipline_ids>) AND od.del = 'no')`n" +
+           "  -- AND EXISTS (SELECT 1 FROM tournament_stage tsd JOIN event ed ON ed.tournament_stageFK = tsd.id JOIN object_discipline od3 ON od3.object_typeFK = 5 AND od3.objectFK = ed.id AND od3.disciplineFK IN (<discipline_ids>) WHERE tsd.tournamentFK = t.id)"
+    $out = Enable-DisciplineFilter -Text $sql -DisciplineIds @(430)
+
+    Assert-Equal 2 $out.Activated 'both paths should be activated'
+    Assert-True ($out.Sql -match [regex]::Escape('od.object_typeFK = 83 AND od.objectFK = s.id')) 'the statistic path should survive intact'
+    Assert-True ($out.Sql -match [regex]::Escape('JOIN event ed ON ed.tournament_stageFK = tsd.id')) 'the stage path should survive intact'
+    Assert-Equal 2 ([regex]::Matches($out.Sql, [regex]::Escape('IN (430)')).Count) 'each path should carry the list'
+}
+
+Test-That 'a statement with no discipline marker is left exactly as it was' {
+    # On a different contract from -TemplateIds, which stops a statement it cannot narrow. Most
+    # of the package audits something no discipline reaches, and skipping those would empty a
+    # batch to make a point about the few that do. The caller reports what went unconfined.
+    $sql = "SELECT 1 FROM participant p WHERE p.del = 'no'"
+    $out = Enable-DisciplineFilter -Text $sql -DisciplineIds @(429, 776)
+
+    Assert-Equal 0 $out.Activated 'nothing to activate'
+    Assert-Equal $sql $out.Sql 'the statement should be untouched'
+}
+
+Test-That 'an already active discipline filter is not activated twice' {
+    $sql = "  -- AND EXISTS (SELECT 1 FROM object_discipline od WHERE od.object_typeFK = 5 AND od.objectFK = e.id AND od.disciplineFK IN (<discipline_ids>) AND od.del = 'no')"
+    $once = Enable-DisciplineFilter -Text $sql -DisciplineIds @(429)
+    $twice = Enable-DisciplineFilter -Text $once.Sql -DisciplineIds @(430)
+
+    Assert-Equal 0 $twice.Activated 'the second pass should find no marker'
+    Assert-True ($twice.Sql -match [regex]::Escape('IN (429)')) 'the first list should stand'
+}
+
 Complete-Group
 
 # --------------------------------------------------------------------------------------
@@ -2928,8 +2985,25 @@ Test-That 'the shipped registry parses and covers every documented sport' {
 
     foreach ($sport in $indexed) {
         Assert-True ($registered -contains $sport) "$sport has no row in TOOLS/sheet-registry.json"
-        $id = [string]$registry.sports.$sport.spreadsheetId
-        Assert-True ($id.Length -gt 20) "$sport should name a document, got '$id'"
+        $entry = $registry.sports.$sport
+        $id = [string]$entry.spreadsheetId
+
+        # A sport is documented before it is published. BMX-Freestyle was separated from
+        # BMX-Racing on 2026-09-04 and written up in full with no board of its own, so the
+        # requirement is a row that says which of the two states it is in - not a document it
+        # does not have yet. The guard is unchanged where it matters: a sport with no row at
+        # all is one somebody forgot, and it still fails above.
+        $published = $true
+        if ($entry.PSObject.Properties.Name -contains 'published') { $published = [bool]$entry.published }
+
+        if ($published) {
+            Assert-True ($id.Length -gt 20) "$sport should name a document, got '$id'"
+        }
+        else {
+            Assert-Equal '' $id "$sport is marked unpublished, so it should name no document"
+            Assert-True (-not $entry.runRequests) `
+                "$sport is marked unpublished, so the worker should not be polling it"
+        }
     }
 }
 
@@ -8450,8 +8524,8 @@ Test-That 'an expectation restating the default its signal implies is reported' 
     # The block records exceptions. A value written in two places is a value that can
     # disagree with itself, which is the same reason Actionable is never written down.
     $root = Copy-RepositoryFixture -Name 'expected-restates-default'
-    Set-FixtureExpectation -Root $root -Sport 'BMX' -Block @'
-      "BMX-DQ-003": {
+    Set-FixtureExpectation -Root $root -Sport 'BMX-Racing' -Block @'
+      "BMX-Racing-DQ-003": {
         "expect": "Zero",
         "reason": "restates what an actionable check already implies"
       }
@@ -8465,8 +8539,8 @@ Test-That 'an expectation restating the default its signal implies is reported' 
 
 Test-That 'a Residual expectation without its count is reported' {
     $root = Copy-RepositoryFixture -Name 'expected-no-residual'
-    Set-FixtureExpectation -Root $root -Sport 'BMX' -Block @'
-      "BMX-DQ-003": {
+    Set-FixtureExpectation -Root $root -Sport 'BMX-Racing' -Block @'
+      "BMX-Racing-DQ-003": {
         "expect": "Residual",
         "reason": "says some rows stay behind without saying how many"
       }
@@ -8480,8 +8554,8 @@ Test-That 'a Residual expectation without its count is reported' {
 
 Test-That 'an expectation for a check with no Approved row is reported' {
     $root = Copy-RepositoryFixture -Name 'expected-unapproved'
-    Set-FixtureExpectation -Root $root -Sport 'BMX' -Block @'
-      "BMX-DQ-994": {
+    Set-FixtureExpectation -Root $root -Sport 'BMX-Racing' -Block @'
+      "BMX-Racing-DQ-994": {
         "expect": "Non-zero",
         "reason": "no registry row assigns this CheckID"
       }
@@ -8495,8 +8569,8 @@ Test-That 'an expectation for a check with no Approved row is reported' {
 
 Test-That 'an expectation outside the vocabulary is reported' {
     $root = Copy-RepositoryFixture -Name 'expected-unknown-value'
-    Set-FixtureExpectation -Root $root -Sport 'BMX' -Block @'
-      "BMX-DQ-003": {
+    Set-FixtureExpectation -Root $root -Sport 'BMX-Racing' -Block @'
+      "BMX-Racing-DQ-003": {
         "expect": "Fewer",
         "reason": "not one of the three the runner can read"
       }
@@ -8514,13 +8588,13 @@ Test-That 'a sport index row without its database name is reported' {
     $lines = @([IO.File]::ReadAllText($path) -split "`n")
     $changed = $false
     for ($i = 0; $i -lt $lines.Count; $i++) {
-        if ($lines[$i] -match '^\| 58 \| BMX \|') {
+        if ($lines[$i] -match '^\| 58 \| BMX-Racing \|') {
             $lines[$i] = $lines[$i] -replace '\|\s*BMX\s*\|\s*$', '|  |'
             $changed = $true
             break
         }
     }
-    if (-not $changed) { throw 'the BMX sport-index row was not found in the fixture copy' }
+    if (-not $changed) { throw 'the BMX-Racing sport-index row was not found in the fixture copy' }
     [IO.File]::WriteAllText($path, ($lines -join "`n"), (New-Object System.Text.UTF8Encoding $false))
 
     $run = Invoke-PackageValidator -Root $root
@@ -8528,7 +8602,10 @@ Test-That 'a sport index row without its database name is reported' {
     Assert-True ($run.Text -match 'has no exact Database sport name') "the mapping finding should be reported; output was:`n$($run.Text)"
 }
 
-Test-That 'one database sport name cannot map to two repository slugs' {
+Test-That 'a sport sharing a database name without naming its discipline is reported' {
+    # One database sport may be two repository sports, and only when each says which part of it
+    # it is. Curling declares no DISCIPLINE_ID_LIST, so pointing it at the BMX database name
+    # leaves nothing that could tell the two apart from the name alone.
     $root = Copy-RepositoryFixture -Name 'duplicate-sport-name-map'
     $path = Join-Path $root 'SPORTS.md'
     $text = [IO.File]::ReadAllText($path)
@@ -8537,8 +8614,42 @@ Test-That 'one database sport name cannot map to two repository slugs' {
 
     $run = Invoke-PackageValidator -Root $root
     Assert-Equal 1 $run.ExitCode 'validator exit code'
-    Assert-True ($run.Text -match "database sport name 'BMX' maps to more than one slug") `
-        "the duplicate mapping finding should be reported; output was:`n$($run.Text)"
+    Assert-True ($run.Text -match "'Curling' shares the database sport name 'BMX'") `
+        "the unnamed-slice finding should be reported; output was:`n$($run.Text)"
+    Assert-True ($run.Text -match 'declares no DISCIPLINE_ID_LIST') `
+        "the reason should name the missing parameter; output was:`n$($run.Text)"
+}
+
+Test-That 'two sports claiming the same discipline are reported' {
+    # The other half of the rule. Two slugs may share a database sport, but not a discipline:
+    # that is two sports claiming the same rows, and no boundary can divide them.
+    $root = Copy-RepositoryFixture -Name 'same-discipline-claimed-twice'
+    $path = Join-Path $root 'SPORTS\params.json'
+    $text = [IO.File]::ReadAllText($path)
+    $before = '"DISCIPLINE_ID_LIST": "430"'
+    if (-not $text.Contains($before)) { throw 'the BMX-Freestyle discipline list was not found in the fixture copy' }
+    $text = $text.Replace($before, '"DISCIPLINE_ID_LIST": "429"')
+    [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match 'both claim discipline 429') `
+        "the collision should be reported; output was:`n$($run.Text)"
+}
+
+Test-That 'a database sport split into two sports that each name their discipline passes' {
+    # The package as it stands: BMX-Racing declares 429 and 776, BMX-Freestyle declares 430,
+    # and they share sport.id 58 and the database sport name BMX. Nothing here should be
+    # reported, and this is the case the one-to-one rule used to refuse outright.
+    $root = Copy-RepositoryFixture -Name 'discipline-split-is-allowed'
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-True ($run.Text -notmatch 'maps to more than one slug') `
+        "a declared split should not be reported; output was:`n$($run.Text)"
+    Assert-True ($run.Text -notmatch 'shares the database sport name') `
+        "a declared split should not be reported; output was:`n$($run.Text)"
+    Assert-True ($run.Text -notmatch 'both claim discipline') `
+        "a declared split should not be reported; output was:`n$($run.Text)"
 }
 
 Test-That 'a semicolon inside a string literal is reported' {
@@ -8586,7 +8697,7 @@ Test-That 'a no-result value missing from the value list is reported' {
     $text = [IO.File]::ReadAllText($path)
 
     $before = "'q', 'dnf', 'dns', 'dsq', 'rel', 'disq.', 'disqualified'"
-    if (-not $text.Contains($before)) { throw 'the BMX result comment vocabulary was not found in the fixture copy' }
+    if (-not $text.Contains($before)) { throw 'the BMX-Racing result comment vocabulary was not found in the fixture copy' }
     $text = $text.Replace($before, "'q', 'dnf', 'dns', 'dsq', 'rel'")
     [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
 

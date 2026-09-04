@@ -932,6 +932,63 @@ foreach ($s in $statements) {
 }
 Add-Result -Group 'DQ' -Name 'Template filter uses the foreign key' -Findings $filterFindings
 
+# The discipline filter, on the two things about it a machine can settle.
+#
+# First, the alias it names has to be one the statement declares. The markers were placed by
+# reading each statement's joins, and the one way that goes wrong without anybody noticing is
+# an alias belonging to a different UNION branch: the SQL then fails at the database with
+# "Unknown column", but only for the one sport that activates it, and only when somebody runs
+# that check. Two such markers reached the package on 2026-09-04 and this is what found them.
+#
+# Second, findings and coverage narrow together. A statement confined in one top-level branch
+# and not in another counts eligible_count over a population the findings never saw, which is
+# the mandatory coverage contract in POWERBI.md. A statement carrying no marker at all is
+# correct and common - most of the package audits something no discipline reaches - so it is
+# the mixture that is reported, never the absence.
+#
+# Nesting is not judged here. Whether a marker sits in the right subquery is a question about
+# what the statement means, and TOOLS/README.md says plainly that the author places it.
+$disciplineFindings = @()
+foreach ($s in $statements) {
+    $masked = Get-MaskedSql -Sql $s.Sql
+    $markers = @([regex]::Matches($s.Sql, 'dsc_\w+\.objectFK\s*=\s*(\w+)\.id'))
+    if ($markers.Count -eq 0) { continue }
+
+    $declared = @{}
+    foreach ($m in [regex]::Matches($masked, '(?i)\b(?:FROM|JOIN)\s+(\w+)\s+(\w+)\b')) {
+        $declared[$m.Groups[2].Value] = $m.Groups[1].Value
+    }
+    foreach ($m in $markers) {
+        $alias = $m.Groups[1].Value
+        if (-not $declared.ContainsKey($alias)) {
+            $disciplineFindings += ("$($s.File):$($s.Line) ($($s.CheckId)): the discipline filter names " +
+                "$alias, which this statement never joins")
+        }
+    }
+
+    # Top-level branches only: a UNION inside a subquery does not start one.
+    #
+    # Read from the raw statement and not from $masked, which strips the comments the marker
+    # lives in - every branch then looked unconfined and the mixture could never be seen. The
+    # depth is counted on each line with its own comment and string literals removed, so a
+    # paren inside either cannot move it.
+    $depth = 0
+    $branches = @('')
+    foreach ($line in ($s.Sql -split "`r?`n")) {
+        $code = ($line -replace "'[^']*'", "''") -replace '--.*$', ''
+        if ($line -match '^\s*UNION ALL\s*$' -and $depth -eq 0) { $branches += '' }
+        else { $branches[$branches.Count - 1] = $branches[$branches.Count - 1] + "`n" + $line }
+        $depth += ([regex]::Matches($code, '\(')).Count - ([regex]::Matches($code, '\)')).Count
+    }
+    $confined = @($branches | ForEach-Object { [bool]($_ -match 'dsc_') })
+    if (($confined -contains $true) -and ($confined -contains $false)) {
+        $disciplineFindings += ("$($s.File):$($s.Line) ($($s.CheckId)): confined to a discipline in " +
+            "$(@($confined | Where-Object { $_ }).Count) of $($confined.Count) top-level branch(es); " +
+            'findings and coverage must narrow together')
+    }
+}
+Add-Result -Group 'DQ' -Name 'Discipline filter is in scope and balanced' -Findings $disciplineFindings
+
 # --------------------------------------------------------------------------------------
 # GLOBAL parameterization
 # --------------------------------------------------------------------------------------
@@ -1239,10 +1296,54 @@ foreach ($row in $indexRows) {
     }
 }
 
+# One database sport can be two repository sports, and only one way: each names the disciplines
+# it is, and no two name the same one. `sport.id` 58 is called BMX and contests Racing, Time
+# Trial and Freestyle; the first two are one sport to a reader of a board and the third is
+# another, and they were separated on 2026-09-04.
+#
+# The rule this replaces was one-to-one, which was right while no sport had been split and wrong
+# the moment one was. What it was protecting is still protected: a slug that shares a database
+# name without saying which slice it is cannot be resolved from the name, so it is still
+# reported. Declaring the same discipline twice is reported too - that is two sports claiming
+# the same rows, which no boundary can separate.
+function Test-DisciplineSplit {
+    param($Group, [hashtable]$Params, [string]$Subject)
+
+    $findings = @()
+    $claimed = @{}
+    foreach ($row in $Group) {
+        $slug = $row.Cells[1]
+        $declared = $null
+        if ($Params.ContainsKey($slug)) { $declared = $Params[$slug].DISCIPLINE_ID_LIST }
+        if ([string]::IsNullOrWhiteSpace([string]$declared)) {
+            $findings += ("SPORTS.md:$($row.Line): '$slug' shares $Subject with another sport and " +
+                'declares no DISCIPLINE_ID_LIST, so nothing says which part of it this sport is')
+            continue
+        }
+        foreach ($id in ([string]$declared -split ',')) {
+            $id = $id.Trim()
+            if ($id -eq '') { continue }
+            if ($claimed.ContainsKey($id)) {
+                $findings += ("SPORTS.md:$($row.Line): '$slug' and '$($claimed[$id])' both claim " +
+                    "discipline $id, so $Subject cannot be divided between them")
+            }
+            else { $claimed[$id] = $slug }
+        }
+    }
+    return $findings
+}
+
+$paramsBySlug = @{}
+if (Test-Path -LiteralPath (Join-Path $RepoRoot 'SPORTS/params.json')) {
+    $paramsJson = Get-Content -LiteralPath (Join-Path $RepoRoot 'SPORTS/params.json') -Raw -Encoding UTF8 |
+        ConvertFrom-Json
+    foreach ($property in $paramsJson.PSObject.Properties) { $paramsBySlug[$property.Name] = $property.Value }
+}
+
 foreach ($group in ($indexRows | Where-Object { $_.Cells.Count -ge 7 } |
         Group-Object { $_.Cells[6].ToLowerInvariant() } | Where-Object { $_.Count -gt 1 })) {
-    $slugs = @($group.Group | ForEach-Object { $_.Cells[1] }) -join ', '
-    $sportFindings += "SPORTS.md: database sport name '$($group.Group[0].Cells[6])' maps to more than one slug: $slugs"
+    $sportFindings += @(Test-DisciplineSplit -Group $group.Group -Params $paramsBySlug `
+            -Subject "the database sport name '$($group.Group[0].Cells[6])'")
 }
 
 foreach ($group in ($indexRows | Group-Object { $_.Cells[1].ToLowerInvariant() } |
@@ -1287,8 +1388,8 @@ foreach ($template in $mandatory) {
 }
 
 foreach ($group in ($indexRows | Group-Object { $_.Cells[0] } | Where-Object { $_.Count -gt 1 })) {
-    $slugs = @($group.Group | ForEach-Object { $_.Cells[1] }) -join ', '
-    $sportFindings += "SPORTS.md: Sport ID $($group.Name) maps to more than one slug: $slugs"
+    $sportFindings += @(Test-DisciplineSplit -Group $group.Group -Params $paramsBySlug `
+            -Subject "Sport ID $($group.Name)")
 }
 
 foreach ($file in (Get-ChildItem -LiteralPath (Join-Path $RepoRoot 'SPORTS') -Filter *.md -File)) {

@@ -27,6 +27,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND NOT EXISTS (
       SELECT 1
       FROM event_participants ep
@@ -57,6 +58,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ;
 
 
@@ -89,6 +91,7 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND r.value IS NOT NULL
   AND TRIM(r.value) <> ''
   AND LOWER(TRIM(r.value)) NOT IN ('gold', 'silver', 'bronze')
@@ -112,6 +115,7 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND r.value IS NOT NULL
   AND TRIM(r.value) <> ''
 ;
@@ -169,6 +173,7 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND TRIM(rk.value) <> ''
   AND TRIM(dur.value) <> ''
   AND (
@@ -202,6 +207,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND EXISTS (
       SELECT 1
       FROM event_participants ep
@@ -334,6 +340,7 @@ FROM (
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
+          -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
     ) x
     WHERE x.rank_value > x.participant_count
       AND NOT EXISTS (
@@ -384,6 +391,7 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 
 ORDER BY sort_order, affected_count DESC, event_id;
 
@@ -528,6 +536,7 @@ JOIN (
           -- AND t2.tournament_templateFK = <tournament_template_id>
           -- AND e2.startdate >= '<from_datetime>'
           -- AND e2.startdate <  '<to_datetime>'
+          -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
           AND NOT EXISTS (
               SELECT 1
               FROM result rc2
@@ -572,6 +581,7 @@ JOIN (
           -- AND t4.tournament_templateFK = <tournament_template_id>
           -- AND e4.startdate >= '<from_datetime>'
           -- AND e4.startdate <  '<to_datetime>'
+          -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e4 WHERE dsc_e4.object_typeFK = 5 AND dsc_e4.objectFK = e4.id AND dsc_e4.disciplineFK IN (<discipline_ids>) AND dsc_e4.del = 'no')
           AND NOT EXISTS (
               SELECT 1
               FROM result rc4
@@ -594,6 +604,7 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND NOT EXISTS (
       SELECT 1
       FROM result rc
@@ -633,6 +644,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND EXISTS (
       SELECT 1
       FROM event_participants ep
@@ -718,6 +730,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ) x
 WHERE
     (x.r_rank_value IS NOT NULL AND x.r_rank_value NOT REGEXP '^[1-9][0-9]*$')
@@ -744,6 +757,7 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ;
 
 
@@ -837,6 +851,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
     GROUP BY e.id, e.name, e.startdate, tt.name, t.name, ts.name
 ) x
 WHERE x.ranked_count = 0
@@ -863,6 +878,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ;
 
 
@@ -897,6 +913,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND EXISTS (
       SELECT 1
       FROM event_participants ep
@@ -928,6 +945,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ;
 
 
@@ -993,6 +1011,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e2.startdate >= '<from_datetime>'
       -- AND e2.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
       AND EXISTS (
           SELECT 1 FROM object_discipline od
           WHERE od.object_typeFK = 5 AND od.objectFK = e2.id
@@ -1032,6 +1051,7 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND EXISTS (
       SELECT 1 FROM object_discipline od
       WHERE od.object_typeFK = 5 AND od.objectFK = e.id
@@ -1070,6 +1090,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND EXISTS (
       SELECT 1
       FROM event_participants ep
@@ -1100,6 +1121,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ;
 
 
@@ -1166,6 +1188,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ) x
 WHERE LOWER(TRIM(x.comment_value)) NOT IN ({{RESULT_COMMENT_VALUE_LIST}})
    OR (
@@ -1195,6 +1218,7 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ;
 
 
@@ -1251,6 +1275,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ) x
 WHERE x.expected_rank IS NOT NULL
   AND (x.rank_value IS NULL OR x.rank_value <> x.expected_rank)
@@ -1276,6 +1301,7 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ;
 
 
@@ -1404,6 +1430,7 @@ FROM (
                   -- AND t.tournament_templateFK = <tournament_template_id>
                   -- AND e.startdate >= '<from_datetime>'
                   -- AND e.startdate <  '<to_datetime>'
+                  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
                   AND EXISTS (
                       SELECT 1 FROM object_discipline od
                       WHERE od.object_typeFK = 5 AND od.objectFK = e.id
@@ -1447,6 +1474,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
       AND EXISTS (
           SELECT 1 FROM object_discipline od
           WHERE od.object_typeFK = 5 AND od.objectFK = e.id
@@ -1496,6 +1524,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
     GROUP BY e.id, e.name, e.startdate, tt.name, p.id, p.name
     HAVING COUNT(DISTINCT ep.id) > 1
 ) d
@@ -1527,6 +1556,7 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ;
 
 
@@ -1644,6 +1674,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
       AND EXISTS (
           SELECT 1 FROM object_discipline od
           WHERE od.object_typeFK = 5 AND od.objectFK = e.id
@@ -1678,6 +1709,7 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND EXISTS (
       SELECT 1 FROM object_discipline od
       WHERE od.object_typeFK = 5 AND od.objectFK = e.id
@@ -1735,6 +1767,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
     GROUP BY e.id, e.name, e.startdate, tt.name, ep.id, r.result_typeFK
     HAVING COUNT(*) > 1
 ) d
@@ -1759,6 +1792,7 @@ WHERE r.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ;
 
 
@@ -1816,6 +1850,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
       -- NULL and '' are one state in DATABASE.md, the active empty row, and a sport uses
       -- it to record that a field does not apply to a participant. Both are therefore out
       -- of scope. What is asserted here is narrower: a value that is neither of them must
@@ -1848,6 +1883,7 @@ WHERE ep.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 
 ORDER BY sort_order, blank_result_count DESC;
 
@@ -1962,6 +1998,7 @@ FROM (
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
+          -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
           AND r.value IS NOT NULL
           AND TRIM(r.value) <> ''
           -- The mirror of GLOBAL-DQ-052, which asks whether the status vocabulary holds a
@@ -2015,6 +2052,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND EXISTS (
       SELECT 1
       FROM event_participants ep
@@ -3410,7 +3448,7 @@ SELECT
 -- read at all - the Full time where stored, the Duration otherwise - ignoring participants a
 -- Comment marks as not finishing.
 -- The Duration column follows the leader/gap convention: the leader carries an absolute time
--- and everyone behind carries a gap to it, marked by a leading plus. SPORTS/BMX.md owns that
+-- and everyone behind carries a gap to it, marked by a leading plus. SPORTS/BMX-Racing.md owns that
 -- statement for BMX. The Full time is preferred where one is stored only because it is
 -- unambiguously absolute; for a sport that populates it thinly, as BMX does over nine events,
 -- almost every row is read from Duration and the convention is what matters.
@@ -3586,6 +3624,7 @@ FROM (
                   -- AND t.tournament_templateFK = <tournament_template_id>
                   -- AND e.startdate >= '<from_datetime>'
                   -- AND e.startdate <  '<to_datetime>'
+                  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
                 -- Two integers, not four columns. The event and stage names used to be carried
                 -- through this grouping and are joined onto the surviving events instead.
                 GROUP BY ep.id, ep.eventFK
@@ -3635,6 +3674,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND EXISTS (
       SELECT 1
       FROM event_participants ep
@@ -4175,6 +4215,7 @@ FROM (
                   -- AND t2.tournament_templateFK = <tournament_template_id>
                   -- AND e2.startdate >= '<from_datetime>'
                   -- AND e2.startdate <  '<to_datetime>'
+                  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
                 GROUP BY e2.id, CAST(r.value AS UNSIGNED)
             ) ranked
         ) s
@@ -4207,6 +4248,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
   AND EXISTS (
       SELECT 1
       FROM event_participants ep3
@@ -4317,6 +4359,7 @@ FROM (
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
+          -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
         GROUP BY e.id, e.name, e.startdate, tt.name, t.name, r.result_typeFK
         -- A comma qualifies on its own. Track Cycling's two events write every value in the
         -- field to three places, so shape_count is 1 there and precision alone would drop
@@ -4347,6 +4390,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ;
 
 
@@ -4433,6 +4477,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
     GROUP BY e.id, e.name, tt.name, t.name, ts.name, e.startdate
 ) x
 WHERE x.with_value + x.excused_participants < x.ranked_participants
@@ -4462,6 +4507,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 
 ORDER BY sort_order, missing_unexcused DESC, event_startdate DESC;
 
@@ -4901,6 +4947,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
       AND (
             CAST(SUBSTRING_INDEX(r.value, ':', -1) AS DECIMAL(12,3)) >= 60
             OR (LENGTH(r.value) - LENGTH(REPLACE(r.value, ':', '')) = 2
@@ -4931,6 +4978,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 
 ORDER BY sort_order, offending_values DESC, event_id;
 
@@ -5040,6 +5088,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
       AND EXISTS (
           SELECT 1
           FROM property p
@@ -5081,6 +5130,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 
 ORDER BY sort_order, medals_on_this_event DESC, event_id;
 
@@ -5202,6 +5252,7 @@ FROM (
       -- AND t.tournament_templateFK = <tournament_template_id>
       -- AND e.startdate >= '<from_datetime>'
       -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
     GROUP BY e.id, e.name, tt.name, t.name, ts.name, e.startdate, e.round_typeFK, round_type_name
 ) x
 WHERE x.timed_participants > 0
@@ -5234,6 +5285,7 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
   -- AND e.startdate >= '<from_datetime>'
   -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 
 ORDER BY sort_order, timed_participants DESC, event_startdate DESC;
 
