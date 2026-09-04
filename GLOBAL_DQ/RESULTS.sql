@@ -952,7 +952,12 @@ FROM (
         ep.id AS event_participants_id,
         ep.eventFK AS event_id,
         CASE
-            WHEN COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) = 0 THEN 'RANK_PRESENT_DURATION_FULL_TIME_MISSING'
+            -- Only this branch takes the excuse. A comment saying the sport records no time
+            -- for this competitor explains a missing Full time and nothing else: a time
+            -- present without a rank, an unreadable one and a zero are all still defects
+            -- whatever the comment says.
+            WHEN COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) = 0
+                 AND COUNT(DISTINCT rnc.id) = 0 THEN 'RANK_PRESENT_DURATION_FULL_TIME_MISSING'
             WHEN COUNT(DISTINCT rk.id) = 0 AND COUNT(DISTINCT dft.id) > 0 THEN 'DURATION_FULL_TIME_PRESENT_WITHOUT_RANK'
             WHEN COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) > 0
                  AND MAX(dft.value) NOT REGEXP '^[0-9]+(:[0-9]+)*(\\.[0-9]+)?$' THEN 'DURATION_FULL_TIME_INVALID_FORMAT'
@@ -972,6 +977,13 @@ FROM (
     LEFT JOIN result dft
       ON dft.event_participantsFK = ep.id AND dft.result_typeFK = {{RESULT_FULL_TIME_TYPE_ID}} AND dft.del = 'no'
      AND dft.value IS NOT NULL AND TRIM(dft.value) <> ''
+    -- The comment that explains a classified competitor holding no time. Biathlon lapping is
+    -- the confirmed case: 1503 of the 2043 participants this check reaches on that sport carry
+    -- it, measured 2026-09-04, and the 540 that do not gather into five events - which is the
+    -- finding this excuse is meant to leave visible.
+    LEFT JOIN result rnc
+      ON rnc.event_participantsFK = ep.id AND rnc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}} AND rnc.del = 'no'
+     AND LOWER(TRIM(rnc.value)) IN ({{RESULT_COMMENT_NO_VALUE_LIST}})
     WHERE ep.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
       AND e2.status_type = 'finished'
@@ -988,7 +1000,8 @@ FROM (
       )
     GROUP BY ep.id, ep.eventFK
     HAVING
-        (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) = 0)
+        (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) = 0
+         AND COUNT(DISTINCT rnc.id) = 0)
         OR (COUNT(DISTINCT rk.id) = 0 AND COUNT(DISTINCT dft.id) > 0)
         OR (COUNT(DISTINCT rk.id) > 0 AND COUNT(DISTINCT dft.id) > 0
             AND MAX(dft.value) NOT REGEXP '^[0-9]+(:[0-9]+)*(\\.[0-9]+)?$')
@@ -4399,8 +4412,17 @@ FROM (
      AND rv.result_typeFK IN ({{RESULT_TIE_VALUE_TYPE_LIST}})
      AND rv.value IS NOT NULL
      AND TRIM(rv.value) <> ''
+    -- Two different excuses, and they are not the same statement about the competitor.
+    -- RESULT_COMMENT_NO_RESULT_LIST says the competitor has no result at all, so a place
+    -- beside it is itself a contradiction and GLOBAL-DQ-052 reports it.
+    -- RESULT_COMMENT_NO_VALUE_LIST says the opposite: the competitor is classified and holds
+    -- a place, and the sport does not record the deciding value for them. Biathlon lapping is
+    -- the confirmed case - a lapped rider is ranked and has no finishing time - and reading
+    -- that as a missing value reported 308 of this check's 310 events on that sport, measured
+    -- 2026-09-04. A sport with no such comment names the sentinel and is unaffected.
     LEFT JOIN result rc ON rc.event_participantsFK = ep.id AND rc.del = 'no'
-     AND LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
+     AND (LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
+          OR LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_VALUE_LIST}}))
      AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
     WHERE e.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}

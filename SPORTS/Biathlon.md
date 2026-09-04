@@ -1100,13 +1100,26 @@ tournament carrying no ranking at all, and 84 are `FINAL_EVENT_NOT_IN_ANY_COMP_R
 absent from every ranking that does exist. They are different repairs and the check separates
 them itself.
 
-**`Biathlon-DQ-132` and `Biathlon-DQ-134` are sentinels, and are recorded as such.** Both read
-`GLOBAL-DQ-136` and `GLOBAL-DQ-145`, which ask whether a ranked competitor's organization
-contradicts their country, and both return `eligible_count = 0`. That zero is the second of the
-two things a zero can be - a correct scope over a population that is legitimately empty today,
-not a misdirected one - and what settles it is `Biathlon-DQ-098`, which reports the organization
-missing on 2799 of 2799. There is no organization for these two to disagree with. The day the
-field is filled is the day they start reading it.
+**`Biathlon-DQ-132` and `Biathlon-DQ-134` were sentinels for about an hour, and are not any
+more.** Both read `GLOBAL-DQ-136` and `GLOBAL-DQ-145`, which ask whether a ranked competitor's
+organization contradicts their country. Measured on 2026-09-04 at 11:00 they returned
+`eligible_count = 0`, which was the second of the two things a zero can be - a correct scope
+over a population legitimately empty that day, not a misdirected one - and what settled it was
+`Biathlon-DQ-098` reporting the organization missing on 2799 of 2799. There was no organization
+for either of them to disagree with.
+
+**The first real run of the same day, at 11:46, returned `eligible_count = 2` on both**, with no
+findings and a verdict of `Clean`. Two organization, country and template combinations had
+entered the scope in the intervening three quarters of an hour, and they agree. The sentinel
+reading is therefore superseded rather than wrong: it was true when taken and had stopped being
+true before it was read back.
+
+This is left standing rather than tidied into the new number, because the fact worth keeping is
+not that the count is 2. It is that the field this sport leaves empty everywhere has begun to
+fill while the layer was being documented, which is the same movement `Biathlon-DQ-119` shows -
+37 uneven relay squads at 11:00 and 29 at 11:46, on an unchanged eligible population of 514.
+Colleagues are correcting this sport now, and a count taken from it is a reading rather than a
+fact. `Biathlon-DQ-098` still reports 2799 of 2799, so the absence itself has not moved yet.
 
 **`Biathlon-DQ-108` audits 172 172 ranked records and finds nothing.** `GLOBAL-DQ-031` asks
 whether a place sits above the size of the field it was awarded in, at this sport's
