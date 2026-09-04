@@ -36,6 +36,12 @@
 .PARAMETER Sport
     The repository slug, as in TOOLS/sheet-registry.json - Soccer, Ice-Hockey, Track-Cycling.
 
+.PARAMETER All
+    Work through every sport in TOOLS/sheet-registry.json instead of one. Idempotent: a board
+    that already carries the tabs is reported and left alone, so it is safe to re-run whenever
+    a sport has been added. It does not restart the worker, which reads its sport list once at
+    startup and will not see a new document until it does.
+
 .PARAMETER SpreadsheetId
     Override the document the registry names. For a board that is not registered yet.
 
@@ -57,12 +63,22 @@
 
 .EXAMPLE
     .\TOOLS\Add-RunRequestsTab.ps1 -Sport Soccer -Register
+
+.EXAMPLE
+    .\TOOLS\Add-RunRequestsTab.ps1 -All -Register -WhatIf
+
+.EXAMPLE
+    .\TOOLS\Add-RunRequestsTab.ps1 -All -Register
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'OneSport')]
 param(
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $true, ParameterSetName = 'OneSport')]
     [string]$Sport,
 
+    [Parameter(Mandatory = $true, ParameterSetName = 'AllSports')]
+    [switch]$All,
+
+    [Parameter(ParameterSetName = 'OneSport')]
     [string]$SpreadsheetId,
 
     [switch]$Register,
@@ -84,6 +100,56 @@ $QueueSheetName = 'Run requests'
 # Kept in step with the same name in TOOLS/Watch-SheetRequests.ps1, which reads it.
 $ApprovalSheetName = 'Run approvals'
 $RegistryPath = Join-Path $PSScriptRoot 'sheet-registry.json'
+
+# -All runs the whole registry, one sport at a time, by re-invoking this file rather than
+# wrapping its body in a loop. The per-sport path is idempotent - it reports a tab that is
+# already there instead of creating a second one - so a catch-up pass is safe to repeat, and
+# leaving that path untouched is why this is four lines rather than a rewrite.
+#
+# It exists because the alternative was somebody remembering. A board opened without these
+# tabs looks finished until a colleague clicks the menu and is told the tab does not exist,
+# which is how Speed-Skating was found on 2026-09-04 with a request already queued against it.
+if ($All) {
+    if (-not (Test-Path -LiteralPath $RegistryPath)) {
+        throw "TOOLS/sheet-registry.json not found; -All has no list of documents to work through."
+    }
+    $everySport = @((Get-Content -Raw -LiteralPath $RegistryPath | ConvertFrom-Json).sports.PSObject.Properties |
+            ForEach-Object { $_.Name } | Sort-Object)
+    Write-Host ("-All: {0} sport(s) in the registry" -f $everySport.Count) -ForegroundColor Cyan
+
+    $forward = @{}
+    if ($Register) { $forward['Register'] = $true }
+    if ($Unprotected) { $forward['Unprotected'] = $true }
+    if ($WhatIf) { $forward['WhatIf'] = $true }
+
+    # Paced, because the quota is per minute and not per request. Sheets allows 60 reads a
+    # minute per user; one sport costs several, and sixteen back to back exhausted it on the
+    # last of them - Triathlon, 2026-09-04, a 429 after the transport had already retried
+    # twice. The work itself is slower than this pause, so the cost is a few seconds and the
+    # alternative is a run that fails at the far end for no reason to do with the document.
+    $paceSeconds = 5
+    $failed = @()
+    $first = $true
+    foreach ($name in $everySport) {
+        if (-not $first -and -not $WhatIf) { Start-Sleep -Seconds $paceSeconds }
+        $first = $false
+        Write-Host ""
+        try { & $PSCommandPath -Sport $name @forward }
+        catch {
+            $failed += $name
+            Write-Host ("  {0} failed: {1}" -f $name, $_.Exception.Message) -ForegroundColor Red
+        }
+    }
+
+    Write-Host ""
+    if ($failed.Count -gt 0) {
+        Write-Host ("-All finished with {0} failure(s): {1}" -f $failed.Count, ($failed -join ', ')) -ForegroundColor Red
+        exit 1
+    }
+    Write-Host ("-All finished: {0} sport(s), no failures" -f $everySport.Count) -ForegroundColor Green
+    Write-Host "The worker reads the sport list once, at startup. Restart it to pick up anything new here." -ForegroundColor Yellow
+    exit 0
+}
 
 # The columns the plan names, in its order. The worker addresses rows by Request ID and never
 # by row index, so this order is a convenience for the reader rather than a contract - but the
@@ -505,8 +571,10 @@ if ($Unprotected) {
         "cell anybody can type into.") -ForegroundColor Yellow
 }
 elseif ($WhatIf) {
-    Write-Host ("  would protect the whole tab, with the owner and the {0} allowed account(s) as " +
-        "its editors" -f @($registry.requesters.allowed).Count) -ForegroundColor DarkGray
+    # Parenthesised before -f on purpose: the operator binds tighter than +, so without them
+    # the format applies to the second fragment alone and the first keeps a literal {0}.
+    Write-Host ((("  would protect the whole tab, with the owner and the {0} allowed account(s) " +
+                    "as its editors") -f @($registry.requesters.allowed).Count)) -ForegroundColor DarkGray
 }
 elseif ($null -ne $existingSheetId) {
     $already = $false

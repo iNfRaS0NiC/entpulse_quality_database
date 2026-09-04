@@ -14,47 +14,47 @@
     "sports": {
         "Artistic-Gymnastics": {
             "spreadsheetId": "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris",
-            "runRequests": false
+            "runRequests": true
         },
         "BMX": {
             "spreadsheetId": "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE",
-            "runRequests": false
+            "runRequests": true
         },
         "Biathlon": {
             "spreadsheetId": "1eQNoYSY_1jbTh0hzFa6CiSXkCuTo4ceolGt8qDxKUr4",
-            "runRequests": false
+            "runRequests": true
         },
         "Curling": {
             "spreadsheetId": "1zv6UoQOdEVR-SNJSakLy7xWVo1fh-jsL8Y-7mybcC3g",
-            "runRequests": false
+            "runRequests": true
         },
         "Cycling": {
             "spreadsheetId": "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs",
-            "runRequests": false
+            "runRequests": true
         },
         "Equestrian": {
             "spreadsheetId": "15DvzC1TLzhMB9bXeyy-2OUa0Xmfo0Mn84-isqYSs9cU",
-            "runRequests": false
+            "runRequests": true
         },
         "Golf": {
             "spreadsheetId": "1VhbXQunl2V4Lq83P_o9wUwel9MSWwgE9h2R9vZYcnWM",
-            "runRequests": false
+            "runRequests": true
         },
         "Handball": {
             "spreadsheetId": "1AUVNbf1U-OZO6V2VZZ9QbMBBaxMtzdWjsACfML_9sQI",
-            "runRequests": false
+            "runRequests": true
         },
         "Ice-Hockey": {
             "spreadsheetId": "1Vy0mfddOI9cWkWEpeM7oA12BTDuvUB-nevFZwQANn94",
-            "runRequests": false
+            "runRequests": true
         },
         "Modern-Pentathlon": {
             "spreadsheetId": "1kWKqdBc2ZD1AYcMEzGUmZHzgjfEgnLyf8AfbCvkxuKs",
-            "runRequests": false
+            "runRequests": true
         },
         "Mountain-Bike": {
             "spreadsheetId": "1-ewyxEyctKW1q_fWwwy0qYff5Y7XN7njFra2IjwSo-M",
-            "runRequests": false
+            "runRequests": true
         },
         "Soccer": {
             "spreadsheetId": "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE",
@@ -62,19 +62,19 @@
         },
         "Speed-Skating": {
             "spreadsheetId": "1CNFGr9KzNTGUtKJMn8vALWxHkL3x97JRtABs541iDPM",
-            "runRequests": false
+            "runRequests": true
         },
         "Swimming": {
             "spreadsheetId": "13puq0_lrO6QLI9aHo8pHwVKCWHSMwD0zdKChoEICg3g",
-            "runRequests": false
+            "runRequests": true
         },
         "Track-Cycling": {
             "spreadsheetId": "1sGFr9ANBR5Y4bCFGmI7F4mZHUE2U8Que2JLccMrwBGk",
-            "runRequests": false
+            "runRequests": true
         },
         "Triathlon": {
             "spreadsheetId": "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0",
-            "runRequests": false
+            "runRequests": true
         }
     }
 }

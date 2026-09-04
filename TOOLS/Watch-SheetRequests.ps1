@@ -249,6 +249,30 @@ function Get-SheetRegistryFile {
     return (Get-Content -LiteralPath $RegistryPath -Raw -Encoding UTF8 | ConvertFrom-Json)
 }
 
+function Get-WatchedSports {
+    <#
+        The documents to watch: every sport whose registry row has runRequests = true, narrowed
+        to one by -Sport when it was given.
+
+        A function rather than eight lines at startup, because the list is rebuilt while the
+        worker runs. It used to be read once, and a sport registered afterwards stayed invisible
+        until somebody restarted the process - which the scheduled task will not do on its own,
+        MultipleInstances being IgnoreNew: every trigger spawns a process that bounces off the
+        one already up and exits. Found on 2026-09-04 with a colleague's request sitting QUEUED
+        on Speed-Skating against a worker that had been up since the previous evening watching
+        Soccer alone.
+    #>
+    param($Registry, [string]$OnlySport)
+
+    $list = @()
+    foreach ($property in $Registry.sports.PSObject.Properties) {
+        if (-not $property.Value.runRequests) { continue }
+        if ($OnlySport -and $property.Name -ne $OnlySport) { continue }
+        $list += [pscustomobject]@{ Name = $property.Name; SpreadsheetId = [string]$property.Value.spreadsheetId }
+    }
+    return @($list)
+}
+
 function Get-ApprovedCheckIds {
     <#
         Every CheckID POWERBI_REGISTRY.md records as Approved, with the sport it belongs to and
@@ -972,12 +996,7 @@ if (-not $NoLog -and -not $WhatIf) {
 
 $registry = Get-SheetRegistryFile
 
-$sports = @()
-foreach ($property in $registry.sports.PSObject.Properties) {
-    if (-not $property.Value.runRequests) { continue }
-    if ($Sport -and $property.Name -ne $Sport) { continue }
-    $sports += [pscustomobject]@{ Name = $property.Name; SpreadsheetId = [string]$property.Value.spreadsheetId }
-}
+$sports = Get-WatchedSports -Registry $registry -OnlySport $Sport
 
 if ($sports.Count -eq 0) {
     Write-Host ""
@@ -1039,6 +1058,11 @@ $handled = 0
 $approved = Get-ApprovedCheckIds
 $approvedStamp = (Get-Item -LiteralPath (Join-Path $RepoRoot 'POWERBI_REGISTRY.md')).LastWriteTimeUtc
 
+# The same treatment for the list of documents. Add-RunRequestsTab.ps1 writes this file when a
+# sport is set up, and until 2026-09-04 a worker already running never noticed - so setting a
+# sport up was not enough, somebody also had to restart the worker, and nothing said so.
+$sportsStamp = (Get-Item -LiteralPath $RegistryPath).LastWriteTimeUtc
+
 # ----- the Drive pre-filter ----------------------------------------------------------------
 #
 # How far back each change query looks, past the moment the previous one was asked. This machine
@@ -1065,6 +1089,25 @@ while ($true) {
             $approved = Get-ApprovedCheckIds
             $approvedStamp = $stamp
             Write-Host ('  POWERBI_REGISTRY.md changed; {0} CheckID(s) now known' -f $approved.Count) -ForegroundColor DarkGray
+        }
+    }
+    catch { }
+
+    # And the documents, on the same terms. A sport set up mid-run joins the watch on the next
+    # pass instead of waiting for a restart that the scheduled task cannot perform.
+    try {
+        $sportsNow = (Get-Item -LiteralPath $RegistryPath).LastWriteTimeUtc
+        if ($sportsNow -ne $sportsStamp) {
+            $before = @($sports | ForEach-Object { $_.Name })
+            $sports = Get-WatchedSports -Registry (Get-SheetRegistryFile) -OnlySport $Sport
+            $sportsStamp = $sportsNow
+            $after = @($sports | ForEach-Object { $_.Name })
+            $added = @($after | Where-Object { $before -notcontains $_ })
+            $dropped = @($before | Where-Object { $after -notcontains $_ })
+            $said = 'sheet-registry.json changed; watching {0}' -f $sports.Count
+            if ($added.Count -gt 0) { $said += (', added ' + ($added -join ', ')) }
+            if ($dropped.Count -gt 0) { $said += (', dropped ' + ($dropped -join ', ')) }
+            Write-Host ('  ' + $said) -ForegroundColor DarkGray
         }
     }
     catch { }
