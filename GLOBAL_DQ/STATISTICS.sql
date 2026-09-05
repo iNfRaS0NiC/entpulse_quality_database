@@ -5297,3 +5297,174 @@ WHERE s.del = 'no'
   -- AND EXISTS (SELECT 1 FROM object_discipline dsc_s WHERE dsc_s.object_typeFK = 83 AND dsc_s.objectFK = s.id AND dsc_s.disciplineFK IN (<discipline_ids>) AND dsc_s.del = 'no')
 
 ORDER BY sort_order, organization_id, competitor_name, statistic_id;
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-154
+    -- Name - COMP.RANK_PLACES_DISAGREE_WITH_THE_LINKED_FINAL
+    -- What it does: Finds a Comp.Rank whose places contradict the final it names, either by placing a finalist somewhere else or by seating somebody who was not in that final among its places.
+    'PLACE_DISAGREES_WITH_THE_FINAL' AS check_type,
+    x.statistic_id,
+    x.statistic_name,
+    x.template_name,
+    x.tournament_name,
+    x.linked_event_id,
+    x.linked_event_name,
+    COUNT(*) AS riders_affected,
+    SUBSTRING(GROUP_CONCAT(CONCAT(x.competitor, ': ranked ', x.cr_place, ', finished ', x.final_place)
+                           ORDER BY x.cr_place SEPARATOR ' | '), 1, 400) AS riders,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A Comp.Rank that names an event is a ranking of the competition
+-- that event ends. Its top places are that final's riders, in that final's order, and the places
+-- below them belong to riders the final did not reach. Two ways that can fail, and they are two
+-- repairs: a rider standing in both with two different numbers, where one of the two is wrong;
+-- and a rider inside the final's own places who never rode it, where either the ranking was
+-- assembled from the wrong field or the final is missing an entry.
+--
+-- Written 2026-09-05 out of BMX Freestyle, and measured there the same day across the four
+-- Comp.Rank records that carry participants: 38, 20, 47 and 58 riders ranked against finals of
+-- 12, 20, 12 and 12. Every rider present in both holds the same number in both - 12, 20, 12 and
+-- 12 agreements and not one disagreement - and the best place absent from the final is 13 in
+-- each of the three that have a qualifier. So the rule is exact where it can be checked, and
+-- these two states return nothing there today. That is what they are for: the agreement is
+-- currently perfect and this is what says so if it stops being.
+--
+-- `GLOBAL-DQ-042` is not this. It asks whether a finalist appears in the ranking at all, which
+-- these two take for granted; neither the number beside them nor who else is sitting among them
+-- is anything it can see.
+--
+-- A statistic can hold both defects and then reports twice, once under each, because they are
+-- corrected separately and a single row would have to hide one of them.
+--
+-- The second state asks whether a rider outside the final is ranked above one who rode it, rather
+-- than whether their place falls inside the final's field size. The two are the same rule and this
+-- is the truer half of it: it compares against the riders who were actually there instead of
+-- against a count, and it needs no per-event tally, which is most of what the first draft cost.
+-- Measured on BMX Freestyle 2026-09-05: 126,7 seconds as first written, 61,3 after the correlated
+-- subqueries became joins, and 13,7 with the discipline filter written as a complement.
+FROM (
+    SELECT
+        s.id AS statistic_id,
+        s.name AS statistic_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        e.id AS linked_event_id,
+        e.name AS linked_event_name,
+        p.name AS competitor,
+        CAST(sd.value AS UNSIGNED) AS cr_place,
+        CAST(rf.value AS UNSIGNED) AS final_place
+    FROM statistic s
+    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN statistic_config cfg ON cfg.statisticFK = s.id AND cfg.del = 'no'
+                             AND cfg.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
+                             AND cfg.value REGEXP '^[0-9]+$'
+    JOIN event e ON e.id = CAST(cfg.value AS UNSIGNED) AND e.del = 'no'
+    JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+    JOIN participant p ON p.id = sp.participantFK AND p.del = 'no'
+    JOIN statistic_data{{SHARD_ID}} sd ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+                            AND sd.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+                            AND sd.value REGEXP '^[0-9]+$'
+    JOIN event_participants epf ON epf.eventFK = e.id AND epf.participantFK = sp.participantFK AND epf.del = 'no'
+    JOIN result rf ON rf.event_participantsFK = epf.id AND rf.del = 'no'
+                  AND rf.result_typeFK = {{RESULT_RANK_TYPE_ID}} AND rf.value REGEXP '^[0-9]+$'
+    WHERE s.del = 'no'
+      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+      AND s.object_typeFK = 3
+      AND tt.sportFK = {{SPORT_ID}}
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_s WHERE dsc_s.object_typeFK = 83 AND dsc_s.objectFK = s.id AND dsc_s.disciplineFK IN (<discipline_ids>) AND dsc_s.del = 'no')
+) x
+WHERE x.cr_place <> x.final_place
+GROUP BY x.statistic_id, x.statistic_name, x.template_name, x.tournament_name,
+         x.linked_event_id, x.linked_event_name
+
+UNION ALL
+
+SELECT
+    'NON_FINALIST_INSIDE_THE_FINAL_PLACES' AS check_type,
+    y.statistic_id,
+    y.statistic_name,
+    y.template_name,
+    y.tournament_name,
+    y.linked_event_id,
+    y.linked_event_name,
+    COUNT(*) AS riders_affected,
+    SUBSTRING(GROUP_CONCAT(CONCAT(y.competitor, ': ranked ', y.cr_place, ', above a rider who did ride the final')
+                           ORDER BY y.cr_place SEPARATOR ' | '), 1, 400) AS riders,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM (
+    SELECT
+        z.statistic_id, z.statistic_name, z.template_name, z.tournament_name,
+        z.linked_event_id, z.linked_event_name, z.competitor, z.cr_place, z.rode_the_final,
+        MAX(CASE WHEN z.rode_the_final = 1 THEN z.cr_place END)
+            OVER (PARTITION BY z.statistic_id) AS deepest_finalist_place
+    FROM (
+        SELECT
+            s2.id AS statistic_id,
+            s2.name AS statistic_name,
+            tt2.name AS template_name,
+            t2.name AS tournament_name,
+            e2.id AS linked_event_id,
+            e2.name AS linked_event_name,
+            p2.name AS competitor,
+            CAST(sd2.value AS UNSIGNED) AS cr_place,
+            CASE WHEN epf2.id IS NULL THEN 0 ELSE 1 END AS rode_the_final
+        FROM statistic s2
+        JOIN tournament t2 ON t2.id = s2.objectFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+        JOIN statistic_config cfg2 ON cfg2.statisticFK = s2.id AND cfg2.del = 'no'
+                                  AND cfg2.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
+                                  AND cfg2.value REGEXP '^[0-9]+$'
+        JOIN event e2 ON e2.id = CAST(cfg2.value AS UNSIGNED) AND e2.del = 'no'
+        JOIN statistic_participants{{SHARD_ID}} sp2 ON sp2.statisticFK = s2.id AND sp2.del = 'no'
+        JOIN participant p2 ON p2.id = sp2.participantFK AND p2.del = 'no'
+        JOIN statistic_data{{SHARD_ID}} sd2 ON sd2.statistic_participants{{SHARD_ID}}FK = sp2.id
+                                 AND sd2.statistic_data_typeFK = {{DATA_RANK_TYPE_ID}}
+                                 AND sd2.value REGEXP '^[0-9]+$'
+        LEFT JOIN event_participants epf2 ON epf2.eventFK = e2.id AND epf2.participantFK = sp2.participantFK AND epf2.del = 'no'
+        WHERE s2.del = 'no'
+          AND s2.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+          AND s2.object_typeFK = 3
+          AND tt2.sportFK = {{SPORT_ID}}
+          AND (tt2.name IS NULL OR tt2.name NOT LIKE '%(IOC)%')
+          AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND EXISTS (SELECT 1 FROM object_discipline dsc_s2 WHERE dsc_s2.object_typeFK = 83 AND dsc_s2.objectFK = s2.id AND dsc_s2.disciplineFK IN (<discipline_ids>) AND dsc_s2.del = 'no')
+    ) z
+) y
+WHERE y.rode_the_final = 0
+  AND y.deepest_finalist_place IS NOT NULL
+  AND y.cr_place < y.deepest_finalist_place
+GROUP BY y.statistic_id, y.statistic_name, y.template_name, y.tournament_name,
+         y.linked_event_id, y.linked_event_name
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT s3.id) AS eligible_count,
+    1 AS sort_order
+FROM statistic s3
+JOIN tournament t3 ON t3.id = s3.objectFK AND t3.del = 'no'
+JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
+JOIN statistic_config cfg3 ON cfg3.statisticFK = s3.id AND cfg3.del = 'no'
+                          AND cfg3.statistic_data_typeFK = {{CONFIG_EVENT_ID_TYPE_ID}}
+                          AND cfg3.value REGEXP '^[0-9]+$'
+JOIN event e3 ON e3.id = CAST(cfg3.value AS UNSIGNED) AND e3.del = 'no'
+JOIN statistic_participants{{SHARD_ID}} sp3 ON sp3.statisticFK = s3.id AND sp3.del = 'no'
+WHERE s3.del = 'no'
+  AND s3.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+  AND s3.object_typeFK = 3
+  AND tt3.sportFK = {{SPORT_ID}}
+  AND (tt3.name IS NULL OR tt3.name NOT LIKE '%(IOC)%')
+  AND t3.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_s3 WHERE dsc_s3.object_typeFK = 83 AND dsc_s3.objectFK = s3.id AND dsc_s3.disciplineFK IN (<discipline_ids>) AND dsc_s3.del = 'no')
+
+ORDER BY sort_order, riders_affected DESC;
