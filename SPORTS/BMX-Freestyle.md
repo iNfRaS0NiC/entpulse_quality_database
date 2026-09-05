@@ -342,10 +342,20 @@ and its behaviour here is not yet observed.
 `-054`, `-056` and `-111` are `Not applicable` and will never be numbered - `GLOBAL-DQ-054` says
 as much in its own prerequisite. `SPORTS/params.json` `_notApplicable` carries the reason.
 
-**One candidate is deliberately unopened.** `GLOBAL-DQ-019 EVENT_DURATION_FORMAT_MISMATCH_TO_RANK`
-asserts that rank 1 holds an absolute time and the rest hold plus-prefixed gaps. BMX-Racing has an
-open question about whether that is the convention this database keeps at all, and the same field
-here holds scores rather than times. Approving it would inherit an argument nobody has settled.
+**One candidate is deliberately unopened, and the reason is on the other board.**
+`GLOBAL-DQ-019 EVENT_DURATION_FORMAT_MISMATCH_TO_RANK` asserts that rank 1 holds an absolute time
+and the rest hold plus-prefixed gaps. `BMX-Racing-DQ-030` runs it on the other half of `sport.id`
+58 and stands at **217 findings with the status `Skipped`**, set there by the user - so the check
+is already parked on the sport it was written against, by somebody who looked at it. Opening a
+second instance of a parked check is not a decision this sport should make on its own.
+
+Two things about it are worth separating, because they read as one and are not.
+BMX-Racing's open question says the stored `101 Duration` contradicts the convention in 7968 of
+7994 events, while the check reports 217; those numbers do not conflict - the first describes the
+shape of the data and the second what the check's own narrower population returns. And in this
+discipline the field holds scores rather than times at all, so the question the check asks is not
+this sport's question. `BMX-Freestyle-DQ-002` already says what is wrong with those 13 events,
+and says it more precisely.
 
 **Almost none of them has been run.** The 200-row gate was measured for `BMX-Freestyle-DQ-002`,
 which returned 13, and for `-111`, which returned none. What the rest return is unknown until the
