@@ -5608,6 +5608,21 @@ Test-That 'the runner renames a document it named itself, and nobody else' {
     Assert-Equal $false (Test-SheetsTitleIsOurs -CurrentTitle 'Petar - do not touch' -Title $new) `
         'a title somebody chose is theirs'
     Assert-Equal $false (Test-SheetsTitleIsOurs -CurrentTitle $new -Title $new) 'and one already right is not rewritten'
+
+    # The case this missed until 2026-09-05. A sport's slug can change while the naming pattern
+    # does not, and the board is then wearing this runner's own name for a sport that no longer
+    # exists. BMX's board sat as `DQ BMX Enetpulse` for a day after the slug became BMX-Racing,
+    # and had to be renamed by hand, because the list held only the pattern before the current
+    # one. Recognising the current shape is what makes the rename follow the slug.
+    Assert-True (Test-SheetsTitleIsOurs -CurrentTitle 'DQ Fixtureball-Racing Enetpulse' -Title $new) `
+        'and a name this runner gave it under the current pattern, for a slug since changed'
+    Assert-True (Test-SheetsTitleIsOurs -CurrentTitle 'DQ BMX Enetpulse' -Title 'DQ BMX-Racing Enetpulse') `
+        'the case that went unnoticed, stated as itself'
+
+    # Still nobody else's. The pattern is the runner's own shape and not a wildcard over
+    # anything containing the word.
+    Assert-Equal $false (Test-SheetsTitleIsOurs -CurrentTitle 'Enetpulse DQ Fixtureball 2026 - working copy' -Title $new) `
+        'a title that merely mentions the same words is not this runner'
 }
 
 Test-That 'Findings is coloured by its share of the population, not by how large it is' {

@@ -43,10 +43,19 @@ $SheetsScope = 'https://www.googleapis.com/auth/spreadsheets https://www.googlea
 # is the same defect as one that overwrites a comment.
 $SheetsUntitled = 'Untitled spreadsheet'
 
-# Titles this runner has given documents in the past. A document still carrying one of these
-# is wearing a name nobody chose, so a change to the naming pattern reaches it. Add the old
-# pattern here whenever the pattern changes; nothing else may go in this list.
-$SheetsFormerTitles = @('Enetpulse DQ - *')
+# Titles this runner has given documents in the past, and the shape it gives them now. A
+# document carrying one of these is wearing a name nobody chose, so a change to the naming
+# pattern reaches it - and so does a change to the sport's slug, which is what the current
+# pattern was added for on 2026-09-05. BMX's board had been named `DQ BMX Enetpulse` by this
+# runner; the slug became BMX-Racing on 2026-09-04 and the board kept the old sport's name,
+# because the list recognised only the pattern before this one. Renaming it by hand is not a
+# fix - the next slug change would do the same thing again.
+#
+# The risk this takes is small and worth naming: a colleague who titles a board exactly
+# `DQ <something> Enetpulse` has picked a name this runner will overwrite. Nothing else may go
+# in this list, and a pattern loose enough to match a title somebody would plausibly choose
+# does not belong in it.
+$SheetsFormerTitles = @('Enetpulse DQ - *', 'DQ * Enetpulse')
 
 # Rows per write request. A single 20 000-row block is megabytes of JSON in one body, which is
 # slow to build, slow to send and all-or-nothing if it fails.
