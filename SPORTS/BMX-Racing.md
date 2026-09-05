@@ -106,9 +106,12 @@ separate, already-confirmed direct column.
 | duration_full_time | 557 | `m:ss.f` or bare seconds; populated in 9 events only | Full-time duration | Confirmed-data |
 | wave_1 | 547 | | Wave 1 | Confirmed-data |
 
-`101 Duration` carries the sport's times and follows the leader/gap convention, but it
-stores them as bare seconds with no colon: `+0.038` for a gap, `98.455` for a leader. This
-is what `BMX-Racing-DQ-030` exists for, the colon-tolerant global shape being too loose here.
+`101 Duration` carries the sport's times and follows the leader/gap convention: a full time
+for the leader, a `+` gap for every other rider. A gap under a minute is written in bare
+seconds, `+0.038`; a gap of a minute or more takes clock notation, `+1:43.043`. Both are
+correct, by the user's decision of 2026-09-05. `BMX-Racing-DQ-030` runs the global template
+`GLOBAL-DQ-019` and carries no sport statement of its own: the sport statement existed only
+to refuse the colon, and that refusal was withdrawn by the same decision.
 
 `557 Full-time duration` is the opposite case. It is present but effectively unused: 421
 participant rows across 9 events, against 61 463 rows in 7 994 events for `101`. Its values
@@ -155,38 +158,34 @@ for the duration the way `557` does for Triathlon.
 
 ### What shape `101 Duration` is actually written in
 
-Measured 2026-08-12 over every active event participant in the sport, split by placing:
+Re-measured 2026-09-05 over every active event participant in the database sport, by value
+shape:
 
-| Position | Shape | Rows | Events | Range written |
-|---|---|---|---|---|
-| rank 1 | absolute, plain | 8 000 | 7 994 | `22.598` – `95.20` |
-| every other rank | absolute, plain | 51 158 | 7 968 | `11.20` – `98.455` |
-| every other rank | absolute, clock | 1 540 | 1 271 | `1:00.002` – `3:27.565` |
-| every other rank | gap (`+`) | 759 | 26 | `+0.037` – `+9.775` |
-| every other rank | other | 6 | 1 | `58.995 +`, `1:18.619 +` |
+| Shape | Values | Events | Reading |
+|---|---|---|---|
+| `+#.#` | 53 269 | 8 004 | the gap, bare seconds |
+| `#.#` | 8 007 | 8 006 | the leader's full time, one per event |
+| `+#:#.#` | 218 | 203 | the gap, clock notation, a minute or more |
+| `-#.#` | 120 | 13 | negative, and every one of the 13 events is Freestyle |
+| `#:#.#` | 13 | 13 | full time in clock notation |
 
-Three things follow, and they are worth keeping apart.
+**The field keeps the leader/gap convention, and the earlier reading of it was overtaken by
+the data.** Measured 2026-08-12, the same field held absolute times at every placing - 51 158
+rows across 7 968 events - and the `+` shape appeared in 26 events. That reading was correct
+when it was taken and is wrong now: the feed was corrected in the weeks between, and today one
+absolute value per event sits against 53 269 gaps. It is recorded here because a reader
+meeting the check's convention would otherwise re-derive the same contradiction and reach the
+same dead end.
 
-**The field holds absolute times for every placing, not a leader and a set of gaps.** 59 158 of
-the 60 698 non-clock rows are absolute, and the `+` shape appears in 26 events out of 7 994.
-Whatever the intended convention was, what is stored is a full time per rider.
+**The one-minute boundary is a notation, not a defect.** A gap of a minute or more is written
+`+1:43.043` rather than `+103.043`, in 203 events. Settled 2026-09-05; before that the sport
+statement refused the colon and reported all 203.
 
-**Two notations are in use, and inside a single event they never overlap.** The highest plain
-value written in an event that also uses clock notation is `59.977`; the lowest clock value in
-the same events is `1:00.002`. The boundary is exactly one minute and holds without a single
-exception across all 1 271 events that carry both — so a check reporting "this event mixes two
-notations" would report 1 271 events that are perfectly consistent.
+**The negative values are not this sport's.** All 13 events carrying `-#.#` are Freestyle -
+Summer Olympics 2020, Pan American Games 2019 and 2023, BMX Freestyle European Championships
+2025 - and the discipline boundary excludes them here. What a negative duration means in a
+judged discipline is an open question for `SPORTS/BMX-Freestyle.md`, not for this file.
 
-**Where the boundary is not held is small and specific:** 19 events, 105 rows, writing a minute
-or more in plain seconds — `60.02`, `61.12`, `98.455` — against `1:00.02` elsewhere. Rank 1 is
-its own case: it is written plain in every one of its 8 000 rows, up to `95.20`, so it never
-takes clock notation at all.
-
-No check is written for any of this. The notation question sits inside the first finding rather
-than beside it: if the field's convention is settled as absolute-per-rider, the notation rule
-has to be stated for that convention before it can be checked, and 105 rows are likely to be
-corrected in the same pass. `GLOBAL_DQ/README.md` records why `GLOBAL-DQ-120` leaves the
-question alone — it reads precision, and notation is a question about magnitudes.
 
 <!-- MANUAL PASTE ZONE: 58 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -397,5 +396,4 @@ A BMX event's Rank sequence may legitimately exceed its own participant count wh
 - Whether BMX `event.round_typeFK=0` (unmapped to any `round_type` row) is an intended sentinel value for "not assigned", or represents bad/legacy data — not yet confirmed.
 - Some BMX Comp.Rank statistics (statistic_typeFK=11, object_typeFK=3) have no reliable path to a discipline: neither `statistic_config` Event id (1471) → event → `object_discipline`, nor a direct `object_discipline` relation (owner type=83) on the statistic itself, is guaranteed to exist. A statistic can be fully discipline-orphaned from both mechanisms (confirmed example: statistic_id=166712, name "Female Park"). Discipline-scoped checks and analysis for BMX Comp.Rank statistics must not assume either path is universal.
 - Whether the sentinel Rank value paired with a `DNS` or `DNF` comment follows a fixed rule is not confirmed. Observed values do not resolve to one: in event 5124031 `DNF` maps to `7` and `DNS` to `10` within an eight-participant heat. Until the rule is confirmed, a check must recognise a non-finishing participant by the presence of an active comment, never by the rank value itself.
-- Which convention `101 Duration` is meant to follow. `BMX-Racing-DQ-030` encodes a leader and a set of `+` gaps, and the stored data is the opposite: absolute times for every placing, with the gap shape in 26 events out of 7 994 (see "What shape `101 Duration` is actually written in"). Either the check states a convention the sport does not keep, or the sport has drifted from one it was meant to keep, and the two call for opposite corrections. Raised 2026-08-12; a notation check for the same field is held behind this answer, because the rule for writing a minute or more cannot be stated before the shape it applies to is settled.
 <!-- MANUAL PASTE ZONE: 58 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
