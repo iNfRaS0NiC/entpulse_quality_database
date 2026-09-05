@@ -3134,6 +3134,17 @@
         "RESULT_DURATION_TYPE_ID": 101,
         "CLIENT_FROM_SEASON": 2004,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "FINAL_ROUND_TYPE_LIST": "173",
+        "BRONZE_ROUND_TYPE_LIST": "181",
+        "MEDAL_ROUND_TYPE_LIST": "173, 181",
+        "RESULT_SCORE_TYPE_ID": 102,
+        "RESULT_FINAL_SCORE_TYPE_ID": 102,
+        "RESULT_TIE_VALUE_TYPE_LIST": "102",
+        "INTEGER_RESULT_TYPE_LIST": "100",
+        "RANK_MAX_PLAUSIBLE": 200,
+        "NOT_STARTED_DESC_LIST": "1",
+        "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+        "LINEUP_SIZE_MIN_SPREAD": 1,
         "_names": {
             "SPORT_ID": "45 Shooting, enet code sh. Confirmed by GLOBAL-DISCOVERY-001 on 2026-09-05, the day the sport was opened.",
             "EVENT_PARTICIPANT_TYPE_LIST": "'athlete' and 'team' - GLOBAL-DISCOVERY-004 returned both, 15 555 athletes across 161 530 participations and 382 teams across 10 014. The team is a real second population here and not an artefact: it carries a lineup of its own members.",
@@ -3145,7 +3156,19 @@
             "RESULT_MEDAL_TYPE_ID": "501 Medal, code 'medal' - GLOBAL-DISCOVERY-007, 11 039 rows across 4 365 events, and GLOBAL-DISCOVERY-026 found exactly three shapes in it: gold, silver and bronze.",
             "RESULT_DURATION_TYPE_ID": "101 Duration, code 'duration' - GLOBAL-DISCOVERY-007. This names which type id the duration field is and says nothing about whether its contents are durations, because measured on 2026-09-05 they are not: 31 value shapes over 2 437 rows, the numbers being target counts, plus a bare backtick in 88 World Cup events, eight country codes and two athlete names. SPORTS/Shooting.md carries the reading and the open question. Nothing should read this parameter as a promise that the field holds a time.",
             "CLIENT_FROM_SEASON": "2004, by the user's decision of 2026-09-05, and the same value every other sport in this repository carries - a common boundary is what makes a count on one sport comparable with a count on another. The sport's own data starts later than that in what was read on the day it was opened, so the value excludes nothing today and is a boundary rather than a filter.",
-            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0, by the user's decision of 2026-09-05: the client takes Shooting whole, so nothing is excluded and 0 is the token that says so. It is not an empty value - a missing token makes every statement that reads it skip silently, which is the failure this exists to prevent. The sport holds 55 template rows over 21 competitions, three of them with no events at all, two of those being (IOC) templates that the statistics statements exclude in any case."
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0, by the user's decision of 2026-09-05: the client takes Shooting whole, so nothing is excluded and 0 is the token that says so. It is not an empty value - a missing token makes every statement that reads it skip silently, which is the failure this exists to prevent. The sport holds 55 template rows over 21 competitions, three of them with no events at all, two of those being (IOC) templates that the statistics statements exclude in any case.",
+            "FINAL_ROUND_TYPE_LIST": "173 Final, the only round this sport calls a final and the one holding 3 656 of its 4 365 medal-bearing events. There is no round type 9 here, unlike the sports that carry both.",
+            "BRONZE_ROUND_TYPE_LIST": "181 bronze, on 640 medal-bearing events, and the name is stored in lower case where every other round type name is capitalised. Shooting decides bronze both ways: 2 908 of its bronzes sit inside 173 Final and 640 in this separate round, so a check keyed on the final alone would miss the second and a check keyed on this alone would report the first.",
+            "MEDAL_ROUND_TYPE_LIST": "173 Final and 181 bronze, by the user's decision of 2026-09-05, measured the same day by intersecting every event carrying a gold, silver or bronze result with the round type it holds - all twelve round types were drilled into individually, so the intersection is coverage and not a sample. A third round type does award medals: 69 events carry one under round_typeFK 0, which maps to no round_type row at all. It is deliberately left out. An event awarding a medal without a round type is the open question this sport was opened with, and putting 0 in this list would silence the 69 rather than report them.",
+            "RESULT_SCORE_TYPE_ID": "102 Points, by the user's decision of 2026-09-05. 170 960 rows across 8 587 events, the sport's second widest field after Rank and the only one holding a shooting score. Qualification writes it whole and a final writes it to a decimal.",
+            "RESULT_FINAL_SCORE_TYPE_ID": "102 Points, the same field and the same decision. Shooting decides an event on its score, so the deciding score and the score are one field here; the sports declaring something different for the two are head-to-head ones where a mirrored score exists.",
+            "RESULT_TIE_VALUE_TYPE_LIST": "102 Points. Two shooters on the same score legitimately share a place, which is what makes a duplicate rank clean for GLOBAL-DQ-021. The shoot-off fields 535 Tops and 536 Zones break such a tie in reality but were left out: they appear in 36 and 9 events in the whole sport, so keying the rule on them would leave almost every genuine tie unexplained.",
+            "INTEGER_RESULT_TYPE_LIST": "100 Rank, by the user's decision of 2026-09-05, and it alone. Measured the same day: Rank holds two value shapes across 171 134 rows, a plain number and a bare hyphen, so a fractional value there is a defect by construction.",
+            "RANK_MAX_PLAUSIBLE": "200, by the user's decision of 2026-09-05. Measured the same day over all 8 632 events carrying a Rank: the largest field is 193 competitors, the 99th percentile is 116 and the median is 8. Nothing in the sport reaches 200, so the value is a ceiling with a margin rather than a threshold anything sits near.",
+            "NOT_STARTED_DESC_LIST": "1 Not started, and it alone. GLOBAL-DISCOVERY-003 returned three statuses for this sport on 2026-09-05 - finished on 8 850 events, notstarted on 65 and cancelled on 7 - and 1 is the only detailed status under notstarted. 106 Cancelled is a different state and is deliberately not here.",
+            "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined' - the same three thirteen other sports declare. A sport with no such row leaves the list naming values that simply never match, which costs nothing.",
+            "LINEUP_SIZE_MIN_SPREAD": "1, as ten other sports declare. Shooting fields teams with lineups - 3 950 member rows under lineup type 14 Starter - so a spread of more than one member between the teams of one event is worth reporting.",
+            "PRECISION_RESULT_TYPE_LIST": "Deliberately not declared, by the user's decision of 2026-09-05, which leaves GLOBAL-DQ-120 EVENT_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT unopened. 102 Points holds both a whole form on 137 100 values and a decimal one on 33 808, and that is the sport rather than a defect: a qualification is scored in whole points and a final to a decimal. Declaring 102 here would report the difference between the two rounds as an inconsistency. This is a value nobody should fill in without reopening the question."
         }
     }
 }
