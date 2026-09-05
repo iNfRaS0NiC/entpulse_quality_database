@@ -180,6 +180,29 @@ The six zeros are a data state and not a structural absence: the fields are a gl
 this discipline has not populated, and nothing about the storage prevents it. They are not
 grounds for calling a check `Not applicable`; `CLAUDE.md` owns that distinction.
 
+**A Comp.Rank here ranks the competition, and its top is the final exactly.** Read 2026-09-05 on
+the four records that carry participants - the 2025 World Cups at Montpellier, Shanghai and Sakai,
+the last of those twice. They rank 58, 47, 38 and 20 riders against finals of 12, 12, 12 and 20,
+and every rider standing in both holds the same number in both: 12, 12, 12 and 20 agreements and
+not one disagreement across 56 comparisons. The best place absent from the final is 13 in each of
+the three that have a qualifier, so places 1 to 12 are the finalists with nobody else among them
+and 13 downward are the riders the final did not reach. `GLOBAL-DQ-154` was written for this rule
+and `BMX-Freestyle-DQ-111` asserts it here; it returns nothing today, which is what the rule
+holding looks like.
+
+**Fourteen of the eighteen Comp.Rank records hold no participant at all.** Measured the same day:
+only the four 2025 World Cups are populated, while 2016, 2019, 2020, 2023, 2024 and the 2025
+European Championships are empty shells with their configuration filled in and nobody ranked.
+`BMX-Freestyle-DQ-050 COMP.RANK_NO_PARTICIPANTS` reports all fourteen. That is 78 per cent of the
+layer, and it is the reason `GLOBAL-DQ-154` can only see four: it has nothing to compare on the
+rest.
+
+**The linked event is the final and the ranking is wider than it**, which matters for any check
+written against this layer. A statement asserting that everyone ranked took part in the linked
+event would report 46 of Montpellier's 58 riders and be wrong to. `GLOBAL-DQ-042` asks the
+question the other way round - whether each finalist appears in the ranking - and is correct here
+for that reason.
+
 <!-- MANUAL PASTE ZONE: 58 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values
@@ -279,10 +302,15 @@ The reason it took a check to find is worth recording: the values are well-forme
 they run monotonically with the finishing order, so `GLOBAL-DQ-045` and `GLOBAL-DQ-054` would
 have passed every one of them. They are only wrong if you already know the sport is judged.
 
-**Sixty-six more were approved on 2026-09-05, in one batch across all eight categories.** The
-sport now holds 68 live checks and one deprecated, `BMX-Freestyle-DQ-001` through `-069`:
-18 `MISSING_VALUES`, 15 `WRONG_RESULTS`, 12 `WRONG_STRUCTURE`, 8 `NO_RELATED_RECORDS`,
-6 `MALFORMED_NAME`, 4 `WRONG_GENDER`, 4 `DATE_RANGE_MISMATCH` and 2 `WRONG_DISCIPLINE`.
+**The sport was opened to all eight categories on 2026-09-05 and holds 110 live checks**,
+`BMX-Freestyle-DQ-001` through `-111`, one of them deprecated by the `GLOBAL-DQ-004`/`-150` merge:
+39 `WRONG_RESULTS`, 24 `MISSING_VALUES`, 15 `WRONG_STRUCTURE`, 12 `NO_RELATED_RECORDS`,
+6 `MALFORMED_NAME`, 6 `DATE_RANGE_MISMATCH`, 5 `WRONG_GENDER` and 3 `WRONG_DISCIPLINE`.
+
+They arrived in five batches on that one day - 66 on what the sport could already run, then 10,
+9, 9 and 13 as each group of parameters was settled. **The parameters are the work and the
+approvals followed them.** 55 are declared, and `SPORTS/params.json` says of each whether it was
+measured here or inherited from BMX-Racing, because those are not the same kind of statement.
 
 **The candidates were drawn from what BMX-Racing instantiates rather than from the whole
 catalogue**, because this file already records that the global structure is inherited and not
@@ -308,9 +336,24 @@ population, and BMX-Racing already reports the same stages from the other side.
 this file records Properties as `Not checked`; it was approved on the same inheritance argument
 and its behaviour here is not yet observed.
 
-**None of the 66 has been run.** The 200-row gate was measured for `BMX-Freestyle-DQ-002` alone,
-where it returned 13. What the rest return is unknown until the sport's first full run, and any
-that floods is a candidate to withdraw - which `POWERBI.md` warns is not a neutral correction.
+**One parameter is recorded as not applicable rather than merely unset.**
+`TIMED_DISCIPLINE_LIST` cannot have a value here: 430 Freestyle is judged and its order follows
+`102 Points`. That is the sport's format and not a state of its data, so `GLOBAL-DQ-045`, `-046`,
+`-054`, `-056` and `-111` are `Not applicable` and will never be numbered - `GLOBAL-DQ-054` says
+as much in its own prerequisite. `SPORTS/params.json` `_notApplicable` carries the reason.
+
+**One candidate is deliberately unopened.** `GLOBAL-DQ-019 EVENT_DURATION_FORMAT_MISMATCH_TO_RANK`
+asserts that rank 1 holds an absolute time and the rest hold plus-prefixed gaps. BMX-Racing has an
+open question about whether that is the convention this database keeps at all, and the same field
+here holds scores rather than times. Approving it would inherit an argument nobody has settled.
+
+**Almost none of them has been run.** The 200-row gate was measured for `BMX-Freestyle-DQ-002`,
+which returned 13, and for `-111`, which returned none. What the rest return is unknown until the
+sport's first full run, and any that floods is a candidate to withdraw - which `POWERBI.md` warns
+is not a neutral correction. Two are known in advance to be large and were approved with the
+number in view: `GLOBAL-DQ-118` reports all 121 finals, because `173 Final` carries
+`knockout = no` in a table every sport shares, and `GLOBAL-DQ-040` reports 103 of them, because
+only 18 of this discipline's 121 finals are linked to a Comp.Rank.
 
 **The board exists and is deliberately empty.** It is registered in `TOOLS/sheet-registry.json`
 and is still an untitled document with no tabs, because a board is handed to colleagues when its

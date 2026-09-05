@@ -2897,10 +2897,8 @@ needs one.
 
 ### When naming the slice is what the server will not run
 
-BMX-Racing holds 420 of the 438 Comp.Rank statistics under its database sport. A filter keeping
-420 of 438 narrows nothing worth having, and it still makes the optimiser drive from
-`object_discipline` and lose the index path the statement was built on. Measured 2026-09-05 on
-five templates:
+A discipline filter written the obvious way is slow, and slow enough to lose a check. Measured
+2026-09-05 on five templates against BMX-Racing:
 
 | | no filter | `disciplineFK IN (429, 776)` | `NOT IN (430)` |
 |---|---|---|---|
@@ -2912,8 +2910,19 @@ five templates:
 
 `EXISTS`, `IN` and `JOIN` time out alike, so this is the plan and not the phrasing. It is also
 not a property of the templates: the same five return numbers on ten other boards, none of which
-declares a discipline at all. And it is not a property of the mechanism: BMX-Freestyle keeps 18
-of 438, and the plain form runs there in 64 seconds.
+declares a discipline at all.
+
+**It is not selectivity either, and the first version of this section said it was.** That reading
+held that a filter keeping 420 of 438 narrows nothing and confuses the optimiser for no gain, and
+BMX-Freestyle disproved it the same day: its filter keeps **18** of 438, which is as selective as
+this database gets, and it is still four and a half times slower than its own complement.
+Measured on `GLOBAL-DQ-154` - 13,7 seconds unfiltered, 61,3 as `disciplineFK IN (430)`, and 13,7
+again as `NOT IN (429, 776)`, same coverage and same nil findings.
+
+So the rule is the plain one: **the positive form is slow in all three of its spellings and the
+complement is fast, whichever slice is the large one.** Why is not established. A semi-join the
+optimiser is free to reorder against an anti-join it has to materialise once would explain both,
+but nothing here has read a plan, and it is written down as a measurement rather than a cause.
 
 So a sport whose slice is the large one asks for the complement instead:
 

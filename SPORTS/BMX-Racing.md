@@ -26,7 +26,13 @@ still costs the index path. Five templates - `GLOBAL-DQ-033 COMP.RANK_RESULTS_MI
 organization against competitor country - each ran 12 to 15 seconds unfiltered, each went over
 the server's 180-second wall written the plain way, and each came back to 12 to 16 seconds
 written as the complement. `EXISTS`, `IN` and `JOIN` fail alike, so it is the plan and not the
-phrasing, and BMX-Freestyle needs none of it: 18 statistics of 438, and the plain form runs.
+phrasing.
+
+**This file first said the cause was selectivity - a filter keeping 420 of 438 narrowing nothing -
+and that was wrong.** BMX-Freestyle disproved it on 2026-09-05: its filter keeps 18 of 438 and is
+still four and a half times slower than its own complement, so it declares one too. The measured
+rule is that the positive form is slow and the complement fast, whichever slice is the large one;
+why, nobody here has established. `TOOLS/README.md` carries the numbers from both sides.
 
 What the choice costs is small today and real: the two forms are the same rows only while every
 object in scope reaches exactly one discipline. All 438 do, measured the same day. An object
