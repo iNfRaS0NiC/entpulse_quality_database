@@ -16,6 +16,24 @@ The boundary is carried by `DISCIPLINE_ID_LIST` in `SPORTS/params.json` and reac
 database through the commented discipline filter every statement that can reach a discipline
 carries. `TOOLS/README.md` owns the mechanism and `POWERBI.md` the query contract.
 
+**The boundary is written as the complement, and that is a decision rather than a detail.**
+`DISCIPLINE_EXCLUDE_LIST = 430` is declared beside it, and a statement's filter is activated as
+`NOT IN (430)` rather than `IN (429, 776)`. The reason is measured, 2026-09-05: this sport holds
+420 of the 438 Comp.Rank statistics under `sport.id` 58, so naming them narrows nothing and
+still costs the index path. Five templates - `GLOBAL-DQ-033 COMP.RANK_RESULTS_MISSING_PHASE`,
+`GLOBAL-DQ-041 COMP.RANK_RESULTS_MEDAL_ON_NON_MEDAL_ROUND_PHASE`,
+`GLOBAL-DQ-113 COMP.RANK_PARTICIPANT_TYPE_MIXED`, and `GLOBAL-DQ-136` and `GLOBAL-DQ-145` on
+organization against competitor country - each ran 12 to 15 seconds unfiltered, each went over
+the server's 180-second wall written the plain way, and each came back to 12 to 16 seconds
+written as the complement. `EXISTS`, `IN` and `JOIN` fail alike, so it is the plan and not the
+phrasing, and BMX-Freestyle needs none of it: 18 statistics of 438, and the plain form runs.
+
+What the choice costs is small today and real: the two forms are the same rows only while every
+object in scope reaches exactly one discipline. All 438 do, measured the same day. An object
+reaching none would be dropped by the plain form and kept by this one, appearing on this board
+and on no other. That is why the exclusion is declared in the sport's own parameters rather than
+worked out by the runner.
+
 Eighteen checks carry no such filter and audit `sport.id` 58 whole. Every one of them looks
 for an object with **no** participation - a template with no tournaments, a tournament with no
 stages, a stage with no events, a person who never competed - so a filter running through that

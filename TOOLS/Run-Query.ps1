@@ -281,6 +281,7 @@ $script:ClientScopeInScopeIds = @()
 # per statement where each one is narrowed, like the boundary above. A sport declaring none
 # reaches none of this and its statements go to the database exactly as they are written.
 $script:DisciplineIds = @()
+$script:DisciplineExcludeIds = @()
 
 # When this invocation began, stamped once so every ledger entry a run writes carries the
 # same moment however long the run took. UTC because the ledger is tracked in git and read on
@@ -1494,6 +1495,14 @@ function Enable-TemplateFilter {
 $DisciplineFilterMarker =
 '(?m)^([ \t]*)--[ \t]*(AND[ \t]+EXISTS[ \t]*\(.*<discipline_ids>.*\))[ \t]*\r?$'
 
+# The same marker read closely enough to be turned inside out. Every one of the 210 markers in
+# the package is written in this one shape - verified 2026-09-05 - so a rewrite either reaches
+# all of a statement's markers or none, and Enable-DisciplineFilter refuses the in-between.
+$DisciplineFilterMarkerParts =
+'(?m)^([ \t]*)--[ \t]*AND[ \t]+EXISTS[ \t]*\([ \t]*SELECT[ \t]+1[ \t]+FROM[ \t]+object_discipline[ \t]+(\w+)' +
+'[ \t]+WHERE[ \t]+\2\.object_typeFK[ \t]*=[ \t]*(\d+)[ \t]+AND[ \t]+\2\.objectFK[ \t]*=[ \t]*([\w.]+)' +
+'[ \t]+AND[ \t]+\2\.disciplineFK[ \t]+IN[ \t]*\(<discipline_ids>\)[ \t]+AND[ \t]+\2\.del[ \t]*=[ \t]*''no''\)[ \t]*\r?$'
+
 function Enable-DisciplineFilter {
     # Activates every discipline filter in the statement and reports how many it found.
     #
@@ -1503,9 +1512,33 @@ function Enable-DisciplineFilter {
     # participant registry, a template inventory - and refusing them would empty a batch to
     # make a point about the ones that do. What a missing marker costs is reported by the
     # caller, once, rather than being silently correct.
-    param([string]$Text, [int[]]$DisciplineIds)
+    #
+    # -ExcludeIds asks for the complement: the same rows named as everything outside the other
+    # slice of the database sport, which is what a sport holding almost all of it has to write
+    # to get a plan the server can run. $DisciplineExcludeParameter carries the measurement and
+    # the reason. The two forms are the same rows only while every object in scope reaches
+    # exactly one discipline; where one reaches none, the positive form drops it from every
+    # sport and this one keeps it here. That is a real difference and the sport file says so.
+    param([string]$Text, [int[]]$DisciplineIds, [int[]]$ExcludeIds)
 
     $found = [regex]::Matches($Text, $DisciplineFilterMarker)
+
+    if ($ExcludeIds -and $ExcludeIds.Count -gt 0) {
+        # Refuse a statement this cannot rewrite whole. A half-narrowed statement asserts a
+        # scope nobody chose, and it would do it silently.
+        $parts = [regex]::Matches($Text, $DisciplineFilterMarkerParts)
+        if ($parts.Count -ne $found.Count) {
+            return [pscustomobject]@{ Sql = $Text; Activated = 0; Unrewritable = ($found.Count - $parts.Count) }
+        }
+        $list = ($ExcludeIds -join ', ')
+        $activated = [regex]::Replace($Text, $DisciplineFilterMarkerParts, {
+                param($m)
+                '{0}AND {1} NOT IN (SELECT {2}.objectFK FROM object_discipline {2} WHERE {2}.object_typeFK = {3} AND {2}.disciplineFK IN ({4}) AND {2}.del = ''no'')' -f `
+                    $m.Groups[1].Value, $m.Groups[4].Value, $m.Groups[2].Value, $m.Groups[3].Value, $list
+            })
+        return [pscustomobject]@{ Sql = $activated; Activated = $parts.Count; Unrewritable = 0 }
+    }
+
     $list = ($DisciplineIds -join ', ')
 
     $activated = [regex]::Replace($Text, $DisciplineFilterMarker, {
@@ -1513,7 +1546,7 @@ function Enable-DisciplineFilter {
             '{0}{1}' -f $m.Groups[1].Value, $m.Groups[2].Value.Replace('<discipline_ids>', $list)
         })
 
-    return [pscustomobject]@{ Sql = $activated; Activated = $found.Count }
+    return [pscustomobject]@{ Sql = $activated; Activated = $found.Count; Unrewritable = 0 }
 }
 
 # The id window a statement can be cut into. WORKFLOW.md separates two ways scope failure
@@ -2108,6 +2141,21 @@ $InScopeParameter = 'IN_SCOPE_TEMPLATE_ID_LIST'
 # database sport rather than the whole of one; absent everywhere else, which is what tells
 # this runner to send every statement unchanged.
 $DisciplineParameter = 'DISCIPLINE_ID_LIST'
+
+# How that confinement is written into a statement, when writing it the obvious way costs more
+# than the sport can pay. A discipline filter that keeps almost everything - BMX-Racing is 420
+# of the 438 Comp.Rank statistics under its database sport - narrows nothing and still makes
+# the optimiser drive from `object_discipline`, losing the index path the statement was built
+# on. Measured 2026-09-05 on five templates: 12 to 15 seconds each unfiltered, all five over
+# the server's 180-second wall with the filter written as `disciplineFK IN (mine)`, and 12 to
+# 16 seconds again with it written as `NOT IN (the others)`. The three obvious spellings -
+# EXISTS, IN, JOIN - time out identically, so this is the plan and not the phrasing.
+#
+# Declaring this list asks for the complement form. It is a sport's statement that its slice is
+# the large one, and it is deliberately not derived: the two forms disagree about an object
+# carrying no discipline at all, which the positive form drops from every sport and this one
+# keeps. TOOLS/README.md owns the mechanism.
+$DisciplineExcludeParameter = 'DISCIPLINE_EXCLUDE_LIST'
 
 # The named keys inside a sport's SPORTS/params.json entry that are not themselves parameters.
 # _notApplicable holds the parameters the sport is documented as unable to supply, mapped to
@@ -6181,6 +6229,23 @@ if ($sportIdentity) {
                     ($script:DisciplineIds -join ', ')) -ForegroundColor DarkGray
         }
     }
+
+    # Said out loud on every run that uses it, because the same statement asserts something
+    # slightly different in this form and a reader of the output has to be able to see which
+    # form produced it.
+    if ($paramTable.ContainsKey($DisciplineExcludeParameter)) {
+        $script:DisciplineExcludeIds = @([string]$paramTable[$DisciplineExcludeParameter] -split ',' |
+            ForEach-Object { $_.Trim() } | Where-Object { $_ -match '^\d+$' } | ForEach-Object { [int]$_ })
+        $overlap = @($script:DisciplineExcludeIds | Where-Object { $script:DisciplineIds -contains $_ })
+        if ($overlap.Count -gt 0) {
+            throw ("{0} and {1} both name discipline(s) {2}. A sport cannot be inside and outside the same discipline; correct SPORTS/params.json." -f `
+                    $DisciplineParameter, $DisciplineExcludeParameter, ($overlap -join ', '))
+        }
+        if ($script:DisciplineExcludeIds.Count -gt 0) {
+            Write-Host ("  {0,-30} the boundary is written as everything except discipline(s) {1}, which is the same rows and a plan the server can run" -f `
+                    $DisciplineExcludeParameter, ($script:DisciplineExcludeIds -join ', ')) -ForegroundColor DarkGray
+        }
+    }
     Write-Host ''
 }
 
@@ -6197,6 +6262,7 @@ $registryTrimmed = @()
 # though they were this sport's, and knowing which is the difference between reading the
 # board and trusting it.
 $disciplineUnmarked = @()
+$disciplineUnrewritable = @()
 
 $notApplicable = @{}
 if ($sportIdentity) { $notApplicable = Get-SportNotApplicable -SportName $ResolvedSportSlug }
@@ -6275,8 +6341,10 @@ foreach ($job in $jobs) {
     # - which tournaments the client takes, and which disciplines this sport is - and a sport
     # can need both at once, as BMX-Racing does.
     if ($script:DisciplineIds.Count -gt 0) {
-        $confined = Enable-DisciplineFilter -Text $job.Sql -DisciplineIds $script:DisciplineIds
+        $confined = Enable-DisciplineFilter -Text $job.Sql -DisciplineIds $script:DisciplineIds `
+            -ExcludeIds $script:DisciplineExcludeIds
         if ($confined.Activated -gt 0) { $job.Sql = $confined.Sql }
+        elseif ($confined.Unrewritable -gt 0) { $disciplineUnrewritable += $job.CheckId }
         else { $disciplineUnmarked += $job.CheckId }
     }
 
@@ -6379,6 +6447,14 @@ if ($disciplineUnmarked.Count -gt 0) {
     # and nothing downstream can tell the difference afterwards.
     Write-Host ("Not confined to this sport's disciplines, so run across the whole database sport - {0}: {1}" -f `
             $disciplineUnmarked.Count, ($disciplineUnmarked -join ', ')) -ForegroundColor Yellow
+}
+if ($disciplineUnrewritable.Count -gt 0) {
+    # Louder than unmarked and for the opposite reason: these statements carry a marker this
+    # runner could not turn into the complement form, so they ran with no discipline filter at
+    # all while carrying one. A marker written in some other shape is the only way to get here,
+    # and it is a defect in the statement rather than a fact about the sport.
+    Write-Host ("Carry a discipline marker this runner could not rewrite, so they ran unconfined - {0}: {1}" -f `
+            $disciplineUnrewritable.Count, ($disciplineUnrewritable -join ', ')) -ForegroundColor Red
 }
 if ($registryTrimmed.Count -gt 0) {
     Write-Host ("Registry branch dropped from {0}: {1}" -f $registryTrimmed.Count, ($registryTrimmed -join ', ')) -ForegroundColor DarkGray

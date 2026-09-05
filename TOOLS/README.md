@@ -2895,6 +2895,49 @@ Every other sport declares nothing, reaches none of this, and sends every statem
 it is written. That is the point of the mechanism: the boundary costs only the sport that
 needs one.
 
+### When naming the slice is what the server will not run
+
+BMX-Racing holds 420 of the 438 Comp.Rank statistics under its database sport. A filter keeping
+420 of 438 narrows nothing worth having, and it still makes the optimiser drive from
+`object_discipline` and lose the index path the statement was built on. Measured 2026-09-05 on
+five templates:
+
+| | no filter | `disciplineFK IN (429, 776)` | `NOT IN (430)` |
+|---|---|---|---|
+| `GLOBAL-DQ-033 COMP.RANK_RESULTS_MISSING_PHASE` | 14,1s | over the 180s wall | 15,3s |
+| `GLOBAL-DQ-041 COMP.RANK_RESULTS_MEDAL_ON_NON_MEDAL_ROUND_PHASE` | 12,1s | over the wall | 12,6s |
+| `GLOBAL-DQ-113 COMP.RANK_PARTICIPANT_TYPE_MIXED` | 13,3s | over the wall | 15,2s |
+| `GLOBAL-DQ-136` organization against competitor country | 14,9s | over the wall | 16,1s |
+| `GLOBAL-DQ-145` the same, per row | 14,1s | over the wall | 15,8s |
+
+`EXISTS`, `IN` and `JOIN` time out alike, so this is the plan and not the phrasing. It is also
+not a property of the templates: the same five return numbers on ten other boards, none of which
+declares a discipline at all. And it is not a property of the mechanism: BMX-Freestyle keeps 18
+of 438, and the plain form runs there in 64 seconds.
+
+So a sport whose slice is the large one asks for the complement instead:
+
+```json
+"DISCIPLINE_ID_LIST": "429, 776",
+"DISCIPLINE_EXCLUDE_LIST": "430"
+```
+
+Both are declared. The first says what the sport is and is what the run reports; the second says
+how its boundary is written. Naming a discipline in both is refused rather than resolved.
+
+**The two forms are not the same statement, and the difference is worth stating.** They select
+the same rows only while every object in scope reaches exactly one discipline. Where one reaches
+none, `IN (mine)` drops it from every sport and `NOT IN (theirs)` keeps it here. All 438
+statistics in BMX's scope reach exactly one, measured the same day - but that is a state of the
+data rather than a guarantee from the structure, and the day it stops being true this sport
+gains rows no other sport would show.
+
+The complement is built by reading the marker apart, so it needs the canonical one-hop shape:
+`object_discipline` joined straight to the audited object. All 210 markers in the package are
+written that way. A statement carrying a marker in any other shape, such as the multi-hop path
+through `tournament_stage`, is handed back **untouched and named in red**, because half a
+statement narrowed would assert a scope nobody chose and say nothing about it.
+
 ### The marker, and why it carries the whole predicate
 
 The runner activates a commented line, the way it already does for the client boundary and for

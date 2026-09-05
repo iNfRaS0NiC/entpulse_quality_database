@@ -889,6 +889,48 @@ Test-That 'an already active discipline filter is not activated twice' {
     Assert-True ($twice.Sql -match [regex]::Escape('IN (429)')) 'the first list should stand'
 }
 
+Test-That 'a sport declaring an exclusion gets the boundary written as the complement' {
+    # The same rows named the other way round, because naming them the obvious way is what the
+    # server will not run. BMX-Racing is 420 of the 438 Comp.Rank statistics under sport 58, so
+    # `disciplineFK IN (429, 776)` narrows nothing and still costs the index path: measured
+    # 2026-09-05, five templates went from 12-15 seconds unfiltered to over the 180-second wall
+    # with it, and back to 12-16 seconds written as `NOT IN (430)`.
+    $sql = "  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_s WHERE dsc_s.object_typeFK = 83 AND dsc_s.objectFK = s.id AND dsc_s.disciplineFK IN (<discipline_ids>) AND dsc_s.del = 'no')"
+    $out = Enable-DisciplineFilter -Text $sql -DisciplineIds @(429, 776) -ExcludeIds @(430)
+
+    Assert-Equal 1 $out.Activated 'the marker should be activated'
+    Assert-True ($out.Sql -match [regex]::Escape("AND s.id NOT IN (SELECT dsc_s.objectFK FROM object_discipline dsc_s WHERE dsc_s.object_typeFK = 83 AND dsc_s.disciplineFK IN (430) AND dsc_s.del = 'no')")) `
+        'the audited object, its owner type and the alias should all be carried over'
+    Assert-True ($out.Sql -notmatch 'EXISTS') 'the correlated form should be gone'
+    Assert-True ($out.Sql -notmatch '429') 'the sport own disciplines should not appear in the complement'
+}
+
+Test-That 'the complement reaches every branch or the statement is refused whole' {
+    # Half a statement narrowed is worse than none of it: it would assert a scope nobody chose
+    # and say nothing. The multi-hop path the runner deliberately allows cannot be turned inside
+    # out, so a statement carrying one is handed back untouched and named in red by the caller.
+    $canonical = "  -- AND EXISTS (SELECT 1 FROM object_discipline od WHERE od.object_typeFK = 5 AND od.objectFK = e.id AND od.disciplineFK IN (<discipline_ids>) AND od.del = 'no')"
+    $viaStage = "  -- AND EXISTS (SELECT 1 FROM tournament_stage tsd JOIN event ed ON ed.tournament_stageFK = tsd.id JOIN object_discipline od3 ON od3.object_typeFK = 5 AND od3.objectFK = ed.id AND od3.disciplineFK IN (<discipline_ids>) WHERE tsd.tournamentFK = t.id)"
+    $out = Enable-DisciplineFilter -Text ($canonical + "`n" + $viaStage) -DisciplineIds @(429, 776) -ExcludeIds @(430)
+
+    Assert-Equal 0 $out.Activated 'nothing should be activated'
+    Assert-Equal 1 $out.Unrewritable 'the marker it cannot turn round should be counted'
+    Assert-True ($out.Sql -match '<discipline_ids>') 'the statement should come back exactly as it went in'
+    Assert-True ($out.Sql -notmatch 'NOT IN') 'no branch should have been rewritten'
+}
+
+Test-That 'a sport declaring no exclusion still gets the positive form' {
+    # The complement is one sport's answer to one measured problem, not the new default. Every
+    # other sport that is a slice of a database sport keeps the form that reads plainly, and
+    # BMX-Freestyle is the case in point: 18 statistics of 438, 64 seconds, nothing to fix.
+    $sql = "  -- AND EXISTS (SELECT 1 FROM object_discipline od WHERE od.object_typeFK = 83 AND od.objectFK = s.id AND od.disciplineFK IN (<discipline_ids>) AND od.del = 'no')"
+    $out = Enable-DisciplineFilter -Text $sql -DisciplineIds @(430) -ExcludeIds @()
+
+    Assert-Equal 1 $out.Activated 'the marker should be activated'
+    Assert-True ($out.Sql -match [regex]::Escape('disciplineFK IN (430)')) 'the positive list should be written in'
+    Assert-True ($out.Sql -notmatch 'NOT IN') 'the complement should not appear'
+}
+
 Complete-Group
 
 # --------------------------------------------------------------------------------------
