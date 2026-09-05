@@ -5600,3 +5600,109 @@ WHERE t.del = 'no'
   )
 
 ORDER BY sort_order, earliest_medal DESC;
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-152
+    -- Name - EVENT_RESULTS_CLOCK_VALUE_IN_JUDGED_DISCIPLINE
+    -- What it does: Finds events of a judged discipline carrying a value in a clock result field, which is a score written where a time belongs.
+    CASE
+        WHEN x.score_values = 0 THEN 'CLOCK_VALUE_INSTEAD_OF_SCORE'
+        ELSE 'CLOCK_VALUE_BESIDE_ITS_SCORE'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.round_type_name,
+    x.tournament_name,
+    x.template_name,
+    x.competitors,
+    x.clock_values,
+    x.score_values,
+    x.sample_clock_values,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A discipline decided by judging records its result as a score.
+-- A value sitting in one of its clock fields is therefore not a slow time or a fast one - it is
+-- a number that was entered in the wrong field, and nothing downstream can tell it from a real
+-- one because a clock field holds whatever it is given.
+--
+-- Two states, because they are two repairs. Where the event also carries its score the clock
+-- value is a duplicate to remove; where it carries none, the score exists only under a name
+-- that misstates what it is, and removing the clock value would delete the result. The split is
+-- read from NUMERIC_RESULT_TYPE_LIST, which is where a sport declares the fields carrying a
+-- measured quantity, and on a judged sport that is the score.
+--
+-- Measured on BMX Freestyle 2026-09-05, which is the sport this was written for: 13 events of
+-- 272, 135 values in each of `101 Duration` and `557 Full-time duration`, and twelve of the
+-- thirteen carry no score at all. On the one that carries both - the 2020 Olympic seeding round -
+-- every competitor's Full time is their own Points value read as seconds and formatted as a
+-- clock: 90.97 points stored as `1:30.970`, 3.80 stored as `3.800`, nine of nine exact. The
+-- Duration field holds the gap to the leader in the same invented units, so a value of `-1.000`
+-- is a one-point gap. That is what makes this worth a check rather than a note: the values are
+-- well-formed clocks, monotonic with the finishing order, and every timed check in the package
+-- would pass them.
+--
+-- **A timed sport must not instantiate this.** The prerequisite is a sport, or a discipline of
+-- one, whose finishing order is decided by judging and which therefore declares no timed
+-- discipline; on a sport whose clock is the result, every event is reported. It is the mirror
+-- of GLOBAL-DQ-045 and GLOBAL-DQ-054, which read TIMED_DISCIPLINE_LIST and assert what a timed
+-- discipline owes; nothing until now asked what a judged one owes, so a judged discipline was
+-- simply left out of that list and never looked at again.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        rt.name AS round_type_name,
+        t.name AS tournament_name,
+        tt.name AS template_name,
+        COUNT(DISTINCT ep.id) AS competitors,
+        SUM(CASE WHEN r.result_typeFK IN ({{CLOCK_RESULT_TYPE_LIST}}) THEN 1 ELSE 0 END) AS clock_values,
+        SUM(CASE WHEN r.result_typeFK IN ({{NUMERIC_RESULT_TYPE_LIST}}) THEN 1 ELSE 0 END) AS score_values,
+        SUBSTRING(GROUP_CONCAT(DISTINCT CASE WHEN r.result_typeFK IN ({{CLOCK_RESULT_TYPE_LIST}})
+                                             THEN r.value END SEPARATOR ', '), 1, 400) AS sample_clock_values
+    FROM event e
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                 AND r.value IS NOT NULL AND TRIM(r.value) <> ''
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+    GROUP BY e.id, e.name, e.startdate, rt.name, t.name, tt.name
+) x
+WHERE x.clock_values > 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e2.id) AS eligible_count,
+    1 AS sort_order
+FROM event e2
+JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+JOIN event_participants ep2 ON ep2.eventFK = e2.id AND ep2.del = 'no'
+JOIN result r2 ON r2.event_participantsFK = ep2.id AND r2.del = 'no'
+              AND r2.value IS NOT NULL AND TRIM(r2.value) <> ''
+WHERE e2.del = 'no'
+  AND tt2.sportFK = {{SPORT_ID}}
+  AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t2.tournament_templateFK = <tournament_template_id>
+  -- AND e2.startdate >= '<from_datetime>'
+  -- AND e2.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
+
+ORDER BY sort_order, event_startdate DESC;

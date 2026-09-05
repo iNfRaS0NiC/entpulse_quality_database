@@ -79,8 +79,8 @@ Five types carry values, measured 2026-09-04 across the whole discipline.
 | points | 102 | decimal | **The deciding value of this sport.** A judged score, not a time | 4390 values over 230 events |
 | medal | 501 | `gold`, `silver`, `bronze` | Medal awarded | 352 values over 118 events |
 | comment | 104 | short code, e.g. `Disq.` | Status qualifier on a competitor | 140 values over 39 events |
-| duration | 101 | clock value | Present, and marginal - see below | 135 values over 13 events |
-| duration_full_time | 557 | clock value | Present, and marginal - see below | 135 values over 13 events |
+| duration | 101 | clock value | **Not a time. The judges' score, written into a clock field** - see below | 135 values over 13 events |
+| duration_full_time | 557 | clock value | **Not a time. The judges' score, written into a clock field** - see below | 135 values over 13 events |
 
 **Freestyle is judged, Racing is timed, and that is the substantive difference between the two
 sports.** Racing carries 61 492 values in each of `101 Duration` and `557 Full-time duration`
@@ -88,6 +88,29 @@ and 766 in `102 Points`; Freestyle carries 4390 in Points and 135 in each clock 
 finishing order of a Freestyle event follows the judges' score.
 
 `547 Wave 1` is used by Racing on two values and by Freestyle on none.
+
+**The 135 clock values are the score, stored in the wrong field.** Read 2026-09-05 across all
+thirteen events. Event 3291684, the 2020 Olympic seeding round, is the only one of the thirteen
+carrying both Points and the clock fields, and on all nine competitors `557 Full-time duration`
+is the competitor's own Points value read as seconds and formatted as a clock:
+
+| Competitor | Rank | `102 Points` | `557 Full-time` | `101 Duration` |
+|---|---:|---:|---|---|
+| Logan Martin | 1 | 90.97 | `1:30.970` | `1:30.970` |
+| Rimu Nakamura | 2 | 87.67 | `1:27.670` | `-3.000` |
+| Daniel Dhers | 3 | 85.10 | `1:25.100` | `-5.000` |
+| Anthony Jeanjean | 4 | 84.65 | `1:24.650` | `-6.000` |
+| Nick Bruce | 9 | 3.80 | `3.800` | `-27.000` |
+
+`101 Duration` holds the gap to the leader in the same invented units - `-3.000` where the gap
+is 3.3 points - which is what the `-1.000` first read on 2026-09-04 is: a one-point gap, and
+never a time. The leader carries the full value in both fields rather than a gap of zero.
+
+**Twelve of the thirteen carry no Points at all**, so on those the score exists only in the
+field that misnames it. All thirteen are ordinary Freestyle events - four Pan American Games
+2019, four 2023, two European Championships 2025 and the Olympic seeding round - so this is
+neither another discipline's rows nor a format the sport uses. It is one wrong way of entering
+a result, repeated. Reported rather than repaired; `CLAUDE.md` owns that boundary.
 
 <!-- MANUAL PASTE ZONE: 58 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -228,7 +251,66 @@ the discipline.
 
 The consequence for a reader of the boards is concrete: a colleague who fills in a date of birth
 from the BMX-Racing board will see the count fall on this one too, without having touched it.
+
+**Settled 2026-09-05: the check stays the same on both sports, and the duplication is accepted.**
+The registry is `object_participants` keyed on `object = 'sport'` and `objectFK = 58`; it carries
+no discipline at all, so this is a fact about the database rather than a filter in the wrong
+place. The runner's `-WithoutRegistryBranch` would drop that branch and leave the three
+participation paths, which do divide - but it would also drop everybody registered to the sport
+with no recorded participation, and those are the records most likely to be incomplete, which is
+what this check exists to find. Keeping them audited twice is the cheaper mistake than not
+auditing them at all. Every other person-level check on these two sports inherits the same
+answer.
 Whether the registry can be divided by discipline at all is the open question below.
+
+**`BMX-Freestyle-DQ-002 EVENT_RESULTS_CLOCK_VALUE_IN_JUDGED_DISCIPLINE`**, approved 2026-09-05.
+It reads `GLOBAL-DQ-152`, written the same day for this finding and for any judged sport after
+it: a discipline decided by judging records a score, so a value in one of its clock fields is a
+number entered in the wrong field. Two `check_type`s because they are two repairs -
+`CLOCK_VALUE_BESIDE_ITS_SCORE` where the score is also present and the clock value is a
+duplicate to remove, and `CLOCK_VALUE_INSTEAD_OF_SCORE` where it is not and removing the clock
+value would delete the result.
+
+Measured on approval: **13 findings of 262 eligible**, twelve of them the second kind. The
+eligible population is the Freestyle events carrying any result at all, not all 272. The check
+is fast - 0,4 seconds - because the clock fields are nearly empty here, which is the point.
+
+The reason it took a check to find is worth recording: the values are well-formed clocks and
+they run monotonically with the finishing order, so `GLOBAL-DQ-045` and `GLOBAL-DQ-054` would
+have passed every one of them. They are only wrong if you already know the sport is judged.
+
+**Sixty-six more were approved on 2026-09-05, in one batch across all eight categories.** The
+sport now holds 68 checks, `BMX-Freestyle-DQ-001` through `-068`:
+18 `MISSING_VALUES`, 15 `WRONG_RESULTS`, 12 `WRONG_STRUCTURE`, 8 `NO_RELATED_RECORDS`,
+6 `MALFORMED_NAME`, 4 `WRONG_GENDER`, 3 `DATE_RANGE_MISMATCH` and 2 `WRONG_DISCIPLINE`.
+
+**The candidates were drawn from what BMX-Racing instantiates rather than from the whole
+catalogue**, because this file already records that the global structure is inherited and not
+re-measured: the two sports are the same rows of the same tables under one `sport.id`. What
+needed deciding was only where the two disciplines genuinely differ. Of BMX-Racing's 115
+templates, 66 could run here on the parameters this sport declares and 48 could not, each of
+those blocked on a value that is a decision rather than a copy - `TIMED_DISCIPLINE_LIST` above
+all, which must stay undeclared here because the discipline is judged and every event would be
+reported. Those 48 are unopened, not refused.
+
+**The Comp.Rank layer is in, against the standing pause.** Since 2026-08-26 a new sport is
+opened without it while event results are corrected. This sport is not a new opening: its
+statistics layer was read on 2026-09-04 and is documented above, so 21 Comp.Rank templates were
+included by the user's decision of 2026-09-05.
+
+**Two candidates carry a caution rather than a clean prerequisite.**
+`GLOBAL-DQ-082 TOURNAMENT_STAGE_EVENT_DISCIPLINE_INCONSISTENT` asks whether a stage groups one
+discipline, and 16 of the 523 stages under `sport.id` 58 group more than one - four of them
+reaching Freestyle, on `BMX World Championship` and `Summer Olympics`. It was approved on the
+measurement rather than on the prerequisite's plain reading: four findings, not a whole
+population, and BMX-Racing already reports the same stages from the other side.
+`GLOBAL-DQ-109 EVENT_SETTINGS_DISCIPLINE_STORAGE_MISMATCH` reads the discipline property, and
+this file records Properties as `Not checked`; it was approved on the same inheritance argument
+and its behaviour here is not yet observed.
+
+**None of the 66 has been run.** The 200-row gate was measured for `BMX-Freestyle-DQ-002` alone,
+where it returned 13. What the rest return is unknown until the sport's first full run, and any
+that floods is a candidate to withdraw - which `POWERBI.md` warns is not a neutral correction.
 
 **The board exists and is deliberately empty.** It is registered in `TOOLS/sheet-registry.json`
 and is still an untitled document with no tabs, because a board is handed to colleagues when its
@@ -239,23 +321,8 @@ this sport's checks are approved, and that run also names it.
 
 ## Open questions
 
-- **The 13 events carrying a duration.** 135 values in each of `101 Duration` and `557 Full-time
-  duration`, on 13 of 272 events, in a discipline decided on points. The smallest Freestyle
-  duration read on 2026-09-04 is `-1.000`, which is not a time. Whether these are a defect, a
-  different discipline's rows attached to a Freestyle event, or a format this sport does use on
-  a few events has not been established, and no check should assume any of the three.
-- **Whether this sport declares a timed discipline at all.** Racing declares
-  `TIMED_DISCIPLINE_LIST = 429, 776` and five checks read it. Freestyle is judged, so the
-  parameter is recorded as not applicable in `SPORTS/params.json` and those five checks are
-  skipped rather than answered - but that is a conclusion about the sport and it rests on the
-  open question above.
-- **Whether the participant registry can be divided by discipline at all.** `BMX-Freestyle-DQ-001
-  PARTICIPANT_MISSING_DATE_OF_BIRTH` reports 3007 eligible here and 3010 on BMX-Racing over a
-  population of 3026, so the two sports audit almost exactly the same people. Measured
-  2026-09-04. Two readings are open and neither has been tested: that the registry is keyed on
-  `sport.id` and holds no discipline at all, in which case no person-level check can be divided
-  and the sport files should say so once; or that a path exists and this statement's discipline
-  filter sits where it cannot use it, in which case it is a defect in the marker and not a fact
-  about the database. Every other person-level check inherits whichever answer this gets.
+None. The three this file opened on 2026-09-04 - the thirteen events carrying a duration, whether
+the sport declares a timed discipline, and whether the participant registry can be divided - were
+all answered on 2026-09-05 and their answers are recorded in the sections they belong to.
 
 <!-- MANUAL PASTE ZONE: 58 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
