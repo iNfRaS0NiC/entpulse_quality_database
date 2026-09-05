@@ -14,6 +14,7 @@
         "NUMERIC_RESULT_TYPE_LIST": "102",
         "CLOCK_RESULT_TYPE_LIST": "101, 557",
         "ROUND_TYPE_LIST": "2, 152, 171, 173, 189",
+        "STAGE_DATE_TOLERANCE_DAYS": 0,
         "STATISTIC_TYPE_ID": 11,
         "STATISTIC_OWNER_TYPE_ID": 3,
         "SHARD_ID": 11,
@@ -22,6 +23,7 @@
         "DATA_ORGANIZATION_TYPE_ID": 1465,
         "_names": {
             "DISCIPLINE_ID_LIST": "430 Freestyle, the one discipline this sport is out of the three sharing sport.id 58. Racing (429) and Time Trial (776) are the other sport and are documented in SPORTS/BMX-Racing.md. Declared 2026-09-04 when the two were separated. Measured the same day: 272 events, 78 tournaments, 18 templates, 2016-2025, and every event under 58 resolves to exactly one discipline",
+            "STAGE_DATE_TOLERANCE_DAYS": "0 - a stage of this sport is written as the days its events are held on, so it is owed no slack. Measured 2026-09-05 across the 117 stages holding a dated Freestyle event: 111 match their events exactly at both ends, five carry one or two spare days and one carries thirty-one, and none holds an event outside its own range. Racing declares 0 for the same reason. Read by GLOBAL-DQ-153, and only by its tightness states - an event outside the stage is reported whatever this says",
             "ROUND_TYPE_LIST": "2 Semi Finals, 152 Qualifier, 171 Preliminary, 173 Final, 189 Seeding. Four of the five are measured 2026-09-04 as the round types this discipline contests - 173 on 121 events, 152 on 115, 2 on 34, 189 on 2 - and 171 Preliminary is not: Freestyle holds no event on it today and it is in the list because the user judged on 2026-09-04 that a Freestyle competition may legitimately hold a preliminary round, Racing using it on 14 events under the same sport.id. The distinction is deliberate and belongs in the record: an expected round set is a judgement about the sport format, never a count of what the data currently holds, and the four measured values are evidence while the fifth is a decision. Racing declares a different list of fifteen and none of the eight heat and repechage types it adds belongs here",
             "CLOCK_RESULT_TYPE_LIST": "101 Duration and 557 Full-time duration - the two result types that carry a clock value. Declared here for the opposite reason every timed sport declares it: this discipline is judged, so neither field should hold anything, and GLOBAL-DQ-152 reads the pair to find the events that do. Measured 2026-09-05: 135 values in each, over 13 of 272 events, and the values are the judges' score written as seconds - 90.97 points stored as 1:30.970. The parameter keeps its usual meaning, which is what these fields are; what changes is what the template asserts about them",
             "NUMERIC_RESULT_TYPE_LIST": "102 Points, and it is the deciding value of this sport rather than a secondary figure. Measured 2026-09-04: 4390 values over 230 of 272 events, against 766 across the whole of Racing. A Freestyle result is settled by the judges' score",

@@ -280,9 +280,9 @@ they run monotonically with the finishing order, so `GLOBAL-DQ-045` and `GLOBAL-
 have passed every one of them. They are only wrong if you already know the sport is judged.
 
 **Sixty-six more were approved on 2026-09-05, in one batch across all eight categories.** The
-sport now holds 68 checks, `BMX-Freestyle-DQ-001` through `-068`:
+sport now holds 68 live checks and one deprecated, `BMX-Freestyle-DQ-001` through `-069`:
 18 `MISSING_VALUES`, 15 `WRONG_RESULTS`, 12 `WRONG_STRUCTURE`, 8 `NO_RELATED_RECORDS`,
-6 `MALFORMED_NAME`, 4 `WRONG_GENDER`, 3 `DATE_RANGE_MISMATCH` and 2 `WRONG_DISCIPLINE`.
+6 `MALFORMED_NAME`, 4 `WRONG_GENDER`, 4 `DATE_RANGE_MISMATCH` and 2 `WRONG_DISCIPLINE`.
 
 **The candidates were drawn from what BMX-Racing instantiates rather than from the whole
 catalogue**, because this file already records that the global structure is inherited and not

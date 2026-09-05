@@ -3435,3 +3435,111 @@ WHERE ts.del = 'no'
         AND e2.startdate IS NOT NULL
         -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
   );
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-153
+    -- Name - TOURNAMENT_STAGE_DATE_RANGE_DISAGREES_WITH_ITS_EVENTS
+    -- What it does: Finds stages whose start and end dates do not match the days their own events are held on, whether the events fall outside the range or the range is wider than they are.
+    CASE
+        WHEN x.empty_days_before < 0 OR x.empty_days_after < 0 THEN 'EVENT_OUTSIDE_STAGE_RANGE'
+        WHEN x.empty_days_before > 0 AND x.empty_days_after > 0 THEN 'STAGE_RANGE_WIDE_AT_BOTH_ENDS'
+        WHEN x.empty_days_before > 0 THEN 'STAGE_RANGE_STARTS_TOO_EARLY'
+        ELSE 'STAGE_RANGE_ENDS_TOO_LATE'
+    END AS check_type,
+    x.tournament_stage_id,
+    x.tournament_stage_name,
+    x.template_name,
+    x.tournament_name,
+    x.stage_startdate,
+    x.stage_enddate,
+    x.event_count,
+    x.earliest_event_startdate,
+    x.latest_event_startdate,
+    x.empty_days_before,
+    x.empty_days_after,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A stage declares the days a part of a competition is held on,
+-- and its own events are what those days are. The two therefore have to agree at both ends, and
+-- there are only two ways they can fail to: an event outside what the stage declares, or a stage
+-- declaring days no event uses.
+--
+-- Merged from `GLOBAL-DQ-004` and `GLOBAL-DQ-150` on 2026-09-05, at the user's decision. The two
+-- asked opposite halves of one question over the same object and the same population, and a
+-- reader meeting them apart had to know which half they were looking at before either number
+-- meant anything. Both vocabularies are carried over unchanged, so a finding reads exactly as it
+-- read under whichever check produced it: `EVENT_OUTSIDE_STAGE_RANGE` was the whole of
+-- `GLOBAL-DQ-004`, and the three `STAGE_RANGE_*` states were `GLOBAL-DQ-150`'s.
+--
+-- The states stay separate because the repairs are separate. An event outside the range is
+-- either an event on the wrong stage or a stage whose dates were never set from its fixtures;
+-- a range wider than its events is a boundary to tighten and nothing to move. The two-ended
+-- state is named on its own for the same reason it was before: it is one stage to correct, not
+-- two findings about one stage.
+--
+-- `STAGE_DATE_TOLERANCE_DAYS` applies to the tightness states only and never to the outside
+-- state. Slack is the sport's format - 0 where a stage is written as the days its events are
+-- held, higher where one event stands for a competition of several days - and no format makes
+-- an event held outside its own stage acceptable.
+--
+-- A stage or an event without a date belongs to `GLOBAL-DQ-005`, which is why both are required
+-- here rather than reported: a range that cannot be read cannot be judged against anything.
+FROM (
+    SELECT
+        ts.id AS tournament_stage_id,
+        ts.name AS tournament_stage_name,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        ts.startdate AS stage_startdate,
+        ts.enddate AS stage_enddate,
+        COUNT(DISTINCT e.id) AS event_count,
+        MIN(e.startdate) AS earliest_event_startdate,
+        MAX(e.startdate) AS latest_event_startdate,
+        DATEDIFF(DATE(MIN(e.startdate)), DATE(ts.startdate)) AS empty_days_before,
+        DATEDIFF(DATE(ts.enddate), DATE(MAX(e.startdate))) AS empty_days_after
+    FROM tournament_stage ts
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event e ON e.tournament_stageFK = ts.id AND e.del = 'no'
+    WHERE ts.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      AND ts.startdate IS NOT NULL
+      AND ts.enddate IS NOT NULL
+      AND e.startdate IS NOT NULL
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+    GROUP BY ts.id, ts.name, tt.name, t.name, ts.startdate, ts.enddate
+) x
+WHERE x.empty_days_before < 0
+   OR x.empty_days_after < 0
+   OR x.empty_days_before + x.empty_days_after > {{STAGE_DATE_TOLERANCE_DAYS}}
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ts2.id) AS eligible_count,
+    1 AS sort_order
+FROM tournament_stage ts2
+JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+JOIN event e2 ON e2.tournament_stageFK = ts2.id AND e2.del = 'no'
+WHERE ts2.del = 'no'
+  AND tt2.sportFK = {{SPORT_ID}}
+  AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  AND ts2.startdate IS NOT NULL
+  AND ts2.enddate IS NOT NULL
+  AND e2.startdate IS NOT NULL
+  -- AND t2.tournament_templateFK = <tournament_template_id>
+  -- AND e2.startdate >= '<from_datetime>'
+  -- AND e2.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
+
+ORDER BY sort_order, empty_days_before DESC, empty_days_after DESC;
