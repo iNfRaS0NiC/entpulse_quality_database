@@ -3280,6 +3280,23 @@ function New-SheetsMergePlan {
         if (-not $moved -and -not $mine) { continue }
         $target = $(if ($mine) { $sqlTitleOf[$key] } elseif ($tabOf.ContainsKey($key)) { $tabOf[$key] } else { '' })
         if (-not $target) { continue }
+
+        # A check the board no longer shows still has its statement on the SQL tab, and when
+        # that block moves the loop wants to repoint its C2 like any other. There is nothing
+        # left to repoint: the tab went with the check on whatever run withdrew it, and a
+        # range naming a tab that is not there is refused by name - taking the whole batch it
+        # travelled in rather than only itself.
+        #
+        # Measured 2026-09-05 on Artistic-Gymnastics and Cycling, after the merge of
+        # GLOBAL-DQ-004 and GLOBAL-DQ-150 deprecated a stage-date-range check and moved every
+        # SQL block below it: one dead link refused 380 good ranges, and the board was only
+        # written by running the whole sport a second time. It passes the second time because
+        # the first pass settles the SQL rows, so nothing looks moved and this write is never
+        # planned - which is why it reads as a flake and is not one.
+        #
+        # $usedTitles is what the board will hold once the structure batch lands: the tabs it
+        # already had, plus the ones being added. A title missing from it cannot be written to.
+        if (-not $usedTitles.ContainsKey($target)) { continue }
         $plan += [pscustomobject]@{
             Kind   = 'Write'
             Raw    = $false
@@ -4822,7 +4839,25 @@ function Invoke-SheetsPlan {
     }
 
     Set-SheetsStage 'clearing stale rows'
-    $clears = @($operations | Where-Object { $_.Kind -eq 'Clear' })
+
+    # A tab this run is removing takes its rows with it, and anything still addressed to it
+    # fails the whole batch rather than itself: Google rejects the request over the one range
+    # it cannot parse, and every other range in it is lost with it. Measured 2026-09-05, when
+    # the merge of GLOBAL-DQ-004 and GLOBAL-DQ-150 deprecated a stage-date-range check on all
+    # sixteen boards: each one tripped on its first pass, 377 good ranges refused over one
+    # dead one, and went through on a second only because by then the tab was already gone.
+    #
+    # The removal is planned in this same operation list and carries the title as well as the
+    # id, so the ranges with nowhere left to land are nameable here. Only two kinds of tab are
+    # ever removed - the empty default Sheet1, and a withdrawn check's - and neither has
+    # anything owed to it, so dropping their ranges loses nothing that was going to arrive.
+    $removedTabs = @{}
+    foreach ($drop in @($operations | Where-Object { $_.Kind -eq 'DeleteSheet' })) {
+        $removedTabs[[string]$drop.Sheet] = $true
+    }
+
+    $clears = @($operations | Where-Object {
+            $_.Kind -eq 'Clear' -and -not $removedTabs.ContainsKey([string]$_.Sheet) })
 
     # The notes exist in one place only, and the clear is about to remove it.
     #
@@ -4884,7 +4919,8 @@ function Invoke-SheetsPlan {
     }
 
     $writes = @()
-    foreach ($operation in @($operations | Where-Object { $_.Kind -eq 'Write' })) {
+    foreach ($operation in @($operations | Where-Object {
+                $_.Kind -eq 'Write' -and -not $removedTabs.ContainsKey([string]$_.Sheet) })) {
         $writes += Split-SheetsWriteChunks -Operation $operation
     }
 
