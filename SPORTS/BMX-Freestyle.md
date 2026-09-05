@@ -355,10 +355,45 @@ number in view: `GLOBAL-DQ-118` reports all 121 finals, because `173 Final` carr
 `knockout = no` in a table every sport shares, and `GLOBAL-DQ-040` reports 103 of them, because
 only 18 of this discipline's 121 finals are linked to a Comp.Rank.
 
-**The board exists and is deliberately empty.** It is registered in `TOOLS/sheet-registry.json`
-and is still an untitled document with no tabs, because a board is handed to colleagues when its
-sport is done rather than when its first check is approved. It is filled by the first run after
-this sport's checks are approved, and that run also names it.
+**Seventeen checks report the whole of `sport.id` 58 rather than this discipline, and their
+numbers should be read that way.** Measured on the first full run, 2026-09-05. Sixteen of them
+never touch the `event` table at all - they audit stages, tournaments and templates, objects that
+reach a discipline only through their events - so the absence of a discipline filter is not a
+marker somebody forgot. Narrowing them would mean rewriting sixteen global templates to reach
+through events, and that would drop the objects holding none, which is exactly what half of them
+are looking for.
+
+The two that make the point:
+`BMX-Freestyle-DQ-098 TOURNAMENT_STAGE_MISSING_CORE_FIELDS` returns 418 and
+`BMX-Freestyle-DQ-047 PARTICIPANT_NO_PARTICIPATION_ANYWHERE` returns 303, in a discipline holding
+272 events. Almost every one of those rows is BMX-Racing's, and the same rows stand on that
+sport's board too.
+
+The largest number on the board belongs to neither group and was settled earlier:
+`BMX-Freestyle-DQ-001 PARTICIPANT_MISSING_DATE_OF_BIRTH` returns 1200, over a registry keyed on
+`sport.id` that no discipline divides.
+
+**Kept on both boards by decision of 2026-09-05, and for the reason the participant registry was:
+seen twice is better than not seen.** The run says so itself, in yellow, on every run - "not
+confined to this sport's disciplines, so run across the whole database sport". A colleague
+reading a large number here should check which board owns the rows before treating them as this
+sport's defect. The full seventeen are `BMX-Freestyle-DQ-004`, `-005`, `-006`, `-041`, `-047`,
+`-048`, `-049`, `-052`, `-054`, `-056`, `-058`, `-059`, `-060`, `-063`, `-066`, `-098` and `-105`.
+
+**The board was filled and named on 2026-09-05**, by the sport's first full run: 115 checks, no
+failures, 117 tabs, and the document renamed from Google's placeholder to `DQ BMX-Freestyle
+Enetpulse`. It had been registered in `TOOLS/sheet-registry.json` and left untitled since
+2026-09-04, because a board is handed to colleagues when its sport is done rather than when its
+first check is approved.
+
+Two numbers from that run are large and neither is a surprise.
+`BMX-Freestyle-DQ-077 EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND_DETAIL` returns 122 -
+every final and one more - because `173 Final` carries `knockout = no` in a `round_type` table
+every sport shares; its summary twin `BMX-Freestyle-DQ-076` returns 2, which is the same defect
+counted the way it is repaired.
+`BMX-Freestyle-DQ-084 EVENT_FINAL_WITHOUT_COMP.RANK` returns 110, because only 18 of this
+discipline's finals are linked to a Comp.Rank. Both were approved with the number known in
+advance, measured before the CheckID was assigned.
 
 <!-- MANUAL PASTE ZONE: 58 DATA QUALITY CHECKS — insert approved additions immediately before this marker; do not move or delete it. -->
 
