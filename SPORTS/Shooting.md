@@ -1,0 +1,247 @@
+# SPORT: Shooting (sport_id=45)
+
+This file is the canonical structural record for Shooting. It contains only confirmed
+sport-specific usage, meanings, identifiers, evidence boundaries and open structural
+questions. Global database mechanisms belong in `../DATABASE.md`.
+
+For additions, insert approved content immediately before the exact active
+`MANUAL PASTE ZONE` marker in the destination subsection. Keep the marker unchanged
+and at the end of its subsection. Replace existing rows or paragraphs in place when a
+correction is required.
+
+## Identity and evidence
+
+- First discovery date: 2026-09-05
+- Latest evidence date: 2026-09-05
+- Verification boundary: the whole database sport, `sport.name` `Shooting`, enet code `sh`.
+  No client scope has been applied and none is declared, so nothing here is narrowed to a
+  template set. The statistics layer was deliberately not read - see Statistics below.
+
+## Structural coverage
+
+| Area | Status | Evidence |
+|---|---|---|
+| Core hierarchy | Confirmed-data | `GLOBAL-DISCOVERY-002`, 55 template/gender rows |
+| Event participants | Confirmed-data | `GLOBAL-DISCOVERY-004` and `-006` |
+| Event results | Confirmed-data | `GLOBAL-DISCOVERY-007`, and `-026` over every one of the eight fields |
+| Incidents | Not used | `GLOBAL-DISCOVERY-008` returned zero active rows |
+| Lineups | Confirmed-data | `GLOBAL-DISCOVERY-005` |
+| Scope layer | Not used | `GLOBAL-DISCOVERY-009` and `-010` returned zero active rows |
+| Properties | Confirmed-data | `GLOBAL-DISCOVERY-011` |
+| object_relation | Confirmed-data | `GLOBAL-DISCOVERY-012` |
+| object_discipline | Confirmed-data | `GLOBAL-DISCOVERY-013` and `-032` |
+| Statistics | Not checked | not read on purpose, 2026-09-05 |
+| Reference values | Confirmed-data | `GLOBAL-DISCOVERY-003` statuses, `-018` and `-019` round types |
+| Other tables | Not checked | |
+
+## Tables and relation paths used
+
+The sport is stored on the ordinary hierarchy: `tournament_template` -> `tournament` ->
+`tournament_stage` -> `event` -> `event_participants` -> `result`, with `object_discipline`
+carrying the discipline on the event and `lineup` carrying a team's members.
+
+A template is split by gender rather than shared across genders: the same competition name
+appears as separate template rows for male, female and mixed. `African Championships` is three
+templates, `Asian Championship` three, and so on across the 55 rows.
+
+<!-- MANUAL PASTE ZONE: 45 TABLES AND RELATIONS — insert approved additions immediately before this marker; do not move or delete it. -->
+
+## Participant and lineup structure
+
+Both an athlete and a team enter events. Athletes are the larger population and teams are a
+real second one, not an artefact: they hold a lineup of their own members.
+
+- Event participants are `athlete` and `team`.
+- The registry holds `athlete` and `team` in the roles `athlete` and `team`.
+- The one lineup type in use is `14 Starter`, whose parent is a `team` and whose members are
+  `athlete`. Members are recorded as male or female; no mixed member row exists, and a mixed
+  team is a team of male and female members rather than a member marked mixed.
+
+<!-- MANUAL PASTE ZONE: 45 PARTICIPANTS AND LINEUPS — insert approved additions immediately before this marker; do not move or delete it. -->
+
+## Event result types
+
+| result_code | result_typeFK | Value shape | Confirmed meaning | Evidence |
+|---|---:|---|---|---|
+| rank | 100 | `#` | The placing. The only other shape is `-` | `GLOBAL-DISCOVERY-026`, 2 shapes |
+| points | 102 | `#` and `#.#` | The score. The decimal form is the one finals use | `GLOBAL-DISCOVERY-026`, 6 shapes |
+| comment | 104 | free text | Qualification and status words | `GLOBAL-DISCOVERY-026`, 41 shapes |
+| medal | 501 | `gold`, `silver`, `bronze` | The medal won | `GLOBAL-DISCOVERY-026`, 3 shapes |
+| duration | 101 | mixed, see below | Not a duration in this sport | `GLOBAL-DISCOVERY-026`, 31 shapes |
+| tops | 535 | `#` and words | Shoot-off, and only in 36 events | `GLOBAL-DISCOVERY-026`, 8 shapes |
+| distance | 103 | words | Present in 3 events and holding no distance | `GLOBAL-DISCOVERY-026`, 3 shapes |
+| zones | 536 | `#` and words | Shoot-off, and only in 9 events | `GLOBAL-DISCOVERY-026`, 6 shapes |
+
+**The value inventory is complete and the addresses behind it are a sample.**
+`GLOBAL-DISCOVERY-026` ran over every one of the eight fields and listed all 100 shapes they
+hold between them, so the inventory above is coverage. `GLOBAL-DISCOVERY-027`, which names the
+events behind one shape, was run for the two busiest shapes of each field and for six chosen
+odd ones; the other 84 pairs have no event named against them yet.
+
+`100 Rank` and `102 Points` carry the sport: 171 134 and 170 960 rows, in 8 632 and 8 587
+events. Every other field is thin by comparison, and three of them - `101`, `103`, `535`,
+`536` - hold values that do not belong to the field they sit in. That is recorded under
+Confirmed sport-specific storage semantics rather than here, because it is a statement about
+what the data does, not about what the field means.
+
+<!-- MANUAL PASTE ZONE: 45 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
+
+## Incident types
+
+Not used - `GLOBAL-DISCOVERY-008` returned zero active incident rows for Shooting events on
+2026-09-05. The statement is a complete-layer query and it succeeded, which is what separates
+this from `Not checked`.
+
+<!-- MANUAL PASTE ZONE: 45 INCIDENTS — insert approved additions immediately before this marker; do not move or delete it. -->
+
+## Scope types and data types
+
+Not used - `GLOBAL-DISCOVERY-009` and `GLOBAL-DISCOVERY-010` both returned zero active rows on
+2026-09-05. The sport has no scope container inside an event: a series of shots is stored as
+its own event, not as a scope of one. `-010` reads the data inside a scope, so its zero follows
+from the first and is not independent evidence.
+
+<!-- MANUAL PASTE ZONE: 45 SCOPES — insert approved additions immediately before this marker; do not move or delete it. -->
+
+## Properties
+
+Fifteen property rows are in use, all `metadata` except one.
+
+- On the event: `discipline`, `Live`, `medal_related`, `ParticipantType`, `Round`, `Type`, and
+  `ElapsedTime` on a single event.
+- On the participant: `date_of_birth`, `height`, `weight`, `status`, `IsNationalTeam`,
+  `ToBeDecided`.
+- On the tournament stage: `Cup`.
+- The one non-metadata row is `ref:participant` `organizationFK` on `event_participants`, and
+  it is present on four rows in total.
+
+`Live` and `Round` are on every one of the 8 922 events; `Type` on 8 919; `ParticipantType` on
+8 579; `discipline` on 5 586, which is fewer than the events that carry a discipline through
+`object_discipline`.
+
+<!-- MANUAL PASTE ZONE: 45 PROPERTIES — insert approved additions immediately before this marker; do not move or delete it. -->
+
+## Generic relations and disciplines
+
+`object_discipline` carries the discipline on the event, owner type 5, across 35 discipline
+rows. The named disciplines are the shooting events themselves - `Trap`, `Skeet`,
+`10m Air Rifle`, `10m Air Pistol`, `25m Pistol`, `50m Pistol`, `50m Rifle Prone`,
+`50m Rifle 3 Position`, `25m Rapid Fire Pistol`, `Double Trap`, `10m Running target`, and the
+300m and Fullbore families.
+
+`object_relation` is thin: six owner/related pairs, the largest being owner type 4 to related
+type 151 with 853 rows, which is the stage-to-country path that
+`GLOBAL-DISCOVERY-014` reads.
+
+`GLOBAL-DISCOVERY-032` returned 91 discipline/gender/participant combinations actually
+contested. A combination absent from that matrix has not been contested and must not be
+assumed available.
+
+<!-- MANUAL PASTE ZONE: 45 GENERIC RELATIONS AND DISCIPLINES — insert approved additions immediately before this marker; do not move or delete it. -->
+
+## Statistics
+
+| statistic_typeFK | Owner type | Participant shard | Data shard | Fields/config | Evidence |
+|---:|---:|---:|---:|---|---|
+
+Not checked, and deliberately so. Shooting was opened on 2026-09-05 without the Comp.Rank
+layer, under the standing decision of 2026-08-26 to leave it aside while the event results it
+is generated from are being corrected. No statistics discovery statement was run and no
+statistic parameter is declared in `SPORTS/params.json`.
+
+This is `Not checked` and never `Not applicable`: the layer exists here. Parameter resolution
+saw `statistic_typeFK` 11 at tournament level over 122 statistics on shard 11 while resolving
+the sport, which is enough to know the structure is present and not enough to document it. The
+sport comes back to this.
+
+<!-- MANUAL PASTE ZONE: 45 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
+
+## Reference values
+
+**Event status.** Three in use: `finished` (`6 Finished`) on 8 850 events, `notstarted`
+(`1 Not started`) on 65, and `cancelled` (`106 Cancelled`) on 7.
+
+**Round types.** Twelve in use, and `GLOBAL-DISCOVERY-019` was run for every one of them, so
+this is coverage rather than a sample.
+
+| round_typeFK | Name | Events |
+|---:|---|---:|
+| 173 | Final | 3 824 |
+| 179 | Qualifier | 3 679 |
+| 181 | bronze | 675 |
+| 178 | Semi Finals | 398 |
+| 0 | *(no name)* | 174 |
+| 191 | Elimination | 89 |
+| 38 | 1 | 29 |
+| 171 | Preliminary | 22 |
+| 176 | Quarter Finals | 12 |
+| 39 | 2 | 10 |
+| 228 | Placement Phase | 9 |
+| 152 | Qualifier | 1 |
+
+Three things in that table are structural rather than incidental, and each is carried into
+Open questions below: `0` maps to no `round_type` row at all; `38` and `39` are named with a
+bare digit; and `152` and `179` are two different ids both named `Qualifier`.
+
+<!-- MANUAL PASTE ZONE: 45 REFERENCE VALUES — insert approved additions immediately before this marker; do not move or delete it. -->
+
+## Event and round representation
+
+An event name states the discipline and the round: `10m Air Pistol Final`,
+`10m Air Rifle Qualification`, `Trap Final`, `Skeet Final`. The busiest four patterns are the
+air pistol and air rifle finals and qualifications, at 484, 482, 470 and 469 events each.
+
+A stage name states the competition and often its host city: `World Cup Munich`,
+`World Cup Changwon`, `World Cup Lonato`, `European Championships`,
+`European Championships Shotgun`.
+
+**Both name inventories are a sample and are recorded as one.** `GLOBAL-DISCOVERY-020` counted
+442 distinct event-name patterns and `-022` counted 188 stage-name patterns; the detail
+statements were run for the three busiest of each. The count of patterns is coverage; the names
+behind all but three of them are not. The pattern count is high because a digit in a name makes
+its own pattern, so `10m` and `25m` events separate.
+
+<!-- MANUAL PASTE ZONE: 45 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
+
+## Confirmed sport-specific storage semantics
+
+**Four result fields hold values belonging to other fields.** Measured 2026-09-05 with
+`GLOBAL-DISCOVERY-026` over the whole inventory, and addressed to named events with `-027`.
+
+- `101 Duration` holds 31 distinct shapes across 2 437 rows in 391 events. The numeric shapes
+  are the bulk, but they are not durations: in `Trap Qualification` the values run 52 to 71,
+  which is a count of targets hit. Beyond those it holds a bare backtick in 88 events, all of
+  them under the `World Cup` template and starting at `World Cup Granada` 2013; the country
+  codes AUT, CRO, CZE, FIN, FRA, GBR, GER and HUN, one row each; and two athlete names -
+  `Daria Turulo` in event 5789722 `Skeet Final`, and `Diana Bacosi`.
+- `103 Distance` holds 29 rows in 3 events, and one of its three shapes is the literal word
+  `Comment` - event 5765754, `Double Trap Qualification`, European Championships Shotgun 2006.
+- `536 Zones` holds `Gold`, `Silver`, `Bronze` and `Final` beside its numbers.
+- `535 Tops` holds `Medal Matches`, `QF` and `--/--` beside its numbers.
+
+Event 5974406 `25m Pistol Final`, South East Asian Games 2017, appears in two of these at once:
+`Gold` in Zones and `Medal Matches` in Tops.
+
+This is recorded as what the data holds. Whether any of it is a defect, and which field each
+value belongs in, has not been decided and no check is written for it.
+
+<!-- MANUAL PASTE ZONE: 45 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
+
+## Open questions
+
+- Whether `event.round_typeFK = 0`, on 174 events and mapping to no `round_type` row, is an
+  intended sentinel for "not assigned" or is bad data. The same question stands open on BMX and
+  the two have not been compared.
+- What round types `38` and `39` are. They are named with the bare digits `1` and `2` and cover
+  39 events between them, and a name of one character cannot be read as a round.
+- Why `152` and `179` are two different round types both named `Qualifier`, one holding 3 679
+  events and the other holding 1. Either the single event is misfiled or the two ids mean
+  different things that the names do not distinguish.
+- What `101 Duration` is meant to hold in this sport. The field name says duration, the numbers
+  in it are target counts, and it also carries athlete names and country codes. Until this is
+  answered, no check can state what a correct value looks like.
+- What the bare backtick in `101 Duration` means. It is one value in each of 88 events, all
+  under the `World Cup` template, which makes it a convention of one source rather than 88
+  separate mistakes.
+
+<!-- MANUAL PASTE ZONE: 45 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

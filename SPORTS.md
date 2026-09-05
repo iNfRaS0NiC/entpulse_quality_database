@@ -29,6 +29,7 @@ mechanisms from `DATABASE.md`.
 | 20 | Handball | H2H (team) | `SPORTS/Handball.md` | In progress | 2026-08-28 | Handball |
 | 56 | Mountain-Bike | Listing (individual) | `SPORTS/Mountain-Bike.md` | In progress | 2026-08-31 | Mountain Bike |
 | 58 | BMX-Freestyle | Listing (individual) | `SPORTS/BMX-Freestyle.md` | In progress | 2026-09-04 | BMX |
+| 45 | Shooting | Listing (individual and team) | `SPORTS/Shooting.md` | In progress | 2026-09-05 | Shooting |
 
 <!-- MANUAL PASTE ZONE: SPORT INDEX — insert approved additions immediately before this marker; do not move or delete it. -->
 

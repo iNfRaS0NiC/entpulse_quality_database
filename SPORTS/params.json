@@ -3121,5 +3121,31 @@
             "MEDAL_TEMPLATE_ID_LIST": "the 30 in-scope templates that record a medal, by the user's decision of 2026-08-31. Measured the same day across BOTH medal layers at once - result type 501 Medal on the event side and data type 1277 Medal on the Comp.Rank side - because Speed Skating was measured on 501 alone and GLOBAL-DQ-125 COMP.RANK_MEDAL_AWARDED_OUTSIDE_MEDAL_TEMPLATE reported 1380 rows there, 23 national-championship templates awarding only through 1277. This sport had the same shape: 12507 and 12508 World Championship Cross Country 1 (IOC) carry no 501 on any event and 34 statistics each carrying 1277, so a 501-only measurement would have missed them. They were in this list for that reason and were then taken out when the client boundary was narrowed the same day and both went out of scope. Two readings were possible and the user chose the narrower: this list now names the medal competitions INSIDE the boundary rather than every competition that awards a medal. The consequence is that it no longer records what was measured about 12507 and 12508, which is why that measurement is written out here in full. Five further templates that award medals in the world record none here and are also out - 9462, 9461 and 9454, the Swiss national championships, and 11567 and 11568 Summer Youth Olympics, which hold no edition at all. The day an in-scope competition records a medal under a template absent from this list, GLOBAL-DQ-125 reports it and this list is what needs correcting",
             "REQUIRED_RESULT_TYPE_LIST": "100 Rank and 101 Duration, by the user's decision of 2026-08-31. Measured over the 1063 finished events that hold any result at all: Rank is on all 1063, Duration on 1046, and the other three types are plainly optional - 104 Comment on 513, 501 Medal on 390, 222 Laps behind on 97. The overlap was stated before the decision and taken knowingly: the 17 events holding a Rank with no Duration are the same 17 GLOBAL-DQ-122 EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE already reports as DECIDING_VALUE_ABSENT_FROM_EVENT, so those rows appear under two CheckIDs. Rank alone would have made the check a guard returning nothing"
         }
+    },
+    "Shooting": {
+        "SPORT_ID": 45,
+        "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "PERSON_ROLE_TYPE_LIST": "'athlete'",
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_COMMENT_TYPE_ID": 104,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "RESULT_DURATION_TYPE_ID": 101,
+        "CLIENT_FROM_SEASON": 2004,
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "_names": {
+            "SPORT_ID": "45 Shooting, enet code sh. Confirmed by GLOBAL-DISCOVERY-001 on 2026-09-05, the day the sport was opened.",
+            "EVENT_PARTICIPANT_TYPE_LIST": "'athlete' and 'team' - GLOBAL-DISCOVERY-004 returned both, 15 555 athletes across 161 530 participations and 382 teams across 10 014. The team is a real second population here and not an artefact: it carries a lineup of its own members.",
+            "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete' and 'team' - GLOBAL-DISCOVERY-006, in the roles 'athlete' and 'team' respectively. One athlete row is registered inactive; every other row is active.",
+            "PERSON_PARTICIPANT_TYPE_LIST": "'athlete' - the only participant type in this sport that is a person. A team is the other type and is not one.",
+            "PERSON_ROLE_TYPE_LIST": "'athlete' - the registry role a person holds here, from GLOBAL-DISCOVERY-006. No coach, official or other person role is in use.",
+            "RESULT_RANK_TYPE_ID": "100 Rank, code 'rank' - GLOBAL-DISCOVERY-007, 171 134 rows across 8 632 events, which is the widest field in the sport. GLOBAL-DISCOVERY-026 found it holds two shapes only, a plain number and a bare hyphen.",
+            "RESULT_COMMENT_TYPE_ID": "104 Comment, code 'comment' - GLOBAL-DISCOVERY-007, 22 471 rows across 3 294 events. Its 41 value shapes were inventoried but their meanings are not settled and no comment value list is declared.",
+            "RESULT_MEDAL_TYPE_ID": "501 Medal, code 'medal' - GLOBAL-DISCOVERY-007, 11 039 rows across 4 365 events, and GLOBAL-DISCOVERY-026 found exactly three shapes in it: gold, silver and bronze.",
+            "RESULT_DURATION_TYPE_ID": "101 Duration, code 'duration' - GLOBAL-DISCOVERY-007. This names which type id the duration field is and says nothing about whether its contents are durations, because measured on 2026-09-05 they are not: 31 value shapes over 2 437 rows, the numbers being target counts, plus a bare backtick in 88 World Cup events, eight country codes and two athlete names. SPORTS/Shooting.md carries the reading and the open question. Nothing should read this parameter as a promise that the field holds a time.",
+            "CLIENT_FROM_SEASON": "2004, by the user's decision of 2026-09-05, and the same value every other sport in this repository carries - a common boundary is what makes a count on one sport comparable with a count on another. The sport's own data starts later than that in what was read on the day it was opened, so the value excludes nothing today and is a boundary rather than a filter.",
+            "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0, by the user's decision of 2026-09-05: the client takes Shooting whole, so nothing is excluded and 0 is the token that says so. It is not an empty value - a missing token makes every statement that reads it skip silently, which is the failure this exists to prevent. The sport holds 55 template rows over 21 competitions, three of them with no events at all, two of those being (IOC) templates that the statistics statements exclude in any case."
+        }
     }
 }
