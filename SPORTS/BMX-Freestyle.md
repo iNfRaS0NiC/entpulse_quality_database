@@ -189,6 +189,15 @@ Racing additionally uses 320 Heats (2870), 38 (1275), 3 Quarter Finals (964), 16
 none of the eight. A Freestyle competition is a qualifier, a semi-final and a final; the heat
 and repechage ladder belongs to racing.
 
+**The expected set is five, and the fifth is a judgement rather than a measurement.** Decided
+2026-09-04: `ROUND_TYPE_LIST = 2, 152, 171, 173, 189`. Four of those are the round types measured
+above; `171 Preliminary` is not, and Freestyle holds no event on it today. It is in the list
+because a Freestyle competition may legitimately hold a preliminary round, which is a statement
+about the format and not about the current population - the distinction `CLAUDE.md` draws between
+a structural absence and a data state, read here in the direction that keeps the check useful on
+the day such a round arrives. The cost is equally plain: a genuinely wrong `171` on a Freestyle
+event is now not reported. `SPORTS/params.json` `_names` carries the same reasoning.
+
 **Event status differs too.** Freestyle holds 264 finished events and 8 not started, and no
 cancelled event; Racing holds 9109 finished and 9 cancelled, and none not started. That is a
 data state on the day it was read, not a structural claim about either sport.
@@ -240,9 +249,6 @@ this sport's checks are approved, and that run also names it.
   parameter is recorded as not applicable in `SPORTS/params.json` and those five checks are
   skipped rather than answered - but that is a conclusion about the sport and it rests on the
   open question above.
-- **The expected round set.** Four round types are in use today. Which set a check should expect
-  is a judgement about the sport's format rather than a count of what it currently holds, and
-  it has not been made.
 - **Whether the participant registry can be divided by discipline at all.** `BMX-Freestyle-DQ-001
   PARTICIPANT_MISSING_DATE_OF_BIRTH` reports 3007 eligible here and 3010 on BMX-Racing over a
   population of 3026, so the two sports audit almost exactly the same people. Measured

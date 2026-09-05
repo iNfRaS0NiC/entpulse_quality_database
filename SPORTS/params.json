@@ -12,6 +12,7 @@
         "RESULT_MEDAL_TYPE_ID": 501,
         "RESULT_COMMENT_TYPE_ID": 104,
         "NUMERIC_RESULT_TYPE_LIST": "102",
+        "ROUND_TYPE_LIST": "2, 152, 171, 173, 189",
         "STATISTIC_TYPE_ID": 11,
         "STATISTIC_OWNER_TYPE_ID": 3,
         "SHARD_ID": 11,
@@ -20,6 +21,7 @@
         "DATA_ORGANIZATION_TYPE_ID": 1465,
         "_names": {
             "DISCIPLINE_ID_LIST": "430 Freestyle, the one discipline this sport is out of the three sharing sport.id 58. Racing (429) and Time Trial (776) are the other sport and are documented in SPORTS/BMX-Racing.md. Declared 2026-09-04 when the two were separated. Measured the same day: 272 events, 78 tournaments, 18 templates, 2016-2025, and every event under 58 resolves to exactly one discipline",
+            "ROUND_TYPE_LIST": "2 Semi Finals, 152 Qualifier, 171 Preliminary, 173 Final, 189 Seeding. Four of the five are measured 2026-09-04 as the round types this discipline contests - 173 on 121 events, 152 on 115, 2 on 34, 189 on 2 - and 171 Preliminary is not: Freestyle holds no event on it today and it is in the list because the user judged on 2026-09-04 that a Freestyle competition may legitimately hold a preliminary round, Racing using it on 14 events under the same sport.id. The distinction is deliberate and belongs in the record: an expected round set is a judgement about the sport format, never a count of what the data currently holds, and the four measured values are evidence while the fifth is a decision. Racing declares a different list of fifteen and none of the eight heat and repechage types it adds belongs here",
             "NUMERIC_RESULT_TYPE_LIST": "102 Points, and it is the deciding value of this sport rather than a secondary figure. Measured 2026-09-04: 4390 values over 230 of 272 events, against 766 across the whole of Racing. A Freestyle result is settled by the judges' score",
             "DATA_ORGANIZATION_TYPE_ID": "1465 Organization, filled on 163 of 163 Comp.Rank rows this discipline holds, read 2026-09-04",
             "_inherited": "Every value here is either measured against discipline 430 on 2026-09-04 or is a fact about sport.id 58 that cannot differ between its disciplines - the sport id, the participant types, the statistic type and shard. Nothing has been carried over as a guess. The parameters BMX-Racing declares and this sport does not are the ones that need a decision rather than a measurement, and SPORTS/BMX-Freestyle.md Open questions names them: whether this sport has a timed discipline at all, and what round set a check should expect. Until those are settled the checks that read them are skipped, which is the honest answer and not a gap"
