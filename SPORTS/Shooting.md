@@ -244,6 +244,66 @@ is why no parameter can express it - and `GLOBAL-DQ-021 EVENT_RESULTS_RANK_DUPLI
 reads the opposite direction and is instantiated as `Shooting-DQ-046`. No CheckID is assigned and
 none is reserved. Decided 2026-09-06.
 
+**Eighteen more templates are `Not applicable` here, decided 2026-09-06.** None is assigned a
+CheckID and none reserves one. They fall in six groups and each group has one reason.
+
+**Seven are `Not applicable` because they need an event scope layer this sport does not write** -
+`GLOBAL-DQ-085`, `GLOBAL-DQ-086`, `GLOBAL-DQ-089`, `GLOBAL-DQ-091`, `GLOBAL-DQ-092`,
+`GLOBAL-DQ-102` and `GLOBAL-DQ-107`. `GLOBAL-DISCOVERY-009` and `-010` both returned zero active
+rows on 2026-09-05: a series of shots is stored as its own event, not as a scope inside one, so
+there is no container for any of them to read.
+
+**Four are `Not applicable` because they need a timed discipline and a full-time field** -
+`GLOBAL-DQ-045`, `GLOBAL-DQ-054`, `GLOBAL-DQ-056` and `GLOBAL-DQ-111`. The sport has neither. Its
+whole result vocabulary is eight types - `100 Rank`, `102 Points`, `501 Medal`, `104 Comment`,
+`101 Duration`, `535 Tops`, `536 Zones` and `103 Distance` - so `557 Full-time duration` does not
+occur anywhere in it, and no shooting discipline is decided by a clock. The same measurement puts
+`CLOCK_RESULT_TYPE_LIST` outside `SPORTS/params.json`.
+
+**Three are `Not applicable` because they need a score mirrored between two sides** -
+`GLOBAL-DQ-090`, `GLOBAL-DQ-108` and `GLOBAL-DQ-114` - and two different facts put them out.
+`GLOBAL-DQ-090` and `GLOBAL-DQ-114` need one figure stored in two result types, which is a
+head-to-head shape; this sport stores one score, and `RESULT_SCORE_TYPE_ID` and
+`RESULT_FINAL_SCORE_TYPE_ID` are both `102 Points` for exactly that reason. `GLOBAL-DQ-108` is out
+on its own ground: it asserts the deciding score is a count of scoring units and so may be neither
+negative nor fractional, and a shooting final is scored to a decimal - 33 808 of the field's
+values carry one against 137 100 whole ones - so it would report every final. That is the same
+fact that keeps `PRECISION_RESULT_TYPE_LIST` undeclared.
+
+**Two are `Not applicable` because they need the `Winner` property on a head-to-head contest** -
+`GLOBAL-DQ-087` and `GLOBAL-DQ-088`. Both name `H2H` per `DATABASE.md` `DB-SEM-015` as their
+prerequisite, and this sport lines a field up and ranks it. `GLOBAL-DQ-088` additionally reads
+`event_participants.number` 1 as the home side and 2 as the away side, which has no meaning in a
+field of thirteen.
+
+**One is `Not applicable` because it needs an event that is a contest between exactly two
+entries** - `GLOBAL-DQ-083`. Measured 2026-09-06, this sport's events hold 3, 5, 7, 9, 10, 11, 12,
+13, 15, 16, 17, 18, 19, 20, 24 and 29 competitors among the commonest sizes alone, so there is no
+field size to declare and `EVENT_PARTICIPANT_COUNT_LIST` has no value that would mean anything.
+
+**One is `Not applicable` for two independent reasons, and either alone would settle it** -
+`GLOBAL-DQ-052 EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED`. `GLOBAL_DQ/README.md` states that a
+sport instantiates it or `GLOBAL-DQ-117`, never both, because the two read the same population and
+both emit `COMMENT_INVALID_VALUE`; this sport carries `GLOBAL-DQ-117` as `Shooting-DQ-058`, which
+is the correct half for a sport settling a placing from a stored score rather than from a time.
+Independently, `GLOBAL-DQ-052` tests the contradiction against a full time and a duration, and
+this sport stores no full time at all, so its stronger arm could never run here.
+
+**Three more are `Not applicable` because the parameter they read is deliberately undeclared, and
+the reason for each lives in `SPORTS/params.json` under `_names` rather than here.**
+`GLOBAL-DQ-120 EVENT_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT` reads
+`PRECISION_RESULT_TYPE_LIST`, which is undeclared because `102 Points` is written whole in a
+qualification and to a decimal in a final, so the check would report the difference between two
+rounds as an inconsistency. `GLOBAL-DQ-128 EVENT_RESULTS_CLOCK_VALUE_COMPONENT_OUT_OF_RANGE` and
+`GLOBAL-DQ-152 EVENT_RESULTS_CLOCK_VALUE_IN_JUDGED_DISCIPLINE` read `CLOCK_RESULT_TYPE_LIST`,
+which is undeclared because the sport writes no clock value at all - every result value it holds
+was searched for a colon on 2026-09-06 and two came back, both shoot-off tallies in a comment.
+
+**With these, every one of the 154 GLOBAL DQ templates has a decision behind it for this sport**,
+as of 2026-09-06: 73 instantiated as `Shooting-DQ-001` to `-073`, 23 `Not applicable`, one
+`Not checked` pending the `101 Duration` question, 52 belonging to the Comp.Rank layer this
+opening deliberately left out, two deprecated, and three that only a head-to-head sport can hold.
+
 <!-- MANUAL PASTE ZONE: 45 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
