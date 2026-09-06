@@ -317,7 +317,7 @@ day it was written for. The zero is the honest reading and the coverage count sa
 
 event.status_type/status_descFK combinations confirmed: finished/6, notstarted/1, cancelled/106.
 
-event.round_typeFK is confirmed active for BMX events, referencing the round_type table. Round type names are not unique identifiers — multiple round_type IDs share identical name text (e.g., two IDs named 'Heats', two named 'Quarter Finals', two named 'Final'); queries must reference round_typeFK by ID, not name. A confirmed unmapped value round_typeFK=0 occurs with no matching round_type row, distinct from a NULL round_typeFK.
+event.round_typeFK is confirmed active for BMX events, referencing the round_type table. Round type names are not unique identifiers — multiple round_type IDs share identical name text (e.g., two IDs named 'Heats', two named 'Quarter Finals', two named 'Final'); queries must reference round_typeFK by ID, not name. An unmapped value round_typeFK=0, with no matching round_type row and distinct from a NULL round_typeFK, was confirmed when this sport was documented and is gone as of 2026-09-06 - see the entry below.
 
 A single round_typeFK value can be attached to events representing logically different rounds. Confirmed for round_typeFK=189 (Seeding), which is used by events named as Time Trial Superfinal, Seeding Run and Semifinal Heat across different tournament templates. Round type identity must not be treated as a reliable indicator of the actual round an event represents
 
@@ -389,11 +389,29 @@ The comment field is free text with no normalized vocabulary. Disqualification a
 
 A BMX event's Rank sequence may legitimately exceed its own participant count when the event stores competition-wide classification positions rather than within-event finishing order. Confirmed positive control: event 5221729 holds 114 active participants ranked `1..121` with interior gaps. Rank magnitude alone therefore does not identify a defect; an invalid rank is one that is both above the event's participant count and disconnected from the next lower rank in the same event.
 
+**An event with no round type is a defect, never a sentinel for "not assigned".** The user
+settled this for Shooting on 2026-09-06 and the rule is the sport-independent half of that
+answer: a round the reference table does not name is not a round. It is recorded here because
+this file carried the same question open, in the form of `round_typeFK=0`, and a question that
+closes leaves nothing behind unless somebody writes down the answer.
+
+**The population it was about is gone.** Measured 2026-09-06 across the whole database sport 58,
+both disciplines together, with no client-period or template filter: no event holds a
+`round_typeFK` that is NULL or resolves to no `round_type` row. `BMX-Racing-DQ-011` and
+`BMX-Freestyle-DQ-008 GLOBAL-DQ-006 EVENT_MISSING_ROUND_TYPE` agree, returning 0 findings of
+9 118 eligible events each. Whether the rows were repaired during the colleague review or read
+differently when this file was written is not established here. Nothing changes in the package:
+the check stays live on both boards, which is the point of recording a rule rather than a count -
+it is now known what to do on the day such an event appears, and the check will report it.
+
+The two checks return the same 9 118 eligible events because `GLOBAL-DQ-006` carries no
+discipline filter, so both BMX boards audit the whole database sport rather than their own half.
+Noted 2026-09-06 and not acted on.
+
 <!-- MANUAL PASTE ZONE: 58 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
 
-- Whether BMX `event.round_typeFK=0` (unmapped to any `round_type` row) is an intended sentinel value for "not assigned", or represents bad/legacy data — not yet confirmed.
 - Some BMX Comp.Rank statistics (statistic_typeFK=11, object_typeFK=3) have no reliable path to a discipline: neither `statistic_config` Event id (1471) → event → `object_discipline`, nor a direct `object_discipline` relation (owner type=83) on the statistic itself, is guaranteed to exist. A statistic can be fully discipline-orphaned from both mechanisms (confirmed example: statistic_id=166712, name "Female Park"). Discipline-scoped checks and analysis for BMX Comp.Rank statistics must not assume either path is universal.
 - Whether the sentinel Rank value paired with a `DNS` or `DNF` comment follows a fixed rule is not confirmed. Observed values do not resolve to one: in event 5124031 `DNF` maps to `7` and `DNS` to `10` within an eight-participant heat. Until the rule is confirmed, a check must recognise a non-finishing participant by the presence of an active comment, never by the rank value itself.
 <!-- MANUAL PASTE ZONE: 58 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

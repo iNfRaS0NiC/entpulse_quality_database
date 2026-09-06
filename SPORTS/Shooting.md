@@ -299,17 +299,24 @@ rounds as an inconsistency. `GLOBAL-DQ-128 EVENT_RESULTS_CLOCK_VALUE_COMPONENT_O
 which is undeclared because the sport writes no clock value at all - every result value it holds
 was searched for a colon on 2026-09-06 and two came back, both shoot-off tallies in a comment.
 
+**One more is `Not applicable` because the sport has no duration to hold a convention** -
+`GLOBAL-DQ-019 EVENT_DURATION_FORMAT_MISMATCH_TO_RANK`. It asserts the leader/gap form, the
+winner carrying an absolute time and everyone behind a signed difference, and
+`GLOBAL_DQ/README.md` states its prerequisite as a sport confirmed to follow that convention on
+its duration result type. This sport follows no such convention because it writes no duration:
+the user confirmed on 2026-09-06 that `101 Duration` should not be populated here at all, which
+is what made the classification decidable - until that answer it was `Not checked` rather than
+`Not applicable`, and the distinction was real. Run the same day to be sure of what was being
+set aside: 390 findings of 391 eligible events, and those 391 are the same events
+`Shooting-DQ-074 GLOBAL-DQ-155 EVENT_RESULTS_UNUSED_RESULT_TYPE_HOLDS_VALUES` already reports.
+Nothing goes unwatched by this exclusion; what it would have added is a second row over one
+population, asserting a convention the sport does not have rather than the defect it does.
+
 **With these, every one of the 155 GLOBAL DQ templates has a decision behind it for this sport**,
-as of 2026-09-06: 74 instantiated as `Shooting-DQ-001` to `-074`, 23 `Not applicable`, one
-`Not checked`, 52 belonging to the Comp.Rank layer this opening deliberately left out, two
-deprecated, and three that only a head-to-head sport can hold. The `Not checked` one is
-`GLOBAL-DQ-019 EVENT_DURATION_FORMAT_MISMATCH_TO_RANK`, and what it waits on changed on
-2026-09-06: it no longer waits on the `101 Duration` question, which is answered below, but on
-whether that answer reclassifies it. It asserts the leader/gap convention - the winner carrying
-an absolute time and everyone behind a signed difference - which is a reading of a duration
-field, and this sport's answer is that the field holds no duration and should hold nothing.
-Whether that is the structural absence `Not applicable` requires is a classification nobody has
-made, and the 390 events the check reports are not what would decide it.
+as of 2026-09-06: 74 instantiated as `Shooting-DQ-001` to `-074`, 24 `Not applicable`, 52
+belonging to the Comp.Rank layer this opening deliberately left out, two deprecated, and three
+that only a head-to-head sport can hold. **Nothing is `Not checked`** - the first sport in the
+package where that is true, Modern Pentathlon having left one blocked.
 
 ## What five closed questions settled
 
@@ -359,7 +366,21 @@ question that closes leaves nothing behind unless the answer is recorded where t
   `Shooting-DQ-074`, reads the whole field and reported 391 events on 2026-09-06.
   `output/SHOOTING_DURATION_FIELD.csv` holds every one of the 2 437 rows.
 
-- **The bare backtick in `101 Duration` belongs to that same defect.** One value in each of 88
+- **Four comment values were read on 2026-09-06 and three of them are settled by the data.**
+They had been approved into `RESULT_COMMENT_VALUE_LIST` without their meaning being known.
+`gm` and `bm` sit in one event, `5972406 10m Air Pistol Qualification`: `gm` on the competitors
+ranked 1 and 2, `bm` on those ranked 3 and 4. That is the ISSF format - the top two of a
+qualification go to the Gold Medal Match and the next two to the Bronze Medal Match - so both are
+qualification marks like `q` and neither is a medal. `golden hit`, one row on the competitor
+ranked 1 of `5854896 25m Pistol Medal Match`, is the deciding hit that won the match, which makes
+it a third shoot-off marker beside `so` and `s-off`. `rpo` is the one still resting on an outside
+source rather than on the database: 149 rows in 23 events, almost all qualifications, carrying
+ordinary ranks and scores including rank 1 with the highest score of its event; in ISSF usage it
+is Ranking Points Only, a competitor who shoots and is placed but cannot advance and takes
+ranking points alone. The database is consistent with that and does not establish it. `a/rpo` on
+one row and `rpo/rpo` on 14 rows in two events are composites of the same.
+
+**The bare backtick in `101 Duration` belongs to that same defect.** One value in each of 88
   events, all under the `World Cup` template. Re-read 2026-09-06, it behaves exactly like the 24
   numeric constants above - once per event and never twice - and the user confirmed it as most
   likely the same mistake rather than a convention of one source. It is inside
@@ -378,7 +399,10 @@ question that closes leaves nothing behind unless the answer is recorded where t
   Measured 2026-09-06 over every finished event, counting each group of competitors sharing one
   `102 Points` value while holding different Ranks: **31 578 such groups in 4 620 events, of which
   26 are explained and 31 552 are not.** Four carry a shoot-off mark in `104 Comment` - `so`,
-  `s-off` - and 22 carry a value in `535 Tops` or `536 Zones`. By round:
+  `s-off` - and 22 carry a value in `535 Tops` or `536 Zones`. The sweep looked for `so` and
+  `s-off` only; `golden hit` was read later the same day as a third marker of the same thing, on
+  one row of one medal match, so the explained count is 26 or 27 and materially neither. By
+  round:
 
   | Round type | Tie groups | Events | Shoot-off comment | `535 Tops` / `536 Zones` | Unexplained |
   |---|---|---|---|---|---|
@@ -408,16 +432,5 @@ question that closes leaves nothing behind unless the answer is recorded where t
   so whatever separated the other finalists is not written down anywhere the package can read.
   Measured while classifying `GLOBAL-DQ-127` on 2026-09-06, which is what makes this the remaining
   half of that decision rather than a question beside it.
-
-- **What `rpo`, `bm`, `gm` and `golden hit` mean.** Four of the 42 values in `104 Comment` are
-  approved into `RESULT_COMMENT_VALUE_LIST` without their meaning being known: `rpo` on 149 rows
-  in 23 events across 4 templates, `bm` and `gm` on 2 rows each, `golden hit` on 1. They are in
-  the list because it states what the sport writes and not what it means, and excluding them would
-  assert they are defects before anybody has said so - but that reasoning holds only while
-  somebody is still expected to answer. Until then
-  `GLOBAL-DQ-117 EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED_BY_SCORE`, running here as
-  `Shooting-DQ-058`, accepts all four as valid vocabulary. Written down 2026-09-06; the values
-  were censused on 2026-09-06 and `SPORTS/params.json` had been citing this entry before it
-  existed.
 
 <!-- MANUAL PASTE ZONE: 45 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
