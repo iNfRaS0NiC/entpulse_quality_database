@@ -154,6 +154,20 @@ saw `statistic_typeFK` 11 at tournament level over 122 statistics on shard 11 wh
 the sport, which is enough to know the structure is present and not enough to document it. The
 sport comes back to this.
 
+**One check runs with narrower coverage than its `eligible_count` suggests, and this is where it
+is recorded.** `GLOBAL-DQ-007 PARTICIPANT_MISSING_DATE_OF_BIRTH`, running here as
+`Shooting-DQ-001`, reaches a person by three paths - an event participant row, a lineup place,
+and a Comp.Rank row - and reads the sport registry beside them. The Comp.Rank path is marked
+optional in the statement precisely so that a sport opened without the layer still gets the other
+three; with no confirmed `SHARD_ID` or `STATISTIC_TYPE_ID` the runner drops the marked pair from
+the findings branch and the coverage branch together, and says so on every run. The consequence is
+the part worth writing down: **an athlete reachable only through a Comp.Rank statistic, appearing
+in no event and no lineup, is not audited**, and `eligible_count` - 16 113 on 2026-09-06, with 479
+findings - counts the paths that were read rather than the sport's whole population. Nothing else
+in the sport is narrowed this way; the run named this one check and no other. It corrects itself
+when the Comp.Rank layer comes back, which is the same reason the layer is `Not checked` rather
+than `Not applicable`.
+
 <!-- MANUAL PASTE ZONE: 45 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Reference values
@@ -214,16 +228,61 @@ its own pattern, so `10m` and `25m` events separate.
   them under the `World Cup` template and starting at `World Cup Granada` 2013; the country
   codes AUT, CRO, CZE, FIN, FRA, GBR, GER and HUN, one row each; and two athlete names -
   `Daria Turulo` in event 5789722 `Skeet Final`, and `Diana Bacosi`.
-- `103 Distance` holds 29 rows in 3 events, and one of its three shapes is the literal word
-  `Comment` - event 5765754, `Double Trap Qualification`, European Championships Shotgun 2006.
-- `536 Zones` holds `Gold`, `Silver`, `Bronze` and `Final` beside its numbers.
-- `535 Tops` holds `Medal Matches`, `QF` and `--/--` beside its numbers.
+- `103 Distance` holds 29 rows in 18 shapes, and **not one of them is a number.** Seventeen rows
+  in sixteen shapes are multi-line blobs of six numbers apiece - `286`, `299`, `284`, `292`,
+  `298`, `288` on one row, separated by newlines - and every one of them sits in a single event,
+  5792171 `50m Rifle 3 Positions Team Final`. Six numbers in the 280-300 band is a competitor's
+  six series of a three-position match, so a whole scorecard has been written into one cell of a
+  field named for a distance. The other twelve rows carry `Q`, the qualification mark, in two
+  events, and one carries the literal word `Comment` - event 5765754, `Double Trap Qualification`,
+  European Championships Shotgun 2006.
+- `535 Tops` holds 77 rows in 38 shapes. `DNS` is the single commonest value at 23 rows in 23
+  events, which is a no-result mark sitting in a tie-break field; then `Q` on 5 rows, `--/--` on
+  3, `-` on 2, `QF` on 2 and `Medal Matches` on 1. Its 32 numeric shapes are not one quantity
+  either: `11`, `16`, `17` and `2` are the size a shoot-off tally would be, while `1141`, `1154`,
+  `1176`, `1179`, `115.5`, `133.7`, `154.3`, `176.6`, `198` and `199.7` are scores.
+- `536 Zones` holds 23 rows in 15 shapes. `Gold`, `Silver` and `Bronze` on 2 rows each, then
+  `4th`, `6th`, `7th` and `Final` on one apiece - medals, placings and a round name in a field
+  meant for a count. Its numbers are `0`, `1`, `2`, `4`, `6`, `7`, and also `503` and `507`,
+  which are scores.
 
 Event 5974406 `25m Pistol Final`, South East Asian Games 2017, appears in two of these at once:
 `Gold` in Zones and `Medal Matches` in Tops.
 
+Profiled whole on 2026-09-06 - every row of all three fields, not a sample. **This bears directly
+on the open question about shoot-offs below.** `535 Tops` and `536 Zones` are the only fields that
+could record what separates two competitors on the same score, and what they mostly hold is
+something else: of the 100 rows across the two, the non-numeric ones are medals, placings, round
+names and a `DNS`, and the numeric ones mix plausible tallies with scores. The fields built for
+the question are themselves not being used for it.
+
 This is recorded as what the data holds. Whether any of it is a defect, and which field each
-value belongs in, has not been decided and no check is written for it.
+value belongs in, has not been decided and no check is written for it. `103 Distance` is the
+closest of the three to `101 Duration`'s answer - a field the sport does not write, holding
+debris - but nobody has said so, and `UNUSED_RESULT_TYPE_LIST` names `101` alone.
+
+**The sport writes two different ranking conventions and neither is dominant.** After a tie, a
+rank sequence can skip the places the tie consumed - 1, 2, 2, 4 - or run on dense - 1, 2, 2, 3.
+Measured 2026-09-06 over every finished event, counting each tie group that has a next rank after
+it: **283 groups in 81 events skip and 264 groups in 92 events run dense**, with three more groups
+in three events doing neither. Both conventions run the whole history, 2004 to 2025, so this is
+not an old practice replaced by a new one; the three that are neither are all 2004. An event
+picks one and holds to it - of the 72 events reported for a dense tie, two also contain a skip
+somewhere else, and no more.
+
+Which of the two is correct has not been decided by anybody, and the package is not neutral
+between them. `GLOBAL-DQ-119 EVENT_RESULTS_RANK_SEQUENCE_BROKEN`, running here as
+`Shooting-DQ-066`, asserts the skip convention in its own words - "ties skipping the places they
+consume" - and carries a `RANK_SEQUENCE_TIE_DOES_NOT_SKIP` branch for the events that do not.
+Of its 447 findings over 8 632 eligible events on 2026-09-06: 251 are `RANK_SEQUENCE_GAP`, 124 are
+`RANK_SEQUENCE_DOES_NOT_START_AT_ONE`, and **72 are `RANK_SEQUENCE_TIE_DOES_NOT_SKIP` - the dense
+events, reported as defects because the template picked the other convention.** Under the dense
+reading those 72 are correct data and the 81 skip events would be the finding instead; the check
+reports only 10 of those 81 today, and for other reasons.
+
+The check was approved on 2026-09-06 knowing this, on the user's decision. It is written here
+rather than left in a commit message because the reason a check carries a known unresolved
+question is the part nobody can reconstruct from the board.
 
 **`GLOBAL-DQ-096 EVENT_NAME_DOES_NOT_NAME_ITS_PARTICIPANTS` is `Not applicable` here, and the
 template says so itself.** It is written for head-to-head sports by the competition model: naming
@@ -398,11 +457,24 @@ one row and `rpo/rpo` on 14 rows in two events are composites of the same.
 
   Measured 2026-09-06 over every finished event, counting each group of competitors sharing one
   `102 Points` value while holding different Ranks: **31 578 such groups in 4 620 events, of which
-  26 are explained and 31 552 are not.** Four carry a shoot-off mark in `104 Comment` - `so`,
-  `s-off` - and 22 carry a value in `535 Tops` or `536 Zones`. The sweep looked for `so` and
-  `s-off` only; `golden hit` was read later the same day as a third marker of the same thing, on
-  one row of one medal match, so the explained count is 26 or 27 and materially neither. By
-  round:
+  four are explained.** Not 26, which is what a first sweep said and what this entry carried for
+  part of the same day. That sweep counted a group as explained if any tied competitor held
+  anything at all in `535 Tops` or `536 Zones`, and profiling those two fields whole showed what
+  they hold. Re-measured on the narrower question - is there something that actually records a
+  tie-break:
+
+  - **4 groups in 4 events** carry a genuine shoot-off mark in `104 Comment`: `pr, s-off 7`,
+    `pr, s-off 8`, `s-off: 2`, `q s-off: 4`.
+  - **5 groups in 3 events** carry a small number in `535 Tops` or `536 Zones`, and even those
+    come mixed with `4th`, `Silver`, `Bronze` and `Gold` on the same rows, or are pairs like
+    `63, 64` and `81, 83` that are scores rather than tallies.
+  - **17 groups in 17 events** carry something in those fields that explains nothing - `DNS` in
+    sixteen of them and `Q` in one.
+  - **31 552 groups in 4 611 events** carry nothing anywhere.
+
+  So the honest figure is four, or nine if the small numbers are counted generously. The round
+  table below is the first sweep's and is left as it was measured, with its `535 Tops`/`536 Zones`
+  column reading as "holds something there" rather than "is explained":
 
   | Round type | Tie groups | Events | Shoot-off comment | `535 Tops` / `536 Zones` | Unexplained |
   |---|---|---|---|---|---|
