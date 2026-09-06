@@ -261,6 +261,50 @@ value belongs in, has not been decided and no check is written for it. `103 Dist
 closest of the three to `101 Duration`'s answer - a field the sport does not write, holding
 debris - but nobody has said so, and `UNUSED_RESULT_TYPE_LIST` names `101` alone.
 
+**Equal scores ranked apart are how this sport ranks, and what separated them is almost never
+stored.** A final is shot off and a qualification is counted back on inner tens; the database keeps
+the outcome and not the reason. Measured 2026-09-06 over every finished event, counting each group
+of competitors sharing one `102 Points` value while holding different Ranks: **31 578 groups in
+4 620 events, of which four carry anything that records a tie-break.**
+
+- **4 groups in 4 events** carry a genuine shoot-off mark in `104 Comment`: `pr, s-off 7`,
+  `pr, s-off 8`, `s-off: 2`, `q s-off: 4`.
+- **5 groups in 3 events** carry a small number in `535 Tops` or `536 Zones`, and even those come
+  mixed with `4th`, `Silver`, `Bronze` and `Gold` on the same rows, or are pairs like `63, 64` and
+  `81, 83` that are scores rather than tallies.
+- **17 groups in 17 events** carry something in those fields that explains nothing - `DNS` in
+  sixteen of them and `Q` in one.
+- **31 552 groups in 4 611 events** carry nothing anywhere.
+
+A first sweep the same day put the explained count at 26. It counted a group as explained if any
+tied competitor held anything at all in `535 Tops` or `536 Zones`, and profiling those two fields
+whole showed what they hold. The figure is four, or nine counting the small numbers generously.
+
+By round, from that first sweep and left as it was measured - its `535 Tops`/`536 Zones` column
+reads as "holds something there" rather than "is explained":
+
+| Round type | Tie groups | Events | Shoot-off comment | `535 Tops` / `536 Zones` | Neither |
+|---|---|---|---|---|---|
+| `179 Qualifier` | 28 343 | 3 148 | 0 | 16 | 28 327 |
+| `173 Final` | 1 808 | 913 | 3 | 5 | 1 800 |
+| `round_typeFK 0` | 712 | 130 | 0 | 0 | 712 |
+| `178 Semi Finals` | 443 | 291 | 0 | 0 | 443 |
+| `191 Elimination` | 88 | 32 | 0 | 0 | 88 |
+| `38` (named `1`) | 56 | 24 | 0 | 0 | 56 |
+| `181 bronze` | 56 | 54 | 0 | 1 | 55 |
+| `171 Preliminary` | 34 | 12 | 0 | 0 | 34 |
+| `39` (named `2`) | 29 | 8 | 0 | 0 | 29 |
+| `176 Quarter Finals` | 7 | 6 | 0 | 0 | 7 |
+| `152 Qualifier` | 1 | 1 | 0 | 0 | 1 |
+| `228 Placement Phase` | 1 | 1 | 1 | 0 | 0 |
+
+Event **5967926** `25m Pistol Final`, Asian Championship, 6 February 2026, is the shape in one row
+set: two competitors on 35 points, ranked 1 and 2, gold and silver, with `104 Comment`,
+`535 Tops`, `536 Zones` and `101 Duration` empty on every row of the event. Swap the two ranks and
+nothing in the database contradicts it. That is what `Shooting-DQ-075
+EVENT_RESULTS_TIED_SCORE_WITHOUT_SHARED_RANK_IN_MEDAL_ROUND` puts in front of a reviewer, and why
+it is restricted to the rounds where the answer costs somebody a medal.
+
 **The sport writes two different ranking conventions and neither is dominant.** After a tie, a
 rank sequence can skip the places the tie consumed - 1, 2, 2, 4 - or run on dense - 1, 2, 2, 3.
 Measured 2026-09-06 over every finished event, counting each tie group that has a next rank after
@@ -270,8 +314,10 @@ not an old practice replaced by a new one; the three that are neither are all 20
 picks one and holds to it - of the 72 events reported for a dense tie, two also contain a skip
 somewhere else, and no more.
 
-Which of the two is correct has not been decided by anybody, and the package is not neutral
-between them. `GLOBAL-DQ-119 EVENT_RESULTS_RANK_SEQUENCE_BROKEN`, running here as
+Which of the two is correct is still not settled as a rule, and the package is not neutral
+between them. **The user decided on 2026-09-06 what to do about that, and it was not to pick a
+convention:** the events stay in the check and the review judges them one at a time, fixing or
+leaving each. Nothing is excluded and nothing is declared correct in advance. `GLOBAL-DQ-119 EVENT_RESULTS_RANK_SEQUENCE_BROKEN`, running here as
 `Shooting-DQ-066`, asserts the skip convention in its own words - "ties skipping the places they
 consume" - and carries a `RANK_SEQUENCE_TIE_DOES_NOT_SKIP` branch for the events that do not.
 Of its 447 findings over 8 632 eligible events on 2026-09-06: 251 are `RANK_SEQUENCE_GAP`, 124 are
@@ -377,6 +423,15 @@ belonging to the Comp.Rank layer this opening deliberately left out, two depreca
 that only a head-to-head sport can hold. **Nothing is `Not checked`** - the first sport in the
 package where that is true, Modern Pentathlon having left one blocked.
 
+**`Shooting-DQ-075` is the sport's only statement of its own**, added 2026-09-06 and living in
+`POWERBI_QUERIES/Shooting.sql`. `GLOBAL-DQ-127 EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK` is
+still `Not applicable` as written, for the reason above, and `Shooting-DQ-075
+EVENT_RESULTS_TIED_SCORE_WITHOUT_SHARED_RANK_IN_MEDAL_ROUND` asks the same question of `173 Final`
+and `181 bronze` alone. The template carries no round-type parameter and five other sports read it
+whole, so adding one would put the question to Biathlon, Mountain Bike, Speed Skating, Swimming
+and Track Cycling, none of whom has been asked it; the narrowing belongs to this sport and is
+written here. It reported 967 findings of 4 268 eligible events on the day it was written.
+
 ## What five closed questions settled
 
 **These five were open questions when the sport was opened and the user answered them on
@@ -449,60 +504,27 @@ one row and `rpo/rpo` on 14 rows in two events are composites of the same.
 
 ## Open questions
 
+**None outstanding as of 2026-09-06.** The sport was opened with six and all six now carry an
+answer; the two that survived the day closed last, and neither closed by being classified away.
+
 - **Where a shoot-off or a countback is recorded when it separates two competitors on the same
-  score.** Nothing in the sport says which of them finished ahead. Equal `102 Points` with
-  different `100 Rank` values is how this sport ranks and is not in itself a question - a final is
-  shot off and a qualification is counted back on inner tens - but the database holds the outcome
-  and almost never holds what produced it.
+  score.** Still not answered as a rule, and the user decided on 2026-09-06 not to wait for one:
+  the competitors on the same score go into a check and the review reads them one at a time,
+  fixing what is wrong and leaving what is right. `Shooting-DQ-075
+  EVENT_RESULTS_TIED_SCORE_WITHOUT_SHARED_RANK_IN_MEDAL_ROUND` is that check, over `173 Final` and
+  `181 bronze` - 967 findings of 4 268 eligible events. The whole-sport form was measured and
+  rejected as unreadable: 31 578 tie groups in 4 620 events, 54% of the sport, of which four carry
+  anything recording a tie-break. `POWERBI_QUERIES/Shooting.sql` holds the reasoning and the three
+  narrowings that were measured and not chosen.
 
-  Measured 2026-09-06 over every finished event, counting each group of competitors sharing one
-  `102 Points` value while holding different Ranks: **31 578 such groups in 4 620 events, of which
-  four are explained.** Not 26, which is what a first sweep said and what this entry carried for
-  part of the same day. That sweep counted a group as explained if any tied competitor held
-  anything at all in `535 Tops` or `536 Zones`, and profiling those two fields whole showed what
-  they hold. Re-measured on the narrower question - is there something that actually records a
-  tie-break:
+- **Which ranking convention is right.** Also unsettled as a rule and settled the same way. The 72
+  `RANK_SEQUENCE_TIE_DOES_NOT_SKIP` findings of `Shooting-DQ-066` stay on the board and the review
+  judges them; `GLOBAL-DQ-119` was not narrowed, no branch was switched off, and no convention was
+  declared correct.
 
-  - **4 groups in 4 events** carry a genuine shoot-off mark in `104 Comment`: `pr, s-off 7`,
-    `pr, s-off 8`, `s-off: 2`, `q s-off: 4`.
-  - **5 groups in 3 events** carry a small number in `535 Tops` or `536 Zones`, and even those
-    come mixed with `4th`, `Silver`, `Bronze` and `Gold` on the same rows, or are pairs like
-    `63, 64` and `81, 83` that are scores rather than tallies.
-  - **17 groups in 17 events** carry something in those fields that explains nothing - `DNS` in
-    sixteen of them and `Q` in one.
-  - **31 552 groups in 4 611 events** carry nothing anywhere.
-
-  So the honest figure is four, or nine if the small numbers are counted generously. The round
-  table below is the first sweep's and is left as it was measured, with its `535 Tops`/`536 Zones`
-  column reading as "holds something there" rather than "is explained":
-
-  | Round type | Tie groups | Events | Shoot-off comment | `535 Tops` / `536 Zones` | Unexplained |
-  |---|---|---|---|---|---|
-  | `179 Qualifier` | 28 343 | 3 148 | 0 | 16 | 28 327 |
-  | `173 Final` | 1 808 | 913 | 3 | 5 | 1 800 |
-  | `round_typeFK 0` | 712 | 130 | 0 | 0 | 712 |
-  | `178 Semi Finals` | 443 | 291 | 0 | 0 | 443 |
-  | `191 Elimination` | 88 | 32 | 0 | 0 | 88 |
-  | `38` (named `1`) | 56 | 24 | 0 | 0 | 56 |
-  | `181 bronze` | 56 | 54 | 0 | 1 | 55 |
-  | `171 Preliminary` | 34 | 12 | 0 | 0 | 34 |
-  | `39` (named `2`) | 29 | 8 | 0 | 0 | 29 |
-  | `176 Quarter Finals` | 7 | 6 | 0 | 0 | 7 |
-  | `152 Qualifier` | 1 | 1 | 0 | 0 | 1 |
-  | `228 Placement Phase` | 1 | 1 | 1 | 0 | 0 |
-
-  The question has three possible answers and they are not variations of one: the separator is
-  recorded in a field nobody here has identified; or it is not recorded and never was, the source
-  supplying a finished ranking and nothing of how it was reached; or it should be recorded and is
-  not, which would make this a gap in 31 552 places rather than 31 552 correct rows.
-
-  **What turns on it.** `GLOBAL-DQ-127 EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK` looks for
-  exactly this shape - one deciding value, two places - and is `Not applicable` for this sport
-  because the shape is how the sport ranks. That classification is right on the second answer and
-  wrong on the third, in which case it is the only check that would have seen the gap. `535 Tops`
-  and `536 Zones` exist for this purpose and hold a value in 36 and 9 events in the whole sport,
-  so whatever separated the other finalists is not written down anywhere the package can read.
-  Measured while classifying `GLOBAL-DQ-127` on 2026-09-06, which is what makes this the remaining
-  half of that decision rather than a question beside it.
+**What that leaves for people is a reading, not a decision.** Two of the sport's findings sets -
+`Shooting-DQ-075`'s 967 events and `Shooting-DQ-066`'s 72 - rest on questions nobody has answered
+in the abstract, and each row is the place to answer it concretely. That is written down here so a
+later reader does not mistake a large finding count for a large defect count.
 
 <!-- MANUAL PASTE ZONE: 45 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
