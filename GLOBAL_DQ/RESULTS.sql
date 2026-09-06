@@ -1242,6 +1242,24 @@ SELECT
     NULL AS eligible_count
 -- What it does, stated in full: Finds event participants whose Medal does not match the
 -- place it stands for, or that carry no Rank at all.
+--
+-- **A bronze awarded on a round that exists to decide bronze may sit at place 1 or at place 3,
+-- and neither is reported**, added 2026-09-06. A match for third place decides places three and
+-- four, and the two conventions both occur: some sports rank such a match 3 and 4, others rank
+-- it 1 and 2 because it is a contest of its own. This is the same latitude `GLOBAL-DQ-119`
+-- was given on 2026-08-28 for the same reason, and it was missing here, so a sport ranking its
+-- bronze match from 1 had every bronze medal it awards reported. Measured across the five
+-- sports declaring a real bronze round: Shooting 629 findings of 11039 medal rows with every
+-- one of them a bronze at place 1, Track Cycling 90 of its 94, Speed Skating 12 of its 14 and
+-- Artistic Gymnastics 2 of its 12; Ice Hockey has none and is unaffected. `expected_rank`
+-- reads `1 or 3` on such a row so the reader can see which rule was applied.
+--
+-- `BRONZE_ROUND_TYPE_LIST` is what decides which events get the latitude, and it is keyed on
+-- the round rather than on the medal: a bronze awarded anywhere else is still expected at
+-- place 3. A sport with no third-place round declares the token `0`, which never matches, and
+-- nothing about it changes. The latitude is bronze-only on purpose - a gold or a silver on a
+-- bronze round is wrong under either convention, and the loser of a bronze match holds no
+-- medal at all.
 FROM (
     SELECT
         ep.id AS event_participants_id,
@@ -1250,10 +1268,12 @@ FROM (
         e.startdate AS event_startdate,
         p.name AS participant_name,
         rm.value AS medal_value,
-        CASE LOWER(TRIM(rm.value))
-            WHEN 'gold' THEN '1'
-            WHEN 'silver' THEN '2'
-            WHEN 'bronze' THEN '3'
+        CASE
+            WHEN LOWER(TRIM(rm.value)) = 'gold' THEN '1'
+            WHEN LOWER(TRIM(rm.value)) = 'silver' THEN '2'
+            WHEN LOWER(TRIM(rm.value)) = 'bronze'
+                 AND e.round_typeFK IN ({{BRONZE_ROUND_TYPE_LIST}}) THEN '1 or 3'
+            WHEN LOWER(TRIM(rm.value)) = 'bronze' THEN '3'
             ELSE NULL
         END AS expected_rank,
         (SELECT NULLIF(TRIM(r2.value), '') FROM result r2
@@ -1278,7 +1298,9 @@ FROM (
       -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
 ) x
 WHERE x.expected_rank IS NOT NULL
-  AND (x.rank_value IS NULL OR x.rank_value <> x.expected_rank)
+  AND (x.rank_value IS NULL
+       OR (x.expected_rank =  '1 or 3' AND x.rank_value NOT IN ('1', '3'))
+       OR (x.expected_rank <> '1 or 3' AND x.rank_value <> x.expected_rank))
 
 UNION ALL
 
@@ -5687,6 +5709,128 @@ UNION ALL
 SELECT
     'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e2.id) AS eligible_count,
+    1 AS sort_order
+FROM event e2
+JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+JOIN event_participants ep2 ON ep2.eventFK = e2.id AND ep2.del = 'no'
+JOIN result r2 ON r2.event_participantsFK = ep2.id AND r2.del = 'no'
+              AND r2.value IS NOT NULL AND TRIM(r2.value) <> ''
+WHERE e2.del = 'no'
+  AND tt2.sportFK = {{SPORT_ID}}
+  AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t2.tournament_templateFK = <tournament_template_id>
+  -- AND e2.startdate >= '<from_datetime>'
+  -- AND e2.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
+
+ORDER BY sort_order, event_startdate DESC;
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-155
+    -- Name - EVENT_RESULTS_UNUSED_RESULT_TYPE_HOLDS_VALUES
+    -- What it does: Finds events holding a value in a result type the sport does not write, separating a value that duplicates a field the event already holds from one that exists nowhere else.
+    CASE
+        WHEN x.values_found_elsewhere = x.unused_values THEN 'UNUSED_TYPE_DUPLICATES_ANOTHER_FIELD'
+        WHEN x.values_found_elsewhere = 0                THEN 'UNUSED_TYPE_HOLDS_ITS_OWN_VALUE'
+        ELSE 'UNUSED_TYPE_HOLDS_BOTH'
+    END AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.round_type_name,
+    x.tournament_name,
+    x.template_name,
+    x.competitors_affected,
+    x.unused_values,
+    x.values_found_elsewhere,
+    x.unused_types_held,
+    x.sample_values,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: A sport writes some of the result types the database offers and
+-- leaves the rest alone. `UNUSED_RESULT_TYPE_LIST` names the ones it leaves alone, and every
+-- value found in them is therefore something nobody meant to put there - an old import, a paste
+-- into the wrong column, a default nobody cleared. Until this existed no check looked at such a
+-- field at all: every result statement in the package reads a type the sport declares, so a type
+-- it does not declare is unreachable by construction and can hold anything indefinitely.
+--
+-- Three states, because they are three repairs. Where every value also sits in a field the same
+-- competitor already holds, the unused field is a duplicate and deleting it loses nothing. Where
+-- none of them does, the field holds the only copy of whatever it is, so deleting it discards
+-- something and somebody must read it first. The third is an event holding both, which is one
+-- event to look at rather than two findings about it.
+--
+-- The audited object is the event and not the row, because an import that filled a column filled
+-- it for a whole competition at once - `unused_values` and `competitors_affected` carry the size,
+-- and `unused_types_held` names which of the declared-unused types the event actually holds, so
+-- a sport listing several does not have to guess which one this row is about.
+--
+-- **The list is a statement about the sport, not about the current data.** A type the sport
+-- genuinely writes must never appear in it: the check would then report every correct value the
+-- sport records. That is the one way to get this wrong, and it fails loudly rather than quietly -
+-- the finding count arrives at the size of the field. `NUMERIC_RESULT_TYPE_LIST`,
+-- `CLOCK_RESULT_TYPE_LIST` and the named single-type parameters are where a sport says what it
+-- does write, and nothing in them belongs here.
+--
+-- Written for Shooting and measured there 2026-09-06, after the sport's `101 Duration` was read
+-- and found to hold no measurement of any kind: 2 437 rows in 391 of 8 922 events, of which
+-- 2 040 are one of 24 values that appear exactly once per event across four templates and twenty
+-- years, 313 are the competitor's own `102 Points` copied across, and the rest are athlete names,
+-- country codes and the literal words `Points` and a column heading. The user confirmed the field
+-- is not written by this sport, which is what put it in the list.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        rt.name AS round_type_name,
+        t.name AS tournament_name,
+        tt.name AS template_name,
+        COUNT(DISTINCT ep.id) AS competitors_affected,
+        COUNT(*) AS unused_values,
+        SUM(CASE WHEN EXISTS (
+                SELECT 1
+                FROM result r_other
+                WHERE r_other.event_participantsFK = r.event_participantsFK
+                  AND r_other.del = 'no'
+                  AND r_other.result_typeFK NOT IN ({{UNUSED_RESULT_TYPE_LIST}})
+                  AND r_other.value IS NOT NULL
+                  AND TRIM(r_other.value) = TRIM(r.value)
+            ) THEN 1 ELSE 0 END) AS values_found_elsewhere,
+        GROUP_CONCAT(DISTINCT CONCAT(r.result_typeFK, ' ', COALESCE(rtp.name, '(unnamed)'))
+            ORDER BY r.result_typeFK SEPARATOR ', ') AS unused_types_held,
+        SUBSTRING(GROUP_CONCAT(DISTINCT r.value ORDER BY r.value SEPARATOR ', '), 1, 400) AS sample_values
+    FROM event e
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+    JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+                 AND r.result_typeFK IN ({{UNUSED_RESULT_TYPE_LIST}})
+                 AND r.value IS NOT NULL AND TRIM(r.value) <> ''
+    LEFT JOIN result_type rtp ON rtp.id = r.result_typeFK
+    WHERE e.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+    GROUP BY e.id, e.name, e.startdate, rt.name, t.name, tt.name
+) x
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e2.id) AS eligible_count,
     1 AS sort_order
 FROM event e2
