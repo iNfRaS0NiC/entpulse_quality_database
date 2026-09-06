@@ -299,66 +299,125 @@ rounds as an inconsistency. `GLOBAL-DQ-128 EVENT_RESULTS_CLOCK_VALUE_COMPONENT_O
 which is undeclared because the sport writes no clock value at all - every result value it holds
 was searched for a colon on 2026-09-06 and two came back, both shoot-off tallies in a comment.
 
-**With these, every one of the 154 GLOBAL DQ templates has a decision behind it for this sport**,
-as of 2026-09-06: 73 instantiated as `Shooting-DQ-001` to `-073`, 23 `Not applicable`, one
-`Not checked` pending the `101 Duration` question, 52 belonging to the Comp.Rank layer this
-opening deliberately left out, two deprecated, and three that only a head-to-head sport can hold.
+**With these, every one of the 155 GLOBAL DQ templates has a decision behind it for this sport**,
+as of 2026-09-06: 74 instantiated as `Shooting-DQ-001` to `-074`, 23 `Not applicable`, one
+`Not checked`, 52 belonging to the Comp.Rank layer this opening deliberately left out, two
+deprecated, and three that only a head-to-head sport can hold. The `Not checked` one is
+`GLOBAL-DQ-019 EVENT_DURATION_FORMAT_MISMATCH_TO_RANK`, and what it waits on changed on
+2026-09-06: it no longer waits on the `101 Duration` question, which is answered below, but on
+whether that answer reclassifies it. It asserts the leader/gap convention - the winner carrying
+an absolute time and everyone behind a signed difference - which is a reading of a duration
+field, and this sport's answer is that the field holds no duration and should hold nothing.
+Whether that is the structural absence `Not applicable` requires is a classification nobody has
+made, and the 390 events the check reports are not what would decide it.
+
+## What five closed questions settled
+
+**These five were open questions when the sport was opened and the user answered them on
+2026-09-06.** Each settles structure rather than a count, and each is written down here because a
+question that closes leaves nothing behind unless the answer is recorded where the question was.
+
+- **An event without a round type is always a defect.** `event.round_typeFK = 0` resolves to no
+  `round_type` row and stands on 174 events. It is not a sentinel for "not assigned": this sport
+  contests no round the reference table does not name.
+  `GLOBAL-DQ-006 EVENT_MISSING_ROUND_TYPE`, running here as `Shooting-DQ-017`, already reports
+  exactly those 174 and needs no change; the answer makes its findings confirmed defects rather
+  than a shape awaiting a reading. 69 of the 174 also award a medal, which is why `round_typeFK 0`
+  stays out of `MEDAL_ROUND_TYPE_LIST` - listing it there would silence the 69 instead of
+  reporting them. The same question stands open on BMX and the two have still not been compared.
+
+- **Round types `38` and `39` are round 1 and round 2.** The bare digits are what the sport calls
+  them, not a truncation of a longer name. They cover 39 events between them and stay in
+  `ROUND_TYPE_LIST`.
+
+- **`152 Qualifier` is a wrong id; `179 Qualifier` is the sport's Qualifier.** 179 holds 3 679
+  events from February 2004 to July 2026. 152 holds one, event `5968725` of 24 October 2017. The
+  id is for the people who own the reference table to delete, with its single event repointed.
+  152 was removed from `ROUND_TYPE_LIST` the same day so that
+  `GLOBAL-DQ-075 EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET`, running here as `Shooting-DQ-055`,
+  reports that one event: while 152 was still listed the check was `Clean` over 8 748 eligible
+  events and the defect stood on no board at all.
+
+- **`101 Duration` should not be populated in this sport.** The field name says duration and
+  nothing in it is a time. Measured 2026-09-06 over all 8 922 events: 391 carry a value, 2 437
+  rows in total, and not one row is a per-competitor measurement. **2 040 of them - 84%, in 373 of
+  the 391 events - are one of 24 values that appear exactly once per event.** `6.943` in 263
+  events, `6.93` in 261, `7.084` in 260, `7.47` and `7.482` in 259 each, `7.419` in 256, then
+  `10.779` in 47, `7.895` in 46, `10.922` in 45, and fifteen more from `8.402` down to `9.649`,
+  each in 12 to 22 events. Which values a competition gets follows its template - the first six
+  are World Cup, the rest Asian Games, Asian Championship, African Championships and European
+  Championships - and they span 2006 to 2026. They land on the leading placings and stop. Event
+  5964240 `50m Pistol Final`, 8 February 2026, is the shape in one row set: thirteen competitors
+  scoring 563 down to 522, the top six carrying `6.93`, `6.943`, `7.084`, `7.419`, `7.47`,
+  `7.482` in that order and the other seven carrying nothing. They rise as the score falls, which
+  is why they read as a plausible ordering and went unquestioned for twenty years. The remaining
+  397 rows are debris of four kinds: 313 rows in 12 events where the value is character for
+  character the competitor's own `102 Points`; 57 non-numeric one-offs including six athlete
+  names, the country codes `FRA`, `AUT` and `SVK`, and the literal words `Points` and `Име`, which
+  are column headings written in as data; 20 further numbers; and 7 bare hyphens.
+  `GLOBAL-DQ-155 EVENT_RESULTS_UNUSED_RESULT_TYPE_HOLDS_VALUES`, running here as
+  `Shooting-DQ-074`, reads the whole field and reported 391 events on 2026-09-06.
+  `output/SHOOTING_DURATION_FIELD.csv` holds every one of the 2 437 rows.
+
+- **The bare backtick in `101 Duration` belongs to that same defect.** One value in each of 88
+  events, all under the `World Cup` template. Re-read 2026-09-06, it behaves exactly like the 24
+  numeric constants above - once per event and never twice - and the user confirmed it as most
+  likely the same mistake rather than a convention of one source. It is inside
+  `Shooting-DQ-074`'s findings and needs nothing of its own.
 
 <!-- MANUAL PASTE ZONE: 45 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
 
-- Whether `event.round_typeFK = 0`, on 174 events and mapping to no `round_type` row, is an
-  intended sentinel for "not assigned" or is bad data. The same question stands open on BMX and
-  the two have not been compared.
-- What round types `38` and `39` are. They are named with the bare digits `1` and `2` and cover
-  39 events between them, and a name of one character cannot be read as a round.
-- Why `152` and `179` are two different round types both named `Qualifier`, one holding 3 679
-  events and the other holding 1. Either the single event is misfiled or the two ids mean
-  different things that the names do not distinguish.
-- What `101 Duration` is meant to hold in this sport, and whether most of what is in it was
-  written there in error. The field name says duration and nothing in it is a time. Measured
-  2026-09-06 over all 8 922 events: 391 carry a value at all, 2 437 rows in total, and the field
-  holds no per-competitor measurement of any kind.
+- **Where a shoot-off or a countback is recorded when it separates two competitors on the same
+  score.** Nothing in the sport says which of them finished ahead. Equal `102 Points` with
+  different `100 Rank` values is how this sport ranks and is not in itself a question - a final is
+  shot off and a qualification is counted back on inner tens - but the database holds the outcome
+  and almost never holds what produced it.
 
-  **2 040 of those rows - 84% - in 373 of the 391 events, are one of 24 values that appear
-  exactly once per event.** `6.943` in 263 events, `6.93` in 261, `7.084` in 260, `7.47` and
-  `7.482` in 259 each, `7.419` in 256, then `10.779` in 47, `7.895` in 46, `10.922` in 45, and
-  fifteen more from `8.402` down to `9.649`, each in 12 to 22 events. The bare backtick belongs to
-  the same family and behaves identically: 88 rows in 88 events, one apiece. Which values a
-  competition gets follows its template - the first six are World Cup, the rest Asian Games, Asian
-  Championship, African Championships and European Championships - and they span 2006 to 2026.
-  They land on the leading placings and stop. Event 5964240 `50m Pistol Final`, 8 February 2026,
-  is the shape in one row set: thirteen competitors scoring 563 down to 522, the top six carrying
-  `6.93`, `6.943`, `7.084`, `7.419`, `7.47`, `7.482` in that order and the other seven carrying
-  nothing. They rise as the score falls, which is why they read as a plausible ordering and went
-  unquestioned for twenty years. A value appearing once in each of 260 events is not a measurement
-  of any of them.
+  Measured 2026-09-06 over every finished event, counting each group of competitors sharing one
+  `102 Points` value while holding different Ranks: **31 578 such groups in 4 620 events, of which
+  26 are explained and 31 552 are not.** Four carry a shoot-off mark in `104 Comment` - `so`,
+  `s-off` - and 22 carry a value in `535 Tops` or `536 Zones`. By round:
 
-  The remaining 397 rows are debris of four kinds: 313 rows in 12 events where the value is
-  character for character the competitor's own `102 Points`; 57 non-numeric one-offs including six
-  athlete names, the country codes `FRA`, `AUT` and `SVK`, and the literal words `Points` and
-  `Име`, which are column headings written in as data; 20 further numbers; and 7 bare hyphens.
+  | Round type | Tie groups | Events | Shoot-off comment | `535 Tops` / `536 Zones` | Unexplained |
+  |---|---|---|---|---|---|
+  | `179 Qualifier` | 28 343 | 3 148 | 0 | 16 | 28 327 |
+  | `173 Final` | 1 808 | 913 | 3 | 5 | 1 800 |
+  | `round_typeFK 0` | 712 | 130 | 0 | 0 | 712 |
+  | `178 Semi Finals` | 443 | 291 | 0 | 0 | 443 |
+  | `191 Elimination` | 88 | 32 | 0 | 0 | 88 |
+  | `38` (named `1`) | 56 | 24 | 0 | 0 | 56 |
+  | `181 bronze` | 56 | 54 | 0 | 1 | 55 |
+  | `171 Preliminary` | 34 | 12 | 0 | 0 | 34 |
+  | `39` (named `2`) | 29 | 8 | 0 | 0 | 29 |
+  | `176 Quarter Finals` | 7 | 6 | 0 | 0 | 7 |
+  | `152 Qualifier` | 1 | 1 | 0 | 0 | 1 |
+  | `228 Placement Phase` | 1 | 1 | 1 | 0 | 0 |
 
-  Nothing is repaired here and no check is written for it. `GLOBAL-DQ-019
-  EVENT_DURATION_FORMAT_MISMATCH_TO_RANK` - which asserts the leader/gap convention, the winner
-  carrying an absolute time and everyone behind a `+` difference - is `Not checked` rather than
-  `Not applicable` and waits on this answer: it reports 390 of the 391 events, so what it would be
-  reading is this open question rather than 390 malformed times. `output/SHOOTING_DURATION_FIELD.csv`
-  holds every one of the 2 437 rows for the people who can answer it.
+  The question has three possible answers and they are not variations of one: the separator is
+  recorded in a field nobody here has identified; or it is not recorded and never was, the source
+  supplying a finished ranking and nothing of how it was reached; or it should be recorded and is
+  not, which would make this a gap in 31 552 places rather than 31 552 correct rows.
 
-- What the bare backtick in `101 Duration` means. It is one value in each of 88 events, all
-  under the `World Cup` template, which makes it a convention of one source rather than 88
-  separate mistakes. Re-read 2026-09-06, it is not a question of its own: it behaves exactly like
-  the 23 numeric values above it, once per event and never twice, so whatever wrote those wrote
-  this. It is listed separately only because a reader looking for it will look for it by name.
+  **What turns on it.** `GLOBAL-DQ-127 EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK` looks for
+  exactly this shape - one deciding value, two places - and is `Not applicable` for this sport
+  because the shape is how the sport ranks. That classification is right on the second answer and
+  wrong on the third, in which case it is the only check that would have seen the gap. `535 Tops`
+  and `536 Zones` exist for this purpose and hold a value in 36 and 9 events in the whole sport,
+  so whatever separated the other finalists is not written down anywhere the package can read.
+  Measured while classifying `GLOBAL-DQ-127` on 2026-09-06, which is what makes this the remaining
+  half of that decision rather than a question beside it.
 
-- Where a shoot-off is recorded when it separates two finalists on the same score. Equal `102
-  Points` with different Ranks is how this sport ranks and is not in itself a question, but 1 204
-  of the events showing it are Finals, where a tie is shot off rather than counted back. The
-  fields that would hold it, `535 Tops` and `536 Zones`, exist in 36 and 9 events in the whole
-  sport, so whatever separated the other finalists is not written down. Measured 2026-09-06 while
-  classifying `GLOBAL-DQ-127 EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK` as `Not applicable`,
-  which is what makes this the remaining half of that question rather than part of it.
+- **What `rpo`, `bm`, `gm` and `golden hit` mean.** Four of the 42 values in `104 Comment` are
+  approved into `RESULT_COMMENT_VALUE_LIST` without their meaning being known: `rpo` on 149 rows
+  in 23 events across 4 templates, `bm` and `gm` on 2 rows each, `golden hit` on 1. They are in
+  the list because it states what the sport writes and not what it means, and excluding them would
+  assert they are defects before anybody has said so - but that reasoning holds only while
+  somebody is still expected to answer. Until then
+  `GLOBAL-DQ-117 EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED_BY_SCORE`, running here as
+  `Shooting-DQ-058`, accepts all four as valid vocabulary. Written down 2026-09-06; the values
+  were censused on 2026-09-06 and `SPORTS/params.json` had been citing this entry before it
+  existed.
 
 <!-- MANUAL PASTE ZONE: 45 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
