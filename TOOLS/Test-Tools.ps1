@@ -7283,6 +7283,38 @@ Test-That 'a check that was never meant to reach zero never notifies' {
     }
 }
 
+Test-That 'a run that reopens exactly one check still queues its message' {
+    # The commonest shape there is - the nightly pass closes hundreds and reopens one - and the
+    # one that silently sent nothing until 2026-09-06. New-ReopenNotification returns @($events)
+    # and PowerShell unwraps a one-element array on assignment, so a caller that does not wrap
+    # holds the PSCustomObject itself, and a PSCustomObject has no .Count in 5.1. Not zero:
+    # empty. The run's own warning line then prints with its number missing and
+    # `if ($reopened.Count -gt 0)` is False, so the queue never sees it.
+    #
+    # Every test in this file already wrapped the call, which is exactly why the suite passed
+    # for as long as it did while the one production call site did not. So the source assertion
+    # below is not belt and braces - it is the half that would have caught it.
+    $renames = @(
+        [pscustomobject]@{ CheckId = 'Fixtureball-DQ-055'; From = 'Clean'; To = 'Reopened'
+            Sport = 'Fixtureball'; Name = 'ROUND_TYPE_NOT_IN_EXPECTED_SET'
+            What = 'a round the sport does not contest'; PreviousFindings = 0
+            CurrentFindings = 1; Verdict = 'Regressed'; TabTitle = 'ROUND_TYPE_NOT_IN_EXPECTED_SET' })
+
+    $unwrapped = New-ReopenNotification -Renames $renames -RunId 'r' `
+        -StartedUtc '2026-09-06T09:10:00Z' -Sport 'Fixtureball' -SheetId 'ABC'
+    Assert-True ($null -eq $unwrapped.Count) `
+        'an unwrapped single event has no Count at all, which is the whole of the defect'
+
+    $events = @(New-ReopenNotification -Renames $renames -RunId 'r' `
+        -StartedUtc '2026-09-06T09:10:00Z' -Sport 'Fixtureball' -SheetId 'ABC')
+    Assert-Equal 1 $events.Count 'wrapped, one reopen is one event'
+    Assert-Equal 'Fixtureball-DQ-055' $events[0].checkId 'and it is the check that reopened'
+
+    $source = Get-Content -LiteralPath (Join-Path $RepoRootPath 'TOOLS\Run-Query.ps1') -Raw
+    Assert-True ($source -match '\$reopened = @\(New-ReopenNotification') `
+        'Run-Query.ps1 must wrap the call, or a single reopen is written red and reaches nobody'
+}
+
 Test-That 'nothing is sent until somebody names a recipient' {
     # The opt-in, and the whole of the safety in this feature. A board update is run by
     # whoever is working on a sport; one that starts mailing a list the day it is merged is

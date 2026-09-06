@@ -5078,10 +5078,22 @@ function Save-RunSheet {
 
             $renamedToReopened = @($plan.StatusRenames |
                     Where-Object { [string]$_.To -eq $SheetsReopenedStatus }).Count
-            $reopened = New-ReopenNotification -Renames $plan.StatusRenames -RunId $stamp `
+            # Wrapped in @(), which is the whole of what makes a single reopen reach anybody.
+            # New-ReopenNotification returns @($events); PowerShell unwraps a one-element array
+            # on assignment, so without this $reopened is the PSCustomObject itself - and a
+            # PSCustomObject has no .Count in 5.1. Not zero: empty. The yellow line above then
+            # prints with its number missing and `if ($reopened.Count -gt 0)` is False, so the
+            # message is never queued. It fires only when exactly one check reopened, which is
+            # the commonest shape there is: the nightly pass closes hundreds and reopens one.
+            # Found 2026-09-06 when Shooting-DQ-055 EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET went
+            # Clean -> Reopened alone and nothing was queued; TOOLS/notifications.local.json
+            # held 128 messages over 17 runs at that moment and not one run had contributed a
+            # single message, which is the fingerprint. Every test in Test-Tools.ps1 already
+            # wrapped the call, which is exactly why the suite passed while this path did not.
+            $reopened = @(New-ReopenNotification -Renames $plan.StatusRenames -RunId $stamp `
                 -StartedUtc $script:RunStartedUtc -Sport $Sport -SheetId $id `
                 -ReopenedWord $SheetsReopenedStatus `
-                -GidOf $(if ($sent.PSObject.Properties.Name -contains 'GidOf') { $sent.GidOf } else { $null })
+                -GidOf $(if ($sent.PSObject.Properties.Name -contains 'GidOf') { $sent.GidOf } else { $null }))
 
             # The board write and the message are two steps and either can happen without the
             # other. On 2026-09-02 Ice-Hockey-DQ-114 EVENT_PARTICIPANT_ORGANIZATION_MISSING was
