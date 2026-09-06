@@ -63,7 +63,7 @@
         },
         "Shooting": {
             "spreadsheetId": "1E1x9Q3tL2a45lwJ_QCNc9pzXzp8zW3M16R9W5tk4Rp8",
-            "runRequests": false
+            "runRequests": true
         },
         "Soccer": {
             "spreadsheetId": "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE",

@@ -256,10 +256,35 @@ something else: of the 100 rows across the two, the non-numeric ones are medals,
 names and a `DNS`, and the numeric ones mix plausible tallies with scores. The fields built for
 the question are themselves not being used for it.
 
-This is recorded as what the data holds. Whether any of it is a defect, and which field each
-value belongs in, has not been decided and no check is written for it. `103 Distance` is the
-closest of the three to `101 Duration`'s answer - a field the sport does not write, holding
-debris - but nobody has said so, and `UNUSED_RESULT_TYPE_LIST` names `101` alone.
+**All of this was decided on 2026-09-06, and most of it turned out to be watched already.**
+`Shooting-DQ-070 GLOBAL-DQ-070 EVENT_RESULTS_NUMERIC_FIELD_NON_NUMERIC` reads
+`NUMERIC_RESULT_TYPE_LIST`, which names `103`, `535` and `536` among its five, and reports every
+value in them that is not a number - 46 findings, and among them all three of `103 Distance`'s
+events, the `Gold` and `Medal Matches` of 5974406, and the `Comment` of 5765754. So `103 Distance`
+needs nothing: it holds 29 rows in 18 shapes and **not one of them is numeric**, which puts the
+whole field inside that check already. Adding `103` to `UNUSED_RESULT_TYPE_LIST` was considered
+and rejected for that reason - it would have put a second check over the same three events, which
+is the argument that kept `GLOBAL-DQ-019` out.
+
+**What was not watched is a number in the right format and the wrong field.** Measured the same
+day: 30 of the 41 numeric rows in `535 Tops`, across 9 events, are character for character the
+competitor's own `102 Points` - `1141` against `1141`, `1176` against `1176`, `199.7` against
+`199.7` - and `536 Zones` has 4 more such rows in 2 events. A four-digit team score in a tie-break
+field is a perfectly good number, so nothing reported it. `Shooting-DQ-076
+EVENT_RESULTS_TOPS_OR_ZONES_HOLDS_THE_COMPETITORS_OWN_POINTS` now does: 11 findings of 16 eligible
+events, which is two thirds of everything that uses these two fields at all.
+
+**One event is the same defect in a form no check sees, and it is named here rather than lost.**
+In 5971614 `Skeet Team Final` the two fields are swapped outright - `536 Zones` holds `503` and
+`507` while `102 Points` holds `6` and `2`. Nothing equals anything, so an equality test passes it,
+and `Shooting-DQ-070` passes it too because both values are numbers. Catching a swap needs a rule
+about which magnitudes belong in which field, and nobody has made that rule for this sport;
+asserting one to gain a single event is the wrong trade.
+
+The small matches are reported with the large ones and that is deliberate. `4` against `4` and `6`
+against `6` in a trap team event may be coincidence, because both quantities are small there. The
+user's decision of 2026-09-06 was that a row a person can judge belongs in front of a person
+rather than behind a threshold nobody agreed.
 
 **Equal scores ranked apart are how this sport ranks, and what separated them is almost never
 stored.** A final is shot off and a qualification is counted back on inner tens; the database keeps
@@ -423,8 +448,8 @@ belonging to the Comp.Rank layer this opening deliberately left out, two depreca
 that only a head-to-head sport can hold. **Nothing is `Not checked`** - the first sport in the
 package where that is true, Modern Pentathlon having left one blocked.
 
-**`Shooting-DQ-075` is the sport's only statement of its own**, added 2026-09-06 and living in
-`POWERBI_QUERIES/Shooting.sql`. `GLOBAL-DQ-127 EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK` is
+**`Shooting-DQ-075` and `-076` are the sport's own statements**, both added 2026-09-06 and living
+in `POWERBI_QUERIES/Shooting.sql`. The second is described under the storage semantics above. `GLOBAL-DQ-127 EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK` is
 still `Not applicable` as written, for the reason above, and `Shooting-DQ-075
 EVENT_RESULTS_TIED_SCORE_WITHOUT_SHARED_RANK_IN_MEDAL_ROUND` asks the same question of `173 Final`
 and `181 bronze` alone. The template carries no round-type parameter and five other sports read it

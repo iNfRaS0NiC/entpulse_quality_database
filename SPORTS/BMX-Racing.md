@@ -398,15 +398,12 @@ closes leaves nothing behind unless somebody writes down the answer.
 **The population it was about is gone.** Measured 2026-09-06 across the whole database sport 58,
 both disciplines together, with no client-period or template filter: no event holds a
 `round_typeFK` that is NULL or resolves to no `round_type` row. `BMX-Racing-DQ-011` and
-`BMX-Freestyle-DQ-008 GLOBAL-DQ-006 EVENT_MISSING_ROUND_TYPE` agree, returning 0 findings of
-9 118 eligible events each. Whether the rows were repaired during the colleague review or read
-differently when this file was written is not established here. Nothing changes in the package:
-the check stays live on both boards, which is the point of recording a rule rather than a count -
-it is now known what to do on the day such an event appears, and the check will report it.
-
-The two checks return the same 9 118 eligible events because `GLOBAL-DQ-006` carries no
-discipline filter, so both BMX boards audit the whole database sport rather than their own half.
-Noted 2026-09-06 and not acted on.
+`BMX-Freestyle-DQ-008 GLOBAL-DQ-006 EVENT_MISSING_ROUND_TYPE` agree, each returning 0 findings
+over its own half of the sport - 9 118 eligible events for Racing and 272 for Freestyle. Whether
+the rows were repaired during the colleague review or read differently when this file was written
+is not established here. Nothing changes in the package: the check stays live on both boards,
+which is the point of recording a rule rather than a count - it is now known what to do on the day
+such an event appears, and the check will report it.
 
 <!-- MANUAL PASTE ZONE: 58 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
