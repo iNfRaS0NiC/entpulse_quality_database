@@ -225,6 +225,25 @@ Event 5974406 `25m Pistol Final`, South East Asian Games 2017, appears in two of
 This is recorded as what the data holds. Whether any of it is a defect, and which field each
 value belongs in, has not been decided and no check is written for it.
 
+**`GLOBAL-DQ-096 EVENT_NAME_DOES_NOT_NAME_ITS_PARTICIPANTS` is `Not applicable` here, and the
+template says so itself.** It is written for head-to-head sports by the competition model: naming
+an event after the competitors is what `Team 1 - Team 2` is, and a sport that lines a field up and
+ranks it has nothing to put in such a name. Measured 2026-09-06, it reports 8 636 of 8 636 events,
+because every one of them is named for its discipline and round - `10m Air Rifle Final`,
+`Trap Qualification`, `Air Pistol Team Bronze Medal Match`. No CheckID is assigned and none is
+reserved. Decided 2026-09-06.
+
+**`GLOBAL-DQ-127 EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK` is `Not applicable` here.** The
+template starts from competitors holding the same deciding value and asks why their place was not
+shared. This sport does not share a place on an equal score: it separates the two by a count-back
+that the database does not store, so equal `102 Points` never implies an equal Rank and the
+template's premise does not hold. Measured 2026-09-06 it reports 4 620 events of 8 586, 54% of the
+sport, at a median of four tie groups per event and a maximum of forty. The absence is structural
+rather than a count - the deciding quantity for a tie is not recorded anywhere in the sport, which
+is why no parameter can express it - and `GLOBAL-DQ-021 EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT`
+reads the opposite direction and is instantiated as `Shooting-DQ-046`. No CheckID is assigned and
+none is reserved. Decided 2026-09-06.
+
 <!-- MANUAL PASTE ZONE: 45 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions
@@ -237,11 +256,49 @@ value belongs in, has not been decided and no check is written for it.
 - Why `152` and `179` are two different round types both named `Qualifier`, one holding 3 679
   events and the other holding 1. Either the single event is misfiled or the two ids mean
   different things that the names do not distinguish.
-- What `101 Duration` is meant to hold in this sport. The field name says duration, the numbers
-  in it are target counts, and it also carries athlete names and country codes. Until this is
-  answered, no check can state what a correct value looks like.
+- What `101 Duration` is meant to hold in this sport, and whether most of what is in it was
+  written there in error. The field name says duration and nothing in it is a time. Measured
+  2026-09-06 over all 8 922 events: 391 carry a value at all, 2 437 rows in total, and the field
+  holds no per-competitor measurement of any kind.
+
+  **2 040 of those rows - 84% - in 373 of the 391 events, are one of 24 values that appear
+  exactly once per event.** `6.943` in 263 events, `6.93` in 261, `7.084` in 260, `7.47` and
+  `7.482` in 259 each, `7.419` in 256, then `10.779` in 47, `7.895` in 46, `10.922` in 45, and
+  fifteen more from `8.402` down to `9.649`, each in 12 to 22 events. The bare backtick belongs to
+  the same family and behaves identically: 88 rows in 88 events, one apiece. Which values a
+  competition gets follows its template - the first six are World Cup, the rest Asian Games, Asian
+  Championship, African Championships and European Championships - and they span 2006 to 2026.
+  They land on the leading placings and stop. Event 5964240 `50m Pistol Final`, 8 February 2026,
+  is the shape in one row set: thirteen competitors scoring 563 down to 522, the top six carrying
+  `6.93`, `6.943`, `7.084`, `7.419`, `7.47`, `7.482` in that order and the other seven carrying
+  nothing. They rise as the score falls, which is why they read as a plausible ordering and went
+  unquestioned for twenty years. A value appearing once in each of 260 events is not a measurement
+  of any of them.
+
+  The remaining 397 rows are debris of four kinds: 313 rows in 12 events where the value is
+  character for character the competitor's own `102 Points`; 57 non-numeric one-offs including six
+  athlete names, the country codes `FRA`, `AUT` and `SVK`, and the literal words `Points` and
+  `Име`, which are column headings written in as data; 20 further numbers; and 7 bare hyphens.
+
+  Nothing is repaired here and no check is written for it. `GLOBAL-DQ-019
+  EVENT_DURATION_FORMAT_MISMATCH_TO_RANK` - which asserts the leader/gap convention, the winner
+  carrying an absolute time and everyone behind a `+` difference - is `Not checked` rather than
+  `Not applicable` and waits on this answer: it reports 390 of the 391 events, so what it would be
+  reading is this open question rather than 390 malformed times. `output/SHOOTING_DURATION_FIELD.csv`
+  holds every one of the 2 437 rows for the people who can answer it.
+
 - What the bare backtick in `101 Duration` means. It is one value in each of 88 events, all
   under the `World Cup` template, which makes it a convention of one source rather than 88
-  separate mistakes.
+  separate mistakes. Re-read 2026-09-06, it is not a question of its own: it behaves exactly like
+  the 23 numeric values above it, once per event and never twice, so whatever wrote those wrote
+  this. It is listed separately only because a reader looking for it will look for it by name.
+
+- Where a shoot-off is recorded when it separates two finalists on the same score. Equal `102
+  Points` with different Ranks is how this sport ranks and is not in itself a question, but 1 204
+  of the events showing it are Finals, where a tie is shot off rather than counted back. The
+  fields that would hold it, `535 Tops` and `536 Zones`, exist in 36 and 9 events in the whole
+  sport, so whatever separated the other finalists is not written down. Measured 2026-09-06 while
+  classifying `GLOBAL-DQ-127 EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK` as `Not applicable`,
+  which is what makes this the remaining half of that question rather than part of it.
 
 <!-- MANUAL PASTE ZONE: 45 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
