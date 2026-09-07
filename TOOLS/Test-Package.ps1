@@ -602,7 +602,18 @@ foreach ($s in ($dqStatements + $globalDq)) {
     if ($s.Sql -notmatch "'COVERAGE'") { $coverageFindings += "${where}: no COVERAGE branch" }
     if ($s.Sql -notmatch 'eligible_count') { $coverageFindings += "${where}: no eligible_count column" }
     if ($s.Sql -notmatch 'COUNT\(DISTINCT') { $coverageFindings += "${where}: coverage is not COUNT(DISTINCT ...)" }
-    if ($s.Sql -notmatch '(?m)^\s*--\s*AND\s') { $coverageFindings += "${where}: no commented scope-limiting filter" }
+    # Case-sensitively, and that is the whole of the fix. `-notmatch` is case-insensitive in
+    # PowerShell, so this rule was satisfied by any prose line a wrap had left beginning with
+    # the word `and` - `Swimming-DQ-065` passed for two weeks on
+    # `-- and is recorded in SPORTS/Swimming.md rather than reported, ...` while carrying no
+    # commented filter at all. Found 2026-09-07 when Para-Swimming-DQ-085 was caught for the
+    # same absence and its structurally identical twin was not.
+    #
+    # The four rules above need no such guard, measured the same day: not one statement in the
+    # package satisfies any of them through a comment, because `AS check_type`, `'COVERAGE'`,
+    # `eligible_count` and `COUNT(DISTINCT` are not phrases prose falls into. This one is,
+    # because it asks for a word rather than for a token.
+    if (-not [regex]::IsMatch($s.Sql, '(?m)^\s*--\s*AND\s')) { $coverageFindings += "${where}: no commented scope-limiting filter" }
 
     # LIMIT is allowed inside a scalar subquery and nowhere else: at depth 0 it would
     # truncate finding rows or drop the COVERAGE row.

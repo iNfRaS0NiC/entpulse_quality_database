@@ -404,6 +404,7 @@ FROM (
          AND st.name = 'status' AND st.del = 'no'
          AND TRIM(st.value) <> ''
     WHERE op.object = 'sport' AND op.objectFK = 46 AND op.del = 'no'
+  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
 ) x
 WHERE (x.registry_active = 'yes' AND x.status_value IN ('retired', 'dead'))
    OR (x.registry_active = 'no'  AND x.status_value = 'active')
@@ -422,6 +423,7 @@ JOIN property st ON st.object = 'participant' AND st.objectFK = p.id
      AND st.name = 'status' AND st.del = 'no'
      AND TRIM(st.value) <> ''
 WHERE op.object = 'sport' AND op.objectFK = 46 AND op.del = 'no'
+  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
 
 ORDER BY sort_order, participant_id;
 -- ==============================================================================
