@@ -1311,8 +1311,47 @@ unfilled field, and one that no Comp.Rank work will change on its own.
 
 ## 11. Global open questions
 
-- Physical FK enforcement for the registered logical relations.
-- Confirmed cardinality, uniqueness and mandatory status for most relations.
+- ~~Physical FK enforcement for the registered logical relations.~~ **Answered 2026-09-07:
+  there is none, anywhere.** The schema holds **zero** `FOREIGN KEY` constraints across its
+  501 base tables, and all 501 are InnoDB — so the absence is a choice rather than an engine
+  limitation. Every `...FK` column is a naming convention and nothing else.
+
+  The consequence is why half this package exists, and it is stated here rather than left to
+  be inferred: **an unresolved reference is a permanent defect family and never a transient
+  state.** Nothing prevents a link to a deleted row, to no row at all, or to a row belonging
+  to another sport, so each has to be asked by a check. All three were found in Para-Swimming
+  on the day this was measured — 7 events on `discipline_id` 0, 788 pointing into Swimming's
+  discipline catalogue, and classes outside the sport's own registered vocabulary.
+- ~~Confirmed cardinality, uniqueness and mandatory status for most relations.~~
+  **Answered 2026-09-07 from the schema itself.** Across the 501 base tables there are
+  **835** columns named `...FK`, in **397** tables:
+
+  | Property | Count | Share |
+  |---|---:|---:|
+  | Declared `NOT NULL` | 800 | 96% |
+  | Nullable | 35 | 4% |
+  | Named in some unique index | 87 | 10% |
+  | Named only in non-unique indexes | 533 | 64% |
+  | Named in no index at all | 215 | 26% |
+  | The leading column of some index | 355 | 43% |
+
+  **Mandatory status is therefore declared almost everywhere, and uniqueness effectively
+  nowhere.** The sharpest form of that second reading: **not one FK-named column in the
+  schema is unique on its own.** All 87 that touch a unique index do so as one member of a
+  composite — so the schema constrains combinations and never once declares "this table
+  holds one row per referenced object".
+
+  The consequence for this package, which is the part that must not be re-derived:
+  **cardinality is never inherited from the schema, only measured.** A statement may not
+  assume one child per parent, one class per event, one result per participant. Where a rule
+  depends on it, the rule is what asserts it, and a check has to ask. `GLOBAL-DQ-160` exists
+  because `object_disability_class` permits several classes on one event, and `GLOBAL-DQ-162`
+  had to be rewritten from a per-pair inequality into set membership for the same reason —
+  both on the day this was measured.
+
+  The 215 unindexed and the 480 that lead no index are also a cost fact, not only a
+  correctness one: a lookup keyed on one of those columns alone has no index path. That is
+  the same mechanism `DB-SEM-016` records for the template filter, generalised.
 - Full verified column inventories for several small reference tables.
 - Target semantics of `incident.ref_participantFK`.
 - Complete allowed values for participant type and gender/category fields.
