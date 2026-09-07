@@ -1653,9 +1653,48 @@ catalogue marks `del = 'yes'`.
   sets are not disjoint.** 224 of 506 names appear under more than one type, one under seven.
   `DB-SEM-022` records what does identify a field — type, category and name together, which
   leaves zero duplicated groups where type and name alone leave 80.
-- Soft-delete behavior of `statistic_type`, `statistic_data_type` and
+- ~~Soft-delete behavior of `statistic_type`, `statistic_data_type` and
   `statistic_data_type_category`. No `del` column was confirmed, so the reference catalogs
-  may include retired rows.
+  may include retired rows.~~
+
+  **Answered 2026-09-07: all three carry `del enum('no','yes') NOT NULL`, and two of the
+  three do hold retired rows.**
+
+  | Catalogue | Rows | `del = 'yes'` |
+  |---|---:|---:|
+  | `statistic_type` | 17 | 0 |
+  | `statistic_data_type` | 1 236 | 5 |
+  | `statistic_data_type_category` | 21 | 1 |
+
+  The retired rows are `Goals ratio` (id 7, type 3), `Minutes per goal` (42, type 3),
+  `Goals interval` (146, type 1), `Goals interval (%)` (148, type 1) and `Winners 2s`
+  (1469, type 8); the retired category is `General` (23), which holds exactly one field and
+  that field is 1469, itself retired.
+
+  **This is live, not latent: 310 `statistic_data` rows carry values under four of those five
+  retired field definitions** — 76 on `Goals interval`, 76 on `Goals interval (%)`, 16 on
+  `Minutes per goal` and 142 on `Winners 2s`. Only `Goals ratio` has none. So a statement that
+  resolves a field id through this catalogue without excluding `del = 'yes'` will present a
+  retired definition as a current one.
+
+  Thirteen places in the package read these catalogues today with no `del` filter:
+  `GLOBAL-DQ-070 COMP.RANK_RESULTS_VALUE_BLANK`,
+  `GLOBAL-DQ-077 COMP.RANK_RESULTS_NUMERIC_FIELD_NON_NUMERIC`,
+  `GLOBAL-DQ-099 COMP.RANK_VALUE_BELONGS_TO_ANOTHER_FIELD`,
+  `Equestrian-DQ-098 COMP.RANK_PAIR_SIDES_CONTRADICT_EACH_OTHER`,
+  `Equestrian-DQ-108 COMP.RANK_PAIR_FIELD_CARRIED_BY_ONE_SIDE_ONLY`, and the discovery
+  statements `GLOBAL-DISCOVERY-015 STATISTIC_TYPES_AND_OWNERS`,
+  `-017 STATISTIC_DATA_AND_CONFIG_FIELDS` (twice),
+  `-028 STATISTIC_DATA_VALUE_PATTERNS_SUMMARY`,
+  `-029 STATISTIC_DATA_VALUE_PATTERNS_DETAIL`,
+  `-030 STATISTIC_DATA_TYPE_CATALOG` (twice) and
+  `-031 STATISTIC_DATA_TYPE_DECLARED_VS_USED`.
+
+  **No statement was changed on the strength of this**, by the user's decision on
+  2026-09-07. The two halves are not the same problem: a discovery statement describing what
+  the catalogue contains arguably wants the retired rows in view, while a DQ statement
+  resolving a field ought to exclude them. Deciding that is separate work, and the five DQ
+  statements are all Comp.Rank, which is paused.
 - Schema and collation equality across all statistic data shards.
 - Complete scope import-table model and provider relation.
 - Taxonomy relationship between `scope_type` and `scope_data_type`.
