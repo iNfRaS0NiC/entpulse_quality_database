@@ -1541,7 +1541,39 @@ and was not measured.
   largest owners, were unregistered. Four names sit under a type that cannot hold them, and
   `offence_typeFK`/`offense_typeFK` are one concept in two spellings. The 351 `metadata`
   names stay with the sport files that confirm them.
-- `saved_json_player` (columns: id, atp_id, name, firstname, lastname, gender, country_code, dob, active, mapped, del, ut, n) has no direct foreign key to `participant`; observed linkage is only a heuristic exact-text match on `name`. The `mapped` flag does not reliably indicate match status. Duplicate `saved_json_player` rows with the same name have been observed mapping to the same `participant.id` (name-collision risk). The table's relationship to `participant`, its canonical-vs-staging role, and its sport scope are not confirmed.
+- ~~`saved_json_player` (columns: id, atp_id, name, firstname, lastname, gender, country_code, dob, active, mapped, del, ut, n) has no direct foreign key to `participant`; observed linkage is only a heuristic exact-text match on `name`. The `mapped` flag does not reliably indicate match status. Duplicate `saved_json_player` rows with the same name have been observed mapping to the same `participant.id` (name-collision risk). The table's relationship to `participant`, its canonical-vs-staging role, and its sport scope are not confirmed.~~
+
+  **Answered 2026-09-07: it is a provider staging table, it sits outside the confirmed model,
+  and nothing in this package may read it.** 18 832 rows, every one `active = 'yes'`, not one
+  `del = 'yes'`, `ut` spanning 2012-11-05 to 2026-01-19.
+
+  **Its key is `atp_id`, not `name`.** `varchar(30)`, `NOT NULL`, indexed, and distinct
+  across all 18 832 rows. It carries two provider id systems under one column name: every one
+  of the 7 210 `female` rows is numeric, while 11 585 of the 11 622 `male` rows are
+  alphanumeric.
+
+  **`name` is not identity, and `mapped` is wrong in both directions.** Matched against
+  `participant` rows of type `athlete` by exact name:
+
+  | `mapped` | Rows | No name match at all | Exactly one | More than one |
+  |---|---:|---:|---:|---:|
+  | `yes` | 9 098 | **508** | 7 107 | 1 483, worst case 22 |
+  | `no` | 9 734 | 6 504 | **2 476** | 754, worst case 33 |
+
+  So 508 rows claim a mapping to a name no athlete holds, and 3 230 rows claim none while
+  holding a name that matches. Where a match exists it is often not unique: 2 237 rows resolve
+  to more than one athlete. The table also collides with itself — 157 names appear on 317
+  rows.
+
+  **The sport scope is not stored anywhere in the table.** The two id systems are ATP's and
+  WTA's, which points at tennis; `Tennis` is `sport.id` 2, and `Wheelchair Tennis` (141) and
+  `Para Table Tennis` (121) exist alongside it. That is an inference from the shape of the
+  identifiers and was not measured as a relation, which is precisely why the table cannot
+  anchor anything.
+
+  The conclusion is the usable part: **a check may not join through this table, and its
+  `mapped` flag is not evidence of anything.** Any true mapping to `participant` lives in the
+  import process, not in the schema.
 - Universal statistic type-to-owner and type-to-shard rules, if any.
 - Target of `statistic_data_type.statistic_typeFK`. The column filters the field catalog
   per statistic type, but its resolution against `statistic_type.id` was not independently
