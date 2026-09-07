@@ -51,8 +51,14 @@ $NamesKey = '_names'
 # the SQL. TOOLS/Run-Query.ps1 declares the same name and the pair of files is the contract.
 $ClientScopeFormKey = '_clientScopeForm'
 $ClientScopeForms = @('complement', 'in-scope')
+# Whether the sport classifies its competition by disability class, which is what makes the
+# Para-only family of templates owed rather than merely applicable. Declared rather than read
+# from the sport's name: every Para sport in the database is called `Para <something>` today,
+# and a rule resting on that would drop the first one that is not. Run-Query.ps1 declares the
+# same name and the pair of files is the contract.
+$ParaSportKey = '_paraSport'
 $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesKey,
-    $ClientScopeFormKey)
+    $ClientScopeFormKey, $ParaSportKey)
 
 # The client's boundary, expressed as the templates it does not take. README.md owns why the
 # client is a boundary of its own; this is the value every statement that can carry one reads.
@@ -1383,6 +1389,47 @@ foreach ($template in $mandatory) {
         if ($carrying -notcontains $sport) {
             $sportFindings += ("POWERBI_REGISTRY.md: '$sport' carries no Approved row for " +
                 "$family $templateName, which GLOBAL_DQ/README.md declares mandatory for every sport")
+        }
+    }
+}
+
+# The same rule, narrowed to the sports a family of templates can apply to at all.
+#
+# A disability class is owed by a Para sport and meaningless everywhere else, so a template
+# reading it cannot be mandatory for every sport - and leaving it merely applicable is how the
+# GLOBAL-DQ-007 gap happened, a refusal that was correct for a reason nobody recorded. The
+# marker is a second sentence in the same Applicability cell, read the same way, and it binds
+# only the sports whose SPORTS/params.json entry declares the Para flag.
+#
+# The flag is declared and not derived. Every Para sport in the database is named
+# `Para <something>` today and 27 of them classify a competition, so a rule keyed on the slug
+# would work right now and would drop the first sport that is named otherwise - silently, which
+# is the failure mode this whole block exists to prevent.
+$paraMandatoryMarker = 'Mandatory for every Para sport.'
+$paraMandatory = @($dqReadmeRows | Where-Object { $_.Cells.Count -gt 5 -and $_.Cells[5] -like "*$paraMandatoryMarker*" })
+$paraSports = @($paramsBySlug.Keys | Where-Object {
+        $entry = $paramsBySlug[$_]
+        $entry.PSObject.Properties.Name -contains $ParaSportKey -and [bool]$entry.$ParaSportKey
+    })
+
+if ($paraMandatory.Count -gt 0 -and $paraSports.Count -eq 0) {
+    $sportFindings += ("SPORTS/params.json: $($paraMandatory.Count) template(s) carry " +
+        "'$paraMandatoryMarker' but no sport declares $ParaSportKey, so the rule inspected nothing")
+}
+foreach ($template in $paraMandatory) {
+    $family = $template.Cells[0]
+    $templateName = Remove-Backtick $template.Cells[1]
+    $carrying = @($registryRows |
+        Where-Object {
+            $_.Cells.Count -eq $expectedColumns -and $_.Cells[7] -eq 'Approved' -and
+            (Remove-Backtick $_.Cells[2]) -eq $family
+        } | ForEach-Object { $_.Cells[1] } | Select-Object -Unique)
+
+    foreach ($sport in ($paraSports | Sort-Object)) {
+        if ($carrying -notcontains $sport) {
+            $sportFindings += ("POWERBI_REGISTRY.md: '$sport' declares $ParaSportKey but carries no " +
+                "Approved row for $family $templateName, which GLOBAL_DQ/README.md declares " +
+                'mandatory for every Para sport')
         }
     }
 }

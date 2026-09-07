@@ -426,6 +426,68 @@ rank.
 
 <!-- MANUAL PASTE ZONE: 135 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
+## Sport-authored checks
+
+This section has no counterpart in `SPORTS/_TEMPLATE.md`. It is here because the seven
+statements in `POWERBI_QUERIES/Para-Swimming.sql` exist for a reason that belongs in the
+record: **Swimming had authored thirteen checks of its own and this sport inherited none of
+them.** Opening it on 2026-09-07 built its candidate list from the GLOBAL catalogue alone and
+never looked at what the sibling sport had written — a third variant of a failure this package
+has recorded twice, that a list built from one source loses whatever only the other holds.
+
+Promotion to GLOBAL templates was offered and copies were chosen, on 2026-09-07. The cost is
+recorded rather than left to be rediscovered: two copies of one logic drift, and the next Para
+aquatic sport will need a third.
+
+| Check | What it asserts | Findings | What was re-derived |
+|---|---|---:|---|
+| `Para-Swimming-DQ-083` EVENT_NAME_STROKE_CONTRADICTS_DISCIPLINE | the name spells one stroke, the discipline names another | 29 of 7119 | nothing but the sport |
+| `Para-Swimming-DQ-084` PARTICIPANT_AGE_AT_EVENT_IMPLAUSIBLE | a competitor under 8 or over 70 at an event they swam | 19 of 618 | **two** sport ids, not one |
+| `Para-Swimming-DQ-085` PARTICIPANT_REGISTRY_ACTIVE_CONTRADICTS_STATUS | the registry flag and the `status` property disagree | 0 of 3060 | **two** sport ids, and a commented filter Swimming lacks |
+| `Para-Swimming-DQ-086` EVENT_NAME_CONVENTION_CONTRADICTS_DISCIPLINE_VOCABULARY | the distance-first or distance-last habit does not match the vocabulary | 4 of 186 | 12 relay discipline ids |
+| `Para-Swimming-DQ-087` EVENT_NAME_CONTRADICTS_DISCIPLINE_DISTANCE_OR_ROUND_TYPE | the name states a distance or round the setting denies | 25 of 8019 | the bare-number round list, `38` alone |
+| `Para-Swimming-DQ-088` EVENT_ROUND_RECORDED_IN_NAME_NOT_IN_ROUND_TYPE | the round is stated only in the name | 3572 of 4411 | the round list, and `Heat <n>` singular |
+| `Para-Swimming-DQ-089` EVENT_RESULTS_QUALIFICATION_NOT_HONOURED_BY_LATER_ROUND | a qualifier appears in no later round | 45 of 409 | all four round-type lists |
+
+**Not one of the seven was a clean copy, and three of them would have reported something false
+if they had been.** `Para-Swimming-DQ-088` run with Swimming's vocabulary returned 2 findings
+of 4411, because Swimming writes `Heats` and this sport writes `Heat 1`; with the singular form
+added it returns 3572. `Para-Swimming-DQ-089` audited nothing at all until a fourth round-type
+list was found in its coverage branch, which no other branch shares.
+
+**And two of them scope through `object_participants.objectFK` as well as
+`tournament_template.sportFK`**, so changing the one obvious sport id left them reading
+Swimming's registry while reporting under this sport's name. Caught on 2026-09-07 by the
+package's own coverage-contract rule, which failed `-085` for a missing commented filter and
+sent me back into a statement I had already measured. The wrong numbers had been reported
+before that: `-084` as 3 of 49 rather than 19 of 618, and `-085` as 11 of 36076 rather than 0
+of 3060. A sport id appears more than once in a statement that reads both the hierarchy and the
+registry, and one substitution is not enough.
+
+**`Para-Swimming-DQ-088` reports 81 per cent of its population by decision, not by oversight.**
+Measured 2026-09-07: Swimming leaks the round into the event name on 593 of 35408 events, 1.7
+per cent, while this sport does it on 3572 of 4411. Swimming records the round in the round
+type; this sport records it in the name and leaves `38`, named `1`, on every heat. `Monitor`
+was the alternative and was rejected: the round type has a place for the heat number and the
+name is not it.
+
+**Six of Swimming's thirteen are deliberately absent**, each for a structural reason:
+
+| Swimming check | Why it is not here |
+|---|---|
+| `Swimming-DQ-046` EVENT_RESULTS_RANK_SEQUENCE_BROKEN_OUTSIDE_SECONDARY_FINAL | Redundant. It exists to exempt a B final, and this sport contests none — its rounds are `38`, `173`, `178`, `223` and `224`. Adapted it returns 407 findings, the same 407 `Para-Swimming-DQ-057` already reports through `GLOBAL-DQ-119` |
+| `Swimming-DQ-069` EVENT_RESULTS_FULL_TIME_IMPOSSIBLE_FOR_DISTANCE | Reads `557 Full-time duration`, which this sport does not carry |
+| `Swimming-DQ-070` EVENT_DISCIPLINE_CONTRADICTS_TEMPLATE_COURSE | Reads Swimming's short-course discipline ids `368`, `369`, `370` under a template named `Long Course`. This sport has neither: the ids belong to another sport's catalogue and no template here carries that name |
+| `Swimming-DQ-083` EVENT_RESULTS_WINNING_TIME_TOO_SLOW_FOR_DISTANCE | Reads `557` as well, so it audits nothing here for the same reason as `-069`. The thresholds would also have needed re-deriving per class, which is moot |
+| `Swimming-DQ-086` EVENT_SETTINGS_DISCIPLINE_ON_SUPERSEDED_CATALOGUE | Became `GLOBAL-DQ-161` on 2026-09-07 and is instantiated as `Para-Swimming-DQ-081` |
+| `Swimming-DQ-087` EVENT_RESULTS_PROVISIONAL_QUALIFICATION_LEFT_UNSETTLED | Reads a `?` provisional marker in `104 Comment`. This sport's 44 distinct comment values do not include it |
+
+Those six carry no `_checkSignal` entry in `SPORTS/params.json`, and cannot: the block accepts
+a GLOBAL template id or one of this sport's own CheckIDs, and these are another sport's. This
+table is the only record of the decision.
+
+<!-- MANUAL PASTE ZONE: 135 SPORT-AUTHORED CHECKS — insert approved additions immediately before this marker; do not move or delete it. -->
+
 ## Open questions
 
 **Nothing here is open.** Every question this file raised was worked through on 2026-09-07 and

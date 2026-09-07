@@ -2583,3 +2583,109 @@ WHERE op2.object = 'sport'
         AND reg2.del = 'no'
   )
 ;
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-162
+    -- Name - EVENT_PARTICIPANT_DISABILITY_CLASS_CONTRADICTS_THE_EVENTS
+    -- What it does: Finds a competitor entered into an event where no disability class the competitor carries is one the event is contested in, and says whether the two are the same family of class or different ones.
+    CASE
+        WHEN SUM(CASE WHEN COALESCE(REGEXP_SUBSTR(ec.name, '^[A-Za-z]+'), '') = COALESCE(REGEXP_SUBSTR(pc.name, '^[A-Za-z]+'), '') THEN 1 ELSE 0 END) > 0
+        THEN 'Class_Differs_Within_One_Family'
+        ELSE 'Class_Family_Differs'
+    END AS check_type,
+    ep.id AS event_participants_id,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    p.id AS participant_id,
+    p.name AS participant_name,
+    GROUP_CONCAT(DISTINCT ec.name ORDER BY ec.name SEPARATOR ' | ') AS event_class_names,
+    GROUP_CONCAT(DISTINCT pc.name ORDER BY pc.name SEPARATOR ' | ') AS participant_class_names,
+    NULL AS eligible_count
+-- What it does, stated in full: Reads the one population where the question can be asked at
+-- all - an entry whose event carries a disability class AND whose competitor carries one too -
+-- and reports the entries where nothing the competitor carries is a class the event is
+-- contested in.
+--
+-- **The population is the intersection and the coverage count says so.** A sport filling only
+-- the event level, which is most of them, has no eligible entry and reads as a sentinel rather
+-- than as clean data; measured 2026-09-07 the intersection exists in 18 sports, from 28717
+-- entries in Para Table Tennis down to 3 in Para-Swimming.
+--
+-- **The assertion is set membership and not inequality, and the difference is a real one.**
+-- `object_disability_class` imposes no cardinality on either side, so an event can carry two
+-- classes and six people in this database carry two. A row-by-row `<>` reports an entry whose
+-- competitor holds `S9` against an event holding both `S9` and `S2`, on the strength of the
+-- pairing that disagrees, while the pairing that agrees says the entry is fine. Grouping to
+-- one row per entry and reporting only where no pairing matches asks the question that was
+-- meant. It also keeps the audited-object rule: measured on Para Table Tennis 2026-09-07 the
+-- ungrouped form returned 10666 rows for 10655 entries.
+--
+-- **Two check_types, because only one of them is a contradiction in every sport.** The family
+-- is the leading run of letters in the class name, taken from the data and not from a list:
+-- `S9` and `S2` share it, `SM7` and `S2` do not, and a points class such as `34 Points` has
+-- none, which pairs it with the other points classes and separates it from the lettered ones.
+--   `Class_Differs_Within_One_Family` is a contradiction in any sport's vocabulary: one
+--   competitor, one impairment, two different numbers on the same scale.
+--   `Class_Family_Differs` is a question rather than a defect, and the split exists so a sport
+--   can answer it once instead of per row. Para swimming classifies a swimmer separately for
+--   freestyle, breaststroke and medley - `S`, `SB` and `SM` - so a swimmer stored as `SM9`
+--   entering an `S9` freestyle race is correctly described by both fields at once. Para
+--   athletics separates track from field the same way, with `T` and `F`.
+--
+-- **What makes the second state worth reporting at all is that the database stores one class
+-- per competitor.** Measured 2026-09-07: of 7886 classified people, 7883 carry exactly one and
+-- the most any carries is two. So a sport whose competitors hold several classes in reality is
+-- keeping one of them here, and every entry in another family is that fact rather than a
+-- defect - which is exactly why it must not be counted as one.
+--
+-- The audited object is the entry and not the event: one competitor in one event is what gets
+-- repaired, and an event holding two mismatched entries is two pieces of work. Both sides'
+-- class names travel with the row because neither is assumed to be the right one.
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+JOIN object_disability_class edc ON edc.object_typeFK = 5 AND edc.objectFK = e.id AND edc.del = 'no'
+JOIN disability_class ec ON ec.id = edc.disability_classFK AND ec.del = 'no'
+JOIN object_disability_class pdc ON pdc.object_typeFK = 15 AND pdc.objectFK = p.id AND pdc.del = 'no'
+JOIN disability_class pc ON pc.id = pdc.disability_classFK AND pc.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+GROUP BY ep.id, e.id, e.name, e.startdate, tt.name, t.name, p.id, p.name
+HAVING SUM(CASE WHEN edc.disability_classFK = pdc.disability_classFK THEN 1 ELSE 0 END) = 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep2.id) AS eligible_count
+FROM event_participants ep2
+JOIN event e2 ON e2.id = ep2.eventFK AND e2.del = 'no'
+JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+JOIN participant p2 ON p2.id = ep2.participantFK AND p2.del = 'no'
+JOIN object_disability_class edc2 ON edc2.object_typeFK = 5 AND edc2.objectFK = e2.id AND edc2.del = 'no'
+JOIN object_disability_class pdc2 ON pdc2.object_typeFK = 15 AND pdc2.objectFK = p2.id AND pdc2.del = 'no'
+WHERE ep2.del = 'no'
+  AND tt2.sportFK = {{SPORT_ID}}
+  AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t2.tournament_templateFK = <tournament_template_id>
+  -- AND e2.startdate >= '<from_datetime>'
+  -- AND e2.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
+;

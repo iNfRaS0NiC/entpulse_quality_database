@@ -1,5 +1,6 @@
 {
     "Para-Swimming": {
+        "_paraSport": true,
         "SPORT_ID": 135,
         "CLIENT_FROM_SEASON": 2004,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",

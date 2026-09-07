@@ -61,6 +61,10 @@
             "spreadsheetId": "1-ewyxEyctKW1q_fWwwy0qYff5Y7XN7njFra2IjwSo-M",
             "runRequests": true
         },
+        "Para-Swimming": {
+            "spreadsheetId": "1aaeUmPXvdsFrDv8TieQ0543bSA6pWEhVpyXt3bzQ1tY",
+            "runRequests": false
+        },
         "Shooting": {
             "spreadsheetId": "1E1x9Q3tL2a45lwJ_QCNc9pzXzp8zW3M16R9W5tk4Rp8",
             "runRequests": true

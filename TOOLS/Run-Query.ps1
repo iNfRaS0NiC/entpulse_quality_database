@@ -2169,8 +2169,14 @@ $CheckSignalKey = '_checkSignal'
 $ExpectedKey = '_expected'
 $NamesKey = '_names'
 $ClientScopeFormKey = '_clientScopeForm'
+# Whether the sport classifies its competition by disability class, which is what makes the
+# Para-only family of templates owed rather than merely applicable. Declared rather than read
+# from the sport's name: every Para sport in the database is called `Para <something>` today,
+# and a rule resting on that would drop the first one that is not. Test-Package.ps1 declares the
+# same name and the pair of files is the contract.
+$ParaSportKey = '_paraSport'
 $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesKey,
-    $ClientScopeFormKey)
+    $ClientScopeFormKey, $ParaSportKey)
 
 # Which way round a sport's client boundary is put to the database. Both forms select the same
 # rows - the excluded ids are the exact complement of the taken ones within the sport - so this
