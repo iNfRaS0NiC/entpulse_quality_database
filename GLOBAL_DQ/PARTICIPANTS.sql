@@ -2497,3 +2497,89 @@ WHERE p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
   -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
 
 ORDER BY sort_order, total_participations DESC, participant_id;
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-157
+    -- Name - PARTICIPANT_DISABILITY_CLASS_MISSING
+    -- What it does: Flags people registered to a sport that classifies its competitors by disability class who carry no class of their own.
+    'Participant_Class_Missing' AS check_type,
+    p.id AS participant_id,
+    p.name AS participant_name,
+    p.type AS participant_type,
+    p.gender AS participant_gender,
+    (
+        SELECT c.name
+        FROM country c
+        WHERE c.id = p.countryFK
+          AND c.del = 'no'
+    ) AS participant_country,
+    NULL AS eligible_count
+-- What it does, stated in full: Finds people on a sport's own object_participants registry,
+-- of the participant types that name a natural person, carrying no disability class.
+--
+-- The class is an attribute of the competitor and not only of the race: object_disability_class
+-- is used at participant level - object_typeFK 15 - by 20 sports over 7867 people, measured
+-- 2026-09-07, so the level is in real use and a sport leaving it empty is leaving a field
+-- unfilled rather than declining a structure. Which is why the applicability prerequisite is
+-- that the sport registers a class vocabulary of its own, not that it already fills this level:
+-- keying it on the current population would switch the check off for exactly the sport it was
+-- written for.
+--
+-- Scoped to PERSON_PARTICIPANT_TYPE_LIST rather than to the registry whole, on the same
+-- reasoning GLOBAL-DQ-007 states: a disability class describes a person, so a team entered on
+-- the registry has none and would be reported as missing one in every sport that registers
+-- teams.
+--
+-- The registry is read on its own and no participation path is joined. A registered competitor
+-- who has not yet appeared anywhere still owes a class, and that is the cheapest moment to
+-- enter it; a participation count would only decide which rows to report first, which is not
+-- this statement's question.
+--
+-- The audited object is the person, so there is no client boundary to apply: a registry row
+-- belongs to the sport rather than to a tournament, and the commented filter is the primary-key
+-- range that POWERBI.md requires of a standalone object.
+FROM object_participants op
+JOIN participant p ON p.id = op.participantFK AND p.del = 'no'
+WHERE op.object = 'sport'
+  AND op.objectFK = {{SPORT_ID}}
+  AND op.del = 'no'
+  AND p.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
+  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
+  AND EXISTS (
+      SELECT 1
+      FROM object_disability_class reg
+      WHERE reg.object_typeFK = 1
+        AND reg.objectFK = {{SPORT_ID}}
+        AND reg.del = 'no'
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM object_disability_class odc
+      WHERE odc.object_typeFK = 15
+        AND odc.objectFK = p.id
+        AND odc.del = 'no'
+  )
+GROUP BY p.id, p.name, p.type, p.gender, p.countryFK
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT p2.id) AS eligible_count
+FROM object_participants op2
+JOIN participant p2 ON p2.id = op2.participantFK AND p2.del = 'no'
+WHERE op2.object = 'sport'
+  AND op2.objectFK = {{SPORT_ID}}
+  AND op2.del = 'no'
+  AND p2.type IN ({{PERSON_PARTICIPANT_TYPE_LIST}})
+  -- AND p2.id BETWEEN <from_participant_id> AND <to_participant_id>
+  AND EXISTS (
+      SELECT 1
+      FROM object_disability_class reg2
+      WHERE reg2.object_typeFK = 1
+        AND reg2.objectFK = {{SPORT_ID}}
+        AND reg2.del = 'no'
+  )
+;

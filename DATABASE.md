@@ -1266,6 +1266,45 @@ both — it is recorded `Not applicable` for Ice Hockey on 2026-08-15 for exactl
 and any sport reaching the same conclusion should record it the same way rather than leaving
 the check to audit an empty population.
 
+### `DB-SEM-020` — A disability class is its own generic attachment, not a property and not an `object_relation`
+
+The class a Para competition is contested in is stored in a dedicated pair of tables:
+`disability_class` is the reference table, holding `id`, `name` and `description`, and
+`object_disability_class` is the link, holding `object_typeFK`, `objectFK` and
+`disability_classFK`. The shape is the same generic attachment pattern as `object_discipline`
+and `object_participants`, and it is the only mechanism the database has for the class.
+
+**It travels through neither of the two paths a reader is likely to try first.** It is not a
+`property`, so `GLOBAL-DISCOVERY-011 PROPERTY_USAGE_BY_OWNER` says nothing about it, and it is
+not an `object_relation`, so `GLOBAL-DISCOVERY-012 OBJECT_RELATION_USAGE` says nothing either.
+Recorded here because that silence reads exactly like an answer: opening Para-Swimming on
+2026-09-07, both statements returned no class and the sport was one step from being documented
+as not storing one, which is the opposite of the truth.
+
+Measured 2026-09-07, six owner levels are in use:
+
+| Owner | `object_typeFK` | Links | What the attachment means |
+|---|---:|---:|---|
+| `event` | 5 | 59 339 | the class this event was contested in |
+| `participant` | 15 | 7 870 | the class this competitor holds |
+| `object_participants` | 59 | 2 276 | the class on a competitor's registry row for a sport |
+| `lineup` | 73 | 1 203 | the class of a place in a team entry |
+| `sport` | 1 | 398 | **the vocabulary declaration** — which classes belong to this sport |
+| `event_participants` | 6 | 30 | the class of one entry into one event |
+
+**The sport-level attachment is a declaration, not a classification**, and it is what makes any
+other level checkable. A sport attaches its own classes to itself and that set is the
+vocabulary its events and competitors may draw on; 27 sports declare one and all 27 also
+classify events, so a check reading an event's class against its sport's vocabulary has a
+reference wherever it applies. `GLOBAL-DQ-156` through `GLOBAL-DQ-160` are written against
+that declaration rather than against any class-name pattern, because a class is spelled `S9`
+in Para Swimming, `T54` in Para Athletics and `C3` in Para Cycling.
+
+**No class is attached to a `statistic` row in any sport.** The Comp.Rank layer has no
+disability class and there is no mechanism by which it could carry one, so a ranking check
+reading a competitor's class has nothing to read — a structural absence rather than an
+unfilled field, and one that no Comp.Rank work will change on its own.
+
 <!-- MANUAL PASTE ZONE: DATABASE STRUCTURAL SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---

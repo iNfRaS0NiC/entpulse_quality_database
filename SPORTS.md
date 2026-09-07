@@ -30,6 +30,7 @@ mechanisms from `DATABASE.md`.
 | 56 | Mountain-Bike | Listing (individual) | `SPORTS/Mountain-Bike.md` | In progress | 2026-08-31 | Mountain Bike |
 | 58 | BMX-Freestyle | Listing (individual) | `SPORTS/BMX-Freestyle.md` | In progress | 2026-09-04 | BMX |
 | 45 | Shooting | Listing (individual and team) | `SPORTS/Shooting.md` | In progress | 2026-09-05 | Shooting |
+| 135 | Para-Swimming | Listing (individual and team) | `SPORTS/Para-Swimming.md` | In progress | 2026-09-07 | Para Swimming |
 
 <!-- MANUAL PASTE ZONE: SPORT INDEX — insert approved additions immediately before this marker; do not move or delete it. -->
 

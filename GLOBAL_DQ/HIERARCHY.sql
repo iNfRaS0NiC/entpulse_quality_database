@@ -3543,3 +3543,479 @@ WHERE ts2.del = 'no'
   -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
 
 ORDER BY sort_order, empty_days_before DESC, empty_days_after DESC;
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-156
+    -- Name - EVENT_DISABILITY_CLASS_MISSING
+    -- What it does: Flags events of a sport that classifies its competition by disability class where the event carries none, and separates the event whose own name already names one from the event that names none.
+    CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM object_disability_class voc
+            JOIN disability_class dcv ON dcv.id = voc.disability_classFK AND dcv.del = 'no'
+            WHERE voc.object_typeFK = 1
+              AND voc.objectFK = tt.sportFK
+              AND voc.del = 'no'
+              AND dcv.name IS NOT NULL
+              AND TRIM(dcv.name) <> ''
+        AND CONCAT(' ', REGEXP_REPLACE(e.name, '[^A-Za-z0-9]+', ' '), ' ')
+            LIKE CONCAT('% ', REGEXP_REPLACE(dcv.name, '[^A-Za-z0-9]+', ' '), ' %')
+        ) THEN 'Class_Named_In_Event_Name_But_Not_Stored'
+        ELSE 'Class_Missing_And_Not_Named'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    ts.name AS stage_name,
+    NULL AS eligible_count
+-- What it does, stated in full: Finds events of a sport that declares a disability-class
+-- vocabulary of its own and classifies its events by it, where this event resolves to no
+-- class at all.
+--
+-- Two check_types because they are two repairs. Where the event's own name already names one
+-- of the sport's registered classes, the class is knowable and the repair is to store what the
+-- name already says. Where it names none, somebody has to decide what the event was, and that
+-- is a different piece of work.
+--
+-- The name test is driven by the sport's own vocabulary rather than by a pattern, and that is
+-- what keeps this statement GLOBAL: a class is spelled S9 in Para Swimming, T54 in Para
+-- Athletics and C3 in Para Cycling, so any hard-coded shape would document one sport and
+-- silently mis-read the rest. Measured 2026-09-07: all 27 sports that classify an event also
+-- register a vocabulary at sport level, so the population the test needs is never absent
+-- where the check applies.
+--
+-- Both sides are normalised with a fixed pattern before they meet, so the class name reaches
+-- LIKE holding nothing but letters, digits and spaces and cannot carry a wildcard into it.
+-- That is deliberate and not defensive dressing: 383 active class names carry no wildcard
+-- today, but 160 of them carry punctuation, and a design that is safe only while that holds
+-- is a design that breaks on the row nobody was looking at. Normalising also makes the test
+-- a whole-token one, so S1 no longer matches inside S14 and a class written against a hyphen
+-- in Freestyle 100m S11-2 still matches.
+--
+-- The cost is stated rather than hidden: a sport abbreviating a class in its event names
+-- differently from its registered spelling reads as naming none. Para Swimming writes the
+-- relay class 34 Points as 34pts, and its 20 such events therefore arrive as
+-- Class_Missing_And_Not_Named rather than as a knowable class.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+
+  AND EXISTS (
+      SELECT 1
+      FROM object_disability_class reg
+      WHERE reg.object_typeFK = 1
+        AND reg.objectFK = tt.sportFK
+        AND reg.del = 'no'
+  )
+  AND NOT EXISTS (
+      SELECT 1
+      FROM object_disability_class odc
+      WHERE odc.object_typeFK = 5
+        AND odc.objectFK = e.id
+        AND odc.del = 'no'
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e2.id) AS eligible_count
+FROM event e2
+JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+WHERE e2.del = 'no'
+  AND tt2.sportFK = {{SPORT_ID}}
+  AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t2.tournament_templateFK = <tournament_template_id>
+  -- AND e2.startdate >= '<from_datetime>'
+  -- AND e2.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
+  AND EXISTS (
+      SELECT 1
+      FROM object_disability_class reg2
+      WHERE reg2.object_typeFK = 1
+        AND reg2.objectFK = tt2.sportFK
+        AND reg2.del = 'no'
+  )
+;
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-158
+    -- Name - EVENT_DISABILITY_CLASS_CONTRADICTED_BY_PROPERTY
+    -- What it does: Flags events whose Class metadata property disagrees with the disability class the event actually carries.
+    'Class_Property_Contradicts_Stored_Class' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    GROUP_CONCAT(DISTINCT TRIM(pr.value) ORDER BY TRIM(pr.value) SEPARATOR ' | ') AS class_property_values,
+    GROUP_CONCAT(DISTINCT dc.name ORDER BY dc.name SEPARATOR ' | ') AS stored_class_names,
+    NULL AS eligible_count
+-- What it does, stated in full: Finds events carrying both a Class metadata property and a
+-- disability class object, where the two do not say the same thing.
+--
+-- The population is the intersection and nothing wider, which is what makes this statement
+-- GLOBAL rather than a Para one. The Class property is not a disability field: 26 sports carry
+-- it on 4330 events, measured 2026-09-07, and its sample value in Motorsports is an engine
+-- class such as 125cc. Asserting anything about the property alone would be wrong in most of
+-- the sports that hold it. An event carrying a disability class object as well is a different
+-- matter - there the two fields are two copies of one fact - and a sport where Class means
+-- something else holds no such event, so its coverage count is zero and it reads as a
+-- sentinel rather than as clean data.
+--
+-- One row per event and not per pair, because the repair is the event: the values from each
+-- side are collapsed so a reader sees what both say without the row multiplying by their
+-- product.
+--
+-- Which copy is right is deliberately not asserted. Para Swimming was measured 2026-09-07
+-- with the object holding the class on 7928 events and the property on 520 of them, never the
+-- property alone, so there the object is the store and the property the redundant copy. That
+-- is a per-sport reading and belongs in the sport file rather than in this statement.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id AND pr.name = 'Class' AND pr.del = 'no'
+JOIN object_disability_class odc ON odc.object_typeFK = 5 AND odc.objectFK = e.id AND odc.del = 'no'
+JOIN disability_class dc ON dc.id = odc.disability_classFK AND dc.del = 'no'
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+  AND pr.value IS NOT NULL
+  AND TRIM(pr.value) <> ''
+GROUP BY e.id, e.name, e.startdate, tt.name, t.name
+HAVING SUM(CASE WHEN TRIM(pr.value) = dc.name THEN 1 ELSE 0 END) = 0
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e2.id) AS eligible_count
+FROM event e2
+JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+JOIN property pr2 ON pr2.object = 'event' AND pr2.objectFK = e2.id AND pr2.name = 'Class' AND pr2.del = 'no'
+JOIN object_disability_class odc2 ON odc2.object_typeFK = 5 AND odc2.objectFK = e2.id AND odc2.del = 'no'
+WHERE e2.del = 'no'
+  AND tt2.sportFK = {{SPORT_ID}}
+  AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t2.tournament_templateFK = <tournament_template_id>
+  -- AND e2.startdate >= '<from_datetime>'
+  -- AND e2.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
+  AND pr2.value IS NOT NULL
+  AND TRIM(pr2.value) <> ''
+;
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-159
+    -- Name - EVENT_DISABILITY_CLASS_NOT_IN_SPORT_VOCABULARY
+    -- What it does: Flags events carrying a disability class their own sport does not register, so the class reads outside the vocabulary that sport declares.
+    'Class_Outside_Sport_Vocabulary' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    odc.disability_classFK AS disability_class_id,
+    COALESCE(dc.name, '(no such class row)') AS disability_class_name,
+    NULL AS eligible_count
+-- What it does, stated in full: Finds events whose disability class is not among the classes
+-- registered for that event's sport at sport level.
+--
+-- A sport declares its own vocabulary by attaching classes to itself - object_typeFK 1, with
+-- the sport as the object - and that declaration is what makes an event's class checkable at
+-- all. All 27 sports that classify an event also declare one, measured 2026-09-07, so the
+-- assertion has a reference wherever it applies.
+--
+-- What it catches is an event reaching into another sport's classes, which is the disability
+-- twin of the foreign-discipline state GLOBAL-DQ-015 reports. Both come from the same kind of
+-- import mistake and neither is visible from inside the event: the class resolves perfectly
+-- well, it simply belongs to a sport this event is not filed under.
+--
+-- The class id and name travel with the finding because the repair depends on which it is: a
+-- class the sport should have registered is a vocabulary to extend, while a class belonging to
+-- another sport is a reference to repoint or an event to refile. A link pointing at no class
+-- row at all is named rather than dropped, on the same reasoning GLOBAL-DQ-015 states for its
+-- unresolved state.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_disability_class odc ON odc.object_typeFK = 5 AND odc.objectFK = e.id AND odc.del = 'no'
+LEFT JOIN disability_class dc ON dc.id = odc.disability_classFK
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+  AND NOT EXISTS (
+      SELECT 1
+      FROM object_disability_class reg
+      WHERE reg.object_typeFK = 1
+        AND reg.objectFK = tt.sportFK
+        AND reg.disability_classFK = odc.disability_classFK
+        AND reg.del = 'no'
+  )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e2.id) AS eligible_count
+FROM event e2
+JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+JOIN object_disability_class odc2 ON odc2.object_typeFK = 5 AND odc2.objectFK = e2.id AND odc2.del = 'no'
+WHERE e2.del = 'no'
+  AND tt2.sportFK = {{SPORT_ID}}
+  AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t2.tournament_templateFK = <tournament_template_id>
+  -- AND e2.startdate >= '<from_datetime>'
+  -- AND e2.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
+;
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-160
+    -- Name - EVENT_DISABILITY_CLASS_AMBIGUOUS
+    -- What it does: Flags events carrying more than one disability class, where the class the event was contested in cannot be read off.
+    'Class_Ambiguous_More_Than_One_Stored' AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    tt.name AS template_name,
+    t.name AS tournament_name,
+    COUNT(DISTINCT odc.disability_classFK) AS classes_stored,
+    GROUP_CONCAT(DISTINCT CONCAT(odc.disability_classFK, ' = ', COALESCE(dc.name, '(no such class row)')) ORDER BY odc.disability_classFK SEPARATOR ' | ') AS classes_seen,
+    NULL AS eligible_count
+-- What it does, stated in full: Finds events holding two or more distinct disability classes,
+-- so nothing downstream can say which one the event was contested in.
+--
+-- object_disability_class is a link table and imposes no cardinality, so an event holding two
+-- classes is structurally legal and semantically empty: a race is contested in one class, and
+-- two rows mean either a correction that never removed what it replaced or two events merged
+-- into one. The ids travel with the names because those are two different repairs.
+--
+-- Kept apart from GLOBAL-DQ-156 EVENT_DISABILITY_CLASS_MISSING on purpose: that check asks
+-- whether a class is there at all and this one whether it is singular, and an event holding
+-- two classes satisfies the first while answering nothing.
+--
+-- A relay contested by a single class is not a counter-example - it carries that one class,
+-- not one per leg. Where a sport genuinely contests an event across classes it stores the
+-- class on the participant instead, which is a different owner level and a different check.
+FROM event e
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN object_disability_class odc ON odc.object_typeFK = 5 AND odc.objectFK = e.id AND odc.del = 'no'
+LEFT JOIN disability_class dc ON dc.id = odc.disability_classFK
+WHERE e.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+GROUP BY e.id, e.name, e.startdate, tt.name, t.name
+HAVING COUNT(DISTINCT odc.disability_classFK) > 1
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e2.id) AS eligible_count
+FROM event e2
+JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+JOIN object_disability_class odc2 ON odc2.object_typeFK = 5 AND odc2.objectFK = e2.id AND odc2.del = 'no'
+WHERE e2.del = 'no'
+  AND tt2.sportFK = {{SPORT_ID}}
+  AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t2.tournament_templateFK = <tournament_template_id>
+  -- AND e2.startdate >= '<from_datetime>'
+  -- AND e2.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
+;
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-161
+    -- Name - EVENT_SETTINGS_DISCIPLINE_ON_SUPERSEDED_CATALOGUE
+    -- What it does: Flags events filed under one of two discipline ids their own sport keeps for the same discipline, where the other id is the one the sport actually uses.
+    'Discipline_Superseded_Within_Its_Sport' AS check_type,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.template_name,
+    x.tournament_name,
+    x.discipline_id,
+    x.discipline_name,
+    c.canonical_id AS canonical_discipline_id,
+    c.canonical_name AS canonical_discipline_name,
+    c.canonical_events AS events_on_canonical_id,
+    NULL AS eligible_count
+-- What it does, stated in full: Finds events whose discipline is a second id their own sport
+-- holds for the same discipline under a different spelling, where a first id carries the bulk
+-- of the sport's events for it.
+--
+-- **A sport keeping two catalogues for one set of races is not an untidy reference table, it
+-- is a split competition.** Anything grouping by discipline - a season table, a record list, a
+-- Comp.Rank - sees two events where the meet ran one. `SPORTS/Swimming.md` records the case
+-- that was found first: World Championships Long Course filing 5 events on
+-- `56 Freestyle 4 x 100 metres` and 28 on `365 Freestyle 4 x 100m`, one competition split
+-- almost in half.
+--
+-- **Which id is canonical is derived from the sport's own use and never listed.** For each
+-- normalised name inside one sport the id carrying the most events wins, ties going to the
+-- higher id, and every event on any other id is reported. That is what lets one statement
+-- answer for two sports whose catalogues chose opposite ends of the id range: Swimming's
+-- current block is 348-374 and Para-Swimming's is 465-492, and neither is named here.
+-- Listing the superseded ids instead would need editing on the day either catalogue gains a
+-- discipline, which is the day nobody remembers.
+--
+-- **Only the sport's own disciplines are read.** `d.sportFK = tt.sportFK` is the whole of the
+-- scope, and it matters: an event pointing at another sport's catalogue is a different defect
+-- with a different repair, and `GLOBAL-DQ-015 EVENT_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN`
+-- owns it. Measured 2026-09-07, Para-Swimming holds both at once - 146 events on its own
+-- superseded spelling and 788 on Swimming's catalogue - and folding them into one number would
+-- have hidden the larger of the two behind the smaller.
+--
+-- **The normalisation is the assumption this statement rests on, so it is stated.** Three
+-- substitutions on a lowercased name: the words for metres collapse to `m`, `individual`
+-- collapses to `indv`, and everything that is not a letter or a digit is dropped. That pairs
+-- `Freestyle 100 metres` with `Freestyle 100m` and `Individual Medley 200 metres` with
+-- `Indv. Medley 200m`, which are the two ways the catalogues seen so far disagree. A sport
+-- whose duplicate spellings differ some other way is not reported, and that is a silence
+-- rather than a clean result.
+--
+-- **Verified against a check written independently.** `Swimming-DQ-086`, a sport statement
+-- built from a hand-listed pairing and read on 2026-08-25, returns 374 findings over 14
+-- superseded ids. This statement returns 374 over 14 for Swimming and 146 over 15 for
+-- Para-Swimming, measured 2026-09-07. That agreement is the reason the derived form was
+-- trusted over the listed one.
+--
+-- It does not say which catalogue should win. The count says which one the sport is using, and
+-- if the owners decide the other way the canonical id changes with the data rather than with
+-- this statement. Either way the events cannot stay on both.
+FROM (
+    SELECT
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        tt.name AS template_name,
+        t.name AS tournament_name,
+        d.id AS discipline_id,
+        d.name AS discipline_name,
+        REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(d.name), ' *(metres|meters|metre|meter)', 'm'), 'individual', 'indv'), '[^a-z0-9]', '') AS norm
+    FROM object_discipline od
+    JOIN discipline d ON d.id = od.disciplineFK
+    JOIN event e ON e.id = od.objectFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    WHERE od.del = 'no'
+      AND od.object_typeFK = 5
+      AND d.sportFK = tt.sportFK
+          AND tt.sportFK = {{SPORT_ID}}
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+          -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+) x
+JOIN (
+    SELECT w.norm, w.discipline_id AS canonical_id, w.discipline_name AS canonical_name, w.canonical_events
+    FROM (
+        SELECT
+            REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(d2.name), ' *(metres|meters|metre|meter)', 'm'), 'individual', 'indv'), '[^a-z0-9]', '') AS norm,
+            d2.id AS discipline_id,
+            d2.name AS discipline_name,
+            COUNT(DISTINCT e2.id) AS canonical_events,
+            ROW_NUMBER() OVER (
+                PARTITION BY REGEXP_REPLACE(REGEXP_REPLACE(REGEXP_REPLACE(LOWER(d2.name), ' *(metres|meters|metre|meter)', 'm'), 'individual', 'indv'), '[^a-z0-9]', '')
+                ORDER BY COUNT(DISTINCT e2.id) DESC, d2.id DESC
+            ) AS rn
+        FROM object_discipline od2
+        JOIN discipline d2 ON d2.id = od2.disciplineFK
+        JOIN event e2 ON e2.id = od2.objectFK AND e2.del = 'no'
+        JOIN tournament_stage ts2 ON ts2.id = e2.tournament_stageFK AND ts2.del = 'no'
+        JOIN tournament t2 ON t2.id = ts2.tournamentFK AND t2.del = 'no'
+        JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
+        WHERE od2.del = 'no'
+          AND od2.object_typeFK = 5
+          AND d2.sportFK = tt2.sportFK
+          AND tt2.sportFK = {{SPORT_ID}}
+          AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t2.tournament_templateFK = <tournament_template_id>
+          -- AND e2.startdate >= '<from_datetime>'
+          -- AND e2.startdate <  '<to_datetime>'
+          -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
+        GROUP BY norm, d2.id, d2.name
+    ) w
+    WHERE w.rn = 1
+) c ON c.norm = x.norm
+WHERE x.discipline_id <> c.canonical_id
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e3.id) AS eligible_count
+FROM object_discipline od3
+JOIN discipline d3 ON d3.id = od3.disciplineFK
+JOIN event e3 ON e3.id = od3.objectFK AND e3.del = 'no'
+JOIN tournament_stage ts3 ON ts3.id = e3.tournament_stageFK AND ts3.del = 'no'
+JOIN tournament t3 ON t3.id = ts3.tournamentFK AND t3.del = 'no'
+JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
+WHERE od3.del = 'no'
+  AND od3.object_typeFK = 5
+  AND d3.sportFK = tt3.sportFK
+          AND tt3.sportFK = {{SPORT_ID}}
+          AND t3.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t3.tournament_templateFK = <tournament_template_id>
+          -- AND e3.startdate >= '<from_datetime>'
+          -- AND e3.startdate <  '<to_datetime>'
+          -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e3 WHERE dsc_e3.object_typeFK = 5 AND dsc_e3.objectFK = e3.id AND dsc_e3.disciplineFK IN (<discipline_ids>) AND dsc_e3.del = 'no')
+;

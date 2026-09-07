@@ -1,4 +1,76 @@
 {
+    "Para-Swimming": {
+        "SPORT_ID": 135,
+        "CLIENT_FROM_SEASON": 2004,
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "PERSON_ROLE_TYPE_LIST": "'athlete'",
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_DURATION_TYPE_ID": 101,
+        "RESULT_COMMENT_TYPE_ID": 104,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "ROUND_TYPE_LIST": "38, 173, 178, 223, 224",
+        "FINAL_ROUND_TYPE_LIST": "173",
+        "MEDAL_ROUND_TYPE_LIST": "173",
+        "BRONZE_ROUND_TYPE_LIST": "0",
+        "NOT_STARTED_DESC_LIST": "1",
+        "STAGE_DATE_TOLERANCE_DAYS": 0,
+        "RANK_MAX_PLAUSIBLE": 200,
+        "CLOCK_RESULT_TYPE_LIST": "101",
+        "PRECISION_RESULT_TYPE_LIST": "101",
+        "INTEGER_RESULT_TYPE_LIST": "100",
+        "NUMERIC_RESULT_TYPE_LIST": "100",
+        "RESULT_TIE_VALUE_TYPE_LIST": "101",
+        "UNUSED_RESULT_TYPE_LIST": "502",
+        "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+        "RESULT_COMMENT_VALUE_LIST": "'=AF', '=AS', 'AF', 'AM', 'AS', 'CR', 'DNF', 'DNS', 'Disq.', 'ER', 'OC', 'PR', 'PR/AM', 'PR/AS', 'PR/ER', 'Q', 'Q/AM', 'Q/AS', 'Q/OC', 'Q/PR', 'Q/PR/AM', 'Q/PR/AS', 'Q/WR', 'R', 'R/AF', 'R/AS', 'WR', 'q/AF', 'q/CR', 'q/ER'",
+        "RESULT_COMMENT_NO_RESULT_LIST": "'DNF', 'DNS', 'Disq.'",
+        "RESULT_COMMENT_NO_VALUE_LIST": "'no-such-comment'",
+        "STALE_NOT_STARTED_DAYS": 2,
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
+        "SERIES_MIN_YEARS": 3,
+        "SERIES_SKIP_YEARS": 2020,
+        "ELIMINATION_ROUND_NAME_LIST": "'semi finals', 'swim-off'",
+        "GROUP_ROUND_NAME_LIST": "'final'",
+        "REQUIRED_RESULT_TYPE_LIST": "100, 101",
+        "_checkSignal": {
+            "GLOBAL-DQ-083": {
+                "signal": "Not applicable",
+                "reason": "The template applies to a sport whose competition model is H2H per DB-SEM-015, where an event is a contest between exactly two entries and any other count is impossible. Para-Swimming is Listing: its field ranges from 1 to 20 and averages 6.39, so no participant count is one the sport never fields. The same reasoning excludes GLOBAL-DQ-096 EVENT_NAME_DOES_NOT_NAME_ITS_PARTICIPANTS and GLOBAL-DQ-144 EVENT_RESULTS_RANK_STORED_BY_A_HEAD_TO_HEAD_SPORT above. An event holding no participant at all is GLOBAL-DQ-071 EVENT_NO_PARTICIPANTS, instantiated as Para-Swimming-DQ-006."
+            },
+            "GLOBAL-DQ-074": {
+                "signal": "Sentinel",
+                "reason": "The sport attaches no venue to any event or to any tournament stage, so all 8300 events are reported and the finding is that fact rather than a list to work through. Measured 2026-09-07: venue_object is used heavily elsewhere - 919440 event links across the database - and five Para winter sports fill it, but no aquatic sport does: Swimming holds 0 of 46379 and Artistic Swimming 0 of 1558. Classified as SPORTS/Swimming.md classifies the identical case rather than as the Monitor that SPORTS/Modern-Pentathlon.md gives its own nought per cent, because there is no backfill in progress here to watch the proportion of. Numbered deliberately with the row count known: declaring it not applicable would switch the check off for the day venues start being written."
+            },
+            "GLOBAL-DQ-067": {
+                "signal": "Sentinel",
+                "reason": "eligible_count is 0 because the sport records no lineup at all, while entering relay teams as event participants. The scope is correct rather than misdirected - the check reads exactly the table this sport leaves empty - so this is a correct scope over a legitimately empty population, which POWERBI.md distinguishes from a scope to fix. GLOBAL-DQ-058 EVENT_TEAM_PARTICIPANT_WITHOUT_LINEUP is the check that catches the absence itself, at 204 of 204; this one starts reporting the day lineups are entered."
+            },
+            "GLOBAL-DQ-112": {
+                "signal": "Sentinel",
+                "reason": "eligible_count is 0 for the same reason as GLOBAL-DQ-067 EVENT_MIXED_TEAM_LINEUP_GENDER_BALANCE_UNEVEN: the sport enters relay teams but records no lineup members, so there is no assignment for an athlete to hold twice. Correct scope over an empty population, not a misdirected one."
+            },
+            "GLOBAL-DQ-152": {
+                "signal": "Not applicable",
+                "reason": "The template is for a sport, or a discipline of one, whose finishing order is decided by judging rather than by the clock, and it states that a timed sport must not instantiate it because its clock is the result and every event would be reported. Para-Swimming is timed throughout: every discipline it contests is a race. Run on 2026-09-07 it returned 7530 findings of 7937 events, which is that symptom and not a defect. The mirror templates asserting what a timed discipline owes - GLOBAL-DQ-045 EVENT_DURATION_FULL_TIME_MISMATCH_TO_RANK and GLOBAL-DQ-054 EVENT_RESULTS_RANK_FULL_TIME_NOT_MONOTONIC - both need the 557 Full-time duration result type this sport does not carry, so neither is available in its place."
+            },
+            "GLOBAL-DQ-093": {
+                "signal": "Not applicable",
+                "reason": "The template is for a head-to-head sport that decides bronze in its own match rather than inside the Final, and it states that a sport awarding every medal in one event uses GLOBAL-DQ-037 EVENT_RESULTS_MEDAL_SET_INVALID_FOR_FINAL instead and must not instantiate this. Para-Swimming awards all three medals inside the Final and declares BRONZE_ROUND_TYPE_LIST as 0. Run on 2026-09-07 it returned 616 findings of 622 medal rounds, which is the predicted whole-population report. GLOBAL-DQ-037 is instantiated in its place as Para-Swimming-DQ-051, together with the GLOBAL-DQ-036 EVENT_RESULTS_RANK_INVALID_OR_MISSING that template requires beside it, as Para-Swimming-DQ-050."
+            },
+            "GLOBAL-DQ-096": {
+                "signal": "Not applicable",
+                "reason": "The template is head-to-head sports only, by the competition model rather than by reading each sport's names, and it states that a sport whose event names are codes, distances or round labels must not instantiate it. Para-Swimming is Listing under DB-SEM-015 and names its events by stroke, distance and disability class, so no event name names a competitor and the whole population reports: 7945 of 7945 when run on 2026-09-07. The four sports that do instantiate it - Curling, Handball, Ice-Hockey and Soccer - are all H2H."
+            },
+            "GLOBAL-DQ-144": {
+                "signal": "Not applicable",
+                "reason": "The template applies to a sport documented as H2H under DB-SEM-015 and no other kind, because a head-to-head event has no field for a place to belong to. Para-Swimming is Listing, where an event-level rank is the correct storage rather than the defect. Run on 2026-09-07 it failed with the API's 128 MB exhausted, which is the documented symptom of a listing sport reporting its entire population, not a statement to redesign. The questions worth asking here are GLOBAL-DQ-020 EVENT_RESULTS_RANK_OUTLIER_ABOVE_FIELD_SIZE and its siblings, which read a place against the field it belongs to."
+            }
+        }
+    },
     "BMX-Freestyle": {
         "SPORT_ID": 58,
         "DISCIPLINE_ID_LIST": "430",
