@@ -1012,6 +1012,39 @@ physical metadata table.
 Template, stage, event participant, participant and lineup structures can carry
 different type/gender context. Their relationship and meaning are sport-specific.
 
+**The five vocabularies were read from the schema on 2026-09-07 and they are not one
+vocabulary.** Each is a declared `enum`, so the allowed values are complete and do not move:
+
+| Layer and column | Declared values | Used |
+|---|---|---|
+| `participant.type` | `team`, `official`, `undefined`, `coach`, `athlete`, `organization`, `horse` | all seven |
+| `participant.gender` | `undefined`, `male`, `female`, `mixed`, `mare`, `gelding`, `stallion` | all seven |
+| `object_participants.participant_type` | `coach`, `team`, `assistant`, `manager`, `athlete`, `official`, `organization`, `horse` | six — `assistant` and `manager` have no rows |
+| `tournament_template.gender` | `undefined`, `male`, `female`, `mixed` | all four |
+| `tournament_stage.gender` | `undefined`, `male`, `female`, `mixed` | all four |
+
+Two mismatches follow, and both are the kind a statement gets wrong by assuming the layers
+agree:
+
+- **The two type vocabularies differ in both directions.** `object_participants` knows
+  `assistant` and `manager`, which `participant` cannot express; `participant` knows
+  `undefined`, which `object_participants` cannot. Eight values against seven, and the
+  overlap is six.
+- **Participant gender and tournament gender are different scales, not one scale read at two
+  levels.** The participant column carries three equine sexes — `mare`, `gelding`,
+  `stallion`, together 13 854 rows — that no tournament layer can hold. A mare entered in a
+  `female` stage is not a contradiction, and a check comparing the two columns directly would
+  report one.
+
+`participant.undefined` is nearly unused, at 4 rows of 2 192 216; `object_participants`
+`assistant` and `manager` are unused entirely. Neither is grounds for treating the value as
+absent — `Applicability is structural, never a row count`.
+
+**187 rows in `object_participants` carry a `participant_type` outside its own
+declaration**, spread across 24 sports. They sit at enum index 0, the slot MySQL uses for a
+value that was never valid, so the column stores something none of its eight names covers.
+Measured 2026-09-07; recorded as a finding, and no check was opened for it.
+
 ### `DB-SEM-010` — Event/round representation is sport-specific
 
 An event row may represent a match, race, heat, round or another competition unit. The
@@ -1448,7 +1481,11 @@ and was not measured.
   `participant.id`, and it names the person the incident is about inside the owning team.**
   `DB-SEM-021` holds the measurement and the two traps — `0` rather than `NULL` marks
   absence, and 22 rows hold a team where 13.8 million hold a person.
-- Complete allowed values for participant type and gender/category fields.
+- ~~Complete allowed values for participant type and gender/category fields.~~
+  **Answered 2026-09-07.** All five are declared `enum`s, so the complete lists are in
+  `DB-SEM-009` along with what each layer actually uses. The two findings that change how a
+  statement is written: the two type vocabularies differ in both directions, and participant
+  gender is a different scale from tournament gender rather than the same one read twice.
 - Complete property owner/type/name taxonomy.
 - `saved_json_player` (columns: id, atp_id, name, firstname, lastname, gender, country_code, dob, active, mapped, del, ut, n) has no direct foreign key to `participant`; observed linkage is only a heuristic exact-text match on `name`. The `mapped` flag does not reliably indicate match status. Duplicate `saved_json_player` rows with the same name have been observed mapping to the same `participant.id` (name-collision risk). The table's relationship to `participant`, its canonical-vs-staging role, and its sport scope are not confirmed.
 - Universal statistic type-to-owner and type-to-shard rules, if any.
