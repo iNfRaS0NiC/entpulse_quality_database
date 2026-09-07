@@ -274,6 +274,19 @@ while Para Athletics carries 3122 and Para Table Tennis 1722. At event level the
 third of twenty-seven. The structure is present and reachable at both levels, and only one of
 them is filled.
 
+**That single classified athlete is a test record, so the honest count is nought.** It is
+participant `Alberto Abarza Diaz TEST` — a real swimmer's name with `TEST` appended — carrying
+class `SM7` and entered into three `S2` events, which is also the whole of what
+`Para-Swimming-DQ-082` reports through
+`GLOBAL-DQ-162 EVENT_PARTICIPANT_DISABILITY_CLASS_CONTRADICTS_THE_EVENTS`: 3 findings of 3
+eligible, every eligible entry in the sport being one of that record's. Read the `1 of 3060`
+above as `0 of 3059 plus a test row` and the level is not partly filled but empty.
+
+Test-named participants are widespread and are not this sport's problem to solve: 57 in Horse
+Racing, 57 in Basketball, 46 in Volleyball, measured 2026-09-07 — and `Australia TEST` in
+Cricket is not one of them, Test cricket being a real format. No check reads them and none is
+proposed here.
+
 The 372 events with no class object are not one population. Measured 2026-09-07 against what
 each event's own name states:
 
