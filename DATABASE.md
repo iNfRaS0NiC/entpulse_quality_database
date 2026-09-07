@@ -1509,6 +1509,32 @@ Two consequences for a statement reading this table:
 Whether the named person belongs to that team's lineup for that event is a further question
 and was not measured.
 
+### `DB-SEM-022` — A statistic field is identified by type, category and name together
+
+`statistic_data_type` is the field catalogue. Read whole on 2026-09-07: 1 236 rows, 506
+distinct names, 17 distinct `statistic_typeFK` values, every one of which resolves against
+`statistic_type.id` with no zeros and nothing dangling.
+
+**The per-type field sets are not disjoint.** 224 of the 506 names appear under more than one
+statistic type, and one name appears under seven. A name alone says nothing about which type
+a field belongs to.
+
+**Nor does type plus name identify a field.** `statistic_data_type_categoryFK` is the third
+part of the key, and it is what separates rows that otherwise look identical:
+
+| Key tried | Duplicated groups among `del = 'no'` rows |
+|---|---:|
+| `statistic_typeFK` + `name` | 80 |
+| `statistic_typeFK` + `statistic_data_type_categoryFK` + `name` | **0** |
+
+Twenty-one categories exist and every `statistic_data_type_categoryFK` resolves. The same
+field name legitimately occurs in two sections of one statistic type, so a lookup keyed on
+type and name returns two rows where the author expected one — and silently takes whichever
+the optimiser returned first if it was written as a scalar.
+
+Including soft-deleted rows the triple collides exactly once, against one of the 5 rows the
+catalogue marks `del = 'yes'`.
+
 <!-- MANUAL PASTE ZONE: DATABASE STRUCTURAL SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---
@@ -1620,9 +1646,13 @@ and was not measured.
   `DB-SEM-006` keeps its requirement to confirm the shard from data even so — the user's
   decision, and the reason is recorded there: nothing enforces the mapping, so it is today's
   state rather than a guarantee.
-- Target of `statistic_data_type.statistic_typeFK`. The column filters the field catalog
+- ~~Target of `statistic_data_type.statistic_typeFK`. The column filters the field catalog
   per statistic type, but its resolution against `statistic_type.id` was not independently
-  verified, and it is unknown whether the per-type field sets are disjoint.
+  verified, and it is unknown whether the per-type field sets are disjoint.~~
+  **Answered 2026-09-07: it resolves against `statistic_type.id` completely, and the field
+  sets are not disjoint.** 224 of 506 names appear under more than one type, one under seven.
+  `DB-SEM-022` records what does identify a field — type, category and name together, which
+  leaves zero duplicated groups where type and name alone leave 80.
 - Soft-delete behavior of `statistic_type`, `statistic_data_type` and
   `statistic_data_type_category`. No `del` column was confirmed, so the reference catalogs
   may include retired rows.
