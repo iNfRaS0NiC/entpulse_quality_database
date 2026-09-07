@@ -1045,6 +1045,42 @@ container. `lineup_scope_result` identifies both the lineup owner and container.
 The statistic type ID does not automatically determine participant/data shard number.
 The physical shard and shard-specific parent column must be confirmed together.
 
+**Measured 2026-09-07: today the mapping is nevertheless total.** Every one of the 17
+`statistic_participantsN` shards was joined to `statistic` and grouped by
+`statistic_typeFK`, over 6 207 616 link rows. The result is exactly 17 rows: shard `N`
+holds statistics of type `N` and of no other type, with no exception anywhere.
+
+| Shard | Statistic type | Link rows | | Shard | Statistic type | Link rows |
+|---:|---:|---:|---|---:|---:|---:|
+| 1 | 1 | 841 137 | | 10 | 10 | 29 609 |
+| 2 | 2 | 11 625 | | 11 | 11 | 3 243 256 |
+| 3 | 3 | 51 590 | | 12 | 12 | 43 507 |
+| 4 | 4 | 356 454 | | 13 | 13 | 2 002 |
+| 5 | 5 | 7 729 | | 14 | 14 | 597 826 |
+| 6 | 6 | 120 826 | | 15 | 15 | 31 490 |
+| 7 | 7 | 9 695 | | 16 | 16 | 38 505 |
+| 8 | 8 | 341 026 | | 17 | 17 | 2 464 |
+| 9 | 9 | 478 875 | | | | |
+
+The data layer inherits the same split from the schema rather than from the data: each
+`statistic_dataN` carries a column named `statistic_participantsNFK`, confirmed for all 17,
+so a data shard cannot reach another shard's participants by construction.
+
+**This rule stays as written even so, and that is deliberate.** Nothing in the schema
+enforces the mapping — there is no constraint, and question 1's answer records that the
+database has no `FOREIGN KEY` anywhere — so the agreement is a property of today's data and
+not a guarantee. A statement still confirms its shard from data rather than deriving it from
+`statistic_typeFK`, because the day the two diverge is the day a derived statement reads the
+wrong table silently. The measurement is recorded to say what the current state is, not to
+license the shortcut.
+
+**Type-to-owner is a different matter and is not a rule at all.** The same reading found the
+17 types spread across four owner levels — `tournament` (3), `tournament_stage` (4), `event`
+(5) and `participant` (15) — in 33 type/owner pairs. No type uses more than two levels, but
+which two does not follow from the type, so the owner level must be confirmed per type and
+per sport. Comp.Rank, `statistic_typeFK = 11`, sits on `tournament` for 81 502 statistics and
+on `tournament_stage` for 1 844.
+
 ### `DB-SEM-007` — Coarse and detailed event statuses are separate fields
 
 `event.status_type` and `event.status_descFK` store different levels of status identity.
@@ -1574,7 +1610,16 @@ and was not measured.
   The conclusion is the usable part: **a check may not join through this table, and its
   `mapped` flag is not evidence of anything.** Any true mapping to `participant` lives in the
   import process, not in the schema.
-- Universal statistic type-to-owner and type-to-shard rules, if any.
+- ~~Universal statistic type-to-owner and type-to-shard rules, if any.~~
+  **Answered 2026-09-07: one of the two exists.** Shard `N` holds statistic type `N` and
+  nothing else, across all 17 shards and 6 207 616 link rows with no exception, and each
+  `statistic_dataN` names `statistic_participantsNFK` so the data layer splits the same way by
+  schema. Type-to-owner is not a rule: 17 types over four owner levels in 33 pairs, never more
+  than two levels per type, and which two does not follow from the type.
+
+  `DB-SEM-006` keeps its requirement to confirm the shard from data even so — the user's
+  decision, and the reason is recorded there: nothing enforces the mapping, so it is today's
+  state rather than a guarantee.
 - Target of `statistic_data_type.statistic_typeFK`. The column filters the field catalog
   per statistic type, but its resolution against `statistic_type.id` was not independently
   verified, and it is unknown whether the per-type field sets are disjoint.
