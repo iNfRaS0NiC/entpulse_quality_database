@@ -239,7 +239,7 @@ Stores an incident for one event-participant row.
 | `event_participantsFK` | Parent event-participant row |
 | `incident_typeFK` | Incident-type reference |
 | `incident_code` | Stored incident code |
-| `ref_participantFK` | Additional participant-like reference; target not globally confirmed |
+| `ref_participantFK` | The person the incident is about, inside the owning team — `participant.id`, confirmed 2026-09-07, `DB-SEM-021` |
 | `elapsed`, `elapsed_plus` | Stored elapsed components; meaning/format open, and confirmed per sport rather than globally — `SPORTS/Ice-Hockey.md` establishes seconds there from the distribution of 12713 goals across a 3600-second game |
 | `sortorder` | Stored ordering value |
 | `del` | Soft-delete flag |
@@ -1354,6 +1354,43 @@ disability class and there is no mechanism by which it could carry one, so a ran
 reading a competitor's class has nothing to read — a structural absence rather than an
 unfilled field, and one that no Comp.Rank work will change on its own.
 
+### `DB-SEM-021` — An incident names a person inside a team, not a second participant
+
+`incident` hangs off `event_participants`, and on a team sport that parent row is the
+**team's** participation in the event. `ref_participantFK` is what supplies the person:
+it holds a `participant.id`, and its role is the competitor the incident is about.
+
+Measured 2026-09-07 over all 14 405 259 incident rows:
+
+| Reading | Rows |
+|---|---:|
+| `ref_participantFK` is `NULL` | 0 |
+| `ref_participantFK` is `0` | 562 410 |
+| `ref_participantFK` resolves to an existing `participant` | 13 842 849 |
+| `ref_participantFK` resolves to nothing | **0** |
+
+By participant type, with the owning `event_participants` row always a `team`:
+13 560 824 `athlete`, 281 764 `coach`, 261 `official`, and 22 `team`.
+
+**The name invites the wrong reading and the data refutes it.** "Additional participant-like
+reference" suggests a second person alongside a first — the assisting player, the player
+replaced. It is not: the column is populated across every incident type, including ones that
+involve one person only, because the parent row never held a person to begin with. `Assist`
+carries it on 947 518 of 950 299 rows, `Yellow card` on 1 370 808 of 1 407 769.
+
+Two consequences for a statement reading this table:
+
+- **`0` is the absence marker, not `NULL`.** The column is `NOT NULL` and unset rows carry
+  zero, so `IS NULL` finds nothing and a join without `> 0` silently drops them.
+- **The type is part of the contract.** 22 rows hold a `team` where every other row holds a
+  person, and 19 of those point at the owning team itself. That is a defect shape rather than
+  a second convention, and it is recorded here so a check that wants it has the measurement
+  it was found by. No check was written for it on 2026-09-07 — the user closed this as a
+  structural fact and left the DQ question unopened.
+
+Whether the named person belongs to that team's lineup for that event is a further question
+and was not measured.
+
 <!-- MANUAL PASTE ZONE: DATABASE STRUCTURAL SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---
@@ -1407,7 +1444,10 @@ unfilled field, and one that no Comp.Rank work will change on its own.
   from it. The finding worth carrying out of that section: **every one of the thirteen has a
   `del` column**, so none of them is a list of currently valid values until `del = 'yes'` is
   excluded.
-- Target semantics of `incident.ref_participantFK`.
+- ~~Target semantics of `incident.ref_participantFK`.~~ **Answered 2026-09-07: it is
+  `participant.id`, and it names the person the incident is about inside the owning team.**
+  `DB-SEM-021` holds the measurement and the two traps — `0` rather than `NULL` marks
+  absence, and 22 rows hold a team where 13.8 million hold a person.
 - Complete allowed values for participant type and gender/category fields.
 - Complete property owner/type/name taxonomy.
 - `saved_json_player` (columns: id, atp_id, name, firstname, lastname, gender, country_code, dob, active, mapped, del, ut, n) has no direct foreign key to `participant`; observed linkage is only a heuristic exact-text match on `name`. The `mapped` flag does not reliably indicate match status. Duplicate `saved_json_player` rows with the same name have been observed mapping to the same `participant.id` (name-collision risk). The table's relationship to `participant`, its canonical-vs-staging role, and its sport scope are not confirmed.
