@@ -279,21 +279,70 @@ values. It must never be interpreted without the discriminator.
 
 #### `property`
 
-Generic key/value metadata.
+Thirteen owner values are in use, measured 2026-09-07 over 93 538 275 property rows. Nine
+of them were unregistered until that date — including the two largest after `event` — so a
+statement built from the registry alone was reading a third of the mechanism.
 
-| Important column | Structural meaning |
-|---|---|
-| `id` | Property-row identifier |
-| `object`, `objectFK` | Text-polymorphic owner |
-| `type` | Stored property type/category |
-| `name` | Property key |
-| `value` | Property value |
-| `del` | Soft-delete flag |
+| ID | `object` value | Owner target | Rows | Unresolved `objectFK` | Verification |
+|---|---|---|---:|---:|---|
+| `REL-PROPERTY-001` | `event` | `event.id` | 40 908 268 | not measured | Confirmed-data |
+| `REL-PROPERTY-002` | `tournament` | `tournament.id` | 3 197 | not measured | Confirmed-data |
+| `REL-PROPERTY-003` | `tournament_stage` | `tournament_stage.id` | 424 901 | not measured | Confirmed-data |
+| `REL-PROPERTY-004` | `participant` | `participant.id` | 3 789 703 | not measured | Confirmed-data |
+| `REL-PROPERTY-005` | `incident` | `incident.id` | 31 168 021 | **3** | Confirmed-data |
+| `REL-PROPERTY-006` | `event_participants` | `event_participants.id` | 14 447 266 | **1** | Confirmed-data |
+| `REL-PROPERTY-007` | `object_participants` | `object_participants.id` | 2 236 958 | **40** | Confirmed-data |
+| `REL-PROPERTY-008` | `lineup` | `lineup.id` | 207 569 | 0 | Confirmed-data |
+| `REL-PROPERTY-009` | `country` | `country.id` | 491 | 0 | Confirmed-data |
+| `REL-PROPERTY-010` | `tournament_template` | `tournament_template.id` | 28 | 0 | Confirmed-data |
+| `REL-PROPERTY-011` | `language_type` | `language_type.id` | 1 | 0 | Confirmed-data |
+| `REL-PROPERTY-012` | `standing` | `standing.id` | 21 | not measured | Confirmed-data |
+| `REL-PROPERTY-013` | `standing_participants` | `standing_participants.id` | 352 680 | not measured | Confirmed-data |
 
-Confirmed owner values in current evidence: `event`, `tournament`,
-`tournament_stage` and `participant`. Other owners remain open until discovered.
+`REL-PROPERTY-012` and `-013` are recorded because the owner values exist, not as an opening
+of the `standing` family — that family is out of scope and neither its targets nor its
+`standing_modifier` vocabulary were pursued.
 
-#### `object_participants`
+Row counts are as of the moment each was read and drift between statements while colleagues
+correct the data; `event_participants` was read as 14 447 264 and 14 447 266 minutes apart.
+They are context, never a basis for a claim. The **44 unresolved rows** are not context: they
+are the defect family `DB-SEM` records under question 1's answer, found again here.
+
+#### The type and name taxonomy
+
+Eight `type` values exist and the whole taxonomy is 26 owner/type pairs over 521
+owner/type/name triples and 439 distinct names:
+
+| `type` | Distinct names | Owners it appears on |
+|---|---:|---|
+| `metadata` | 351 | all thirteen |
+| `standing_modifier` | 60 | `standing_participants` only — out of scope |
+| `ref:participant` | 36 | `incident`, `event`, `event_participants`, `object_participants`, `lineup`, `participant` |
+| `ref:offence_type` | 3 | `incident`, `participant` |
+| `nrk:ref` | 2 | `event` |
+| `date` | 1 | `participant` |
+| `rule` | 1 | `standing` |
+| `unknown` | 1 | `incident` |
+
+The 351 `metadata` names are sport vocabulary and stay in the sport files that confirm them;
+this section owns the mechanism, not each sport's use of it. The other vocabularies are small
+enough to be closed sets, and reading them closed is what exposes the following.
+
+**Four names sit under a type that cannot hold them.** `ref:offence_type` carries
+`date_of_birth` on 2 rows, a name belonging to `date`. `ref:participant` carries `Live`,
+`gameType` and `AwardedWinner` on one row each — the first two are `nrk:ref` names and none
+of the three is a participant reference. And the single `unknown` row is named
+`offence_typeFK`, which is a `ref:offence_type` name. A statement that trusts `type` to
+constrain `name`, or `name` to imply what `value` holds, is wrong on these rows.
+
+**The same thing is spelled more than one way at the same layer.** `offence_typeFK`
+(408 044 rows) and `offense_typeFK` (11 804) are one concept in two spellings.
+`ref:participant` holds `team` beside `TeamFK`, and `referee`, `refereeFK`,
+`second_referee` and `second_refereeFK` as four separate names. Case and suffix are not
+normalised, so a name filter has to be written for the variants that exist rather than the
+one a reader expects — the `%Fly%`-matching-`Butterfly` mistake in a different form.
+
+### `object_participants`
 
 Generic participant-to-owner relation.
 
@@ -1486,7 +1535,12 @@ and was not measured.
   `DB-SEM-009` along with what each layer actually uses. The two findings that change how a
   statement is written: the two type vocabularies differ in both directions, and participant
   gender is a different scale from tournament gender rather than the same one read twice.
-- Complete property owner/type/name taxonomy.
+- ~~Complete property owner/type/name taxonomy.~~ **Answered 2026-09-07** under § 9
+  `property`: 13 owner values, 8 types, 26 owner/type pairs, 521 triples, 439 names. The
+  registry grew from 4 rows to 13 — `incident` and `event_participants`, the second and third
+  largest owners, were unregistered. Four names sit under a type that cannot hold them, and
+  `offence_typeFK`/`offense_typeFK` are one concept in two spellings. The 351 `metadata`
+  names stay with the sport files that confirm them.
 - `saved_json_player` (columns: id, atp_id, name, firstname, lastname, gender, country_code, dob, active, mapped, del, ut, n) has no direct foreign key to `participant`; observed linkage is only a heuristic exact-text match on `name`. The `mapped` flag does not reliably indicate match status. Duplicate `saved_json_player` rows with the same name have been observed mapping to the same `participant.id` (name-collision risk). The table's relationship to `participant`, its canonical-vs-staging role, and its sport scope are not confirmed.
 - Universal statistic type-to-owner and type-to-shard rules, if any.
 - Target of `statistic_data_type.statistic_typeFK`. The column filters the field catalog
