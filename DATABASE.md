@@ -765,6 +765,55 @@ Two things follow, and a check has to work with both:
   mechanism, three sports, two vocabularies — so a sport file records which names its sport
   uses and this section records only that the mechanism exists.
 
+### Small reference table inventories
+
+Thirteen small reference tables are read across this package and none had a verified column
+inventory. All thirteen were read from `information_schema` on 2026-09-07 and are recorded
+here in full, because a column list guessed from a name is the kind of error nothing later
+catches.
+
+**They share one shape.** Every one of the thirteen carries `id`, `name`, `n`, `ut` and
+`del`, and all but `venue_data_type` also carry `description`. `n` and `ut` are the
+provider's sequence and update stamp; `del` is the soft-delete flag described by
+`DB-SEM-002`.
+
+**Every one of the thirteen has `del`.** None of these catalogues is safe to read as a list
+of currently valid values: a retired row is still a row, and a statement that resolves an id
+against one of them without excluding `del = 'yes'` will resolve it to a name nobody uses
+any more.
+
+`id`, `n` and `del` are `NOT NULL` everywhere. `ut` is `NOT NULL` everywhere except
+`scope_type`, `scope_data_type` and `venue_data_type`, where it is nullable — those three
+also differ from the rest in column order, placing `del` before `n`. `description` is
+nullable only in `language_type`, `scope_type` and `scope_data_type`.
+
+The columns beyond the shared shape are what each table actually contributes:
+
+| Table | Rows | Columns beyond `id`, `name`, `description`, `n`, `ut`, `del` |
+|---|---:|---|
+| `category` | 0 | — (empty today) |
+| `country` | 258 | `enetID` `int unsigned NOT NULL` — the provider's own country key |
+| `disability_class` | 212 | — |
+| `discipline` | 935 | `sportFK` `int unsigned NOT NULL` — what separates a duplicate name from a foreign catalogue |
+| `language_type` | 126 | — (`description` nullable) |
+| `object_type` | 160 | `internal` `enum('yes','no')` nullable |
+| `round_type` | 301 | `value` `int NOT NULL`, `knockout` `enum('no','yes') NOT NULL` — the pair behind `DB-SEM-012` |
+| `scope_data_type` | 977 | — (`description` and `ut` nullable) |
+| `scope_type` | 1382 | — (`description` and `ut` nullable; `name` indexed) |
+| `tournament_age_class` | 3 | — |
+| `tournament_set` | 14 | — |
+| `tournament_sub_set` | 97 | `tournament_setFK` `int unsigned NOT NULL` — the only parent-child pair among the thirteen |
+| `venue_data_type` | 55 | no `description` at all; `ut` nullable |
+
+Row counts are `information_schema` estimates as of 2026-09-07 and are context, never a
+basis for a claim. Types and nullability are declarations and do not move.
+
+Two of these bear directly on checks already written. `discipline.sportFK` is the column
+`GLOBAL-DQ-015` and `GLOBAL-DQ-161` both turn on, and it is the reason a duplicate
+discipline name and a reference into another sport's catalogue are different defects.
+`round_type.knockout` is the second half of the identity `DB-SEM-012` records: one round
+name exists twice, once knockout and once not, and only this column tells them apart.
+
 <!-- MANUAL PASTE ZONE: DATABASE REFERENCE MECHANISMS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---
@@ -1352,7 +1401,12 @@ unfilled field, and one that no Comp.Rank work will change on its own.
   The 215 unindexed and the 480 that lead no index are also a cost fact, not only a
   correctness one: a lookup keyed on one of those columns alone has no index path. That is
   the same mechanism `DB-SEM-016` records for the template filter, generalised.
-- Full verified column inventories for several small reference tables.
+- ~~Full verified column inventories for several small reference tables.~~
+  **Answered 2026-09-07.** All thirteen are recorded in full under § 6
+  "Small reference table inventories", with the shape they share and each one's deviations
+  from it. The finding worth carrying out of that section: **every one of the thirteen has a
+  `del` column**, so none of them is a list of currently valid values until `del = 'yes'` is
+  excluded.
 - Target semantics of `incident.ref_participantFK`.
 - Complete allowed values for participant type and gender/category fields.
 - Complete property owner/type/name taxonomy.
