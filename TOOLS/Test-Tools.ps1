@@ -7266,7 +7266,6 @@ Test-That 'the queue survives the disk and a damaged file does not end a run' {
 Test-That 'a check that was never meant to reach zero never notifies' {
     # The gate is in Sheets.ps1 and this asserts the consequence, because it is the thing
     # somebody will report as a bug: a Monitor check whose count jumped and no mail arrived.
-    # See output/Reopened_by_mistake.md for the eight rows that taught it.
     foreach ($expectation in @('Non-zero', 'Residual', '')) {
         $summary = @((New-SheetFixtureEntry -CheckId 'Fixtureball-DQ-060' -Findings 1114 -Eligible 90000 -Verdict 'As expected'))
         $summary[0].Expected = $expectation

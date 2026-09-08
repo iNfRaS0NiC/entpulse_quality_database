@@ -11,7 +11,7 @@
     reviewing it - so the pass runs the closed ones and nothing else. Which of them fit is
     decided by a budget rather than a threshold in seconds, cheapest first, with a slice kept
     for the expensive tail so it comes round rather than never running between full boards.
-    TOOLS/Nightly.ps1 holds the rule and output/NIGHTLY_RUN_PLAN.md the measurements behind it.
+    TOOLS/Nightly.ps1 holds the rule.
 
     **It writes to the board, and that is the point.** A check it finds is written `Reopened`
     by the same rule a full run uses, which means the reviewer meets a red chip rather than a

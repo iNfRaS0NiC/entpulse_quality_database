@@ -3,7 +3,7 @@
 # A run every night across the opened sports whose only job is to notice that something which
 # was clean has stopped being clean. It does not replace the full board and it never writes to
 # one; it leaves no trace in RUNS/ either, so the next real run still compares against the last
-# real one. See output/NIGHTLY_RUN_PLAN.md for the measurements the design rests on.
+# real one.
 #
 # Everything here is a pure function over what the ledgers already hold. Nothing in this file
 # runs a statement, opens a connection or sends anything, which is what lets the selection be

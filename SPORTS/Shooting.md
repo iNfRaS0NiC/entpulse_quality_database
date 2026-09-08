@@ -503,7 +503,7 @@ question that closes leaves nothing behind unless the answer is recorded where t
   are column headings written in as data; 20 further numbers; and 7 bare hyphens.
   `GLOBAL-DQ-155 EVENT_RESULTS_UNUSED_RESULT_TYPE_HOLDS_VALUES`, running here as
   `Shooting-DQ-074`, reads the whole field and reported 391 events on 2026-09-06.
-  `output/SHOOTING_DURATION_FIELD.csv` holds every one of the 2 437 rows.
+  Running that check returns every one of the 2 437 rows; they are not held in a file.
 
 - **Four comment values were read on 2026-09-06 and three of them are settled by the data.**
 They had been approved into `RESULT_COMMENT_VALUE_LIST` without their meaning being known.
