@@ -3492,6 +3492,48 @@ Running 113 checks into D:\out\Soccer.xlsx
     Assert-True ($tally.FirstError -like '*Unable to connect*') 'with the reason'
 }
 
+Test-That 'a request that recorded no run is not written DONE' {
+    # The defect this exists for, 2026-09-08: nine Biathlon requests were written DONE with
+    # empty Run ID and Findings. Every one fell inside one of three full board runs somebody
+    # was doing by hand; none appears in RUNS/Biathlon.json; none left an output folder; each
+    # was over in three to five seconds. On the board they read exactly like clean checks.
+    #
+    # Get-RunCheckTally could not see it: it counts `[N/M] … ERROR` lines, which only a batch
+    # prints, so a single check that did nothing leaves Total = 0 and passes through.
+    $nothing = @'
+Query: Biathlon-DQ-120  COMP.RANK_TEAM_GENDER_BALANCE_UNEVEN
+'@
+    $outcome = Get-RunOutcome -Output $nothing
+    Assert-Equal '' $outcome.RunId 'nothing named itself, so there is no run id'
+
+    $reason = Get-RunNoResultReason -ExitCode 0 -Outcome $outcome -Output $nothing
+    Assert-True ($reason -ne '') 'so the request is not answered'
+    Assert-True ($reason -like '*no result*') "and says so plainly, got: $reason"
+
+    # The child's own words when it left any, because "nothing was recorded" plus the reason is
+    # a better morning than either alone.
+    $withClue = $nothing + "`n  the machine is already running a full board refresh of Biathlon, so this run was not started"
+    $quoted = Get-RunNoResultReason -ExitCode 0 -Outcome (Get-RunOutcome -Output $withClue) -Output $withClue
+    Assert-True ($quoted -like '*not started*') "the clue line is quoted, got: $quoted"
+
+    # A real run is untouched, in both shapes. This is the mistake that would matter more:
+    # marking a good run ERROR puts a reviewer on a hunt for a failure that never happened.
+    $single = "Run Biathlon 08.09.2026 13-18-11`nUnchanged: 1 finding(s) of 2875 eligible, expected Zero"
+    Assert-Equal '' (Get-RunNoResultReason -ExitCode 0 -Outcome (Get-RunOutcome -Output $single) -Output $single) `
+        'a single check that named its run is a run'
+
+    $batch = 'Written: D:\SQL''s Output\Biathlon 08.09.2026 10-48-29'
+    Assert-Equal '' (Get-RunNoResultReason -ExitCode 0 -Outcome (Get-RunOutcome -Output $batch) -Output $batch) `
+        'and so is a batch that wrote a folder, which prints no findings sentence at all'
+
+    # A non-zero exit is somebody else's branch and must not be claimed by this one, or the
+    # request would be told it produced no result when it produced a failure.
+    Assert-Equal '' (Get-RunNoResultReason -ExitCode 75 -Outcome $outcome -Output $nothing) `
+        'the run lock exits 75 and goes back on the queue as WAITING'
+    Assert-Equal '' (Get-RunNoResultReason -ExitCode 1 -Outcome $outcome -Output $nothing) `
+        'and a failed run is already reported as one'
+}
+
 Test-That 'a run where some checks failed is still a run' {
     # The other half, and the one that must not regress: three of four worked, so the board is
     # updated and the failure is reported beside it rather than instead of it.

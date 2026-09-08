@@ -774,6 +774,42 @@ function Get-RunCheckTally {
     }
 }
 
+function Get-RunNoResultReason {
+    <#
+        What to say about a run that exited cleanly and recorded nothing, or '' if it did.
+
+        Every real run names itself: a single check prints `Run <Sport> <stamp>` and a batch
+        prints `Written: <folder>`, and Get-RunOutcome reads either into RunId. An empty RunId
+        after exit 0 therefore means the child got as far as exiting without executing
+        anything - and until 2026-09-08 the board had no word for that.
+
+        Nine Biathlon requests were written DONE with empty figures that day. Every one of them
+        fell inside one of three full board runs somebody was doing by hand; none appears in
+        RUNS/Biathlon.json; none left an output folder; each was over in three to five seconds
+        against the thirty to ninety a real check takes. On the board they read exactly like
+        checks that had come back clean.
+
+        Get-RunCheckTally cannot see this. It counts `[N/M] Check rows=… ERROR` lines, which
+        only a batch prints, so a single check that did nothing leaves Total = 0 and passes.
+
+        The reason the child exited 0 is still not known - the run lock exits 75 and is handled
+        - and this does not need to know. A request that produced no run was not answered,
+        whatever the cause, and saying so is the whole job. The clue line is quoted when the
+        output holds one, because 'nothing was recorded' plus the child's own words is a better
+        morning than either alone.
+    #>
+    param([int]$ExitCode, $Outcome, [string]$Output)
+
+    if ($ExitCode -ne 0) { return '' }
+    if (-not [string]::IsNullOrWhiteSpace([string]$Outcome.RunId)) { return '' }
+
+    $message = 'The run produced no result. Nothing was recorded for it.'
+    $clue = [regex]::Match([string]$Output, '(?m)^(?<line>.*(ERROR|Exception|failed|not started|gave up).*)$')
+    if ($clue.Success) { $message = $clue.Groups['line'].Value.Trim() }
+    if ($message.Length -gt 480) { $message = $message.Substring(0, 480) }
+    return $message
+}
+
 function Get-RunDuration {
     <#
         What the whole thing took, for the cell to keep once it has stopped moving. A row that
@@ -1365,6 +1401,24 @@ while ($true) {
                 Status     = 'ERROR'
                 FinishedAt = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss')
                 Progress   = '{0} of {0} failed, in {1}' -f $tally.Total, $took
+                Error      = $message
+            }
+            $handled++
+            $didSomething = $true
+            continue
+        }
+
+        # Exited cleanly and recorded nothing, which is not a clean board. Get-RunNoResultReason
+        # owns the reasoning and the night it was written for.
+        $noResult = Get-RunNoResultReason -ExitCode $result.ExitCode -Outcome $outcome -Output $result.Output
+        if ($noResult) {
+            $message = $noResult
+
+            Write-Host ("    no run was recorded: {0}" -f $message) -ForegroundColor Red
+            Set-RequestCells -SpreadsheetId $board.SpreadsheetId -RequestId $next.RequestId -Values @{
+                Status     = 'ERROR'
+                FinishedAt = (Get-Date).ToString('dd.MM.yyyy HH:mm:ss')
+                Progress   = ''
                 Error      = $message
             }
             $handled++
