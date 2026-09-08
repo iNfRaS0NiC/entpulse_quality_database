@@ -5972,6 +5972,21 @@ Test-That 'No Issue / Change reads as closed, the same as Fixed' {
     Assert-True ($open.Background -ne $fixed.Background) 'while In Progress stays apart'
 }
 
+Test-That 'Missing closes a finding, and says so in red rather than in green' {
+    # The one value whose colour deliberately does not follow "green means closed", by the
+    # user's decision of 2026-09-08. A tab green to the bottom says the reviewers worked
+    # through it; a tab red to the bottom says the data was never there to work through. Both
+    # come off the count and only one of them is worth going back to.
+    $missing = $SheetsRowReviewBands | Where-Object { $_.Value -eq 'Missing' }
+    $fixed = $SheetsRowReviewBands | Where-Object { $_.Value -eq 'Fixed' }
+
+    Assert-True ($null -ne $missing) 'the value is on the list'
+    Assert-Equal '#F4C5C3' $missing.Background 'the light red the board was given'
+    Assert-Equal '#B31412' $missing.Colour "and Reopened's text colour, so the two reds are one family"
+    Assert-True ($missing.Background -ne $fixed.Background) 'not the green the other closing values carry'
+    Assert-True ($SheetsRowReviewDismissed -contains 'Missing') 'and it comes off the open counts'
+}
+
 Test-That 'no conclusion survives onto a reading it was not reached about' {
     # All three, since 2026-08-26. `No Issue / Change` and `In Progress` used to be carried on
     # the key alone, on the reasoning that they judge the object rather than the reading. What
@@ -6262,7 +6277,7 @@ Test-That 'Review Status is a closed list, coloured, and drawn only over its own
     $validation = @($plan.Operations | Where-Object { $_.Kind -eq 'Validation' -and $_.Sheet -eq 'LIST' })
     Assert-Equal 1 $validation.Count 'the column carries a dropdown'
     Assert-Equal 3 $validation[0].Column 'at Review Status, right after the two data columns'
-    Assert-Equal 'Fixed|No Issue / Change|In Progress' (@($validation[0].Values) -join '|') `
+    Assert-Equal 'Fixed|No Issue / Change|In Progress|Missing' (@($validation[0].Values) -join '|') `
         'offering exactly the declared list'
 
     $rules = @($plan.Operations | Where-Object { $_.Kind -eq 'FormatRules' -and $_.Sheet -eq 'LIST' })
@@ -7185,6 +7200,10 @@ Test-That 'the message names the check rather than numbering it' {
         Assert-True ($body -like '*EVENT_RESULTS_MISSING_FOR_FINISHED*') 'and the name'
         Assert-True ($body -like '*5*') 'and the row count'
         Assert-True ($body -like '*No Issue / Change*') 'and which count it is quoting'
+        # Both words, because both are subtracted. The sentence is built from
+        # $SheetsRowReviewDismissed so that a third value cannot leave the mail explaining the
+        # number beside it with a rule the board stopped following.
+        Assert-True ($body -like '*No Issue / Change or Missing*') 'naming every value that count leaves out'
     }
     Assert-True ($mail.BodyHtml -like '*a finished event with no result rows*') 'the HTML says what it asserts'
     Assert-True ($mail.BodyHtml -like '*docs.google.com/spreadsheets/d/ABC*') 'and carries somewhere to go'

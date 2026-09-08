@@ -1036,11 +1036,11 @@ tell the reviewer to skip a tab that needs them.
 shows `ERROR` instead, so it cannot be misread as a clean zero, and is left unlinked because it
 has no tab; the reason is on the console and in `_summary.csv`, along with the durations.
 
-**It is the count the console printed less the rows the reviewers marked `No Issue / Change`.**
-The other two row verdicts need no such help. A row marked `Fixed` leaves the result the next
-time the check runs, because the thing it described is gone, so the count falls on its own; a
-row marked `In Progress` is open work and belongs in the count for as long as it says so. `No
-Issue / Change` is the one that is settled and never leaves: the reviewer has decided the row is
+**It is the count the console printed less the rows the reviewers marked `No Issue / Change`
+or `Missing`.** The other two row verdicts need no such help. A row marked `Fixed` leaves the
+result the next time the check runs, because the thing it described is gone, so the count falls
+on its own; a row marked `In Progress` is open work and belongs in the count for as long as it
+says so. `No Issue / Change` is the one that is settled and never leaves: the reviewer has decided the row is
 the sport rather than a defect, so it returns every run for good. Counting it makes a finished
 check read as a busy one forever — on `Golf-DQ-048` that was 251 of 283 rows, a board saying
 there were 283 things to do when there were 32.
@@ -1574,7 +1574,7 @@ this is not.
 
 `All findings` is what the statement returned. Every other column that counts findings —
 `Findings`, `Prev findings`, `Change`, `Verdict` and the `Trends` series — counts what is still
-**open**, with the rows the reviewers marked `No Issue / Change` taken out of it. A settled
+**open**, with the rows the reviewers marked `No Issue / Change` or `Missing` taken out of it. A settled
 finding stays in the result for good, because the decision is a reading of the data rather than
 a change to it, so counting it forever made a finished check read as a busy one. `Rows` had that
 subtraction to itself until 2026-08-17, which is how a check could show 0 open rows beside a
@@ -1740,7 +1740,7 @@ So a run that finds `Clean` or `Completed` on a check its own result contradicts
 |---|---|
 | What triggers it | the cell reads `Clean` or `Completed`, or a superseded spelling of either, **and** the check's `Expected` is `Zero`, **and** the run returns open findings |
 | Why the expectation matters | `Zero` is carried by `Actionable` and `Sentinel`, and for both every returned row is a defect. `Non-zero` belongs to `Monitor`, where the proportion is the finding and the count never reaches nothing; `Residual` is a remainder somebody agreed to leave; an empty expectation belongs to `Blocked`, `Not applicable` and `Out of client scope`. On those, `Completed` means the reviewer read it, so reopening would ask the same question every run for ever. Narrowed 2026-08-26 after the first eleven boards moved 99 checks and eight of them should not have |
-| What counts | `Findings` after dismissals, not raw rows — a check whose remaining rows are all marked `No Issue / Change` is still finished and keeps its word |
+| What counts | `Findings` after dismissals, not raw rows — a check whose remaining rows are all marked `No Issue / Change` or `Missing` is still finished and keeps its word |
 | The other eight | untouched by *this* rule. `Monitor Only` expects a count forever, `Reviewing`, `On Hold` and `Skipped` say where the reading got to, `IT Fix` and `Other Team` say who is holding it, `Not reviewed` is the seed and `Deprecated` is the registry's. None is a claim a result can contradict by returning rows — but five of them are closed by returning nothing, which is the fourth exception below |
 | Going the other way | see the fourth exception. Until 2026-08-27 the answer here was *never*, and for `Clean`, `Monitor Only` and `Skipped` it still is |
 
@@ -1788,7 +1788,7 @@ address was set go out on the first run after it is.
 | A tab it cannot name | links to the board instead. A tab id is a number Google assigns and one created on this very run has none until Google answers, so the link degrades rather than pointing at whichever tab the document was last left on |
 | What is never sent | anything that is not a reopen. A check closing itself on two clean runs, and a superseded spelling being brought up to date, are both in the same list the run reads and neither is news |
 | What a check that expects `Non-zero` sends | nothing, ever. The gate is the same `Expected` gate that governs the word itself, so a `Monitor` check whose count jumps is not a reopen and does not mail. This is the thing most likely to be reported as a fault |
-| Which numbers it quotes | the open ones, dismissals already subtracted, so the message and the board agree. A reviewer who has marked rows `No Issue / Change` sees the same count in both places, and the message says which count it is |
+| Which numbers it quotes | the open ones, dismissals already subtracted, so the message and the board agree. A reviewer who has marked rows `No Issue / Change` or `Missing` sees the same count in both places, and the message says which count it is — the sentence is built from the list of dismissing values, so it cannot name fewer of them than the count leaves out |
 | Sent twice | no. One transition is one message, keyed on the run's own start, so a board update retried after a transport failure does not mail again |
 | Already dealt with | not sent. The queue is written when a run finds something and is a file from then on, so it cannot know that somebody worked through the rows during the day. The board is asked again at sending time and only checks it still calls `Reopened` go out; the rest are named on screen and marked sent, because they were raised and answered. Measured the first day it ran: six of nineteen BMX checks had already been answered by the afternoon drain |
 | If the board cannot be read | everything sends. A board that will not read, a check the board does not carry, a status that comes back blank - all send. A network fault that silenced an alarm would be the worst failure here, because it is silent and looks exactly like a quiet night |
@@ -1967,7 +1967,7 @@ and both travel together. `Review Status` is the one a column is filtered and co
 is why it holds a word and not a sentence — a paragraph there makes "how many of these 63 are
 closed" unanswerable, and it is the question the column is for.
 
-It offers three values, drawn from what was written rather than from what a vocabulary ought to
+It offers four values, drawn from what was written rather than from what a vocabulary ought to
 contain:
 
 | Value | Colour | Means |
@@ -1975,6 +1975,7 @@ contain:
 | `Fixed` | green | corrected in the database |
 | `No Issue / Change` | green | looked at — either not a defect, or nothing to change |
 | `In Progress` | blue | being worked on |
+| `Missing` | red | the thing this row is about is absent at the source — there is nothing to correct it in |
 
 `No Issue / Change` reads in the same green as `Fixed` from 2026-08-31. The two are different
 conclusions and the grey used to say so, but what a reviewer scanning a tab wants from a colour
@@ -1993,13 +1994,37 @@ stray-participant check while `no change` appeared only on the year-gap check �
 side. Two checks' words for the same outcome, not two outcomes. Folding them under one value
 that names both keeps either reviewer's reading legible.
 
+`Missing` is the fourth, added on 2026-09-08. It says the row describes something absent at the
+source rather than something wrong in the database, and it **closes the row**: `Missing` sits in
+`$SheetsRowReviewDismissed` beside `No Issue / Change`, so a row marked with it comes off `Rows`,
+`Findings`, `Prev findings`, `Change`, `Verdict` and the `Trends` series — everything the section
+on open counts above describes. The reasoning is the same one arriving from the other direction:
+`No Issue / Change` says there is nothing wrong to fix, `Missing` says there is nothing there to
+fix it in, and neither is work anybody is waiting on.
+
+**It is also the one value whose colour does not follow "green means closed".** By the user's
+decision of 2026-09-08, and against the 2026-08-31 argument below rather than in ignorance of
+it. A tab green to the bottom says the reviewers worked through it; a tab red to the bottom says
+the data was never there to work through. Both come off the count and only one of them is
+something anybody will want to look at again. The red is `#F4C5C3`, the lighter of the two the
+board already uses, with `Reopened`'s `#B31412` for the text so the two reds read as one family.
+
+It is appended to the list rather than placed beside the other value that closes, because the
+three before it have held their positions in the dropdown since the column existed and reviewers
+reach for them by position.
+
+Because `Missing` is a second dismissing value, `$SheetsRowReviewDismissed` is a list and is read
+with `-contains`; the sentence the `Reopened` mail carries about what `Rows` leaves out is built
+from that same list rather than typed, so a mail cannot go on naming one value after the board
+started subtracting two.
+
 `For IT` was considered and left out: the check-level `Status` already has `IT Fix`, and nobody
-has yet needed to say it about a single row. Adding a fourth value costs one line and the
+has yet needed to say it about a single row. Adding a value costs one line and the
 migration below makes it harmless, so the list stays as small as the evidence supports.
 
 ### A conclusion belongs to the reading it was reached about
 
-**All three values are carried to the next run only against a row that comes back identical.**
+**All four values are carried to the next run only against a row that comes back identical.**
 Every other note goes to the `Review log` with the reason. A note is found by its key — the
 `check_type` and the id columns — and then the rest of the row is compared before it is put
 back, so a finding that stayed under the same key while its counts, names or values moved comes
@@ -2041,8 +2066,8 @@ took the trouble to write is lost. A `Fixed` row with no note of its own logs no
 nothing was replaced.
 
 The exception is narrow on purpose: only `Fixed`, because only `Fixed` predicts its own
-disappearance. `No Issue / Change` and `In Progress` assert nothing about the next run and
-follow the rule above unchanged.
+disappearance. `No Issue / Change`, `In Progress` and `Missing` assert nothing about the next
+run and follow the rule above unchanged.
 
 **A note with no reading behind it is carried on the key alone.** That is the one exception and
 it is deliberate: a note rescued out of `eligible_count` by the legacy path below was never read
@@ -2058,8 +2083,14 @@ nobody opens is where that would hide.
 It is applied wherever a note passes through, so a cell reaches its column already spelled the
 way the dropdown offers rather than being flagged by the run that introduced it. A spelling not
 listed is left exactly as written: `not found` is the one such cell, and guessing which of the
-three the reviewer meant would be inventing their conclusion rather than recording it. Sheets
+four the reviewer meant would be inventing their conclusion rather than recording it. Sheets
 flags it, which is the right way for them to be asked.
+
+`Missing` arriving on 2026-09-08 does not change that, and it was asked about at the time. It is
+the obvious home for `not found` and it is still a guess — the reviewer may have meant absent at
+the source, or may have meant they could not find it — and the cost of guessing has gone up
+rather than down, because the translation would now also take the row off the count. Left as
+written, by the user's decision.
 
 A former heading is still recognised. A tab is found by its heading, so renaming a column makes
 every existing one invisible to the next run — and invisible here means cleared and rewritten
@@ -2107,7 +2138,7 @@ this is the rest of the ledger made readable by somebody who will never open a J
 
 `Findings` here is `All findings`, not `Overview`'s `Findings`. The ledger records what the
 statement returned and the board subtracts what reviewers have since marked
-`No Issue / Change`, so the same run reads higher on this tab than on the board by exactly
+`No Issue / Change` or `Missing`, so the same run reads higher on this tab than on the board by exactly
 the number of settled findings. That is the right way round for a history: a dismissal is a
 reading of the data rather than a change to it, and subtracting today's dismissals from a
 run made three weeks ago would rewrite what that run measured.

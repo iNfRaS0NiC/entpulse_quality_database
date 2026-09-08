@@ -731,15 +731,24 @@ $SheetsRowReviewColumns = @('Review Status', 'Review Note')
 
 # What a reviewer may conclude about one finding, and the only values Review Status offers.
 #
-# Three, drawn from what was actually written rather than from what a vocabulary ought to
+# Four, drawn from what was actually written rather than from what a vocabulary ought to
 # contain. 610 cells across one board held five spellings of four ideas, and two of them turned
 # out to be one: no issue appeared only on the stray-participant check and no change only on the
 # year-gap check, never side by side, so they were two checks' words for the same outcome rather
 # than two outcomes. The value carries both words so neither reviewer's reading is overwritten.
 #
 # For IT was considered and left out: the check-level Status already has IT Fix, and nobody has
-# yet needed to say it about a single row. A fourth value costs one line here and the migration
-# makes adding one harmless, so the list stays as small as the evidence supports.
+# yet needed to say it about a single row. A value costs one line here and the migration makes
+# adding one harmless, so the list stays as small as the evidence supports.
+#
+# Missing is the fourth, asked for on 2026-09-08. It says the row describes something absent at
+# the source rather than something wrong in the database: nobody is going to fill it in, so it
+# is not work anybody is waiting on. That is why it is in $SheetsRowReviewDismissed below and
+# comes off the open counts - see there for what dismissing a row actually does.
+#
+# It is appended rather than placed beside the other value that closes, because the three
+# before it have had their positions in the dropdown since the column existed and reviewers
+# reach for them by position. A new value goes on the end.
 #
 # Review Note is deliberately not constrained. It holds a sentence.
 #
@@ -748,10 +757,18 @@ $SheetsRowReviewColumns = @('Review Status', 'Review Note')
 # needs from the colour is whether a row is closed, and both of these close it. In Progress is
 # the one that is still open and it keeps a colour of its own. The values remain distinct in
 # the cell and in the Review log, so nothing that counts them is affected: only the reading is.
+#
+# Missing is the one place that reading is deliberately not followed, by the user's decision of
+# 2026-09-08. It closes the row and it is red, because closed is not the only thing worth
+# seeing here: a tab of green rows says the reviewers worked through it, and a tab that is red
+# to the bottom says the data is not there to work through. Both come off the count; only one
+# of them is an answer somebody will want to look at again. The red is the light one of the two
+# the board already uses, and the text colour is Reopened's, so the two reds read as one family.
 $SheetsRowReviewBands = @(
     [pscustomobject]@{ Value = 'Fixed'; Background = '#E6F4EA'; Colour = '#137333' }
     [pscustomobject]@{ Value = 'No Issue / Change'; Background = '#E6F4EA'; Colour = '#137333' }
     [pscustomobject]@{ Value = 'In Progress'; Background = '#E8F0FE'; Colour = '#1967D2' }
+    [pscustomobject]@{ Value = 'Missing'; Background = '#F4C5C3'; Colour = '#B31412' }
 )
 
 # Wide enough for the longest value the dropdown offers, plus the room the dropdown's own chip
@@ -767,8 +784,8 @@ $SheetsRowReviewStatusColumnWidth = ((
         Measure-Object -Maximum).Maximum * $SheetsResultColumnCharWidth) +
 $SheetsResultColumnPadding + 20
 
-# The one of the three that closes a finding without changing the data, and the reason Overview
-# needs to know about it at all.
+# The two values that close a finding without changing the data, and the reason Overview needs
+# to know about them at all.
 #
 # The other two settle themselves. A row marked Fixed usually leaves the result the next time the
 # check runs, because the thing it described is no longer there - the count falls on its own and
@@ -779,10 +796,25 @@ $SheetsResultColumnPadding + 20
 # the sport rather than a defect, so the row stays in the result for good, and Overview's Rows
 # goes on reporting work that nobody is ever going to do. On Golf-DQ-048 that was 251 of 283.
 #
-# So Rows counts what is still open and the dismissed rows come out of it. Findings, Eligible and
-# Change are untouched: they are the run's own measurement of the database, and a reviewer's
-# conclusion is not allowed to edit what a statement returned. The tab still holds every row.
-$SheetsRowReviewDismissed = 'No Issue / Change'
+# Missing joined it on 2026-09-08 and is here on the same argument arriving from the other
+# direction. No Issue / Change says there is nothing wrong to fix; Missing says there is nothing
+# there to fix it in. Neither is work, and a row that will never be done is a row the count has
+# to stop asking for - which is the whole of what this list decides.
+#
+# A list rather than the single value it was until then, because there is now more than one word
+# for "not work". Read with -contains: a spelling nobody declared is not dismissed, the same way
+# it is not renamed.
+#
+# So Rows counts what is still open and the dismissed rows come out of it - and out of Findings,
+# Prev findings, Change, Verdict and the Trends series with it. Rows had the subtraction to
+# itself until 2026-08-17, which is how a check could show 0 open rows beside a Findings of 40
+# and a verdict of Above residual; this comment went on saying so until 2026-09-08, by which
+# time the code and TOOLS/README.md had both said the opposite for three weeks.
+#
+# All findings and Eligible are the two that stay untouched: they are the run's own measurement
+# of the database, and a reviewer's conclusion is not allowed to edit what a statement returned.
+# The tab still holds every row.
+$SheetsRowReviewDismissed = @('No Issue / Change', 'Missing')
 
 # A conclusion belongs to the reading it was reached about, and to no other.
 #
@@ -2152,7 +2184,7 @@ function New-SheetsMergePlan {
 
         $carriedOf[$runKey] = $carried
         $dismissedOf[$runKey] = @(@($carried.Review) |
-            Where-Object { [string]$_ -eq $SheetsRowReviewDismissed }).Count
+            Where-Object { $SheetsRowReviewDismissed -contains [string]$_ }).Count
     }
 
     $cells = 0

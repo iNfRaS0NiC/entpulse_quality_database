@@ -365,6 +365,28 @@ function Get-NotifyStatusColour {
     return [pscustomobject]@{ Background = $background; Foreground = $foreground }
 }
 
+function Get-NotifyDismissedPhrase {
+    <#
+        The words the board takes off its own counts, named in the sentence that explains them.
+
+        Read from $SheetsRowReviewDismissed rather than typed, for the reason the colours above
+        are: the mail says what Rows means, and a mail still naming one value after the board
+        started subtracting two is the mail quietly misreporting the number beside it.
+
+        Falls back to what that list holds today, so Notify.ps1 dot-sourced on its own - which
+        is how half the tests take it - still has a sentence.
+    #>
+
+    $values = $null
+    try { $values = Get-Variable -Name 'SheetsRowReviewDismissed' -ValueOnly -ErrorAction Stop } catch { $values = $null }
+    $words = @(@($values) | Where-Object { -not [string]::IsNullOrWhiteSpace([string]$_) } |
+        ForEach-Object { [string]$_ })
+    if ($words.Count -eq 0) { $words = @('No Issue / Change', 'Missing') }
+
+    if ($words.Count -eq 1) { return $words[0] }
+    return ((@($words) | Select-Object -First ($words.Count - 1)) -join ', ') + ' or ' + $words[-1]
+}
+
 function Format-ReopenDigest {
     <#
         Subject, and both bodies, for one message covering these events.
@@ -476,7 +498,8 @@ function Format-ReopenDigest {
         }
     }
     $lines += ''
-    $lines += 'Rows are open findings: rows already marked No Issue / Change are not in them.'
+    $lines += ('Rows are open findings: rows already marked {0} are not in them.' -f
+        (Get-NotifyDismissedPhrase))
 
     # ----- the HTML body
     #
@@ -585,7 +608,8 @@ function Format-ReopenDigest {
         '</tr>{2}</table>' +
 
         '<div style="color:' + $NotifyBrandGrey + ';font-size:12px;border-top:1px solid ' + $NotifyBrandRule + ';padding-top:12px">' +
-        'Rows are open findings &mdash; rows already marked No Issue / Change are not counted.</div>' +
+        'Rows are open findings &mdash; rows already marked ' +
+        (ConvertTo-NotifyHtmlText -Text (Get-NotifyDismissedPhrase)) + ' are not counted.</div>' +
         '</div>') -f
         $items.Count,
         (ConvertTo-NotifyHtmlText -Text $opening),
