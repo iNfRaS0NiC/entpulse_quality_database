@@ -1535,6 +1535,51 @@ the optimiser returned first if it was written as a scalar.
 Including soft-deleted rows the triple collides exactly once, against one of the 5 rows the
 catalogue marks `del = 'yes'`.
 
+### `DB-SEM-023` — The statistic shards are not interchangeable, in columns or in collation
+
+Read from `information_schema` on 2026-09-07 over all 34 shard tables. Every one is InnoDB.
+
+**`statistic_participantsN` agrees on columns everywhere** — `id`, `statisticFK`,
+`participantFK`, `del`, `n`, `ut`, with identical types and nullability across all 17.
+
+**`statistic_dataN` does not.** It has five distinct column signatures:
+
+| Shards | Columns | `value` collation | `del` collation |
+|---|---|---|---|
+| 1–9 | base 8 | `utf8mb3_general_ci` | `latin1_swedish_ci` |
+| 10–11 | base 8 | `utf8mb3_general_ci` | `utf8mb3_general_ci` |
+| 12–13 | base 8 **+ `sub_param`** | `utf8mb3_general_ci` | `utf8mb3_general_ci` |
+| 14–15 | base 8 **+ `sub_param`** | `utf8mb4_0900_ai_ci` | `utf8mb4_0900_ai_ci` |
+| 16–17 | base 8 | `utf8mb4_general_ci` | `utf8mb4_general_ci` |
+
+`sub_param` `varchar(255)` nullable exists on four shards and on no other. It carries data on
+two of them: shard 13 fills it on all 1 472 067 rows and shard 12 on 1 470 058 of 1 512 609,
+while shards 14 and 15 declare it and leave it empty on every row. Types 12 and 13 are
+`Player Action Zone Stats` and `Team Action Zone Stats`, so the extra column is the zone
+parameter those two types need.
+
+**Collation splits the same way on both families, 13 / 2 / 2**: shards 1–13
+`utf8mb3_general_ci`, 14–15 `utf8mb4_0900_ai_ci`, 16–17 `utf8mb4_general_ci` — at table level
+and on every text column.
+
+Three consequences for a statement:
+
+- **A `UNION ALL` across shards cannot project a uniform column list** unless it names the
+  base eight explicitly. Selecting `sub_param` breaks on 13 of 17 shards, and `SELECT *`
+  produces branches of different width.
+- **String comparison is not the same operation in every shard.** `utf8mb3_general_ci`,
+  `utf8mb4_general_ci` and `utf8mb4_0900_ai_ci` differ in sort order and in accent handling,
+  so an equality or an `ORDER BY` on `value` is shard-dependent, and comparing a value from a
+  `utf8mb3` shard against one from a `utf8mb4` shard forces a coercion or fails outright as an
+  illegal mix.
+- **`del` in shards 1–9 is `latin1_swedish_ci` while its own table is `utf8mb3`.** It is an
+  `enum` so the practical effect is nil, but it is the clearest sign that these tables were
+  not created together and should not be assumed to have been.
+
+A caution measured alongside this: `information_schema.TABLE_ROWS` estimated
+`statistic_data12` at 453 337 rows against an actual 1 512 609, a factor of 3.3. Shard row
+estimates are unusable as counts.
+
 <!-- MANUAL PASTE ZONE: DATABASE STRUCTURAL SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ---
@@ -1695,7 +1740,12 @@ catalogue marks `del = 'yes'`.
   the catalogue contains arguably wants the retired rows in view, while a DQ statement
   resolving a field ought to exclude them. Deciding that is separate work, and the five DQ
   statements are all Comp.Rank, which is paused.
-- Schema and collation equality across all statistic data shards.
+- ~~Schema and collation equality across all statistic data shards.~~ **Answered 2026-09-07:
+  neither holds.** `statistic_dataN` has five distinct column signatures and four shards carry
+  a `sub_param` column the other thirteen do not; collation splits 13 / 2 / 2 across three
+  different collations on both shard families. `DB-SEM-023` holds the full map and the three
+  consequences — a cross-shard `UNION` must name its columns, string comparison is
+  shard-dependent, and the shards were plainly not created together.
 - Complete scope import-table model and provider relation.
 - Taxonomy relationship between `scope_type` and `scope_data_type`.
 - What distinguishes two Comp.Rank statistics sharing one tournament, discipline and gender.
