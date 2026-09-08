@@ -1320,8 +1320,8 @@ Those three do not form a unique key in practice. A season holds one Comp.Rank p
 sharing the same tournament, and a single stage can hold several competitions of the same
 discipline and gender.
 
-**What separates them is `statistic.name`, measured 2026-09-08.** Over all 81 502
-`statistic_typeFK = 11` rows owned by a `tournament`, grouping on tournament, discipline
+**What separates them is `statistic.name`, measured 2026-09-08.** Over all 78 733 active
+`statistic_typeFK = 11` rows owned by a `tournament` (81 503 including `del = 'yes'`), grouping on tournament, discipline
 (`object_discipline` at `object_typeFK = 83`) and gender (`tournament_template.gender`) gives
 12 101 groups holding one statistic and 11 039 holding more — up to 50 and beyond in a single
 group. Within those 11 039 groups the name separates every statistic in **11 036** of them.
@@ -1876,8 +1876,30 @@ estimates are unusable as counts.
   `DB-SEM-013` holds the measurement and the caution — the name carries identity as free text
   with no recorded convention, so a uniqueness check on the four attributes together is
   possible while parsing the name is not.
-- Where the relation between a Comp.Rank and the events it covers will be stored once
+- ~~Where the relation between a Comp.Rank and the events it covers will be stored once
   `statistic_config` Event id (`1471`) becomes mandatory. It is populated for part of the
-  current data only, and statistics without it currently declare no event scope at all.
+  current data only, and statistics without it currently declare no event scope at all.~~
+
+  **Answered 2026-09-08: nowhere new. It stays where it is now** — `statistic_config` with
+  `statistic_data_typeFK = 1471`, one row per statistic. The user settled this; it was never a
+  measurement question.
+
+  What the measurement did establish is the shape of that field. Of 80 525 active Comp.Rank
+  statistics, **40 657 carry an Event id row and 39 868 declare no event scope at all**. The
+  value is not a single id: 38 066 hold one, and **2 591 hold a comma-separated list**, the
+  longest naming 37 events.
+
+  **A statement cannot join through this column**, because the relation lives inside a
+  `varchar(255)` as delimited text rather than as rows.
+
+  231 of those values are exactly 255 characters, the column's declared maximum, and 13 of
+  them end on an id shorter than the one before it — statistic 332330 ends `,412`. **This is
+  not a data defect and no check was opened for it.** The user confirmed on 2026-09-08 that
+  every event id is used and that the 255-character ceiling is a limit of this field alone, not
+  a loss anywhere behind it; an earlier reading here called it lossy and that reading is
+  withdrawn.
+
+  It remains a reading hazard, which is why it is recorded: anything parsing this column as a
+  list will take `412` for an event id and resolve it against a real event or against nothing.
 
 <!-- MANUAL PASTE ZONE: DATABASE OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
