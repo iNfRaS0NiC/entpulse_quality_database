@@ -1,0 +1,39 @@
+#!/bin/sh
+#
+# The package validator, before a commit rather than after one.
+#
+# CLAUDE.md requires TOOLS/Test-Package.ps1 after any change to a .sql file, a registry row or
+# a paste marker, and required it by hand until 2026-09-08. What that cost is on the record:
+# GLOBAL-DQ-004 was merged away on 2026-09-05, five sport rows went Deprecated, and six sports
+# went unwatched by the nightly pass for three nights. The validator would not have caught that
+# one - the guard for it did not exist yet - but the shape of the failure did not depend on the
+# guard being missing. It depended on nothing running anything.
+#
+# So this runs it always, rather than only when a .sql file is staged. A commit touching only
+# RUNS/ can break the package too, which is exactly what the ledger check added the same day
+# asserts, and a hook that decides for itself when the rules apply is a hook that will one day
+# decide wrongly.
+#
+# About 23 seconds. That is the price, it is paid per commit, and `git commit --no-verify`
+# skips it for the case where somebody knows better.
+#
+# Not installed by cloning. Git hooks are not version-controlled, so this file is here and
+# TOOLS/Install-Hooks.ps1 points core.hooksPath at the directory holding it. A fresh clone has
+# every tool in the package and no hook at all until that is run once.
+
+repo="$(git rev-parse --show-toplevel)"
+
+# -NonInteractive and a closed stdin, because a hook runs inside somebody else's command
+# and must never be the thing waiting for input. `git commit -F -` hands the hook a stdin
+# that belongs to git, and a prompt on it would hang the commit with nothing on screen.
+powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass -File "$repo/TOOLS/Test-Package.ps1" < /dev/null
+status=$?
+
+if [ $status -ne 0 ]; then
+    echo ""
+    echo "The package validator failed, so nothing was committed."
+    echo "Fix what it named, or commit with --no-verify if you mean to leave it."
+    exit $status
+fi
+
+exit 0

@@ -5,9 +5,11 @@
 # one; it leaves no trace in RUNS/ either, so the next real run still compares against the last
 # real one.
 #
-# Everything here is a pure function over what the ledgers already hold. Nothing in this file
-# runs a statement, opens a connection or sends anything, which is what lets the selection be
-# tested against sixteen real ledgers without a login.
+# Everything here is a pure function over what the ledgers already hold, with one exception
+# named below: Read-NightlyApprovals reads POWERBI_REGISTRY.md, because a ledger cannot say
+# whether a check still exists. It takes the path rather than finding one, so it is as testable
+# as the rest. Nothing in this file runs a statement, opens a connection or sends anything,
+# which is what lets the selection be tested against sixteen real ledgers without a login.
 
 # What a night is allowed to cost, in seconds of database time.
 #
@@ -38,6 +40,55 @@ $NightlyRotationShare = 0.15
 # one check in the whole package is both handed off and closed, so this filter costs nothing
 # against them and exists for the two that matter.
 $NightlyReviewStatuses = @('Clean', 'Completed', 'Reopened')
+
+# The one question a ledger cannot answer: does this check still exist?
+#
+# A ledger is a record of what ran, and it is never rewritten - so it goes on holding a check
+# months after the package stopped containing one. POWERBI_REGISTRY.md is where a CheckID lives
+# or stops living, and until 2026-09-08 nothing joined the two. What that cost is measurable:
+# GLOBAL-DQ-004 DATE_RANGE_MISMATCH - TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE was merged into
+# GLOBAL-DQ-153 TOURNAMENT_STAGE_DATE_RANGE_DISAGREES_WITH_ITS_EVENTS on 2026-09-05, five sport
+# rows went Deprecated, and the ledgers still remembered all five as closed. The pass asked for
+# them, Run-Query refused an id it no longer has - correctly - and the refusal takes the whole
+# sport with it, because one unknown id fails the run. Six sports, 432 of 957 checks, unwatched
+# for three nights, while every validator in the package stayed green.
+#
+# So the selector asks. Approved is the only status a check runs under; Deprecated is the only
+# other one the registry has, and a CheckID with no row at all is the same answer for a
+# different reason - it belongs to a sport that no longer exists, which is what RUNS/BMX.json
+# held after BMX became BMX-Racing and BMX-Freestyle.
+$NightlyApprovedStatus = 'Approved'
+
+function Read-NightlyApprovals {
+    <#
+        Every CheckID POWERBI_REGISTRY.md still records as Approved, as a set.
+
+        The path is a parameter rather than found here, so a test can hand it a fixture and so
+        this file keeps its one rule: it computes, it does not go looking. Returns $null when
+        the file is not there, which the caller decides what to do about - this function has no
+        opinion on whether a pass should run without one.
+
+        The parse is the one Run-Query.ps1 uses on the same file: eight cells, a CheckID in the
+        first, backticks stripped. Two copies of a parser is one more than anybody wants, and
+        the alternative is dot-sourcing a script that runs when you dot-source it.
+    #>
+    param([string]$Path)
+
+    if ([string]::IsNullOrWhiteSpace($Path)) { return $null }
+    if (-not (Test-Path -LiteralPath $Path)) { return $null }
+
+    $approved = @{}
+    foreach ($line in (Get-Content -LiteralPath $Path -Encoding UTF8)) {
+        if ($line -notmatch '^\s*\|') { continue }
+        $cells = @(($line.Trim() -replace '^\|', '' -replace '\|\s*$', '') -split '\|' |
+            ForEach-Object { ($_ -replace '`', '').Trim() })
+        if ($cells.Count -ne 8) { continue }
+        if ($cells[0] -notmatch '^\S+-DQ-\d+$') { continue }
+        if ($cells[7] -ne $NightlyApprovedStatus) { continue }
+        $approved[$cells[0]] = $true
+    }
+    return $approved
+}
 
 function Get-NightlyLedgerState {
     <#
@@ -141,6 +192,14 @@ function Select-NightlyChecks {
 
         Timing comes from the ledger, so the cost model tracks the database rather than a guess
         made once.
+
+        -Approved is the set Read-NightlyApprovals returns, and it is the structural filter:
+        a check the registry no longer records as Approved cannot be run at all, which is a
+        different answer from Test-NightlyCandidate's "not worth running tonight". They are kept
+        apart because the second is about the reading and the first is about whether the check
+        exists - and because the pass has to be able to say which of the two happened. Passing
+        $null means no filtering, which is what every test predating this asks for and what the
+        selector did until 2026-09-08.
     #>
     param(
         $Ledgers,
@@ -149,10 +208,17 @@ function Select-NightlyChecks {
         [string[]]$Statuses = $NightlyReviewStatuses,
         $Legacy,
         [datetime]$Now = (Get-Date),
-        $LastRunAt
+        $LastRunAt,
+        $Approved
     )
 
     $candidates = @()
+
+    # What a ledger still offers and the package no longer has. Collected rather than skipped
+    # silently: a sport that quietly shrinks by sixty checks is the failure this whole filter
+    # exists to end, and replacing a loud one with a quiet one would be no improvement.
+    $retired = @()
+
     foreach ($ledger in @($Ledgers)) {
         if ($null -eq $ledger) { continue }
         $sport = [string]$ledger.sport
@@ -161,6 +227,10 @@ function Select-NightlyChecks {
             $entry = $state[$key]
             if (-not (Test-NightlyCandidate -Entry $entry -Statuses $Statuses -Legacy $Legacy)) { continue }
             $entry | Add-Member -NotePropertyName Sport -NotePropertyValue $sport -Force
+            if ($Approved -and -not $Approved.ContainsKey([string]$entry.CheckId)) {
+                $retired += $entry
+                continue
+            }
             $candidates += $entry
         }
     }
@@ -227,6 +297,7 @@ function Select-NightlyChecks {
         Seconds    = ($selected | Measure-Object -Property Seconds -Sum).Sum
         Deferred   = @($skipped | Where-Object { $rotated -notcontains $_ }).Count
         Budget     = $BudgetSeconds
+        Retired    = $retired
     }
 }
 

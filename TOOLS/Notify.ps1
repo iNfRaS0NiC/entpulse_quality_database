@@ -217,6 +217,69 @@ function New-ReopenNotification {
     return @($events)
 }
 
+# What a queued message is about.
+#
+# The queue held one kind of thing until 2026-09-08 - a check that reopened - and an event
+# carried no word for which kind it was because there was nothing to tell it apart from. The
+# second kind is a night that did not run: not a fact about the data at all, but about the
+# machine that reads it, and it belongs here because this is the only path to a person that
+# already exists and already has an address.
+#
+# They are kept apart rather than folded together. A reopen digest is worked through by a
+# reviewer; a failed pass is fixed by whoever owns the laptop, and a reader who filters the
+# first must not lose the second inside it.
+#
+# An event with no `kind` is a reopen. That is not a default so much as the truth about every
+# event already sitting in a queue file on disk, written before the field existed.
+$NotifyKindReopen = 'reopen'
+$NotifyKindPassFailure = 'passFailure'
+
+function Get-NotifyEventKind {
+    param($Event)
+
+    if ($null -eq $Event) { return $NotifyKindReopen }
+    $kind = [string]$Event.kind
+    if ([string]::IsNullOrWhiteSpace($kind)) { return $NotifyKindReopen }
+    return $kind
+}
+
+function New-NotifyPassFailureEvent {
+    <#
+        One queued event per sport a nightly pass could not run.
+
+        Per sport rather than one for the night, so the message groups the way a reopen digest
+        does and so a night that fails on one sport twice does not queue two messages about it.
+        The id carries the run and the sport: a pass re-run by hand after a fix queues nothing
+        new for a sport it has already reported and does queue for one it has not.
+
+        The reason travels with it. A sport that failed is a sentence somebody has to act on -
+        an id that no longer exists, a login that expired, a gateway that timed out are three
+        different mornings - and a message saying only that six sports failed sends the reader
+        to a log to find out which question they are being asked.
+    #>
+    param([string]$RunId, [string]$StartedUtc, $Failures)
+
+    $events = @()
+    foreach ($failure in @($Failures)) {
+        if ($null -eq $failure) { continue }
+        $sport = [string]$failure.Sport
+        if ([string]::IsNullOrWhiteSpace($sport)) { continue }
+        $events += [pscustomobject]@{
+            notificationId = ('pass|{0}|{1}' -f $RunId, $sport)
+            kind           = $NotifyKindPassFailure
+            status         = $NotifyStatusQueued
+            runId          = $RunId
+            startedUtc     = $StartedUtc
+            sport          = $sport
+            reason         = [string]$failure.Reason
+            checks         = $(if ($null -eq $failure.Checks) { 0 } else { [int]$failure.Checks })
+            queuedUtc      = ((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'))
+            attempts       = 0
+        }
+    }
+    return @($events)
+}
+
 function Add-NotifyEvent {
     <#
         The queue with these events added, and a count of how many were new.
@@ -622,6 +685,113 @@ function Format-ReopenDigest {
         Subject  = $subject
         Body     = ($lines -join "`n")
         BodyHtml = $html
+    }
+}
+
+function Format-PassFailureDigest {
+    <#
+        Subject, and both bodies, for a night that did not run.
+
+        Deliberately plainer than the reopen digest beside it. That one is a working list a
+        reviewer goes through; this one is a single fact - the machine did not do its job for
+        these sports, and here is what it said - and dressing it as a report would make it look
+        like something to read rather than something to fix.
+
+        The reason is quoted verbatim rather than summarised. `No CheckID matches
+        'Triathlon-DQ-004'` is the whole diagnosis of the failure that made this function
+        necessary, and any wording of my own in its place would have been a worse sentence.
+
+        Both bodies, for the reason Format-ReopenDigest gives: HTML is what nearly everyone
+        sees and text is what a client refusing it shows, what a preview line quotes and what a
+        search matches.
+    #>
+    param($Events)
+
+    $items = @(ConvertTo-NotifyList -Value $Events)
+    if ($items.Count -eq 0) { return $null }
+
+    $noun = $(if ($items.Count -eq 1) { 'sport' } else { 'sports' })
+    $subject = ('Data Quality - Nightly pass failed: {0} {1}' -f $items.Count, $noun)
+
+    # Get-NotifyStamp, not ConvertTo-NotifyStamp: the second is the compact form that goes
+    # inside a notification id, and the first is the one a person reads, in the zone they work
+    # in and labelled with it.
+    $when = [string]@($items)[0].startedUtc
+    $stamp = ''
+    if (-not [string]::IsNullOrWhiteSpace($when)) {
+        $parsed = [datetime]::MinValue
+        $styles = [Globalization.DateTimeStyles]::AssumeUniversal -bor `
+            [Globalization.DateTimeStyles]::AdjustToUniversal
+        if ([datetime]::TryParse($when, [Globalization.CultureInfo]::InvariantCulture,
+                $styles, [ref]$parsed)) {
+            $stamp = Get-NotifyStamp -MomentUtc $parsed
+        }
+    }
+    $generated = Get-NotifyStamp
+
+    # The colour of the word the board uses for a check that came back, borrowed for a night
+    # that did not happen. Both are "this was fine and is not any more", and a second red
+    # invented here would be a second red for the same reading.
+    $band = Get-NotifyStatusColour -Status 'Reopened'
+
+    $lines = @()
+    $lines += $subject
+    if ($stamp) { $lines += ('The pass started {0}.' -f $stamp) }
+    $lines += ''
+    $lines += 'These sports were not checked last night. Every other sport ran.'
+    $lines += ''
+    foreach ($item in $items) {
+        $lines += ('{0} - {1} check(s) not run' -f [string]$item.sport, [int]$item.checks)
+        $lines += ('    {0}' -f [string]$item.reason)
+    }
+    $lines += ''
+    $lines += 'The full pass is in TOOLS/nightly.local.log on the machine that ran it.'
+
+    $rows = ''
+    foreach ($item in $items) {
+        $rows += ('<tr style="border-top:1px solid {3}">' +
+            '<td style="padding:9px 14px;vertical-align:top;font-weight:700;white-space:nowrap">{0}</td>' +
+            '<td style="padding:9px 14px 9px 0;vertical-align:top;text-align:right;white-space:nowrap">{1}</td>' +
+            '<td style="padding:9px 14px 9px 0;vertical-align:top;color:{4}">{2}</td>' +
+            '</tr>') -f
+            (ConvertTo-NotifyHtmlText -Text ([string]$item.sport)),
+            [int]$item.checks,
+            (ConvertTo-NotifyHtmlText -Text ([string]$item.reason)),
+            $NotifyBrandRule,
+            $NotifyBrandInk
+    }
+
+    $html = ('<div style="font-family:Arial,Helvetica,sans-serif;color:' + $NotifyBrandInk + '">' +
+        '<table cellspacing="0" cellpadding="0" border="0"><tr>' +
+        '<td style="padding-right:12px"><span style="display:inline-block;padding:4px 12px;border-radius:12px;' +
+        'background:{3};color:{4};font-size:14px;font-weight:700;text-align:center">{0}</span></td>' +
+        '<td style="vertical-align:middle;font-size:16px;color:' + $NotifyBrandInk + '">' +
+        'sport(s) were not checked last night. Every other sport ran.</td>' +
+        '</tr></table>' +
+        '<div style="border-bottom:1px solid ' + $NotifyBrandRule + ';margin:14px 0 0 0"></div>' +
+
+        '<table cellspacing="0" cellpadding="0" border="0" width="100%" ' +
+        'style="border-collapse:collapse;margin:0 0 18px 0;font-size:13px">' +
+        '<tr style="background:#f1f3f4;color:' + $NotifyBrandGrey + ';text-align:left">' +
+        '<th style="padding:9px 14px;font-weight:700;font-size:11px;letter-spacing:.6px">SPORT</th>' +
+        '<th style="padding:9px 14px 9px 0;font-weight:700;font-size:11px;letter-spacing:.6px;text-align:right">CHECKS</th>' +
+        '<th style="padding:9px 14px 9px 0;font-weight:700;font-size:11px;letter-spacing:.6px">WHAT IT SAID</th>' +
+        '</tr>{1}</table>' +
+
+        '<div style="color:' + $NotifyBrandGrey + ';font-size:12px;border-top:1px solid ' + $NotifyBrandRule + ';padding-top:12px">' +
+        '{2}The full pass is in TOOLS/nightly.local.log on the machine that ran it.</div>' +
+        '</div>') -f
+        $items.Count,
+        $rows,
+        $(if ($stamp) { (ConvertTo-NotifyHtmlText -Text ('The pass started {0}. ' -f $stamp)) } else { '' }),
+        $band.Background,
+        $band.Foreground
+
+    return [pscustomobject]@{
+        Subject   = $subject
+        Body      = ($lines -join "`n")
+        BodyHtml  = $html
+        Generated = $generated
     }
 }
 
@@ -1119,6 +1289,11 @@ function Invoke-NotifyDrain {
         twenty. Two runs that both reopened something send two, because they happened at
         different times and folding them together would date the second one wrongly.
 
+        Grouped by kind as well, since 2026-09-08. A night that failed and a check that
+        reopened can share a runId and are not one message: the first is read by whoever owns
+        the machine and the second by whoever reviews the board, and a reader filtering one
+        must not lose the other inside it.
+
         A message that fails keeps its place and its attempt count, and is retried by the next
         run. At $NotifyMaxAttempts it becomes FAILED and stops: a queue that retries for ever
         is a queue that hides a broken credential behind a line nobody reads.
@@ -1144,14 +1319,21 @@ function Invoke-NotifyDrain {
     if ($recipients.Count -eq 0) {
         # Not a fault and not silent. The messages stay QUEUED and go out on the first run
         # after somebody sets the address, which is the behaviour that makes the opt-in safe.
-        Write-Host ("  {0} reopen notification(s) are queued and unsent: EP_NOTIFY_TO is not set in TOOLS\secrets.local.ps1" -f `
+        Write-Host ("  {0} notification(s) are queued and unsent: EP_NOTIFY_TO is not set in TOOLS\secrets.local.ps1" -f `
                 $waiting.Count) -ForegroundColor DarkGray
         return [pscustomobject]@{ Sent = 0; Failed = 0; Waiting = $waiting.Count; Skipped = $true }
     }
 
     # Asked again at sending time, because the queue answers what a run found and the board
     # answers what is still open. See Select-NotifyStillOpen.
-    $checked = Select-NotifyStillOpen -Events $waiting
+    #
+    # Only the reopen events are asked. A failed pass has no check and no board to ask, and
+    # nothing about it can be settled by somebody working through rows during the day - it is a
+    # fact about a night that has already happened.
+    $reopens = @($waiting | Where-Object { (Get-NotifyEventKind -Event $_) -eq $NotifyKindReopen })
+    $others = @($waiting | Where-Object { (Get-NotifyEventKind -Event $_) -ne $NotifyKindReopen })
+
+    $checked = Select-NotifyStillOpen -Events $reopens
     foreach ($item in @($checked.Settled)) {
         $item.status = $NotifyStatusSent
         $item | Add-Member -NotePropertyName sentUtc `
@@ -1161,7 +1343,7 @@ function Invoke-NotifyDrain {
         Write-Host ("  {0} {1} is {2} on the board now and is not sent" -f `
                 $item.checkId, $item.name, $item.settledAs) -ForegroundColor DarkGray
     }
-    $waiting = @($checked.Send)
+    $waiting = @($checked.Send) + $others
     if ($waiting.Count -eq 0) {
         if (-not $DryRun) { [void](Save-NotifyQueue -Queue $queue -Path $Path) }
         return [pscustomobject]@{
@@ -1173,11 +1355,17 @@ function Invoke-NotifyDrain {
 
     $sent = 0
     $failed = 0
-    $byRun = $waiting | Group-Object { [string]$_.runId }
+    $byRun = $waiting | Group-Object { '{0}|{1}' -f (Get-NotifyEventKind -Event $_), [string]$_.runId }
     foreach ($group in $byRun) {
         $items = @($group.Group)
-        $mail = Format-ReopenDigest -Events $items
+        $kind = Get-NotifyEventKind -Event $items[0]
+        $mail = $(if ($kind -eq $NotifyKindPassFailure) {
+                Format-PassFailureDigest -Events $items
+            } else {
+                Format-ReopenDigest -Events $items
+            })
         if ($null -eq $mail) { continue }
+        $what = $(if ($kind -eq $NotifyKindPassFailure) { 'Nightly pass notification' } else { 'Reopen notification' })
 
         try {
             $result = Send-NotifyMail -To $recipients -Subject $mail.Subject -Body $mail.Body `
@@ -1193,8 +1381,8 @@ function Invoke-NotifyDrain {
             }
             $sent += $items.Count
             $verb = $(if ($DryRun) { 'would be sent' } else { 'sent' })
-            Write-Host ("  Reopen notification {0} to {1}: {2}" -f `
-                    $verb, ($recipients -join ', '), $mail.Subject) -ForegroundColor DarkGray
+            Write-Host ("  {0} {1} to {2}: {3}" -f `
+                    $what, $verb, ($recipients -join ', '), $mail.Subject) -ForegroundColor DarkGray
         }
         catch {
             foreach ($item in $items) {
@@ -1205,7 +1393,7 @@ function Invoke-NotifyDrain {
                 $item | Add-Member -NotePropertyName lastError -NotePropertyValue $_.Exception.Message -Force
             }
             $failed += $items.Count
-            Write-Host ("  the reopen notification for {0} could not be sent and stays queued: {1}" -f `
+            Write-Host ("  the notification for {0} could not be sent and stays queued: {1}" -f `
                     $group.Name, $_.Exception.Message) -ForegroundColor Yellow
         }
     }

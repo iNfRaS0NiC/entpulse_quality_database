@@ -1786,7 +1786,8 @@ address was set go out on the first run after it is.
 | Where the two links go | the **sport** opens that board's `Overview`; the word at the end of the row opens the **check's own tab**. A reader who wants the sport and a reader who wants the one finding are two different readers |
 | What it looks like | text and HTML both, text first. A plain-text mail can only carry a naked URL, and a Google tab link is ninety characters that push the four columns off the screen; HTML gives the row a word to hang the link on. The text alternative is what a client refusing HTML shows and what a search over somebody's mail matches |
 | A tab it cannot name | links to the board instead. A tab id is a number Google assigns and one created on this very run has none until Google answers, so the link degrades rather than pointing at whichever tab the document was last left on |
-| What is never sent | anything that is not a reopen. A check closing itself on two clean runs, and a superseded spelling being brought up to date, are both in the same list the run reads and neither is news |
+| What is never sent | anything that is not a reopen **or a failed nightly pass**. A check closing itself on two clean runs, and a superseded spelling being brought up to date, are both in the same list the run reads and neither is news |
+| The second kind of message | a night that did not run. `Invoke-NightlyRun.ps1` queues one event per failed sport and the drain sends them as `Data Quality - Nightly pass failed: N sports`, separately from the reopen digest — one is a working list for a reviewer, the other a fault report for whoever owns the machine. An event with no `kind` is a reopen, which is what every event written before 2026-09-08 is |
 | What a check that expects `Non-zero` sends | nothing, ever. The gate is the same `Expected` gate that governs the word itself, so a `Monitor` check whose count jumps is not a reopen and does not mail. This is the thing most likely to be reported as a fault |
 | Which numbers it quotes | the open ones, dismissals already subtracted, so the message and the board agree. A reviewer who has marked rows `No Issue / Change` or `Missing` sees the same count in both places, and the message says which count it is — the sentence is built from the list of dismissing values, so it cannot name fewer of them than the count leaves out |
 | Sent twice | no. One transition is one message, keyed on the run's own start, so a board update retried after a transport failure does not mail again |
@@ -2361,6 +2362,13 @@ is not. That is the point — a per-machine file under the output root has no hi
 backup and no way to reach a colleague — but it places the ledger next to a rule it must not
 be mistaken for.
 
+`RUNS/archive/` holds the ledger of a sport the package no longer has. The pass reads the top
+level of `RUNS/` only, so a file moved there stops being enumerated while its runs survive —
+which is the right trade for a record: `RUNS/BMX.json` held 70 runs when BMX was split into
+BMX-Racing and BMX-Freestyle, and deleting them to stop the pass tripping over the file would
+have thrown away history to fix a lookup. `TOOLS/Test-Tools.ps1` fails on a ledger at the top
+level whose sport is not in `SPORTS.md`.
+
 `CLAUDE.md` is explicit that results produced by this runner are execution output and never
 evidence, and that stands unchanged. The ledger records what a run returned; it does not make
 any of it a structural finding. A finding still enters the repository only through the
@@ -2388,11 +2396,50 @@ proves nothing outside its window. Selection saves far more and costs nothing.
 
 | | |
 |---|---|
-| What runs | a check whose last recorded run returned zero findings over an `eligible_count` above zero, whose expectation is `Zero`, whose status was `OK`, and whose reviewer status is `Clean`, `Completed` or `Reopened` |
+| What runs | a check whose last recorded run returned zero findings over an `eligible_count` above zero, whose expectation is `Zero`, whose status was `OK`, whose reviewer status is `Clean`, `Completed` or `Reopened` — **and which `POWERBI_REGISTRY.md` still records as `Approved`** |
 | Why those three statuses | each is a conclusion a result can contradict. `Not reviewed` and a blank cell carry no conclusion; `On Hold`, `IT Fix` and `Other Team` are waiting on somebody else; `Monitor Only` expects a count for ever; `Skipped` and `Deprecated` are out of the reading. Measured first: only one check in the package is both handed off and closed, so the filter costs nothing against those and exists for the two that matter |
 | Where the status comes from | `run.review` in the ledger, written from what the board held when the last run read it. It is **not live**: a status changed this morning is not seen until the next board run |
 | How much runs | as much as fits a budget of database time, cheapest first, with a slice kept for the expensive tail by least recently run. 4.5 hours by default |
 | Why a budget and not a threshold | a threshold in seconds rots the way a hardcoded list of CheckIDs does. Under a budget the effective ceiling falls on its own as sports accumulate, in the order the cost table says to give things up in |
+| Why the registry is asked at all | see below. A ledger is never rewritten, so it goes on offering a check the package has retired — and asking `Run-Query.ps1` for an id it no longer has fails the **whole sport**, not the one check |
+
+#### A ledger remembers what the package has forgotten
+
+**The selector asks `POWERBI_REGISTRY.md` whether each check still exists, and says out loud
+what it left out.** Added 2026-09-08, after the failure it exists to prevent had run for three
+nights.
+
+`GLOBAL-DQ-004 DATE_RANGE_MISMATCH — TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE` was merged into
+`GLOBAL-DQ-153 TOURNAMENT_STAGE_DATE_RANGE_DISAGREES_WITH_ITS_EVENTS` on 2026-09-05 and five
+sport rows went `Deprecated`. The ledgers went on remembering all five as closed, so the pass
+asked for them; `Run-Query.ps1` refused an id it no longer has, correctly; and the refusal took
+the whole sport with it. Six sports and **432 of 957 checks unwatched on the nights of the 5th,
+6th and 7th of September**, while `Test-Package.ps1` stayed green on all 22 of its checks — the
+package was correct, and nothing in it had ever compared a ledger against the package.
+
+`Approved` is the only status a check runs under; `Deprecated` is the only other one the
+registry has. A CheckID with **no row at all** is the same answer for a different reason: it
+belongs to a sport that no longer exists, which is what `RUNS/BMX.json` held after BMX became
+BMX-Racing and BMX-Freestyle on 2026-09-04. That ledger put 62 obsolete checks into the
+selection every night and failed the pass on `Sport identity is ambiguous in SPORTS.md`; it now
+lives under `RUNS/archive/`, which the pass does not read.
+
+Two guards stand behind the filter, both in `TOOLS/Test-Tools.ps1`:
+
+| Guard | Fails when |
+|---|---|
+| the selector drops what the registry has retired, and names it | the structural filter stops filtering, or stops reporting |
+| every ledger in `RUNS/` names a sport that is in `SPORTS.md` | a sport is renamed or split and its old ledger is left behind |
+
+The second is there because `Test-Package.ps1` **excludes `RUNS/` by design** — those files are
+machine output rather than package content, and walking them cost 7.37 seconds — so the package
+validator could never have seen either half of this. A ledger that no longer belongs to a sport
+belongs in `RUNS/archive/`, not in the pass's way.
+
+A retired check is still not an error. It is the normal state between the day a check is
+deprecated and the next **full** board run for that sport, which is what writes `Deprecated`
+into the board and thence into the ledger. The pass names what it skipped every night until
+then, capped at six per sport on a log line and uncapped under `-WhatIf`.
 
 Today that is **779 checks and about 67 minutes** of database time across sixteen sports, plus
 roughly a minute a sport writing boards. The ceiling binds on nothing yet; it starts binding at
@@ -2428,6 +2475,20 @@ the cheapest, which is what the first night does anyway.
 
 A sport that fails does not end the pass, and its checks stay in the rotation rather than being
 recorded as done. One broken board must not silence fifteen others.
+
+**And it says so where a person will see it.** The pass queues one notification event per failed
+sport into `TOOLS/notifications.local.json` — the same queue a reopened check goes into — and the
+07:00 drain sends it as its own message, `Data Quality - Nightly pass failed: N sports`, naming
+each sport, how many checks went unrun, and quoting verbatim what the failure said. Added
+2026-09-08 for the reason the whole of the section above exists: the pass had failed for three
+nights and the only trace was an exit code in Task Scheduler and a line in a log nobody opens.
+
+It is a separate message rather than a line in the reopen digest. That one is a working list a
+reviewer goes through; this is a fault report for whoever owns the machine, and a reader who
+filters the first must not lose the second inside it. The id carries the run and the sport, so a
+pass re-run by hand after a fix queues nothing for a sport it has already reported. A queue that
+cannot be opened is reported and does not change the exit code — the pass has already failed;
+this only decides how loudly.
 
 And `TOOLS/nightly.local.log`, appended each pass and ignored by git under the same rule. Added
 2026-09-01, because until then a night left **no trace at all**: Task Scheduler captures nothing,
@@ -3020,6 +3081,40 @@ few that do.
 The warning is yellow because it is not a tidy-up note. Every check it names ran across the
 whole database sport while the board it writes to says one discipline of it, and nothing
 downstream can tell afterwards.
+
+## The validator runs before a commit
+
+`git config core.hooksPath TOOLS/hooks`, set once per clone by `TOOLS/Install-Hooks.ps1`. The
+hook is `TOOLS/hooks/pre-commit` and it runs `TOOLS/Test-Package.ps1`, refusing the commit if
+the validator finds anything.
+
+```powershell
+.\TOOLS\Install-Hooks.ps1            # once per clone
+.\TOOLS\Install-Hooks.ps1 -WhatIf    # say what would change
+.\TOOLS\Install-Hooks.ps1 -Remove    # back to .git/hooks, which holds nothing
+```
+
+**`core.hooksPath` rather than a copy into `.git/hooks`.** Hooks are not version-controlled, so
+a hook committed to the repository does nothing until somebody installs it and a hook installed
+by hand is one machine's arrangement no clone inherits. Pointing git at a directory in the
+working tree makes the hook itself reviewable, and leaves one config value as the whole of the
+installation. A fresh clone has every tool here and no hook until the script is run once —
+the same as the scheduled tasks below, and recorded in the same place for the same reason.
+
+**It runs always, not only when a `.sql` file is staged.** A commit touching only `RUNS/` can
+break the package too — which is exactly what `Every ledger belongs to an indexed sport`
+asserts — and a hook that decides for itself when the rules apply is a hook that will one day
+decide wrongly. About **23 seconds** a commit; `git commit --no-verify` skips it.
+
+**`Test-Tools.ps1` is deliberately not in it.** Six and a half minutes is not a per-commit cost
+anybody would pay, and it would be paid on every commit that touches a document. It stays what
+`CLAUDE.md` already asks for: a thing a person runs after changing `Run-Query.ps1`,
+`Test-Package.ps1`, `Sheets.ps1`, `Notify.ps1` or the nightly pass.
+
+This closes the last of the four gaps found on 2026-09-08. The guards existed and stayed silent
+because nothing called them: `GLOBAL-DQ-004` was retired on the 5th, six sports went unwatched
+for three nights, and the validator was green throughout — green being what it says when nobody
+asks it anything.
 
 ## Scheduled tasks on this machine
 

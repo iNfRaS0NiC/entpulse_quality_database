@@ -7362,6 +7362,91 @@ Test-That 'nothing is sent until somebody names a recipient' {
     }
 }
 
+Test-That 'a night that did not run reaches a person, and does not travel as a reopen' {
+    # The queue held one kind of thing until 2026-09-08 and a failed pass held none. Six sports
+    # failed on the nights of the 5th, 6th and 7th of September - 432 of 957 checks unwatched -
+    # and the only trace was an exit code in Task Scheduler and a line in a log nobody opens.
+    #
+    # One event per sport, so the message groups the way a reopen digest does. The id carries
+    # the run and the sport, so a pass re-run by hand after a fix queues nothing for a sport it
+    # has already reported.
+    $failures = @(
+        [pscustomobject]@{ Sport = 'Fixtureball'; Checks = 67
+            Reason = "No CheckID matches 'Fixtureball-DQ-004'. Use -ListChecks to see available IDs." }
+        [pscustomobject]@{ Sport = 'Otherball'; Checks = 12; Reason = 'the connection was refused' }
+        [pscustomobject]@{ Sport = ''; Checks = 1; Reason = 'no sport, no event' }
+    )
+    $events = @(New-NotifyPassFailureEvent -RunId 'r1' -StartedUtc '2026-09-08T19:00:02Z' -Failures $failures)
+
+    Assert-Equal 2 $events.Count 'one per sport, and none for a nameless one'
+    Assert-Equal 'passFailure' ([string]$events[0].kind) 'the kind is on the event'
+    Assert-Equal 'pass|r1|Fixtureball' ([string]$events[0].notificationId) 'and the id carries the run and the sport'
+    Assert-Equal 67 ([int]$events[0].checks) 'with what it cost'
+
+    # An event written before the field existed is a reopen, which is the truth about every
+    # event already sitting in a queue file on disk.
+    Assert-Equal 'reopen' (Get-NotifyEventKind -Event ([pscustomobject]@{ notificationId = 'x' })) `
+        'no kind means the kind there used to be'
+
+    $again = Add-NotifyEvent -Queue $events -Events $events
+    Assert-Equal 0 $again.Added 'the same pass reported twice adds nothing'
+}
+
+Test-That 'the pass-failure message names each sport and quotes what it said' {
+    # The reason is quoted rather than summarised. `No CheckID matches 'Fixtureball-DQ-004'` is
+    # the whole diagnosis; a message saying only that two sports failed sends the reader to a
+    # log to find out which question they are being asked.
+    $events = @(New-NotifyPassFailureEvent -RunId 'r1' -StartedUtc '2026-09-08T19:00:02Z' -Failures @(
+            [pscustomobject]@{ Sport = 'Fixtureball'; Checks = 67
+                Reason = "No CheckID matches 'Fixtureball-DQ-004'." }
+            [pscustomobject]@{ Sport = 'Otherball'; Checks = 12; Reason = 'the connection was refused' }
+        ))
+    $mail = Format-PassFailureDigest -Events $events
+
+    Assert-True ($mail.Subject -like '*Nightly pass failed: 2 sports*') 'the subject says what happened and how much'
+    Assert-True ($mail.Subject -notlike '*Reopened*') 'and is not the other kind of message'
+
+    foreach ($body in @($mail.Body, $mail.BodyHtml)) {
+        Assert-True ($body -like '*Fixtureball*') 'the first sport'
+        Assert-True ($body -like '*Otherball*') 'the second'
+        Assert-True ($body -like "*No CheckID matches*") 'what the first one said'
+        Assert-True ($body -like '*the connection was refused*') 'and the second, which is a different morning'
+        Assert-True ($body -like '*67*') 'and how many checks went unrun'
+    }
+
+    # The readable stamp, not the compact one that goes inside a notification id. 21:00 CEST is
+    # 19:00 UTC, which is the hour the pass actually starts.
+    Assert-True ($mail.Body -like '*2026-09-08 21:00:02 CEST*') 'in the zone somebody reads in'
+
+    Assert-True ($null -eq (Format-PassFailureDigest -Events @())) 'and nothing composes nothing'
+}
+
+Test-That 'a failed pass drains beside a reopened check without either blocking the other' {
+    # They share a runId and they are not one message: the drain groups by kind as well as by
+    # run since 2026-09-08, because a reopen digest is worked through by a reviewer and a failed
+    # pass is fixed by whoever owns the machine. What this asserts is the half that can be
+    # asserted from outside - both leave the queue - since the drain reports items rather than
+    # messages and names the two kinds only on the console. The wording of each is pinned by
+    # the two tests above.
+    $path = Join-Path ([System.IO.Path]::GetTempPath()) ('notify-' + [guid]::NewGuid().ToString('N') + '.json')
+    try {
+        $queue = @(New-ReopenNotification -Renames @(
+                [pscustomobject]@{ CheckId = 'Fixtureball-DQ-050'; From = 'Completed'; To = 'Reopened'
+                    Sport = 'Fixtureball'; Name = 'NAME_A'; What = 'a thing'; PreviousFindings = 0
+                    CurrentFindings = 4; Verdict = 'Regressed' }
+            ) -RunId 'r1' -StartedUtc '2026-09-08T19:00:02Z' -Sport 'Fixtureball' -SheetId 'ABC')
+        $queue += @(New-NotifyPassFailureEvent -RunId 'r1' -StartedUtc '2026-09-08T19:00:02Z' -Failures @(
+                [pscustomobject]@{ Sport = 'Otherball'; Checks = 12; Reason = 'the connection was refused' }))
+        [void](Save-NotifyQueue -Queue $queue -Path $path)
+
+        $result = Invoke-NotifyDrain -Path $path -To @('someone@example.com') -DryRun
+        Assert-Equal 2 $result.Sent 'both go out'
+    }
+    finally {
+        Remove-Item -LiteralPath $path -Force -ErrorAction SilentlyContinue
+    }
+}
+
 Test-That 'a dry run composes without sending and without marking' {
     # What a first run should do, and what these tests do always. A drain that marked a
     # message sent on a dry run would lose it: the record of having said a thing is the only
@@ -8117,6 +8202,76 @@ Test-That 'the same ledgers choose the same checks twice' {
 Complete-Group
 
 # --------------------------------------------------------------------------------------
+Test-That 'the approvals set holds what the registry still approves and nothing else' {
+    # The registry has exactly two statuses, Approved and Deprecated, and the parse is the one
+    # Run-Query.ps1 uses on the same file. A row that is not a check row - the header, the
+    # separator, a table elsewhere in the document - is not a check and must not become one.
+    $fixture = Join-Path ([System.IO.Path]::GetTempPath()) ('registry-' + [guid]::NewGuid().ToString('N') + '.md')
+    @(
+        '# Some heading'
+        ''
+        '| CheckID | Sport | Family | Category | Object | Name | Query file | Status |'
+        '|---|---|---|---|---|---|---|---|'
+        '| Fixtureball-DQ-001 | Fixtureball | GLOBAL-DQ-001 | MISSING_VALUES | EVENT | A_NAME | `GLOBAL_DQ/X.sql` | Approved |'
+        '| Fixtureball-DQ-002 | Fixtureball | GLOBAL-DQ-002 | MISSING_VALUES | EVENT | B_NAME | `GLOBAL_DQ/X.sql` | Deprecated |'
+        '| not a check id | Fixtureball | | | | | | Approved |'
+        '| Fixtureball-DQ-003 | Fixtureball | too | few | cells |'
+    ) | Set-Content -LiteralPath $fixture -Encoding UTF8
+
+    $approved = Read-NightlyApprovals -Path $fixture
+
+    Assert-Equal 1 $approved.Count 'one row survives'
+    Assert-True ($approved.ContainsKey('Fixtureball-DQ-001')) 'the Approved one'
+    Assert-True (-not $approved.ContainsKey('Fixtureball-DQ-002')) 'and not the Deprecated one'
+    Assert-True (-not $approved.ContainsKey('Fixtureball-DQ-003')) 'nor a malformed row'
+
+    $absent = Join-Path ([System.IO.Path]::GetTempPath()) ('registry-' + [guid]::NewGuid().ToString('N') + '.md')
+    Assert-True ($null -eq (Read-NightlyApprovals -Path $absent)) `
+        'a missing file returns nothing rather than an empty set, so a caller can tell the two apart'
+
+    Remove-Item -LiteralPath $fixture -Force -ErrorAction SilentlyContinue
+}
+
+Test-That 'a check the registry no longer approves is not asked for, and is named' {
+    # The defect this exists for: GLOBAL-DQ-004 DATE_RANGE_MISMATCH -
+    # TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE was merged into GLOBAL-DQ-153 on 2026-09-05 and
+    # five sport rows went Deprecated. The ledgers went on remembering them as closed, the pass
+    # asked Run-Query for an id it no longer has, and Run-Query failed the whole sport rather
+    # than the one check - six sports and 432 of 957 checks unwatched for three nights.
+    #
+    # So the filter is structural and it is loud. A retired check is not "not worth running
+    # tonight", which is Test-NightlyCandidate's question; it is a check that cannot run at all,
+    # and the difference has to reach whoever reads the pass.
+    $review = [pscustomobject]@{
+        'F-DQ-001' = [pscustomobject]@{ status = 'Clean' }
+        'F-DQ-002' = [pscustomobject]@{ status = 'Clean' }
+    }
+    $ledger = New-NightlyLedger -Runs @(New-NightlyRun -Review $review -Checks @(
+            (New-NightlyCheck -CheckId 'F-DQ-001')
+            (New-NightlyCheck -CheckId 'F-DQ-002')
+        ))
+
+    $both = Select-NightlyChecks -Ledgers @($ledger) -Approved $null
+    Assert-Equal 2 @($both.Checks).Count 'without an approvals set nothing is filtered'
+    Assert-Equal 0 @($both.Retired).Count 'and nothing is reported as retired'
+
+    $one = Select-NightlyChecks -Ledgers @($ledger) -Approved @{ 'F-DQ-001' = $true }
+    Assert-Equal 1 @($one.Checks).Count 'the approved one is still run'
+    Assert-Equal 'F-DQ-001' @($one.Checks)[0].CheckId 'and it is the right one'
+    Assert-Equal 1 @($one.Retired).Count 'the other is reported rather than dropped in silence'
+    Assert-Equal 'F-DQ-002' @($one.Retired)[0].CheckId 'by id'
+    Assert-Equal 'NAME_F-DQ-002' @($one.Retired)[0].Name 'and by name, so nobody is asked about a bare number'
+    Assert-Equal 'Fixtureball' @($one.Retired)[0].Sport 'and it says whose it is'
+
+    # An open check is not reported as retired even when its id is gone. It never was a
+    # candidate, so naming it would be noise about a check nobody was going to run.
+    $open = New-NightlyLedger -Runs @(New-NightlyRun -Review ([pscustomobject]@{
+                'F-DQ-009' = [pscustomobject]@{ status = 'Clean' } }) -Checks @(
+            (New-NightlyCheck -CheckId 'F-DQ-009' -Findings 5)))
+    $none = Select-NightlyChecks -Ledgers @($open) -Approved @{}
+    Assert-Equal 0 @($none.Retired).Count 'only a check that would have run is worth naming'
+}
+
 # Approved DQ semantic regressions
 #
 # Test-Package.ps1 intentionally stops at static package consistency; it cannot execute the
@@ -8479,6 +8634,45 @@ Start-Group 'Validator' 'Package validator'
 Test-That 'the repository as it stands passes' {
     $run = Invoke-PackageValidator -Root $RepoRootPath
     Assert-Equal 0 $run.ExitCode "validator exit code; output was:`n$($run.Text)"
+}
+
+Test-That 'a ledger for a sport the package no longer has is reported' {
+    # The half of the 2026-09-08 failure no validator could see, moved here from the behaviour
+    # tests on the same day it was written: the check is a file-name comparison, so it belongs
+    # in the validator that runs before every commit rather than in the six-minute suite.
+    #
+    # RUNS/BMX.json outlived its sport when BMX became BMX-Racing and BMX-Freestyle, and
+    # TOOLS/Invoke-NightlyRun.ps1 enumerates RUNS/ to decide what to watch - so the pass
+    # selected 62 obsolete checks every night and failed on `Sport identity is ambiguous`.
+    $root = Copy-RepositoryFixture -Name 'orphan-ledger'
+    $runs = Join-Path $root 'RUNS'
+    if (-not (Test-Path -LiteralPath $runs)) { [void](New-Item -ItemType Directory -Path $runs) }
+    Set-Content -LiteralPath (Join-Path $runs 'Nosuchball.json') -Encoding UTF8 `
+        -Value '{ "sport": "Nosuchball", "ledgerVersion": 1, "runs": [] }'
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'the validator refuses it'
+    Assert-True ($run.Text -like '*Nosuchball*') 'and names the file rather than counting it'
+    Assert-True ($run.Text -like '*RUNS/archive/*') 'and says where such a ledger belongs'
+}
+
+Test-That 'the commit hook the package ships runs the validator' {
+    # Hooks are not version-controlled, so this asserts the file that gets installed rather
+    # than any installation: a clone has the tool and no hook until Install-Hooks.ps1 is run.
+    $hook = Join-Path $PSScriptRoot 'hooks/pre-commit'
+    Assert-True (Test-Path -LiteralPath $hook) 'TOOLS/hooks/pre-commit should be in the package'
+
+    $text = Get-Content -LiteralPath $hook -Raw
+    Assert-True ($text -like '*Test-Package.ps1*') 'it runs the package validator'
+    Assert-True ($text -like '*exit $status*') 'and fails the commit with what the validator returned'
+    Assert-True ($text -notlike '*Test-Tools.ps1*') `
+        'and not this suite, which is six and a half minutes and not a per-commit cost'
+
+    $installer = Join-Path $PSScriptRoot 'Install-Hooks.ps1'
+    Assert-True (Test-Path -LiteralPath $installer) 'and the installer is beside it'
+    $source = Get-Content -LiteralPath $installer -Raw
+    Assert-True ($source -like "*'TOOLS/hooks'*") `
+        'pointing core.hooksPath at a relative path, so the value is the same on every machine'
 }
 
 Test-That 'two swapped registry rows are reported as out of order' {

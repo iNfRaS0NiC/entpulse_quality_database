@@ -72,6 +72,10 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Sheets.ps1')
 . (Join-Path $PSScriptRoot 'Nightly.ps1')
 
+# For the queue alone. The pass sends nothing itself - it writes the failure where the 07:00
+# drain will find it, exactly as a board run writes a reopened check there.
+. (Join-Path $PSScriptRoot 'Notify.ps1')
+
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $LedgerDir = Join-Path $RepoRoot 'RUNS'
 $RunQuery = Join-Path $PSScriptRoot 'Run-Query.ps1'
@@ -152,8 +156,25 @@ if ($ledgers.Count -eq 0) {
 $statePath = Get-NightlyStatePath
 $state = Read-NightlyState -Path $statePath
 
+# What the package still contains, which the ledgers cannot say. A ledger is never rewritten,
+# so it goes on offering a check long after the registry retired it - and asking Run-Query for
+# an id it no longer has fails the whole sport, not the one check. Read-NightlyApprovals owns
+# the reasoning and the night it cost.
+#
+# A missing registry stops the pass rather than running it unfiltered. Running blind is how
+# this failed the first time, and a checkout without POWERBI_REGISTRY.md is a broken checkout -
+# not an occasion to send 957 statements at the production database and hope.
+$registryPath = Join-Path $RepoRoot 'POWERBI_REGISTRY.md'
+$approved = Read-NightlyApprovals -Path $registryPath
+if ($null -eq $approved) {
+    Write-Host ("POWERBI_REGISTRY.md not found at {0}. It says which checks still exist, so nothing is run without it." -f `
+            $registryPath) -ForegroundColor Red
+    Stop-NightlyLog
+    exit 1
+}
+
 $selection = Select-NightlyChecks -Ledgers $ledgers -Legacy $SheetsStatusLegacy `
-    -BudgetSeconds ($BudgetMinutes * 60) -LastRunAt $state.LastRunAt
+    -BudgetSeconds ($BudgetMinutes * 60) -LastRunAt $state.LastRunAt -Approved $approved
 
 if (-not $Quiet) {
     Write-Host ("Nightly pass: {0} check(s) of {1} closed, about {2:n1} min of database time, budget {3:n0} min." -f `
@@ -162,6 +183,38 @@ if (-not $Quiet) {
     if ($selection.Deferred -gt 0) {
         Write-Host ("  {0} check(s) did not fit and come round on a later night." -f `
                 $selection.Deferred) -ForegroundColor DarkGray
+    }
+}
+
+# Said whatever else is said, and said with -Quiet too. A ledger offering a check the registry
+# has retired is a mismatch somebody has to resolve - the ledger is right about what ran and the
+# registry is right about what exists - and the pass is the only place the two ever meet.
+if (@($selection.Retired).Count -gt 0) {
+    $byRetiredSport = @{}
+    foreach ($entry in @($selection.Retired)) {
+        $name = [string]$entry.Sport
+        if (-not $byRetiredSport.ContainsKey($name)) { $byRetiredSport[$name] = @() }
+        $byRetiredSport[$name] += $entry
+    }
+    Write-Host ("  {0} check(s) are closed in a ledger but no longer Approved in POWERBI_REGISTRY.md, and were not run:" -f `
+            @($selection.Retired).Count) -ForegroundColor Yellow
+
+    # Named, with a ceiling. Each id goes out with what it asserts, because a bare number asks
+    # somebody to decide about a check they have not been told anything about - but a whole
+    # sport's worth of them is a wall rather than a report. RUNS/BMX.json is why the ceiling is
+    # here: it is the ledger of a sport that was split in two, so every one of its 62 closed
+    # checks is retired at once and would print on one line every night.
+    # -WhatIf is somebody looking at the selection by hand, so it names every one; a night
+    # writing to a log nobody opens until something is wrong gets the first few.
+    $cap = $(if ($WhatIf) { [int]::MaxValue } else { 6 })
+    foreach ($name in @($byRetiredSport.Keys | Sort-Object)) {
+        $entries = @($byRetiredSport[$name] | Sort-Object CheckId)
+        $ids = @($entries | Select-Object -First $cap | ForEach-Object { '{0} {1}' -f $_.CheckId, $_.Name })
+        $line = $ids -join '; '
+        if ($entries.Count -gt $cap) {
+            $line += (' - and {0} more, named in full by -WhatIf' -f ($entries.Count - $cap))
+        }
+        Write-Host ("    {0}: {1}" -f $name, $line) -ForegroundColor Yellow
     }
 }
 
@@ -194,6 +247,12 @@ $ran = 0
 $failed = @()
 $clock = Get-Date
 
+# The night's own identity, so that a failure queued for one pass is not queued again by the
+# next. Add-NotifyEvent keys on the notification id and the id carries this, so a pass re-run by
+# hand after a fix queues nothing for a sport it has already reported.
+$runId = $clock.ToString('dd.MM.yyyy HH-mm-ss')
+$startedUtc = $clock.ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+
 foreach ($sportName in @($selection.BySport.Keys | Sort-Object)) {
     $checks = @($selection.BySport[$sportName])
     $ids = @($checks | ForEach-Object { [string]$_.CheckId })
@@ -217,7 +276,11 @@ foreach ($sportName in @($selection.BySport.Keys | Sort-Object)) {
         # Named rather than counted, and the sport is left out of the state so its checks still
         # count as waiting. A night that quietly recorded a failed sport as done would take it
         # out of the rotation for as long as the failure lasted.
-        $failed += $sportName
+        $failed += [pscustomobject]@{
+            Sport  = $sportName
+            Reason = [string]$_.Exception.Message
+            Checks = $ids.Count
+        }
         Write-Host ("  {0} failed and its checks stay in the rotation: {1}" -f `
                 $sportName, $_.Exception.Message) -ForegroundColor Yellow
     }
@@ -233,7 +296,32 @@ Write-Host ("Nightly pass finished: {0} check(s) over {1} sport(s) in {2:n1} min
 # same rule a full run uses, and queued for notification there; TOOLS/Send-Notifications.ps1
 # sends it at the next scheduled drain. One mechanism, one wording, whichever run noticed.
 if ($failed.Count -gt 0) {
-    Write-Host ("  {0} sport(s) failed: {1}" -f $failed.Count, ($failed -join ', ')) -ForegroundColor Yellow
+    Write-Host ("  {0} sport(s) failed: {1}" -f `
+            $failed.Count, (@($failed | ForEach-Object { $_.Sport }) -join ', ')) -ForegroundColor Yellow
+
+    # Queued, not sent. The pass has no address and no business having one: TOOLS/Notify.ps1
+    # owns the queue and TOOLS/Send-Notifications.ps1 drains it at 07:00, which is the same
+    # path a reopened check already takes. One mechanism, one place a message can be lost.
+    #
+    # This exists because the failure was silent. Six sports failed on the night of 2026-09-05
+    # and again on the 06th and the 07th - 432 of 957 checks unwatched - and the only trace was
+    # a line in a log and an exit code in Task Scheduler. A pass that cannot say it did not run
+    # is a pass nobody can rely on, and the alarm has to reach a person rather than a file.
+    try {
+        $events = New-NotifyPassFailureEvent -RunId $runId -StartedUtc $startedUtc -Failures $failed
+        $queuePath = Get-NotifyQueuePath
+        $added = Add-NotifyEvent -Queue (Read-NotifyQueue -Path $queuePath) -Events $events
+        [void](Save-NotifyQueue -Queue $added.Queue -Path $queuePath)
+        Write-Host ("  {0} of them queued for the next notification drain." -f $added.Added) `
+            -ForegroundColor DarkGray
+    }
+    catch {
+        # A queue that will not open must not be the reason a pass reports success. It has
+        # already failed; this only decides how loudly.
+        Write-Host ("  the failure could not be queued for notification: {0}" -f `
+                $_.Exception.Message) -ForegroundColor Yellow
+    }
+
     Stop-NightlyLog
     exit 1
 }

@@ -1775,6 +1775,34 @@ if (Test-Path -LiteralPath $paramsPath) {
 Add-Result -Group 'Sports' -Name 'Sport index, slugs and parameter file' -Findings $sportFindings
 Set-Metric 'Sports indexed' $indexed.Count
 
+# A ledger for a sport the package no longer has.
+#
+# This is a file-name comparison and nothing more, which is why it can live here at all: the
+# content walk above excludes RUNS/ on purpose - those files are machine output rather than
+# package content, and reading them cost 7.37 seconds - and this reads none of them.
+#
+# It exists because nothing ever compared the two. RUNS/BMX.json outlived the sport when BMX
+# became BMX-Racing and BMX-Freestyle on 2026-09-04, and TOOLS/Invoke-NightlyRun.ps1 enumerates
+# RUNS/ to decide what to watch - so every night it selected 62 obsolete checks and failed the
+# pass on `Sport identity is ambiguous in SPORTS.md`, silently, for three nights. The validator
+# was green throughout, because a ledger was not something it had an opinion about.
+#
+# RUNS/archive/ is where such a file belongs: the pass reads the top level only, so the runs
+# survive and stop being enumerated. Deleting them would fix the lookup by throwing away the
+# record, which is the wrong trade for seventy runs.
+$ledgerFindings = @()
+$ledgerDir = Join-Path $RepoRoot 'RUNS'
+if (Test-Path -LiteralPath $ledgerDir) {
+    foreach ($file in @(Get-ChildItem -LiteralPath $ledgerDir -Filter '*.json' -ErrorAction SilentlyContinue)) {
+        $name = [System.IO.Path]::GetFileNameWithoutExtension($file.Name)
+        if (-not $indexed.ContainsKey($name)) {
+            $ledgerFindings += ("RUNS/$($file.Name): no sport '$name' in SPORTS.md. A ledger for a sport " +
+                'the package no longer has belongs in RUNS/archive/, which the nightly pass does not read')
+        }
+    }
+}
+Add-Result -Group 'Sports' -Name 'Every ledger belongs to an indexed sport' -Findings $ledgerFindings
+
 # --------------------------------------------------------------------------------------
 # Output
 # --------------------------------------------------------------------------------------
