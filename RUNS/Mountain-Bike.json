@@ -4728,6 +4728,53 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "05.09.2026 17-55-15",
+                     "startedUtc":  "2026-09-05T15:55:15Z",
+                     "output":  "",
+                     "commit":  "e23c54d375f2+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Mountain-Bike-DQ-124",
+                                        "runKey":  "Mountain-Bike-DQ-124",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_DATE_RANGE_DISAGREES_WITH_ITS_EVENTS",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  413,
+                                        "findings":  412,
+                                        "eligible":  665,
+                                        "seconds":  0.6,
+                                        "status":  "OK",
+                                        "sqlHash":  "dbe13c0a9e5a"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  25,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  2,
+                                   "phases":  {
+                                                  "reading the document":  11.3,
+                                                  "planning the changes":  3,
+                                                  "adding and sizing tabs":  1.7,
+                                                  "putting the board tabs in front":  0.5,
+                                                  "hiding columns and colouring Rows":  0.6,
+                                                  "clearing stale rows":  1,
+                                                  "writing values":  5.2,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0.5,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               }
                  }
              ],
     "sheetId":  "1-ewyxEyctKW1q_fWwwy0qYff5Y7XN7njFra2IjwSo-M"

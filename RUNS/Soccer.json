@@ -38670,6 +38670,52 @@
                                                           "checkBy":  ""
                                                       }
                                 }
+                 },
+                 {
+                     "runId":  "05.09.2026 17-57-08",
+                     "startedUtc":  "2026-09-05T15:57:08Z",
+                     "output":  "",
+                     "commit":  "e23c54d375f2+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Soccer-DQ-114",
+                                        "runKey":  "Soccer-DQ-114",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_DATE_RANGE_DISAGREES_WITH_ITS_EVENTS",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  94,
+                                        "findings":  93,
+                                        "eligible":  1159,
+                                        "seconds":  0.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "04fa486a3420"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  31.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  13.5,
+                                                  "planning the changes":  2.6,
+                                                  "adding and sizing tabs":  2.6,
+                                                  "hiding columns and colouring Rows":  1.1,
+                                                  "clearing stale rows":  1.1,
+                                                  "writing values":  9.5,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0.5,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               }
                  }
              ],
     "sheetId":  "1g5F6v96J9l56MM1yROTf3Y7p9hzYVVAvcuReWqVKnSE"

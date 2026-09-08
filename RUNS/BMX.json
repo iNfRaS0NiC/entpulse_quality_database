@@ -36603,6 +36603,266 @@
                                                        "checkBy":  "Ivaylo Georgiev"
                                                    }
                                 }
+                 },
+                 {
+                     "runId":  "04.09.2026 15-42-44",
+                     "startedUtc":  "2026-09-04T13:42:44Z",
+                     "output":  "",
+                     "commit":  "e7df6af447f2",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-106",
+                                        "runKey":  "BMX-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  561,
+                                        "seconds":  13.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "6b31f313061d"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  51.3,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  18.4,
+                                                  "planning the changes":  13.5,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  7.6,
+                                                  "writing values":  7.2,
+                                                  "confirming the rows arrived":  1.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  1.1,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-DQ-106":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  ""
+                                                   }
+                                }
+                 },
+                 {
+                     "runId":  "04.09.2026 15-43-58",
+                     "startedUtc":  "2026-09-04T13:43:58Z",
+                     "output":  "",
+                     "commit":  "e7df6af447f2+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-111",
+                                        "runKey":  "BMX-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  21145,
+                                        "seconds":  13.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "af83fd7ea8e9"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  51.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  19.7,
+                                                  "planning the changes":  12.3,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  7.8,
+                                                  "writing values":  9.2,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-DQ-111":  {
+                                                       "status":  "Reopened",
+                                                       "checkBy":  ""
+                                                   }
+                                }
+                 },
+                 {
+                     "runId":  "04.09.2026 16-07-41",
+                     "startedUtc":  "2026-09-04T14:07:41Z",
+                     "output":  "",
+                     "commit":  "e7df6af447f2+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-096",
+                                        "runKey":  "BMX-DQ-096",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  30,
+                                        "findings":  29,
+                                        "eligible":  9369,
+                                        "seconds":  1.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "b99522e5584c"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  60.8,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  16.5,
+                                                  "planning the changes":  15,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.4,
+                                                  "clearing stale rows":  8.1,
+                                                  "writing values":  15.6,
+                                                  "confirming the rows arrived":  2.2,
+                                                  "colouring the trend":  0.8,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.6,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-DQ-096":  {
+                                                       "status":  "IT Fix",
+                                                       "checkBy":  ""
+                                                   }
+                                }
+                 },
+                 {
+                     "runId":  "04.09.2026 16-31-14",
+                     "startedUtc":  "2026-09-04T14:31:14Z",
+                     "output":  "",
+                     "commit":  "e7df6af447f2+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-096",
+                                        "runKey":  "BMX-DQ-096",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  11,
+                                        "findings":  10,
+                                        "eligible":  9369,
+                                        "seconds":  1.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "b99522e5584c"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  51.2,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  18.2,
+                                                  "planning the changes":  12,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  7.3,
+                                                  "writing values":  8.2,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  2.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  1,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-DQ-096":  {
+                                                       "status":  "IT Fix",
+                                                       "checkBy":  ""
+                                                   }
+                                }
+                 },
+                 {
+                     "runId":  "04.09.2026 16-35-22",
+                     "startedUtc":  "2026-09-04T14:35:22Z",
+                     "output":  "",
+                     "commit":  "e7df6af447f2+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-DQ-096",
+                                        "runKey":  "BMX-DQ-096",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  11,
+                                        "findings":  10,
+                                        "eligible":  9369,
+                                        "seconds":  1.6,
+                                        "status":  "OK",
+                                        "sqlHash":  "b99522e5584c"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  51.7,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  18.4,
+                                                  "planning the changes":  13.3,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.4,
+                                                  "clearing stale rows":  7.6,
+                                                  "writing values":  9.2,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-DQ-096":  {
+                                                       "status":  "IT Fix",
+                                                       "checkBy":  ""
+                                                   }
+                                }
                  }
              ],
     "sheetId":  "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE"

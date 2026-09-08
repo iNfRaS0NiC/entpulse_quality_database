@@ -24512,6 +24512,52 @@
                                                             "checkBy":  "Vanin"
                                                         }
                                 }
+                 },
+                 {
+                     "runId":  "05.09.2026 17-54-27",
+                     "startedUtc":  "2026-09-05T15:54:27Z",
+                     "output":  "",
+                     "commit":  "e23c54d375f2+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Biathlon-DQ-137",
+                                        "runKey":  "Biathlon-DQ-137",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_DATE_RANGE_DISAGREES_WITH_ITS_EVENTS",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  843,
+                                        "seconds":  0.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "07e19c74d68b"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  26.3,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  9.1,
+                                                  "planning the changes":  4.4,
+                                                  "adding and sizing tabs":  2.7,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  1.2,
+                                                  "writing values":  6.2,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0.5,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               }
                  }
              ],
     "sheetId":  "1eQNoYSY_1jbTh0hzFa6CiSXkCuTo4ceolGt8qDxKUr4"
