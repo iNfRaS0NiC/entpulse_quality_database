@@ -219,25 +219,32 @@ SELECT
         ), 'country', NULL)
     ) AS missing_fields,
     NULL AS eligible_count
-FROM participant p
-WHERE p.del = 'no'
-  AND p.type IN ({{EVENT_PARTICIPANT_TYPE_LIST}})
-  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
-  AND EXISTS (
-      SELECT 1
+-- The sport's participants are collected once, in a derived table, and this statement is
+-- driven from that. Written the obvious way - FROM participant with the sport as a correlated
+-- EXISTS - the server drives from `participant`, 1,157,140 athletes across every sport, and
+-- tests each one. Seventeen sports survive that plan; the two that also splice a discipline
+-- filter into the same EXISTS do not. Measured 2026-09-08 on BMX-Freestyle: 175.6 seconds
+-- against 2.6, same 689 eligible and the same finding rows, and the scope alone costs 1.5.
+-- Cycling 11.2 to 5.1, Soccer 0.8 to 0.6. TOOLS/Run-Query.ps1 owns why the discipline filter
+-- is written as a complement; this is the one statement where that was not enough.
+FROM (
+      SELECT DISTINCT ep.participantFK AS participant_id
       FROM event_participants ep
       JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
       JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
       JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
       JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-      WHERE ep.participantFK = p.id
-        AND ep.del = 'no'
+      WHERE ep.del = 'no'
         AND tt.sportFK = {{SPORT_ID}}
         AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
         AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
         -- AND t.tournament_templateFK = <tournament_template_id>
         -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
-  )
+) scope
+JOIN participant p ON p.id = scope.participant_id
+WHERE p.del = 'no'
+  AND p.type IN ({{EVENT_PARTICIPANT_TYPE_LIST}})
+  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
   AND (
       p.name IS NULL
       OR TRIM(p.name) = ''
@@ -259,25 +266,25 @@ SELECT
     NULL,
     NULL,
     COUNT(DISTINCT p.id) AS eligible_count
-FROM participant p
-WHERE p.del = 'no'
-  AND p.type IN ({{EVENT_PARTICIPANT_TYPE_LIST}})
-  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
-  AND EXISTS (
-      SELECT 1
+FROM (
+      SELECT DISTINCT ep.participantFK AS participant_id
       FROM event_participants ep
       JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
       JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
       JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
       JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-      WHERE ep.participantFK = p.id
-        AND ep.del = 'no'
+      WHERE ep.del = 'no'
         AND tt.sportFK = {{SPORT_ID}}
         AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
         AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
         -- AND t.tournament_templateFK = <tournament_template_id>
         -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
-  );
+) scope
+JOIN participant p ON p.id = scope.participant_id
+WHERE p.del = 'no'
+  AND p.type IN ({{EVENT_PARTICIPANT_TYPE_LIST}})
+  -- AND p.id BETWEEN <from_participant_id> AND <to_participant_id>
+;
 
 
 -- ================================================================================
