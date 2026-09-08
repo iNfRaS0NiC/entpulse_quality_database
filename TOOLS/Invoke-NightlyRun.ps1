@@ -72,9 +72,17 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'Sheets.ps1')
 . (Join-Path $PSScriptRoot 'Nightly.ps1')
 
-# For the queue alone. The pass sends nothing itself - it writes the failure where the 07:00
-# drain will find it, exactly as a board run writes a reopened check there.
+# For the queue and for reading each board's Status column. The pass sends nothing itself - it
+# writes the failure where the 07:00 drain will find it, exactly as a board run writes a
+# reopened check there.
 . (Join-Path $PSScriptRoot 'Notify.ps1')
+
+# The pass reads boards of its own now, so it needs the credentials in its own process. It did
+# not until 2026-09-08: every database and Sheets call belonged to the Run-Query child, which
+# loads these itself. Without them every sport falls back to the ledger's status - loudly, and
+# correctly, and uselessly, because that is the staleness the board read exists to end.
+$SecretsPath = Join-Path $PSScriptRoot 'secrets.local.ps1'
+if (Test-Path -LiteralPath $SecretsPath) { . $SecretsPath }
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $LedgerDir = Join-Path $RepoRoot 'RUNS'
@@ -173,8 +181,46 @@ if ($null -eq $approved) {
     exit 1
 }
 
+# What each board says right now. The ledger learns a status only when a run records one, and
+# this pass records nothing - so its knowledge of the boards decayed until somebody happened to
+# run a full board by hand. That is what left BMX-Freestyle unwatched: a board, a ledger, 110
+# checks and no review entry ever, so marking one Completed changed nothing.
+#
+# One read of Overview!B:I per sport, which is what the 14:00 sweep already does daily across
+# the same boards. A sport with no row in the registry, or one that will not read, keeps the
+# ledger's status and is named below - a status that silently fell back is a status nobody can
+# trust, which is the argument Get-NotifyBoardStatus already makes for the drain.
+$boardOf = @{}
+foreach ($entry in @(Get-NotifySweepBoards)) { $boardOf[[string]$entry.Sport] = [string]$entry.SheetId }
+
+$boardStatus = @{}
+$staleSports = @()
+foreach ($ledger in $ledgers) {
+    $name = [string]$ledger.sport
+    if (-not $boardOf.ContainsKey($name)) {
+        $staleSports += ('{0} (no row in TOOLS/sheet-registry.json)' -f $name)
+        continue
+    }
+    try {
+        $map = Get-NotifyBoardStatus -SheetId $boardOf[$name]
+        if ($map -and $map.Count -gt 0) { $boardStatus[$name] = $map }
+        else { $staleSports += ('{0} (the board returned no rows)' -f $name) }
+    }
+    catch {
+        $staleSports += ('{0} ({1})' -f $name, $_.Exception.Message)
+    }
+}
+
+if (-not $Quiet) {
+    Write-Host ("Board status read for {0} of {1} sport(s)." -f $boardStatus.Count, $ledgers.Count) -ForegroundColor Cyan
+}
+foreach ($stale in $staleSports) {
+    Write-Host ("  falling back to the ledger's status for {0}" -f $stale) -ForegroundColor Yellow
+}
+
 $selection = Select-NightlyChecks -Ledgers $ledgers -Legacy $SheetsStatusLegacy `
-    -BudgetSeconds ($BudgetMinutes * 60) -LastRunAt $state.LastRunAt -Approved $approved
+    -BudgetSeconds ($BudgetMinutes * 60) -LastRunAt $state.LastRunAt -Approved $approved `
+    -BoardStatus $boardStatus
 
 if (-not $Quiet) {
     Write-Host ("Nightly pass: {0} check(s) of {1} closed, about {2:n1} min of database time, budget {3:n0} min." -f `

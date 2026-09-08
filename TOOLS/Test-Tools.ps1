@@ -8027,17 +8027,24 @@ function New-NightlyCheck {
 }
 
 Test-That 'only a closed check with a conclusion to contradict is run at night' {
-    # Four conditions, and each is here because dropping it breaks the pass in a different
-    # direction: an open check is already in front of the reviewer, an empty population says
-    # nothing every night for a reason that is not the data, a Monitor check never reaches
-    # zero, and a status nobody has put a conclusion on has no conclusion to disprove.
+    # Three conditions since 2026-09-08, and each is here because dropping it breaks the pass
+    # in a different direction: an empty population says nothing every night for a reason that
+    # is not the data, a Monitor check never reaches zero, and a status nobody has put a
+    # conclusion on has no conclusion to disprove.
+    #
+    # What the last run returned is no longer one of them. `findings = 0` stood in for "nobody
+    # is looking at this right now" while the status came from the ledger, and the live board
+    # status replaces the thing it stood in for. It also refused the case it was most needed
+    # for: F-DQ-004 below is a check somebody called Clean while the last run recorded seven
+    # findings, and the run that settles which of the two is true is exactly the run the old
+    # condition would not make. 119 checks across the package were in that state.
     $review = [pscustomobject]@{}
     $checks = @()
     foreach ($case in @(
             @{ Id = 'F-DQ-001'; F = 0; E = 100; Exp = 'Zero'; St = 'Clean'; Want = $true }
             @{ Id = 'F-DQ-002'; F = 0; E = 100; Exp = 'Zero'; St = 'Completed'; Want = $true }
             @{ Id = 'F-DQ-003'; F = 0; E = 100; Exp = 'Zero'; St = 'Reopened'; Want = $true }
-            @{ Id = 'F-DQ-004'; F = 7; E = 100; Exp = 'Zero'; St = 'Clean'; Want = $false }
+            @{ Id = 'F-DQ-004'; F = 7; E = 100; Exp = 'Zero'; St = 'Clean'; Want = $true }
             @{ Id = 'F-DQ-005'; F = 0; E = 0; Exp = 'Zero'; St = 'Clean'; Want = $false }
             @{ Id = 'F-DQ-006'; F = 0; E = 100; Exp = 'Non-zero'; St = 'Monitor Only'; Want = $false }
             @{ Id = 'F-DQ-007'; F = 0; E = 100; Exp = 'Zero'; St = 'On Hold'; Want = $false }
@@ -8055,13 +8062,59 @@ Test-That 'only a closed check with a conclusion to contradict is run at night' 
     $picked = @((Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy).Checks |
             ForEach-Object { $_.CheckId })
 
-    Assert-Equal 3 $picked.Count 'three of the twelve are worth a night'
-    foreach ($id in @('F-DQ-001', 'F-DQ-002', 'F-DQ-003')) {
+    Assert-Equal 4 $picked.Count 'four of the twelve are worth a night'
+    foreach ($id in @('F-DQ-001', 'F-DQ-002', 'F-DQ-003', 'F-DQ-004')) {
         Assert-True ($picked -contains $id) "$id is run"
     }
-    foreach ($id in @('F-DQ-004', 'F-DQ-005', 'F-DQ-006', 'F-DQ-007', 'F-DQ-008', 'F-DQ-009', 'F-DQ-010', 'F-DQ-011', 'F-DQ-012')) {
+    foreach ($id in @('F-DQ-005', 'F-DQ-006', 'F-DQ-007', 'F-DQ-008', 'F-DQ-009', 'F-DQ-010', 'F-DQ-011', 'F-DQ-012')) {
         Assert-True ($picked -notcontains $id) "$id is not"
     }
+
+    # The status is what keeps a check out, and nothing else. F-DQ-005 has no population and
+    # F-DQ-006 expects a count for ever; the other six are somebody's conclusion that the check
+    # is not theirs to answer tonight.
+    Assert-True ($picked -notcontains 'F-DQ-010') 'nobody has concluded anything about it'
+}
+
+Test-That 'the board decides the status, and the ledger only when the board cannot be read' {
+    # The ledger learns a status only when a run records one, and the pass records nothing - so
+    # its knowledge of the boards decayed until somebody happened to run a full board by hand.
+    # BMX-Freestyle is what that allowed: a board, a ledger, 110 checks and no review entry
+    # ever, so none of its 74 otherwise-eligible checks was watched and marking one `Completed`
+    # would not have changed that. Eleven sports were three days stale the day this was written.
+    $review = [pscustomobject]@{
+        'F-DQ-001' = [pscustomobject]@{ status = 'Not reviewed' }
+        'F-DQ-002' = [pscustomobject]@{ status = 'Completed' }
+    }
+    $ledger = New-NightlyLedger -Runs @((New-NightlyRun -Review $review -Checks @(
+                    (New-NightlyCheck -CheckId 'F-DQ-001')
+                    (New-NightlyCheck -CheckId 'F-DQ-002')
+                    (New-NightlyCheck -CheckId 'F-DQ-003')
+                )))
+
+    $fromLedger = @((Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy).Checks |
+            ForEach-Object { $_.CheckId })
+    Assert-Equal 'F-DQ-002' ($fromLedger -join ',') 'without a board, only what the ledger recorded'
+
+    # The board carries all three. It closes the one the ledger never heard of, it opens the one
+    # the ledger thought was closed, and an empty cell is a conclusion nobody has reached.
+    $board = @{ 'Fixtureball' = @{
+            'F-DQ-001' = 'Completed'
+            'F-DQ-002' = 'IT Fix'
+            'F-DQ-003' = ''
+        } }
+    $live = @((Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy -BoardStatus $board).Checks)
+    Assert-Equal 'F-DQ-001' (@($live | ForEach-Object { $_.CheckId }) -join ',') `
+        'the board wins over the ledger in both directions'
+    Assert-Equal 'board' ([string]@($live)[0].StatusFrom) 'and the entry says where its status came from'
+
+    # A sport the board map does not carry keeps the ledger, which is what a read that failed
+    # leaves behind. Falling back is fine; falling back silently is not, and Invoke-NightlyRun
+    # names every sport it happened to.
+    $other = @{ 'Otherball' = @{ 'F-DQ-001' = 'Completed' } }
+    $fallback = @((Select-NightlyChecks -Ledgers @($ledger) -Legacy $SheetsStatusLegacy -BoardStatus $other).Checks)
+    Assert-Equal 'F-DQ-002' (@($fallback | ForEach-Object { $_.CheckId }) -join ',') 'the ledger still answers'
+    Assert-Equal 'ledger' ([string]@($fallback)[0].StatusFrom) 'and says so'
 }
 
 Test-That 'a superseded spelling of a status still counts as the status it means' {

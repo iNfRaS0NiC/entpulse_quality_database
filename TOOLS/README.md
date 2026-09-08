@@ -2396,12 +2396,58 @@ proves nothing outside its window. Selection saves far more and costs nothing.
 
 | | |
 |---|---|
-| What runs | a check whose last recorded run returned zero findings over an `eligible_count` above zero, whose expectation is `Zero`, whose status was `OK`, whose reviewer status is `Clean`, `Completed` or `Reopened` — **and which `POWERBI_REGISTRY.md` still records as `Approved`** |
+| What runs | a check over an `eligible_count` above zero, whose expectation is `Zero`, whose last run's status was `OK`, whose reviewer status **on the board right now** is `Clean`, `Completed` or `Reopened`, and which `POWERBI_REGISTRY.md` still records as `Approved` |
 | Why those three statuses | each is a conclusion a result can contradict. `Not reviewed` and a blank cell carry no conclusion; `On Hold`, `IT Fix` and `Other Team` are waiting on somebody else; `Monitor Only` expects a count for ever; `Skipped` and `Deprecated` are out of the reading. Measured first: only one check in the package is both handed off and closed, so the filter costs nothing against those and exists for the two that matter |
-| Where the status comes from | `run.review` in the ledger, written from what the board held when the last run read it. It is **not live**: a status changed this morning is not seen until the next board run |
+| Where the status comes from | **the board, read at the start of the pass** — one `Overview!B:I` per sport. The ledger's `run.review` is the fallback for a sport with no registry row or a board that would not read, and every such sport is named on the console |
 | How much runs | as much as fits a budget of database time, cheapest first, with a slice kept for the expensive tail by least recently run. 4.5 hours by default |
 | Why a budget and not a threshold | a threshold in seconds rots the way a hardcoded list of CheckIDs does. Under a budget the effective ceiling falls on its own as sports accumulate, in the order the cost table says to give things up in |
 | Why the registry is asked at all | see below. A ledger is never rewritten, so it goes on offering a check the package has retired — and asking `Run-Query.ps1` for an id it no longer has fails the **whole sport**, not the one check |
+| What the last run returned | nothing. `findings = 0` was a condition until 2026-09-08 and is not one now — see below |
+
+#### The board is asked, because the ledger goes stale
+
+**The status comes from the board at the start of the pass, not from the ledger.** Changed
+2026-09-08.
+
+The ledger learns a status only when a run records one, and this pass runs with `-NoLedger` and
+records nothing — so its knowledge of every board decayed until somebody happened to run a full
+board by hand. `BMX-Freestyle` is what that allows: a board, a ledger, 110 checks and **not one
+review entry, ever**, so none of its 74 otherwise-eligible checks was watched at all and marking
+one `Completed` would not have changed that. Eleven sports were three days stale the same
+afternoon.
+
+The split is now clean and each side says what it is for: **the ledger knows what the run
+measured, the board knows what a person concluded.** One read of `Overview!B:I` per sport, which
+is what the 14:00 sweep already does daily across the same boards.
+
+A sport with no row in `TOOLS/sheet-registry.json`, or one whose board will not read, keeps the
+ledger's status — and is named on the console. A status that silently fell back is a status
+nobody can trust, which is the argument `Get-NotifyBoardStatus` already makes for the drain. A
+board that carries the check with an **empty** status wins too, and empty is in no list, so the
+check does not run: the board is the authority and it is saying nobody has concluded anything.
+
+The pass therefore needs the Sheets credentials in its own process, which it did not until this
+change — every database and Sheets call used to belong to the `Run-Query.ps1` child.
+
+#### What the last run returned is not a condition
+
+**`findings = 0` was dropped on 2026-09-08, with the live status that replaces it.**
+
+It was a proxy. While the status came from the ledger, a check the ledger recorded at zero was
+the only one the ledger could show as closed, so the count stood in for "nobody is looking at
+this right now" — and the board status now answers that directly.
+
+It also refused the case it was most needed for. `Completed` says a person fixed the data;
+nothing has measured it since, and the run that would confirm or contradict that claim is
+exactly the run the condition would not make. **119 checks across the package sat in that
+state** — `Artistic-Gymnastics-DQ-025` with 113 findings recorded, `-DQ-039` with 182 — all
+declared fixed, none re-measured. `Reopened` was refused on the same grounds, and for the same
+reason it is on the status list at all: it is already disproved, and the run is what will show
+it fixed.
+
+It does not run away. The first night either confirms — zero, and the word stands — or
+contradicts, and the board writes `Reopened` where the reviewer meets it in red. What keeps a
+check out is a person's conclusion, and nothing else.
 
 #### A ledger remembers what the package has forgotten
 
@@ -2441,9 +2487,11 @@ deprecated and the next **full** board run for that sport, which is what writes 
 into the board and thence into the ledger. The pass names what it skipped every night until
 then, capped at six per sport on a log line and uncapped under `-WhatIf`.
 
-Today that is **779 checks and about 67 minutes** of database time across sixteen sports, plus
-roughly a minute a sport writing boards. The ceiling binds on nothing yet; it starts binding at
-around 26 sports once the review has closed most of what is currently open.
+Today that is **1169 checks and about 102 minutes** of database time across nineteen sports,
+plus roughly a minute a sport writing boards. It was 779 over sixteen on 2026-09-01; the three
+changes of 2026-09-08 account for the rest — the registry filter took a few out, dropping
+`findings = 0` put about 176 in, and reading the board live added another 95, including the 74
+of `BMX-Freestyle` that had never been watched at all. The ceiling still binds on nothing.
 
 ### It writes to the board
 

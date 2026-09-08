@@ -102,9 +102,10 @@ function Get-NightlyLedgerState {
 
         The reviewer's status is taken the same way but from a different place - the run's
         `review` block, which Save-RunSheet writes from what the board held when the run read
-        it. That makes it the status **as of the last board run**, not a live one. A status
-        somebody changed this morning is not here until the next board, and the selector says
-        so rather than pretending otherwise.
+        it. That makes it the status **as of the last run that included the check**, which since
+        2026-09-08 is the fallback rather than the answer: Select-NightlyChecks asks the board
+        itself and uses this only for a sport it could not read. See -BoardStatus there for what
+        the staleness cost while this was the only source.
     #>
     param($Ledger)
 
@@ -162,12 +163,29 @@ function Test-NightlyCandidate {
         population returns nothing every night for a reason that has nothing to do with the
         data being right, and its day comes when the population arrives - which a full board
         will see.
+
+        **What the last run returned is no longer one of the conditions.** It was, until
+        2026-09-08, and the reasoning was sound while the status came from the ledger: a check
+        the ledger recorded at zero was the only one the ledger could show as closed, so
+        `findings = 0` stood in for "nobody is looking at this right now".
+
+        It was a proxy, and the live board status replaces the thing it was standing in for.
+        Worse, it defeated the case it was most needed for. `Completed` says a person fixed the
+        data; nothing has measured it since, and the run that would either confirm or contradict
+        that claim is exactly the run this condition refused. 119 checks across the package sat
+        in that state on the day it was removed - Artistic-Gymnastics-DQ-025 with 113 findings
+        recorded, -DQ-039 with 182 - all of them declared fixed and none of them re-measured.
+        `Reopened` was refused on the same grounds and for the same reason it is on the status
+        list at all: it is already disproved, and the run is what will show it fixed.
+
+        It does not run away. The first night either confirms - zero, and the word stands - or
+        contradicts, and the board writes `Reopened` where the reviewer will see it red. What
+        keeps a check out is the status, which is a person's conclusion, and nothing else.
     #>
     param($Entry, [string[]]$Statuses = $NightlyReviewStatuses, $Legacy)
 
     if ($null -eq $Entry) { return $false }
     if ([string]$Entry.Expected -ne 'Zero') { return $false }
-    if ([int]$Entry.Findings -ne 0) { return $false }
     if ([int]$Entry.Eligible -le 0) { return $false }
 
     $status = [string]$Entry.ReviewStatus
@@ -193,6 +211,25 @@ function Select-NightlyChecks {
         Timing comes from the ledger, so the cost model tracks the database rather than a guess
         made once.
 
+        -BoardStatus is what each board says right now, as a map of sport to a map of CheckID
+        to status, and it overrides the ledger for every check a board carries.
+
+        The ledger cannot answer this question. It learns a status only when a run records one,
+        the nightly runs with -NoLedger and records nothing, so the pass's knowledge of the
+        board decayed until somebody happened to run a full board. BMX-Freestyle is what that
+        allows: a board, a ledger, 110 checks, and not one review entry ever - so none of its 74
+        otherwise-eligible checks was watched at all, and marking one `Completed` would not have
+        changed that. Eleven sports were three days stale on the day this was written.
+
+        The split is now clean and says what each side is for: the ledger knows what the run
+        measured, the board knows what a person concluded. A sport with no board row, or one
+        that could not be read, keeps the ledger's status and the pass says which - a status
+        that silently fell back is a status nobody can trust.
+
+        A board that carries the check with an empty status wins too, and empty is not in the
+        list, so the check is not run. That is the honest reading: the board is the authority,
+        and it is saying nobody has concluded anything.
+
         -Approved is the set Read-NightlyApprovals returns, and it is the structural filter:
         a check the registry no longer records as Approved cannot be run at all, which is a
         different answer from Test-NightlyCandidate's "not worth running tonight". They are kept
@@ -209,7 +246,8 @@ function Select-NightlyChecks {
         $Legacy,
         [datetime]$Now = (Get-Date),
         $LastRunAt,
-        $Approved
+        $Approved,
+        $BoardStatus
     )
 
     $candidates = @()
@@ -223,8 +261,22 @@ function Select-NightlyChecks {
         if ($null -eq $ledger) { continue }
         $sport = [string]$ledger.sport
         $state = Get-NightlyLedgerState -Ledger $ledger
+        # What the board says now, where it was read. Written onto the entry rather than passed
+        # alongside it, so everything downstream - the candidate test, the report, the rotation
+        # key - reads one status and cannot disagree with itself about which one it meant.
+        $live = $null
+        if ($BoardStatus -and $BoardStatus.ContainsKey($sport)) { $live = $BoardStatus[$sport] }
+
         foreach ($key in @($state.Keys)) {
             $entry = $state[$key]
+            if ($live -and $live.ContainsKey([string]$entry.CheckId)) {
+                $entry | Add-Member -NotePropertyName ReviewStatus `
+                    -NotePropertyValue ([string]$live[[string]$entry.CheckId]) -Force
+                $entry | Add-Member -NotePropertyName StatusFrom -NotePropertyValue 'board' -Force
+            }
+            else {
+                $entry | Add-Member -NotePropertyName StatusFrom -NotePropertyValue 'ledger' -Force
+            }
             if (-not (Test-NightlyCandidate -Entry $entry -Statuses $Statuses -Legacy $Legacy)) { continue }
             $entry | Add-Member -NotePropertyName Sport -NotePropertyValue $sport -Force
             if ($Approved -and -not $Approved.ContainsKey([string]$entry.CheckId)) {
