@@ -48854,6 +48854,58 @@
                                                              "checkBy":  ""
                                                          }
                                 }
+                 },
+                 {
+                     "runId":  "08.09.2026 15-26-09",
+                     "startedUtc":  "2026-09-08T13:26:09Z",
+                     "output":  "",
+                     "commit":  "064641c47ec3+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-045",
+                                        "runKey":  "Triathlon-DQ-045",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FULL_TIME_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  55,
+                                        "findings":  54,
+                                        "eligible":  3745,
+                                        "seconds":  3.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "98f0444e981b"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  54.2,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  17.2,
+                                                  "planning the changes":  15.5,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.4,
+                                                  "clearing stale rows":  9.5,
+                                                  "writing values":  8.6,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.6,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Triathlon-DQ-045":  {
+                                                             "status":  "Reopened",
+                                                             "checkBy":  "Lyubomir,Gabriel"
+                                                         }
+                                }
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"
