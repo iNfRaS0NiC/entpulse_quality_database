@@ -26171,6 +26171,318 @@
                                                             "checkBy":  ""
                                                         }
                                 }
+                 },
+                 {
+                     "runId":  "08.09.2026 13-48-39",
+                     "startedUtc":  "2026-09-08T11:48:39Z",
+                     "output":  "",
+                     "commit":  "c6fe743e930d",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Biathlon-DQ-120",
+                                        "runKey":  "Biathlon-DQ-120",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_GENDER_BALANCE_UNEVEN",
+                                        "category":  "WRONG_GENDER",
+                                        "dataTypes":  "Comp.Rank: 1429 Team; Setting: 1470 Gender",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  149,
+                                        "seconds":  14.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "a2d5469dd081"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  51.3,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  13.4,
+                                                  "planning the changes":  20.1,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  7.6,
+                                                  "writing values":  6.8,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.7,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Biathlon-DQ-120":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "08.09.2026 13-49-57",
+                     "startedUtc":  "2026-09-08T11:49:57Z",
+                     "output":  "",
+                     "commit":  "c6fe743e930d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Biathlon-DQ-111",
+                                        "runKey":  "Biathlon-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_WITHOUT_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  169,
+                                        "findings":  168,
+                                        "eligible":  2506,
+                                        "seconds":  0.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "c349b8e4b145"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  53.5,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  14.9,
+                                                  "planning the changes":  20.1,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  8.7,
+                                                  "writing values":  6.4,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.6,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Biathlon-DQ-111":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  "Aleksandar D."
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "08.09.2026 13-51-00",
+                     "startedUtc":  "2026-09-08T11:51:00Z",
+                     "output":  "",
+                     "commit":  "c6fe743e930d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Biathlon-DQ-104",
+                                        "runKey":  "Biathlon-DQ-104",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_SETTINGS_MEDAL_SET_INVALID",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1277 Medal, 1429 Team, 1270 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  2875,
+                                        "seconds":  9.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "aac32094cf3c"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  56.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  14.9,
+                                                  "planning the changes":  22.6,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.1,
+                                                  "clearing stale rows":  10,
+                                                  "writing values":  6.3,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Biathlon-DQ-104":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  "Vanin"
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "08.09.2026 13-52-16",
+                     "startedUtc":  "2026-09-08T11:52:16Z",
+                     "output":  "",
+                     "commit":  "c6fe743e930d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Biathlon-DQ-091",
+                                        "runKey":  "Biathlon-DQ-091",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_TIME_DIFFERENCE_FORMAT_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1270 Rank, 1427 Time Difference",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  2824,
+                                        "seconds":  16.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "6b99b5f1b9c4"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  50.2,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  13.6,
+                                                  "planning the changes":  19.2,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  8.4,
+                                                  "writing values":  6.1,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Biathlon-DQ-091":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "08.09.2026 13-53-34",
+                     "startedUtc":  "2026-09-08T11:53:34Z",
+                     "output":  "",
+                     "commit":  "c6fe743e930d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Biathlon-DQ-124",
+                                        "runKey":  "Biathlon-DQ-124",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  2873,
+                                        "seconds":  0.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "8cef307a46cb"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  49,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  12.9,
+                                                  "planning the changes":  19,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  7.7,
+                                                  "writing values":  6.6,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Biathlon-DQ-124":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  "Vanin"
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "08.09.2026 13-54-32",
+                     "startedUtc":  "2026-09-08T11:54:32Z",
+                     "output":  "",
+                     "commit":  "c6fe743e930d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Biathlon-DQ-129",
+                                        "runKey":  "Biathlon-DQ-129",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_DISCIPLINE_CONTRADICTS_LINKED_EVENT",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  2873,
+                                        "seconds":  0.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "79f4519bca66"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  48.6,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  13.8,
+                                                  "planning the changes":  18.4,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  7.4,
+                                                  "writing values":  6.1,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Biathlon-DQ-129":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  "Vanin"
+                                                        }
+                                }
                  }
              ],
     "sheetId":  "1eQNoYSY_1jbTh0hzFa6CiSXkCuTo4ceolGt8qDxKUr4"
