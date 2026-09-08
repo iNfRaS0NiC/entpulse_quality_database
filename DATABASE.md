@@ -897,22 +897,29 @@ The columns beyond the shared shape are what each table actually contributes:
 
 | Table | Rows | Columns beyond `id`, `name`, `description`, `n`, `ut`, `del` |
 |---|---:|---|
-| `category` | 0 | — (empty today) |
-| `country` | 258 | `enetID` `int unsigned NOT NULL` — the provider's own country key |
-| `disability_class` | 212 | — |
+| `category` | 1 | — one row: `OLYMPIC`, "Used for Olympic sports", the marker `DB-SEM-017` reads |
+| `country` | 262 | `enetID` `int unsigned NOT NULL` — the provider's own country key |
+| `disability_class` | 384 | — |
 | `discipline` | 935 | `sportFK` `int unsigned NOT NULL` — what separates a duplicate name from a foreign catalogue |
 | `language_type` | 126 | — (`description` nullable) |
-| `object_type` | 160 | `internal` `enum('yes','no')` nullable |
-| `round_type` | 301 | `value` `int NOT NULL`, `knockout` `enum('no','yes') NOT NULL` — the pair behind `DB-SEM-012` |
-| `scope_data_type` | 977 | — (`description` and `ut` nullable) |
-| `scope_type` | 1382 | — (`description` and `ut` nullable; `name` indexed) |
-| `tournament_age_class` | 3 | — |
-| `tournament_set` | 14 | — |
+| `object_type` | 161 | `internal` `enum('yes','no')` nullable |
+| `round_type` | 381 | `value` `int NOT NULL`, `knockout` `enum('no','yes') NOT NULL` — the pair behind `DB-SEM-012` |
+| `scope_data_type` | 1075 | — (`description` and `ut` nullable) |
+| `scope_type` | 1377 | — (`description` and `ut` nullable; `name` indexed) |
+| `tournament_age_class` | 4 | — |
+| `tournament_set` | 15 | — |
 | `tournament_sub_set` | 97 | `tournament_setFK` `int unsigned NOT NULL` — the only parent-child pair among the thirteen |
-| `venue_data_type` | 55 | no `description` at all; `ut` nullable |
+| `venue_data_type` | 56 | no `description` at all; `ut` nullable |
 
-Row counts are `information_schema` estimates as of 2026-09-07 and are context, never a
-basis for a claim. Types and nullability are declarations and do not move.
+Row counts are exact `COUNT(*)` values as of 2026-09-08 and are context, never a basis for
+a claim. Types and nullability are declarations and do not move.
+
+**They were `information_schema.TABLE_ROWS` estimates when this table was first written on
+2026-09-07, and the estimates were badly wrong.** `disability_class` was estimated at 212
+against an actual 384, `scope_data_type` at 977 against 1 075, `round_type` at 301 against
+381 — and `category` was estimated at 0 and recorded here as empty, when it holds one row.
+Eight of the thirteen were off. `TABLE_ROWS` is unusable as a count, which `DB-SEM-023`
+records again for the statistic shards.
 
 Two of these bear directly on checks already written. `discipline.sportFK` is the column
 `GLOBAL-DQ-015` and `GLOBAL-DQ-161` both turn on, and it is the reason a duplicate
@@ -1809,7 +1816,34 @@ estimates are unusable as counts.
   11 named providers. The consequence that binds a check: **the live scope tables carry no
   `providerFK`**, so a scope defect can never be attributed to a provider. The import tables
   and provider family are recorded, not opened.
-- Taxonomy relationship between `scope_type` and `scope_data_type`.
+- ~~Taxonomy relationship between `scope_type` and `scope_data_type`.~~
+  **Answered 2026-09-08: there is no taxonomy, because they are two independent axes.**
+  Neither table holds a column pointing at the other — a schema fact, not a data reading.
+  `scope_type` names a segment of an event and `scope_data_type` names a value measured in
+  one; the only place the two meet is a join from `event_scope` through `scope_result`.
+
+  `scope_type`'s 1 377 rows are dominated by numbered positional families — `over#` 451,
+  `point#` 252, `checkpoint#` 200, `game#` 150, `lap#` 100, then `frame#`, `goal#`, `leg#`,
+  `heat#`, `set#`, `round#`, `overtime#`, `shootout#` and a tail of 26 singletons such as
+  `starting_grid`, `fastest_lap` and `aggregate_score`. `scope_data_type`'s 1 075 rows hold
+  measured fields — `rank`, `points`, `duration`, `laps_behind`, `pitstops` — but also
+  numbered families of their own: `point#` 250, `dart#` 40, `strokes#` 30, `fence#` 30,
+  `judge_#` 7.
+
+  **The naming style therefore does not tell the two apart.** `point#` exists in both with
+  roughly 250 rows each, so a reader matching on name shape would conclude a relation that the
+  schema does not have.
+
+  In use: 738 of the 1 376 active scope types appear in `event_scope`, and 590 of the 1 075
+  active data types appear in `scope_result`.
+
+  **What was not measured, and why:** the global matrix of which data types occur under which
+  scope type. It requires joining `scope_result` (99 339 067 rows) to `event_scope`
+  (6 802 370) and grouping, and that does not complete inside one query window — it was
+  attempted on 2026-09-08 and hit the gateway timeout. It was not split into shards, per the
+  standing rule that a query which will not run is redesigned rather than cut, and no redesign
+  reaches it. So whether the pairs are constrained or free remains unknown, and the user closed
+  the question on the structural answer with that gap stated rather than left implicit.
 - What distinguishes two Comp.Rank statistics sharing one tournament, discipline and gender.
   Those three are the intended identifying attributes (`DB-SEM-013`), but a season holds one
   statistic per stop and a stage can hold several competitions of the same discipline and
