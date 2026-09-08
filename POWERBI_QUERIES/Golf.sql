@@ -1743,12 +1743,12 @@ SELECT
         ELSE 'FIELD_IMPLIES_A_PAR_THAT_IS_NOT_A_COURSE_PAR'
     END AS check_type,
     d.event_id,
-    d.event_name,
-    d.event_startdate,
+    ev.name AS event_name,
+    ev.startdate AS event_startdate,
     d.stage_id AS tournament_stage_id,
-    d.stage_name AS tournament_stage_name,
-    d.tournament_name,
-    d.template_name,
+    tsn.name AS tournament_stage_name,
+    tn.name AS tournament_name,
+    ttn.name AS template_name,
     d.stage_par AS the_stage_says,
     d.implied_par AS the_field_says,
     d.competitors_behind_it,
@@ -1809,12 +1809,7 @@ SELECT
 FROM (
     SELECT
         b.event_id,
-        b.event_name,
-        b.event_startdate,
         b.stage_id,
-        b.stage_name,
-        b.tournament_name,
-        b.template_name,
         b.stage_par,
         b.implied_par,
         COUNT(*) AS competitors_behind_it,
@@ -1823,12 +1818,7 @@ FROM (
     FROM (
         SELECT
             a.event_id,
-            a.event_name,
-            a.event_startdate,
             a.stage_id,
-            a.stage_name,
-            a.tournament_name,
-            a.template_name,
             CAST(pp.par_value AS SIGNED) AS stage_par,
             CASE WHEN MOD(a.par_total - (a.sum_rounds - CAST(pp.par_value AS SIGNED) * a.n_rounds), a.n_rounds) = 0
                  THEN CAST(CAST(pp.par_value AS SIGNED)
@@ -1840,12 +1830,9 @@ FROM (
             SELECT
                 ep.id AS ep_id,
                 e.id AS event_id,
-                e.name AS event_name,
-                e.startdate AS event_startdate,
+                -- Ids only through the grouping and the window. The names are joined back
+                -- onto the events that survive; Golf-DQ-104 records why.
                 ts.id AS stage_id,
-                ts.name AS stage_name,
-                t.name AS tournament_name,
-                tt.name AS template_name,
                 SUM(CASE WHEN r.result_typeFK IN (31, 32, 33, 34, 35)
                           AND TRIM(r.value) REGEXP '^[0-9]+$'
                          THEN CAST(TRIM(r.value) AS SIGNED) ELSE 0 END) AS sum_rounds,
@@ -1872,7 +1859,7 @@ FROM (
               -- AND t.tournament_templateFK = <tournament_template_id>
               -- AND e.startdate >= '<from_datetime>'
               -- AND e.startdate <  '<to_datetime>'
-            GROUP BY ep.id, e.id, e.name, e.startdate, ts.id, ts.name, t.name, tt.name
+            GROUP BY ep.id, e.id, ts.id
         ) a
         JOIN (
             SELECT objectFK AS stage_id, MAX(value) AS par_value
@@ -1884,9 +1871,12 @@ FROM (
           AND a.par_total IS NOT NULL
     ) b
     WHERE b.implied_par IS NOT NULL
-    GROUP BY b.event_id, b.event_name, b.event_startdate, b.stage_id, b.stage_name, b.tournament_name,
-             b.template_name, b.stage_par, b.implied_par
+    GROUP BY b.event_id, b.stage_id, b.stage_par, b.implied_par
 ) d
+JOIN event ev ON ev.id = d.event_id
+JOIN tournament_stage tsn ON tsn.id = d.stage_id
+JOIN tournament tn ON tn.id = tsn.tournamentFK
+JOIN tournament_template ttn ON ttn.id = tn.tournament_templateFK
 WHERE d.rn = 1
   AND d.implied_par <> d.stage_par
 
@@ -1939,10 +1929,10 @@ SELECT
     -- What it does: Flags a competitor whose score against par does not follow from their own rounds, in an event where nearly every other card does.
     'CARD_TOTAL_PAR_CONTRADICTS_ITS_OWN_ROUNDS' AS check_type,
     w.event_id,
-    w.event_name,
-    w.event_startdate,
-    w.season,
-    w.participant_name,
+    ev.name AS event_name,
+    ev.startdate AS event_startdate,
+    tn.name AS season,
+    pn.name AS participant_name,
     w.field_par AS the_field_par,
     w.n_rounds AS rounds_played,
     w.sum_rounds AS strokes_recorded,
@@ -2018,10 +2008,7 @@ SELECT
 FROM (
     SELECT
         f.event_id,
-        f.event_name,
-        f.event_startdate,
-        f.season,
-        f.participant_name,
+        f.participant_id,
         f.n_rounds,
         f.sum_rounds,
         f.par_total,
@@ -2033,10 +2020,7 @@ FROM (
     FROM (
         SELECT
             v.event_id,
-            v.event_name,
-            v.event_startdate,
-            v.season,
-            v.participant_name,
+            v.participant_id,
             v.n_rounds,
             v.sum_rounds,
             v.par_total,
@@ -2049,10 +2033,7 @@ FROM (
         FROM (
             SELECT
                 b.event_id,
-                b.event_name,
-                b.event_startdate,
-                b.season,
-                b.participant_name,
+                b.participant_id,
                 b.n_rounds,
                 b.sum_rounds,
                 b.par_total,
@@ -2062,10 +2043,7 @@ FROM (
             FROM (
                 SELECT
                     a.event_id,
-                    a.event_name,
-                    a.event_startdate,
-                    a.season,
-                    a.participant_name,
+                    a.participant_id,
                     a.n_rounds,
                     a.sum_rounds,
                     a.par_total,
@@ -2079,11 +2057,10 @@ FROM (
                 FROM (
                     SELECT
                         ep.id AS ep_id,
-                        e.id AS event_id,
-                        e.name AS event_name,
-                        e.startdate AS event_startdate,
-                        t.name AS season,
-                        p.name AS participant_name,
+                        -- Ids only through the four windows below. The names are joined
+                        -- back onto the cards that survive; Golf-DQ-104 records why.
+                        ep.eventFK AS event_id,
+                        ep.participantFK AS participant_id,
                         ts.id AS stage_id,
                         SUM(CASE WHEN r.result_typeFK IN (31, 32, 33, 34, 35)
                                   AND TRIM(r.value) REGEXP '^[1-9][0-9]*$'
@@ -2115,7 +2092,7 @@ FROM (
                       -- AND t.tournament_templateFK = <tournament_template_id>
                       -- AND e.startdate >= '<from_datetime>'
                       -- AND e.startdate <  '<to_datetime>'
-                    GROUP BY ep.id, e.id, e.name, e.startdate, t.name, p.name, ts.id
+                    GROUP BY ep.id, ep.eventFK, ep.participantFK, ts.id
                 ) a
                 JOIN (
                     SELECT objectFK AS stage_id, MAX(value) AS par_value
@@ -2129,6 +2106,10 @@ FROM (
         ) v
     ) f
 ) w
+JOIN event ev ON ev.id = w.event_id
+JOIN tournament_stage tsn ON tsn.id = ev.tournament_stageFK
+JOIN tournament tn ON tn.id = tsn.tournamentFK
+JOIN participant pn ON pn.id = w.participant_id
 WHERE (w.implied_par IS NULL OR w.implied_par <> w.field_par)
   AND w.cards_wrong_here BETWEEN 1 AND 3
   AND w.rounds_are_strokes_here = 1
@@ -2185,16 +2166,16 @@ SELECT
     CASE WHEN MAX(c.made_cut) = 'no' THEN 'MISSED_CUT_CARD_BEATS_THE_CUT_LINE'
          ELSE 'MADE_CUT_CARD_TRAILS_THE_BEST_MISSED_CARD' END AS check_type,
     c.event_id,
-    c.event_name,
-    c.event_startdate,
-    c.season,
+    ev.name AS event_name,
+    ev.startdate AS event_startdate,
+    tn.name AS season,
     COUNT(*) AS cards_on_the_wrong_side,
     -- No ORDER BY inside the concatenation: MySQL resolves one against this SELECT's own output
     -- columns, and folding the row to the event took participant_name out of them. The order is
     -- carried by the value instead - the total is left-padded so it sorts as a number - and the
     -- reviewer's row-level notes do not depend on it, since a finding is keyed on check_type and
     -- the columns whose names end in _id.
-    GROUP_CONCAT(CONCAT(LPAD(c.total36, 4, '0'), ' ', c.participant_name)
+    GROUP_CONCAT(CONCAT(LPAD(c.total36, 4, '0'), ' ', pn.name)
                  SEPARATOR ' | ') AS affected_participants,
     MAX(c.cut_line_yes) AS worst_total_that_made_the_cut,
     MAX(c.best_missed) AS best_total_that_missed,
@@ -2249,10 +2230,7 @@ SELECT
 FROM (
     SELECT
         b.event_id,
-        b.event_name,
-        b.event_startdate,
-        b.season,
-        b.participant_name,
+        b.participant_id,
         b.made_cut,
         b.total36,
         b.cut_line_yes,
@@ -2265,10 +2243,7 @@ FROM (
     FROM (
         SELECT
             a.event_id,
-            a.event_name,
-            a.event_startdate,
-            a.season,
-            a.participant_name,
+            a.participant_id,
             a.made_cut,
             a.total36,
             MAX(CASE WHEN a.made_cut = 'yes' THEN a.total36 END)
@@ -2279,11 +2254,10 @@ FROM (
                 OVER (PARTITION BY a.event_id) AS late_after_cut
         FROM (
             SELECT
-                e.id AS event_id,
-                e.name AS event_name,
-                e.startdate AS event_startdate,
-                t.name AS season,
-                p.name AS participant_name,
+                -- Ids only through the three windows. The names are joined back onto the
+                -- rows that survive the filter; Golf-DQ-104 records why.
+                ep.eventFK AS event_id,
+                ep.participantFK AS participant_id,
                 MAX(CASE WHEN r.result_typeFK = 38 THEN LOWER(TRIM(r.value)) END) AS made_cut,
                 MAX(CASE WHEN r.result_typeFK = 104 THEN LOWER(TRIM(r.value)) END) AS comment_value,
                 SUM(CASE WHEN r.result_typeFK IN (31, 32) AND TRIM(r.value) REGEXP '^[1-9][0-9]*$'
@@ -2310,7 +2284,7 @@ FROM (
               -- AND t.tournament_templateFK = <tournament_template_id>
               -- AND e.startdate >= '<from_datetime>'
               -- AND e.startdate <  '<to_datetime>'
-            GROUP BY ep.id, e.id, e.name, e.startdate, t.name, p.name
+            GROUP BY ep.id, ep.eventFK, ep.participantFK
             HAVING n36 = 2
                AND made_cut IN ('yes', 'no')
                AND (comment_value IS NULL
@@ -2318,6 +2292,10 @@ FROM (
         ) a
     ) b
 ) c
+JOIN event ev ON ev.id = c.event_id
+JOIN tournament_stage tsn ON tsn.id = ev.tournament_stageFK
+JOIN tournament tn ON tn.id = tsn.tournamentFK
+JOIN participant pn ON pn.id = c.participant_id
 WHERE c.late_after_cut = 0
   AND (
         (c.made_cut = 'no'  AND c.total36 < c.cut_line_yes
@@ -2327,9 +2305,9 @@ WHERE c.late_after_cut = 0
       )
 GROUP BY
     c.event_id,
-    c.event_name,
-    c.event_startdate,
-    c.season
+    ev.name,
+    ev.startdate,
+    tn.name
 
 UNION ALL
 
@@ -2389,10 +2367,10 @@ SELECT
               THEN 'MDF_COMMENT_WITHOUT_A_MADE_CUT_FLAG'
          ELSE 'MISSED_CUT_CARD_HOLDS_A_ROUND_PLAYED_AFTER_THE_CUT' END AS check_type,
     b.event_id,
-    b.event_name,
-    b.event_startdate,
-    b.season,
-    b.participant_name,
+    ev.name AS event_name,
+    ev.startdate AS event_startdate,
+    tn.name AS season,
+    pn.name AS participant_name,
     b.made_cut AS made_cut_recorded,
     b.comment_value AS comment_recorded,
     b.late_rounds AS rounds_after_the_cut,
@@ -2441,10 +2419,7 @@ SELECT
 FROM (
     SELECT
         a.event_id,
-        a.event_name,
-        a.event_startdate,
-        a.season,
-        a.participant_name,
+        a.participant_id,
         a.made_cut,
         a.comment_value,
         a.late_rounds,
@@ -2456,11 +2431,10 @@ FROM (
                  THEN 1 ELSE 0 END) OVER (PARTITION BY a.event_id) AS missed_cut_cards_here
     FROM (
         SELECT
-            e.id AS event_id,
-            e.name AS event_name,
-            e.startdate AS event_startdate,
-            t.name AS season,
-            p.name AS participant_name,
+            -- Ids only through the window. The names are joined back onto the surviving
+            -- cards instead of being sorted with all of them; Golf-DQ-104 records why.
+            ep.eventFK AS event_id,
+            ep.participantFK AS participant_id,
             MAX(CASE WHEN r.result_typeFK = 38 THEN LOWER(TRIM(r.value)) END) AS made_cut,
             MAX(CASE WHEN r.result_typeFK = 104 THEN LOWER(TRIM(r.value)) END) AS comment_value,
             SUM(CASE WHEN r.result_typeFK IN (33, 34, 35) AND TRIM(r.value) REGEXP '^[1-9][0-9]*$'
@@ -2483,9 +2457,13 @@ FROM (
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
-        GROUP BY ep.id, e.id, e.name, e.startdate, t.name, p.name
+        GROUP BY ep.id, ep.eventFK, ep.participantFK
     ) a
 ) b
+JOIN event ev ON ev.id = b.event_id
+JOIN tournament_stage tsn ON tsn.id = ev.tournament_stageFK
+JOIN tournament tn ON tn.id = tsn.tournamentFK
+JOIN participant pn ON pn.id = b.participant_id
 WHERE (
         (b.made_cut = 'no' AND b.late_rounds > 0
          AND (b.comment_value IS NULL OR b.comment_value <> 'mdf')
@@ -2536,10 +2514,10 @@ SELECT
     -- What it does: Flags a card finishing ahead of another card that scored better over the same number of rounds, in an event where at most three cards do.
     'RANK_CONTRADICTS_THE_TOTAL_PAR_IT_IS_BUILT_ON' AS check_type,
     d.event_id,
-    d.event_name,
-    d.event_startdate,
-    d.season,
-    d.participant_name,
+    ev.name AS event_name,
+    ev.startdate AS event_startdate,
+    tn.name AS season,
+    pn.name AS participant_name,
     d.rank_value AS rank_recorded,
     d.par_total AS total_par_recorded,
     d.n_rounds AS rounds_played,
@@ -2584,10 +2562,7 @@ SELECT
 FROM (
     SELECT
         c.event_id,
-        c.event_name,
-        c.event_startdate,
-        c.season,
-        c.participant_name,
+        c.participant_id,
         c.rank_value,
         c.par_total,
         c.n_rounds,
@@ -2597,10 +2572,7 @@ FROM (
     FROM (
         SELECT
             b.event_id,
-            b.event_name,
-            b.event_startdate,
-            b.season,
-            b.participant_name,
+            b.participant_id,
             b.rank_value,
             b.par_total,
             b.n_rounds,
@@ -2609,11 +2581,14 @@ FROM (
                 AS best_rank_among_worse
         FROM (
             SELECT
-                e.id AS event_id,
-                e.name AS event_name,
-                e.startdate AS event_startdate,
-                t.name AS season,
-                p.name AS participant_name,
+                -- Ids only through the two windows below. The names used to be carried in
+                -- the GROUP BY and sorted with every one of the sport's 373472 cards; a sort
+                -- reserves each column's declared width per row, which is what GLOBAL-DQ-111
+                -- records as the largest cost it removed. They are joined back at the end,
+                -- onto the cards that survive. Measured 2026-09-08: 47.6 seconds to 28.9 and
+                -- 45.5 to 25.1, same finding - event 325242, Dubai Desert Classic 2005.
+                ep.eventFK AS event_id,
+                ep.participantFK AS participant_id,
                 MAX(CASE WHEN r.result_typeFK = 104 THEN LOWER(TRIM(r.value)) END) AS comment_value,
                 MAX(CASE WHEN r.result_typeFK = 100 AND TRIM(r.value) REGEXP '^[0-9]+$'
                          THEN CAST(TRIM(r.value) AS SIGNED) END) AS rank_value,
@@ -2640,7 +2615,7 @@ FROM (
               -- AND t.tournament_templateFK = <tournament_template_id>
               -- AND e.startdate >= '<from_datetime>'
               -- AND e.startdate <  '<to_datetime>'
-            GROUP BY ep.id, e.id, e.name, e.startdate, t.name, p.name
+            GROUP BY ep.id, ep.eventFK, ep.participantFK
             HAVING rank_value IS NOT NULL
                AND par_total IS NOT NULL
                AND n_rounds > 0
@@ -2649,6 +2624,10 @@ FROM (
         ) b
     ) c
 ) d
+JOIN event ev ON ev.id = d.event_id
+JOIN tournament_stage tsn ON tsn.id = ev.tournament_stageFK
+JOIN tournament tn ON tn.id = tsn.tournamentFK
+JOIN participant pn ON pn.id = d.participant_id
 WHERE d.best_rank_among_worse < d.rank_value
   AND d.cards_wrong_here BETWEEN 1 AND 3
 
@@ -2979,11 +2958,11 @@ SELECT
     -- What it does: Flags a card paid less than a card that finished behind it in the same event.
     'PRIZE_MONEY_CONTRADICTS_THE_FINISHING_ORDER' AS check_type,
     d.event_id,
-    d.event_name,
-    d.event_startdate,
-    d.season,
-    d.template_name,
-    d.participant_name,
+    ev.name AS event_name,
+    ev.startdate AS event_startdate,
+    tn.name AS season,
+    ttn.name AS template_name,
+    pn.name AS participant_name,
     d.rank_value AS rank_recorded,
     d.prize AS prize_money_recorded,
     d.best_prize_behind AS most_paid_to_a_worse_finish,
@@ -3024,11 +3003,7 @@ SELECT
 FROM (
     SELECT
         c.event_id,
-        c.event_name,
-        c.event_startdate,
-        c.season,
-        c.template_name,
-        c.participant_name,
+        c.participant_id,
         c.rank_value,
         c.prize,
         c.best_prize_behind,
@@ -3037,23 +3012,17 @@ FROM (
     FROM (
         SELECT
             b.event_id,
-            b.event_name,
-            b.event_startdate,
-            b.season,
-            b.template_name,
-            b.participant_name,
+            b.participant_id,
             b.rank_value,
             b.prize,
             MAX(b.prize) OVER (PARTITION BY b.event_id ORDER BY b.rank_value
                                RANGE BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING) AS best_prize_behind
         FROM (
             SELECT
-                e.id AS event_id,
-                e.name AS event_name,
-                e.startdate AS event_startdate,
-                t.name AS season,
-                tt.name AS template_name,
-                p.name AS participant_name,
+                -- Ids only through the two windows. The names are joined back onto the
+                -- rows that survive; Golf-DQ-104 records why.
+                ep.eventFK AS event_id,
+                ep.participantFK AS participant_id,
                 MAX(CASE WHEN r.result_typeFK = 100 AND TRIM(r.value) REGEXP '^[0-9]+$'
                          THEN CAST(TRIM(r.value) AS SIGNED) END) AS rank_value,
                 MAX(CASE WHEN r.result_typeFK = 540 AND TRIM(r.value) REGEXP '^[0-9]+(\\.[0-9]+)?$'
@@ -3076,11 +3045,16 @@ FROM (
               -- AND t.tournament_templateFK = <tournament_template_id>
               -- AND e.startdate >= '<from_datetime>'
               -- AND e.startdate <  '<to_datetime>'
-            GROUP BY ep.id, e.id, e.name, e.startdate, t.name, tt.name, p.name
+            GROUP BY ep.id, ep.eventFK, ep.participantFK
             HAVING rank_value IS NOT NULL AND prize > 0
         ) b
     ) c
 ) d
+JOIN event ev ON ev.id = d.event_id
+JOIN tournament_stage tsn ON tsn.id = ev.tournament_stageFK
+JOIN tournament tn ON tn.id = tsn.tournamentFK
+JOIN tournament_template ttn ON ttn.id = tn.tournament_templateFK
+JOIN participant pn ON pn.id = d.participant_id
 WHERE d.best_prize_behind > d.prize
 
 UNION ALL
