@@ -822,7 +822,7 @@ No PowerBI update required.
 
 Only stable questions explicitly raised during authorized PowerBI work belong here.
 
-1. **Should the organization/country comparison be asked of the Comp.Rank layer too?**
+1. ~~**Should the organization/country comparison be asked of the Comp.Rank layer too?**
    `GLOBAL-DQ-132` compares an organization's country with the competitor's on the event layer,
    reading the `organizationFK` property on `event_participants`. The statistic layer holds the
    same fact through a different mechanism - `statistic_data_type` 1465 Organization, which
@@ -831,14 +831,50 @@ Only stable questions explicitly raised during authorized PowerBI work belong he
    proposed and deliberately not written on 2026-08-21: it would be a third organization CheckID
    per sport, and the event-layer pair was judged enough for now. Raise it again when the two
    presence checks start coming back clean, because until an organization is stored there is
-   nothing to compare.
+   nothing to compare.~~
 
-2. **Lineup members have no organization field at all.** Every athlete, team, lineup member and
+   **Answered 2026-09-08: yes, and it was already done three days after this was written.**
+   `GLOBAL-DQ-136 COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR` — finds
+   Comp.Rank organizations whose country is not the country of the competitors ranked under
+   them — was written on 2026-08-24, together with its drill-down
+   `GLOBAL-DQ-145 COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL`,
+   which names every such competitor one row per ranking. Both are instantiated on fifteen
+   sports. The decision of 2026-08-21 recorded here was reversed and this entry was never struck
+   out.
+
+   The condition it set — raise it again when the presence checks come back clean — is moot,
+   and would have kept the question shut for the wrong reason had it been followed. Measured
+   2026-09-08, the Comp.Rank layer carries an Organization on **494 424 of 3 146 389 ranked
+   participation rows, 15.7 per cent**. That is not an argument against the check; it is what
+   `GLOBAL-DQ-136` reads, and it is why seven sports carry it with an `eligible_count` of 0 as a
+   sentinel. A check is judged by the invariant it guards, not by today's population.
+
+2. ~~**Lineup members have no organization field at all.** Every athlete, team, lineup member and
    Comp.Rank participant is supposed to carry an organization, and three of those four have
    somewhere to keep it. The lineup does not: measured 2026-08-21, `property` rows with owner
    `lineup` number zero, as do `participant`, `event`, `tournament` and `tournament_stage` -
    `event_participants` is the only owner in the database that carries an `organizationFK`. This
    is a request against the schema rather than a check that can be written, and it is recorded
-   here so it is not mistaken for one.
+   here so it is not mistaken for one.~~
+
+   **Answered 2026-09-08, with one of its own claims corrected.** The lineup half stands: no
+   `property` row with owner `lineup` is named `organizationFK`, so there is nowhere on a lineup
+   entry to record an organization, and that remains a request against the schema rather than a
+   check anybody can write.
+
+   **`event_participants` is not the only owner, though.** Measured 2026-09-08 across the whole
+   `property` table, `organizationFK` has two owners: `event_participants` on 1 050 269 rows and
+   **`object_participants` on 86 124** — a competitor's registry row for a sport. The 2026-08-21
+   reading missed the second one.
+
+   That correction raises a question the original entry could not have asked, and it was
+   measured rather than assumed: **if an organization already lives at registry level, can a
+   lineup reach one through the competitor?** It cannot. Of 478 933 distinct participants
+   appearing in an active `lineup` row, **3 788 have an organization on their registry row —
+   0.8 per cent**. The detour is not a substitute, so nothing here changes what the schema needs
+   to provide.
+
+   Closed because that is the whole of what can be said from this side. The schema request is
+   the owners' to act on, and no check follows from it.
 
 <!-- MANUAL PASTE ZONE: POWERBI OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->
