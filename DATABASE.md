@@ -1318,8 +1318,31 @@ is not expected alongside an identical gender.
 
 Those three do not form a unique key in practice. A season holds one Comp.Rank per stop, all
 sharing the same tournament, and a single stage can hold several competitions of the same
-discipline and gender. What additionally separates two such statistics is not yet confirmed
-and is recorded as an open question below.
+discipline and gender.
+
+**What separates them is `statistic.name`, measured 2026-09-08.** Over all 81 502
+`statistic_typeFK = 11` rows owned by a `tournament`, grouping on tournament, discipline
+(`object_discipline` at `object_typeFK = 83`) and gender (`tournament_template.gender`) gives
+12 101 groups holding one statistic and 11 039 holding more — up to 50 and beyond in a single
+group. Within those 11 039 groups the name separates every statistic in **11 036** of them.
+
+**The residue is four pairs, in three tournaments:**
+
+| Tournament | Repeated name | Statistics |
+|---:|---|---|
+| 34187 | `World Cup All-Around, Stuttgart Team All-Around Final Female - Competition Rank (athletes)` | 315538, 315543 |
+| 35903 | `Junior European Championships - Olsztyn Female - Competition Rank` | 321341, 363546 |
+| 47051 | `Individual` | 155523, 155524 |
+| 47051 | `Synchro` | 196082, 196085 |
+
+**The name works, but not by a convention anybody recorded, and that is the caution.** In
+tournament 34187 the discriminating suffix is `(athletes)` on an otherwise identical long
+name; in 47051 the names are bare words — `Individual`, `Synchro`, `Team`, `Team (athletes)`.
+It is free text carrying identity, so a uniqueness check on the four attributes together is
+possible while any check that parses the name is not, and `DB-SEM-013`'s existing rule stands:
+uniqueness checks are written per sport.
+
+No check was opened for the four pairs on 2026-09-08 — the Comp.Rank layer is paused.
 
 Every event carrying a Final round type is expected to have its own Comp.Rank. The relation
 between the two is not stored as a foreign key, so this is an expectation about population
@@ -1844,11 +1867,15 @@ estimates are unusable as counts.
   standing rule that a query which will not run is redesigned rather than cut, and no redesign
   reaches it. So whether the pairs are constrained or free remains unknown, and the user closed
   the question on the structural answer with that gap stated rather than left implicit.
-- What distinguishes two Comp.Rank statistics sharing one tournament, discipline and gender.
+- ~~What distinguishes two Comp.Rank statistics sharing one tournament, discipline and gender.
   Those three are the intended identifying attributes (`DB-SEM-013`), but a season holds one
   statistic per stop and a stage can hold several competitions of the same discipline and
   gender, so no uniqueness check can be built on them until the additional discriminator is
-  confirmed.
+  confirmed.~~ **Answered 2026-09-08: `statistic.name`.** It separates every statistic in
+  11 036 of the 11 039 colliding groups, leaving four pairs in three tournaments.
+  `DB-SEM-013` holds the measurement and the caution — the name carries identity as free text
+  with no recorded convention, so a uniqueness check on the four attributes together is
+  possible while parsing the name is not.
 - Where the relation between a Comp.Rank and the events it covers will be stored once
   `statistic_config` Event id (`1471`) becomes mandatory. It is populated for part of the
   current data only, and statistics without it currently declare no event scope at all.
