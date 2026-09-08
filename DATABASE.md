@@ -742,8 +742,65 @@ Name/value metadata attached to an event-scope container.
 - `scope_data_type` defines the individual segment/checkpoint/data point.
 - A direct taxonomy relation between those two reference tables has not been confirmed.
 
-Parallel `*_import` tables with `providerFK` have been observed. Their complete schema
-and canonical/import synchronization behavior remain open.
+### The import twin model
+
+Read 2026-09-07. Six scope tables have a parallel `*_import` table, and the pattern is
+uniform rather than per-table:
+
+| Live table | Import twin |
+|---|---|
+| `event_scope` | `event_scope_import` |
+| `event_scope_detail` | `event_scope_detail_import` |
+| `lineup_scope_result` | `lineup_scope_result_import` |
+| `scope_result` | `scope_result_import` |
+| `scope_type` | `scope_type_import` |
+| `scope_data_type` | `scope_data_type_import` |
+
+Each twin carries its live table's own columns plus exactly three staging columns:
+
+- `importID` — the batch the row arrived in;
+- `providerFK` — which provider supplied it, resolving against `provider.id`;
+- `status_import` `enum('init','mapped','unmapped','import','ignore','in_sync','error')`.
+
+Three differences between a twin and its live table are worth naming, because each one is a
+place a statement written against the wrong side goes quietly wrong:
+
+- **The live scope tables carry no `providerFK` at all.** Provenance exists only in the twin,
+  so once a row is imported, which provider supplied it cannot be recovered from the live
+  table. No check may attribute a scope defect to a provider.
+- **`del` reverses its enum order.** Live tables declare `enum('no','yes')`, twins declare
+  `enum('yes','no')`. An `enum` numbers its values from 1, so the two columns sort and cast
+  differently despite holding the same two words.
+- **Key columns widen.** `int` becomes `int unsigned` throughout, and
+  `event_scope_import.eventFK` is `bigint` where `event_scope.eventFK` is `int`.
+
+The small twins are fully settled today — `scope_type_import` is `in_sync` on all 594 rows and
+`scope_data_type_import` on all 1 103 — but that is a data state and says nothing about the
+other four.
+
+### The provider relation
+
+The provider is four tables, not one:
+
+| Table | Rows | What it holds |
+|---|---:|---|
+| `provider` | 11 | the reference: `id`, `name`, `del`, `n`, `ut`; all 11 active |
+| `object_provider` | 1 164 | `object_typeFK` + `objectFK` + `providerFK` + `active` — which provider covers which object |
+| `provider_data` | 114 273 | `providerFK` + `object` + `objectFK` + `type` `enum('coverage','export','rule','name')` + `name`/`value` — per-object provider configuration |
+| `provider_object_id` | ~87 774 880 | `providerFK` + `object` `varchar(255)` + `last_updated`, and **no `objectFK`** |
+
+The eleven providers are `Spocosy Scrapers`, `LS`, `A1`, `LTR`, `DR.dk`, `Quick Goal`, `SMT`,
+`Roninsport`, `Fabric-BB Media`, `Enetpulse` and `SDC`. `information_schema` estimated the
+table at 9 rows; it holds 11, which is one more reason those estimates are not counts.
+
+`provider_object_id` has no column pointing at an object. Its `object` holds a table name and
+its own `id` appears to be the identity being allocated — a registry mapping one global id
+space to a provider and an object kind. **That reading is an inference from the shape and a
+13-row sample and was not confirmed**; `last_updated` was `0000-00-00 00:00:00` on every
+sampled row.
+
+The import tables and the provider family stay outside the reach of DQ work, by the user's
+decision on 2026-09-07. They are recorded so the model is complete, not opened.
 
 <!-- MANUAL PASTE ZONE: DATABASE SCOPES — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -1746,7 +1803,12 @@ estimates are unusable as counts.
   different collations on both shard families. `DB-SEM-023` holds the full map and the three
   consequences — a cross-shard `UNION` must name its columns, string comparison is
   shard-dependent, and the shards were plainly not created together.
-- Complete scope import-table model and provider relation.
+- ~~Complete scope import-table model and provider relation.~~ **Answered 2026-09-07** under
+  § 5. Six scope tables have an import twin and the pattern is uniform: live columns plus
+  `importID`, `providerFK` and a seven-value `status_import`. The provider is four tables and
+  11 named providers. The consequence that binds a check: **the live scope tables carry no
+  `providerFK`**, so a scope defect can never be attributed to a provider. The import tables
+  and provider family are recorded, not opened.
 - Taxonomy relationship between `scope_type` and `scope_data_type`.
 - What distinguishes two Comp.Rank statistics sharing one tournament, discipline and gender.
   Those three are the intended identifying attributes (`DB-SEM-013`), but a season holds one
