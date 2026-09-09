@@ -4434,74 +4434,84 @@ SELECT
         ELSE 'DECIDING_VALUE_MISSING_FOR_PART_OF_FIELD'
     END AS check_type,
     x.event_id,
-    x.event_name,
-    x.template_name,
-    x.tournament_name,
-    x.stage_name,
-    x.event_startdate,
+    ev.name AS event_name,
+    ttn.name AS template_name,
+    tn.name AS tournament_name,
+    tsn.name AS stage_name,
+    ev.startdate AS event_startdate,
     x.ranked_participants,
     x.with_value,
     x.excused_participants,
     (x.ranked_participants - x.with_value - x.excused_participants) AS missing_unexcused,
     NULL AS eligible_count,
     0 AS sort_order
+-- Read once, not joined three times. The rank, the deciding value and the excusing
+-- Comment used to arrive as three separate joins to result, which multiply a participation
+-- into a row per combination, and three COUNT(DISTINCT) then undid the multiplication. One
+-- pass over result answers all three per participation and the event totals are plain sums.
+-- The grouping key drops four names the statement wants only for the events it reports.
+-- GLOBAL-DQ-141 carries the same correction and GLOBAL-DQ-111 records why.
+--
+-- Measured 2026-09-09, every row identical in every column: Cycling 45.4 seconds to 34.0,
+-- Track-Cycling 11.4 to 8.3 over its 13209 findings.
 FROM (
     SELECT
-        e.id AS event_id,
-        e.name AS event_name,
-        tt.name AS template_name,
-        t.name AS tournament_name,
-        ts.name AS stage_name,
-        e.startdate AS event_startdate,
-        COUNT(DISTINCT ep.id) AS ranked_participants,
-        COUNT(DISTINCT CASE WHEN rv.id IS NOT NULL THEN ep.id END) AS with_value,
-        -- Excused only where the value is absent. A participant who did not finish and still
-        -- holds a value is neither a finding nor an excuse, and counting them here would let
-        -- one missing row hide behind another participant's Comment.
-        COUNT(DISTINCT CASE WHEN rv.id IS NULL AND rc.id IS NOT NULL THEN ep.id END)
-            AS excused_participants
-    FROM event e
-    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
-    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
-    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-    JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
-    -- The Rank is what makes a participant auditable here. A field entry carrying no place
-    -- was never classified, which is GLOBAL-DQ-036's question rather than this one's.
-    JOIN result rr ON rr.event_participantsFK = ep.id AND rr.del = 'no'
-     AND rr.result_typeFK = {{RESULT_RANK_TYPE_ID}}
-     AND rr.value IS NOT NULL
-     AND TRIM(rr.value) <> ''
-    -- Any one of the sport's deciding fields accounts for the place, which is the same
-    -- reading GLOBAL-DQ-116 gave the list: a timed sport storing both a duration and a full
-    -- time is not short of a result because it kept only one of them for a participant.
-    LEFT JOIN result rv ON rv.event_participantsFK = ep.id AND rv.del = 'no'
-     AND rv.result_typeFK IN ({{RESULT_TIE_VALUE_TYPE_LIST}})
-     AND rv.value IS NOT NULL
-     AND TRIM(rv.value) <> ''
-    -- Two different excuses, and they are not the same statement about the competitor.
-    -- RESULT_COMMENT_NO_RESULT_LIST says the competitor has no result at all, so a place
-    -- beside it is itself a contradiction and GLOBAL-DQ-052 reports it.
-    -- RESULT_COMMENT_NO_VALUE_LIST says the opposite: the competitor is classified and holds
-    -- a place, and the sport does not record the deciding value for them. Biathlon lapping is
-    -- the confirmed case - a lapped rider is ranked and has no finishing time - and reading
-    -- that as a missing value reported 308 of this check's 310 events on that sport, measured
-    -- 2026-09-04. A sport with no such comment names the sentinel and is unaffected.
-    LEFT JOIN result rc ON rc.event_participantsFK = ep.id AND rc.del = 'no'
-     AND (LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
-          OR LOWER(TRIM(rc.value)) IN ({{RESULT_COMMENT_NO_VALUE_LIST}}))
-     AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
-    WHERE e.del = 'no'
-      AND tt.sportFK = {{SPORT_ID}}
-      AND e.status_type = 'finished'
-      AND e.status_descFK = 6
-      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
-      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
-      -- AND t.tournament_templateFK = <tournament_template_id>
-      -- AND e.startdate >= '<from_datetime>'
-      -- AND e.startdate <  '<to_datetime>'
-      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
-    GROUP BY e.id, e.name, tt.name, t.name, ts.name, e.startdate
+        g.event_id,
+        COUNT(*) AS ranked_participants,
+        SUM(g.has_value) AS with_value,
+        SUM(CASE WHEN g.has_value = 0 AND g.has_excuse = 1 THEN 1 ELSE 0 END) AS excused_participants
+    FROM (
+        SELECT
+            ep.eventFK AS event_id,
+            -- The Rank is what makes a participant auditable here. A field entry carrying no
+            -- place was never classified, which is GLOBAL-DQ-036's question rather than this
+            -- one's; the HAVING below drops it exactly as the inner join used to.
+            MAX(CASE WHEN r.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+                      AND r.value IS NOT NULL AND TRIM(r.value) <> '' THEN 1 ELSE 0 END) AS has_rank,
+            -- Any one of the sport's deciding fields accounts for the place, which is the same
+            -- reading GLOBAL-DQ-116 gave the list: a timed sport storing both a duration and a
+            -- full time is not short of a result because it kept only one of them.
+            MAX(CASE WHEN r.result_typeFK IN ({{RESULT_TIE_VALUE_TYPE_LIST}})
+                      AND r.value IS NOT NULL AND TRIM(r.value) <> '' THEN 1 ELSE 0 END) AS has_value,
+            -- Two different excuses, and they are not the same statement about the competitor.
+            -- RESULT_COMMENT_NO_RESULT_LIST says the competitor has no result at all, so a place
+            -- beside it is itself a contradiction and GLOBAL-DQ-052 reports it.
+            -- RESULT_COMMENT_NO_VALUE_LIST says the opposite: the competitor is classified and
+            -- holds a place, and the sport does not record the deciding value for them. Biathlon
+            -- lapping is the confirmed case - a lapped rider is ranked and has no finishing time
+            -- - and reading that as a missing value reported 308 of this check's 310 events on
+            -- that sport, measured 2026-09-04. A sport with no such comment names the sentinel
+            -- and is unaffected.
+            MAX(CASE WHEN r.result_typeFK = {{RESULT_COMMENT_TYPE_ID}}
+                      AND (LOWER(TRIM(r.value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
+                           OR LOWER(TRIM(r.value)) IN ({{RESULT_COMMENT_NO_VALUE_LIST}}))
+                     THEN 1 ELSE 0 END) AS has_excuse
+        FROM event e
+        JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+        JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+        JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
+        JOIN result r ON r.event_participantsFK = ep.id AND r.del = 'no'
+             AND r.result_typeFK IN ({{RESULT_RANK_TYPE_ID}}, {{RESULT_TIE_VALUE_TYPE_LIST}}, {{RESULT_COMMENT_TYPE_ID}})
+        WHERE e.del = 'no'
+          AND tt.sportFK = {{SPORT_ID}}
+          AND e.status_type = 'finished'
+          AND e.status_descFK = 6
+          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+          -- AND t.tournament_templateFK = <tournament_template_id>
+          -- AND e.startdate >= '<from_datetime>'
+          -- AND e.startdate <  '<to_datetime>'
+          -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+        GROUP BY ep.id, ep.eventFK
+        HAVING has_rank = 1
+    ) g
+    GROUP BY g.event_id
 ) x
+JOIN event ev ON ev.id = x.event_id
+JOIN tournament_stage tsn ON tsn.id = ev.tournament_stageFK
+JOIN tournament tn ON tn.id = tsn.tournamentFK
+JOIN tournament_template ttn ON ttn.id = tn.tournament_templateFK
 WHERE x.with_value + x.excused_participants < x.ranked_participants
 
 UNION ALL

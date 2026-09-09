@@ -1319,32 +1319,13 @@ FROM (
             e.startdate AS event_startdate,
             pa.name AS participant_name,
             -- Does the stage hold any later round for this discipline at all
-            (SELECT COUNT(DISTINCT e2.id)
-               FROM event e2
-               JOIN object_discipline od2 ON od2.object_typeFK = 5 AND od2.objectFK = e2.id AND od2.del = 'no'
-              WHERE e2.del = 'no'
-                AND e2.tournament_stageFK = e.tournament_stageFK
-                AND od2.disciplineFK = od.disciplineFK
-                AND e2.id <> e.id
-                AND ( (e.round_typeFK IN (320, 204) AND e2.round_typeFK IN (178, 2, 173, 9, 223, 224))
-                   OR (e.round_typeFK IN (178, 2)   AND e2.round_typeFK IN (173, 9, 223, 224)) )
-            ) AS later_events_in_stage,
-            -- and how many competitors the biggest of them could take. The largest is used
-            -- rather than the sum, because a swimmer reaching the final swam the semi too
-            -- and adding the two fields would count them twice.
-            (SELECT COALESCE(MAX(f.field_size), 0) FROM (
-                SELECT COUNT(DISTINCT ep5.id) AS field_size
-                  FROM event e5
-                  JOIN object_discipline od5 ON od5.object_typeFK = 5 AND od5.objectFK = e5.id AND od5.del = 'no'
-                  JOIN event_participants ep5 ON ep5.eventFK = e5.id AND ep5.del = 'no'
-                 WHERE e5.del = 'no'
-                   AND e5.tournament_stageFK = e.tournament_stageFK
-                   AND od5.disciplineFK = od.disciplineFK
-                   AND e5.id <> e.id
-                   AND ( (e.round_typeFK IN (320, 204) AND e5.round_typeFK IN (178, 2, 173, 9, 223, 224))
-                      OR (e.round_typeFK IN (178, 2)   AND e5.round_typeFK IN (173, 9, 223, 224)) )
-                 GROUP BY e5.id
-            ) f) AS largest_later_field,
+            -- Both of these belong to the event, not to the competitor, and used to be
+            -- evaluated once per qualified competitor in it. They are resolved once per
+            -- event and discipline in the join below; GLOBAL-DQ-111 records the same
+            -- correction - a per-row probe for a property of the event. Measured
+            -- 2026-09-09: 48.0 seconds to 32.4, all 648 rows identical in every column.
+            le.later_events_in_stage,
+            le.largest_later_field,
             -- and does one of them hold this competitor
             (SELECT COUNT(DISTINCT e3.id)
                FROM event e3
@@ -1366,6 +1347,51 @@ FROM (
         JOIN round_type rt ON rt.id = e.round_typeFK
         JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
         JOIN discipline d ON d.id = od.disciplineFK
+        JOIN (
+            SELECT ee.id AS event_id, ood.disciplineFK AS discipline_id,
+                (SELECT COUNT(DISTINCT e2.id)
+                   FROM event e2
+                   JOIN object_discipline od2 ON od2.object_typeFK = 5 AND od2.objectFK = e2.id AND od2.del = 'no'
+                  WHERE e2.del = 'no'
+                    AND e2.tournament_stageFK = ee.tournament_stageFK
+                    AND od2.disciplineFK = ood.disciplineFK
+                    AND e2.id <> ee.id
+                    AND ( (ee.round_typeFK IN (320, 204) AND e2.round_typeFK IN (178, 2, 173, 9, 223, 224))
+                       OR (ee.round_typeFK IN (178, 2)   AND e2.round_typeFK IN (173, 9, 223, 224)) )
+                ) AS later_events_in_stage,
+                -- and how many competitors the biggest of them could take. The largest is used
+                -- rather than the sum, because a swimmer reaching the final swam the semi too
+                -- and adding the two fields would count them twice.
+                (SELECT COALESCE(MAX(f.field_size), 0) FROM (
+                    SELECT COUNT(DISTINCT ep5.id) AS field_size
+                      FROM event e5
+                      JOIN object_discipline od5 ON od5.object_typeFK = 5 AND od5.objectFK = e5.id AND od5.del = 'no'
+                      JOIN event_participants ep5 ON ep5.eventFK = e5.id AND ep5.del = 'no'
+                     WHERE e5.del = 'no'
+                       AND e5.tournament_stageFK = ee.tournament_stageFK
+                       AND od5.disciplineFK = ood.disciplineFK
+                       AND e5.id <> ee.id
+                       AND ( (ee.round_typeFK IN (320, 204) AND e5.round_typeFK IN (178, 2, 173, 9, 223, 224))
+                          OR (ee.round_typeFK IN (178, 2)   AND e5.round_typeFK IN (173, 9, 223, 224)) )
+                     GROUP BY e5.id
+                ) f) AS largest_later_field
+            FROM event ee
+            JOIN tournament_stage ts9 ON ts9.id = ee.tournament_stageFK AND ts9.del = 'no'
+            JOIN tournament t9 ON t9.id = ts9.tournamentFK AND t9.del = 'no'
+            JOIN tournament_template tt9 ON tt9.id = t9.tournament_templateFK AND tt9.del = 'no'
+                 AND tt9.sportFK = 46
+            JOIN object_discipline ood ON ood.object_typeFK = 5 AND ood.objectFK = ee.id AND ood.del = 'no'
+            WHERE ee.del = 'no'
+              AND ee.status_type = 'finished'
+              AND ee.round_typeFK IN (320, 204, 178, 2)
+              AND t9.tournament_templateFK NOT IN (10470, 12788, 12791, 12792, 12797, 12799)
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t9.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t9.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+              AND EXISTS (SELECT 1 FROM event_participants ep9
+                          JOIN result cm9 ON cm9.event_participantsFK = ep9.id AND cm9.del = 'no'
+                                         AND cm9.result_typeFK = 104 AND cm9.value LIKE 'Q%'
+                          WHERE ep9.eventFK = ee.id AND ep9.del = 'no')
+            GROUP BY ee.id, ood.disciplineFK
+        ) le ON le.event_id = e.id AND le.discipline_id = od.disciplineFK
         JOIN event_participants ep ON ep.eventFK = e.id AND ep.del = 'no'
         JOIN participant pa ON pa.id = ep.participantFK
         -- The qualification marker in every spelling the sport uses. The column collation
