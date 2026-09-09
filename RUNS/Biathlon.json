@@ -27939,6 +27939,58 @@
                                                             "checkBy":  "Gabriel, Vanin"
                                                         }
                                 }
+                 },
+                 {
+                     "runId":  "09.09.2026 14-28-09",
+                     "startedUtc":  "2026-09-09T12:28:09Z",
+                     "output":  "",
+                     "commit":  "3fdae6cfffd7",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Biathlon-DQ-098",
+                                        "runKey":  "Biathlon-DQ-098",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  1573,
+                                        "findings":  1572,
+                                        "eligible":  2830,
+                                        "seconds":  17.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "a283eaaf53d3"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  58.6,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  12.5,
+                                                  "planning the changes":  16.6,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.1,
+                                                  "clearing stale rows":  14.5,
+                                                  "writing values":  11.9,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Biathlon-DQ-098":  {
+                                                            "status":  "IT Fix",
+                                                            "checkBy":  ""
+                                                        }
+                                }
                  }
              ],
     "sheetId":  "1eQNoYSY_1jbTh0hzFa6CiSXkCuTo4ceolGt8qDxKUr4"
