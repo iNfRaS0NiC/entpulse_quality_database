@@ -25,24 +25,23 @@ SELECT
 -- The required form is [Discipline] [Gender] [Round] [Run N] [Heat N], with `Overall` kept
 -- where the event carries it.
 --
--- **It reports most of the sport on the day it is written, and that is intended.** The sport
--- runs several naming conventions at once and the required form is the smallest of them: most
--- events open with a possessive gender - `Men's Racing Motos Run 1 Heat 1` - some with a plain
--- one, and a minority already carry the required form. So this is not a shape imposed from
--- outside the sport but the one of its own conventions the user chose on 2026-09-09, knowing
--- what the others held. That makes it a work list first and a guard second, in the same shape
--- as GLOBAL-DQ-144: it falls towards its coverage count as the events are renamed, rather than
--- sitting at zero from the day it is written.
+-- **It is a guard, and it took two drafts to become one.** A renaming cron rewrites this
+-- sport's event names to the required form, and the first draft of this check disagreed with
+-- the cron about the round word: it used the sport's older vocabulary - `Motos`,
+-- `Quarterfinal`, `1/8 Finals`, `Last Chance Race` - and so reported the rename as still
+-- outstanding on most of the sport after the cron had already done it. The cron reads
+-- `round_type.name`, and once this check reads the same thing it falls to almost nothing.
+-- What it now reports is what the cron could not fix rather than what it has not reached yet.
 --
--- **No counts are recorded here on purpose.** A renaming cron was running against this sport
--- while the check was written, and two measurements twenty minutes apart disagreed because of
--- it - the population it audits is being repaired as it is read. `RUNS/BMX-Racing.json` holds
--- what each run actually returned; anything written into this comment would be stale by the
--- next pass.
+-- **No counts are recorded here on purpose.** The population is being repaired while it is
+-- read, and two measurements twenty minutes apart disagreed for that reason alone.
+-- `RUNS/BMX-Racing.json` holds what each run actually returned.
 --
--- `check_type` is what makes the report usable while that is going on:
+-- `check_type` separates what the cron owns from what a person does:
 --   RIGHT_WORDS_IN_THE_WRONG_ORDER - the round word is already the right one and only the
---     order differs. These are the rename and nothing else, and they are what the cron closes.
+--     order differs. These are the rename and nothing else, and the cron closes them. A row
+--     here that survives a cron pass is one the cron could not build a name for, such as an
+--     event of mixed gender whose name carries no gender word at all.
 --   NAME_DOES_NOT_MATCH_DISCIPLINE_GENDER_ROUND_RUN_AND_HEAT - the name says something else.
 --     Among them, events whose entire name is `Male` or `Female` and carry no discipline, no
 --     round and no number; events named `General Classification`; events saying `Time Trial`
@@ -53,26 +52,28 @@ SELECT
 --   HEAT_NUMBER_MISSING_OR_DISAGREES_WITH_THE_HEAT_PROPERTY and its Run twin compare the name
 --     against a stored number rather than against a vocabulary, so they stay true whatever is
 --     decided about wording.
--- Everything except RIGHT_WORDS_IN_THE_WRONG_ORDER is a defect under any reading of the sport,
--- and a reviewer can work those without waiting for the rename to finish.
+-- Everything except RIGHT_WORDS_IN_THE_WRONG_ORDER is a defect under any reading of the sport
+-- and needs a person rather than another cron pass.
 --
--- `Overall` is admitted rather than corrected. Most tournament / gender / round-type groups
--- holding an `Overall` event also hold a plain one, so the two are different events sitting
--- side by side and the pattern has no other place to put the distinction; asking for the
--- `Overall` ones to be renamed would ask for a collision. `General Classification` is not
--- admitted, and that is the opposite answer to the same question, measured the same way: no
--- group holding one holds any other final, so it is that tournament's final under another
--- name and renaming it collides with nothing. Both were checked on 2026-09-09; the shapes are
--- what matters here rather than the counts, for the reason given above.
+-- **The pattern has no slot for `Overall`, and that is the cron's answer rather than this
+-- check's.** Two events of the same round, gender and tournament - one plain, one `Overall` -
+-- both reduce to the same name under the pattern, and the cron settles that by numbering them
+-- from the oldest rather than by keeping a word. So `Overall` is not admitted as a round word,
+-- and a trailing number is admitted instead. What the sport loses by that is real and is worth
+-- recording: `Motos` and `Motos Overall` were two different events, and `Racing Men Heats 1`
+-- and `Racing Men Heats 2` no longer say which is which. That is a consequence of the required
+-- form, not a defect this check can report.
 --
--- The round word comes from an explicit list keyed on the round type's id rather than from
--- `round_type.name`. Twelve ids cover every active event. `38` is the reason the list exists:
--- its `round_type` row is named `1`, which `SPORTS/BMX-Racing.md` records as a weakness of the
--- reference row rather than of the events, and reading it back would ask the whole of Round 1
--- to be called `Racing Men 1 Heat 4`.
+-- `General Classification` needed no such handling: no tournament holding one holds any other
+-- final, so it is that tournament's final under another name and folding it in collides with
+-- nothing. Measured 2026-09-09, the same way and with the opposite answer.
 --
--- Whether an event is an `Overall` one is taken from its own name, because nothing else
--- records it. That is the one thing here the check cannot verify independently.
+-- The round word is `round_type.name` as stored, with the two exceptions the cron makes:
+-- `Semi Finals` becomes `Semifinal`, and `1` becomes `Round 1`. An earlier draft of this check
+-- used the sport's own older vocabulary instead - `Motos`, `Quarterfinal`, `1/8 Finals`,
+-- `Last Chance Race` - which disagreed with the cron on most of the sport and reported the
+-- rename as still outstanding after it had run. The reference row is the authority here
+-- because it is what the cron reads.
 FROM (
     SELECT
         x.*,
@@ -80,10 +81,18 @@ FROM (
             x.discipline_word,
             x.gender_word,
             x.round_word,
-            CASE WHEN x.name_says_overall = 1 THEN 'Overall' END,
             CASE WHEN x.run_value IS NOT NULL THEN CONCAT('Run ', x.run_value) END,
             CASE WHEN x.heat_value IS NOT NULL THEN CONCAT('Heat ', x.heat_value) END
         )) AS expected_name,
+        -- The cron settles a collision by putting a number on the end, so a name that is the
+        -- expected one plus a trailing number is correct and not a finding. The number is the
+        -- cron's to choose - it orders by date - and reproducing that choice here would make
+        -- the check disagree with its own correct output.
+        CASE WHEN x.event_name REGEXP '[[:space:]][0-9]+$'
+             THEN TRIM(SUBSTRING(x.event_name, 1,
+                    CHAR_LENGTH(x.event_name) - CHAR_LENGTH(SUBSTRING_INDEX(x.event_name, ' ', -1))))
+             ELSE x.event_name
+        END AS name_without_group_number,
         CASE
             WHEN x.event_name LIKE 'Men'' %' OR x.event_name LIKE 'Women'' %'
                  THEN 'POSSESSIVE_APOSTROPHE_BROKEN'
@@ -109,7 +118,6 @@ FROM (
             tt.name AS template_name,
             rt.id AS round_type_id,
             rt.name AS round_type_name,
-            CASE WHEN e.name LIKE '%Overall%' THEN 1 ELSE 0 END AS name_says_overall,
             CASE ts.gender
                 WHEN 'male' THEN 'Men'
                 WHEN 'female' THEN 'Women'
@@ -119,19 +127,17 @@ FROM (
                 WHEN 429 THEN 'Racing'
                 WHEN 776 THEN 'Time Trial'
             END AS discipline_word,
+            -- `round_type.name` as stored, with the only two exceptions the renaming
+            -- cron makes: `Semi Finals` is written `Semifinal`, and `1` is written
+            -- `Round 1` because a bare number names nothing. Confirmed 2026-09-09
+            -- against the events the cron had already rewritten: every other round type
+            -- appears in the name exactly as the reference row spells it, plural and
+            -- spacing included, and the `Round` event property is a worse source than
+            -- the reference row because it carries typos of its own.
             CASE rt.id
-                WHEN 38  THEN 'Round 1'
-                WHEN 168 THEN 'Last Chance Race'
-                WHEN 4   THEN '1/8 Finals'
-                WHEN 5   THEN '1/16 Finals'
-                WHEN 6   THEN '1/32 Finals'
-                WHEN 320 THEN 'Motos'
-                WHEN 152 THEN 'Qualification'
-                WHEN 3   THEN 'Quarterfinal'
-                WHEN 2   THEN 'Semifinal'
-                WHEN 173 THEN 'Final'
-                WHEN 189 THEN 'Time Trial Superfinal'
-                WHEN 171 THEN 'Time Trial'
+                WHEN 2  THEN 'Semifinal'
+                WHEN 38 THEN 'Round 1'
+                ELSE rt.name
             END AS round_word,
             MAX(CASE WHEN pr.name = 'Run' THEN pr.value END) AS run_value,
             MAX(CASE WHEN pr.name = 'Heat' THEN pr.value END) AS heat_value
@@ -163,6 +169,7 @@ FROM (
       AND TRIM(x.event_name) <> ''
 ) y
 WHERE BINARY y.event_name <> BINARY y.expected_name
+  AND BINARY y.name_without_group_number <> BINARY y.expected_name
 
 UNION ALL
 
@@ -184,18 +191,9 @@ FROM (
             WHEN 776 THEN 'Time Trial'
         END AS discipline_word,
         CASE rt.id
-            WHEN 38  THEN 'Round 1'
-            WHEN 168 THEN 'Last Chance Race'
-            WHEN 4   THEN '1/8 Finals'
-            WHEN 5   THEN '1/16 Finals'
-            WHEN 6   THEN '1/32 Finals'
-            WHEN 320 THEN 'Motos'
-            WHEN 152 THEN 'Qualification'
-            WHEN 3   THEN 'Quarterfinal'
-            WHEN 2   THEN 'Semifinal'
-            WHEN 173 THEN 'Final'
-            WHEN 189 THEN 'Time Trial Superfinal'
-            WHEN 171 THEN 'Time Trial'
+            WHEN 2  THEN 'Semifinal'
+            WHEN 38 THEN 'Round 1'
+            ELSE rt.name
         END AS round_word,
         e.name AS event_name
     FROM event e
@@ -281,18 +279,9 @@ FROM (
                 WHEN 776 THEN 'Time Trial'
             END AS discipline_word,
             CASE rt.id
-                WHEN 38  THEN 'Round 1'
-                WHEN 168 THEN 'Last Chance Race'
-                WHEN 4   THEN '1/8 Finals'
-                WHEN 5   THEN '1/16 Finals'
-                WHEN 6   THEN '1/32 Finals'
-                WHEN 320 THEN 'Motos'
-                WHEN 152 THEN 'Qualification'
-                WHEN 3   THEN 'Quarterfinal'
-                WHEN 2   THEN 'Semifinal'
-                WHEN 173 THEN 'Final'
-                WHEN 189 THEN 'Time Trial Superfinal'
-                WHEN 171 THEN 'Time Trial'
+                WHEN 2  THEN 'Semifinal'
+                WHEN 38 THEN 'Round 1'
+                ELSE rt.name
             END AS round_word
         FROM event e
         JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
