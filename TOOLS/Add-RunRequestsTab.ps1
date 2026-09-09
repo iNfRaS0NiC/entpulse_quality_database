@@ -50,6 +50,18 @@
     what makes the worker poll it. Left off, the tab is created and the worker ignores it,
     which is the right order while the Apps Script has not been deployed yet.
 
+.PARAMETER Reprotect
+    Bring the editors of an existing protected `Run requests` tab back in step with
+    requesters.owner and requesters.allowed. Without it a tab that is already protected is
+    left exactly as it was, which is right for a re-run and wrong for the day an account is
+    added: the new colleague passes the allowlist in the Apps Script, reaches Google's
+    protection, and is told "You are trying to edit a protected cell or object". Measured on
+    2026-09-09, when gabriel.kirov@enetpulse.com was added to the list alone.
+
+    It only ever widens or narrows the queue tab to the registry's own list. `Run approvals`
+    keeps the owner as its only editor and is not touched, because that protection is the
+    whole-sport gate.
+
 .PARAMETER Unprotected
     Create the tab without the protected range. For a document where the protection has to be
     arranged by hand, or a rehearsal. It leaves the allowlist as the only guard, which the
@@ -84,6 +96,8 @@ param(
     [string]$SpreadsheetId,
 
     [switch]$Register,
+
+    [switch]$Reprotect,
 
     [switch]$Unprotected,
 
@@ -121,6 +135,7 @@ if ($All) {
 
     $forward = @{}
     if ($Register) { $forward['Register'] = $true }
+    if ($Reprotect) { $forward['Reprotect'] = $true }
     if ($Unprotected) { $forward['Unprotected'] = $true }
     if ($WhatIf) { $forward['WhatIf'] = $true }
 
@@ -614,6 +629,7 @@ elseif ($null -eq $existingSheetId) {
 }
 else {
     $already = $false
+    $existingRanges = @()
     $protection = Invoke-SheetsApiWithRetry -Method GET -Path ("$SpreadsheetId" + '?fields=sheets(properties.sheetId,protectedRanges)')
     foreach ($sheet in @($protection.sheets)) {
         if ([int]$sheet.properties.sheetId -ne $existingSheetId) { continue }
@@ -623,12 +639,64 @@ else {
         # 2026-09-01, on the first real run.
         if ($null -ne $sheet.protectedRanges -and @($sheet.protectedRanges).Count -gt 0) {
             $already = $true
+            $existingRanges = @($sheet.protectedRanges)
         }
     }
 
-    if ($already) {
+    # The list the tab should carry, in both branches below. See the long note under the
+    # create path for why every allowed account is an editor and not only the owner.
+    $queueEditors = @(@($registry.requesters.owner) + @($registry.requesters.allowed) |
+            Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
+
+    if ($already -and $Reprotect) {
+        # An existing protection is never rebuilt, only re-addressed. Deleting and re-adding it
+        # would hand the range a new id and drop whatever a person had set on it by hand, and
+        # the only thing out of date is who may write.
+        $wanted = @($queueEditors | ForEach-Object { ([string]$_).ToLowerInvariant() } | Sort-Object)
+        foreach ($range in $existingRanges) {
+            $current = @(@($range.editors.users) |
+                    Where-Object { -not [string]::IsNullOrWhiteSpace($_) } |
+                    ForEach-Object { ([string]$_).ToLowerInvariant() } | Sort-Object)
+
+            if (($current -join ', ') -eq ($wanted -join ', ')) {
+                Write-Host ("  the tab is already protected, and its {0} editor(s) already match the registry" -f $current.Count) -ForegroundColor Green
+                continue
+            }
+
+            $added = @($wanted | Where-Object { $current -notcontains $_ })
+            $removed = @($current | Where-Object { $wanted -notcontains $_ })
+            $delta = @()
+            if ($added.Count) { $delta += ('+' + ($added -join ', +')) }
+            if ($removed.Count) { $delta += ('-' + ($removed -join ', -')) }
+
+            if ($WhatIf) {
+                Write-Host ("  -Reprotect: would set the tab's editors to {0} account(s) ({1})" -f $wanted.Count, ($delta -join '; ')) -ForegroundColor DarkGray
+                continue
+            }
+
+            # fields = 'editors' on purpose: it replaces the editor list and leaves the
+            # description, the range and requestingUserCanEdit as they are.
+            #
+            # Not $reprotect: PowerShell variable names are case-insensitive, so that name is
+            # the -Reprotect switch itself, and assigning a hashtable to it threw "Cannot
+            # convert System.Collections.Hashtable to SwitchParameter" on all seventeen boards.
+            $editorPatch = @{
+                updateProtectedRange = @{
+                    protectedRange = @{
+                        protectedRangeId = [int]$range.protectedRangeId
+                        editors          = @{ users = $queueEditors; domainUsersCanEdit = $false }
+                    }
+                    fields = 'editors'
+                }
+            }
+            [void](Invoke-SheetsApiWithRetry -Method POST -Path "$SpreadsheetId`:batchUpdate" -Body @{ requests = @($editorPatch) })
+            Write-Host ("  reprotected: {0} account(s) may write it ({1})" -f $queueEditors.Count, ($delta -join '; ')) -ForegroundColor Green
+        }
+    }
+    elseif ($already) {
         $verb = if ($WhatIf) { 'would leave' } else { 'leaving' }
-        Write-Host ("  the tab is already protected; {0} the existing protection alone" -f $verb) -ForegroundColor Yellow
+        $hint = if ($WhatIf) { '' } else { ' (-Reprotect brings its editors back in step with the registry)' }
+        Write-Host ("  the tab is already protected; {0} the existing protection alone{1}" -f $verb, $hint) -ForegroundColor Yellow
     }
     elseif ($WhatIf) {
         Write-Host ((("  would protect the whole tab, with the owner and the {0} allowed account(s) " +
@@ -646,8 +714,6 @@ else {
         # document is merely shared with. What it no longer proves is `Requested by`, which is
         # now a claim one of five accounts can write. The whole-sport gate moved to
         # `Run approvals` below for exactly that reason.
-        $queueEditors = @(@($registry.requesters.owner) + @($registry.requesters.allowed) |
-                Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
         $protect = @{
             addProtectedRange = @{
                 protectedRange = @{

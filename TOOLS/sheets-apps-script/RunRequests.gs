@@ -44,7 +44,8 @@ var ALLOWED = [
   'zgeorgieva@enetpulse.com',
   'vanin.neykov@enetpulse.com',
   'mtumpalov@enetpulse.com',
-  'venelin@enetpulse.com'
+  'venelin@enetpulse.com',
+  'gabriel.kirov@enetpulse.com'
 ];
 
 /**
