@@ -342,6 +342,86 @@ stages carry `38` beside the full bracket in the same stage - `173`, `176`, `178
 The bare `1` is therefore a weakness of the `round_type` reference row, not of the events
 using it: the name does not say which round it is, while the events do.
 
+### The event name is a sentence the event's own settings can be read back from
+
+The required form is **`[Discipline] [Gender] [Round] [Run N] [Heat N]`** - `Racing Men Motos
+Run 1 Heat 1` - with `Overall` kept after the round word where the event carries it. Chosen by
+the user on 2026-09-09 for the renaming cron, and it is what
+`BMX-Racing-DQ-118 EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN` compares against.
+
+**Run comes before Heat.** That part the sport has never disagreed about: names ending
+`Run 1 Heat 1` are common and not one ends `Heat 1 Run 1`. Both numbers come from event
+properties of the same names, `Run` carrying 1 to 3 and `Heat` a larger range, so the check can
+compare the name against a stored number rather than against a vocabulary - the only part of
+the pattern that needs no editorial decision at all.
+
+**The sport ran several conventions at once when this was written**, and the required form was
+the smallest of them. Most events opened with a possessive gender - `Men's Racing Motos Run 1
+Heat 1`, with the round word before Run and Heat - some with a plain gender, a minority with
+the discipline, and a few with neither. The chosen form is one of the sport's own, not one
+imposed from outside, but it was the minority one, so the check reports most of the sport until
+the cron has passed.
+
+**Twelve round types carry the vocabulary**, and the word the name uses is mostly not the round
+type's own name:
+
+| Round type | Word in the name |
+|---|---|
+| `173 Final` | `Final` |
+| `2 Semi Finals` | `Semifinal` |
+| `3 Quarter Finals` | `Quarterfinal` |
+| `4 1/8`, `5 1/16`, `6 1/32` | `1/8 Finals`, `1/16 Finals`, `1/32 Finals` |
+| `38 1` | `Round 1` |
+| `168 Repechage` | `Last Chance Race` |
+| `320 Heats` | `Motos` |
+| `152 Qualifier` | `Qualification` |
+| `189 Seeding` | `Time Trial Superfinal` |
+| `171 Preliminary` | `Time Trial` |
+
+`38` is why the list is keyed on the id rather than read from `round_type.name`: that row is
+named `1`, which the paragraph above already records as a weakness of the reference row rather
+than of the events, and reading it back would ask the whole of Round 1 to be called
+`Racing Men 1 Heat 4`.
+
+**`Overall` is a second event, not a second spelling.** Most tournament / gender / round-type
+groups holding an `Overall` event also hold a plain one, so the two sit side by side and the
+name is the only thing telling them apart. The pattern therefore admits `Overall` after the
+round word; asking for those events to be renamed would ask for a collision. This is the same
+shape as `Combined` in Artistic Gymnastics.
+
+**`General Classification` is the opposite answer to the same question.** No group holding one
+holds any other final, so it is that tournament's final under another name and renaming it
+collides with nothing. Measured the same way as `Overall`, on 2026-09-09, and it is worth
+recording that the two questions looked identical and came back differently.
+
+### Two checks read that sentence
+
+Approved 2026-09-09, sport-specific rather than global because the pattern is the sport's own,
+and the first entries in `POWERBI_QUERIES/BMX-Racing.sql`, which did not exist before them.
+
+`BMX-Racing-DQ-118 EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN` is a work list first and a
+guard second, in the same shape as `GLOBAL-DQ-144`: it reports most of the sport now and falls
+towards its coverage count as the cron renames. Its `check_type` column is what keeps it usable
+meanwhile - `RIGHT_WORDS_IN_THE_WRONG_ORDER` is the rename and nothing else, while everything
+else is a defect under any reading and can be worked immediately. Among those: events whose
+entire name is `Male` or `Female`, carrying no discipline, no round and no number; events named
+`Time Trial` under a round type of `Qualifier`; events reading `Heat 4 Overall` with no round
+word at all; events saying `Motos Overall` under a round type of `Final`; and
+`POSSESSIVE_APOSTROPHE_BROKEN`, an apostrophe with no `s` in `Men' Racing Motos`, which is
+wrong under the old convention as well as the new one.
+
+`BMX-Racing-DQ-119 EVENT_NAME_PATTERN_CANNOT_BE_BUILT` is its companion - no gender on the
+stage, no round type, an empty name, or a round type outside the twelve - and returns nothing
+today.
+
+**No counts are recorded for either.** A renaming cron was running against this sport while the
+checks were written, and two measurements twenty minutes apart disagreed because of it: the
+population is being repaired as it is read. `RUNS/BMX-Racing.json` holds what each run
+returned, and it is a run record rather than evidence.
+
+Neither reads whitespace or text hygiene. `BMX-Racing-DQ-049` carries
+`GLOBAL-DQ-049 EVENT_NAME_FORMAT_INVALID` and already asks that question.
+
 <!-- MANUAL PASTE ZONE: 58 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
