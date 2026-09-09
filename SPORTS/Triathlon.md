@@ -466,6 +466,54 @@ A ninth value, `204 Heats`, is carried by two events in November 2023. It is abs
 table above because the inventory that built the table did not reach it; it is inside the
 sport's contested set, so `GLOBAL-DQ-075` does not report it.
 
+### The event name is a sentence the event's own settings can be read back from
+
+A Triathlon event name is the discipline, the gender and the round, in that order:
+`Sprint Distance Women Semifinal 2`, with the group number kept where sibling rounds share a
+base name. Confirmed 2026-09-09 against all 3762 active events.
+
+**A Mixed discipline takes no gender word.** `Mixed Relay` already carries it, so
+`Mixed Relay Final` is the correct form and `Mixed Relay Mixed Final` is not.
+
+**Nine round types carry the whole vocabulary**, and they are the same nine as `ROUND_TYPE_LIST`
+in `SPORTS/params.json`:
+
+| Round type | Word in the name |
+|---|---|
+| `173 Final`, `9 Final` | `Final` |
+| `178 Semi Finals` | `Semifinal` |
+| `179 Qualifier` | `Qualifier` |
+| `180 Repechage` | `Repechage` |
+| `284 Final B` | `Final B` |
+| `283 Final C` | `Final C` |
+| `267 Final Phase` | `Final Phase` |
+| `204 Heats` | `Heat` |
+
+`Semifinal` is written without a hyphen, unanimously: all 175 events on round type 178 across
+this sport and Artistic Gymnastics use that spelling, and none uses `Semi-Final`. `Final B`,
+`Final C` and `Final Phase` are ordinary round words and their names repeat them verbatim; the
+54 events carrying them are correctly named.
+
+### Two checks read that sentence
+
+Approved 2026-09-09, from the event-renaming task rather than from a sampling wave, and
+sport-specific rather than global because the pattern is the sport's own.
+
+`Triathlon-DQ-124 EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN` reports **40 of 3762**, every
+one of them unambiguous: 18 write `Woman` for `Women` and 7 write `Female`, 9 carry the
+`Qualifer` typo, one `Mixed Relay` event has no round word, one event named `Final` sits on
+round type `Heats`, and 5 sibling rounds share a name with no group number. One of the 40 is
+worse than a name: an event called `Standard Distance Woman Final` whose stored discipline is
+`Sprint Distance`, so the name and the discipline name two different races. The client scope
+removes none of them.
+
+`Triathlon-DQ-125 EVENT_NAME_PATTERN_CANNOT_BE_BUILT` is its companion — no discipline, no
+round type, an empty name, or a round type outside the nine. It returns nothing today and sits
+at its coverage count of 3762, which is what it is for.
+
+Text hygiene is deliberately not read by either: `Triathlon-DQ-055` carries
+`GLOBAL-DQ-049 EVENT_NAME_FORMAT_INVALID` and already asks that question.
+
 <!-- MANUAL PASTE ZONE: 50 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics

@@ -167,6 +167,8 @@ Full SQL never belongs here. It is stored in one sport-scoped file under
 | Artistic-Gymnastics-DQ-123 | Artistic-Gymnastics | GLOBAL-DQ-150 | DATE_RANGE_MISMATCH | TOURNAMENT_STAGE | TOURNAMENT_STAGE_DATE_RANGE_WIDER_THAN_ITS_EVENTS | `GLOBAL_DQ/HIERARCHY.sql` | Deprecated |
 | Artistic-Gymnastics-DQ-124 | Artistic-Gymnastics | GLOBAL-DQ-151 | MISSING_VALUES | PARTICIPANT | PARTICIPANT_MISSING_SPLIT_NAME | `GLOBAL_DQ/PARTICIPANTS.sql` | Approved |
 | Artistic-Gymnastics-DQ-125 | Artistic-Gymnastics | GLOBAL-DQ-153 | DATE_RANGE_MISMATCH | TOURNAMENT_STAGE | TOURNAMENT_STAGE_DATE_RANGE_DISAGREES_WITH_ITS_EVENTS | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
+| Artistic-Gymnastics-DQ-126 | Artistic-Gymnastics | — | MALFORMED_NAME | EVENT | EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN | `POWERBI_QUERIES/Artistic-Gymnastics.sql` | Approved |
+| Artistic-Gymnastics-DQ-127 | Artistic-Gymnastics | — | MISSING_VALUES | EVENT | EVENT_NAME_PATTERN_CANNOT_BE_BUILT | `POWERBI_QUERIES/Artistic-Gymnastics.sql` | Approved |
 | Biathlon-DQ-001 | Biathlon | GLOBAL-DQ-001 | NO_RELATED_RECORDS | TEMPLATE | TEMPLATE_NO_TOURNAMENTS_OR_STAGES | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
 | Biathlon-DQ-002 | Biathlon | GLOBAL-DQ-003 | NO_RELATED_RECORDS | TOURNAMENT_STAGE | TOURNAMENT_STAGE_NO_EVENTS | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
 | Biathlon-DQ-003 | Biathlon | GLOBAL-DQ-058 | NO_RELATED_RECORDS | EVENT | EVENT_TEAM_PARTICIPANT_WITHOUT_LINEUP | `GLOBAL_DQ/PARTICIPANTS.sql` | Approved |
@@ -2265,5 +2267,7 @@ Full SQL never belongs here. It is stored in one sport-scoped file under
 | Triathlon-DQ-121 | Triathlon | GLOBAL-DQ-150 | DATE_RANGE_MISMATCH | TOURNAMENT_STAGE | TOURNAMENT_STAGE_DATE_RANGE_WIDER_THAN_ITS_EVENTS | `GLOBAL_DQ/HIERARCHY.sql` | Deprecated |
 | Triathlon-DQ-122 | Triathlon | GLOBAL-DQ-151 | MISSING_VALUES | PARTICIPANT | PARTICIPANT_MISSING_SPLIT_NAME | `GLOBAL_DQ/PARTICIPANTS.sql` | Approved |
 | Triathlon-DQ-123 | Triathlon | GLOBAL-DQ-153 | DATE_RANGE_MISMATCH | TOURNAMENT_STAGE | TOURNAMENT_STAGE_DATE_RANGE_DISAGREES_WITH_ITS_EVENTS | `GLOBAL_DQ/HIERARCHY.sql` | Approved |
+| Triathlon-DQ-124 | Triathlon | — | MALFORMED_NAME | EVENT | EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN | `POWERBI_QUERIES/Triathlon.sql` | Approved |
+| Triathlon-DQ-125 | Triathlon | — | MISSING_VALUES | EVENT | EVENT_NAME_PATTERN_CANNOT_BE_BUILT | `POWERBI_QUERIES/Triathlon.sql` | Approved |
 
 <!-- MANUAL PASTE ZONE: POWERBI DQ REGISTRY — insert approved additions immediately before this marker; do not move or delete it. -->

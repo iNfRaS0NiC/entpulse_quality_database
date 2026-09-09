@@ -486,3 +486,375 @@ WHERE ep.del = 'no'
   )
 
 ORDER BY sort_order, event_id, event_participants_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Triathlon-DQ-124
+    -- Name - EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN
+    -- What it does: Finds events whose name is not the discipline, the gender and the round the event itself stores.
+    y.check_type,
+    y.event_id,
+    y.event_name,
+    y.expected_name,
+    y.discipline,
+    y.stage_gender,
+    y.round_type_name,
+    y.tournament_id,
+    y.tournament_name,
+    y.template_id,
+    y.template_name,
+    y.startdate,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: An event is described twice - once in the text of its own
+-- name, once in the discipline, stage gender and round type hung off it - and this reports
+-- where the name is not what those three say it should be. The expected form is
+-- [Discipline] [Gender] [Round], with a trailing group number kept where sibling rounds share
+-- a base name.
+--
+-- The round word comes from an explicit list keyed on the round type's id, and that list is
+-- the vocabulary this sport actually uses rather than a general one. That is deliberate. A
+-- guessed mapping enforced spellings the data does not hold, and on 2026-09-09 three of them
+-- contradicted the whole population: 175 events named Semifinal against a mapping demanding
+-- Semi-Final, 160 named Prelims against Preliminary, and 54 legitimate Final B, Final C and
+-- Final Phase events reported as unrecognised. A round type outside the list is therefore not
+-- a naming defect here, and belongs to the companion check that says the name cannot be built.
+--
+-- The comparison is BINARY, so a name differing only in case is a finding. Whitespace and text
+-- hygiene are deliberately not read: GLOBAL-DQ-049 EVENT_NAME_FORMAT_INVALID already carries
+-- that question for this sport, and asking it again would report one defect twice.
+--
+-- Measured 2026-09-09: 40 of 3762 events, every one unambiguous - Woman and Female written
+-- for Women, the Qualifer typo, a Mixed Relay event with no round word, an event named Final
+-- whose round type is Heats, and five sibling rounds sharing a name with no group number. The
+-- client scope removes none of them; all 3762 events are inside it.
+FROM (
+    SELECT
+        x.*,
+        TRIM(CONCAT_WS(' ', x.discipline, x.gender_label, x.round_word)) AS expected_base,
+        TRIM(CONCAT_WS(' ', TRIM(CONCAT_WS(' ', x.discipline, x.gender_label, x.round_word)), x.actual_number)) AS expected_name,
+        -- How many events in the same stage share this base name. A window rather than a
+        -- correlated count per event: the population is read once, and the question is only
+        -- ever asked of rows already in it.
+        COUNT(*) OVER (PARTITION BY x.stage_id, x.actual_base) AS siblings_sharing_base,
+        CASE
+            WHEN x.event_name REGEXP '(Male|Female)'
+                 THEN 'NAME_SAYS_MALE_OR_FEMALE_INSTEAD_OF_MEN_OR_WOMEN'
+            WHEN x.discipline LIKE '%Mixed%'
+                 AND x.event_name REGEXP '(Mixed.*Mixed|Mixed.*(Men|Women))'
+                 THEN 'GENDER_ADDED_TO_A_MIXED_DISCIPLINE'
+            WHEN COUNT(*) OVER (PARTITION BY x.stage_id, x.actual_base) > 1
+                 AND x.actual_number IS NULL
+                 THEN 'SIBLING_ROUNDS_SHARE_A_NAME_WITH_NO_GROUP_NUMBER'
+            ELSE 'NAME_DOES_NOT_MATCH_DISCIPLINE_GENDER_AND_ROUND'
+        END AS check_type
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            e.startdate,
+            ts.id AS stage_id,
+            ts.gender AS stage_gender,
+            t.id AS tournament_id,
+            t.name AS tournament_name,
+            tt.id AS template_id,
+            tt.name AS template_name,
+            d.name AS discipline,
+            rt.id AS round_type_id,
+            rt.name AS round_type_name,
+            -- The Mixed exception: a discipline that already says Mixed carries the gender in
+            -- its own name, so adding one repeats it. Stated in the rename task and kept here.
+            CASE WHEN d.name LIKE '%Mixed%' THEN NULL
+                 WHEN ts.gender = 'male'    THEN 'Men'
+                 WHEN ts.gender = 'female'  THEN 'Women'
+            END AS gender_label,
+            -- The round words Triathlon actually uses, keyed on the round type's own id.
+            -- Nine ids cover every active event, and they are the same nine as ROUND_TYPE_LIST
+            -- in SPORTS/params.json.
+            CASE rt.id
+                WHEN 173 THEN 'Final'
+                WHEN 9   THEN 'Final'
+                WHEN 178 THEN 'Semifinal'
+                WHEN 179 THEN 'Qualifier'
+                WHEN 180 THEN 'Repechage'
+                WHEN 284 THEN 'Final B'
+                WHEN 283 THEN 'Final C'
+                WHEN 267 THEN 'Final Phase'
+                WHEN 204 THEN 'Heat'
+            END AS round_word,
+            -- The trailing group number is part of the pattern rather than of the round word,
+            -- so it is split off before the two are compared and put back afterwards.
+            CASE WHEN e.name REGEXP '[[:space:]][0-9]+$'
+                 THEN TRIM(SUBSTRING(e.name, 1,
+                        CHAR_LENGTH(e.name) - CHAR_LENGTH(SUBSTRING_INDEX(e.name, ' ', -1))))
+                 ELSE TRIM(e.name)
+            END AS actual_base,
+            CASE WHEN e.name REGEXP '[[:space:]][0-9]+$'
+                 THEN SUBSTRING_INDEX(e.name, ' ', -1)
+            END AS actual_number
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    LEFT JOIN discipline d ON d.id = od.disciplineFK
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    WHERE e.del = 'no'
+      AND tt.sportFK = 50
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    ) x
+    WHERE x.round_word IS NOT NULL
+      AND x.discipline IS NOT NULL
+      AND x.event_name IS NOT NULL
+      AND TRIM(x.event_name) <> ''
+) y
+WHERE BINARY y.actual_base <> BINARY y.expected_base
+   OR (y.siblings_sharing_base > 1 AND y.actual_number IS NULL)
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT c.event_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            e.startdate,
+            ts.id AS stage_id,
+            ts.gender AS stage_gender,
+            t.id AS tournament_id,
+            t.name AS tournament_name,
+            tt.id AS template_id,
+            tt.name AS template_name,
+            d.name AS discipline,
+            rt.id AS round_type_id,
+            rt.name AS round_type_name,
+            -- The Mixed exception: a discipline that already says Mixed carries the gender in
+            -- its own name, so adding one repeats it. Stated in the rename task and kept here.
+            CASE WHEN d.name LIKE '%Mixed%' THEN NULL
+                 WHEN ts.gender = 'male'    THEN 'Men'
+                 WHEN ts.gender = 'female'  THEN 'Women'
+            END AS gender_label,
+            -- The round words Triathlon actually uses, keyed on the round type's own id.
+            -- Nine ids cover every active event, and they are the same nine as ROUND_TYPE_LIST
+            -- in SPORTS/params.json.
+            CASE rt.id
+                WHEN 173 THEN 'Final'
+                WHEN 9   THEN 'Final'
+                WHEN 178 THEN 'Semifinal'
+                WHEN 179 THEN 'Qualifier'
+                WHEN 180 THEN 'Repechage'
+                WHEN 284 THEN 'Final B'
+                WHEN 283 THEN 'Final C'
+                WHEN 267 THEN 'Final Phase'
+                WHEN 204 THEN 'Heat'
+            END AS round_word,
+            -- The trailing group number is part of the pattern rather than of the round word,
+            -- so it is split off before the two are compared and put back afterwards.
+            CASE WHEN e.name REGEXP '[[:space:]][0-9]+$'
+                 THEN TRIM(SUBSTRING(e.name, 1,
+                        CHAR_LENGTH(e.name) - CHAR_LENGTH(SUBSTRING_INDEX(e.name, ' ', -1))))
+                 ELSE TRIM(e.name)
+            END AS actual_base,
+            CASE WHEN e.name REGEXP '[[:space:]][0-9]+$'
+                 THEN SUBSTRING_INDEX(e.name, ' ', -1)
+            END AS actual_number
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    LEFT JOIN discipline d ON d.id = od.disciplineFK
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    WHERE e.del = 'no'
+      AND tt.sportFK = 50
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+) c
+WHERE c.round_word IS NOT NULL
+      AND c.discipline IS NOT NULL
+      AND c.event_name IS NOT NULL
+      AND TRIM(c.event_name) <> ''
+
+ORDER BY sort_order, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Triathlon-DQ-125
+    -- Name - EVENT_NAME_PATTERN_CANNOT_BE_BUILT
+    -- What it does: Flags events for which no expected name exists, because the discipline, the round type or the name itself is missing.
+    z.check_type,
+    z.event_id,
+    z.event_name,
+    z.discipline,
+    z.stage_gender,
+    z.round_type_id,
+    z.round_type_name,
+    z.tournament_id,
+    z.tournament_name,
+    z.template_id,
+    z.template_name,
+    z.startdate,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: The companion of EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN,
+-- and the reason that check can be strict. An expected name is the discipline, the gender and
+-- the round word joined together, so an event missing any of the three has no expected name to
+-- be compared against and would otherwise leave the audit without being counted anywhere.
+--
+-- The four states are one work list rather than four checks: none of them is a naming defect,
+-- and none can be repaired by renaming anything. A missing discipline or round type is a gap
+-- in the event's own settings. A round type outside the vocabulary is a decision nobody has
+-- made yet - the nine ids in the list are the ones this sport uses today, and a new one
+-- arriving here is the check asking for a word rather than reporting a fault.
+--
+-- It returns nothing on the day it is written, which is what it is for. The population it
+-- guards is every active event in the sport, so it sits at its coverage count with no findings
+-- until one of the four states appears.
+FROM (
+    SELECT
+        x.*,
+        CASE
+            WHEN x.event_name IS NULL OR TRIM(x.event_name) = '' THEN 'EVENT_NAME_EMPTY'
+            WHEN x.discipline IS NULL                            THEN 'NO_DISCIPLINE_ON_THE_EVENT'
+            WHEN x.round_type_id IS NULL                         THEN 'NO_ROUND_TYPE_ON_THE_EVENT'
+            ELSE 'ROUND_TYPE_OUTSIDE_THE_SPORT_VOCABULARY'
+        END AS check_type
+    FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            e.startdate,
+            ts.id AS stage_id,
+            ts.gender AS stage_gender,
+            t.id AS tournament_id,
+            t.name AS tournament_name,
+            tt.id AS template_id,
+            tt.name AS template_name,
+            d.name AS discipline,
+            rt.id AS round_type_id,
+            rt.name AS round_type_name,
+            -- The Mixed exception: a discipline that already says Mixed carries the gender in
+            -- its own name, so adding one repeats it. Stated in the rename task and kept here.
+            CASE WHEN d.name LIKE '%Mixed%' THEN NULL
+                 WHEN ts.gender = 'male'    THEN 'Men'
+                 WHEN ts.gender = 'female'  THEN 'Women'
+            END AS gender_label,
+            -- The round words Triathlon actually uses, keyed on the round type's own id.
+            -- Nine ids cover every active event, and they are the same nine as ROUND_TYPE_LIST
+            -- in SPORTS/params.json.
+            CASE rt.id
+                WHEN 173 THEN 'Final'
+                WHEN 9   THEN 'Final'
+                WHEN 178 THEN 'Semifinal'
+                WHEN 179 THEN 'Qualifier'
+                WHEN 180 THEN 'Repechage'
+                WHEN 284 THEN 'Final B'
+                WHEN 283 THEN 'Final C'
+                WHEN 267 THEN 'Final Phase'
+                WHEN 204 THEN 'Heat'
+            END AS round_word,
+            -- The trailing group number is part of the pattern rather than of the round word,
+            -- so it is split off before the two are compared and put back afterwards.
+            CASE WHEN e.name REGEXP '[[:space:]][0-9]+$'
+                 THEN TRIM(SUBSTRING(e.name, 1,
+                        CHAR_LENGTH(e.name) - CHAR_LENGTH(SUBSTRING_INDEX(e.name, ' ', -1))))
+                 ELSE TRIM(e.name)
+            END AS actual_base,
+            CASE WHEN e.name REGEXP '[[:space:]][0-9]+$'
+                 THEN SUBSTRING_INDEX(e.name, ' ', -1)
+            END AS actual_number
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    LEFT JOIN discipline d ON d.id = od.disciplineFK
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    WHERE e.del = 'no'
+      AND tt.sportFK = 50
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+    ) x
+    WHERE x.event_name IS NULL
+       OR TRIM(x.event_name) = ''
+       OR x.discipline IS NULL
+       OR x.round_type_id IS NULL
+       OR x.round_word IS NULL
+) z
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT c.event_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+        SELECT
+            e.id AS event_id,
+            e.name AS event_name,
+            e.startdate,
+            ts.id AS stage_id,
+            ts.gender AS stage_gender,
+            t.id AS tournament_id,
+            t.name AS tournament_name,
+            tt.id AS template_id,
+            tt.name AS template_name,
+            d.name AS discipline,
+            rt.id AS round_type_id,
+            rt.name AS round_type_name,
+            -- The Mixed exception: a discipline that already says Mixed carries the gender in
+            -- its own name, so adding one repeats it. Stated in the rename task and kept here.
+            CASE WHEN d.name LIKE '%Mixed%' THEN NULL
+                 WHEN ts.gender = 'male'    THEN 'Men'
+                 WHEN ts.gender = 'female'  THEN 'Women'
+            END AS gender_label,
+            -- The round words Triathlon actually uses, keyed on the round type's own id.
+            -- Nine ids cover every active event, and they are the same nine as ROUND_TYPE_LIST
+            -- in SPORTS/params.json.
+            CASE rt.id
+                WHEN 173 THEN 'Final'
+                WHEN 9   THEN 'Final'
+                WHEN 178 THEN 'Semifinal'
+                WHEN 179 THEN 'Qualifier'
+                WHEN 180 THEN 'Repechage'
+                WHEN 284 THEN 'Final B'
+                WHEN 283 THEN 'Final C'
+                WHEN 267 THEN 'Final Phase'
+                WHEN 204 THEN 'Heat'
+            END AS round_word,
+            -- The trailing group number is part of the pattern rather than of the round word,
+            -- so it is split off before the two are compared and put back afterwards.
+            CASE WHEN e.name REGEXP '[[:space:]][0-9]+$'
+                 THEN TRIM(SUBSTRING(e.name, 1,
+                        CHAR_LENGTH(e.name) - CHAR_LENGTH(SUBSTRING_INDEX(e.name, ' ', -1))))
+                 ELSE TRIM(e.name)
+            END AS actual_base,
+            CASE WHEN e.name REGEXP '[[:space:]][0-9]+$'
+                 THEN SUBSTRING_INDEX(e.name, ' ', -1)
+            END AS actual_number
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    LEFT JOIN discipline d ON d.id = od.disciplineFK
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    WHERE e.del = 'no'
+      AND tt.sportFK = 50
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+) c
+
+ORDER BY sort_order, event_id;

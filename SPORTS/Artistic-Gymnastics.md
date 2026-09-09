@@ -469,6 +469,43 @@ nothing for it to find. `Artistic-Gymnastics-DQ-088 COMP.RANK_RESULTS_MEDAL_ON_N
 is unmoved at 36, which means its findings sit on some round other than the bronze one and are
 a separate question this change does not touch.
 
+### The event name is a sentence the event's own settings can be read back from
+
+An Artistic Gymnastics event name is the discipline, the gender and the round, in that order:
+`Pommel Horse Men Prelims`. Confirmed 2026-09-09 against all 7941 active events, and it is the
+form `Artistic-Gymnastics-DQ-126 EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN` compares against.
+
+**Six round types carry the whole vocabulary**, and the word the name uses is not always the
+round type's own name:
+
+| Round type | Word in the name |
+|---|---|
+| `173 Final` | `Final`, or `Combined` |
+| `179 Qualifier` | `Qualifier` |
+| `171 Preliminary` | `Prelims` |
+| `178 Semi Finals` | `Semifinal` |
+| `176 Quarter Finals` | `Quarter Finals` |
+| `181 bronze` | `Bronze` |
+
+Three of those six disagree with `round_type.name`, and the data is unanimous about it rather
+than mixed: every one of the 160 events on round type 171 says `Prelims`, and both events on
+178 say `Semifinal`. A check reading `round_type.name` back into the name would report the
+sport's whole convention as a defect.
+
+**Round type 173 carries two words, and they are two different events.** 146 events are named
+`Combined` where the round type is `Final`, and of the 146 tournament / discipline / gender
+groups holding one, **145 also hold a separate `Final` event**. The two therefore sit side by
+side in the same competition and the name is the only thing distinguishing them: renaming the
+`Combined` ones to `Final` would collide with an event already there in 145 of 146 cases. This
+is the reason the pattern above admits two words for one round type, and the reason the naming
+task's `[Discipline] [Gender] [RoundType]` form cannot be applied to this sport unaltered — the
+form has no place to put the distinction the sport actually stores.
+
+`ROUND_TYPE_LIST` in `SPORTS/params.json` reads `9, 152, 173, 179` for this sport, which is not
+the set above: it omits 171, 176, 178 and 181, all four of which carry active events, and
+includes 9 and 152, which carry none. The parameter and the data disagree and the parameter has
+not been corrected here, because nothing yet establishes which of the two is wrong.
+
 <!-- MANUAL PASTE ZONE: 40 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
@@ -576,6 +613,28 @@ That costs 17 rows the check would otherwise report and leaves 44 over 156587 co
 entries, among them a 2015 World Championships team final placing a score of 360.035 seventh
 behind one of 261.660. The single Vault row that survives is a Vault final, which is the arm
 the exclusion keeps.
+
+Two further checks were approved on 2026-09-09, from the event-renaming task carried for
+Triathlon and Artistic Gymnastics rather than from a sampling wave. They are sport-specific and
+not a global template, because the pattern each sport's names follow is the sport's own.
+
+`Artistic-Gymnastics-DQ-126 EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN` compares the name
+against the discipline, the stage gender and the round word the event itself stores. **146 of
+7941**, in three shapes: 85 put the gender before the discipline, so `Men Pommel Horse Prelims`
+stands beside `Pommel Horse Men Prelims` in the same sport; 43 name the apparatus
+`Vault Apparatus` where the discipline is `Vault`; and 18 carry no gender word at all. The
+client scope removes none of them — every one of the 7941 events is inside it.
+
+`Artistic-Gymnastics-DQ-127 EVENT_NAME_PATTERN_CANNOT_BE_BUILT` is its companion and the reason
+it can be strict: an event with no discipline, no round type, an empty name, or a round type
+outside the six has no expected name to be compared against, and would otherwise leave the
+audit without being counted anywhere. It returns nothing today and sits at its coverage count,
+which is what it is for — a new round type arriving is the check asking for a word rather than
+reporting a fault.
+
+Text hygiene is deliberately not read by either. `Artistic-Gymnastics-DQ-053`, which carries
+`GLOBAL-DQ-049 EVENT_NAME_FORMAT_INVALID`, already asks that question for this sport, and a
+second copy would report one defect twice.
 
 <!-- MANUAL PASTE ZONE: 40 SPORT-SPECIFIC DQ WAVE — insert approved additions immediately before this marker; do not move or delete it. -->
 
