@@ -9,6 +9,11 @@ For additions, insert approved content immediately before the exact active
 and at the end of its subsection. Replace existing rows or paragraphs in place when a
 correction is required.
 
+A `##` heading beyond the template's names a structure the template has no section for -
+`Scope`, `Disability class`, the sport's own checks. A dated account of a decision or a
+measured batch is never one: it is written as a `###` under the section its content belongs
+to, so the file's outline stays the state of the sport and the chronology reads beneath it.
+
 ## Identity and evidence
 
 - First discovery date:

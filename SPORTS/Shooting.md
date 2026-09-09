@@ -21,17 +21,17 @@ correction is required.
 
 | Area | Status | Evidence |
 |---|---|---|
-| Core hierarchy | Confirmed-data | `GLOBAL-DISCOVERY-002`, 55 template/gender rows |
-| Event participants | Confirmed-data | `GLOBAL-DISCOVERY-004` and `-006` |
-| Event results | Confirmed-data | `GLOBAL-DISCOVERY-007`, and `-026` over every one of the eight fields |
+| Core hierarchy | Used | `GLOBAL-DISCOVERY-002`, 55 template/gender rows |
+| Event participants | Used | `GLOBAL-DISCOVERY-004` and `-006` |
+| Event results | Used | `GLOBAL-DISCOVERY-007`, and `-026` over every one of the eight fields |
 | Incidents | Not used | `GLOBAL-DISCOVERY-008` returned zero active rows |
-| Lineups | Confirmed-data | `GLOBAL-DISCOVERY-005` |
+| Lineups | Used | `GLOBAL-DISCOVERY-005` |
 | Scope layer | Not used | `GLOBAL-DISCOVERY-009` and `-010` returned zero active rows |
-| Properties | Confirmed-data | `GLOBAL-DISCOVERY-011` |
-| object_relation | Confirmed-data | `GLOBAL-DISCOVERY-012` |
-| object_discipline | Confirmed-data | `GLOBAL-DISCOVERY-013` and `-032` |
+| Properties | Used | `GLOBAL-DISCOVERY-011` |
+| object_relation | Used | `GLOBAL-DISCOVERY-012` |
+| object_discipline | Used | `GLOBAL-DISCOVERY-013` and `-032` |
 | Statistics | Not checked | not read on purpose, 2026-09-05 |
-| Reference values | Confirmed-data | `GLOBAL-DISCOVERY-003` statuses, `-018` and `-019` round types |
+| Reference values | Used | `GLOBAL-DISCOVERY-003` statuses, `-018` and `-019` round types |
 | Other tables | Not checked | |
 
 ## Tables and relation paths used
@@ -457,7 +457,7 @@ whole, so adding one would put the question to Biathlon, Mountain Bike, Speed Sk
 and Track Cycling, none of whom has been asked it; the narrowing belongs to this sport and is
 written here. It reported 967 findings of 4 268 eligible events on the day it was written.
 
-## What five closed questions settled
+### What five closed questions settled
 
 **These five were open questions when the sport was opened and the user answered them on
 2026-09-06.** Each settles structure rather than a count, and each is written down here because a

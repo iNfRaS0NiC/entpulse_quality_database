@@ -687,7 +687,7 @@ templates wait on the Comp.Rank layer inside the first two categories, seven mor
 inside these four, and `GLOBAL-DQ-007` waits on it in `MISSING_VALUES`. `DUPLICATE_RECORD`
 has no DQ template at all in this package — it is carried by `GLOBAL-DISCOVERY-033` alone
 — so there was never anything to open there.
-## The open questions, answered on 2026-08-27
+### The open questions, answered on 2026-08-27
 
 Every DQ category for this sport was open by that date, which is when the questions the
 opening had accumulated were measured rather than left standing. Nine of the thirteen are
@@ -828,7 +828,7 @@ wait on it, plus `GLOBAL-DQ-007`.
 **The relay shot ceiling** is the one new question the answers created, and it is recorded as
 question 11 above rather than left implicit: whether to extend `Biathlon-DQ-061` to the relay
 disciplines at 40 now that what the figure counts is known.
-## The last four questions, decided on 2026-08-27
+### The last four questions, decided on 2026-08-27
 
 **The majority spelling is the canonical one.** `Disqualified` is right and `DSQ` and `Disq.`
 are to be corrected; `FFn` is right and `FF n` is to be corrected. That is 602 rows against
@@ -877,7 +877,7 @@ no CheckID is assigned for either in any sport. On this sport they ride along wi
 `GLOBAL-DISCOVERY-018` on round types, `-020` on event names, `-022` on stage names, `-024`
 on statistic names and `-033` on duplicate people, which is why a board of 78 checks runs as
 83 statements.
-## Sampling every discipline, and the three monitors that found nothing
+### Sampling every discipline, and the three monitors that found nothing
 
 On 2026-08-27 five results were read from each of the nine disciplines and the whole result
 layer was profiled against the rules of the sport. Five checks came out of it and are recorded
@@ -920,7 +920,7 @@ would add a row to the board and nothing to the reading.
 every one of them outside it. It is named in the scope of the relay checks regardless, because a
 discipline with no rows today is a data state and not a structural absence.
 
-## Five more sport statements, written on 2026-08-27
+### Five more sport statements, written on 2026-08-27
 
 **`Biathlon-DQ-079 EVENT_RELAY_PENALTY_LOOP_WITHOUT_A_FULL_BOUT_OF_SPARES`** reads the two
 shooting figures against each other. A penalty loop is given only for a target still standing
@@ -978,7 +978,7 @@ under three orders of magnitude of noise. Only `dns` is read and not the wider n
 DNF fired at every range they reached before stopping, so their figure is expected rather than
 contradictory.
 
-## The Super Sprint fires two different numbers, and the round type says which
+### The Super Sprint fires two different numbers, and the round type says which
 
 Established 2026-08-27 from the format: **the qualification shoots two bouts, prone then
 standing, and cannot exceed 10 missed shots; the final shoots four, prone, prone, standing,
@@ -992,7 +992,9 @@ reach 11 are all in finals, where 20 is the correct ceiling and they stay clean.
 closed for the day a qualification value arrives that no qualification could have produced.
 <!-- MANUAL PASTE ZONE: 7 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
-## Ten Comp.Rank checks, approved on 2026-09-04
+## Comp.Rank checks, approved 2026-09-04
+
+### Ten Comp.Rank checks, approved on 2026-09-04
 
 The layer was read the same day and every candidate was run and read before it was numbered.
 All ten are GLOBAL templates instantiated through the registry, none is an authored sport
@@ -1038,7 +1040,7 @@ reading `LPD` sit in the numeric `1271 Points` field, all of them on one statist
 outside it on both counts. Its `eligible_count` is 2799 rather than 0, so this is a correct
 scope over clean data and not a misdirected one.
 
-## Thirty-six more Comp.Rank checks, approved the same day
+### Thirty-six more Comp.Rank checks, approved the same day
 
 The rest of the layer, run and read on 2026-09-04 before any of it was numbered. Three
 parameters were written first, each with one reading and each the same value in every sport
@@ -1143,7 +1145,7 @@ sport's tie convention to be confirmed first: skip-after-tie is what ranking spo
 sport ranking densely would report its normal shape as a defect. Neither has been measured here.
 
 
-## The last two Comp.Rank templates, approved on 2026-09-04
+### The last two Comp.Rank templates, approved on 2026-09-04
 
 Both were held back on 2026-09-04 for want of a parameter, and both were measured the same day
 before being numbered. The layer is now complete: 48 of 48 templates.

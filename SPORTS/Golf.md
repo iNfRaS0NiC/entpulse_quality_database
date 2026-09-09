@@ -25,17 +25,17 @@ correction is required.
 
 | Area | Status | Evidence |
 |---|---|---|
-| Core hierarchy | Confirmed | `GLOBAL-DISCOVERY-001`, `-002` |
-| Event participants | Confirmed | `GLOBAL-DISCOVERY-004`, `-032` |
-| Event results | Confirmed | `GLOBAL-DISCOVERY-007` narrowed; `-026` for `31`–`34`, `36`, `100` |
-| Incidents | Confirmed absent | `GLOBAL-DISCOVERY-008` |
-| Lineups | Confirmed absent | `GLOBAL-DISCOVERY-005` |
-| Scope layer | Confirmed | `GLOBAL-DISCOVERY-009`, `-010` narrowed |
-| Properties | Confirmed | `GLOBAL-DISCOVERY-011` |
-| object_relation | Confirmed | `GLOBAL-DISCOVERY-012` |
-| object_discipline | Confirmed | `GLOBAL-DISCOVERY-013`, `-032` |
-| Statistics | Confirmed | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-030`, `-031` |
-| Reference values | Confirmed | `GLOBAL-DISCOVERY-014` |
+| Core hierarchy | Used | `GLOBAL-DISCOVERY-001`, `-002` |
+| Event participants | Used | `GLOBAL-DISCOVERY-004`, `-032` |
+| Event results | Used | `GLOBAL-DISCOVERY-007` narrowed; `-026` for `31`–`34`, `36`, `100` |
+| Incidents | Not used | `GLOBAL-DISCOVERY-008` |
+| Lineups | Not used | `GLOBAL-DISCOVERY-005` |
+| Scope layer | Used | `GLOBAL-DISCOVERY-009`, `-010` narrowed |
+| Properties | Used | `GLOBAL-DISCOVERY-011` |
+| object_relation | Used | `GLOBAL-DISCOVERY-012` |
+| object_discipline | Used | `GLOBAL-DISCOVERY-013`, `-032` |
+| Statistics | Used | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-030`, `-031` |
+| Reference values | Used | `GLOBAL-DISCOVERY-014` |
 | Other tables | Not checked | |
 
 ## Tables and relation paths used

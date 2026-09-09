@@ -613,7 +613,7 @@ no 400 metre breaststroke that one is a wrong time rather than a wrong disciplin
 Reading the whole field instead of the winner would report every slow swimmer in the
 sport. The winner is what makes the test structural: everyone behind was slower still.
 
-## The two relay catalogues, measured and decided on 2026-08-27
+### The two relay catalogues, measured and decided on 2026-08-27
 
 Open questions 1 and 3 were both about the same thing seen from its two ends, and profiling
 the relay disciplines answered both.
@@ -660,7 +660,7 @@ one competition rather than inside a single edition, which is what the question 
 the men's short-course World Championships would rank its `4x100m Freestyle Relay` under `56`
 for 2004 and 2006 and under `365` from 2008 on.
 
-## The provisional markers, decided on 2026-08-27
+### The provisional markers, decided on 2026-08-27
 
 Open question 4 asked whether `?` and `R?` are meant to be resolved or left standing. Measuring
 them against the round the sport uses to settle such a place separates them completely, and they
@@ -695,7 +695,7 @@ comment vocabulary and no second check is needed.
 type ids for the same round, holding 157 and 143 events, both in use to 2026 and 2027. That is
 the same duplicate-catalogue shape the disciplines have and it has not been put to anybody.
 
-## The catalogue fold covers all fourteen disciplines, decided on 2026-08-27
+### The catalogue fold covers all fourteen disciplines, decided on 2026-08-27
 
 The decision recorded above under "The two relay catalogues" was first taken for the three relay
 ids and was extended the same day to the whole `metres` catalogue. The current `m` names are
@@ -708,7 +708,7 @@ every one of the 374 carries a current twin, so the check's
 `Superseded_Discipline_With_No_Current_Twin` verdict returns nothing and is a sentinel for a
 state the sport is not in.
 
-## The last four decisions, taken on 2026-08-27
+### The last four decisions, taken on 2026-08-27
 
 **A comment carries a status, and a question is not a status.** Question 11 is decided: no value
 of `104 Comment` may contain a question mark, so `?`, `R?` and `#NAME?` are all defects and none

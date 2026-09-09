@@ -58,19 +58,19 @@ client meant to order it at all is still a question for them.
 
 | Area | Status | Evidence |
 |---|---|---|
-| Core hierarchy | Confirmed | `GLOBAL-DISCOVERY-002` narrowed, 39 templates, one of them empty |
-| Event participants | Confirmed | `GLOBAL-DISCOVERY-004`, `-032` narrowed, teams only |
-| Event results | Confirmed | `GLOBAL-DISCOVERY-007` narrowed, 8 types; `-026` narrowed over all 8 |
-| Incidents | Confirmed, outside client scope | `GLOBAL-DISCOVERY-008` narrowed, 13 types; UK Sport does not take the layer, decided 2026-08-28 |
-| Lineups | Confirmed | `GLOBAL-DISCOVERY-005` narrowed, 2 lineup types |
-| Scope layer | Confirmed | `GLOBAL-DISCOVERY-009`, `-010` narrowed, 2 scope types |
-| Properties | Confirmed | `GLOBAL-DISCOVERY-011` narrowed, 30 rows |
-| object_relation | Confirmed | `GLOBAL-DISCOVERY-012` narrowed, 6 pairs |
-| object_discipline | Confirmed | `GLOBAL-DISCOVERY-013` narrowed, one discipline |
-| Statistics | Confirmed | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-024`, `-025`, `-028`, `-029`, `-030`, `-031` sport-wide |
-| Reference values | Confirmed | `GLOBAL-DISCOVERY-014` narrowed, 1984 stages; `-018`/`-019` narrowed, all 46 round types |
-| Stage name patterns | Confirmed | `GLOBAL-DISCOVERY-022`/`-023` narrowed, all 200 patterns over all 1984 stages |
-| Participant duplicates | Confirmed | `GLOBAL-DISCOVERY-033` sport-wide, 208 name groups |
+| Core hierarchy | Used | `GLOBAL-DISCOVERY-002` narrowed, 39 templates, one of them empty |
+| Event participants | Used | `GLOBAL-DISCOVERY-004`, `-032` narrowed, teams only |
+| Event results | Used | `GLOBAL-DISCOVERY-007` narrowed, 8 types; `-026` narrowed over all 8 |
+| Incidents | Used | `GLOBAL-DISCOVERY-008` narrowed, 13 types; UK Sport does not take the layer, decided 2026-08-28 |
+| Lineups | Used | `GLOBAL-DISCOVERY-005` narrowed, 2 lineup types |
+| Scope layer | Used | `GLOBAL-DISCOVERY-009`, `-010` narrowed, 2 scope types |
+| Properties | Used | `GLOBAL-DISCOVERY-011` narrowed, 30 rows |
+| object_relation | Used | `GLOBAL-DISCOVERY-012` narrowed, 6 pairs |
+| object_discipline | Used | `GLOBAL-DISCOVERY-013` narrowed, one discipline |
+| Statistics | Used | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-024`, `-025`, `-028`, `-029`, `-030`, `-031` sport-wide |
+| Reference values | Used | `GLOBAL-DISCOVERY-014` narrowed, 1984 stages; `-018`/`-019` narrowed, all 46 round types |
+| Stage name patterns | Used | `GLOBAL-DISCOVERY-022`/`-023` narrowed, all 200 patterns over all 1984 stages |
+| Participant duplicates | Used | `GLOBAL-DISCOVERY-033` sport-wide, 208 name groups |
 | Event name patterns | Not checked | `GLOBAL-DISCOVERY-020` narrowed returns 4666 patterns; `-021` read 8 of them, which is a sample and not coverage |
 | Event result value detail | Not checked | `GLOBAL-DISCOVERY-027` completed for `501 Medal` only; see Open questions |
 | Venues and cities | Not checked | |

@@ -68,21 +68,21 @@ answered.
 
 | Area | Status | Evidence |
 |---|---|---|
-| Core hierarchy | Confirmed | `GLOBAL-DISCOVERY-002` narrowed, 25 templates |
-| Event participants | Confirmed | `GLOBAL-DISCOVERY-004`, `-032` narrowed |
-| Event results | Confirmed | `GLOBAL-DISCOVERY-007` narrowed, 12 types |
-| Incidents | Confirmed | `GLOBAL-DISCOVERY-008` narrowed, 16 types |
-| Lineups | Confirmed | `GLOBAL-DISCOVERY-005` narrowed, 5 lineup types |
-| Scope layer | Confirmed | `GLOBAL-DISCOVERY-009`, `-010` narrowed, 7 scope types |
-| Properties | Confirmed | `GLOBAL-DISCOVERY-011` narrowed, 33 rows |
-| object_relation | Confirmed | `GLOBAL-DISCOVERY-012` narrowed, 7 pairs |
-| object_discipline | Confirmed | `GLOBAL-DISCOVERY-013` narrowed, one discipline |
-| Statistics | Confirmed | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-030`, `-031` sport-wide |
-| Reference values | Confirmed | `GLOBAL-DISCOVERY-018` narrowed, 26 round types |
-| Venues and cities | Confirmed | measured 2026-08-15, `venue_object` on 232 events, `city_object` on none |
-| Status vocabulary map | Confirmed | measured 2026-08-15, `map_sport_status_desc` maps 89 descriptions to the sport |
-| Translations | Confirmed present, unread | measured 2026-08-15, `language` holds 147586 rows over 46 language types |
-| Other tables | Confirmed absent or out of scope | `object_round` never attaches to an event outside `FIFA`; nothing else in `DATABASE.md` is populated for this sport |
+| Core hierarchy | Used | `GLOBAL-DISCOVERY-002` narrowed, 25 templates |
+| Event participants | Used | `GLOBAL-DISCOVERY-004`, `-032` narrowed |
+| Event results | Used | `GLOBAL-DISCOVERY-007` narrowed, 12 types |
+| Incidents | Used | `GLOBAL-DISCOVERY-008` narrowed, 16 types |
+| Lineups | Used | `GLOBAL-DISCOVERY-005` narrowed, 5 lineup types |
+| Scope layer | Used | `GLOBAL-DISCOVERY-009`, `-010` narrowed, 7 scope types |
+| Properties | Used | `GLOBAL-DISCOVERY-011` narrowed, 33 rows |
+| object_relation | Used | `GLOBAL-DISCOVERY-012` narrowed, 7 pairs |
+| object_discipline | Used | `GLOBAL-DISCOVERY-013` narrowed, one discipline |
+| Statistics | Used | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-030`, `-031` sport-wide |
+| Reference values | Used | `GLOBAL-DISCOVERY-018` narrowed, 26 round types |
+| Venues and cities | Used | measured 2026-08-15, `venue_object` on 232 events, `city_object` on none |
+| Status vocabulary map | Used | measured 2026-08-15, `map_sport_status_desc` maps 89 descriptions to the sport |
+| Translations | Used | present and measured 2026-08-15, contents unread; `language` holds 147586 rows over 46 language types |
+| Other tables | Not used | `object_round` never attaches to an event outside `FIFA`; nothing else in `DATABASE.md` is populated for this sport |
 
 ## Tables and relation paths used
 

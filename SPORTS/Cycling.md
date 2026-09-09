@@ -92,18 +92,18 @@ like rather than an answered one. Recorded under Open questions.
 
 | Area | Status | Evidence |
 |---|---|---|
-| Core hierarchy | Confirmed | `GLOBAL-DISCOVERY-002` sport-wide, 51 templates |
-| Event participants | Confirmed | `GLOBAL-DISCOVERY-004`, `-032` sport-wide |
-| Event results | Confirmed | `GLOBAL-DISCOVERY-007` sport-wide, 6 types, and `-026` over all six |
-| Incidents | Confirmed absent | `GLOBAL-DISCOVERY-008` returned nothing |
-| Lineups | Confirmed absent | `GLOBAL-DISCOVERY-005` returned nothing |
-| Scope layer | Confirmed | `GLOBAL-DISCOVERY-009`, `-010` sport-wide; the type list re-measured over `event_scope` on 2026-08-16 and found to be 193 rather than the 48 first read |
-| `object_round` | Confirmed absent | no row of any type points at a Comp.Rank participant: 0 across 181997, measured 2026-08-16 |
-| Properties | Confirmed | `GLOBAL-DISCOVERY-011` sport-wide, 33 rows |
-| object_relation | Confirmed | `GLOBAL-DISCOVERY-012` sport-wide, 5 pairs |
-| object_discipline | Confirmed | `GLOBAL-DISCOVERY-013` sport-wide, one discipline |
-| Statistics | Confirmed | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-028`, `-030`, `-031` |
-| Reference values | Confirmed | `GLOBAL-DISCOVERY-018` sport-wide, 24 round types |
+| Core hierarchy | Used | `GLOBAL-DISCOVERY-002` sport-wide, 51 templates |
+| Event participants | Used | `GLOBAL-DISCOVERY-004`, `-032` sport-wide |
+| Event results | Used | `GLOBAL-DISCOVERY-007` sport-wide, 6 types, and `-026` over all six |
+| Incidents | Not used | `GLOBAL-DISCOVERY-008` returned nothing |
+| Lineups | Not used | `GLOBAL-DISCOVERY-005` returned nothing |
+| Scope layer | Used | `GLOBAL-DISCOVERY-009`, `-010` sport-wide; the type list re-measured over `event_scope` on 2026-08-16 and found to be 193 rather than the 48 first read |
+| `object_round` | Not used | no row of any type points at a Comp.Rank participant: 0 across 181997, measured 2026-08-16 |
+| Properties | Used | `GLOBAL-DISCOVERY-011` sport-wide, 33 rows |
+| object_relation | Used | `GLOBAL-DISCOVERY-012` sport-wide, 5 pairs |
+| object_discipline | Used | `GLOBAL-DISCOVERY-013` sport-wide, one discipline |
+| Statistics | Used | `GLOBAL-DISCOVERY-015`, `-016`, `-017`, `-028`, `-030`, `-031` |
+| Reference values | Used | `GLOBAL-DISCOVERY-018` sport-wide, 24 round types |
 | Other tables | Not checked | |
 
 ## Tables and relation paths used

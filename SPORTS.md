@@ -14,23 +14,23 @@ mechanisms from `DATABASE.md`.
 |---:|---|---|---|---|---|---|
 | 58 | BMX-Racing | Listing (individual) | `SPORTS/BMX-Racing.md` | In progress | 2026-07-22 | BMX |
 | 50 | Triathlon | Listing (individual and team) | `SPORTS/Triathlon.md` | In progress | 2026-07-30 | Triathlon |
-| 10 | Curling | H2H (team) | `SPORTS/Curling.md` | In progress | 2026-08-01 | Curling |
+| 10 | Curling | H2H (team) | `SPORTS/Curling.md` | Reviewed | 2026-08-01 | Curling |
 | 40 | Artistic-Gymnastics | Listing (individual and team) | `SPORTS/Artistic-Gymnastics.md` | In progress | 2026-08-04 | Artistic Gymnastics |
 | 1 | Soccer | H2H (team) | `SPORTS/Soccer.md` | In progress | 2026-08-05 | Soccer |
 | 42 | Modern-Pentathlon | Listing (individual and team) | `SPORTS/Modern-Pentathlon.md` | In progress | 2026-08-06 | Modern Pentathlon |
-| 3 | Golf | Hybrid (individual and team) | `SPORTS/Golf.md` | In progress | 2026-08-13 | Golf |
-| 5 | Ice-Hockey | H2H (team) | `SPORTS/Ice-Hockey.md` | In progress | 2026-08-15 | Ice Hockey |
-| 30 | Cycling | Listing (individual and team) | `SPORTS/Cycling.md` | In progress | 2026-08-17 | Cycling |
-| 37 | Equestrian | Listing (individual and team) | `SPORTS/Equestrian.md` | In progress | 2026-08-18 | Equestrian |
-| 46 | Swimming | Listing (individual and team) | `SPORTS/Swimming.md` | In progress | 2026-08-25 | Swimming |
+| 3 | Golf | Hybrid (individual and team) | `SPORTS/Golf.md` | Reviewed | 2026-08-13 | Golf |
+| 5 | Ice-Hockey | H2H (team) | `SPORTS/Ice-Hockey.md` | Reviewed | 2026-08-15 | Ice Hockey |
+| 30 | Cycling | Listing (individual and team) | `SPORTS/Cycling.md` | Reviewed | 2026-08-17 | Cycling |
+| 37 | Equestrian | Listing (individual and team) | `SPORTS/Equestrian.md` | Reviewed | 2026-08-18 | Equestrian |
+| 46 | Swimming | Listing (individual and team) | `SPORTS/Swimming.md` | Awaiting Comp.Rank | 2026-08-25 | Swimming |
 | 19 | Speed-Skating | Listing (individual and team) | `SPORTS/Speed-Skating.md` | In progress | 2026-08-31 | Speed Skating |
 | 55 | Track-Cycling | Listing (individual and team) | `SPORTS/Track-Cycling.md` | In progress | 2026-08-26 | Track Cycling |
-| 7 | Biathlon | Listing (individual and team) | `SPORTS/Biathlon.md` | In progress | 2026-09-04 | Biathlon |
-| 20 | Handball | H2H (team) | `SPORTS/Handball.md` | In progress | 2026-08-28 | Handball |
+| 7 | Biathlon | Listing (individual and team) | `SPORTS/Biathlon.md` | Reviewed | 2026-09-04 | Biathlon |
+| 20 | Handball | H2H (team) | `SPORTS/Handball.md` | Reviewed | 2026-08-28 | Handball |
 | 56 | Mountain-Bike | Listing (individual) | `SPORTS/Mountain-Bike.md` | In progress | 2026-08-31 | Mountain Bike |
 | 58 | BMX-Freestyle | Listing (individual) | `SPORTS/BMX-Freestyle.md` | In progress | 2026-09-04 | BMX |
-| 45 | Shooting | Listing (individual and team) | `SPORTS/Shooting.md` | In progress | 2026-09-05 | Shooting |
-| 135 | Para-Swimming | Listing (individual and team) | `SPORTS/Para-Swimming.md` | In progress | 2026-09-07 | Para Swimming |
+| 45 | Shooting | Listing (individual and team) | `SPORTS/Shooting.md` | Awaiting Comp.Rank | 2026-09-05 | Shooting |
+| 135 | Para-Swimming | Listing (individual and team) | `SPORTS/Para-Swimming.md` | Awaiting Comp.Rank | 2026-09-07 | Para Swimming |
 
 <!-- MANUAL PASTE ZONE: SPORT INDEX — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -96,6 +96,26 @@ inferred after a sport is documented. `-Sport` accepts either value and resolves
 | `Not checked` | The layer was not queried, the query failed or coverage was incomplete |
 
 An empty section is not evidence. It remains `Not checked` until verified.
+
+## Structural status meanings
+
+The `Structural status` column of the index records how far the sport file has been read,
+not whether its DQ work is done: `WORKFLOW.md` keeps closure the user's answer and never a
+value read off the package. The three values are stated as conditions on the sport file so
+the cell is derived from what the file records rather than assigned by feel:
+
+| Status | Condition on `SPORTS/<SportSlug>.md` |
+|---|---|
+| `In progress` | A layer outside the statistics is still `Not checked`, or an open question has no decision |
+| `Awaiting Comp.Rank` | Every layer outside the statistics is `Used` or `Not used`, and every open question is closed or deferred with a named reason. Only the statistics layer, paused by the decision of 2026-08-26, remains to be read |
+| `Reviewed` | Every layer is read, the statistics layer included. The only `Not checked` left are named deferrals recorded under "Open questions" |
+
+The `Other tables` row of the coverage table is outside all three conditions. No catalogue
+statement reads it, so it is `Not checked` in nearly every file, and a row nothing can fill
+does not hold a sport in `In progress`.
+
+The value moves in one direction with the reading and back again with a correction: a sport
+whose Comp.Rank layer is rebuilt returns to `Awaiting Comp.Rank` until it is read again.
 
 ## Manual index-rule additions
 
