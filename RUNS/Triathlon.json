@@ -49114,6 +49114,69 @@
                                                              "checkBy":  "Lyudmila"
                                                          }
                                 }
+                 },
+                 {
+                     "runId":  "Triathlon 09.09.2026 13-59-10",
+                     "startedUtc":  "2026-09-09T11:59:09Z",
+                     "output":  "D:\\SQL\u0027s Output\\Triathlon 09.09.2026 13-59-10",
+                     "commit":  "1b0aa0b7f7c5+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-124",
+                                        "runKey":  "Triathlon-DQ-124",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  41,
+                                        "findings":  40,
+                                        "eligible":  3762,
+                                        "seconds":  0.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "51881dbccde0"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-125",
+                                        "runKey":  "Triathlon-DQ-125",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_PATTERN_CANNOT_BE_BUILT",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3762,
+                                        "seconds":  0.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "26dd20ad1689"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  48.7,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  13.4,
+                                                  "planning the changes":  11.4,
+                                                  "adding and sizing tabs":  2.2,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  11.7,
+                                                  "writing values":  7.8,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               }
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"

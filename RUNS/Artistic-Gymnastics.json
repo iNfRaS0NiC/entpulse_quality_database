@@ -48539,6 +48539,69 @@
                                                                        "checkBy":  "Teodor Dobrev"
                                                                    }
                                 }
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 09.09.2026 13-58-21",
+                     "startedUtc":  "2026-09-09T11:58:20Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 09.09.2026 13-58-21",
+                     "commit":  "1b0aa0b7f7c5+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-126",
+                                        "runKey":  "Artistic-Gymnastics-DQ-126",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  147,
+                                        "findings":  146,
+                                        "eligible":  7941,
+                                        "seconds":  1.1,
+                                        "status":  "OK",
+                                        "sqlHash":  "e6e0399608f3"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-127",
+                                        "runKey":  "Artistic-Gymnastics-DQ-127",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_PATTERN_CANNOT_BE_BUILT",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7941,
+                                        "seconds":  0.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "24333c4230e1"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  33.7,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  10.5,
+                                                  "planning the changes":  5.6,
+                                                  "adding and sizing tabs":  2.2,
+                                                  "hiding columns and colouring Rows":  0.7,
+                                                  "clearing stale rows":  4.6,
+                                                  "writing values":  7.7,
+                                                  "confirming the rows arrived":  0.8,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  1
+                                              }
+                               }
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"
