@@ -48906,6 +48906,162 @@
                                                              "checkBy":  "Lyubomir,Gabriel"
                                                          }
                                 }
+                 },
+                 {
+                     "runId":  "09.09.2026 06-51-43",
+                     "startedUtc":  "2026-09-09T04:51:43Z",
+                     "output":  "",
+                     "commit":  "4fa56071c365+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-045",
+                                        "runKey":  "Triathlon-DQ-045",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FULL_TIME_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  3745,
+                                        "seconds":  4.1,
+                                        "status":  "OK",
+                                        "sqlHash":  "98f0444e981b"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  54.6,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  15,
+                                                  "planning the changes":  16.9,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  10.2,
+                                                  "writing values":  8.9,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.9,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Triathlon-DQ-045":  {
+                                                             "status":  "Reopened",
+                                                             "checkBy":  "Lyubomir,Gabriel"
+                                                         }
+                                }
+                 },
+                 {
+                     "runId":  "09.09.2026 06-53-47",
+                     "startedUtc":  "2026-09-09T04:53:47Z",
+                     "output":  "",
+                     "commit":  "4fa56071c365+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-038",
+                                        "runKey":  "Triathlon-DQ-038",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_MISSING_MEDAL_RELATED_FOR_MEDAL_ROUND",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3424,
+                                        "seconds":  0.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "16428d63b6cc"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  56.4,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  15.6,
+                                                  "planning the changes":  17.7,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  10.5,
+                                                  "writing values":  9.6,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Triathlon-DQ-038":  {
+                                                             "status":  "Reopened",
+                                                             "checkBy":  "Aleksandar D."
+                                                         }
+                                }
+                 },
+                 {
+                     "runId":  "09.09.2026 06-54-50",
+                     "startedUtc":  "2026-09-09T04:54:50Z",
+                     "output":  "",
+                     "commit":  "4fa56071c365+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-076",
+                                        "runKey":  "Triathlon-DQ-076",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SETTINGS_UNEXPECTED_MEDAL_RELATED_FOR_NON_MEDAL_ROUND",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  321,
+                                        "seconds":  0.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "fc7e1d878cc3"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  60.2,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  16.2,
+                                                  "planning the changes":  15.6,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  9.4,
+                                                  "writing values":  15.9,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Triathlon-DQ-076":  {
+                                                             "status":  "Reopened",
+                                                             "checkBy":  "Aleksandar D."
+                                                         }
+                                }
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"
