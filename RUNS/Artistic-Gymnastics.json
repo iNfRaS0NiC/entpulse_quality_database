@@ -48487,6 +48487,58 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "09.09.2026 07-58-33",
+                     "startedUtc":  "2026-09-09T05:58:33Z",
+                     "output":  "",
+                     "commit":  "a733e08f18a4+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-106",
+                                        "runKey":  "Artistic-Gymnastics-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  506,
+                                        "findings":  505,
+                                        "eligible":  7828,
+                                        "seconds":  3.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "b0d737a49147"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  65.5,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  22.8,
+                                                  "planning the changes":  14.2,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.5,
+                                                  "clearing stale rows":  15.8,
+                                                  "writing values":  8.8,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  1
+                                              }
+                               },
+                     "review":  {
+                                    "Artistic-Gymnastics-DQ-106":  {
+                                                                       "status":  "Reopened",
+                                                                       "checkBy":  "Teodor Dobrev"
+                                                                   }
+                                }
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"

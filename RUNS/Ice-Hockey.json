@@ -46856,6 +46856,58 @@
                                                               "checkBy":  "Gabriel"
                                                           }
                                 }
+                 },
+                 {
+                     "runId":  "09.09.2026 07-57-37",
+                     "startedUtc":  "2026-09-09T05:57:37Z",
+                     "output":  "",
+                     "commit":  "a733e08f18a4+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Ice-Hockey-DQ-114",
+                                        "runKey":  "Ice-Hockey-DQ-114",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  7024,
+                                        "seconds":  0.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "e4bb57aaeeed"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  49.1,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  11.1,
+                                                  "planning the changes":  15.2,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  13,
+                                                  "writing values":  7.3,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Ice-Hockey-DQ-114":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  ""
+                                                          }
+                                }
                  }
              ],
     "sheetId":  "1Vy0mfddOI9cWkWEpeM7oA12BTDuvUB-nevFZwQANn94"

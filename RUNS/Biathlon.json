@@ -26483,6 +26483,58 @@
                                                             "checkBy":  "Vanin"
                                                         }
                                 }
+                 },
+                 {
+                     "runId":  "09.09.2026 08-31-39",
+                     "startedUtc":  "2026-09-09T06:31:39Z",
+                     "output":  "",
+                     "commit":  "60a8942937e0+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Biathlon-DQ-005",
+                                        "runKey":  "Biathlon-DQ-005",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NO_PARTICIPANTS",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  161,
+                                        "findings":  160,
+                                        "eligible":  2526,
+                                        "seconds":  0.6,
+                                        "status":  "OK",
+                                        "sqlHash":  "373d8141c1c4"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  56.6,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  12.7,
+                                                  "planning the changes":  19.5,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  11.4,
+                                                  "writing values":  9.9,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Biathlon-DQ-005":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  "Vanin"
+                                                        }
+                                }
                  }
              ],
     "sheetId":  "1eQNoYSY_1jbTh0hzFa6CiSXkCuTo4ceolGt8qDxKUr4"

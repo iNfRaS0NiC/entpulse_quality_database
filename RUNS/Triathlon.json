@@ -49062,6 +49062,58 @@
                                                              "checkBy":  "Aleksandar D."
                                                          }
                                 }
+                 },
+                 {
+                     "runId":  "09.09.2026 07-05-09",
+                     "startedUtc":  "2026-09-09T05:05:09Z",
+                     "output":  "",
+                     "commit":  "a733e08f18a4",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-102",
+                                        "runKey":  "Triathlon-DQ-102",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  141,
+                                        "findings":  140,
+                                        "eligible":  3745,
+                                        "seconds":  2.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "cf393bfa6c0a"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  49.5,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  14.4,
+                                                  "planning the changes":  14.1,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  9.1,
+                                                  "writing values":  9,
+                                                  "confirming the rows arrived":  0.5,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Triathlon-DQ-102":  {
+                                                             "status":  "IT Fix",
+                                                             "checkBy":  "Lyudmila"
+                                                         }
+                                }
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"

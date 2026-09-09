@@ -32779,6 +32779,110 @@
                                                                  "checkBy":  "Zlati"
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "09.09.2026 07-09-58",
+                     "startedUtc":  "2026-09-09T05:09:58Z",
+                     "output":  "",
+                     "commit":  "a733e08f18a4+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-059",
+                                        "runKey":  "Speed-Skating-DQ-059",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DUPLICATE_BY_METADATA",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  11,
+                                        "findings":  10,
+                                        "eligible":  4570,
+                                        "seconds":  0.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "9c1fae6ab048"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  51.2,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  18.3,
+                                                  "planning the changes":  14.9,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  6.8,
+                                                  "writing values":  7.5,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  1
+                                              }
+                               },
+                     "review":  {
+                                    "Speed-Skating-DQ-059":  {
+                                                                 "status":  "Reopened",
+                                                                 "checkBy":  "Zlati"
+                                                             }
+                                }
+                 },
+                 {
+                     "runId":  "09.09.2026 07-40-12",
+                     "startedUtc":  "2026-09-09T05:40:12Z",
+                     "output":  "",
+                     "commit":  "a733e08f18a4+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-031",
+                                        "runKey":  "Speed-Skating-DQ-031",
+                                        "parameters":  "",
+                                        "name":  "EVENT_DURATION_FORMAT_MISMATCH_TO_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  236,
+                                        "findings":  235,
+                                        "eligible":  4246,
+                                        "seconds":  3,
+                                        "status":  "OK",
+                                        "sqlHash":  "d0bcb72e1290"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  63.6,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  23.5,
+                                                  "planning the changes":  15.9,
+                                                  "adding and sizing tabs":  0.2,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  11.9,
+                                                  "writing values":  8.6,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.6,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Speed-Skating-DQ-031":  {
+                                                                 "status":  "IT Fix",
+                                                                 "checkBy":  "Zlati"
+                                                             }
+                                }
                  }
              ],
     "sheetId":  "1CNFGr9KzNTGUtKJMn8vALWxHkL3x97JRtABs541iDPM"
