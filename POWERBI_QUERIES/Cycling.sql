@@ -296,14 +296,14 @@ SELECT
     -- What it does: Finds unexplained Ranks above the field size that also sit after a gap, skipping the halves of a split stage.
     'RANK_OUTLIER_ABOVE_FIELD_SIZE' AS check_type,
     z.event_id,
-    z.event_name,
-    z.event_startdate,
-    z.template_name,
+    ev.name AS event_name,
+    ev.startdate AS event_startdate,
+    ttn.name AS template_name,
     -- The edition, carried from GLOBAL-DQ-020 where it was added on 2026-08-17. It matters more
     -- here than anywhere else the template runs: this sport names its events Stage 4, which is
     -- the same string in every tour of every year, so without the tournament a finding row
     -- cannot be placed in time or even in the right race.
-    z.tournament_name,
+    tn.name AS tournament_name,
     z.participant_count,
     z.affected_count,
 -- What it does, stated in full: GLOBAL-DQ-020 for Cycling, minus the one shape in this sport
@@ -324,10 +324,6 @@ SELECT
 FROM (
     SELECT
         y.event_id,
-        y.event_name,
-        y.event_startdate,
-        y.template_name,
-        y.tournament_name,
         MAX(y.participant_count) AS participant_count,
         COUNT(*) AS affected_count,
         GROUP_CONCAT(DISTINCT y.rank_value ORDER BY y.rank_value SEPARATOR ', ') AS ranks_held,
@@ -338,27 +334,27 @@ FROM (
     SELECT
         x.event_participants_id,
         x.event_id,
-        x.event_name,
-        x.event_startdate,
-        x.template_name,
-        x.tournament_name,
-        x.participant_name,
+        pn.name AS participant_name,
         x.rank_value,
         x.participant_count,
         x.next_lower_rank
     FROM (
         SELECT
             ep.id AS event_participants_id,
-            e.id AS event_id,
-            e.name AS event_name,
-            e.startdate AS event_startdate,
-            tt.name AS template_name,
-            t.name AS tournament_name,
-            p.name AS participant_name,
+            -- Ids only through the window. The event, tournament, template and competitor
+            -- names used to be carried past it for every ranked participation in the
+            -- sport, and a sort reserves each column's declared width per row - what
+            -- GLOBAL-DQ-111 records as the largest cost it removed. They are joined back
+            -- after the rank_value > participant_count filter, which leaves seventeen
+            -- rows. The participant join stays here because p.del = 'no' drops rows and
+            -- so belongs before the window; only its name moved out. Measured 2026-09-09:
+            -- 44.5 seconds to 33.8, all seventeen rows identical in every column.
+            ep.eventFK AS event_id,
+            ep.participantFK AS participant_id,
             CAST(r.value AS UNSIGNED) AS rank_value,
             pc.participant_count,
             MAX(CAST(r.value AS UNSIGNED)) OVER (
-                PARTITION BY e.id
+                PARTITION BY ep.eventFK
                 ORDER BY CAST(r.value AS UNSIGNED)
                 RANGE BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
             ) AS next_lower_rank
@@ -396,6 +392,7 @@ FROM (
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
     ) x
+    JOIN participant pn ON pn.id = x.participant_id
     WHERE x.rank_value > x.participant_count
       AND NOT EXISTS (
           SELECT 1
@@ -409,8 +406,12 @@ FROM (
     ) y
     WHERE y.next_lower_rank IS NULL
        OR y.rank_value > y.next_lower_rank + 1
-    GROUP BY y.event_id, y.event_name, y.event_startdate, y.template_name, y.tournament_name
+    GROUP BY y.event_id
 ) z
+JOIN event ev ON ev.id = z.event_id
+JOIN tournament_stage tsn ON tsn.id = ev.tournament_stageFK
+JOIN tournament tn ON tn.id = tsn.tournamentFK
+JOIN tournament_template ttn ON ttn.id = tn.tournament_templateFK
 
 UNION ALL
 
@@ -826,10 +827,10 @@ SELECT
         ELSE 'EVENT_RANK_MISSING_WITH_OTHER_RESULT_PRESENT'
     END AS check_type,
     x.event_id,
-    x.event_name,
-    x.event_startdate,
-    x.tournament_stage_name,
-    x.template_name,
+    ev.name AS event_name,
+    ev.startdate AS event_startdate,
+    tsn.name AS tournament_stage_name,
+    ttn.name AS template_name,
     x.field_size,
     x.affected_count,
     x.rank_not_integer_count,
@@ -871,10 +872,6 @@ SELECT
 FROM (
     SELECT
         y.event_id,
-        MAX(y.event_name) AS event_name,
-        MAX(y.event_startdate) AS event_startdate,
-        MAX(y.tournament_stage_name) AS tournament_stage_name,
-        MAX(y.template_name) AS template_name,
         COUNT(DISTINCT y.ep_id) AS field_size,
         COUNT(DISTINCT CASE WHEN y.offence IS NOT NULL THEN y.ep_id END) AS affected_count,
         COUNT(DISTINCT CASE WHEN y.offence = 'RANK_NOT_INTEGER' THEN y.ep_id END) AS rank_not_integer_count,
@@ -889,10 +886,6 @@ FROM (
         SELECT
             g.ep_id,
             g.event_id,
-            g.event_name,
-            g.event_startdate,
-            g.tournament_stage_name,
-            g.template_name,
             g.participant_name,
             g.rank_raw,
             CASE
@@ -908,12 +901,15 @@ FROM (
         FROM (
             SELECT
                 ep.id AS ep_id,
-                e.id AS event_id,
-                e.name AS event_name,
-                e.startdate AS event_startdate,
-                ts.name AS tournament_stage_name,
-                tt.name AS template_name,
-                p.name AS participant_name,
+                -- Ids through the per-participation grouping, names joined onto the events
+                -- that survive. The event, stage and template names used to sit in the
+                -- GROUP BY key and be carried through two further levels for every
+                -- participation in the sport; GLOBAL-DQ-111 records what a wide sort key
+                -- costs. Measured 2026-09-09: 54.4 seconds to 45.0, every one of the 1376
+                -- rows identical in every column. The remainder is the LEFT JOIN over
+                -- result, which has_any_result needs whole and no type filter can narrow.
+                ep.eventFK AS event_id,
+                MAX(p.name) AS participant_name,
                 NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = 100 THEN r.value END)), '') AS rank_raw,
                 NULLIF(TRIM(MAX(CASE WHEN r.result_typeFK = 104 THEN r.value END)), '') AS comment_raw,
                 MAX(CASE WHEN r.value IS NOT NULL AND TRIM(r.value) <> '' THEN 1 ELSE 0 END) AS has_any_result
@@ -934,12 +930,16 @@ FROM (
               -- AND t.tournament_templateFK = <tournament_template_id>
               -- AND e.startdate >= '<from_datetime>'
               -- AND e.startdate <  '<to_datetime>'
-            GROUP BY ep.id, e.id, e.name, e.startdate, ts.name, tt.name, p.name
+            GROUP BY ep.id, ep.eventFK
         ) g
     ) y
     GROUP BY y.event_id
     HAVING affected_count > 0
 ) x
+JOIN event ev ON ev.id = x.event_id
+JOIN tournament_stage tsn ON tsn.id = ev.tournament_stageFK
+JOIN tournament tn ON tn.id = tsn.tournamentFK
+JOIN tournament_template ttn ON ttn.id = tn.tournament_templateFK
 
 UNION ALL
 

@@ -816,9 +816,17 @@ UNION ALL
 SELECT
     'COVERAGE' AS check_type,
     NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-    COUNT(DISTINCT sp.id) AS eligible_count,
+    -- Counted over the statistic participants collected once, rather than over the join
+    -- result. The two ask the same question of the same scope and return the same 2684;
+    -- COUNT(DISTINCT) across the four-table join builds its distinct set from every row
+    -- the join produces, while grouping first hands it a set already made. Measured
+    -- 2026-09-09: this branch fell from 42.7 seconds to 6.4 and the whole statement from
+    -- 48.3 to 12.3, with the finding branch untouched at 6.3 and every row identical.
+    COUNT(DISTINCT c.sp_id) AS eligible_count,
     1 AS sort_order
-FROM statistic s
+FROM (
+    SELECT sp.id AS sp_id
+    FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
 JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
      AND tt.sportFK = 1
@@ -832,6 +840,8 @@ WHERE s.del = 'no'
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
   AND t.tournament_templateFK IN (44, 50, 65, 66, 76, 77, 287, 288, 289, 290, 292, 301, 9377, 9379, 9428, 9468, 9579, 9833, 10269, 10368, 10371, 11185, 11186, 11241, 11243, 11244, 11245, 11246)
   -- AND t.tournament_templateFK = <tournament_template_id>
+    GROUP BY sp.id
+) c
 
 ORDER BY sort_order, statistic_id, participant_name;
 

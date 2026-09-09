@@ -351,6 +351,29 @@ FROM (
                       ' behind ', b.participant_name, ' rank ', b.rank_value, ' with ', b.points_value)
                ORDER BY (a.points_value = 0), (b.points_value - a.points_value) DESC SEPARATOR ' || '), ' || ', 1) AS worst_example
     FROM (
+        -- Who is overtaken, decided once per competitor instead of by pairing every
+        -- competitor with every competitor below them. The window reads only ranks strictly
+        -- greater, which is what b.rank_value > a.rank_value does, and carries the best score
+        -- any of them holds. A competitor that score does not exceed cannot be contradicted
+        -- by anyone, so the join below is never asked about them.
+        --
+        -- The statement used to scan the sport twice - 248440 participations each time - and
+        -- pair the two inside every event, at the square of the field. Measured 2026-09-09:
+        -- 65.5 seconds to 19.5, the same 821 rows and the same values in thirteen of the
+        -- fourteen columns, field_size, contradicting_participants and
+        -- largest_contradicted_gap among them.
+        --
+        -- worst_example moved on 48 of the 821, and the movement is a tie rather than a
+        -- disagreement: in every one of them the gap is identical and the row names a
+        -- different pair that ties for worst. The old choice among equals was not a rule but
+        -- the order the plan happened to feed GROUP_CONCAT - stable across runs, and not
+        -- reproducible from the statement. Writing an explicit tie-break was tried and made
+        -- it worse rather than restoring the old pick, so none is claimed here: where several
+        -- pairs tie for worst, which one is shown is not defined.
+        SELECT a0.*,
+               MAX(a0.points_value) OVER (PARTITION BY a0.event_id ORDER BY a0.rank_value
+                    RANGE BETWEEN 1 FOLLOWING AND UNBOUNDED FOLLOWING) AS best_points_behind
+        FROM (
         SELECT ts.name AS stage_name, ts.gender AS stage_gender, tt.name AS template_name,
                e.id AS event_id, e.name AS event_name, e.startdate AS event_startdate,
                YEAR(e.startdate) AS event_year,
@@ -372,6 +395,7 @@ FROM (
           -- AND t.tournament_templateFK = <tournament_template_id>
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
+        ) a0
     ) a
     LEFT JOIN (
         SELECT e.id AS event_id, ep.participantFK AS participant_id, p.name AS participant_name,
@@ -393,6 +417,7 @@ FROM (
           -- AND e.startdate >= '<from_datetime>'
           -- AND e.startdate <  '<to_datetime>'
     ) b ON b.event_id = a.event_id
+       AND a.best_points_behind > a.points_value
        AND b.rank_value   > a.rank_value
        AND b.points_value > a.points_value
     GROUP BY a.event_id
