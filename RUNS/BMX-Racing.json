@@ -8026,6 +8026,474 @@
                                                               "checkBy":  ""
                                                           }
                                 }
+                 },
+                 {
+                     "runId":  "09.09.2026 11-21-08",
+                     "startedUtc":  "2026-09-09T09:21:08Z",
+                     "output":  "",
+                     "commit":  "7e011223216d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-Racing-DQ-111",
+                                        "runKey":  "BMX-Racing-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  20979,
+                                        "seconds":  15,
+                                        "status":  "OK",
+                                        "sqlHash":  "f43a7c3fdbc7"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  106.9,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  25.1,
+                                                  "planning the changes":  46.4,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.6,
+                                                  "clearing stale rows":  18.7,
+                                                  "writing values":  11.8,
+                                                  "confirming the rows arrived":  0.5,
+                                                  "colouring the trend":  1,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  1.1,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-Racing-DQ-111":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          }
+                                }
+                 },
+                 {
+                     "runId":  "09.09.2026 11-28-54",
+                     "startedUtc":  "2026-09-09T09:28:54Z",
+                     "output":  "",
+                     "commit":  "7e011223216d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-Racing-DQ-106",
+                                        "runKey":  "BMX-Racing-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PARTICIPANT_ORGANIZATION_COUNTRY_CONTRADICTS_COMPETITOR",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Comp.Rank: 1465 Organization",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  533,
+                                        "seconds":  15.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "00838ce3944f"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  120.5,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  29.8,
+                                                  "planning the changes":  56,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  19.7,
+                                                  "writing values":  11.2,
+                                                  "confirming the rows arrived":  0.9,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-Racing-DQ-106":  {
+                                                              "status":  "Reopened",
+                                                              "checkBy":  ""
+                                                          }
+                                }
+                 },
+                 {
+                     "runId":  "09.09.2026 11-40-08",
+                     "startedUtc":  "2026-09-09T09:40:08Z",
+                     "output":  "",
+                     "commit":  "7e011223216d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-Racing-DQ-043",
+                                        "runKey":  "BMX-Racing-DQ-043",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_WITHOUT_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  10,
+                                        "findings":  9,
+                                        "eligible":  426,
+                                        "seconds":  0.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "cd061eed74c2"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  112.4,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  28.1,
+                                                  "planning the changes":  47.4,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.4,
+                                                  "clearing stale rows":  18.9,
+                                                  "writing values":  12.9,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  1.8,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  1,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-Racing-DQ-043":  {
+                                                              "status":  "On Hold",
+                                                              "checkBy":  "Aleksandar D."
+                                                          }
+                                }
+                 },
+                 {
+                     "runId":  "09.09.2026 11-43-07",
+                     "startedUtc":  "2026-09-09T09:43:07Z",
+                     "output":  "",
+                     "commit":  "7e011223216d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-Racing-DQ-088",
+                                        "runKey":  "BMX-Racing-DQ-088",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_EFFECTIVE_TIME_NOT_MONOTONIC",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 557 Full-time duration, 101 Duration, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  8,
+                                        "findings":  7,
+                                        "eligible":  8004,
+                                        "seconds":  4.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "de1a323be55d"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  107.5,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  5,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  25,
+                                                  "planning the changes":  46.3,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.4,
+                                                  "clearing stale rows":  19,
+                                                  "writing values":  12.5,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.8,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  1.4
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-Racing-DQ-088":  {
+                                                              "status":  "Reviewing",
+                                                              "checkBy":  "Hristiyana, Aleksandar D."
+                                                          }
+                                }
+                 },
+                 {
+                     "runId":  "09.09.2026 11-54-19",
+                     "startedUtc":  "2026-09-09T09:54:19Z",
+                     "output":  "",
+                     "commit":  "7e011223216d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-Racing-DQ-116",
+                                        "runKey":  "BMX-Racing-DQ-116",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_DATE_RANGE_DISAGREES_WITH_ITS_EVENTS",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  410,
+                                        "seconds":  0.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "d542071ee4f3"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  106.5,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  23.1,
+                                                  "planning the changes":  45.6,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  19.7,
+                                                  "writing values":  12,
+                                                  "confirming the rows arrived":  3.1,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.9
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-Racing-DQ-116":  {
+                                                              "status":  "Completed",
+                                                              "checkBy":  "Gabriel"
+                                                          }
+                                }
+                 },
+                 {
+                     "runId":  "09.09.2026 12-51-53",
+                     "startedUtc":  "2026-09-09T10:51:53Z",
+                     "output":  "",
+                     "commit":  "7e011223216d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-Racing-DQ-117",
+                                        "runKey":  "BMX-Racing-DQ-117",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PLACES_DISAGREE_WITH_THE_LINKED_FINAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank; Comp.Rank: 1270 Rank; Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  21,
+                                        "findings":  20,
+                                        "eligible":  419,
+                                        "seconds":  16.8,
+                                        "status":  "OK",
+                                        "sqlHash":  "538d96e09dd3"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  106.8,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  21.2,
+                                                  "planning the changes":  52.6,
+                                                  "adding and sizing tabs":  0.6,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  19.9,
+                                                  "writing values":  9.6,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.9,
+                                                  "declaring the result tables":  0.3
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-Racing-DQ-117":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          }
+                                }
+                 },
+                 {
+                     "runId":  "09.09.2026 13-11-55",
+                     "startedUtc":  "2026-09-09T11:11:55Z",
+                     "output":  "",
+                     "commit":  "7e011223216d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-Racing-DQ-117",
+                                        "runKey":  "BMX-Racing-DQ-117",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PLACES_DISAGREE_WITH_THE_LINKED_FINAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank; Comp.Rank: 1270 Rank; Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  17,
+                                        "findings":  16,
+                                        "eligible":  419,
+                                        "seconds":  16.8,
+                                        "status":  "OK",
+                                        "sqlHash":  "538d96e09dd3"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  109.5,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  21.9,
+                                                  "planning the changes":  50.3,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.1,
+                                                  "clearing stale rows":  19.6,
+                                                  "writing values":  14.4,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.7,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-Racing-DQ-117":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          }
+                                }
+                 },
+                 {
+                     "runId":  "09.09.2026 13-33-24",
+                     "startedUtc":  "2026-09-09T11:33:24Z",
+                     "output":  "",
+                     "commit":  "7e011223216d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-Racing-DQ-117",
+                                        "runKey":  "BMX-Racing-DQ-117",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PLACES_DISAGREE_WITH_THE_LINKED_FINAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank; Comp.Rank: 1270 Rank; Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  6,
+                                        "findings":  5,
+                                        "eligible":  419,
+                                        "seconds":  16.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "538d96e09dd3"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  113,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  25.7,
+                                                  "planning the changes":  50.5,
+                                                  "adding and sizing tabs":  0.2,
+                                                  "hiding columns and colouring Rows":  1.5,
+                                                  "clearing stale rows":  20.8,
+                                                  "writing values":  12.3,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.9
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-Racing-DQ-117":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          }
+                                }
+                 },
+                 {
+                     "runId":  "09.09.2026 13-39-58",
+                     "startedUtc":  "2026-09-09T11:39:58Z",
+                     "output":  "",
+                     "commit":  "7e011223216d+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-Racing-DQ-117",
+                                        "runKey":  "BMX-Racing-DQ-117",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_PLACES_DISAGREE_WITH_THE_LINKED_FINAL",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank; Comp.Rank: 1270 Rank; Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  3,
+                                        "findings":  2,
+                                        "eligible":  419,
+                                        "seconds":  16.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "538d96e09dd3"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  108.5,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  24.2,
+                                                  "planning the changes":  51,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.1,
+                                                  "clearing stale rows":  19.7,
+                                                  "writing values":  10.7,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-Racing-DQ-117":  {
+                                                              "status":  "Not reviewed",
+                                                              "checkBy":  ""
+                                                          }
+                                }
                  }
              ],
     "sheetId":  "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE"
