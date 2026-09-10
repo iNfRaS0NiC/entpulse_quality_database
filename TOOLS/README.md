@@ -2218,11 +2218,15 @@ scope that moved underneath them. Each dropped note is written down with the rea
 | the finding under that key came back reading differently | the row stayed, and says something else than it did |
 | more than one finding in this result carries this key | the note cannot be told which of them it is about |
 | the check was re-shaped | the columns the key is built from are not the ones the note was written against |
-| the row was marked `Fixed` and came back, so its note was replaced on the board | the mark stayed and the cell now says why the row is still there |
+| the row was marked `Fixed` and came back, so why it is still there was added after the note on the board | the mark stayed, and the reason went into the cell after the reviewer's own sentence |
 
-The last of them is not a dropped conclusion. The row keeps its `Fixed` and the reviewer's
-sentence is kept here because the cell it sat in now holds `No Change` or `Other issue for the
-same event` instead; see `Fixed is the exception` above.
+The last of them is the one row here that records no loss at all. The finding is still on its
+tab, it still reads `Fixed`, and the reviewer's sentence is still in its cell with `(No Change)`
+or `(Other issue for the same event)` after it. What the log keeps is what the cell said before
+the reason was put there, which is how the wording of a note is followed back through the runs
+it survived. Written only where the cell actually changes, so a row that comes back a fourth
+time files nothing. It replaced the sentence outright until 2026-09-10, and until then this was
+a dropped conclusion like the rest; see `Fixed is the exception` above.
 
 The second is not a fix and must not read like one. `GLOBAL-DQ-030` went from one row per stray
 participant to one row per statistic on 2026-08-11, and its notes were keyed on a column the new
