@@ -323,3 +323,177 @@ WHERE e.del = 'no'
   -- AND t.tournament_templateFK = <tournament_template_id>
 
 ORDER BY sort_order, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - BMX-Racing-DQ-121
+    -- Name - EVENT_NAME_CARRIES_A_WORD_THE_RENAMING_PATTERN_WILL_DROP
+    -- What it does: Finds events whose name holds a word the required form has no slot for, so the renaming cron will drop it.
+    CASE WHEN MAX(g.events_sharing_the_expected_name) > 1
+         THEN 'LOSING_IT_COLLIDES_WITH_ANOTHER_EVENT'
+         ELSE 'WORD_IS_DROPPED_AND_THE_NAME_STAYS_UNIQUE'
+    END AS check_type,
+    g.event_id,
+    g.event_name,
+    g.expected_name,
+    GROUP_CONCAT(DISTINCT g.word ORDER BY g.word SEPARATOR ', ') AS words_the_pattern_drops,
+    COUNT(DISTINCT g.word) AS word_count,
+    MAX(g.round_type_name) AS round_type_name,
+    MAX(g.tournament_name) AS tournament_name,
+    MAX(g.template_name) AS template_name,
+    MAX(g.startdate) AS event_startdate,
+    MAX(g.events_sharing_the_expected_name) AS events_sharing_the_expected_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: The required form is `[Discipline] [Gender] [Round] [Run N]
+-- [Heat N]` and it is built from the event's own settings, so any word the current name carries
+-- that the form has no slot for disappears the moment the renaming cron reaches that event.
+-- This lists those words while they are still there. `Women's Racing Motos Overall Heat 3`
+-- becomes `Racing Women Heats Heat 3`, and this reports `Motos` and `Overall`.
+--
+-- **It reports a consequence rather than a defect, and that is a change of position.** Until
+-- 2026-09-10 `SPORTS/BMX-Racing.md` recorded that the loss of `Overall` was a consequence of the
+-- chosen form and not something a check could report. The user reversed that on 2026-09-10:
+-- what a rename destroys cannot be recovered from the database afterwards, so it has to be
+-- readable before the cron passes, and a board row is where a person will actually see it. The
+-- sport file records the reversal.
+--
+-- `check_type` separates the two, and only the first is a decision anybody has to take:
+--   LOSING_IT_COLLIDES_WITH_ANOTHER_EVENT - another event under the same tournament reduces to
+--     the same expected name, so this word is part of what tells the two apart and after the
+--     rename a trailing number is all that will. That is how `Motos` and `Motos Overall` became
+--     `Racing Men Heats 1` and `Racing Men Heats 2`, neither of which says which is the overall
+--     standing.
+--   WORD_IS_DROPPED_AND_THE_NAME_STAYS_UNIQUE - the word goes and nothing collides. Still worth
+--     seeing before it goes, and cheaper to accept.
+--
+-- **A word is matched normalised and in both numbers.** The comparison lower-cases, drops a
+-- possessive `'s`, drops everything that is not a letter or a digit, and accepts a match on the
+-- singular or the plural, so `Women's` against `Women` is not a loss and `Finals` against
+-- `Final` is not either. What survives that is a word with no counterpart in the expected name
+-- at all.
+--
+-- One row per event, never one per word: the audited object is the event, the words it loses
+-- travel as a named column, and `word_count` says how many. An event whose name already is the
+-- expected name carries no lost word and is not a finding.
+--
+-- The eligible population is the one `BMX-Racing-DQ-118` audits - every event whose discipline,
+-- stage gender and round type let the required form be built at all. The two answer different
+-- questions over it: `-118` asks whether the name is the expected one,
+-- `EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN`, and this asks what becomes of the words when
+-- it is made so. `BMX-Racing-DQ-119 EVENT_NAME_PATTERN_CANNOT_BE_BUILT` owns the events that
+-- fall out of the population.
+FROM (
+    SELECT
+        b.event_id,
+        b.event_name,
+        b.expected_name,
+        b.round_type_name,
+        b.tournament_name,
+        b.template_name,
+        b.startdate,
+        b.events_sharing_the_expected_name,
+        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(b.name_for_the_diff, ' ', seq.n), ' ', -1)) AS word
+    FROM (
+        SELECT
+            a.*,
+            COUNT(*) OVER (PARTITION BY a.tournament_id, a.expected_name) AS events_sharing_the_expected_name
+        FROM (
+            SELECT
+                e.id AS event_id,
+                TRIM(e.name) AS event_name,
+                -- The cron settles a collision by putting a number on the end, so that number
+                -- is its own and not a word the name is losing. Split off before the diff, the
+                -- same rule `BMX-Racing-DQ-118` applies when it accepts such a name as correct.
+                CASE WHEN e.name REGEXP '[[:space:]][0-9]+$'
+                     THEN TRIM(SUBSTRING(TRIM(e.name), 1,
+                            CHAR_LENGTH(TRIM(e.name)) - CHAR_LENGTH(SUBSTRING_INDEX(TRIM(e.name), ' ', -1))))
+                     ELSE TRIM(e.name)
+                END AS name_for_the_diff,
+                e.startdate,
+                t.id AS tournament_id,
+                t.name AS tournament_name,
+                tt.name AS template_name,
+                rt.name AS round_type_name,
+                TRIM(CONCAT_WS(' ',
+                    CASE od.disciplineFK WHEN 429 THEN 'Racing' WHEN 776 THEN 'Time Trial' END,
+                    CASE ts.gender WHEN 'male' THEN 'Men' WHEN 'female' THEN 'Women' WHEN 'mixed' THEN 'Mixed' END,
+                    CASE rt.id WHEN 2 THEN 'Semifinal' WHEN 38 THEN 'Round 1' ELSE rt.name END,
+                    CASE WHEN MAX(CASE WHEN pr.name = 'Run' THEN pr.value END) IS NOT NULL
+                         THEN CONCAT('Run ', MAX(CASE WHEN pr.name = 'Run' THEN pr.value END)) END,
+                    CASE WHEN MAX(CASE WHEN pr.name = 'Heat' THEN pr.value END) IS NOT NULL
+                         THEN CONCAT('Heat ', MAX(CASE WHEN pr.name = 'Heat' THEN pr.value END)) END
+                )) AS expected_name
+            FROM event e
+            JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+            JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+            JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+            JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+            LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+            LEFT JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id AND pr.del = 'no'
+                                 AND pr.name IN ('Run', 'Heat')
+            WHERE e.del = 'no'
+              AND tt.sportFK = 58
+              -- sport.id 58 carries two editorially distinct sports. Racing and Time Trial are
+              -- this one; Freestyle is discipline 430 and belongs to BMX-Freestyle.
+              AND od.disciplineFK IN (429, 776)
+              AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+              -- AND t.tournament_templateFK = <tournament_template_id>
+              AND rt.name IS NOT NULL
+              AND ts.gender IN ('male', 'female', 'mixed')
+              AND od.disciplineFK IN (429, 776)
+              AND e.name IS NOT NULL
+              AND TRIM(e.name) <> ''
+            GROUP BY e.id, e.name, e.startdate, t.id, t.name, tt.name,
+                     rt.id, rt.name, ts.gender, od.disciplineFK
+        ) a
+    ) b
+    -- One row per word of the name. Twelve is above the longest name the sport carries and the
+    -- join stops at the word count of each name, so a short name costs one row.
+    JOIN (
+        SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+        UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8
+        UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11 UNION ALL SELECT 12
+    ) seq
+      ON seq.n <= CHAR_LENGTH(b.name_for_the_diff) - CHAR_LENGTH(REPLACE(b.name_for_the_diff, ' ', '')) + 1
+) g
+WHERE TRIM(g.word) <> ''
+  AND LOWER(REGEXP_REPLACE(REGEXP_REPLACE(g.word, '''s$', ''), '[^A-Za-z0-9]', '')) <> ''
+  AND CONCAT(' ', LOWER(REGEXP_REPLACE(g.expected_name, '[^A-Za-z0-9 ]', '')), ' ')
+      NOT LIKE CONCAT('% ', LOWER(REGEXP_REPLACE(REGEXP_REPLACE(g.word, '''s$', ''), '[^A-Za-z0-9]', '')), ' %')
+  AND CONCAT(' ', LOWER(REGEXP_REPLACE(g.expected_name, '[^A-Za-z0-9 ]', '')), ' ')
+      NOT LIKE CONCAT('% ', TRIM(TRAILING 's' FROM LOWER(REGEXP_REPLACE(REGEXP_REPLACE(g.word, '''s$', ''), '[^A-Za-z0-9]', ''))), ' %')
+  AND CONCAT(' ', LOWER(REGEXP_REPLACE(g.expected_name, '[^A-Za-z0-9 ]', '')), ' ')
+      NOT LIKE CONCAT('% ', LOWER(REGEXP_REPLACE(REGEXP_REPLACE(g.word, '''s$', ''), '[^A-Za-z0-9]', '')), 's %')
+GROUP BY g.event_id, g.event_name, g.expected_name
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT c.event_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT e.id AS event_id
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    WHERE e.del = 'no'
+      AND tt.sportFK = 58
+      AND od.disciplineFK IN (429, 776)
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      AND rt.name IS NOT NULL
+      AND ts.gender IN ('male', 'female', 'mixed')
+      AND e.name IS NOT NULL
+      AND TRIM(e.name) <> ''
+) c
+
+ORDER BY sort_order, check_type, event_startdate DESC;

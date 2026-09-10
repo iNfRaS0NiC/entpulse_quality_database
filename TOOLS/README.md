@@ -1162,6 +1162,23 @@ is written identically, so the two agree.
 This is what lets `Rows` be both a number and a link: its `display` is the row count. Any
 new link must set `display` to whatever the cell is meant to read.
 
+### A GLOBAL template never reaches a board
+
+A run writes a check tab for every statement in it, and the tab is matched on the next run by
+the CheckID in its own `A2`. So `GLOBAL-DQ-007 -Sport Biathlon` - the template executed directly
+against a sport - wrote a tab keyed `GLOBAL-DQ-007`, and when the sport's own `Biathlon-DQ-084`
+ran next it found its title taken by a tab carrying a different id and minted
+`PTC_MISS_DATE_OF_BIRTH~2` beside it. Two tabs, one question, and a reviewer working on
+whichever they happened to open. Found on Biathlon and Track-Cycling on 2026-09-10, with 595
+unreviewed rows on the Biathlon leftover; the `History` tabs of eight further boards carry rows
+from the same practice.
+
+`Save-RunSheet` now drops any statement whose run key begins `GLOBAL-DQ-` before the board is
+planned, and says on screen which ones it kept off. Running a template against a sport is still
+a legitimate thing to do - it is how a candidate is profiled before anybody numbers it - and
+what was wrong was only that it wrote to the reviewers' board. `POWERBI.md`'s authorization gate
+already says an unapproved check does not belong there, so this enforces a rule that existed.
+
 ### Tab names
 
 Check names routinely run past Excel's 31-character tab limit, and they differ in their
@@ -1786,8 +1803,9 @@ address was set go out on the first run after it is.
 | Where the two links go | the **sport** opens that board's `Overview`; the word at the end of the row opens the **check's own tab**. A reader who wants the sport and a reader who wants the one finding are two different readers |
 | What it looks like | text and HTML both, text first. A plain-text mail can only carry a naked URL, and a Google tab link is ninety characters that push the four columns off the screen; HTML gives the row a word to hang the link on. The text alternative is what a client refusing HTML shows and what a search over somebody's mail matches |
 | A tab it cannot name | links to the board instead. A tab id is a number Google assigns and one created on this very run has none until Google answers, so the link degrades rather than pointing at whichever tab the document was last left on |
-| What is never sent | anything that is not a reopen **or a failed nightly pass**. A check closing itself on two clean runs, and a superseded spelling being brought up to date, are both in the same list the run reads and neither is news |
+| What is never sent | anything that is not a reopen, **a failed nightly pass or a whole-sport run request**. A check closing itself on two clean runs, and a superseded spelling being brought up to date, are both in the same list the run reads and neither is news |
 | The second kind of message | a night that did not run. `Invoke-NightlyRun.ps1` queues one event per failed sport and the drain sends them as `Data Quality - Nightly pass failed: N sports`, separately from the reopen digest — one is a working list for a reviewer, the other a fault report for whoever owns the machine. An event with no `kind` is a reopen, which is what every event written before 2026-09-08 is |
+| The third kind, and the only one sent at once | somebody asking for a **whole-sport run**. `Watch-SheetRequests.ps1` mails it the moment it sees the request, not through the morning drain, by the user's decision of 2026-09-10: it is a person waiting on a decision only the owner can take, the board sits at `WAITING` until they take it, and a mail arriving the next morning is about a request already stale for a working day. Keyed on the Request ID, so a row waiting through forty passes of the worker is one message. The queue is still written first and the send is the second step - recorded and unsent is a message that arrives late, sent and unrecorded is one that arrives every ninety seconds - so a send that fails leaves it for the 07:00 drain. An approved request sends nothing: there is no longer anything to decide |
 | What a check that expects `Non-zero` sends | nothing, ever. The gate is the same `Expected` gate that governs the word itself, so a `Monitor` check whose count jumps is not a reopen and does not mail. This is the thing most likely to be reported as a fault |
 | Which numbers it quotes | the open ones, dismissals already subtracted, so the message and the board agree. A reviewer who has marked rows `No Issue / Change` or `Missing` sees the same count in both places, and the message says which count it is — the sentence is built from the list of dismissing values, so it cannot name fewer of them than the count leaves out |
 | Sent twice | no. One transition is one message, keyed on the run's own start, so a board update retried after a transport failure does not mail again |
@@ -2030,6 +2048,21 @@ Every other note goes to the `Review log` with the reason. A note is found by it
 `check_type` and the id columns — and then the rest of the row is compared before it is put
 back, so a finding that stayed under the same key while its counts, names or values moved comes
 back unreviewed rather than green.
+
+**A `Fixed` row that comes back keeps its note and the reason follows it in brackets** -
+`2002-11-09 (No Change)`, or `(Other issue for the same event)` where the reading moved. From
+2026-08-31 until 2026-09-10 the reason replaced the sentence outright and the `Review log` was
+the only place it survived; on 10.09 that cost `Biathlon-DQ-084
+PARTICIPANT_MISSING_DATE_OF_BIRTH` a column of dates of birth somebody had gone and found, in a
+single run. The brackets cost a phrase rather than a line, because the previous one is taken off
+before the next goes on, and a cell that does not change no longer files a log row at all.
+
+`TOOLS/Restore-ReplacedNotes.ps1` puts back what was replaced before that. It reads each board's
+`Review log`, finds every row whose `Why` says the note was replaced, locates the finding on its
+own tab by the same key and rewrites the cell - and only where the cell still holds a bare
+reason, because anything else is a reviewer who has written since. Nothing is written without
+`-Apply`; a bare run reports what it would do. Run once, on 2026-09-10, restoring 613 cells
+across six boards. It takes no run lock, so it must not be run while a board write is in flight.
 
 Until 2026-08-26 only `Fixed` was held to this, on the reasoning that the other two judge the
 object rather than the reading: this organization is a neutral entry, this stage is being

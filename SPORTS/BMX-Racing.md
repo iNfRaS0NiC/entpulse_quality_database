@@ -424,6 +424,14 @@ required form has no slot for the word, so `Motos` and `Motos Overall` both beca
 `Racing Men Heats` and are now told apart by a number that does not say which is the overall
 standing. This is a consequence of the form, not a defect any check can report.
 
+**That last sentence stood until 2026-09-10 and no longer does.** It said the loss was a
+consequence of the form rather than a defect any check could report, and the user reversed it
+that day on the ground that a rename destroys the only evidence of what was lost: once a name
+is rebuilt from the settings, nothing distinguishes a name that had disagreed with them from
+one that had agreed. `BMX-Racing-DQ-121 EVENT_NAME_CARRIES_A_WORD_THE_RENAMING_PATTERN_WILL_DROP`
+reports it while it is still there. It is still not a defect in the event - the check says so in
+its own `check_type` - but it is something a person has to see before the cron reaches it.
+
 **`General Classification` needed no such handling**, and that is the opposite answer to the
 same question asked the same way: no tournament holding one holds any other final, so it was
 that tournament's final under another name and folding it in collided with nothing.
@@ -491,6 +499,39 @@ Nothing else moved. `'semi finals'`, `'quarter finals'`, `'1/8'`, `'1/16'`, `'1/
 elimination list: those names are rounds a rider goes out of, in this sport as in any other.
 `38 1` stays in neither list, because a round type named with the bare digit `1` cannot be
 classified from its name at all.
+
+### Two more checks read the round, and neither reads the name
+
+`BMX-Racing-DQ-120` carries `GLOBAL-DQ-163 EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE` - the
+event's `Round` property naming a different round from its `round_typeFK`. Approved 2026-09-10
+and instantiated on all fourteen Listing sports the same day, under the new `WRONG_ROUND`
+category.
+
+**It exists because of the renaming cron rather than in spite of it.** The cron builds the event
+name from `round_type.name`, so after a pass the name agrees with the round type by
+construction: a wrong round type produces a wrong name, the two agree, and
+`BMX-Racing-DQ-118 EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN` is silent about both. The
+`Round` property is not rewritten. It is the one field on the event that still says what the
+round was called before, and this check reads it.
+
+It reports 73 events of 9118, all one row: round type `383 Time Trial Qualifier` against a
+property reading `Time Trail Qualifier`. A transposition, filed as
+`PROPERTY_IS_NOT_IN_THE_ROUND_VOCABULARY` because no round type carries that spelling.
+
+`BMX-Racing-DQ-121 EVENT_NAME_CARRIES_A_WORD_THE_RENAMING_PATTERN_WILL_DROP` is the second, and
+the paragraph above records why the position on it changed. It reports 26 events of the same
+9118, and every one is the case this file has described since the sport was opened: an event
+filed under `385 Time Trial Superfinal` and named `Racing Men Seeding`, or under
+`383 Time Trial Qualifier` and named `Racing Men Qualifier`. The word the rename will drop is
+`Seeding` in the first and `Qualifier` in the second, and in both the round type and the `Round`
+property already agree with each other against the name.
+
+**The three say different things about the same events and none of them replaces another.**
+`-118` says the name is not the expected one. `-121` says which word goes when it is made so.
+`-120` says the two structured fields disagree, which is the only one of the three that survives
+a cron pass. The 26 are a subset of what `-118` reported on 2026-09-10, and `-118`'s own count
+moved from 0 to 145 inside an hour that day, which is the population being repaired while it is
+read rather than either check changing its mind.
 
 <!-- MANUAL PASTE ZONE: 58 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 

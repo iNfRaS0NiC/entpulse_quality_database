@@ -234,6 +234,17 @@ function New-ReopenNotification {
 $NotifyKindReopen = 'reopen'
 $NotifyKindPassFailure = 'passFailure'
 
+# Somebody has asked for a whole-sport run and it is waiting on the owner.
+#
+# **This one is sent the moment it is queued, and it is the only kind that is.** The others are
+# a digest of what a night did, and a digest is a thing to read over coffee: the queue holds
+# them and `EP DQ reopen queue` drains it at 07:00. A whole-sport request is not that. It is a
+# person waiting for a decision only the owner can make, on a board that will sit at WAITING
+# until they make it, and a mail arriving the next morning tells them about a request that has
+# already been stale for a working day. Added by the user's decision of 2026-09-10, who asked
+# for it in those words: it has to be immediate.
+$NotifyKindRunRequest = 'runRequest'
+
 function Get-NotifyEventKind {
     param($Event)
 
@@ -241,6 +252,182 @@ function Get-NotifyEventKind {
     $kind = [string]$Event.kind
     if ([string]::IsNullOrWhiteSpace($kind)) { return $NotifyKindReopen }
     return $kind
+}
+
+function New-NotifyRunRequestEvent {
+    <#
+        One queued event per whole-sport request seen on a board.
+
+        The id carries the request, so a request waiting through forty passes of the worker is
+        one mail rather than forty. That is the whole of the de-duplication and it needs nothing
+        else: a Request ID is minted once, by the menu item that wrote the row.
+
+        The state travels with it because the two mornings are different. `waiting` is a
+        decision the owner has not taken yet and the board is holding the row for them;
+        `refused` is a request that will never run as things stand, and the reason says what to
+        change. Neither is a run that failed - that is what the request row's own Error cell is
+        for - and this is only ever about a request that has appeared.
+    #>
+    param(
+        [string]$Sport,
+        [string]$RequestId,
+        [string]$RequestedBy,
+        [string]$RequestedAt,
+        [string]$State,
+        [string]$Why,
+        [string]$BoardUrl
+    )
+
+    if ([string]::IsNullOrWhiteSpace($Sport) -or [string]::IsNullOrWhiteSpace($RequestId)) {
+        return @()
+    }
+
+    return @([pscustomobject]@{
+            notificationId = ('runRequest|{0}|{1}' -f $Sport, $RequestId)
+            kind           = $NotifyKindRunRequest
+            status         = $NotifyStatusQueued
+            runId          = $RequestId
+            sport          = $Sport
+            requestedBy    = [string]$RequestedBy
+            requestedAt    = [string]$RequestedAt
+            state          = $(if ([string]::IsNullOrWhiteSpace($State)) { 'waiting' } else { $State })
+            reason         = [string]$Why
+            boardUrl       = [string]$BoardUrl
+            queuedUtc      = ((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ'))
+            attempts       = 0
+        })
+}
+
+function Format-RunRequestDigest {
+    <#
+        Subject and both bodies for a whole-sport request.
+
+        One request per message rather than a digest, and that is the opposite of every other
+        kind here. A digest groups things somebody will work through in one sitting; this is a
+        single decision with a link to where it is taken, and grouping two of them would mean
+        the second is read as context for the first.
+
+        The subject names the sport, because that is what the owner is deciding about and it is
+        the half of the sentence that survives a phone's lock screen.
+    #>
+    param($Events)
+
+    $items = @(ConvertTo-NotifyList -Value $Events)
+    if ($items.Count -eq 0) { return $null }
+    $one = @($items)[0]
+
+    $sport = [string]$one.sport
+    $state = [string]$one.state
+    $who = [string]$one.requestedBy
+    $when = [string]$one.requestedAt
+    $why = [string]$one.reason
+    $url = [string]$one.boardUrl
+
+    $subject = $(if ($state -eq 'refused') {
+            'Data Quality - Whole-sport run refused on {0}' -f $sport
+        } else {
+            'Data Quality - Whole-sport run waiting for you on {0}' -f $sport
+        })
+
+    $lead = $(if ($state -eq 'refused') {
+            '{0} asked for every approved check on {1} to be run, and the board refused it.' -f $who, $sport
+        } else {
+            '{0} asked for every approved check on {1} to be run. It is waiting for your approval and will not start without it.' -f $who, $sport
+        })
+
+    $lines = @($lead, '')
+    if (-not [string]::IsNullOrWhiteSpace($when)) { $lines += ('Requested   {0}' -f $when) }
+    $lines += ('Request ID  {0}' -f [string]$one.runId)
+    if (-not [string]::IsNullOrWhiteSpace($why)) { $lines += ('Reason      {0}' -f $why) }
+    if (-not [string]::IsNullOrWhiteSpace($url)) { $lines += @('', $url) }
+    $lines += @('', ('Sent by the request worker at {0}.' -f (Get-NotifyStamp)))
+    $body = ($lines -join "`n")
+
+    $htmlLines = @('<p>' + (ConvertTo-NotifyHtmlText -Text $lead) + '</p>', '<table cellpadding="4">')
+    if (-not [string]::IsNullOrWhiteSpace($when)) {
+        $htmlLines += ('<tr><td><b>Requested</b></td><td>{0}</td></tr>' -f (ConvertTo-NotifyHtmlText -Text $when))
+    }
+    $htmlLines += ('<tr><td><b>Request ID</b></td><td>{0}</td></tr>' -f (ConvertTo-NotifyHtmlText -Text ([string]$one.runId)))
+    if (-not [string]::IsNullOrWhiteSpace($why)) {
+        $htmlLines += ('<tr><td><b>Reason</b></td><td>{0}</td></tr>' -f (ConvertTo-NotifyHtmlText -Text $why))
+    }
+    $htmlLines += '</table>'
+    if (-not [string]::IsNullOrWhiteSpace($url)) {
+        $htmlLines += ('<p><a href="{0}">Open the {1} board</a></p>' -f
+            (ConvertTo-NotifyHtmlText -Text $url), (ConvertTo-NotifyHtmlText -Text $sport))
+    }
+    $htmlLines += ('<p style="color:#777">Sent by the request worker at {0}.</p>' -f (Get-NotifyStamp))
+
+    return [pscustomobject]@{
+        Subject  = $subject
+        Body     = $body
+        BodyHtml = ($htmlLines -join "`n")
+    }
+}
+
+function Send-NotifyRunRequestNow {
+    <#
+        Queue a whole-sport request and try to send it in the same breath.
+
+        **The queue is written first and the send is the second step, not the other way round.**
+        A mail that goes out and is then not recorded is a mail that goes out again on the next
+        pass, ninety seconds later, and again after that. Recorded first, the worst case is a
+        message nobody receives until 07:00 - which is exactly what the queue is for, and is
+        what happens on its own if the send throws.
+
+        Returns what happened, for the worker to print: `sent`, `queued` when the send could not
+        be made, or `already` when this request has been reported before.
+    #>
+    param(
+        $Event,
+        [string]$QueuePath,
+        [string[]]$To,
+        [switch]$DryRun
+    )
+
+    $events = @(ConvertTo-NotifyList -Value $Event)
+    if ($events.Count -eq 0) { return 'none' }
+
+    if ([string]::IsNullOrWhiteSpace($QueuePath)) { $QueuePath = Get-NotifyQueuePath }
+    $queue = Read-NotifyQueue -Path $QueuePath
+    $added = Add-NotifyEvent -Queue $queue -Events $events
+    if ($added.Added -eq 0) { return 'already' }
+
+    Save-NotifyQueue -Path $QueuePath -Queue $added.Queue
+
+    $recipients = @($To)
+    if ($recipients.Count -eq 0) { return 'queued' }
+
+    $mail = Format-RunRequestDigest -Events $events
+    if ($null -eq $mail) { return 'queued' }
+
+    try {
+        $result = Send-NotifyMail -To $recipients -Subject $mail.Subject -Body $mail.Body `
+            -BodyHtml $mail.BodyHtml -DryRun:$DryRun
+        if ($DryRun) { return 'sent' }
+
+        # Marked sent in the file that was just written, so the 07:00 drain does not send it a
+        # second time. Re-read rather than reused: the drain may have rewritten the queue in
+        # between, and the copy in hand would put back what it removed.
+        $queue = Read-NotifyQueue -Path $QueuePath
+        foreach ($item in @(ConvertTo-NotifyList -Value $queue)) {
+            if ([string]$item.notificationId -ne [string]$events[0].notificationId) { continue }
+            $item.status = $NotifyStatusSent
+            $item | Add-Member -NotePropertyName sentUtc `
+                -NotePropertyValue ((Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')) -Force
+            if ($result.PSObject.Properties.Name -contains 'MessageId') {
+                $item | Add-Member -NotePropertyName messageId -NotePropertyValue $result.MessageId -Force
+            }
+        }
+        Save-NotifyQueue -Path $QueuePath -Queue $queue
+        return 'sent'
+    }
+    catch {
+        # Left queued on purpose. The drain will find it, and a request the owner hears about
+        # late is better than a worker that stops taking requests because a mail server did not
+        # answer.
+        return 'queued'
+    }
 }
 
 function New-NotifyPassFailureEvent {
@@ -1361,11 +1548,20 @@ function Invoke-NotifyDrain {
         $kind = Get-NotifyEventKind -Event $items[0]
         $mail = $(if ($kind -eq $NotifyKindPassFailure) {
                 Format-PassFailureDigest -Events $items
-            } else {
+            }
+            elseif ($kind -eq $NotifyKindRunRequest) {
+                # Reached only when the immediate send failed. Send-NotifyRunRequestNow marks
+                # its own as sent, so anything of this kind still queued at 07:00 is one that
+                # did not go out at the time and is worth sending late.
+                Format-RunRequestDigest -Events $items
+            }
+            else {
                 Format-ReopenDigest -Events $items
             })
         if ($null -eq $mail) { continue }
-        $what = $(if ($kind -eq $NotifyKindPassFailure) { 'Nightly pass notification' } else { 'Reopen notification' })
+        $what = $(if ($kind -eq $NotifyKindPassFailure) { 'Nightly pass notification' }
+            elseif ($kind -eq $NotifyKindRunRequest) { 'Whole-sport request notification' }
+            else { 'Reopen notification' })
 
         try {
             $result = Send-NotifyMail -To $recipients -Subject $mail.Subject -Body $mail.Body `

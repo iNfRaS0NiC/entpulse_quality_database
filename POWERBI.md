@@ -717,9 +717,17 @@ per CheckID - the same rule by which those statements are selected.
 | Band | Categories | What is wrong |
 |---|---|---|
 | `1 Structure` | `WRONG_STRUCTURE`, `NO_RELATED_RECORDS` | the shape or the relation itself |
-| `2 Wrong value` | `WRONG_RESULTS`, `WRONG_GENDER`, `WRONG_DISCIPLINE`, `DATE_RANGE_MISMATCH`, `MALFORMED_NAME`, `DUPLICATE_RECORD` | the value is present and wrong |
+| `2 Wrong value` | `WRONG_RESULTS`, `WRONG_GENDER`, `WRONG_DISCIPLINE`, `WRONG_ROUND`, `DATE_RANGE_MISMATCH`, `MALFORMED_NAME`, `DUPLICATE_RECORD` | the value is present and wrong |
 | `3 Missing value` | `MISSING_VALUES` | the field is empty |
 | `4 Patterns` | `PATTERNS` | nothing is wrong — the rows are a census of how something is spelled or used, and a group with a count is not a thing to correct |
+
+**`WRONG_ROUND` sits in the second band for the same reason, and was opened the way
+`WRONG_DISCIPLINE` was - by a check that needed it rather than by the category being named.**
+An event says which round it is twice: `event.round_typeFK`, which resolves to a `round_type`
+row, and the `Round` event property, which carries the word. Where the two disagree the
+reference is not broken - it resolves perfectly well - so nothing about the shape is wrong;
+what is wrong is that one of two present values names the wrong round. Added by decision of
+2026-09-10 with `GLOBAL-DQ-163`.
 
 `DUPLICATE_RECORD` sits in the second band and not the first. Two records for one person do
 not break a relation — each resolves perfectly well — but every count read through either is

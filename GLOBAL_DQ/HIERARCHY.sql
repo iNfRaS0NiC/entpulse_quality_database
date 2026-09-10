@@ -4019,3 +4019,127 @@ WHERE od3.del = 'no'
           -- AND e3.startdate <  '<to_datetime>'
           -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e3 WHERE dsc_e3.object_typeFK = 5 AND dsc_e3.objectFK = e3.id AND dsc_e3.disciplineFK IN (<discipline_ids>) AND dsc_e3.del = 'no')
 ;
+
+
+-- ======================================================================================
+
+SELECT
+    -- CheckID - GLOBAL-DQ-163
+    -- Name - EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE
+    -- What it does: Flags events whose Round property names a different round from the round type the event is filed under.
+    CASE
+        WHEN TRIM(TRAILING 's' FROM REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(rt.name)), '[^a-z0-9]', ''), '[0-9]+$', '')) = ''
+          OR TRIM(TRAILING 's' FROM REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(pr.value)), '[^a-z0-9]', ''), '[0-9]+$', '')) = ''
+            THEN 'ONE_OF_THE_TWO_IS_A_BARE_NUMBER'
+        WHEN EXISTS (
+                 SELECT 1
+                 FROM round_type rt2
+                 WHERE rt2.del = 'no'
+                   AND TRIM(TRAILING 's' FROM REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(rt2.name)), '[^a-z0-9]', ''), '[0-9]+$', ''))
+                     = TRIM(TRAILING 's' FROM REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(pr.value)), '[^a-z0-9]', ''), '[0-9]+$', ''))
+             )
+            THEN 'PROPERTY_NAMES_A_DIFFERENT_ROUND_TYPE'
+        ELSE 'PROPERTY_IS_NOT_IN_THE_ROUND_VOCABULARY'
+    END AS check_type,
+    e.id AS event_id,
+    e.name AS event_name,
+    e.startdate AS event_startdate,
+    rt.id AS round_type_id,
+    rt.name AS round_type_name,
+    TRIM(pr.value) AS round_property_value,
+-- What it does, stated in full: An event states its round twice - once as `event.round_typeFK`,
+-- which resolves to a `round_type` row, and once as the `Round` event property, which carries
+-- the word - and this reports where the two name different rounds.
+--
+-- **It is global because neither side is the event's name.** A sport's event name follows that
+-- sport's own convention, so reading a round out of it needs a per-sport pattern and belongs in
+-- `POWERBI_QUERIES/<Sport>.sql`, which is where `BMX-Racing-DQ-118`, `Artistic-Gymnastics-DQ-126`
+-- and `Triathlon-DQ-124` live. These two fields are the same two fields in every sport, so one
+-- statement answers for all of them. The second consequence matters more: a renaming cron that
+-- rewrites event names from `round_type.name` makes the name agree with the round type by
+-- construction, so a wrong round type then produces a wrong name that no name check can see.
+-- The `Round` property is not rewritten, and it keeps saying what it always said.
+--
+-- **The comparison is between normalised words, and the normalisation is the assumption.**
+-- Both sides are lower-cased, stripped of everything that is not a letter or a digit, stripped
+-- of a trailing number and then of a trailing `s`. That is what makes `Heats` and `Heat 7` the
+-- same round rather than twelve thousand findings, `Semi Finals` and `Semifinal 2` the same
+-- round, and `Slowest Heats` and `Slowest Heat 1` the same round. Measured 2026-09-10 across
+-- the thirteen Listing sports: 135 772 events agree after it and 751 do not, so the
+-- normalisation carries 99.4% of the population and what is left is the finding list.
+--
+-- `check_type` separates three things, because they are repaired differently:
+--   PROPERTY_NAMES_A_DIFFERENT_ROUND_TYPE - the property normalises to the name of some other
+--     `round_type` row, so it is a claim about a real round and one of the two fields is wrong
+--     about which. `matching_round_type_ids` names the rows it matches. Shooting filing a
+--     `Final` whose property says `Qualification`; Speed Skating filing a `Final` whose property
+--     says `After Run 1`.
+--   PROPERTY_IS_NOT_IN_THE_ROUND_VOCABULARY - the property matches no round type at all, so it
+--     is a spelling or a word nobody else uses: `Time Trail Qualifier` for `Time Trial
+--     Qualifier`, `Qualifying` and `Qualification` for `Qualifier`, `Slow Heat 1` for
+--     `Slowest Heat 1`. Wrong text rather than a wrong round, and the smaller repair of the two.
+--   ONE_OF_THE_TWO_IS_A_BARE_NUMBER - one side is only digits and names nothing once the
+--     trailing number is stripped. Read it in both directions: where the round type is the bare
+--     number the property is the only field saying which round it is, and where the property is
+--     the bare number it is the field that has lost the word.
+--
+-- **Silence is a real answer here.** An event with no `Round` property is not eligible: nothing
+-- states the round twice, so there is nothing to compare, and `GLOBAL-DQ-006` owns a missing or
+-- dangling `round_typeFK`. A sport that stores no `Round` property at all reports
+-- `eligible_count = 0`, which `POWERBI.md` requires the sport file to classify - a sport with
+-- the structure and no rows is a sentinel, a sport without the structure is `Not applicable`.
+    (
+        SELECT GROUP_CONCAT(DISTINCT rt3.id ORDER BY rt3.id SEPARATOR ', ')
+        FROM round_type rt3
+        WHERE rt3.del = 'no'
+          AND TRIM(TRAILING 's' FROM REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(pr.value)), '[^a-z0-9]', ''), '[0-9]+$', '')) <> ''
+          AND TRIM(TRAILING 's' FROM REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(rt3.name)), '[^a-z0-9]', ''), '[0-9]+$', ''))
+            = TRIM(TRAILING 's' FROM REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(pr.value)), '[^a-z0-9]', ''), '[0-9]+$', ''))
+    ) AS matching_round_type_ids,
+    t.name AS tournament_name,
+    tt.name AS template_name,
+    NULL AS eligible_count,
+    0 AS sort_order
+FROM event e
+JOIN round_type rt ON rt.id = e.round_typeFK
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id AND pr.name = 'Round' AND pr.del = 'no'
+WHERE e.del = 'no'
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+  AND TRIM(COALESCE(pr.value, '')) <> ''
+  AND TRIM(TRAILING 's' FROM REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(pr.value)), '[^a-z0-9]', ''), '[0-9]+$', ''))
+   <> TRIM(TRAILING 's' FROM REGEXP_REPLACE(REGEXP_REPLACE(LOWER(TRIM(rt.name)), '[^a-z0-9]', ''), '[0-9]+$', ''))
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT e.id) AS eligible_count,
+    1 AS sort_order
+FROM event e
+JOIN round_type rt ON rt.id = e.round_typeFK
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+     AND tt.sportFK = {{SPORT_ID}}
+JOIN property pr ON pr.object = 'event' AND pr.objectFK = e.id AND pr.name = 'Round' AND pr.del = 'no'
+WHERE e.del = 'no'
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+  AND TRIM(COALESCE(pr.value, '')) <> ''
+
+ORDER BY sort_order, check_type, event_startdate DESC
+;

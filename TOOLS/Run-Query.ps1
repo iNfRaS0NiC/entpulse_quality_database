@@ -2257,6 +2257,12 @@ $CheckPriorityByCategory = @{
     'WRONG_RESULTS'       = '2 Wrong value'
     'WRONG_GENDER'        = '2 Wrong value'
     'WRONG_DISCIPLINE'    = '2 Wrong value'
+    # The event says which round it is twice - the round_typeFK and the Round property - and
+    # this is the family where the two disagree. A value that is present and wrong, so it sits
+    # beside WRONG_DISCIPLINE rather than in the structure band: the reference resolves
+    # perfectly well, it just names a different round from the one the event's own setting does.
+    # Opened 2026-09-10 by GLOBAL-DQ-163, the way WRONG_DISCIPLINE was opened by a check.
+    'WRONG_ROUND'         = '2 Wrong value'
     'DATE_RANGE_MISMATCH' = '2 Wrong value'
     'MALFORMED_NAME'      = '2 Wrong value'
     # Two records where the database should hold one. The value in each is present and may be
@@ -4949,6 +4955,34 @@ function Save-RunSheet {
 
     if ($TestRun -or $NoSheet) { return $null }
     if ($Sport -in @('MIXED', 'AD-HOC', 'GLOBAL', '')) { return $null }
+
+    # **A GLOBAL template never reaches a board, even when it is run against one sport.**
+    #
+    # The guard above catches a run with no sport to write to; this catches the other way in.
+    # `GLOBAL-DQ-007 -Sport Biathlon` executes the template directly, and a tab is matched by
+    # the CheckID in its own A2, so the tab it wrote was keyed `GLOBAL-DQ-007`. When the sport's
+    # own `Biathlon-DQ-084` ran next the title was taken by a tab carrying a different id, and
+    # the run minted `PTC_MISS_DATE_OF_BIRTH~2` beside it. Two tabs, one question, and the
+    # reviewer working on whichever they opened. Found on Biathlon and Track-Cycling on
+    # 2026-09-10; the `History` tabs of eight more boards carry rows from the same practice.
+    #
+    # Dropped rather than refused, because running a template against a sport is a legitimate
+    # thing to do - it is how a candidate is profiled before anybody numbers it - and what is
+    # wrong is only that it writes to the reviewers' board. `POWERBI.md`'s authorization gate
+    # already says an unapproved check does not belong there, so this enforces a rule that
+    # existed rather than adding one.
+    $isTemplate = { param($id) ([string]$id) -match '^GLOBAL-DQ-' }
+    $templateJobs = @($Collected | Where-Object { & $isTemplate (Get-JobRunKey -Job $_.Job) })
+    if ($templateJobs.Count -gt 0) {
+        $Collected = @($Collected | Where-Object { -not (& $isTemplate (Get-JobRunKey -Job $_.Job)) })
+        $Summary = @($Summary | Where-Object { -not (& $isTemplate $_.CheckId) })
+        $names = @($templateJobs | ForEach-Object { Get-JobRunKey -Job $_.Job } | Sort-Object -Unique)
+        Write-Host ("  {0} GLOBAL template(s) ran against this sport and are kept off the board: {1}" -f `
+                $names.Count, ($names -join ', ')) -ForegroundColor DarkGray
+        Write-Host ("  A board row belongs to the sport's own CheckID. " +
+            "POWERBI_REGISTRY.md names the one that carries each template here.") -ForegroundColor DarkGray
+    }
+    if (@($Collected).Count -eq 0) { return $null }
 
     $id = Get-SportSheetId -Sport $Sport -Explicit $SheetId
     if ([string]::IsNullOrWhiteSpace($id)) { return $null }

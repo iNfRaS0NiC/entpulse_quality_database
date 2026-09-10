@@ -109,6 +109,9 @@ $CheckPriorityByCategory = @{
     'WRONG_RESULTS'       = '2 Wrong value'
     'WRONG_GENDER'        = '2 Wrong value'
     'WRONG_DISCIPLINE'    = '2 Wrong value'
+    # The round_typeFK and the Round property naming different rounds. Carried here as well so
+    # the two maps cannot disagree about a band.
+    'WRONG_ROUND'         = '2 Wrong value'
     'DATE_RANGE_MISMATCH' = '2 Wrong value'
     'MALFORMED_NAME'      = '2 Wrong value'
     # Two records where there should be one. Carried here as well so the two maps cannot

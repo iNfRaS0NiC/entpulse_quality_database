@@ -506,6 +506,39 @@ the set above: it omits 171, 176, 178 and 181, all four of which carry active ev
 includes 9 and 152, which carry none. The parameter and the data disagree and the parameter has
 not been corrected here, because nothing yet establishes which of the two is wrong.
 
+### Two checks read the round without reading the name
+
+`Artistic-Gymnastics-DQ-128` carries `GLOBAL-DQ-163 EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE` - the event's
+`Round` property naming a different round from its `round_typeFK`. Approved 2026-09-10 and
+instantiated on all fourteen Listing sports the same day, under the new `WRONG_ROUND`
+category.
+
+**It is global because neither side is the event's name.** Reading a round out of a name
+takes this sport's own convention and lives in `POWERBI_QUERIES/Artistic-Gymnastics.sql`; these two
+fields are the same two fields everywhere. The comparison is between normalised words -
+lower-cased, stripped of punctuation, of a trailing number and then of a trailing `s` - which
+makes `Heats` and `Heat 7` one round rather than a finding. Measured across the thirteen
+Listing sports on 2026-09-10: 135 772 events agree after it and 751 do not.
+
+Here it reports 69 events of 7941, all one row: round type `179 Qualifier` against a property reading
+`Qualifying`. A spelling rather than a different round, filed as
+`PROPERTY_IS_NOT_IN_THE_ROUND_VOCABULARY`.
+
+`Artistic-Gymnastics-DQ-129 EVENT_NAME_CARRIES_A_WORD_THE_RENAMING_PATTERN_WILL_DROP` is the second, and it
+reports a consequence rather than a defect. The required form is built from the event's own
+settings, so a word the current name carries that the form has no slot for disappears the
+moment the name is made to follow it - and nothing recovers it afterwards, because the
+settings are then all that is left. Approved 2026-09-10 by the user, who reversed a position
+recorded on 2026-09-09 that such a loss was not something a check could report.
+
+It reports 49 events of 7941. `Artistic-Gymnastics-DQ-126` reports 146 as not following the
+pattern; these are the 49 among them whose name holds a word the form has no slot for.
+
+`check_type` separates `LOSING_IT_COLLIDES_WITH_ANOTHER_EVENT` - another event in the same
+stage reduces to the same expected name, so the word is part of what tells the two apart -
+from `WORD_IS_DROPPED_AND_THE_NAME_STAYS_UNIQUE`. Only the first is a decision anybody has
+to take. One row per event, never one per word.
+
 <!-- MANUAL PASTE ZONE: 40 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics

@@ -870,14 +870,22 @@ $SheetsRowReviewFixedValue = 'Fixed'
 $SheetsRowReviewFixedStillOpenNote = 'No Change'
 $SheetsRowReviewFixedMovedNote = 'Other issue for the same event'
 
-# The reviewer's own sentence, when one of the two above replaces it on the board.
+# The reviewer's own sentence, when one of the two above is put after it on the board.
 #
-# Overwritten there and kept here, so the cell answers "why is this back" while the Review log
-# goes on answering "what did anybody conclude about it". Dropping the sentence outright was
-# the other option and it loses the only record of a judgement somebody took the trouble to
-# write; keeping both in the cell grows it by a line on every run a row survives.
-$SheetsRowReviewNoteReplacedReason = 'the row was marked Fixed and came back, so its note was ' +
-'replaced on the board with why it is still there'
+# **The sentence is kept in the cell and the reason follows it in brackets** - `2002-11-09 (No
+# Change)` - by the user's decision of 2026-09-10. It was replaced outright from 2026-08-31
+# until that day, on the reasoning that the Review log kept it and that keeping both in the
+# cell grows it by a line on every run a row survives. The run of 10.09 showed what that costs:
+# `Biathlon-DQ-084 PARTICIPANT_MISSING_DATE_OF_BIRTH` carried the dates of birth somebody had
+# gone and found, one per row, and a single run moved every one of them into the log and left
+# `No Change` in their place. A conclusion nobody can see on the board is a conclusion nobody
+# acts on, and the brackets cost one short phrase rather than a line because
+# ConvertTo-SheetsNoteWithoutReason takes the previous one off before the next goes on.
+#
+# The log row is still written, so the history of what a cell said is unbroken - but only where
+# the cell actually changes, or a surviving row would file the same sentence every run.
+$SheetsRowReviewNoteReplacedReason = 'the row was marked Fixed and came back, so why it is ' +
+'still there was added after the note on the board'
 
 # What each spelling written before the list existed meant. Applied wherever a note passes
 # through, so a cell reaches its new column already reading as one of the values above rather
@@ -1182,6 +1190,35 @@ function ConvertTo-SheetsReviewStatus {
     return $text
 }
 
+function ConvertTo-SheetsNoteWithoutReason {
+    # A reviewer's note with the bracketed reason this board may have appended to it taken off
+    # again, so appending the current one cannot stack.
+    #
+    # `2002-11-09 (No Change)` read back on the next run must become `2002-11-09` before the
+    # run decides what to put in the brackets, or a row surviving five runs ends up carrying
+    # five copies of the same sentence. It also lets the reason change without a trace of the
+    # old one: a row that was `No Change` and now reads differently becomes
+    # `2002-11-09 (Other issue for the same event)` rather than keeping both.
+    #
+    # A note that is nothing but a bare reason is emptied. Those were written by every run
+    # between 2026-08-31 and 2026-09-10, when the reviewer's sentence was replaced outright
+    # rather than kept, and there is nothing in front of the brackets to preserve.
+    param([string]$Note)
+
+    $text = [string]$Note
+    if ([string]::IsNullOrWhiteSpace($text)) { return '' }
+    $text = $text.Trim()
+
+    foreach ($reason in @($SheetsRowReviewFixedStillOpenNote, $SheetsRowReviewFixedMovedNote)) {
+        if ($text -eq $reason) { return '' }
+        $suffix = ' ({0})' -f $reason
+        if ($text.EndsWith($suffix, [System.StringComparison]::Ordinal)) {
+            return $text.Substring(0, $text.Length - $suffix.Length).Trim()
+        }
+    }
+    return $text
+}
+
 function New-SheetsCarriedReview {
     <#
         Last run's notes matched to this run's findings, and what could not be matched.
@@ -1323,15 +1360,29 @@ function New-SheetsCarriedReview {
             if ([string]$one.Review -eq $SheetsRowReviewFixedValue) {
                 $because = $(if ($moved) { $SheetsRowReviewFixedMovedNote }
                     else { $SheetsRowReviewFixedStillOpenNote })
+
+                # The reviewer's sentence is kept and the reason is put after it in brackets,
+                # by the user's decision of 2026-09-10. Until that day the sentence was
+                # replaced outright and the Review log was the only place it survived, which
+                # is where a column of dates - `PARTICIPANT_MISSING_DATE_OF_BIRTH` notes
+                # holding the date of birth somebody had gone and found - went on the run of
+                # 10.09. A date in the log is a date nobody reading the board can see.
+                $kept = ConvertTo-SheetsNoteWithoutReason ([string]$one.Note)
+                $becomes = $(if ([string]::IsNullOrWhiteSpace($kept)) { [string]$because }
+                    else { '{0} ({1})' -f $kept, $because })
+
+                # Logged only where the cell actually changes. Without that a row surviving
+                # run after run would file the same unchanged sentence every time, because the
+                # note it is compared against now carries the brackets too.
                 if (-not [string]::IsNullOrWhiteSpace([string]$one.Note) -and
-                    [string]$one.Note -ne $because) {
+                    [string]$one.Note -ne $becomes) {
                     $dropped += [pscustomobject]@{
                         Key = $one.Key; Review = $one.Review; Note = $one.Note
                         Why = $SheetsRowReviewNoteReplacedReason
                     }
                 }
                 $review[$at] = [string]$one.Review
-                $note[$at] = [string]$because
+                $note[$at] = [string]$becomes
                 continue
             }
 

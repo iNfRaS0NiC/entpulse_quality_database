@@ -1347,3 +1347,200 @@ FROM (
 ) c
 
 ORDER BY sort_order, event_id;
+
+
+-- ================================================================================
+SELECT
+    -- CheckID - Artistic-Gymnastics-DQ-129
+    -- Name - EVENT_NAME_CARRIES_A_WORD_THE_RENAMING_PATTERN_WILL_DROP
+    -- What it does: Finds events whose name holds a word the required form has no slot for, so a rename to that form will drop it.
+    CASE WHEN MAX(g.siblings_sharing_the_expected_base) > 1
+         THEN 'LOSING_IT_COLLIDES_WITH_ANOTHER_EVENT'
+         ELSE 'WORD_IS_DROPPED_AND_THE_NAME_STAYS_UNIQUE'
+    END AS check_type,
+    g.event_id,
+    g.event_name,
+    g.expected_base,
+    GROUP_CONCAT(DISTINCT g.word ORDER BY g.word SEPARATOR ', ') AS words_the_pattern_drops,
+    COUNT(DISTINCT g.word) AS word_count,
+    MAX(g.discipline) AS discipline,
+    MAX(g.round_type_name) AS round_type_name,
+    MAX(g.tournament_name) AS tournament_name,
+    MAX(g.template_name) AS template_name,
+    MAX(g.startdate) AS event_startdate,
+    MAX(g.siblings_sharing_the_expected_base) AS siblings_sharing_the_expected_base,
+    NULL AS eligible_count,
+    0 AS sort_order
+-- What it does, stated in full: The required form is `[Discipline] [Gender] [Round]` and it is
+-- built from the event's own settings, so any word the current name carries that the form has
+-- no slot for disappears the moment the name is made to follow it. This lists those words while
+-- they are still there, and it exists because nothing recovers them afterwards: once a name is
+-- rewritten from the settings, the settings are all that is left and a name that disagreed with
+-- them can no longer be told from one that agreed.
+--
+-- It is the companion of ``Artistic-Gymnastics-DQ-126` EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN`, over
+-- the same population and with the same expected name. That check asks whether the name is the
+-- expected one; this asks what the name is carrying that the expected one does not.
+--
+-- `check_type` separates the two, and only the first is a decision anybody has to take:
+--   LOSING_IT_COLLIDES_WITH_ANOTHER_EVENT - another event in the same stage reduces to the same
+--     expected name, so this word is part of what tells the two apart and after a rename a
+--     trailing number is all that will.
+--   WORD_IS_DROPPED_AND_THE_NAME_STAYS_UNIQUE - the word goes and nothing collides.
+--
+-- **A word is matched normalised and in both numbers.** The comparison lower-cases, drops a
+-- possessive `'s`, drops everything that is not a letter or a digit, and accepts a match on the
+-- singular or the plural, so `Women's` against `Women` is not a loss and `Finals` against
+-- `Final` is not either. The trailing group number is not a word of the name: it is the
+-- pattern's own, split off before the diff exactly as the pattern check splits it.
+--
+-- One row per event, never one per word: the audited object is the event, the words it loses
+-- travel as a named column, and `word_count` says how many. An event whose name already is the
+-- expected one carries no lost word and is not a finding.
+FROM (
+    SELECT
+        b.event_id,
+        b.event_name,
+        b.expected_base,
+        b.discipline,
+        b.round_type_name,
+        b.tournament_name,
+        b.template_name,
+        b.startdate,
+        b.siblings_sharing_the_expected_base,
+        b.expected_words,
+        TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(b.actual_base, ' ', seq.n), ' ', -1)) AS word
+    FROM (
+        SELECT
+            a.*,
+            COUNT(*) OVER (PARTITION BY a.stage_id, a.expected_base) AS siblings_sharing_the_expected_base
+        FROM (
+            SELECT
+                e.id AS event_id,
+                TRIM(e.name) AS event_name,
+                e.startdate,
+                ts.id AS stage_id,
+                t.name AS tournament_name,
+                tt.name AS template_name,
+                d.name AS discipline,
+                rt.name AS round_type_name,
+                TRIM(CONCAT_WS(' ',
+                    d.name,
+                    CASE WHEN d.name LIKE '%Mixed%' THEN NULL
+                         WHEN ts.gender = 'male'    THEN 'Men'
+                         WHEN ts.gender = 'female'  THEN 'Women'
+                    END,
+                    CASE rt.id
+                        WHEN 173 THEN 'Final'
+                        WHEN 179 THEN 'Qualifier'
+                        WHEN 171 THEN 'Prelims'
+                        WHEN 178 THEN 'Semifinal'
+                        WHEN 176 THEN 'Quarter Finals'
+                        WHEN 181 THEN 'Bronze'
+                    END
+                )) AS expected_base,
+                -- Every word the expected name may legitimately hold, which is the expected
+                -- name itself, plus `Combined`, which round type 173 carries in this
+                -- sport beside `Final` and which `Artistic-Gymnastics-DQ-126` accepts as correct.
+                TRIM(CONCAT_WS(' ',
+                    d.name,
+                    CASE WHEN d.name LIKE '%Mixed%' THEN NULL
+                         WHEN ts.gender = 'male'    THEN 'Men'
+                         WHEN ts.gender = 'female'  THEN 'Women'
+                    END,
+                    CASE rt.id
+                        WHEN 173 THEN 'Final'
+                        WHEN 179 THEN 'Qualifier'
+                        WHEN 171 THEN 'Prelims'
+                        WHEN 178 THEN 'Semifinal'
+                        WHEN 176 THEN 'Quarter Finals'
+                        WHEN 181 THEN 'Bronze'
+                    END,
+                    CASE rt.id WHEN 173 THEN 'Combined' END
+                )) AS expected_words,
+                -- The trailing group number belongs to the pattern rather than to the name, so
+                -- it is split off before the diff, the same rule `Artistic-Gymnastics-DQ-126` applies.
+                CASE WHEN e.name REGEXP '[[:space:]][0-9]+$'
+                     THEN TRIM(SUBSTRING(TRIM(e.name), 1,
+                            CHAR_LENGTH(TRIM(e.name)) - CHAR_LENGTH(SUBSTRING_INDEX(TRIM(e.name), ' ', -1))))
+                     ELSE TRIM(e.name)
+                END AS actual_base
+            FROM event e
+            JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+            JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+            JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+            LEFT JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+            LEFT JOIN discipline d ON d.id = od.disciplineFK
+            LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+            WHERE e.del = 'no'
+              AND tt.sportFK = 40
+              AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+              AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+              -- AND t.tournament_templateFK = <tournament_template_id>
+              AND d.name IS NOT NULL
+              AND e.name IS NOT NULL
+              AND TRIM(e.name) <> ''
+              AND CASE rt.id
+                        WHEN 173 THEN 'Final'
+                        WHEN 179 THEN 'Qualifier'
+                        WHEN 171 THEN 'Prelims'
+                        WHEN 178 THEN 'Semifinal'
+                        WHEN 176 THEN 'Quarter Finals'
+                        WHEN 181 THEN 'Bronze'
+                    END IS NOT NULL
+        ) a
+    ) b
+    -- One row per word of the name. Twelve is above the longest name the sport carries and the
+    -- join stops at the word count of each name, so a short name costs one row.
+    JOIN (
+        SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4
+        UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8
+        UNION ALL SELECT 9 UNION ALL SELECT 10 UNION ALL SELECT 11 UNION ALL SELECT 12
+    ) seq
+      ON seq.n <= CHAR_LENGTH(b.actual_base) - CHAR_LENGTH(REPLACE(b.actual_base, ' ', '')) + 1
+) g
+WHERE TRIM(g.word) <> ''
+  AND LOWER(REGEXP_REPLACE(REGEXP_REPLACE(g.word, '''s$', ''), '[^A-Za-z0-9]', '')) <> ''
+  AND CONCAT(' ', LOWER(REGEXP_REPLACE(g.expected_words, '[^A-Za-z0-9 ]', '')), ' ')
+      NOT LIKE CONCAT('% ', LOWER(REGEXP_REPLACE(REGEXP_REPLACE(g.word, '''s$', ''), '[^A-Za-z0-9]', '')), ' %')
+  AND CONCAT(' ', LOWER(REGEXP_REPLACE(g.expected_words, '[^A-Za-z0-9 ]', '')), ' ')
+      NOT LIKE CONCAT('% ', TRIM(TRAILING 's' FROM LOWER(REGEXP_REPLACE(REGEXP_REPLACE(g.word, '''s$', ''), '[^A-Za-z0-9]', ''))), ' %')
+  AND CONCAT(' ', LOWER(REGEXP_REPLACE(g.expected_words, '[^A-Za-z0-9 ]', '')), ' ')
+      NOT LIKE CONCAT('% ', LOWER(REGEXP_REPLACE(REGEXP_REPLACE(g.word, '''s$', ''), '[^A-Za-z0-9]', '')), 's %')
+GROUP BY g.event_id, g.event_name, g.expected_base
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT c.event_id) AS eligible_count,
+    1 AS sort_order
+FROM (
+    SELECT e.id AS event_id
+    FROM event e
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    LEFT JOIN object_discipline od ON od.object_typeFK = 5 AND od.objectFK = e.id AND od.del = 'no'
+    LEFT JOIN discipline d ON d.id = od.disciplineFK
+    LEFT JOIN round_type rt ON rt.id = e.round_typeFK
+    WHERE e.del = 'no'
+      AND tt.sportFK = 40
+      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= 2004
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      AND d.name IS NOT NULL
+      AND e.name IS NOT NULL
+      AND TRIM(e.name) <> ''
+      AND CASE rt.id
+                        WHEN 173 THEN 'Final'
+                        WHEN 179 THEN 'Qualifier'
+                        WHEN 171 THEN 'Prelims'
+                        WHEN 178 THEN 'Semifinal'
+                        WHEN 176 THEN 'Quarter Finals'
+                        WHEN 181 THEN 'Bronze'
+                    END IS NOT NULL
+) c
+
+ORDER BY sort_order, check_type, event_startdate DESC;

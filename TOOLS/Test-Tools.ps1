@@ -3383,6 +3383,34 @@ Test-That 'a batch is still identified by the folder it wrote' {
     Assert-Equal 'Soccer 01.09.2026 09-00-00' (Get-RunOutcome -Output $output).RunId 'the folder is the run id'
 }
 
+Test-That 'a whole-sport batch is identified by the folder it announced' {
+    # The shape a real batch prints, and the one that was missing. `Written:` belongs to a
+    # single check writing one file; a batch says `Running N checks into <folder>` at the start
+    # and `Done: ... -> <path>` at the end. Reading only `Written:` left RunId empty, which
+    # Get-RunNoResultReason reads as "nothing ran" - and that is what put ERROR on Biathlon
+    # REQ-20260910-113831-B2F4 after 140 statements and 9707 rows had gone through.
+    $output = @'
+Running 140 checks into D:\SQL's Output\Biathlon 10.09.2026 13-39-37
+[1/140] Biathlon-DQ-001  rows=1  0,4s  OK
+Recorded in D:\VSCode\entpulse_quality_database\RUNS\Biathlon.json
+Done: 140 statement(s), 9707 rows, 0 failed, 0 skipped -> D:\SQL's Output\Biathlon 10.09.2026 13-39-37\Biathlon.xlsx
+'@
+    Assert-Equal 'Biathlon 10.09.2026 13-39-37' (Get-RunOutcome -Output $output).RunId `
+        'the folder it announced is the run id, and it is what the ledger is keyed by'
+    Assert-Equal '' (Get-RunNoResultReason -ExitCode 0 -Outcome (Get-RunOutcome -Output $output) -Output $output) `
+        'so a run that did all of that is not called unrecorded'
+}
+
+Test-That 'the run id a single check names beats the folder a batch announced' {
+    # Both lines can be present - a one-check batch prints the folder and the check names its
+    # own run - and the explicit name is the one the ledger uses.
+    $output = @'
+Running 1 checks into D:\SQL's Output\Biathlon 10.09.2026 13-39-37
+Run Biathlon 10.09.2026 13-39-37
+'@
+    Assert-Equal 'Biathlon 10.09.2026 13-39-37' (Get-RunOutcome -Output $output).RunId 'the named run wins'
+}
+
 Test-That 'a run that printed no count leaves the cells empty rather than guessing' {
     $outcome = Get-RunOutcome -Output 'Query: Fixtureball-DQ-001  SOME_CHECK'
     Assert-Equal '' $outcome.Findings 'no findings figure'
@@ -5940,10 +5968,10 @@ Test-That 'Fixed on a finding that reads differently says the object has another
     $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
 
     Assert-Equal 'Fixed' $carried.Review[0] 'the mark stands'
-    Assert-Equal 'Other issue for the same event' $carried.Note[0] 'and the note says why the row is back'
+    Assert-Equal 'IT corrected the country (Other issue for the same event)' $carried.Note[0] 'the sentence is kept and the reason follows it'
     Assert-Equal 1 @($carried.Dropped).Count 'the sentence it replaced is logged rather than lost'
     Assert-Equal 'IT corrected the country' $carried.Dropped[0].Note 'with what the reviewer wrote'
-    Assert-True ($carried.Dropped[0].Why -like '*replaced on the board*') 'saying why it was taken off'
+    Assert-True ($carried.Dropped[0].Why -like '*added after the note*') 'saying what happened to it'
 }
 
 Test-That 'Fixed on a row that has not moved says nothing changed' {
@@ -5965,9 +5993,9 @@ Test-That 'Fixed on a row that has not moved says nothing changed' {
     $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
 
     Assert-Equal 'Fixed' $carried.Review[0] 'the mark stays against the row it was made about'
-    Assert-Equal 'No Change' $carried.Note[0] 'and the note says the fix has not landed'
+    Assert-Equal 'raised with IT (No Change)' $carried.Note[0] 'the sentence is kept and the note says the fix has not landed'
     Assert-Equal 1 @($carried.Dropped).Count 'the sentence it replaced is logged'
-    Assert-Equal 'raised with IT' $carried.Dropped[0].Note 'so nothing the reviewer wrote is lost'
+    Assert-Equal 'raised with IT' $carried.Dropped[0].Note 'and the log keeps what the cell said before'
 }
 
 Test-That 'a Fixed row with no note of its own logs nothing' {
@@ -5988,6 +6016,64 @@ Test-That 'a Fixed row with no note of its own logs nothing' {
     Assert-Equal 'Fixed' $carried.Review[0] 'the mark stays'
     Assert-Equal 'No Change' $carried.Note[0] 'and the cell now says why'
     Assert-Equal 0 @($carried.Dropped).Count 'with nothing logged, because nothing was replaced'
+}
+
+Test-That 'the bracketed reason does not stack run after run' {
+    # The note read back on the next run already carries the brackets, so appending blindly
+    # would give a row surviving five runs five copies of the same phrase. The previous reason
+    # comes off before the current one goes on, and a cell that does not change files nothing.
+    $header = @('check_type', 'organization_id', 'organization_country', 'competitors')
+    $values = @('ORG', '1611294', 'International', '4')
+    $rows = @([pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'
+            organization_country = 'International'; competitors = '4'
+        })
+    $notes = @([pscustomobject]@{
+            Key = (Get-SheetsFindingKey -Row @('ORG', '1611294') -Columns @(0, 1))
+            Review = 'Fixed'; Note = '2002-11-09 (No Change)'
+            Fingerprint = (Get-SheetsRowFingerprint -Values $values)
+        })
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal '2002-11-09 (No Change)' $carried.Note[0] 'the cell is unchanged'
+    Assert-Equal 0 @($carried.Dropped).Count 'and nothing is logged, because nothing moved'
+}
+
+Test-That 'a reason that changes replaces the old one rather than joining it' {
+    # The same row read differently is a different answer to the same question, not a second
+    # one. The reviewer keeps their sentence and one reason, the current one.
+    $header = @('check_type', 'organization_id', 'organization_country', 'competitors')
+    $rows = @([pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'
+            organization_country = 'Ukraine'; competitors = '4'
+        })
+    $notes = @([pscustomobject]@{
+            Key = (Get-SheetsFindingKey -Row @('ORG', '1611294') -Columns @(0, 1))
+            Review = 'Fixed'; Note = '2002-11-09 (No Change)'
+            Fingerprint = (Get-SheetsRowFingerprint -Values @('ORG', '1611294', 'International', '4'))
+        })
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal '2002-11-09 (Other issue for the same event)' $carried.Note[0] 'one reason, the current one'
+    Assert-Equal 1 @($carried.Dropped).Count 'and the change is logged'
+}
+
+Test-That 'a note that is nothing but a bare reason leaves no empty brackets' {
+    # Every run between 2026-08-31 and 2026-09-10 replaced the sentence outright, so boards
+    # carry cells reading exactly `No Change`. There is nothing in front of the brackets to
+    # keep, and `No Change (No Change)` would be the alternative.
+    $header = @('check_type', 'organization_id', 'organization_country', 'competitors')
+    $values = @('ORG', '1611294', 'International', '4')
+    $rows = @([pscustomobject]@{ check_type = 'ORG'; organization_id = '1611294'
+            organization_country = 'International'; competitors = '4'
+        })
+    $notes = @([pscustomobject]@{
+            Key = (Get-SheetsFindingKey -Row @('ORG', '1611294') -Columns @(0, 1))
+            Review = 'Fixed'; Note = 'No Change'
+            Fingerprint = (Get-SheetsRowFingerprint -Values $values)
+        })
+    $carried = New-SheetsCarriedReview -Header $header -Rows $rows -Was $header -Notes $notes
+
+    Assert-Equal 'No Change' $carried.Note[0] 'the cell stays as it was'
+    Assert-Equal 0 @($carried.Dropped).Count 'and nothing is logged'
 }
 
 Test-That 'the Review Status column fits the longest value its dropdown offers' {
@@ -7178,6 +7264,66 @@ Test-That 'the reopen transition carries what a message has to say' {
     Assert-Equal 'Zero' $said[0].Expected 'and the expectation that let it reopen at all'
     Assert-Equal 4 $said[0].CurrentFindings 'the count that contradicted the closed word'
     Assert-Equal 'Regressed' $said[0].Verdict 'and the verdict judged against the open count'
+}
+
+Test-That 'a whole-sport request becomes one notification per request' {
+    # The id is the Request ID, so a row that sits WAITING through forty passes of the worker
+    # is one mail. That is the whole of the de-duplication and it needs nothing else: a Request
+    # ID is minted once, by the menu item that wrote the row.
+    $first = New-NotifyRunRequestEvent -Sport 'Biathlon' -RequestId 'REQ-1' `
+        -RequestedBy 'someone@enetpulse.com' -RequestedAt '10.09.2026 13:38:33' -State 'waiting' `
+        -Why 'Waiting for the owner to approve it.' -BoardUrl 'https://example.invalid/b'
+    Assert-Equal 1 @($first).Count 'one event'
+    Assert-Equal 'runRequest' ([string]$first[0].kind) 'of its own kind'
+    Assert-Equal 'runRequest|Biathlon|REQ-1' ([string]$first[0].notificationId) 'keyed on the request'
+
+    $queue = Add-NotifyEvent -Queue @() -Events $first
+    Assert-Equal 1 $queue.Added 'the first pass queues it'
+    $again = Add-NotifyEvent -Queue $queue.Queue -Events $first
+    Assert-Equal 0 $again.Added 'and the fortieth queues nothing'
+
+    # A sport and a request with nothing in them is not an event. The worker reads cells, and a
+    # blank one must not become a mail about nothing.
+    Assert-Equal 0 @(New-NotifyRunRequestEvent -Sport '' -RequestId 'REQ-1').Count 'no sport, no event'
+    Assert-Equal 0 @(New-NotifyRunRequestEvent -Sport 'Biathlon' -RequestId '').Count 'no request, no event'
+}
+
+Test-That 'the whole-sport message names the sport, the asker and what is being waited on' {
+    # The subject is read on a lock screen, so the sport goes in it: it is what the owner is
+    # deciding about and the half of the sentence that survives the truncation.
+    $waiting = New-NotifyRunRequestEvent -Sport 'Biathlon' -RequestId 'REQ-20260910-113831-B2F4' `
+        -RequestedBy 'vanin.neykov@enetpulse.com' -RequestedAt '10.09.2026 13:38:33' -State 'waiting' `
+        -Why 'Waiting for the owner to approve it.' -BoardUrl 'https://example.invalid/board'
+    $mail = Format-RunRequestDigest -Events $waiting
+    Assert-True ($mail.Subject -like '*Biathlon*') "the subject names the sport, got: $($mail.Subject)"
+    Assert-True ($mail.Subject -like '*waiting*') 'and says it is waiting'
+    Assert-True ($mail.Body -like '*vanin.neykov@enetpulse.com*') 'the body names who asked'
+    Assert-True ($mail.Body -like '*REQ-20260910-113831-B2F4*') 'and the request id, which is what the owner approves'
+    Assert-True ($mail.Body -like '*https://example.invalid/board*') 'and links the board'
+
+    # A refusal reads differently on purpose: nothing is waiting on the owner, something has to
+    # be changed before the request can run at all.
+    $refused = New-NotifyRunRequestEvent -Sport 'Biathlon' -RequestId 'REQ-2' `
+        -RequestedBy 'someone@enetpulse.com' -State 'refused' -Why 'This board has no Run approvals tab.'
+    $second = Format-RunRequestDigest -Events $refused
+    Assert-True ($second.Subject -like '*refused*') "a refusal says so, got: $($second.Subject)"
+    Assert-True ($second.Body -like '*no Run approvals tab*') 'and quotes the reason verbatim'
+}
+
+Test-That 'a GLOBAL template run against a sport is kept off that sport''s board' {
+    # `GLOBAL-DQ-007 -Sport Biathlon` executes the template directly, and a tab is matched by
+    # the CheckID in its own A2 - so the tab it wrote was keyed GLOBAL-DQ-007, and when the
+    # sport's own Biathlon-DQ-084 ran next the title was taken and the run minted a ~2 beside
+    # it. Two tabs, one question. Found on two boards on 2026-09-10.
+    # Asserted against the source with plain substrings and no pattern of its own. The first
+    # attempt used a regex built out of the line it was looking for, and the escaping of the
+    # PowerShell sigils inside it was wrong in a way that read as a test failure rather than
+    # as a broken test - which is the worse of the two, because it accuses working code.
+    $source = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'Run-Query.ps1') -Raw
+    Assert-True ($source -like "*'^GLOBAL-DQ-'*") `
+        'Save-RunSheet tests a run key against the template prefix'
+    Assert-True ($source -like '*kept off the board*') `
+        'and says so on screen rather than dropping them in silence'
 }
 
 Test-That 'only a reopen becomes a notification' {

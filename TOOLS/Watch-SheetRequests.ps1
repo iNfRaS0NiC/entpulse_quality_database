@@ -98,6 +98,9 @@ $ErrorActionPreference = 'Stop'
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 . (Join-Path $PSScriptRoot 'Sheets.ps1')
+# For the whole-sport request mail. Sheets.ps1 already carries the token this sends on, so the
+# two arrive together or not at all.
+. (Join-Path $PSScriptRoot 'Notify.ps1')
 
 $SecretsPath = Join-Path $PSScriptRoot 'secrets.local.ps1'
 if (Test-Path -LiteralPath $SecretsPath) { . $SecretsPath }
@@ -938,12 +941,25 @@ function Get-RunOutcome {
     }
 
     # A single run names itself on a `Run <Sport> dd.MM.yyyy HH-mm-ss` line, which is what the
-    # ledger entry is keyed by; a batch is identified by the folder it wrote. Both are read,
-    # the explicit name first, so a reader can find the entry either way.
+    # ledger entry is keyed by; a batch is identified by the folder it wrote. Every form is
+    # read, the explicit name first, so a reader can find the entry either way.
+    #
+    # **The batch form is the folder it announces, not `Written:`.** `Written:` is printed by a
+    # single check writing one file and by nothing else: a batch prints `Running N checks into
+    # <folder>` at the start and `Done: ... -> <path>` at the end. Until 2026-09-10 only
+    # `Written:` was read, so a batch matched neither pattern, left RunId empty and was declared
+    # unrecorded by Get-RunNoResultReason. That is what happened to Biathlon
+    # REQ-20260910-113831-B2F4, the first whole-sport request that got past the approval gate:
+    # 140 statements, 9707 rows, 0 failed, the ledger entry written as
+    # `Biathlon 10.09.2026 13-39-37` - and ERROR on the board.
     $runId = ''
     $named = [regex]::Match($Output, '(?m)^Run (?<name>.+?)\s*$')
     if ($named.Success) { $runId = $named.Groups['name'].Value.Trim() }
-    else {
+    if ([string]::IsNullOrWhiteSpace($runId)) {
+        $batch = [regex]::Match($Output, '(?m)^Running \d+ checks? into (?<path>.+?)\s*$')
+        if ($batch.Success) { $runId = Split-Path -Leaf ($batch.Groups['path'].Value.Trim()) }
+    }
+    if ([string]::IsNullOrWhiteSpace($runId)) {
         $folder = [regex]::Match($Output, '(?m)Written:\s+(?<path>.+)$')
         if ($folder.Success) { $runId = Split-Path -Leaf ($folder.Groups['path'].Value.Trim()) }
     }
@@ -1281,6 +1297,30 @@ while ($true) {
 
         $verdict = Test-RequestAcceptable -Request $next -Sport $board.Name -Approved $approved `
             -Registry $registry -OpenRequests $ahead -WholeSportApprovals $approvals
+
+        # **A whole-sport request is mailed the moment it is seen.** It is the one request that
+        # runs every check against the production database, it cannot start without the owner,
+        # and until they act the board says WAITING and nothing else happens. The id is the
+        # Request ID, so a row waiting through forty passes is one mail. Send-NotifyRunRequestNow
+        # owns the queue-first ordering and the fallback to the 07:00 drain.
+        if ($next.CheckId -eq $WholeSportToken -and -not $WhatIf) {
+            $state = $(if ($verdict.Ok) { 'approved' }
+                elseif ($verdict.Pending) { 'waiting' }
+                else { 'refused' })
+            if ($state -ne 'approved') {
+                $event = New-NotifyRunRequestEvent -Sport $board.Name -RequestId $next.RequestId `
+                    -RequestedBy $next.RequestedBy -RequestedAt $next.RequestedAt `
+                    -State $state -Why $verdict.Why `
+                    -BoardUrl ('https://docs.google.com/spreadsheets/d/{0}/edit' -f $board.SpreadsheetId)
+                $told = Send-NotifyRunRequestNow -Event $event -To (Get-NotifyRecipients)
+                if ($told -eq 'sent') {
+                    Write-Host ("    the owner has been mailed about this request") -ForegroundColor DarkGray
+                }
+                elseif ($told -eq 'queued') {
+                    Write-Host ("    could not be mailed now; queued for the next drain") -ForegroundColor Yellow
+                }
+            }
+        }
 
         # A held request should have been stepped over above and never reach here. It is caught
         # anyway, because the cost of being wrong is a request marked failed that somebody was
