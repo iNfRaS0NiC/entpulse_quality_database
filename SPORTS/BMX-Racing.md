@@ -323,14 +323,46 @@ A single round_typeFK value can be attached to events representing logically dif
 
 BMX Comp.Rank participants carry a Phase through `object_round` (object_typeFK=138, type='phase'), recording the round the participant's rank was taken from. Phase is close to universal here and the gaps are scattered: 90 of the sport's 20763 active Comp.Rank participant rows carry no phase row, and they sit in 21 of its 413 Comp.Rank. Every one of those 21 is a field phased in part - between one and sixteen competitors of a field of ten to two hundred and twenty-two - and none is a Comp.Rank with no phases at all. `GLOBAL-DQ-033` is therefore an ordinary repair list for BMX rather than a proportion to watch, and is signalled `Actionable` on that basis. The wording this paragraph carried until 2026-08-12 called the gap a large share of the population, which the counts do not support at either object.
 
-The round types used by BMX Phase values are not the set BMX events use, and the split follows the knockout flag (`DB-SEM-012`). BMX events use the **non-knockout** variants — 176 Quarter Finals, 178 Semi Finals, 184 1/8, 185 1/16, 188 1/32, 173 Final — while the majority of Phase values use the **knockout** variants of the same names: 3, 2, 4, 5, 6, 9. Phase additionally carries round types BMX events never use, confirmed for 19 (Small Final) and 152 (Qualifier), both knockout; and BMX events use round types that never appear as a Phase, confirmed for 189 (Seeding) and the unmapped 0. Comparing a BMX Phase against its event's round_typeFK by ID alone reports nearly the whole population as mismatched and is not a valid check.
+The round types used by BMX Phase values are not the set BMX events use, and comparing a BMX Phase
+against its event's `round_typeFK` by ID alone reports much of the population as mismatched and is
+not a valid check. **The reason is no longer the one this paragraph gave until 2026-09-10, and the
+wording it carried has been replaced rather than corrected.** It said BMX events use the
+non-knockout variants - 176 Quarter Finals, 178 Semi Finals, 184 1/8, 185 1/16, 188 1/32, 173 Final
+- while Phase mostly uses the knockout variants 3, 2, 4, 5, 6, 9, so that the split followed the
+knockout flag (`DB-SEM-012`). Re-measured 2026-09-10 that is inverted for five of the six: events
+now sit on 3, 2, 4, 5 and 6, and 176, 178, 184, 185 and 188 carry no event at all. Only `173 Final`
+is still where the old wording put it.
 
-The complete set of `event.round_typeFK` values BMX events currently carry, confirmed by
-inventory: 3 (Quarter Finals), 9 (Final), 38, 171 (Preliminary), 173 (Final), 176 (Quarter
-Finals), 178 (Semi Finals), 179 (Qualifier), 180 (Repechage), 184 (1/8), 185 (1/16), 188
-(1/32), 189 (Seeding), 204 (Heats), 320 (Heats), plus the unmapped 0. Three names occur under
-two IDs each - Heats as 204 and 320, Quarter Finals as 176 and 3, Final as 173 and 9 - which
-is the duplication the paragraph above warns about, now quantified.
+What survives the re-measurement is the mismatch itself, arriving from the other direction. **The
+events have settled on one member of each name pair and Phase still uses both.** Phase spans
+seventeen round types where events span twelve, and four names appear on it twice over: Final as
+`9` on 3545 phase rows and `173` on 628, Semi Finals as `2` on 2096 and `178` on 335, Qualifier as
+`179` on 2674 and `152` on 67, Heats as `204` on 1636 and `320` on 3. Phase also carries `19 Small
+Final` on 12 rows, which no event uses, while events use `168 Repechage` where Phase uses the
+non-knockout `180` on 1869. The `0` the old wording named as a Phase-only value is gone with the
+unmapped `round_typeFK` itself.
+
+The complete set of `event.round_typeFK` values BMX Racing events carry, by inventory of
+2026-09-10: 2 (Semi Finals) on 650 events, 3 (Quarter Finals) on 964, 4 (1/8) on 651, 5 (1/16) on
+320, 6 (1/32) on 109, 38 (1) on 1275, 152 (Qualifier) on 1074, 168 (Repechage) on 734, 171
+(Preliminary) on 14, 173 (Final) on 426, 189 (Seeding) on 31 and 320 (Heats) on 2870. Twelve, and
+every one but 38, 171, 173 and 189 is flagged `knockout = yes`.
+
+**A different fifteen stood here until that date** - 3, 9, 38, 171, 173, 176, 178, 179, 180, 184,
+185, 188, 189, 204, 320, plus the unmapped 0 - recorded when the sport was opened, and
+`SPORTS/params.json` carried the same fifteen as `ROUND_TYPE_LIST`. Nine of them now carry no
+event: 9, 176, 178, 179, 180, 184, 185, 188 and 204. Six the sport does contest were missing: 2, 4,
+5, 6, 152 and 168, holding 3538 events between them. `BMX-Racing-DQ-069`, running `GLOBAL-DQ-075
+EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET` - events whose round type is outside the set the sport is
+confirmed to contest - reported exactly those 3538 of 9118 eligible for as long as the gap stood.
+The user settled it on 2026-09-10: the parameter was stale, not the data wrong, so
+`ROUND_TYPE_LIST` is now the twelve above and the check returns nothing while keeping its
+population, ready for a thirteenth id.
+
+Round names still occur under two IDs each - Final as 173 and 9, Semi Finals as 178 and 2,
+Quarter Finals as 176 and 3, Heats as 204 and 320, Qualifier as 179 and 152, Repechage as 180 and
+168 - which is the duplication the paragraph above warns about. What changed is which member the
+events sit on, not that the pairs exist.
 
 `38` resolves to a `round_type` row named `1`, and the round it stands for is **Round 1**,
 the first racing round. Confirmed two ways. Every one of the 37 distinct event names carried
@@ -425,6 +457,40 @@ evidence.
 
 Neither reads whitespace or text hygiene. `BMX-Racing-DQ-049` carries
 `GLOBAL-DQ-049 EVENT_NAME_FORMAT_INVALID` and already asks that question.
+
+### A round named Final is not a knockout round in this sport
+
+**`173 Final` carrying `knockout = no` is correct, and the expectation for the name is `no`.**
+Recorded by decision on 2026-09-10, against the shape of the data rather than from it, and the
+measurement is here so the decision is legible.
+
+`BMX-Racing-DQ-090`, running `GLOBAL-DQ-118
+EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND_DETAIL` - the per-event repair list for a round
+type whose knockout flag contradicts the round - reported 426 events of 7843 eligible, and every
+one of the 426 was the same row: round type `173 Final`, stored `knockout = no`, expected `yes`,
+pointed at `9 Final`. The check was asking for 426 events to be moved onto the knockout twin of
+their own name. It is the reading that is wrong, not the events: a BMX final ranks the eight
+riders who reached it and eliminates nobody, which is what the non-knockout member of the pair
+says.
+
+So `'final'` moved from `ELIMINATION_ROUND_NAME_LIST` to `GROUP_ROUND_NAME_LIST` in
+`SPORTS/params.json`. Golf recorded the same reading for its own finals on 2026-08-13, Speed
+Skating on 2026-08-22 and Track Cycling on 2026-08-26; Handball recorded the opposite on
+2026-08-28, because there a final is a tie whose loser goes out of the contest that round decides.
+
+The consequence is deliberate and is the point of stating it: `BMX-Racing-DQ-090` stops reporting
+the 426 events on `173` and starts reporting whatever sits on `9 Final`, which is nothing today.
+`BMX-Racing-DQ-076`, running `GLOBAL-DQ-097 EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND` -
+the same judgement reported once per round type instead of once per event - follows it and drops
+from 1 finding to 0, as the two are written to always agree on which round types are wrong. Both
+keep a live eligible population, so neither is a sentinel: the day a BMX final is filed under `9`,
+they say so.
+
+Nothing else moved. `'semi finals'`, `'quarter finals'`, `'1/8'`, `'1/16'`, `'1/32'`, `'heats'`,
+`'qualifier'`, `'repechage'`, `'playoff'`, `'tie-breaker'` and `'small final'` stay on the
+elimination list: those names are rounds a rider goes out of, in this sport as in any other.
+`38 1` stays in neither list, because a round type named with the bare digit `1` cannot be
+classified from its name at all.
 
 <!-- MANUAL PASTE ZONE: 58 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 

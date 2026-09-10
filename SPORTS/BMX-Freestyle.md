@@ -248,6 +248,33 @@ event is now not reported. `SPORTS/params.json` `_names` carries the same reason
 cancelled event; Racing holds 9109 finished and 9 cancelled, and none not started. That is a
 data state on the day it was read, not a structural claim about either sport.
 
+### A round named Final is not a knockout round in this discipline either
+
+**`173 Final` carrying `knockout = no` is correct here, as it is in BMX Racing, and the
+expectation for the name is `no`.** Recorded by decision on 2026-09-10, the same day and on the
+same ground as `SPORTS/BMX-Racing.md` records it.
+
+`BMX-Freestyle-DQ-077`, running `GLOBAL-DQ-118
+EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND_DETAIL` - the per-event repair list for a round
+type whose knockout flag contradicts the round - reported 121 events of 272 eligible, and every
+one of the 121 was the same row: round type `173 Final`, stored `knockout = no`, expected `yes`,
+pointed at `9 Final`. A Freestyle final ranks the riders who reached it on the runs they put down
+and eliminates nobody, so the non-knockout member of the pair is the right one and the check was
+asking for the whole population of finals to be moved off it.
+
+So `'final'` moved from `ELIMINATION_ROUND_NAME_LIST` to `GROUP_ROUND_NAME_LIST` in
+`SPORTS/params.json`, which is the third thing this discipline inherits from Racing unchanged.
+`BMX-Freestyle-DQ-077` drops from 121 findings to 0 and `BMX-Freestyle-DQ-076`, running
+`GLOBAL-DQ-097 EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND` - the same judgement reported
+once per round type instead of once per event - follows it, as the two are written to always
+agree on which round types are wrong. Neither becomes a sentinel: the eligible population stays
+live, so the day a Freestyle final is filed under `9` they say so.
+
+The discipline contests four round types and the other three already agree with their own names,
+measured 2026-09-10: `152 Qualifier` on 115 events and `2 Semi Finals` on 34 are both stored
+`knockout = yes`, which is right for rounds riders go out of, and `189 Seeding` on 2 events is
+stored `knockout = no`. Only the finals were ever reported.
+
 <!-- MANUAL PASTE ZONE: 58 EVENT AND ROUND REPRESENTATION — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Confirmed sport-specific storage semantics
@@ -360,10 +387,12 @@ and says it more precisely.
 **Almost none of them has been run.** The 200-row gate was measured for `BMX-Freestyle-DQ-002`,
 which returned 13, and for `-111`, which returned none. What the rest return is unknown until the
 sport's first full run, and any that floods is a candidate to withdraw - which `POWERBI.md` warns
-is not a neutral correction. Two are known in advance to be large and were approved with the
-number in view: `GLOBAL-DQ-118` reports all 121 finals, because `173 Final` carries
-`knockout = no` in a table every sport shares, and `GLOBAL-DQ-040` reports 103 of them, because
-only 18 of this discipline's 121 finals are linked to a Comp.Rank.
+is not a neutral correction. Two were known in advance to be large and were approved with the
+number in view. `GLOBAL-DQ-040` reports 103 of the finals, because only 18 of this discipline's
+121 finals are linked to a Comp.Rank, and it still does. The other was `GLOBAL-DQ-118`, which
+reported all 121 finals because `173 Final` carries `knockout = no` in a table every sport
+shares - and on 2026-09-10 that reading was found to be the wrong way round and the check now
+returns nothing. The subsection below records why.
 
 **Seventeen checks report the whole of `sport.id` 58 rather than this discipline, and their
 numbers should be read that way.** Measured on the first full run, 2026-09-05. Sixteen of them

@@ -2001,6 +2001,79 @@
                                                   "declaring the result tables":  4.4
                                               }
                                }
+                 },
+                 {
+                     "runId":  "BMX-Freestyle 10.09.2026 08-29-03",
+                     "startedUtc":  "2026-09-10T06:29:00Z",
+                     "output":  "D:\\SQL\u0027s Output\\BMX-Freestyle 10.09.2026 08-29-03",
+                     "commit":  "7c4701c177a0+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-Freestyle-DQ-076",
+                                        "runKey":  "BMX-Freestyle-DQ-076",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  4,
+                                        "seconds":  1.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "91fecbe79a00"
+                                    },
+                                    {
+                                        "checkId":  "BMX-Freestyle-DQ-077",
+                                        "runKey":  "BMX-Freestyle-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_KNOCKOUT_FLAG_CONTRADICTS_ROUND_DETAIL",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  272,
+                                        "seconds":  1.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "83ced04f40c1"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  39.5,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  0,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  10.7,
+                                                  "planning the changes":  11.7,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  10.5,
+                                                  "writing values":  4.4,
+                                                  "confirming the rows arrived":  0,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.3
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-Freestyle-DQ-076":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             },
+                                    "BMX-Freestyle-DQ-077":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
                  }
              ],
     "sheetId":  "1hdz_Kjs0xsPBAaPL_r0HkAAFT_C7x9pAJTWZXBCvOvg"
