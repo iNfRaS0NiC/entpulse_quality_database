@@ -1131,11 +1131,22 @@ while ($true) {
 
     # And the documents, on the same terms. A sport set up mid-run joins the watch on the next
     # pass instead of waiting for a restart that the scheduled task cannot perform.
+    #
+    # **The reload replaces $registry itself, not only the sports it yields.** That variable is
+    # read once at startup and passed to Get-RequestDecision on every request, which reads
+    # requesters.allowed out of it - so until 2026-09-10 an account added to the allowlist
+    # mid-run stayed invisible for as long as the process lived, while a sport added on the same
+    # edit joined the watch immediately. Both halves of the file now arrive together.
+    # gabriel.kirov@enetpulse.com was refused on Handball on 2026-09-10, twenty-six hours after
+    # being added to all three of the places that name a requester, by a process that had started
+    # two hours before the edit.
     try {
         $sportsNow = (Get-Item -LiteralPath $RegistryPath).LastWriteTimeUtc
         if ($sportsNow -ne $sportsStamp) {
             $before = @($sports | ForEach-Object { $_.Name })
-            $sports = Get-WatchedSports -Registry (Get-SheetRegistryFile) -OnlySport $Sport
+            $allowedBefore = @($registry.requesters.allowed).Count
+            $registry = Get-SheetRegistryFile
+            $sports = Get-WatchedSports -Registry $registry -OnlySport $Sport
             $sportsStamp = $sportsNow
             $after = @($sports | ForEach-Object { $_.Name })
             $added = @($after | Where-Object { $before -notcontains $_ })
@@ -1143,6 +1154,13 @@ while ($true) {
             $said = 'sheet-registry.json changed; watching {0}' -f $sports.Count
             if ($added.Count -gt 0) { $said += (', added ' + ($added -join ', ')) }
             if ($dropped.Count -gt 0) { $said += (', dropped ' + ($dropped -join ', ')) }
+            # Said even when the sports are unchanged, because that is exactly the edit whose
+            # effect was invisible before: the line read 'watching 17' with nothing added or
+            # dropped, and nobody could tell from it that a requester had been let in.
+            $allowedNow = @($registry.requesters.allowed).Count
+            if ($allowedNow -ne $allowedBefore) {
+                $said += (', {0} requester(s) allowed, was {1}' -f $allowedNow, $allowedBefore)
+            }
             Write-Host ('  ' + $said) -ForegroundColor DarkGray
         }
     }
