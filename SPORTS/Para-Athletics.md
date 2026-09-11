@@ -111,6 +111,12 @@ mixed and 15 female, entered in the `4 X 100 Metres`, `4 X 400 Metres` and Unive
 | zone_attempts | 538 | A time | **Not a meaning this sport has.** Ten rows, see below | `GLOBAL-DISCOVERY-007`, ad-hoc profiling 2026-09-11 |
 
 `100 Rank` is on 45 871 participations in 7519 events, the sport's most complete field.
+**The deciding value is `101 Duration`, `103 Distance` or, on the pentathlon, `102 Points`**,
+which is what `RESULT_TIE_VALUE_TYPE_LIST` declares by the user's decision of 2026-09-11: the
+nineteen pentathlon rows carry no time and no mark, and without `102` in the list
+`GLOBAL-DQ-122 EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE` read every one of their ranks as
+unsupported, ten events of the 433 it reported. The cost accepted with it is that the 1114
+shifted values in `102` count as deciding values for as long as they stand.
 `101 Duration` is on 38 351 in 6324 events, `103 Distance` on 15 399 in 1985, and the two
 between them are the performance of a track or road event and of a field event respectively.
 
@@ -119,7 +125,9 @@ distinct written forms. The vocabulary is small and combines: progression `Q` an
 `WR`, `AR`, `CR`, `GR`, `ER`, `PR`, `NR`, `RR`, `WL`, `WRC`, `PRC`, the continental `AS`, `AF`,
 `AM`, `OC`, a season or personal best `SB`, `PB`, an equalled record written `=WR`, `=AR`,
 `=CR`, `=PR`, `=SB`, `=PB`, `=ER`, `=RR`, the no-result statuses `DQ`, `DSQ`, `Disq.`, `DNS`,
-`DNF`, `NM`, `NMR`, and `YC` or `Yellow card`. Codes combine with a comma and a space, as in
+`DNF`, `NM`, `NMR`, and `YC` or `Yellow card`; the no-result codes, beside which no rank, time
+or medal may stand, are `DQ`, `DSQ`, `Disq.`, `DNS`, `DNF`, `NM` and `NMR`, the last added by
+the user's decision of 2026-09-11 as the same fact as `NM`. Codes combine with a comma and a space, as in
 `Q, SB` and `Q, WR, AR, PR`. **Disqualification is written three ways** - `DQ` on 701 rows,
 `DSQ` on 61, `Disq.` on 27 - and the combinations are written with every spacing the keyboard
 allows: `Q, PB`, `Q , PB`, `q ,PB`, `Q,  SB`, `Q SB`, `PB , Q`. A check reading this field by
@@ -349,6 +357,10 @@ evidence.
   events, `38 1` 2324, `178 Semi Finals` 548, `284 Final B` 26, `179 Qualifier` 23,
   `265 Final A` 4, `2 Semi Finals` 2, `39 2` 1, `89 1` 1. The three single-digit-named types
   are heats; `2` and `89` duplicate `178` and `38` by name and are the minority spelling.
+  **By the user's decision of 2026-09-11 the two are the wrong choice, not a vocabulary**: the
+  sport writes a semi-final as `178` and a heat as `38`, so `ROUND_TYPE_LIST` carries the seven
+  others and `Para-Athletics-DQ-039` on `GLOBAL-DQ-075 EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET`
+  reports the three events. The alternative, admitting both spellings, was rejected.
 - Medals are awarded on `173 Final` (13 750 medal rows) and `265 Final A` (12); `284 Final B`
   awards none, being the consolation final of wheelchair racing.
 - Tournament templates, 20 rows over seven names split by gender: `World Championships`

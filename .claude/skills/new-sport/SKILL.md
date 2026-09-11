@@ -143,6 +143,20 @@ The recurring ones, and where the alternatives come from:
 A decision the user has not made stays out of `params.json`. Recording the area as `Not checked`
 is always available and is the honest answer; guessing to fill a row is not.
 
+**Then every parameter, not only the runner's decisions.** The Decisions tab lists what the run
+chose for itself; it does not list what the assistant is about to choose while writing
+`SPORTS/params.json`, and that is the larger set. Which round types are the Final and which
+award medals, which result types are unused, numeric, clock or deciding, which Comment codes
+mean no result, which templates are out of the client's scope - each is a classification the
+data supports in more than one way, and each is read by named checks as a fact. Before stage 3,
+put them to the user in groups by theme, one structured question per value or per tightly
+related set, each carrying the measurement behind the proposed value, the checks that read it
+by name, and the alternative with what it would report. Para Athletics was opened on 2026-09-11
+with only the Decisions tab asked and every parameter written from the assistant's own reading;
+three of them changed when the user was finally asked. A parameter that is the same measured
+fact for every sport - `CLIENT_FROM_SEASON` as the first stored season, a `NOT_STARTED_DESC_LIST`
+holding the one status that occurs - is stated with its measurement and not asked.
+
 ## Stage 3 - record what was confirmed
 
 Only after the user issues:

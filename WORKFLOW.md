@@ -348,7 +348,11 @@ Results are execution output, not evidence. They enter the repository only throu
 5. leave every other area `Not checked`;
 6. add the sport's confirmed parameter values to `SPORTS/params.json`, so a GLOBAL DQ
    template can run for it without rediscovery. Record only values the sport file now
-   documents as confirmed.
+   documents as confirmed, and only values the user has decided: every classification a
+   parameter encodes - which rounds are finals, which result types are unused or deciding,
+   which Comment codes mean no result, which templates are out of scope - is put to the user
+   with its measurement, the checks that read it and the alternative, before this step and
+   not after it. `.claude/skills/new-sport/SKILL.md` stage 2b carries the procedure.
 
 Later updates target only the smallest relevant part of that sport file.
 

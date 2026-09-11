@@ -1775,6 +1775,142 @@
                                                                   "checkBy":  ""
                                                               }
                                 }
+                 },
+                 {
+                     "runId":  "Para-Athletics 11.09.2026 19-30-40",
+                     "startedUtc":  "2026-09-11T17:30:38Z",
+                     "output":  "D:\\SQL\u0027s Output\\Para-Athletics 11.09.2026 19-30-40",
+                     "commit":  "26173a026a02+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Para-Athletics-DQ-015",
+                                        "runKey":  "Para-Athletics-DQ-015",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 104 Comment, 101 Duration, 102 Points, 103 Distance",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  11,
+                                        "findings":  10,
+                                        "eligible":  7519,
+                                        "seconds":  2.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "aaf4c8029a35"
+                                    },
+                                    {
+                                        "checkId":  "Para-Athletics-DQ-039",
+                                        "runKey":  "Para-Athletics-DQ-039",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_TYPE_NOT_IN_EXPECTED_SET",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  7733,
+                                        "seconds":  0.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "51ea69776ecc"
+                                    },
+                                    {
+                                        "checkId":  "Para-Athletics-DQ-053",
+                                        "runKey":  "Para-Athletics-DQ-053",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_RANK_WITHOUT_DECIDING_VALUE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration, 102 Points, 103 Distance, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  424,
+                                        "findings":  423,
+                                        "eligible":  7519,
+                                        "seconds":  1.8,
+                                        "status":  "OK",
+                                        "sqlHash":  "f0dbf9feb6fe"
+                                    },
+                                    {
+                                        "checkId":  "Para-Athletics-DQ-065",
+                                        "runKey":  "Para-Athletics-DQ-065",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_DECIDING_VALUE_WITHOUT_RANK",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 101 Duration, 102 Points, 103 Distance, 104 Comment, 100 Rank",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  7116,
+                                        "seconds":  2.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "33e857e7c66f"
+                                    },
+                                    {
+                                        "checkId":  "Para-Athletics-DQ-082",
+                                        "runKey":  "Para-Athletics-DQ-082",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED_BY_DURATION",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 100 Rank, 101 Duration, 501 Medal, 104 Comment",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  319,
+                                        "findings":  318,
+                                        "eligible":  21256,
+                                        "seconds":  1.6,
+                                        "status":  "OK",
+                                        "sqlHash":  "da005a58a3f7"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  16.6,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  5,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  6.5,
+                                                  "planning the changes":  1.3,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  1.1,
+                                                  "clearing stale rows":  1.4,
+                                                  "writing values":  4.5,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Para-Athletics-DQ-015":  {
+                                                                  "status":  "Not reviewed",
+                                                                  "checkBy":  ""
+                                                              },
+                                    "Para-Athletics-DQ-039":  {
+                                                                  "status":  "Clean",
+                                                                  "checkBy":  ""
+                                                              },
+                                    "Para-Athletics-DQ-053":  {
+                                                                  "status":  "Not reviewed",
+                                                                  "checkBy":  ""
+                                                              },
+                                    "Para-Athletics-DQ-065":  {
+                                                                  "status":  "Not reviewed",
+                                                                  "checkBy":  ""
+                                                              },
+                                    "Para-Athletics-DQ-082":  {
+                                                                  "status":  "Not reviewed",
+                                                                  "checkBy":  ""
+                                                              }
+                                }
                  }
              ],
     "sheetId":  "1WFnWLWrcNMrsHowlOQssFkprbBfmqKyrU1n9JdXkYNc"
