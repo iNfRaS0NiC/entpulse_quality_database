@@ -184,6 +184,14 @@ sport statement only when the condition cannot be expressed through declared par
 
 A structural finding never becomes a DQ check automatically.
 
+A sport this skill opens is bound by the whole-catalogue rule in `GLOBAL_DQ/README.md`
+"Mandatory templates": every GLOBAL template is owed by it, and stage 4 ends only when each one
+is an `Approved` row or a recorded exception in `SPORTS/params.json`. Do not write
+`_catalogueExempt` for a new sport — the key is for the sports opened before 2026-09-11. A
+without-Comp.Rank opening records the deferral as `_deferredLayers` with `Comp.Rank`, the
+reason and the date, which is what keeps the 49 `STATISTICS.sql` templates from being demanded
+before the layer is read.
+
 ## What this skill must not do
 
 - open a sport without having asked whether the Comp.Rank layer is in or out, or answer that

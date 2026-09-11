@@ -779,6 +779,42 @@ check that happens to return nothing today is not thereby a `Zero` check, exactl
 a run came back clean is the same mistake in a new column, and it is worse here: a wrong
 expectation is not a missing judgement but a judgement the tooling repeats at every run.
 
+### Which templates the sport still owes
+
+Two more reserved keys exist for the whole-catalogue rule that `GLOBAL_DQ/README.md`
+"Mandatory templates" owns: a sport opened on or after 2026-09-11 owes every GLOBAL template
+that is not marked `**Retired.**`, and `Test-Package.ps1` fails the package while one of them
+has neither an `Approved` row nor a recorded exception. The exceptions it reads are the two
+blocks above — a parameter the template declares under `_notApplicable`, or a `_checkSignal`
+of `Not applicable`, `Out of client scope` or `Blocked` keyed on the template — and the two
+keys below. Prose in the sport file is not one of them.
+
+| Key | Value | Means |
+|---|---|---|
+| `_catalogueExempt` | a non-empty reason | The sport is outside the rule. The sports opened before 2026-09-11 carry it, seventeen of the nineteen once Shooting and Para Swimming were bound the same day; a new sport never does. Deleting it binds the sport |
+| `_deferredLayers` | an object, layer name to non-empty reason | A layer the sport has and was deliberately opened without. Every template reading that layer is not demanded while the entry stands and is demanded the day it is removed |
+
+The exemption is the declared side and the obligation is the default, the opposite of
+`_paraSport`: a forgotten Para flag costs six checks on one sport, and a forgotten catalogue
+flag would have cost the whole rule on every sport opened after it. The only layer name
+`_deferredLayers` accepts is `Comp.Rank`, which is every template in `GLOBAL_DQ/STATISTICS.sql`;
+a sport with no Comp.Rank at all does not need it, because `STATISTIC_TYPE_ID` under
+`_notApplicable` already closes the same 49 templates.
+
+```json
+"<SportSlug>": {
+  "SPORT_ID": <SPORT_ID>,
+  "_deferredLayers": {
+    "Comp.Rank": "Opened without the Comp.Rank layer on <date> under the pause of 2026-08-26; SPORTS/<SportSlug>.md Statistics says what is unread."
+  }
+}
+```
+
+`Test-Package.ps1` names each bound sport's undecided templates, fails a `_deferredLayers`
+entry naming a layer it does not know, and fails an empty reason on either key. Neither key
+is written by the runner and neither is written without the user's approval: the rule obliges
+a decision on every template, and the decision is still theirs.
+
 On a sport with a large event or statistic volume, run a capped batch first —
 `-MaxChecks 8` — and read what it costs before letting the whole catalogue go.
 

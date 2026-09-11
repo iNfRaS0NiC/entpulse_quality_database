@@ -5864,3 +5864,101 @@ WHERE e2.del = 'no'
   -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e2 WHERE dsc_e2.object_typeFK = 5 AND dsc_e2.objectFK = e2.id AND dsc_e2.disciplineFK IN (<discipline_ids>) AND dsc_e2.del = 'no')
 
 ORDER BY sort_order, event_startdate DESC;
+
+-- ================================================================================
+SELECT
+    -- CheckID - GLOBAL-DQ-164
+    -- Name - EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED_BY_DURATION
+    -- What it does: Flags invalid Comment values, or an unclassified Comment stored together with a Rank, Duration, or Medal, for a sport that stores neither a score nor a full time.
+    CASE
+        WHEN LOWER(TRIM(x.comment_value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}}) AND x.medal_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_MEDAL'
+        WHEN LOWER(TRIM(x.comment_value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}}) AND x.rank_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_RANK'
+        WHEN LOWER(TRIM(x.comment_value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}}) AND x.duration_value IS NOT NULL THEN 'COMMENT_NO_RESULT_WITH_TIME'
+        ELSE 'COMMENT_INVALID_VALUE'
+    END AS check_type,
+    x.event_participants_id,
+    x.event_id,
+    x.event_name,
+    x.event_startdate,
+    x.participant_name,
+    x.comment_value,
+    x.rank_value,
+    x.duration_value,
+    x.medal_value,
+    x.tournament_template_name,
+    NULL AS eligible_count
+-- What it does, stated in full: Finds Comment values outside the sport's status codes, or
+-- marking a participant as unclassified while a Rank, a Duration or a Medal is stored for that
+-- same participant.
+-- The third member of a family of three. GLOBAL-DQ-052 tests the contradiction against a full
+-- time as well as a duration, GLOBAL-DQ-117 against a scalar score, and each therefore needs a
+-- result type a sport may not store. A sport keeping only a Rank, a Duration, a Comment and a
+-- Medal could instantiate neither, which left its Comment vocabulary unwatched - Para Swimming
+-- on 2026-09-11. This statement is GLOBAL-DQ-052 with the full-time field removed and nothing
+-- else changed, so the three emit the same check_type values over the same object.
+FROM (
+    SELECT
+        ep.id AS event_participants_id,
+        e.id AS event_id,
+        e.name AS event_name,
+        e.startdate AS event_startdate,
+        p.name AS participant_name,
+        tt.name AS tournament_template_name,
+        rc.value AS comment_value,
+        (SELECT NULLIF(TRIM(r2.value), '') FROM result r2
+          WHERE r2.event_participantsFK = ep.id AND r2.result_typeFK = {{RESULT_RANK_TYPE_ID}}
+            AND r2.del = 'no' AND r2.value IS NOT NULL LIMIT 1) AS rank_value,
+        (SELECT NULLIF(TRIM(r4.value), '') FROM result r4
+          WHERE r4.event_participantsFK = ep.id AND r4.result_typeFK = {{RESULT_DURATION_TYPE_ID}}
+            AND r4.del = 'no' AND r4.value IS NOT NULL LIMIT 1) AS duration_value,
+        (SELECT NULLIF(TRIM(r5.value), '') FROM result r5
+          WHERE r5.event_participantsFK = ep.id AND r5.result_typeFK = {{RESULT_MEDAL_TYPE_ID}}
+            AND r5.del = 'no' AND r5.value IS NOT NULL LIMIT 1) AS medal_value
+    FROM event_participants ep
+    JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+    JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+    JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+    JOIN participant p ON p.id = ep.participantFK AND p.del = 'no'
+    JOIN result rc ON rc.event_participantsFK = ep.id AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}} AND rc.del = 'no'
+    WHERE ep.del = 'no'
+      AND tt.sportFK = {{SPORT_ID}}
+      AND rc.value IS NOT NULL
+      AND TRIM(rc.value) <> ''
+      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+      -- AND t.tournament_templateFK = <tournament_template_id>
+      -- AND e.startdate >= '<from_datetime>'
+      -- AND e.startdate <  '<to_datetime>'
+      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+) x
+WHERE LOWER(TRIM(x.comment_value)) NOT IN ({{RESULT_COMMENT_VALUE_LIST}})
+   OR (
+        LOWER(TRIM(x.comment_value)) IN ({{RESULT_COMMENT_NO_RESULT_LIST}})
+        AND (x.rank_value IS NOT NULL OR x.duration_value IS NOT NULL OR x.medal_value IS NOT NULL)
+      )
+
+UNION ALL
+
+SELECT
+    'COVERAGE' AS check_type,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    COUNT(DISTINCT ep.id) AS eligible_count
+FROM event_participants ep
+JOIN event e ON e.id = ep.eventFK AND e.del = 'no'
+JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'
+JOIN tournament t ON t.id = ts.tournamentFK AND t.del = 'no'
+JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+JOIN result rc ON rc.event_participantsFK = ep.id AND rc.result_typeFK = {{RESULT_COMMENT_TYPE_ID}} AND rc.del = 'no'
+WHERE ep.del = 'no'
+  AND tt.sportFK = {{SPORT_ID}}
+  AND rc.value IS NOT NULL
+  AND TRIM(rc.value) <> ''
+  AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+  AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+  -- AND t.tournament_templateFK = <tournament_template_id>
+  -- AND e.startdate >= '<from_datetime>'
+  -- AND e.startdate <  '<to_datetime>'
+  -- AND EXISTS (SELECT 1 FROM object_discipline dsc_e WHERE dsc_e.object_typeFK = 5 AND dsc_e.objectFK = e.id AND dsc_e.disciplineFK IN (<discipline_ids>) AND dsc_e.del = 'no')
+;
+

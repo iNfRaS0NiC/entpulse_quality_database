@@ -378,6 +378,16 @@ For a sport whose structure matches an existing template's prerequisite, the app
 is a registry row with `Family` set, not a new statement. That is the whole point of the
 template layer: opening sport 40 should cost a row, not 60 lines of SQL.
 
+**For a sport opened on or after 2026-09-11 the whole GLOBAL catalogue is owed, and stage 4 is
+not finished while a template has no record.** `GLOBAL_DQ/README.md` "Mandatory templates" owns
+the rule: every template not marked retired ends as an `Approved` row or as a recorded exception
+in `SPORTS/params.json` — a parameter under `_notApplicable`, a `_checkSignal` of
+`Not applicable`, `Out of client scope` or `Blocked`, or a layer under `_deferredLayers` — and
+`TOOLS/Test-Package.ps1` fails the package on the first template that is neither. No category
+needs naming for such a sport; the catalogue is the batch. Each template is still decided by the
+user, one at a time, and nothing is classified away automatically. The sports opened before that
+date carry `_catalogueExempt` and keep the category gate.
+
 ## Promoting an ad-hoc query
 
 Promotion is separate from running the query.

@@ -116,6 +116,15 @@ than only in their owner:
 - **Statistics context.** Any statement whose audited object is a `statistic`,
   `statistic_participantsN` or `statistic_dataN` row projects `template_name` and excludes
   IOC-purpose templates identically in every branch.
+- **The whole catalogue is owed by a sport opened from 2026-09-11.** Every GLOBAL template not
+  marked `**Retired.**` ends, for such a sport, as an `Approved` registry row or as a recorded
+  exception in `SPORTS/params.json`: a parameter under `_notApplicable`, a `_checkSignal` of
+  `Not applicable`, `Out of client scope` or `Blocked`, or a layer under `_deferredLayers`.
+  `TOOLS/Test-Package.ps1` fails the package while one template is neither. The rule opens the
+  whole catalogue without a named category; it decides nothing — each template is still the
+  user's call, one at a time, and no exception is ever written automatically. A sport opened
+  before that date carries `_catalogueExempt` with its reason. `GLOBAL_DQ/README.md`
+  "Mandatory templates" owns the rule.
 - **Applicability is structural, never a row count.** A check is `Not applicable` for a sport
   only when the sport does not store the structure the rule reads — no such column, layer or
   relation. A status, type, discipline or value that simply has no rows today is a data

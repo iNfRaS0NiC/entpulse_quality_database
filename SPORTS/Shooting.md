@@ -525,6 +525,50 @@ one row and `rpo/rpo` on 14 rows in two events are composites of the same.
   likely the same mistake rather than a convention of one source. It is inside
   `Shooting-DQ-074`'s findings and needs nothing of its own.
 
+**`Shooting-DQ-057 GLOBAL-DQ-116 EVENT_RESULTS_RANK_TIE_CONTRADICTED_BY_SCORE` is `Deprecated`,
+decided 2026-09-11.** The template was retired on 2026-08-07 in favour of `GLOBAL-DQ-021
+EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT`, which this sport already runs as `Shooting-DQ-046`
+over the same population; the row was instantiated on 2026-09-06 against the template's own cell
+and asked nothing `Shooting-DQ-046` does not. The CheckID stays reserved.
+
+**Bound to the whole-catalogue rule on 2026-09-11, and the ten templates it turned up.** The
+rule in `GLOBAL_DQ/README.md` "Mandatory templates" reads only `SPORTS/params.json` and
+`POWERBI_REGISTRY.md`, and read that way the "every template decided" paragraph above was short
+by ten: six decisions of 2026-09-06 lived only in this file, and four templates had never been
+decided at all. All ten were settled on 2026-09-11, the sport's `_catalogueExempt` was removed
+and its Comp.Rank deferral recorded under `_deferredLayers`, so `TOOLS/Test-Package.ps1` now
+holds the sport to the whole catalogue.
+
+The six of 2026-09-06 are now `_checkSignal` entries of `Not applicable`, each with the reason
+this file already gave: `GLOBAL-DQ-019 EVENT_DURATION_FORMAT_MISMATCH_TO_RANK`, `GLOBAL-DQ-093
+EVENT_RESULTS_MEDAL_SET_INVALID_FOR_MEDAL_ROUND`, `GLOBAL-DQ-094
+EVENT_RESULTS_MEDAL_CONTRADICTS_SCORE`, `GLOBAL-DQ-096 EVENT_NAME_DOES_NOT_NAME_ITS_PARTICIPANTS`,
+`GLOBAL-DQ-127 EVENT_RESULTS_TIED_VALUE_WITHOUT_SHARED_RANK` and `GLOBAL-DQ-144
+EVENT_RESULTS_RANK_STORED_BY_A_HEAD_TO_HEAD_SPORT`.
+
+`GLOBAL-DQ-164 EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED_BY_DURATION`, written the same day
+for Para Swimming, was demanded of this sport within the hour, which is the rule working: it is
+`Not applicable` here because the sport instantiates `GLOBAL-DQ-117` as `Shooting-DQ-058`, and
+`GLOBAL_DQ/README.md` says a sport instantiates exactly one of the three Comment templates.
+
+The four run for the first time on 2026-09-11:
+
+| Template | Asserts | Returned | Decision |
+|---|---|---|---|
+| `GLOBAL-DQ-009 PARTICIPANT_NO_PARTICIPATION_ANYWHERE` | a registered participant with no event, lineup or Comp.Rank participation | 137 of 16 808 with the Comp.Rank path read, 664 without it | `Blocked` - the third path needs `STATISTIC_TYPE_ID` and `SHARD_ID`, which the deferred layer leaves unrecorded, and 527 of the 664 take part only through Comp.Rank, so the check cannot be narrowed. Lifts with the Comp.Rank pause |
+| `GLOBAL-DQ-151 PARTICIPANT_MISSING_SPLIT_NAME` | a participant whose first or last name is not stored beside the composed name | 13 of 16 406, every one a single-name athlete from Laos, India, Indonesia or Malaysia with `first_name` empty | `Shooting-DQ-078`, `Monitor` - a person with one name is expected here and the reviewer sorts them; the check keeps watching for a real gap |
+| `GLOBAL-DQ-161 EVENT_SETTINGS_DISCIPLINE_ON_SUPERSEDED_CATALOGUE` | an event filed under a second id for a discipline the sport already has | 0 of 9 382; the sport keeps one catalogue of 35 disciplines with no duplicated spelling | `Shooting-DQ-079`, `Actionable` - clean today, and zero findings never retires a check |
+| `GLOBAL-DQ-135 PARTICIPANT_COACH_OR_OFFICIAL_NO_PARTICIPATION_ANYWHERE` | a coach or official filed in the registry with no participation | could not run: `SUPPORT_PARTICIPANT_TYPE_LIST` has no value, because the registry files only `athlete` and `team` | `SUPPORT_PARTICIPANT_TYPE_LIST` under `_notApplicable`; instantiate the day a support role is filed |
+
+`GLOBAL-DQ-135` is the one of the four that is not a check, and the reason is structural rather
+than a count: the template reads only the roles named in its list, and this registry names none
+it could read. `GLOBAL-DQ-009` is the one that is a check and cannot run yet, and it is the
+first `Blocked` entry the deferred Comp.Rank layer has produced: a template that reads the layer
+as one path among three is refused with the layer, and the 137 registrations with no
+participation anywhere stay unreported until the pause lifts. The user chose that over recording
+the two layer identifiers early. The other two are the gap the rule exists to find - questions
+that were never asked of a sport closed as finished.
+
 <!-- MANUAL PASTE ZONE: 45 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

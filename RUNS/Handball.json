@@ -15393,6 +15393,1202 @@
                                                             "checkBy":  "Aleksandar D."
                                                         }
                                 }
+                 },
+                 {
+                     "runId":  "11.09.2026 08-33-34",
+                     "startedUtc":  "2026-09-11T06:33:34Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-105",
+                                        "runKey":  "Handball-DQ-105",
+                                        "parameters":  "",
+                                        "name":  "EVENT_EXTRA_PERIOD_STATUS_MISMATCH",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Scope: 460 extra_time_first_time; Scope field: 162 goals",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  77,
+                                        "seconds":  2.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "ebe025a5bad5"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  59.7,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  16.6,
+                                                  "planning the changes":  17.7,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.5,
+                                                  "clearing stale rows":  13.7,
+                                                  "writing values":  8.1,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.3,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-105":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 08-39-20",
+                     "startedUtc":  "2026-09-11T06:39:20Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-106",
+                                        "runKey":  "Handball-DQ-106",
+                                        "parameters":  "",
+                                        "name":  "EVENT_SCOPE_PERIOD_NOT_STORED_FOR_BOTH_SIDES",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Scope: 460 extra_time_first_time; Scope field: 162 goals",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  73,
+                                        "seconds":  1,
+                                        "status":  "OK",
+                                        "sqlHash":  "05f5f75d4aba"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  65.6,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  20.2,
+                                                  "planning the changes":  17.1,
+                                                  "adding and sizing tabs":  0.2,
+                                                  "hiding columns and colouring Rows":  1.3,
+                                                  "clearing stale rows":  15.8,
+                                                  "writing values":  9,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-106":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  "Vanin"
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 08-40-40",
+                     "startedUtc":  "2026-09-11T06:40:40Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-105",
+                                        "runKey":  "Handball-DQ-105",
+                                        "parameters":  "",
+                                        "name":  "EVENT_EXTRA_PERIOD_STATUS_MISMATCH",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Scope: 460 extra_time_first_time; Scope field: 162 goals",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  4,
+                                        "findings":  3,
+                                        "eligible":  77,
+                                        "seconds":  1.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "ebe025a5bad5"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  53.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  15.3,
+                                                  "planning the changes":  15,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  13.5,
+                                                  "writing values":  7,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-105":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 08-43-45",
+                     "startedUtc":  "2026-09-11T06:43:45Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-113",
+                                        "runKey":  "Handball-DQ-113",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_HALFTIME_SCORE_ABOVE_ORDINARY_TIME_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 5 Halftime, 1 Ordinary time",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  11896,
+                                        "seconds":  1.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "a1dca0fec680"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  63.1,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  17.1,
+                                                  "planning the changes":  18.2,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  15.8,
+                                                  "writing values":  7.1,
+                                                  "confirming the rows arrived":  1.9,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-113":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  "Vanin"
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 08-45-33",
+                     "startedUtc":  "2026-09-11T06:45:33Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-095",
+                                        "runKey":  "Handball-DQ-095",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MIRROR_SCORE_WITHOUT_DECIDING_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 6 Running score, 4 Final Result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  12900,
+                                        "seconds":  1.1,
+                                        "status":  "OK",
+                                        "sqlHash":  "e7ccdeac220d"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  63,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  5,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  17.6,
+                                                  "planning the changes":  17.7,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  13.1,
+                                                  "writing values":  8.1,
+                                                  "confirming the rows arrived":  3.5,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.6
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-095":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 08-46-51",
+                     "startedUtc":  "2026-09-11T06:46:51Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-114",
+                                        "runKey":  "Handball-DQ-114",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_OUTCOME_WORD_CONTRADICTS_FINAL_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 668 Event outcome, 4 Final Result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Regressed",
+                                        "rows":  7,
+                                        "findings":  6,
+                                        "eligible":  12900,
+                                        "seconds":  1.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "9c2b864f87f0"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  60,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  16.8,
+                                                  "planning the changes":  18.6,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.4,
+                                                  "clearing stale rows":  15.6,
+                                                  "writing values":  5.7,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.3,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-114":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 08-48-06",
+                     "startedUtc":  "2026-09-11T06:48:06Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-120",
+                                        "runKey":  "Handball-DQ-120",
+                                        "parameters":  "",
+                                        "name":  "EVENT_WINNER_CONTRADICTS_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 668 Event outcome, 4 Final Result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  12368,
+                                        "seconds":  2,
+                                        "status":  "OK",
+                                        "sqlHash":  "c37d42b72b4b"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  59.8,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  16.4,
+                                                  "planning the changes":  17.9,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  16.1,
+                                                  "writing values":  6.5,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-120":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 08-49-21",
+                     "startedUtc":  "2026-09-11T06:49:21Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-091",
+                                        "runKey":  "Handball-DQ-091",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULT_MIRRORED_SCORE_TYPES_DISAGREE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 4 Final Result, 6 Running score",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  12900,
+                                        "seconds":  1.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "29266e867bb8"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  64.3,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  6,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  20,
+                                                  "planning the changes":  17,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  17.1,
+                                                  "writing values":  6.3,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  1,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-091":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  "Vanin"
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 08-50-39",
+                     "startedUtc":  "2026-09-11T06:50:39Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-019",
+                                        "runKey":  "Handball-DQ-019",
+                                        "parameters":  "",
+                                        "name":  "TEMPLATE_TOURNAMENT_YEAR_CLAIMED_BY_SPAN_AND_SINGLE_SEASON",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  5,
+                                        "findings":  4,
+                                        "eligible":  38,
+                                        "seconds":  0.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "6b90eb37e3fd"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  65.8,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  17.7,
+                                                  "planning the changes":  20.8,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  17.6,
+                                                  "writing values":  6.4,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-019":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  "Aleksandar D."
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 08-51-59",
+                     "startedUtc":  "2026-09-11T06:51:59Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-112",
+                                        "runKey":  "Handball-DQ-112",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_ELIMINATION_ROUND_DECIDED_BY_A_TIE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 4 Final Result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  1448,
+                                        "seconds":  0.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "36f8576a0a50"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  72.4,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  18.7,
+                                                  "planning the changes":  22.8,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.3,
+                                                  "clearing stale rows":  16.9,
+                                                  "writing values":  10.6,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-112":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  "Gabriel"
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 08-53-26",
+                     "startedUtc":  "2026-09-11T06:53:26Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-122",
+                                        "runKey":  "Handball-DQ-122",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_MEDAL_SET_INCOMPLETE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  12,
+                                        "findings":  11,
+                                        "eligible":  247,
+                                        "seconds":  0.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "a08f1044cb77"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  58.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  16.6,
+                                                  "planning the changes":  18.1,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  14.6,
+                                                  "writing values":  6.1,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-122":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  "Aleksandar D."
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 09-00-07",
+                     "startedUtc":  "2026-09-11T07:00:07Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-121",
+                                        "runKey":  "Handball-DQ-121",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_REQUIRED_RESULT_LAYER_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Result: 1 Ordinary time, 4 Final Result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  47,
+                                        "findings":  46,
+                                        "eligible":  12900,
+                                        "seconds":  1.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "f4a0ff898d2f"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  61.4,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  18,
+                                                  "planning the changes":  18.4,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.1,
+                                                  "clearing stale rows":  15.7,
+                                                  "writing values":  6.1,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-121":  {
+                                                            "status":  "Reviewing",
+                                                            "checkBy":  "Vanin"
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 09-22-00",
+                     "startedUtc":  "2026-09-11T07:22:00Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-121",
+                                        "runKey":  "Handball-DQ-121",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_REQUIRED_RESULT_LAYER_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Result: 1 Ordinary time, 4 Final Result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  12900,
+                                        "seconds":  1.1,
+                                        "status":  "OK",
+                                        "sqlHash":  "f4a0ff898d2f"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  52.4,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  15.8,
+                                                  "planning the changes":  15,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.1,
+                                                  "clearing stale rows":  12.5,
+                                                  "writing values":  6.1,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-121":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  "Vanin"
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 09-29-41",
+                     "startedUtc":  "2026-09-11T07:29:41Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-122",
+                                        "runKey":  "Handball-DQ-122",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_MEDAL_SET_INCOMPLETE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "Result: 501 Medal",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  12,
+                                        "findings":  11,
+                                        "eligible":  247,
+                                        "seconds":  0.8,
+                                        "status":  "OK",
+                                        "sqlHash":  "a08f1044cb77"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  53.2,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  14.2,
+                                                  "planning the changes":  15.3,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.3,
+                                                  "clearing stale rows":  13.3,
+                                                  "writing values":  5.9,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  1.7,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-122":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  "Aleksandar D."
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 09-31-20",
+                     "startedUtc":  "2026-09-11T07:31:20Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-091",
+                                        "runKey":  "Handball-DQ-091",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULT_MIRRORED_SCORE_TYPES_DISAGREE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 4 Final Result, 6 Running score",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  12900,
+                                        "seconds":  1.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "29266e867bb8"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  59.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  16.8,
+                                                  "planning the changes":  18.1,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.4,
+                                                  "clearing stale rows":  15.5,
+                                                  "writing values":  6.1,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-091":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  "Vanin"
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 09-32-36",
+                     "startedUtc":  "2026-09-11T07:32:36Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-095",
+                                        "runKey":  "Handball-DQ-095",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_MIRROR_SCORE_WITHOUT_DECIDING_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 6 Running score, 4 Final Result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  12900,
+                                        "seconds":  1.1,
+                                        "status":  "OK",
+                                        "sqlHash":  "e7ccdeac220d"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  64,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  16.6,
+                                                  "planning the changes":  18.4,
+                                                  "adding and sizing tabs":  0.2,
+                                                  "hiding columns and colouring Rows":  1.4,
+                                                  "clearing stale rows":  19.7,
+                                                  "writing values":  5.9,
+                                                  "confirming the rows arrived":  0.5,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-095":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 09-35-24",
+                     "startedUtc":  "2026-09-11T07:35:24Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-120",
+                                        "runKey":  "Handball-DQ-120",
+                                        "parameters":  "",
+                                        "name":  "EVENT_WINNER_CONTRADICTS_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 668 Event outcome, 4 Final Result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  12368,
+                                        "seconds":  2.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "c37d42b72b4b"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  59.6,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  19,
+                                                  "planning the changes":  17.5,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  13.7,
+                                                  "writing values":  6,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-120":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 09-36-42",
+                     "startedUtc":  "2026-09-11T07:36:42Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-111",
+                                        "runKey":  "Handball-DQ-111",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_PENALTY_SHOOTOUT_WITHOUT_EXTRA_TIME",
+                                        "category":  "WRONG_STRUCTURE",
+                                        "dataTypes":  "Result: 3 Penalty Shootout, 2 Extra time",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  57,
+                                        "findings":  56,
+                                        "eligible":  209,
+                                        "seconds":  0.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "8cdc261e0551"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  65.1,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  18.8,
+                                                  "planning the changes":  16.9,
+                                                  "adding and sizing tabs":  0.2,
+                                                  "hiding columns and colouring Rows":  1.5,
+                                                  "clearing stale rows":  15.9,
+                                                  "writing values":  8.2,
+                                                  "confirming the rows arrived":  0.5,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  2.1,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-111":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  "Gabriel"
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 09-38-08",
+                     "startedUtc":  "2026-09-11T07:38:08Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-083",
+                                        "runKey":  "Handball-DQ-083",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  11124,
+                                        "findings":  11123,
+                                        "eligible":  13098,
+                                        "seconds":  3.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "38ae70981551"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  117.8,
+                                   "valueRequests":  7,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  18.7,
+                                                  "planning the changes":  21.4,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.3,
+                                                  "clearing stale rows":  62.3,
+                                                  "writing values":  12.2,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-083":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 09-40-26",
+                     "startedUtc":  "2026-09-11T07:40:26Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-118",
+                                        "runKey":  "Handball-DQ-118",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_PARTICIPANT_ORGANIZATION_MISSING_THROUGHOUT",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  253,
+                                        "findings":  252,
+                                        "eligible":  281,
+                                        "seconds":  0.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "c2273c0d0b19"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  63.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  17.6,
+                                                  "planning the changes":  19,
+                                                  "adding and sizing tabs":  0.2,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  18,
+                                                  "writing values":  6.1,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0.1,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-118":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 09-43-15",
+                     "startedUtc":  "2026-09-11T07:43:15Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-114",
+                                        "runKey":  "Handball-DQ-114",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_OUTCOME_WORD_CONTRADICTS_FINAL_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 668 Event outcome, 4 Final Result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  12900,
+                                        "seconds":  2,
+                                        "status":  "OK",
+                                        "sqlHash":  "9c2b864f87f0"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  60.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  16,
+                                                  "planning the changes":  16.8,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  16.8,
+                                                  "writing values":  7.7,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.6,
+                                                  "declaring the result tables":  0.6
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-114":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 09-45-02",
+                     "startedUtc":  "2026-09-11T07:45:02Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-120",
+                                        "runKey":  "Handball-DQ-120",
+                                        "parameters":  "",
+                                        "name":  "EVENT_WINNER_CONTRADICTS_SCORE",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 668 Event outcome, 4 Final Result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  12370,
+                                        "seconds":  2.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "c37d42b72b4b"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  63.1,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  20,
+                                                  "planning the changes":  19.2,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.1,
+                                                  "clearing stale rows":  14.8,
+                                                  "writing values":  6,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-120":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  ""
+                                                        }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 10-33-17",
+                     "startedUtc":  "2026-09-11T08:33:17Z",
+                     "output":  "",
+                     "commit":  "1af7678b9d5b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-110",
+                                        "runKey":  "Handball-DQ-110",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_FINAL_SCORE_NOT_ORDINARY_PLUS_EXTRA_TIME",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 1 Ordinary time, 2 Extra time, 4 Final Result",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  73,
+                                        "findings":  72,
+                                        "eligible":  12899,
+                                        "seconds":  1.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "07e8b922c800"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  53.2,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  14.7,
+                                                  "planning the changes":  16.7,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  10.4,
+                                                  "writing values":  7.3,
+                                                  "confirming the rows arrived":  1.2,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-110":  {
+                                                            "status":  "Completed",
+                                                            "checkBy":  "Gabriel"
+                                                        }
+                                }
                  }
              ],
     "sheetId":  "1AUVNbf1U-OZO6V2VZZ9QbMBBaxMtzdWjsACfML_9sQI"

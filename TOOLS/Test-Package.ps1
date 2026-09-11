@@ -57,8 +57,16 @@ $ClientScopeForms = @('complement', 'in-scope')
 # and a rule resting on that would drop the first one that is not. Run-Query.ps1 declares the
 # same name and the pair of files is the contract.
 $ParaSportKey = '_paraSport'
+# The whole-catalogue rule of 2026-09-11 (GLOBAL_DQ/README.md, "Mandatory templates"): a sport
+# owes every GLOBAL template unless it declares the exemption, and a layer it was deliberately
+# opened without is declared too. The exemption is the declared side and the obligation the
+# default, the opposite polarity from the Para flag: a forgotten Para flag costs six checks on
+# one sport, a forgotten catalogue flag would cost the whole rule on every sport opened after
+# it. The other script declares the same names and the pair of files is the contract.
+$CatalogueExemptKey = '_catalogueExempt'
+$DeferredLayersKey = '_deferredLayers'
 $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesKey,
-    $ClientScopeFormKey, $ParaSportKey)
+    $ClientScopeFormKey, $ParaSportKey, $CatalogueExemptKey, $DeferredLayersKey)
 
 # The client's boundary, expressed as the templates it does not take. README.md owns why the
 # client is a boundary of its own; this is the value every statement that can carry one reads.
@@ -1445,6 +1453,128 @@ foreach ($template in $paraMandatory) {
                 "Approved row for $family $templateName, which GLOBAL_DQ/README.md declares " +
                 'mandatory for every Para sport')
         }
+    }
+}
+
+# The whole catalogue, for every sport opened from 2026-09-11 (GLOBAL_DQ/README.md, "Mandatory
+# templates"). A bound sport owes every template that is not retired, and "owes" means one of
+# four records the validator can read: an Approved registry row naming the template as Family;
+# a parameter the template declares as mandatory, recorded under _notApplicable; a _checkSignal
+# entry keyed on the template that says Not applicable, Out of client scope or Blocked; or a
+# layer the sport was opened without, declared under _deferredLayers. A template with none of
+# them is the GLOBAL-DQ-007 gap again - a refusal nobody recorded - which is what Shooting and
+# Para Swimming turned out to hold on 2026-09-11, 17 and 27 templates each, after both had been
+# closed as finished.
+#
+# Bound is the default. A sport is outside the rule only while its params entry carries
+# _catalogueExempt with a reason, which the nineteen sports opened before the rule do. That is
+# the opposite polarity from the Para flag on purpose: a flag that had to be set to bind a sport
+# would be forgotten exactly on the sport where it mattered.
+#
+# The rule reads what is recorded and decides nothing: every one of the four records is written
+# only after the user approves it for that template on that sport.
+$retiredMarker = '**Retired.**'
+$owedTemplates = @($dqReadmeRows | Where-Object {
+        $_.Cells.Count -gt 5 -and -not $_.Cells[5].StartsWith($retiredMarker)
+    })
+# A layer name a sport may defer, and the template file that is that layer. GLOBAL_DQ/README.md
+# defines the vocabulary; this is its machine-readable copy, and a name outside it fails below.
+$deferrableLayers = @{ 'Comp.Rank' = 'STATISTICS.sql' }
+$decidingSignals = @('Not applicable', 'Out of client scope', 'Blocked')
+
+if ($owedTemplates.Count -eq 0) {
+    $sportFindings += 'GLOBAL_DQ/README.md: every template is marked retired, so the whole-catalogue rule inspected nothing'
+}
+
+# A retired template is owed by nobody and instantiated by nobody. GLOBAL-DQ-116 was retired
+# on 2026-08-07 with "not to be instantiated" in its cell, and Track-Cycling and Shooting both
+# instantiated it afterwards, because the cell was prose and nothing read it. Both rows were
+# deprecated on 2026-09-11; this is what stops the third.
+$retiredFamilies = @($dqReadmeRows | Where-Object {
+        $_.Cells.Count -gt 5 -and $_.Cells[5].StartsWith($retiredMarker)
+    } | ForEach-Object { $_.Cells[0] })
+foreach ($row in $registryRows) {
+    if ($row.Cells.Count -ne $expectedColumns -or $row.Cells[7] -ne 'Approved') { continue }
+    $family = Remove-Backtick $row.Cells[2]
+    if ($retiredFamilies -contains $family) {
+        $sportFindings += ("POWERBI_REGISTRY.md: $($row.Cells[0]) is Approved on $family, which " +
+            "GLOBAL_DQ/README.md marks retired; deprecate the row or un-retire the template")
+    }
+}
+
+foreach ($sport in ($indexed.Keys | Sort-Object)) {
+    if (-not $paramsBySlug.ContainsKey($sport)) {
+        $sportFindings += ("SPORTS/params.json: '$sport' has no entry, so the whole-catalogue rule " +
+            "cannot read which templates it has decided; every sport in SPORTS.md needs one")
+        continue
+    }
+    $entry = $paramsBySlug[$sport]
+    $propertyNames = @($entry.PSObject.Properties.Name)
+
+    $deferredFiles = @()
+    if ($propertyNames -contains $DeferredLayersKey) {
+        $layers = $entry.$DeferredLayersKey
+        if ($null -eq $layers -or $layers -isnot [System.Management.Automation.PSCustomObject]) {
+            $sportFindings += "SPORTS/params.json: '$sport' $DeferredLayersKey must be an object mapping a layer name to its reason"
+        }
+        else {
+            foreach ($layer in $layers.PSObject.Properties) {
+                if (-not $deferrableLayers.ContainsKey($layer.Name)) {
+                    $sportFindings += ("SPORTS/params.json: '$sport' $DeferredLayersKey names '$($layer.Name)', which " +
+                        "GLOBAL_DQ/README.md does not define as a layer; known: $($deferrableLayers.Keys -join ', ')")
+                    continue
+                }
+                if ([string]::IsNullOrWhiteSpace([string]$layer.Value)) {
+                    $sportFindings += "SPORTS/params.json: '$sport' $DeferredLayersKey records no reason for '$($layer.Name)'"
+                }
+                $deferredFiles += $deferrableLayers[$layer.Name]
+            }
+        }
+    }
+
+    if ($propertyNames -contains $CatalogueExemptKey) {
+        if ([string]::IsNullOrWhiteSpace([string]$entry.$CatalogueExemptKey)) {
+            $sportFindings += "SPORTS/params.json: '$sport' $CatalogueExemptKey records no reason; the exemption is a decision and needs one"
+        }
+        continue
+    }
+
+    $approvedFamilies = @($registryRows |
+        Where-Object {
+            $_.Cells.Count -eq $expectedColumns -and $_.Cells[1] -eq $sport -and $_.Cells[7] -eq 'Approved'
+        } | ForEach-Object { Remove-Backtick $_.Cells[2] })
+    $impossibleParameters = @()
+    if ($propertyNames -contains $NotApplicableKey -and $null -ne $entry.$NotApplicableKey) {
+        $impossibleParameters = @($entry.$NotApplicableKey.PSObject.Properties.Name)
+    }
+    $decidedBySignal = @()
+    if ($propertyNames -contains $CheckSignalKey -and $null -ne $entry.$CheckSignalKey) {
+        $decidedBySignal = @($entry.$CheckSignalKey.PSObject.Properties |
+            Where-Object { $null -ne $_.Value -and $decidingSignals -contains [string]$_.Value.signal } |
+            ForEach-Object { $_.Name })
+    }
+
+    $isParaSport = $paraSports -contains $sport
+    $undecided = @()
+    foreach ($template in $owedTemplates) {
+        $family = $template.Cells[0]
+        # A template owed by every Para sport reads a disability class, which the section
+        # above calls meaningless on every other sport; demanding six Not applicable records
+        # from each non-Para sport would restate that in nineteen places.
+        if (-not $isParaSport -and $template.Cells[5] -like "*$paraMandatoryMarker*") { continue }
+        if ($approvedFamilies -contains $family) { continue }
+        if ($decidedBySignal -contains $family) { continue }
+        $declared = @(($template.Cells[4] -split ',') | ForEach-Object { Remove-Backtick $_ } | Where-Object { $_ })
+        if (@($declared | Where-Object { $impossibleParameters -contains $_ }).Count -gt 0) { continue }
+        $templateFile = Split-Path -Leaf (Remove-Backtick $template.Cells[2])
+        if ($deferredFiles -contains $templateFile) { continue }
+        $undecided += "$family $(Remove-Backtick $template.Cells[1])"
+    }
+    if ($undecided.Count -gt 0) {
+        $sportFindings += ("SPORTS/params.json: '$sport' is bound by the whole-catalogue rule and has no record " +
+            "for $($undecided.Count) template(s) - no Approved row, no $NotApplicableKey parameter, no " +
+            "$CheckSignalKey of $($decidingSignals -join '/'), no $DeferredLayersKey layer: " +
+            ($undecided -join '; '))
     }
 }
 

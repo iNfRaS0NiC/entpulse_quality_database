@@ -46,6 +46,18 @@ means measuring twice and deciding the second half without the first in view. Wh
 at a time is the decision, never the batch it arrives in: each candidate is still named,
 explained and approved separately, and an unapproved one is not written.
 
+**For a sport opened on or after 2026-09-11 the whole GLOBAL catalogue is open from its first
+DQ session, and no category has to be named.** Decided 2026-09-11; `GLOBAL_DQ/README.md`
+"Mandatory templates" owns the rule and `TOOLS/Test-Package.ps1` enforces it. Every template in
+the registry is owed by such a sport, so the batch is the catalogue: each template not marked
+retired is run, read and brought back, and the user decides it as an instantiation or as one
+of the recorded exceptions — `Not applicable`, `Out of client scope`, `Blocked`, or a deferred
+layer — each written into `SPORTS/params.json` only after they approve it. What the rule opens
+is the scope; what it leaves exactly where it was is the decision, which is still made one
+template at a time and never by the rule itself. A sport opened before that date is exempt by
+a recorded key and keeps the category gate above; a sport-authored check outside the catalogue
+keeps it on every sport.
+
 ## Approval and identity workflow
 
 1. The user chooses the sport and one or more DQ categories.
@@ -104,6 +116,16 @@ Measured on Golf, 2026-08-13, which is why the rule is written down:
 | `GLOBAL-DQ-049` | 13430 | 13340 - held open rather than assigned |
 
 The last two are the rule working. The first three are what it exists to prevent.
+
+**On a sport bound by the whole-catalogue rule, "held open rather than assigned" is no longer a
+place a candidate can stay.** Since 2026-09-11 every template is owed by such a sport, and a
+candidate the gate stops is decided rather than parked: it is instantiated with the signal its
+rows earn — `Monitor` where the finding is population-wide, `Sentinel` where the population is
+empty today — or recorded as `Not applicable`, `Out of client scope` or `Blocked` with the
+reason, and each of those is still the user's decision. The gate's question does not change,
+and neither does the reading that answers it; what changes is that the answer has to be one
+`TOOLS/Test-Package.ps1` can see, because a candidate with no record fails the package. Golf,
+where the two held-open rows above were decided, is exempt from the rule and keeps them.
 
 One more from 2026-08-14, and it is the clearest case the sport has produced:
 

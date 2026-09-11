@@ -571,6 +571,13 @@ stage over-collects because a stage here is a whole championship: of 199 overall
 reach only one component, 83 reach two, 50 reach three, 12 reach four and 3 reach more than
 four. Even among the twelve the total agrees for 3 events and 103 riders of 189. The
 components are not there, and where they are they are not provably the right ones.
+**`Track-Cycling-DQ-073 GLOBAL-DQ-116 EVENT_RESULTS_RANK_TIE_CONTRADICTED_BY_SCORE` is
+`Deprecated`, decided 2026-09-11.** The template was retired on 2026-08-07 in favour of
+`GLOBAL-DQ-021 EVENT_RESULTS_RANK_DUPLICATE_WITHOUT_COMMENT`, which this sport already runs as
+`Track-Cycling-DQ-054` over the same population; the row was instantiated on 2026-08-26 against
+the template's own cell and asked nothing `Track-Cycling-DQ-054` does not. The CheckID stays
+reserved.
+
 <!-- MANUAL PASTE ZONE: 55 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Open questions

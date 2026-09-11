@@ -592,6 +592,14 @@ template's declared parameters.
 
 A template is not permission to check a sport. The authorization gate is unchanged.
 
+For a sport opened on or after 2026-09-11 the whole GLOBAL catalogue is owed: every template
+not marked Retired ends as an Approved registry row or as a recorded exception in
+SPORTS/params.json (a _notApplicable parameter, a _checkSignal of Not applicable, Out of
+client scope or Blocked, or a layer under _deferredLayers), and TOOLS/Test-Package.ps1 fails
+the package while one is neither. No category has to be named for such a sport. Each template
+is still decided by the user, one at a time; nothing is classified away automatically. Sports
+opened before that date carry _catalogueExempt. GLOBAL_DQ/README.md owns the rule.
+
 PACKAGE VALIDATION
 
 TOOLS/Test-Package.ps1 mechanically checks identity headers, CheckID uniqueness, the

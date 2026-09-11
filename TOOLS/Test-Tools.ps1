@@ -8990,6 +8990,117 @@ Test-That 'a sport that names what the client takes must not write the complemen
         "the statements should be reported as not keeping to the inclusion; output was:`n$($run.Text)"
 }
 
+function Remove-FixtureSportKey {
+    # Deletes one reserved key line from one sport's entry in a throwaway copy, which is the
+    # whole of what binding an exempt sport to the whole-catalogue rule takes.
+    param([string]$Root, [string]$Sport, [string]$Key)
+
+    $path = Join-Path $Root 'SPORTS\params.json'
+    $text = [IO.File]::ReadAllText($path)
+    $anchor = '  "{0}": {{' -f $Sport
+    $index = $text.IndexOf($anchor)
+    if ($index -lt 0) { throw "the $Sport entry was not found in the fixture copy" }
+    # Entries are indented four spaces; the next one starts at the first line that opens a
+    # quoted key at that depth. The static [regex]::Replace overload with a fourth argument
+    # takes RegexOptions, not a count - passing 1 there is IgnoreCase and replaces every
+    # match, which bound ten sports at once the first time this ran.
+    $tail = $text.Substring($index)
+    $next = $tail.IndexOf("`n    `"", 1)
+    if ($next -lt 0) { $next = $tail.Length }
+    $block = $tail.Substring(0, $next)
+    $pattern = New-Object System.Text.RegularExpressions.Regex ('(?m)^\s*"' + [regex]::Escape($Key) + '":.*\r?\n')
+    $block = $pattern.Replace($block, '', 1)
+    $text = $text.Substring(0, $index) + $block + $tail.Substring($next)
+    [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+}
+
+function Add-FixtureSportKey {
+    # Inserts one line immediately after a sport's SPORT_ID in a throwaway copy.
+    param([string]$Root, [string]$Sport, [string]$Line)
+
+    $path = Join-Path $Root 'SPORTS\params.json'
+    $text = [IO.File]::ReadAllText($path)
+    $anchor = '  "{0}": {{' -f $Sport
+    $index = $text.IndexOf($anchor)
+    if ($index -lt 0) { throw "the $Sport entry was not found in the fixture copy" }
+    $idIndex = $text.IndexOf('"SPORT_ID":', $index)
+    $lineEnd = $text.IndexOf("`n", $idIndex)
+    $text = $text.Insert($lineEnd + 1, "        $Line`n")
+    [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+}
+
+Test-That 'a sport without the catalogue exemption owes every template it has not decided' {
+    # The whole-catalogue rule of 2026-09-11. Golf is exempt, opened 2026-08-12, and holds
+    # GLOBAL-DQ-049 EVENT_NAME_FORMAT_INVALID "open rather than assigned" since 2026-08-13 - the
+    # very outcome the rule removes. Deleting the exemption is all it takes to bind the sport,
+    # and the finding must name the template rather than count it.
+    $root = Copy-RepositoryFixture -Name 'catalogue-bound'
+    Remove-FixtureSportKey -Root $root -Sport 'Golf' -Key '_catalogueExempt'
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match "'Golf' is bound by the whole-catalogue rule") "bound-sport finding; output was:`n$($run.Text)"
+    Assert-True ($run.Text -match 'GLOBAL-DQ-049 EVENT_NAME_FORMAT_INVALID') 'the undecided template is named'
+    # Retired templates are owed by nobody: GLOBAL-DQ-004 was merged into GLOBAL-DQ-153 and
+    # Golf's row on it is Deprecated, so its absence must not be reported.
+    Assert-True ($run.Text -notmatch 'GLOBAL-DQ-004 TOURNAMENT_STAGE_EVENT_OUTSIDE_DATE_RANGE') 'a retired template is not demanded'
+    # A template the sport closed through an impossible parameter is decided: GLOBAL-DQ-087
+    # reads WINNER_VALUE_LIST, which Golf declares under _notApplicable.
+    Assert-True ($run.Text -notmatch 'GLOBAL-DQ-087 ') 'a template closed by a _notApplicable parameter is not demanded'
+    # The Para-only family is owed by Para sports alone, so a non-Para sport is not asked to
+    # record six times that it classifies nobody.
+    Assert-True ($run.Text -notmatch 'GLOBAL-DQ-156 ') 'a Para-only template is not demanded of a non-Para sport'
+    # And no other sport is touched: every other entry keeps its exemption or its records.
+    Assert-True ($run.Text -notmatch "'Ice-Hockey' is bound") 'an exempt sport is left alone'
+}
+
+Test-That 'a deferred Comp.Rank layer leaves the STATISTICS templates undemanded, and an unknown layer is refused' {
+    # Every sport since 2026-08-26 has been opened without the Comp.Rank layer, so a bound sport
+    # with Comp.Rank needs a way to say so that is not a false Not applicable. The layer maps to
+    # every template in STATISTICS.sql and nothing else; a name outside the vocabulary is a typo
+    # that would otherwise defer nothing silently.
+    $root = Copy-RepositoryFixture -Name 'catalogue-deferred'
+    Remove-FixtureSportKey -Root $root -Sport 'Golf' -Key '_catalogueExempt'
+    Add-FixtureSportKey -Root $root -Sport 'Golf' `
+        -Line '"_deferredLayers": { "Comp.Rank": "fixture: opened without the layer", "Standings": "fixture: no such layer" },'
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match "'Golf' is bound by the whole-catalogue rule") 'the sport is still bound'
+    Assert-True ($run.Text -notmatch 'GLOBAL-DQ-030 COMP\.RANK_RESULTS_PARTICIPANT_NOT_IN_TOURNAMENT') 'a STATISTICS template is not demanded while the layer is deferred'
+    Assert-True ($run.Text -match 'GLOBAL-DQ-049 EVENT_NAME_FORMAT_INVALID') 'a template outside the deferred layer is still demanded'
+    Assert-True ($run.Text -match "_deferredLayers names 'Standings'") "the unknown layer is refused; output was:`n$($run.Text)"
+}
+
+Test-That 'an exemption or a deferral without a reason is refused' {
+    # Both keys are decisions, and a decision with no reason is the thing the rule exists to
+    # stop: a refusal correct for a reason nobody wrote down.
+    $root = Copy-RepositoryFixture -Name 'catalogue-no-reason'
+    Remove-FixtureSportKey -Root $root -Sport 'Golf' -Key '_catalogueExempt'
+    Add-FixtureSportKey -Root $root -Sport 'Golf' -Line '"_catalogueExempt": "",'
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match '_catalogueExempt records no reason') "empty exemption finding; output was:`n$($run.Text)"
+    Assert-True ($run.Text -notmatch "'Golf' is bound") 'an exemption, even an empty one, is still an exemption until it is fixed'
+}
+
+Test-That 'an Approved row on a retired template is reported' {
+    # GLOBAL-DQ-116 was retired on 2026-08-07 and instantiated twice afterwards, because its
+    # cell was prose. Re-approving one of the two deprecated rows is the whole of that mistake.
+    $root = Copy-RepositoryFixture -Name 'retired-instantiated'
+    $path = Join-Path $root 'POWERBI_REGISTRY.md'
+    $text = [IO.File]::ReadAllText($path)
+    $row = '| Shooting-DQ-057 | Shooting | GLOBAL-DQ-116 | WRONG_RESULTS | EVENT_RESULTS | EVENT_RESULTS_RANK_TIE_CONTRADICTED_BY_SCORE | `GLOBAL_DQ/RESULTS.sql` | '
+    if ($text.IndexOf($row + 'Deprecated |') -lt 0) { throw 'the Shooting-DQ-057 row was not found as Deprecated' }
+    $text = $text.Replace($row + 'Deprecated |', $row + 'Approved |')
+    [IO.File]::WriteAllText($path, $text, (New-Object System.Text.UTF8Encoding $false))
+
+    $run = Invoke-PackageValidator -Root $root
+    Assert-Equal 1 $run.ExitCode 'validator exit code'
+    Assert-True ($run.Text -match 'Shooting-DQ-057 is Approved on GLOBAL-DQ-116, which GLOBAL_DQ/README.md marks retired') "retired-template finding; output was:`n$($run.Text)"
+}
+
 Test-That 'a check narrowed to the sport medal templates is accepted beside the boundary' {
     # A check auditing medals audits the competitions that award them, which is a subset of
     # what the client takes. Golf narrows GLOBAL-DQ-026 that way and Ice Hockey follows it, so

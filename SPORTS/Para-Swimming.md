@@ -437,6 +437,44 @@ reader meeting a six-thousand-row check needs to know which of the two was chose
 The cancelled population behaves the opposite way and is clean: no cancelled event carries a
 rank.
 
+**Bound to the whole-catalogue rule on 2026-09-11, and the 25 templates it turned up.** The
+rule in `GLOBAL_DQ/README.md` "Mandatory templates" reads only `SPORTS/params.json` and
+`POWERBI_REGISTRY.md`, and read that way this sport, closed as finished on 2026-09-07, had 25
+templates with no record: 22 whose prerequisite this file already says the sport lacks, and
+three never decided. All were settled on 2026-09-11, `_catalogueExempt` was removed and the
+Comp.Rank deferral recorded under `_deferredLayers`.
+
+**The 22 are closed by six parameters under `_notApplicable`**, each pointing at the section of
+this file that documents the absence: `RESULT_FINAL_SCORE_TYPE_ID`, `RESULT_MIRROR_SCORE_TYPE_ID`
+and `RESULT_SCORE_TYPE_ID` (no score of any kind - `GLOBAL-DQ-084`, `-085`, `-087`, `-088`,
+`-090`, `-094`, `-108`, `-114`, `-117`, `-126`), `SCOPE_TYPE_ID` and `SCOPE_TYPE_LIST` (no scope
+layer - `GLOBAL-DQ-085`, `-086`, `-089`, `-091`, `-092`, `-102`, `-107`), `RESULT_FULL_TIME_TYPE_ID`
+(no `557` - `GLOBAL-DQ-045`, `-052`, `-054`, `-056`, `-111`) and `SUPPORT_PARTICIPANT_TYPE_LIST`
+(no coach or official - `GLOBAL-DQ-135`).
+
+The three run for the first time on 2026-09-11:
+
+| Template | Asserts | Returned | Decision |
+|---|---|---|---|
+| `GLOBAL-DQ-151 PARTICIPANT_MISSING_SPLIT_NAME` | a participant whose first or last name is not stored beside the composed name | 0 of 3 060, the Comp.Rank branch dropped as for `GLOBAL-DQ-007` | `Para-Swimming-DQ-091`, `Actionable` |
+| `GLOBAL-DQ-068 EVENT_TEAM_LINEUP_SIZE_UNEVEN` | two lineups of one event differ in size | eligible 0: no lineup is recorded, the structure `GLOBAL-DQ-067` and `-112` already watch as sentinels | `Para-Swimming-DQ-092`, `Sentinel` |
+| `GLOBAL-DQ-009 PARTICIPANT_NO_PARTICIPATION_ANYWHERE` | a registered participant with no event, lineup or Comp.Rank participation | 17 of 3 060, the same 17 with and without the Comp.Rank path | `Blocked` - the template needs `STATISTIC_TYPE_ID` and `SHARD_ID`, which the deferral leaves unrecorded; lifts with the Comp.Rank pause, as on Shooting |
+
+**Closing `GLOBAL-DQ-052` and `GLOBAL-DQ-117` by parameter left the Comment vocabulary watched by
+nothing**, which the whole-catalogue rule surfaced and the user decided to fix the same day
+rather than queue: `GLOBAL-DQ-164 EVENT_RESULTS_COMMENT_INVALID_OR_CONTRADICTED_BY_DURATION` was
+written as `GLOBAL-DQ-052` with the full-time field removed and nothing else changed, and runs
+here as `Para-Swimming-DQ-093`, `Actionable`. Measured before assignment, 338 of 4 778
+participations with a Comment: 148 disqualified or non-starting swimmers still holding a Rank,
+one holding a bronze, 189 values outside the vocabulary - about 155 durations and the `#NAME?`
+the Event result types section already calls a defect in the field, 24 spellings of
+disqualification, and two codes joined with a comma instead of `/`. None of it is the sport
+behaving normally. The four spellings `Disq.`, `Disq`, `DSQ` and `DQ` were added to
+`RESULT_COMMENT_VALUE_LIST` and `RESULT_COMMENT_NO_RESULT_LIST` at the same time, as the Event
+result types section says any check reading the field must carry, so the check reports a
+disqualified swimmer with a Rank under every spelling and does not report the spelling itself;
+re-run with the lists completed it returns 324.
+
 <!-- MANUAL PASTE ZONE: 135 STORAGE SEMANTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## Sport-authored checks

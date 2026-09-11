@@ -2175,8 +2175,16 @@ $ClientScopeFormKey = '_clientScopeForm'
 # and a rule resting on that would drop the first one that is not. Test-Package.ps1 declares the
 # same name and the pair of files is the contract.
 $ParaSportKey = '_paraSport'
+# The whole-catalogue rule of 2026-09-11 (GLOBAL_DQ/README.md, "Mandatory templates"): a sport
+# owes every GLOBAL template unless it declares the exemption, and a layer it was deliberately
+# opened without is declared too. The exemption is the declared side and the obligation the
+# default, the opposite polarity from the Para flag: a forgotten Para flag costs six checks on
+# one sport, a forgotten catalogue flag would cost the whole rule on every sport opened after
+# it. The other script declares the same names and the pair of files is the contract.
+$CatalogueExemptKey = '_catalogueExempt'
+$DeferredLayersKey = '_deferredLayers'
 $ReservedParamKeys = @($NotApplicableKey, $CheckSignalKey, $ExpectedKey, $NamesKey,
-    $ClientScopeFormKey, $ParaSportKey)
+    $ClientScopeFormKey, $ParaSportKey, $CatalogueExemptKey, $DeferredLayersKey)
 
 # Which way round a sport's client boundary is put to the database. Both forms select the same
 # rows - the excluded ids are the exact complement of the taken ones within the sport - so this
