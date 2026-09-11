@@ -63,13 +63,14 @@
             "runRequests": true
         },
         "Para-Athletics": {
-            "spreadsheetId": "",
-            "published": false,
-            "runRequests": false
+            "spreadsheetId": "1WFnWLWrcNMrsHowlOQssFkprbBfmqKyrU1n9JdXkYNc",
+            "runRequests": true,
+            "scriptId": "1A7b5nGXZjJvcwUtnc1mSIfzas4jQbcilthFOlzjmmgNAh3q-r5nQyuu8"
         },
         "Para-Swimming": {
             "spreadsheetId": "1aaeUmPXvdsFrDv8TieQ0543bSA6pWEhVpyXt3bzQ1tY",
-            "runRequests": false
+            "runRequests": true,
+            "scriptId": "1HiC4Ips-sER73xKQ6vn1Mpr_pBCxPbtFL19zCv2xZSW4W0qjE-mrmFf-"
         },
         "Shooting": {
             "spreadsheetId": "1E1x9Q3tL2a45lwJ_QCNc9pzXzp8zW3M16R9W5tk4Rp8",

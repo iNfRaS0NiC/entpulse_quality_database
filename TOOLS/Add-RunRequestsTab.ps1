@@ -48,7 +48,33 @@
 .PARAMETER Register
     After creating the tab, set runRequests to true for that sport in the registry, which is
     what makes the worker poll it. Left off, the tab is created and the worker ignores it,
-    which is the right order while the Apps Script has not been deployed yet.
+    which is the right order while the Apps Script has not been deployed yet. With
+    -SpreadsheetId it also records that id on a row that names none yet and drops the
+    "published": false the row carried, and with -DeployScript or -ScriptId it records the
+    script's id so a later push reaches the same project.
+
+.PARAMETER DeployScript
+    Put the DQ menu on the document through the Apps Script API: create the container-bound
+    project if the registry records none for the sport, and push TOOLS/sheets-apps-script/
+    RunRequests.gs and appsscript.json into it either way. Until 2026-09-11 both files were
+    pasted by hand into Extensions > Apps Script on every new board, and a board whose tab had
+    been made but whose script had not - or the other way round, BMX-Freestyle the same day -
+    looked finished until a colleague clicked.
+
+    Refused on a sport that is registered and records no scriptId: that document's script was
+    pasted by hand, the API cannot see a bound project it did not create, and a second one
+    would put a second DQ menu on the board. Record the existing project once with -ScriptId,
+    from Project Settings in the script editor, and from then on this pushes into it.
+
+    Needs three things once: the script.projects scope on the token (TOOLS\Connect-Sheets.ps1
+    -Force re-consents), the Apps Script API switched on in the Cloud project that owns the
+    client, and the same API switched on for the account at script.google.com/home/usersettings.
+    A deploy refused for any of the three leaves the tabs and the board as they are.
+
+.PARAMETER ScriptId
+    The id of a bound Apps Script project that already exists on the document, to be recorded
+    in the registry with -Register and pushed into with -DeployScript. For the boards set up
+    by hand before the deploy existed.
 
 .PARAMETER Reprotect
     Bring the editors of an existing protected `Run requests` tab back in step with
@@ -83,6 +109,13 @@
 
 .EXAMPLE
     .\TOOLS\Add-RunRequestsTab.ps1 -All -Register
+
+.EXAMPLE
+    .\TOOLS\Add-RunRequestsTab.ps1 -Sport Para-Athletics -SpreadsheetId 1WFn... -DeployScript -Register
+
+.EXAMPLE
+    .\TOOLS\Add-RunRequestsTab.ps1 -All -DeployScript
+    Push the current RunRequests.gs to every board whose project this tool knows.
 #>
 [CmdletBinding(DefaultParameterSetName = 'OneSport')]
 param(
@@ -96,6 +129,11 @@ param(
     [string]$SpreadsheetId,
 
     [switch]$Register,
+
+    [switch]$DeployScript,
+
+    [Parameter(ParameterSetName = 'OneSport')]
+    [string]$ScriptId,
 
     [switch]$Reprotect,
 
@@ -135,6 +173,7 @@ if ($All) {
 
     $forward = @{}
     if ($Register) { $forward['Register'] = $true }
+    if ($DeployScript) { $forward['DeployScript'] = $true }
     if ($Reprotect) { $forward['Reprotect'] = $true }
     if ($Unprotected) { $forward['Unprotected'] = $true }
     if ($WhatIf) { $forward['WhatIf'] = $true }
@@ -230,6 +269,23 @@ function Read-Registry {
         throw "TOOLS/sheet-registry.json not found. It owns which document belongs to which sport."
     }
     return (Get-Content -LiteralPath $RegistryPath -Raw -Encoding UTF8 | ConvertFrom-Json)
+}
+
+function Get-AppsScriptFiles {
+    # The two files as the Apps Script API takes them. The manifest's keys beginning with an
+    # underscore are prose for the reader of the repository copy and are not manifest fields,
+    # so they are dropped here rather than sent for Google to refuse.
+    $sourceDir = Join-Path $PSScriptRoot 'sheets-apps-script'
+    $code = Get-Content -LiteralPath (Join-Path $sourceDir 'RunRequests.gs') -Raw -Encoding UTF8
+    $manifest = Get-Content -LiteralPath (Join-Path $sourceDir 'appsscript.json') -Raw -Encoding UTF8 | ConvertFrom-Json
+    $fields = [ordered]@{}
+    foreach ($property in $manifest.PSObject.Properties) {
+        if (-not $property.Name.StartsWith('_')) { $fields[$property.Name] = $property.Value }
+    }
+    return @(
+        @{ name = 'RunRequests'; type = 'SERVER_JS'; source = $code },
+        @{ name = 'appsscript'; type = 'JSON'; source = ($fields | ConvertTo-Json -Depth 6) }
+    )
 }
 
 $registry = Read-Registry
@@ -827,43 +883,118 @@ else {
     }
 }
 
-# ----- record it -------------------------------------------------------------------------
+# ----- the DQ menu -----------------------------------------------------------------------
+#
+# The script the menu runs is two files in TOOLS/sheets-apps-script/, and the registry's
+# scriptId is the only memory of which bound project holds them: the Apps Script API can
+# create a project on a document and rewrite one it is given the id of, and it cannot list the
+# projects a document already carries. So a sport that is registered and records no scriptId
+# is one whose script was pasted by hand, and creating another would put two DQ menus on the
+# board. That case is refused with the way out, not guessed.
 
-if ($Register) {
-    if ($WhatIf -and ($registry.sports.PSObject.Properties.Name -contains $Sport) -and $registry.sports.$Sport.runRequests) {
-        Write-Host ("  {0} already has runRequests = true; the file would be left alone." -f $Sport) -ForegroundColor DarkGray
-    }
-    elseif ($WhatIf -and -not ($registry.sports.PSObject.Properties.Name -contains $Sport)) {
-        Write-Host ("  {0} has no row in the registry, so nothing would be recorded. Add the row first." -f $Sport) -ForegroundColor Yellow
-    }
-    elseif ($WhatIf) {
-        Write-Host "  would set runRequests = true for $Sport in TOOLS/sheet-registry.json" -ForegroundColor DarkGray
-    }
-    elseif (-not ($registry.sports.PSObject.Properties.Name -contains $Sport)) {
-        Write-Host ("  {0} has no row in the registry, so nothing was recorded. Add the row first." -f $Sport) -ForegroundColor Yellow
+$knownScriptId = ''
+if ($registry.sports.PSObject.Properties.Name -contains $Sport -and
+    $registry.sports.$Sport.PSObject.Properties.Name -contains 'scriptId') {
+    $knownScriptId = [string]$registry.sports.$Sport.scriptId
+}
+if (-not [string]::IsNullOrWhiteSpace($ScriptId)) { $knownScriptId = $ScriptId }
+$deployedScriptId = ''
+
+if ($DeployScript) {
+    $registeredByHand = [string]::IsNullOrWhiteSpace($knownScriptId) -and
+        ($registry.sports.PSObject.Properties.Name -contains $Sport) -and
+        [bool]$registry.sports.$Sport.runRequests
+
+    if ($registeredByHand) {
+        Write-Host ("  {0} is registered and records no scriptId, so its DQ menu was pasted by hand. " +
+            "A second project would be a second menu; nothing was deployed. Record the existing " +
+            "project once with -ScriptId <id from Project Settings> -Register, and -DeployScript " +
+            "will push into it from then on.") -f $Sport -ForegroundColor Yellow
     }
     else {
-        # One flag, edited in place, and never a reserialise of the whole file. Windows
-        # PowerShell 5.1's ConvertTo-Json replaces every apostrophe and angle bracket with its
-        # numeric escape and reindents to its own style, so setting this one boolean through it
-        # rewrote all eighty lines and left the three prose _about fields unreadable. Measured
-        # on the first real -Register, Soccer, 2026-09-01. This file is read by people as well
-        # as by scripts, so its formatting is part of it.
-        $raw = Get-Content -LiteralPath $RegistryPath -Raw -Encoding UTF8
-        # [^}] and not . - a sport's block contains no brace of its own, and a lazy dot walked
-        # straight past this sport's "runRequests": true into the next sport's false and flipped
-        # that one instead. Caught on Soccer 2026-09-01, having turned on Speed-Skating, which
-        # has no queue tab: the worker would have polled a document with nothing to read.
-        $pattern = '("' + [regex]::Escape($Sport) + '"\s*:\s*\{[^}]*?"runRequests"\s*:\s*)false'
-        $rx = New-Object Text.RegularExpressions.Regex($pattern)
-
-        if (-not $rx.IsMatch($raw)) {
-            Write-Host ("  {0} already has runRequests = true; the file was left alone." -f $Sport) -ForegroundColor DarkGray
+        $files = Get-AppsScriptFiles
+        if ($WhatIf) {
+            if ($knownScriptId) {
+                Write-Host ("  would push {0} file(s) into the bound script {1}" -f $files.Count, $knownScriptId) -ForegroundColor DarkGray
+            }
+            else {
+                Write-Host ("  would create the bound Apps Script project on the document and push {0} file(s) into it" -f $files.Count) -ForegroundColor DarkGray
+            }
         }
         else {
-            $updated = $rx.Replace($raw, '${1}true', 1)
+            if ([string]::IsNullOrWhiteSpace($knownScriptId)) {
+                $project = Invoke-SheetsApiWithRetry -Method POST -Path 'projects' -Root $ScriptApiRoot -Body @{
+                    title    = "DQ $Sport RunRequests"
+                    parentId = $SpreadsheetId
+                }
+                $knownScriptId = [string]$project.scriptId
+                Write-Host ("  created the bound Apps Script project {0}" -f $knownScriptId) -ForegroundColor Green
+            }
+            # Built by hand: the body carries the whole of RunRequests.gs as one value, which is
+            # the case ConvertTo-Json does not finish. See ConvertTo-SheetsJsonString.
+            $fileJson = @($files | ForEach-Object {
+                    '{"name":' + (ConvertTo-SheetsJsonString -Text ([string]$_.name)) +
+                    ',"type":' + (ConvertTo-SheetsJsonString -Text ([string]$_.type)) +
+                    ',"source":' + (ConvertTo-SheetsJsonString -Text ([string]$_.source)) + '}'
+                })
+            [void](Invoke-SheetsApiWithRetry -Method PUT -Path ("projects/{0}/content" -f $knownScriptId) `
+                    -Root $ScriptApiRoot -Body ('{"files":[' + ($fileJson -join ',') + ']}'))
+            Write-Host ("  pushed {0} file(s): the DQ menu is on the document from its next open" -f $files.Count) -ForegroundColor Green
+            $deployedScriptId = $knownScriptId
+        }
+    }
+}
+
+# ----- record it -------------------------------------------------------------------------
+#
+# Everything the registry should say about this document once it is set up, written through
+# Set-SheetRegistryEntry in TOOLS/Sheets.ps1: the id, for a row that named none; runRequests,
+# which is what the worker polls on; the scriptId, which is what a later push needs; and no
+# "published": false, which the row stops being true of the moment it names a document.
+
+if ($Register) {
+    if (-not ($registry.sports.PSObject.Properties.Name -contains $Sport)) {
+        Write-Host ("  {0} has no row in the registry, so nothing {1} recorded. Add the row first." -f `
+                $Sport, $(if ($WhatIf) { 'would be' } else { 'was' })) -ForegroundColor Yellow
+    }
+    else {
+        $row = $registry.sports.$Sport
+        $set = @{}
+        $remove = @()
+        $recordedId = [string]$row.spreadsheetId
+        if ([string]::IsNullOrWhiteSpace($recordedId)) {
+            $set['spreadsheetId'] = '"' + $SpreadsheetId + '"'
+            if ($row.PSObject.Properties.Name -contains 'published') { $remove += 'published' }
+        }
+        elseif ($recordedId -ne $SpreadsheetId) {
+            # Two documents for one sport is a decision, not a correction this script makes.
+            Write-Host ("  the registry names {0} for {1} and this run wrote {2}; the registry was left as it is" -f `
+                    $recordedId, $Sport, $SpreadsheetId) -ForegroundColor Yellow
+        }
+        if (-not [bool]$row.runRequests) { $set['runRequests'] = 'true' }
+        $idToRecord = $(if ($deployedScriptId) { $deployedScriptId } elseif ($ScriptId) { $ScriptId } else { '' })
+        if ($idToRecord -and ([string]$row.scriptId) -ne $idToRecord) { $set['scriptId'] = '"' + $idToRecord + '"' }
+
+        if ($set.Count -eq 0 -and $remove.Count -eq 0) {
+            Write-Host ("  {0} is already recorded as set up; the file {1} left alone." -f `
+                    $Sport, $(if ($WhatIf) { 'would be' } else { 'was' })) -ForegroundColor DarkGray
+        }
+        elseif ($WhatIf) {
+            Write-Host ("  would record for {0} in TOOLS/sheet-registry.json: {1}{2}" -f $Sport,
+                (($set.Keys | Sort-Object | ForEach-Object { '{0} = {1}' -f $_, $set[$_] }) -join ', '),
+                $(if ($remove.Count) { '; dropping ' + ($remove -join ', ') } else { '' })) -ForegroundColor DarkGray
+        }
+        else {
+            $raw = Get-Content -LiteralPath $RegistryPath -Raw -Encoding UTF8
+            $updated = Set-SheetRegistryEntry -Raw $raw -Sport $Sport -Set $set -Remove $remove
+            if ($null -eq $updated) { throw "$Sport's block in TOOLS/sheet-registry.json could not be found to edit." }
             [IO.File]::WriteAllText($RegistryPath, $updated, (New-Object Text.UTF8Encoding($false)))
-            Write-Host "  recorded: the worker will poll this document" -ForegroundColor Green
+            Write-Host ("  recorded in TOOLS/sheet-registry.json: {0}{1}" -f
+                (($set.Keys | Sort-Object | ForEach-Object { '{0} = {1}' -f $_, $set[$_] }) -join ', '),
+                $(if ($remove.Count) { '; dropped ' + ($remove -join ', ') } else { '' })) -ForegroundColor Green
+            if ($set.ContainsKey('runRequests')) {
+                Write-Host "  the worker will poll this document" -ForegroundColor Green
+            }
         }
     }
 }
@@ -872,15 +1003,24 @@ elseif ($registry.sports.PSObject.Properties.Name -contains $Sport -and $registr
 }
 else {
     Write-Host ("  not registered. The worker ignores this document until " +
-        "runRequests is true - run again with -Register once the Apps Script is deployed.") -ForegroundColor DarkGray
+        "runRequests is true - run again with -Register once the DQ menu is on it.") -ForegroundColor DarkGray
 }
 
 Write-Host ""
-Write-Host "Next, by hand and in the browser:" -ForegroundColor Cyan
-Write-Host "  1. Extensions > Apps Script, paste TOOLS/sheets-apps-script/RunRequests.gs" -ForegroundColor DarkGray
-Write-Host "  2. Project Settings > show appsscript.json, paste the one beside it" -ForegroundColor DarkGray
-Write-Host "  3. Reload the document and check the DQ menu appears." -ForegroundColor DarkGray
-Write-Host "     A simple onOpen builds the menu for anybody who may open the document; no" -ForegroundColor DarkGray
-Write-Host "     installable trigger is needed, and one would not change who a menu item runs as." -ForegroundColor DarkGray
-Write-Host "  4. Each colleague authorises the script once, on their first click." -ForegroundColor DarkGray
+if ($deployedScriptId -or ($DeployScript -and $WhatIf)) {
+    Write-Host "Next: reload the document and the DQ menu is there. Each colleague authorises the" -ForegroundColor Cyan
+    Write-Host "script once, on their first click; that screen is Google's and nothing here removes it." -ForegroundColor Cyan
+}
+elseif ($knownScriptId) {
+    Write-Host ("The document's DQ menu is the bound project {0}; -DeployScript pushes the current files into it." -f $knownScriptId) -ForegroundColor Cyan
+}
+else {
+    Write-Host "Next, the DQ menu - -DeployScript does this; by hand it is, in the browser:" -ForegroundColor Cyan
+    Write-Host "  1. Extensions > Apps Script, paste TOOLS/sheets-apps-script/RunRequests.gs" -ForegroundColor DarkGray
+    Write-Host "  2. Project Settings > show appsscript.json, paste the one beside it" -ForegroundColor DarkGray
+    Write-Host "  3. Reload the document and check the DQ menu appears." -ForegroundColor DarkGray
+    Write-Host "     A simple onOpen builds the menu for anybody who may open the document; no" -ForegroundColor DarkGray
+    Write-Host "     installable trigger is needed, and one would not change who a menu item runs as." -ForegroundColor DarkGray
+    Write-Host "  4. Each colleague authorises the script once, on their first click." -ForegroundColor DarkGray
+}
 Write-Host ""

@@ -3049,6 +3049,44 @@ Test-That 'the shipped registry parses and covers every documented sport' {
     }
 }
 
+Test-That 'a registry row is edited in place and the rest of the file is not touched' {
+    # Set-SheetRegistryEntry is what -Register and the first board write go through, and the
+    # file it edits is read by people: three prose _about fields, an apostrophe or two, one
+    # indentation. The shipped file is the fixture, because that is the one it will be run on.
+    $registryPath = Join-Path $PSScriptRoot 'sheet-registry.json'
+    $raw = Get-Content -LiteralPath $registryPath -Raw -Encoding UTF8
+
+    $out = Set-SheetRegistryEntry -Raw $raw -Sport 'Para-Athletics' `
+        -Set @{ spreadsheetId = '"1abcdefghijklmnopqrstuvwxyz"'; runRequests = 'true'; scriptId = '"1scr"' } `
+        -Remove @('published')
+    Assert-True ($null -ne $out) 'the sport has a row, so the edit returns text'
+
+    $parsed = $out | ConvertFrom-Json
+    $row = $parsed.sports.'Para-Athletics'
+    Assert-Equal '1abcdefghijklmnopqrstuvwxyz' ([string]$row.spreadsheetId) 'the id is recorded'
+    Assert-Equal $true ([bool]$row.runRequests) 'the worker flag is set'
+    Assert-Equal '1scr' ([string]$row.scriptId) 'the bound script is remembered'
+    Assert-True (-not ($row.PSObject.Properties.Name -contains 'published')) 'published: false is dropped'
+
+    Assert-Equal (($raw -split "`n").Count) (($out -split "`n").Count) 'one line in, one line out: the block keeps its shape'
+    Assert-Equal ([string]$parsed._published) ([string]($raw | ConvertFrom-Json)._published) `
+        'the prose that mentions a sport by name is not the row and is not touched'
+    $before = ($raw | ConvertFrom-Json).sports
+    foreach ($name in $before.PSObject.Properties.Name) {
+        if ($name -eq 'Para-Athletics') { continue }
+        Assert-Equal ([string]$before.$name.spreadsheetId) ([string]$parsed.sports.$name.spreadsheetId) "$name keeps its document"
+        Assert-Equal ([bool]$before.$name.runRequests) ([bool]$parsed.sports.$name.runRequests) "$name keeps its worker flag"
+    }
+
+    # A key already present is rewritten where it is, not appended twice.
+    $again = Set-SheetRegistryEntry -Raw $out -Sport 'Para-Athletics' -Set @{ scriptId = '"1other"' }
+    Assert-Equal 1 ([regex]::Matches($again, '"scriptId"').Count) 'scriptId is written once'
+    Assert-Equal '1other' ([string](($again | ConvertFrom-Json).sports.'Para-Athletics'.scriptId)) 'and holds the new value'
+
+    Assert-True ($null -eq (Set-SheetRegistryEntry -Raw $raw -Sport 'Fixtureball-Nowhere' -Set @{ runRequests = 'true' })) `
+        'a sport with no row is not invented'
+}
+
 Test-That 'the Apps Script allows exactly the accounts the registry allows' {
     # The list lives twice by necessity: the .gs runs in Google and cannot read a file in this
     # repository, so it carries a copy and the worker enforces the original. Two copies drift,
@@ -5663,6 +5701,25 @@ Test-That 'the hidden columns are hidden on a new board and on every full sport 
     Assert-Equal 2 @($onComplete | Where-Object { $_.Hidden }).Count 'a complete one closes them again'
     Assert-True (@($onComplete | Where-Object { -not $_.Hidden }).Count -gt 0) `
         'and opens everything else, so the layout comes from this file and not from the board'
+}
+
+Test-That 'a long string becomes a JSON literal in linear time and comes back intact' {
+    # ConvertTo-Json on Windows PowerShell 5.1 did not finish on the 24 KB of RunRequests.gs -
+    # twenty minutes and 10 GB on 2026-09-11 before the run was killed - so the one request
+    # that carries a file builds its body with this instead. The file itself is the fixture,
+    # because it is the string this exists for.
+    $code = Get-Content -LiteralPath (Join-Path $PSScriptRoot 'sheets-apps-script\RunRequests.gs') -Raw -Encoding UTF8
+    $clock = [Diagnostics.Stopwatch]::StartNew()
+    $literal = ConvertTo-SheetsJsonString -Text $code
+    $clock.Stop()
+    Assert-True ($clock.Elapsed.TotalSeconds -lt 5) "escaping the script should take well under a second, took $($clock.Elapsed.TotalSeconds)s"
+    Assert-Equal $code ((('{"s":' + $literal + '}') | ConvertFrom-Json).s) 'the script survives the round trip'
+
+    $tricky = "a`"b\c`nd`re`tf" + [char]0x0422 + [char]0x0001
+    $back = (('{"s":' + (ConvertTo-SheetsJsonString -Text $tricky) + '}') | ConvertFrom-Json).s
+    Assert-Equal $tricky $back 'quotes, backslashes, line breaks, a Cyrillic letter and a control character all come back'
+    Assert-True ((ConvertTo-SheetsJsonString -Text $tricky) -notmatch '[^\x20-\x7E]') 'and nothing outside printable ASCII is sent, so the transport cannot re-encode it'
+    Assert-Equal '""' (ConvertTo-SheetsJsonString -Text '') 'an empty string is an empty literal'
 }
 
 Test-That 'the runner renames a document it named itself, and nobody else' {

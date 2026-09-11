@@ -21,6 +21,10 @@ $SheetsApiRoot = 'https://sheets.googleapis.com/v4/spreadsheets'
 # Drive answers one question this package asks - which files have changed - and shares the
 # Sheets authorisation to do it. A second root and not a second client.
 $DriveApiRoot = 'https://www.googleapis.com/drive/v3'
+# Apps Script puts the DQ menu on a new board without anybody opening the script editor. Same
+# token again: TOOLS/Add-RunRequestsTab.ps1 creates the container-bound project and pushes the
+# two files in TOOLS/sheets-apps-script/, which until 2026-09-11 was a paste by hand per sport.
+$ScriptApiRoot = 'https://script.googleapis.com/v1'
 $SheetsTokenUrl = 'https://oauth2.googleapis.com/token'
 # The board, the one message the package sends about it, and one question asked of Drive.
 #
@@ -35,7 +39,15 @@ $SheetsTokenUrl = 'https://oauth2.googleapis.com/token'
 # which is what stops the run-request worker's idle cost growing with the number of boards.
 # Without it the worker still works and simply reads every board every pass, so a token minted
 # before this line is a slower worker and not a broken one.
-$SheetsScope = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive.metadata.readonly'
+#
+# script.projects creates and rewrites Apps Script projects - only the ones this account owns,
+# and here only the container-bound one on a board. Added 2026-09-11 so the first board write
+# of a new sport deploys the DQ menu itself. A token minted before then fails the deploy with a
+# 403 and nothing else: the tabs, the board and the worker are unaffected, and
+# TOOLS/Connect-Sheets.ps1 -Force re-consents. The Apps Script API also has to be switched on
+# once, in the Cloud project that owns the client and at script.google.com/home/usersettings for
+# the account; TOOLS/README.md "Deploying it on a document" has both.
+$SheetsScope = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/script.projects'
 
 # The title Google gives a spreadsheet nobody has named. The runner names the document while
 # it still reads exactly this, and never over a title somebody chose: a colleague who renames
@@ -3764,7 +3776,11 @@ function Invoke-SheetsApi {
         TimeoutSec = $SheetsRequestTimeoutSeconds
     }
     if ($null -ne $Body) {
-        $arguments['Body'] = ($Body | ConvertTo-Json -Depth 12 -Compress)
+        # A string is sent as it is, already JSON. Windows PowerShell 5.1's ConvertTo-Json is
+        # not linear in the length of a string value: on the 24 KB of RunRequests.gs it ran a
+        # core at 100% for twenty minutes and 10 GB before it was killed, 2026-09-11. A caller
+        # carrying a long string builds the body with ConvertTo-SheetsJsonString instead.
+        $arguments['Body'] = $(if ($Body -is [string]) { $Body } else { $Body | ConvertTo-Json -Depth 12 -Compress })
         $arguments['ContentType'] = 'application/json; charset=utf-8'
     }
 
@@ -3802,7 +3818,7 @@ function Invoke-SheetsApi {
 
         # Named for the API that actually refused it. A Drive failure reported as a Sheets
         # failure sends the reader to the wrong scope and the wrong quota.
-        $api = $(if ($Root -eq $DriveApiRoot) { 'Drive' } else { 'Sheets' })
+        $api = $(if ($Root -eq $DriveApiRoot) { 'Drive' } elseif ($Root -eq $ScriptApiRoot) { 'Apps Script' } else { 'Sheets' })
         throw "$api API $Method $Path failed: $detail$context"
     }
 }
@@ -5802,4 +5818,92 @@ function Set-SheetTitleIfUnnamed {
             })
     } | Out-Null
     return $true
+}
+
+function Set-SheetRegistryEntry {
+    <#
+        One sport's block in TOOLS/sheet-registry.json, edited in place and returned as text.
+
+        Never a reserialise of the whole file. Windows PowerShell 5.1's ConvertTo-Json replaces
+        every apostrophe and angle bracket with its numeric escape and reindents to its own
+        style, so setting one boolean through it rewrote all eighty lines and left the three
+        prose _about fields unreadable - measured on the first real -Register, Soccer,
+        2026-09-01. The file is read by people as well as by scripts, and its formatting is
+        part of it.
+
+        A sport's block holds flat keys and no brace of its own, which is what makes the block
+        findable by its first line and its first closing brace. Keys in $Set are written with
+        the JSON text given - '"1abc"', 'true', '' for nothing - in the order they already have,
+        new ones at the end; keys in $Remove go. The block keeps the file's indentation and line
+        ending, and a sport with no block returns $null rather than an invented one: the row is
+        the human's to add, and a tool that wrote one would write it for a sport that may be
+        misspelled.
+    #>
+    param(
+        [Parameter(Mandatory = $true)] [string]$Raw,
+        [Parameter(Mandatory = $true)] [string]$Sport,
+        [hashtable]$Set = @{},
+        [string[]]$Remove = @()
+    )
+
+    # Anchored on the line that opens the block. The sport's name can appear inside the prose
+    # of an _about field too, but never followed by a colon and a brace at the start of a line.
+    $pattern = '(?m)^([ \t]*)"' + [regex]::Escape($Sport) + '"[ \t]*:[ \t]*\{'
+    $open = [regex]::Match($Raw, $pattern)
+    if (-not $open.Success) { return $null }
+
+    $close = $Raw.IndexOf('}', $open.Index + $open.Length)
+    if ($close -lt 0) { return $null }
+
+    $indent = $open.Groups[1].Value
+    $body = $Raw.Substring($open.Index + $open.Length, $close - ($open.Index + $open.Length))
+    $nl = $(if ($Raw.Contains("`r`n")) { "`r`n" } else { "`n" })
+
+    # What is there, in its order. A key holds its JSON text verbatim, comma stripped.
+    $entries = [ordered]@{}
+    foreach ($line in ($body -split "`r?`n")) {
+        if ($line -match '^\s*"([^"]+)"\s*:\s*(.*?)\s*,?\s*$' -and $Matches[2] -ne '') {
+            $entries[$Matches[1]] = $Matches[2]
+        }
+    }
+    foreach ($key in $Remove) { if ($entries.Contains($key)) { $entries.Remove($key) } }
+    foreach ($key in @($Set.Keys)) { $entries[$key] = [string]$Set[$key] }
+
+    $inner = $indent + '    '
+    $keys = @($entries.Keys)
+    $lines = @()
+    for ($i = 0; $i -lt $keys.Count; $i++) {
+        $comma = $(if ($i -lt $keys.Count - 1) { ',' } else { '' })
+        $lines += ('{0}"{1}": {2}{3}' -f $inner, $keys[$i], $entries[$keys[$i]], $comma)
+    }
+    $block = $open.Value + $nl + ($lines -join $nl) + $nl + $indent + '}'
+    return $Raw.Substring(0, $open.Index) + $block + $Raw.Substring($close + 1)
+}
+
+function ConvertTo-SheetsJsonString {
+    <#
+        One string as a JSON literal, quotes included, in linear time.
+
+        ConvertTo-Json is what every request body goes through, and it is fine on the values a
+        board carries; on a single long value it is not - see Invoke-SheetsApi. This does the
+        one thing that path needs: escape the characters JSON reserves, and write everything
+        outside ASCII as \uXXXX so the body survives Invoke-RestMethod's own encoding of a
+        string, which is what ConvertTo-Json's output was already relying on.
+    #>
+    param([string]$Text)
+
+    $sb = New-Object System.Text.StringBuilder ($Text.Length + 16)
+    [void]$sb.Append('"')
+    foreach ($ch in $Text.ToCharArray()) {
+        $code = [int]$ch
+        if ($ch -eq '"') { [void]$sb.Append('\"'); continue }
+        if ($ch -eq '\') { [void]$sb.Append('\\'); continue }
+        if ($ch -eq "`n") { [void]$sb.Append('\n'); continue }
+        if ($ch -eq "`r") { [void]$sb.Append('\r'); continue }
+        if ($ch -eq "`t") { [void]$sb.Append('\t'); continue }
+        if ($code -lt 32 -or $code -gt 126) { [void]$sb.Append('\u' + $code.ToString('x4')) }
+        else { [void]$sb.Append($ch) }
+    }
+    [void]$sb.Append('"')
+    return $sb.ToString()
 }

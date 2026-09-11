@@ -5026,6 +5026,11 @@ function Save-RunSheet {
             }
         }
 
+        # Whether this is the document's first write, decided before the title goes: Google's
+        # placeholder is still on a document nobody has written, and on nothing else. A title in
+        # one of the runner's former patterns is not that - those documents have their menus.
+        $firstWrite = [string]::IsNullOrWhiteSpace([string]$state.Title) -or ([string]$state.Title -eq $SheetsUntitled)
+
         $title = $(if ($SheetTitle) { $SheetTitle } else { "DQ $Sport Enetpulse" })
         if (Set-SheetTitleIfUnnamed -SpreadsheetId $id -CurrentTitle $state.Title -Title $title) {
             Write-Host "  named it '$title'" -ForegroundColor DarkGray
@@ -5098,6 +5103,24 @@ function Save-RunSheet {
         $sent = Invoke-SheetsPlan -SpreadsheetId $id -Plan $plan
         Write-Host ("  {0} tab(s) added, {1} cleared, {2} range(s) written, {3} table(s)" -f `
                 $sent.Added, $sent.Cleared, $sent.Written, $sent.Tables) -ForegroundColor DarkGray
+
+        # A new board is finished by the run that first writes it, not by three commands
+        # somebody remembers afterwards. The queue tabs, the DQ menu and the registry row were
+        # each a separate step until 2026-09-11, and BMX-Freestyle went a week with the menu and
+        # no tab for it to write to. After the write rather than before, so a document that
+        # would not take the board is not registered as one that did; and nothing in it may end
+        # the update - the board is current by this line, and a refused Apps Script deploy is
+        # a line to act on, not a reason to lose that.
+        if ($firstWrite) {
+            Write-Host 'First write to this document: setting up its Run requests tab and DQ menu.' -ForegroundColor DarkGray
+            try {
+                & (Join-Path $PSScriptRoot 'Add-RunRequestsTab.ps1') -Sport $Sport -SpreadsheetId $id -DeployScript -Register
+            }
+            catch {
+                Write-Host ("  the set-up did not finish and the board is unaffected: {0}" -f $_.Exception.Message) -ForegroundColor Yellow
+                Write-Host ("  finish it with: .\TOOLS\Add-RunRequestsTab.ps1 -Sport {0} -SpreadsheetId {1} -DeployScript -Register" -f $Sport, $id) -ForegroundColor Yellow
+            }
+        }
         # Where the reviewers' notes were put before the tabs were cleared. Said out loud
         # rather than left in the folder, because the run that needs it is the one that did
         # not finish - and that run's last legible line is this one.

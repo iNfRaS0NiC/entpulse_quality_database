@@ -17213,6 +17213,58 @@
                                                             "checkBy":  "Aleksandar D."
                                                         }
                                 }
+                 },
+                 {
+                     "runId":  "11.09.2026 15-23-59",
+                     "startedUtc":  "2026-09-11T13:23:59Z",
+                     "output":  "",
+                     "commit":  "1cc4edf8958b+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-083",
+                                        "runKey":  "Handball-DQ-083",
+                                        "parameters":  "",
+                                        "name":  "EVENT_PARTICIPANT_ORGANIZATION_MISSING",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Sentinel",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  10283,
+                                        "findings":  10282,
+                                        "eligible":  13098,
+                                        "seconds":  3.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "38ae70981551"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  86.1,
+                                   "valueRequests":  7,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  13,
+                                                  "planning the changes":  15.9,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  2.9,
+                                                  "clearing stale rows":  41.6,
+                                                  "writing values":  10.8,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-083":  {
+                                                            "status":  "IT Fix",
+                                                            "checkBy":  ""
+                                                        }
+                                }
                  }
              ],
     "sheetId":  "1AUVNbf1U-OZO6V2VZZ9QbMBBaxMtzdWjsACfML_9sQI"

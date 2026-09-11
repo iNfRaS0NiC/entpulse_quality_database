@@ -28,7 +28,8 @@
  * expensive, and nowhere else.
  *
  * The source of truth for this file is TOOLS/sheets-apps-script/RunRequests.gs in the
- * entpulse_quality_database repository. Edit it there, then paste it in.
+ * entpulse_quality_database repository. Edit it there, then push it with
+ * TOOLS/Add-RunRequestsTab.ps1 -All -DeployScript; a paste by hand is the fallback.
  */
 
 var QUEUE_SHEET = 'Run requests';

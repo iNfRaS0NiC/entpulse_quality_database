@@ -2333,6 +2333,17 @@ The document is created by a person rather than by the runner on purpose. One ma
 the API is born in whoever authorised it's Drive with no one else on it, and sharing is then
 a manual step anyway — later, and in a place nobody thinks to look.
 
+**Everything after that is the first write's job.** A run that finds Google's placeholder title
+on the document names it, writes the board, and then — from 2026-09-11 — creates and protects
+the `Run requests` and `Run approvals` tabs, puts the `DQ` menu on the document through the
+Apps Script API, and completes the sport's row in `TOOLS/sheet-registry.json`: the id, the
+`runRequests` flag the worker polls on, the script's id, and no `"published": false`. Until
+then those were three commands somebody remembered after the board, and BMX-Freestyle went a
+week with the menu and no tab for it to write to. The set-up runs after the write and never
+ends it: a deploy refused for a missing scope is a yellow line naming the command that
+finishes the job, and the board is current either way. The one manual step left is Google's
+own: each colleague authorises the script once, on their first click.
+
 While the title is still Google's own `Untitled spreadsheet`, the first run names it
 `DQ <Sport> Enetpulse`, or whatever `-SheetTitle` says. A title somebody chose is never
 overwritten: titling the document is a decision, and putting the runner's name back every
@@ -2700,12 +2711,21 @@ One of the two is the board people are reading, and a run that quietly wrote to 
 would be very hard to notice.
 
 `runRequests` says whether that document carries the `Run requests` tab and its Apps Script,
-which is what lets a reviewer ask for one check to be re-run from the board. It is `false`
-everywhere today; Soccer is being set up first and alone, because the first deploy is scopes,
-permissions and an approval and each one after it is about fifteen minutes.
+which is what lets a reviewer ask for one check to be re-run from the board. Soccer was set up
+first and alone on 2026-09-01, because the first deploy was scopes, permissions and an approval;
+since 2026-09-11 a new board is set up by the run that first writes it, and the flag is set by
+that run.
 
-A sport gets its row the first time its board is published. `TOOLS/Test-Tools.ps1` fails if a
-sport indexed in `SPORTS.md` has no row here.
+`scriptId` is the container-bound Apps Script project that holds the `DQ` menu, recorded by
+`TOOLS/Add-RunRequestsTab.ps1 -DeployScript` when it creates the project, or by `-ScriptId` for a
+board whose script was pasted by hand before that existed. It is the only memory of which
+project to push into: the Apps Script API creates and rewrites projects and cannot list the ones
+a document already carries, so a row that is registered and records none is a board with a
+hand-pasted menu, and the tool refuses to create a second project on it rather than put a
+second `DQ` menu beside the first.
+
+A sport gets its row when it is opened, unpublished, and the row is completed by the first
+board write. `TOOLS/Test-Tools.ps1` fails if a sport indexed in `SPORTS.md` has no row here.
 
 ## Asking for a run from a board
 
@@ -2715,7 +2735,7 @@ machine does the rest.
 
 | Piece | Where |
 |---|---|
-| The menu and what it appends | `TOOLS/sheets-apps-script/RunRequests.gs`, pasted into the document's Apps Script project |
+| The menu and what it appends | `TOOLS/sheets-apps-script/RunRequests.gs`, pushed into the document's bound Apps Script project by `Add-RunRequestsTab.ps1 -DeployScript` |
 | Its scopes | `TOOLS/sheets-apps-script/appsscript.json` |
 | Creating and protecting both tabs | `TOOLS/Add-RunRequestsTab.ps1 -Sport <Sport>` |
 | Who may approve a whole-sport run | the `Run approvals` tab, whose only editor is the owner |
@@ -3005,27 +3025,44 @@ every thirty seconds to find that out.
 
 ### Deploying it on a document
 
+The first board write does this on a new document (see "Which document a sport writes to"). By
+hand, for a board that predates that or one whose first write could not:
+
 ```powershell
-.\TOOLS\Add-RunRequestsTab.ps1 -Sport Soccer -WhatIf   # say what it would do
-.\TOOLS\Add-RunRequestsTab.ps1 -Sport Soccer           # create and protect the tab
+.\TOOLS\Add-RunRequestsTab.ps1 -Sport Para-Athletics -WhatIf                     # say what it would do
+.\TOOLS\Add-RunRequestsTab.ps1 -Sport Para-Athletics -DeployScript -Register    # tabs, menu, registry row
 ```
 
-Then, in the browser: paste `RunRequests.gs` and `appsscript.json` into Extensions > Apps
-Script, and add an **installable** `onOpen` trigger owned by the owner account - a simple
-trigger runs as the viewer and would not be able to write a protected tab. Reload the document
-and the `DQ` menu appears.
+`-DeployScript` creates the container-bound Apps Script project on the document and pushes
+`TOOLS/sheets-apps-script/RunRequests.gs` and `appsscript.json` into it; on a sport whose row
+already records a `scriptId` it pushes into that project instead, which is how a change to the
+menu reaches every board:
 
-**On a document that already has the tab, paste the script before running the script above.**
-That order is safe in a way the other one is not. The Apps Script finds its columns by name, so
-a new version works unchanged on a tab that has not gained the columns yet - it simply leaves
-them out. An old version on a migrated tab does the opposite: it appends by position, and its
-values land one column to the left of the headers describing them. Nothing is damaged either
-way, because a row whose `Status` cell ends up empty is one the worker never picks up, but it
-is a row somebody has to delete.
+```powershell
+.\TOOLS\Add-RunRequestsTab.ps1 -All -DeployScript
+```
 
-Only when that works, run again with `-Register`, which sets `runRequests` to true and is what
-makes the worker poll the document. The order matters: a registered document with no menu is a
-queue nobody can add to, and a worker polling it for nothing.
+It needs three things once, all outside this repository: the `script.projects` scope on the
+token, which `TOOLS\Connect-Sheets.ps1 -Force` re-consents to in the browser; the Apps Script
+API enabled in the Cloud project that owns the OAuth client (APIs & Services > Library > Apps
+Script API); and the same API switched on for the account at
+`script.google.com/home/usersettings`. Missing any of the three, the deploy is refused with a
+403 and nothing else changes — the tabs are there, the board is current, and the run says which
+command to repeat.
+
+A board set up by hand before 2026-09-11 has a menu the API did not create and cannot see. Record
+it once, from Project Settings in the script editor, and the tool pushes into it from then on:
+
+```powershell
+.\TOOLS\Add-RunRequestsTab.ps1 -Sport Soccer -ScriptId 1AbC... -Register
+```
+
+Without that, `-DeployScript` on such a board refuses rather than guesses: a second project is
+a second `DQ` menu beside the first.
+
+`-Register` is what makes the worker poll the document, and the order still matters where the
+menu is pasted by hand: a registered document with no menu is a queue nobody can add to, and a
+worker polling it for nothing. Deployed through the tool the two happen in one command.
 
 The board updater leaves this tab alone by construction. `TOOLS/Sheets.ps1` removes exactly one
 tab ever - `Sheet1`, and only while it is still empty - plus the tab of a check withdrawn from
