@@ -123,10 +123,14 @@ distinct written forms. The vocabulary is small and combines: progression `Q` an
 `Q, SB` and `Q, WR, AR, PR`. **Disqualification is written three ways** - `DQ` on 701 rows,
 `DSQ` on 61, `Disq.` on 27 - and the combinations are written with every spacing the keyboard
 allows: `Q, PB`, `Q , PB`, `q ,PB`, `Q,  SB`, `Q SB`, `PB , Q`. A check reading this field by
-value carries the canonical forms and reports the spacing; which of the two the spacing is, a
-vocabulary or a defect, is the user's call at the time the check is instantiated and is left
-open below. Four rows hold a medal name (`Gold`, `Silver`, `Bronze`) and six hold `F#`, a
-class, which the field cannot mean.
+value carries the canonical forms and reports the spacing. **The spacing is a defect, not a
+vocabulary**, by the user's decision of 2026-09-11 when the check was instantiated: the
+vocabulary keeps the canonical `Q, PB` form alone and `Para-Athletics-DQ-082` reports the 32
+written variants on their 128 rows as `COMMENT_INVALID_VALUE`, beside the medal names, the
+`LT3`-style codes and the stray `F1`. The alternative, admitting every spacing the keyboard
+allows into `RESULT_COMMENT_VALUE_LIST`, was rejected because a list that accepts `q ,PB` has
+stopped saying what the field's written form is. Four rows hold a medal name (`Gold`,
+`Silver`, `Bronze`) and six hold `F#`, a class, which the field cannot mean.
 
 **`102 Points` holds points on nineteen rows and something else on the other 1114.** Measured
 2026-09-11 by discipline: the nineteen are `Pentathlon - Overall`, values 3324 to 5806, which is
@@ -153,11 +157,21 @@ record marks as `104 Comment` plus a handful of times and a stray `final`. `537 
 and `538 Zone attempts` are ten rows each, all from one day of the Para Asian Games,
 2018-10-08: `537` holds the name and country of a different competitor in the same event
 (`Songwut Lamsan Thailand` on Hiep Ngoc Nguyen's participation in the `400m - T11`), and `538`
-a time that reads as that competitor's own. A `T11` runner competes with a guide, so the pairing
-of a name and a time on another athlete's row is what a guide's record would look like if it were
-written into whatever field was free; that is a reading, not a confirmed meaning, and it is
-left open below. All four types are kept in the table because they are genuinely present in
-the sport's data; the meaning column says what each one is instead.
+a time that reads as that competitor's own. The first reading of this file took the pair for a
+guide's record, because a `T11` runner competes with one. **Measured on 2026-09-11, it is not:
+the four fields hold the results of a different race of the same day, written into whatever
+result type was free.** On Shinya Wada's row in `5000m - T11`, `537` and `538` hold his own name
+and his own `1500m - T11` time of the same afternoon, `4:22.87`, rank 2 there; `535` and `536`
+beside them hold Hamid Eslami's name and his `4:18.18`, the win in that same 1500 m. Every
+5000 m row pairs the same way with a 1500 m result of some class, the `400m - T11` and
+`400m - T12` rows with the other 400 m heats, and Prawat Wahoram, a `T54` wheelchair racer who
+has no guide, is named on his own `5000m - T53/54` row with his `1500m - T53/54` time. The
+same row carries the one defect this leaves behind: its `101 Duration` is `3:14.54`, the
+1500 m time, and the 5000 m time `11:13.06` sits in `102 Points`. All four types are kept in
+the table because they are genuinely present in the sport's data; the meaning column says what
+each one is instead, and `Para-Athletics-DQ-073` on
+`GLOBAL-DQ-155 EVENT_RESULTS_UNUSED_RESULT_TYPE_HOLDS_VALUES` reports every one of the 294 rows
+as a value in a type the sport does not write.
 
 <!-- MANUAL PASTE ZONE: 112 EVENT RESULTS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -236,10 +250,27 @@ events on them are events pointing at a same-named discipline of the wrong sport
 itself holds no duplicated spelling, which is why `GLOBAL-DQ-161` reports nothing over 5971
 events.
 
+**The cause is a lookup by name, applied to every tournament but one.** Measured on 2026-09-11
+over the 609 events on the six ids: the Athletics ids `5`, `6` and `17` are carried only by
+Summer Paralympics 2024, whose 37 links are the earliest `object_discipline` rows the sport has
+(ids 5174 to 12010); every other tournament, 37 of them from Athens 2004 to the 2025 World
+Championships, carries `136`, `139` and `404` on all 572 of its events, and no event carries
+both an Athletics id and a foreign one. Three names resolved to two different foreign sports is
+what a lookup that takes the first discipline row spelled `1500 Metres` produces, and one import
+of one source could not have done it across 37 tournaments and 21 years. Paris 2024 was loaded
+first and correctly; the historical backfill behind it was not. `Para-Athletics-DQ-010` on
+`GLOBAL-DQ-015` reports the 572 events, and the repair is one substitution per id.
+
 `object_relation` holds three pairs: owner type 4 (stage) to related type 151 (country) on 82
 rows, which is the host country `GLOBAL-DISCOVERY-014` reads; owner type 4 to related type 33
-(city) on 49 rows; and owner type 2 (tournament) to related type 152 on 18 rows, six distinct
-related objects, which was not resolved and is left open below.
+(city) on 49 rows; and owner type 2 to related type 152 on 18 rows, six distinct related
+objects. Type 2 is `tournament_template`, not `tournament` as the first reading of this file
+wrote, and the pair is the template-subset path `../DATABASE.md` `REL-OBJECT-002` documents:
+read on 2026-09-11, the 18 templates are the sport's six competitions in their three genders,
+and the six related objects are the sub-sets `SUMMER_PARALYMPICS` and `COMMONWEALTH_GAMES`
+under the set `SUMMER_GAMES`, `ASIAN_SUMMER_GAMES` and `PAN_AMERICAN_GAMES` under
+`CONTINENTAL_GAMES`, `EUROPE` under `CONTINENTAL_CHAMPIONSHIPS`, and `WORLD_CHAMPIONSHIPS`
+under the set of the same name. Nothing in it is particular to the sport.
 
 `GLOBAL-DISCOVERY-032` returned 43 discipline/gender/participant combinations actually
 contested, from 2004 to 2025. A combination absent from that matrix has not been contested and
@@ -284,8 +315,13 @@ row itself is a duplicate in the reference table, which is outside this sport.
 reads; whether each is an event contested across classes that should carry one combined class
 instead, or two links where one was meant, was not read on 2026-09-11 and is the check's work.
 
-117 events carry no class at all; how many of them state one in their own name, as 95 of
-Para Swimming's 372 did, was not measured and is left open below.
+117 events carry no class at all. `GLOBAL-DQ-156 EVENT_DISABILITY_CLASS_MISSING` separates
+them itself, read on 2026-09-11: 113 name a registered class in their own name, as
+`200 Metres - T37` of Beijing 2008 does, and owe the object that name already states; four name
+none, and they are the three `4 X 100 Metres Relay` of Paris 2024, the universal relay that is
+contested across classes by rule, and one `Shot Put - Seated` of 2006, which names a condition
+rather than a class. `Para-Athletics-DQ-074` reports both states, 113 and 4, as its two
+`check_type` values.
 
 <!-- MANUAL PASTE ZONE: 112 DISABILITY CLASS — insert approved additions immediately before this marker; do not move or delete it. -->
 
@@ -521,18 +557,33 @@ run.
 
 ## Open questions
 
-- What `537 Top attempts` and `538 Zone attempts` hold on their twenty rows of 2018-10-08: a
-  guide's name and time written into free fields, or an import shifted by two columns. Twenty
-  rows in ten events; answerable by reading the four T11 and T12 events against their guides.
-- Whether the spacing variants of a combined Comment (`Q , PB`, `q ,PB`, `Q SB`) are a
-  vocabulary or a defect. Decided at the instantiation of the Comment check, not before.
-- What `object_relation` owner type 2 to related type 152 carries on 18 tournaments, six
-  distinct related objects. One query against the related type's table.
-- Why 389 `1500 Metres`, 138 `5000 Metres` and 45 `Marathon` events point at Speed Skating's
-  and Mountain Bike's disciplines rather than Athletics' `5`, `6` and `17`: one import or a
-  name-matched lookup. `Para-Athletics-DQ-010` on `GLOBAL-DQ-015` reports them; the question is
-  the cause, which the rows do not say.
-- How many of the 117 events without a class object state one in their own name. One query,
-  the same one Para Swimming answered on 2026-09-07.
+**Nothing here is open.** The five questions the opening raised on 2026-09-11 were measured and
+decided the same afternoon, and each is kept with what closed it rather than deleted, because
+the reason a question stopped being open is the part nobody can reconstruct from the answer.
+Four closed by measurement and one by a decision of the user's, recorded with the alternative
+that was rejected.
+
+1. **What `537 Top attempts` and `538 Zone attempts` hold on their twenty rows of 2018-10-08.**
+   *Closed: the results of another race of the same day.* Not a guide's record, which was the
+   first reading: the named person is a competitor of the same games with exactly that time in
+   the 1500 m or the other 400 m heats, on one row the athlete himself, and one of them is a
+   wheelchair racer who has no guide. Recorded under Event results, together with the one row
+   whose `101 Duration` holds the wrong race's time.
+2. **Whether the spacing variants of a combined Comment are a vocabulary or a defect.** *Closed
+   by decision: a defect.* `Para-Athletics-DQ-082` keeps reporting the 128 rows; admitting the
+   32 forms into the vocabulary was the rejected alternative. Recorded under Event results.
+3. **What `object_relation` type 2 to type 152 carries on 18 rows.** *Closed, and the question
+   had a wrong word in it.* Type 2 is the tournament template, and the pair is the documented
+   template-subset path: six competitions in three genders, six sub-sets under four sets.
+   Recorded under Generic relations and disciplines.
+4. **Why 572 events point at Speed Skating's and Mountain Bike's disciplines.** *Closed: a
+   lookup by name on the historical backfill.* Only Paris 2024, loaded first, carries the
+   Athletics ids; the 37 tournaments behind it carry the foreign ones on every event, and no
+   event carries both. Recorded under Generic relations and disciplines;
+   `Para-Athletics-DQ-010` reports the rows.
+5. **How many of the 117 events without a class state one in their own name.** *Closed: 113,
+   and the four that do not are the universal relays of Paris 2024 and one seated shot put.*
+   `Para-Athletics-DQ-074` already reports the two states apart. Recorded under Disability
+   class.
 
 <!-- MANUAL PASTE ZONE: 112 OPEN QUESTIONS — insert approved additions immediately before this marker; do not move or delete it. -->

@@ -2676,10 +2676,10 @@ on 2026-09-04, when BMX-Freestyle was separated from BMX-Racing and written up i
 anybody had made it a document. A run for such a sport writes no board and says which sport and
 why, instead of quietly producing nothing.
 
-**No sport is in that state today.** BMX-Freestyle was, for about an hour of the same afternoon,
-and then got its document. The example above is kept because the state it describes recurs every
-time a sport is opened and is the honest way to record the gap, not because anything is sitting
-in it now.
+**Para-Athletics is in that state since 2026-09-11**, opened and taken through its whole
+catalogue with no document yet. BMX-Freestyle was, for about an hour of the afternoon of
+2026-09-04, and then got its document. The example above is kept because the state it describes
+recurs every time a sport is opened and is the honest way to record the gap.
 
 The guard this relaxes is unchanged where it matters. `TOOLS/Test-Tools.ps1` still requires a
 row here for every sport `SPORTS.md` lists, so a sport somebody forgot to register still fails;
