@@ -11262,6 +11262,58 @@
                                                               "checkBy":  "Aleksandar D."
                                                           }
                                 }
+                 },
+                 {
+                     "runId":  "11.09.2026 13-20-40",
+                     "startedUtc":  "2026-09-11T11:20:40Z",
+                     "output":  "",
+                     "commit":  "2473775fc5b2+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-Racing-DQ-001",
+                                        "runKey":  "BMX-Racing-DQ-001",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_DATE_OF_BIRTH",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  1176,
+                                        "findings":  1175,
+                                        "eligible":  3025,
+                                        "seconds":  18.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "15b3cbe6882d"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  124,
+                                   "valueRequests":  6,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  23.9,
+                                                  "planning the changes":  53.2,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  29.5,
+                                                  "writing values":  14.1,
+                                                  "confirming the rows arrived":  0.5,
+                                                  "colouring the trend":  0.6,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "BMX-Racing-DQ-001":  {
+                                                              "status":  "Reopened",
+                                                              "checkBy":  ""
+                                                          }
+                                }
                  }
              ],
     "sheetId":  "1ZIAf--pLUyyZHBb6r2AyIxEfKS1kyv3_Hy9SlyiCuiE"

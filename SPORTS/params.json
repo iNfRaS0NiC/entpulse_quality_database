@@ -1,7 +1,100 @@
 {
+    "Para-Athletics": {
+        "_paraSport": true,
+        "SPORT_ID": 112,
+        "DISCIPLINE_SPORT_ID_LIST": "4, 112",
+        "_deferredLayers": {
+            "Comp.Rank": "Opened without the Comp.Rank layer on 2026-09-11 under the pause of 2026-08-26; SPORTS/Para-Athletics.md Statistics says the layer is deliberately unread. The runner's discovery printed 'the sport has no statistics' on the same day, which is a heuristic and not a reading; delete this entry when the layer is opened."
+        },
+        "CLIENT_FROM_SEASON": 2004,
+        "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
+        "EVENT_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "REGISTRY_PARTICIPANT_TYPE_LIST": "'athlete', 'team'",
+        "PERSON_PARTICIPANT_TYPE_LIST": "'athlete'",
+        "PERSON_ROLE_TYPE_LIST": "'athlete'",
+        "RESULT_RANK_TYPE_ID": 100,
+        "RESULT_DURATION_TYPE_ID": 101,
+        "RESULT_COMMENT_TYPE_ID": 104,
+        "RESULT_MEDAL_TYPE_ID": 501,
+        "ROUND_TYPE_LIST": "2, 38, 39, 89, 173, 178, 179, 265, 284",
+        "FINAL_ROUND_TYPE_LIST": "173, 265",
+        "MEDAL_ROUND_TYPE_LIST": "173, 265",
+        "BRONZE_ROUND_TYPE_LIST": "0",
+        "NOT_STARTED_DESC_LIST": "1",
+        "STAGE_DATE_TOLERANCE_DAYS": 0,
+        "RANK_MAX_PLAUSIBLE": 200,
+        "CLOCK_RESULT_TYPE_LIST": "101",
+        "PRECISION_RESULT_TYPE_LIST": "101, 103",
+        "INTEGER_RESULT_TYPE_LIST": "100, 102",
+        "NUMERIC_RESULT_TYPE_LIST": "100, 102, 103",
+        "RESULT_TIE_VALUE_TYPE_LIST": "101, 103",
+        "UNUSED_RESULT_TYPE_LIST": "535, 536, 537, 538",
+        "PLACEHOLDER_COUNTRY_LIST": "'International', 'Unknown', 'Undefined'",
+        "RESULT_COMMENT_VALUE_LIST": "'Q', 'q', 'SB', 'PB', 'WR', 'AR', 'CR', 'GR', 'ER', 'PR', 'NR', 'RR', 'WL', 'WRC', 'PRC', 'AS', 'AF', 'AM', 'OC', '=WR', '=AR', '=CR', '=PR', '=SB', '=PB', '=ER', '=RR', 'DQ', 'DSQ', 'Disq.', 'DNS', 'DNF', 'NM', 'NMR', 'YC', 'Yellow card', 'q, SB', 'Q, PB', 'Q, AR', 'Q, PR', 'Q, CR', 'Q, WR', 'Q, GR', 'Q, AS', 'Q, AF', 'Q, ER', 'Q, OC', 'Q, RR', 'Q, NR', 'Q, =SB', 'Q, =PB', 'q, =PB', 'Q, =AR', 'Q, =PR', 'Q, =CR', 'Q, =WR', 'Q, PRC', 'Q, WRC', 'PR, AR', 'PR, SB', 'PR, PB', 'PR, CR', 'WR, PR', 'Q, WR, PR', 'Q, WR, AR, PR', 'WR, PR, ER', '=PR, AR'",
+        "RESULT_COMMENT_NO_RESULT_LIST": "'DQ', 'DSQ', 'Disq.', 'DNS', 'DNF', 'NM'",
+        "RESULT_COMMENT_NO_VALUE_LIST": "'no-such-comment'",
+        "LINEUP_SIZE_MIN_SPREAD": 1,
+        "STALE_NOT_STARTED_DAYS": 2,
+        "DUPLICATE_KEY_INCLUDES_EVENT_NAME": 1,
+        "DUPLICATE_KEY_USES_CALENDAR_DAY": 1,
+        "SERIES_MIN_YEARS": 3,
+        "SERIES_SKIP_YEARS": 2020,
+        "ELIMINATION_ROUND_NAME_LIST": "'semi finals', 'qualifier'",
+        "GROUP_ROUND_NAME_LIST": "'final', 'final a', 'final b'",
+        "REQUIRED_RESULT_TYPE_LIST": "100",
+        "_notApplicable": {
+            "RESULT_FINAL_SCORE_TYPE_ID": "The sport stores no deciding score: a race is decided on the clock and a field event on the mark, and 102 Points is the pentathlon total on nineteen rows and a shifted field everywhere else (SPORTS/Para-Athletics.md, Event result types). Blocks GLOBAL-DQ-084, -085, -087, -088, -090, -094, -108, -114 and -126. Decided 2026-09-11.",
+            "RESULT_MIRROR_SCORE_TYPE_ID": "No score is stored, so nothing is mirrored; see RESULT_FINAL_SCORE_TYPE_ID. Decided 2026-09-11.",
+            "RESULT_SCORE_TYPE_ID": "No scalar score settles a placing here; the sport instantiates GLOBAL-DQ-164 for its Comment field. Blocks GLOBAL-DQ-117 and the retired GLOBAL-DQ-116. Decided 2026-09-11.",
+            "SCOPE_TYPE_ID": "The scope layer is not used: GLOBAL-DISCOVERY-009 and GLOBAL-DISCOVERY-010 both returned zero active rows on 2026-09-11 (SPORTS/Para-Athletics.md, Scope types and data types). Blocks GLOBAL-DQ-085, -086, -089, -091, -092 and -107. Decided 2026-09-11.",
+            "SCOPE_TYPE_LIST": "The scope layer is not used; see SCOPE_TYPE_ID. Blocks GLOBAL-DQ-102. Decided 2026-09-11.",
+            "RESULT_FULL_TIME_TYPE_ID": "The sport carries no 557 Full-time duration; its only time is 101 Duration (SPORTS/Para-Athletics.md, Event result types). Blocks GLOBAL-DQ-045, -052, -054, -056 and -111. Decided 2026-09-11.",
+            "SUPPORT_PARTICIPANT_TYPE_LIST": "The registry files nobody around the competition: object_participants holds athlete and team and no support role - no coach, no official, and a guide runner is a Pilot property on the participation, not a registry row (SPORTS/Para-Athletics.md, Participant and lineup structure). Blocks GLOBAL-DQ-135. Decided 2026-09-11.",
+            "EVENT_PARTICIPANT_COUNT_LIST": "The sport lines a field up and ranks it, and a field is any size from a single thrower to a marathon start; there is no count that would mean anything, as on Shooting. Blocks GLOBAL-DQ-083. Decided 2026-09-11."
+        },
+        "_checkSignal": {
+            "GLOBAL-DQ-009": {
+                "signal": "Blocked",
+                "reason": "The template reads three participation paths and the third is Comp.Rank, so it needs STATISTIC_TYPE_ID and SHARD_ID, which this sport does not record while the layer is deferred under _deferredLayers; the runner's discovery found no statistics for the sport at all on 2026-09-11, so the day the layer is opened may close this as Not applicable instead. Lifts with the Comp.Rank pause, on the same principle as Shooting and Para Swimming. Decided 2026-09-11."
+            },
+            "GLOBAL-DQ-019": {
+                "signal": "Not applicable",
+                "reason": "The template asserts the leader/gap convention on the duration result type - the winner an absolute time, everyone behind a signed difference - and this sport writes an absolute time for every competitor: measured 2026-09-11 it reported 6286 of 6320 events, which is the convention not being the sport's. The 87 rows of +0.00 it does hold are a shifted field on throwers and jumpers, recorded under Event result types, not a gap form. Decided 2026-09-11."
+            },
+            "GLOBAL-DQ-093": {
+                "signal": "Not applicable",
+                "reason": "Head-to-head sport deciding bronze in its own match; this sport lines a field up and ranks it and its bronze is the third place of a Final. Measured 2026-09-11 at 4509 of 4659 medal-round events. Decided 2026-09-11."
+            },
+            "GLOBAL-DQ-096": {
+                "signal": "Not applicable",
+                "reason": "Head-to-head sports only, by the competition model: every event here is named for its discipline and class (100 Metres - T11), because a ranked field has no two names to put in a title. Measured 2026-09-11 at 7525 of 7525. Decided 2026-09-11."
+            },
+            "GLOBAL-DQ-144": {
+                "signal": "Not applicable",
+                "reason": "H2H sports only per DB-SEM-015; this sport is Listing and its Rank is the classification. The statement exhausted the server's memory on 2026-09-11 before it could report the whole population, which is what it would have done. Decided 2026-09-11."
+            },
+            "GLOBAL-DQ-152": {
+                "signal": "Not applicable",
+                "reason": "The template is for a sport, or a discipline of one, whose finishing order is decided by judging rather than by the clock, and says itself that a timed sport must not instantiate it. Every discipline here is timed or measured; measured 2026-09-11 it reported 6324 of 7524 events, its clock beside its Rank. Decided 2026-09-11."
+            },
+            "GLOBAL-DQ-127": {
+                "signal": "Not applicable",
+                "reason": "The template asks why competitors holding the same deciding value did not share a place, and this sport separates them by a thousandth of a second or a photo finish that the database does not store: measured 2026-09-11 at 354 events, wheelchair marathons and sprints among them, with the same time to the hundredth on adjacent places. The same reading as Shooting's count-back, decided there 2026-09-06 and here 2026-09-11. GLOBAL-DQ-021 reads the opposite direction and runs as Para-Athletics-DQ-015."
+            },
+            "GLOBAL-DQ-162": {
+                "signal": "Monitor",
+                "reason": "Reported 2412 of 11441 entries on 2026-09-11 and most are the sport's normal shape: 552 are the Cyrillic Т11 class that GLOBAL-DQ-159 reports on its own, and about 1500 are an event contested in a combined class (F55-56) entered by an athlete holding one of its members (F56), which the template's set membership reads as a difference because the combined class is one name. The remainder, athletes whose held class differs from the class they were entered in (T12 against T13, T46 against T47), is what the check is for. Runs as Para-Athletics-DQ-080; the Para rule requires the row and the reviewer sorts the rows. Decided 2026-09-11."
+            },
+            "GLOBAL-DQ-120": {
+                "signal": "Monitor",
+                "reason": "792 events on 2026-09-11 in which the same result type is written to different numbers of decimal places (11.2 beside 11.23), 526 of them at World Championships. A hand-timed mark and an automatic one can legitimately differ in precision and the database does not say which is which, so the proportion is the finding and a single row is not a defect. Runs as Para-Athletics-DQ-052. Decided 2026-09-11."
+            }
+        }
+    },
     "Para-Swimming": {
         "_paraSport": true,
         "SPORT_ID": 135,
+        "DISCIPLINE_SPORT_ID_LIST": "135",
         "_deferredLayers": {
             "Comp.Rank": "Opened without the Comp.Rank layer on 2026-09-07 under the pause of 2026-08-26; SPORTS/Para-Swimming.md Statistics says every statistics area is Not checked rather than Not applicable. Bound to the whole-catalogue rule on 2026-09-11 with this deferral in place."
         },
@@ -95,6 +188,7 @@
     },
     "BMX-Freestyle": {
         "SPORT_ID": 58,
+        "DISCIPLINE_SPORT_ID_LIST": "58",
         "_catalogueExempt": "Opened 2026-09-04, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "DISCIPLINE_ID_LIST": "430",
         "DISCIPLINE_EXCLUDE_LIST": "429, 776",
@@ -203,6 +297,7 @@
         "DISCIPLINE_ID_LIST": "429, 776",
         "DISCIPLINE_EXCLUDE_LIST": "430",
         "SPORT_ID": 58,
+        "DISCIPLINE_SPORT_ID_LIST": "58",
         "_catalogueExempt": "Opened 2026-07-24, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -352,6 +447,7 @@
         "BRONZE_ROUND_TYPE_LIST": "0",
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 50,
+        "DISCIPLINE_SPORT_ID_LIST": "50",
         "_catalogueExempt": "Opened 2026-07-31, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -498,6 +594,7 @@
         "RESULT_RANK_TYPE_ID": 100,
         "COMP_RANK_ENTRY_SIZE_LIST": "1, 2",
         "SPORT_ID": 10,
+        "DISCIPLINE_SPORT_ID_LIST": "10",
         "_catalogueExempt": "Opened 2026-08-01, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -659,6 +756,7 @@
         "BRONZE_ROUND_TYPE_LIST": "181",
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 40,
+        "DISCIPLINE_SPORT_ID_LIST": "40",
         "_catalogueExempt": "Opened 2026-08-04, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -816,6 +914,7 @@
         "_clientScopeForm": "in-scope",
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 1,
+        "DISCIPLINE_SPORT_ID_LIST": "1",
         "_catalogueExempt": "Opened 2026-08-05, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "RESULT_RANK_TYPE_ID": 100,
         "CLIENT_FROM_SEASON": 2004,
@@ -1033,6 +1132,7 @@
         "BRONZE_ROUND_TYPE_LIST": "0",
         "COMP_RANK_ENTRY_SIZE_LIST": "1, 2",
         "SPORT_ID": 42,
+        "DISCIPLINE_SPORT_ID_LIST": "42",
         "_catalogueExempt": "Opened 2026-08-06, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -1202,6 +1302,7 @@
         "BRONZE_ROUND_TYPE_LIST": "0",
         "COMP_RANK_ENTRY_SIZE_LIST": "1, 2",
         "SPORT_ID": 3,
+        "DISCIPLINE_SPORT_ID_LIST": "3",
         "_catalogueExempt": "Opened 2026-08-12, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 4,
@@ -1427,6 +1528,7 @@
     "Ice-Hockey": {
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 5,
+        "DISCIPLINE_SPORT_ID_LIST": "5",
         "_catalogueExempt": "Opened 2026-08-14, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -1713,6 +1815,7 @@
         "DATA_TEAM_TYPE_ID": 1429,
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 30,
+        "DISCIPLINE_SPORT_ID_LIST": "30",
         "_catalogueExempt": "Opened 2026-08-16, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -2045,6 +2148,7 @@
     "Equestrian": {
         "COMP_RANK_ENTRY_SIZE_LIST": "1, 2, 8",
         "SPORT_ID": 37,
+        "DISCIPLINE_SPORT_ID_LIST": "37",
         "_catalogueExempt": "Opened 2026-08-18, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -2249,6 +2353,7 @@
     "Swimming": {
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 46,
+        "DISCIPLINE_SPORT_ID_LIST": "46",
         "_catalogueExempt": "Opened 2026-08-20, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -2452,6 +2557,7 @@
     "Speed-Skating": {
         "COMP_RANK_ENTRY_SIZE_LIST": "1",
         "SPORT_ID": 19,
+        "DISCIPLINE_SPORT_ID_LIST": "19",
         "_catalogueExempt": "Opened 2026-08-24, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -2686,6 +2792,7 @@
     "Biathlon": {
         "BRONZE_ROUND_TYPE_LIST": "0",
         "SPORT_ID": 7,
+        "DISCIPLINE_SPORT_ID_LIST": "7",
         "_catalogueExempt": "Opened 2026-08-27, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -2818,6 +2925,7 @@
     },
     "Track-Cycling": {
         "SPORT_ID": 55,
+        "DISCIPLINE_SPORT_ID_LIST": "55",
         "_catalogueExempt": "Opened 2026-08-26, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -2926,6 +3034,7 @@
     "Handball": {
         "RESULT_RANK_TYPE_ID": 100,
         "SPORT_ID": 20,
+        "DISCIPLINE_SPORT_ID_LIST": "20",
         "_catalogueExempt": "Opened 2026-08-28, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "STAGE_DATE_TOLERANCE_DAYS": 0,
@@ -3120,6 +3229,7 @@
     },
     "Mountain-Bike": {
         "SPORT_ID": 56,
+        "DISCIPLINE_SPORT_ID_LIST": "56",
         "_catalogueExempt": "Opened 2026-08-31, before the whole-catalogue rule of 2026-09-11; GLOBAL_DQ/README.md Mandatory templates. Delete this key to bind the sport once its undecided templates are recorded.",
         "CLIENT_FROM_SEASON": 2004,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "9453, 9454, 9455, 9456, 9461, 9462, 9463, 12507, 12508, 12509, 12510",
@@ -3239,6 +3349,7 @@
     },
     "Shooting": {
         "SPORT_ID": 45,
+        "DISCIPLINE_SPORT_ID_LIST": "45",
         "_deferredLayers": {
             "Comp.Rank": "Opened without the Comp.Rank layer on 2026-09-05 under the pause of 2026-08-26; the sport has 122 tournament-owned statistics and SPORTS/Shooting.md Statistics says what is unread. Bound to the whole-catalogue rule on 2026-09-11 with this deferral in place."
         },

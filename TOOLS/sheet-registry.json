@@ -62,6 +62,11 @@
             "spreadsheetId": "1-ewyxEyctKW1q_fWwwy0qYff5Y7XN7njFra2IjwSo-M",
             "runRequests": true
         },
+        "Para-Athletics": {
+            "spreadsheetId": "",
+            "published": false,
+            "runRequests": false
+        },
         "Para-Swimming": {
             "spreadsheetId": "1aaeUmPXvdsFrDv8TieQ0543bSA6pWEhVpyXt3bzQ1tY",
             "runRequests": false

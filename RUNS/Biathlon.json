@@ -31288,6 +31288,58 @@
                                                   "declaring the result tables":  0.5
                                               }
                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 13-23-10",
+                     "startedUtc":  "2026-09-11T11:23:10Z",
+                     "output":  "",
+                     "commit":  "2473775fc5b2+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Biathlon-DQ-084",
+                                        "runKey":  "Biathlon-DQ-084",
+                                        "parameters":  "",
+                                        "name":  "PARTICIPANT_MISSING_DATE_OF_BIRTH",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  802,
+                                        "findings":  801,
+                                        "eligible":  6865,
+                                        "seconds":  18,
+                                        "status":  "OK",
+                                        "sqlHash":  "a904ae756524"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  57,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  13.2,
+                                                  "planning the changes":  19.8,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  13.8,
+                                                  "writing values":  7,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Biathlon-DQ-084":  {
+                                                            "status":  "Reopened",
+                                                            "checkBy":  "PK"
+                                                        }
+                                }
                  }
              ],
     "sheetId":  "1eQNoYSY_1jbTh0hzFa6CiSXkCuTo4ceolGt8qDxKUr4"

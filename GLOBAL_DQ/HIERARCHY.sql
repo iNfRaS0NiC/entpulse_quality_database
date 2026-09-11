@@ -632,6 +632,14 @@ SELECT
 --     correct. The other ten sports gain nothing from either widening.
 -- `unresolved_discipline_ids` carries the value the relation actually holds, because `0` and a
 -- plausible-looking id that has since been deleted are different stories and the row should not
+-- **Which sports own the disciplines this sport may read is DISCIPLINE_SPORT_ID_LIST, not
+-- SPORT_ID.** For most sports the two are the same value. Para Athletics is not most sports:
+-- its events are filed under the discipline catalogue of Athletics (sport 4), every one of the
+-- 6543 events carrying a discipline reads it there, and on 2026-09-11 the statement read as
+-- 'foreign' the whole of a sport that has no catalogue of its own. Naming the owning sports
+-- lets the statement keep asking its question - a discipline nobody can read - of a sport
+-- whose disciplines legitimately live next door, and the reviewer still sees the owning sport
+-- in foreign_sport_disciplines when one is genuinely wrong.
 -- make the reviewer go and look. `foreign_sport_disciplines` does the same for the third state
 -- and names the owning sport as well as the discipline, because the id alone cannot tell a
 -- reviewer whether the event or the reference is the thing to move.
@@ -645,10 +653,10 @@ FROM (
         ts.name AS stage_name,
         COUNT(od.id) AS relation_rows,
         COUNT(d.id) AS resolved_rows,
-        COUNT(CASE WHEN d.sportFK = {{SPORT_ID}} THEN d.id END) AS own_sport_rows,
+        COUNT(CASE WHEN d.sportFK IN ({{DISCIPLINE_SPORT_ID_LIST}}) THEN d.id END) AS own_sport_rows,
         GROUP_CONCAT(DISTINCT CASE WHEN d.id IS NULL THEN od.disciplineFK END
                      ORDER BY od.disciplineFK SEPARATOR ', ') AS unresolved_discipline_ids,
-        GROUP_CONCAT(DISTINCT CASE WHEN d.id IS NOT NULL AND d.sportFK <> {{SPORT_ID}}
+        GROUP_CONCAT(DISTINCT CASE WHEN d.id IS NOT NULL AND d.sportFK NOT IN ({{DISCIPLINE_SPORT_ID_LIST}})
                                    THEN CONCAT(d.id, ' ', d.name, ' - sport ', d.sportFK, ' ', sp.name) END
                      ORDER BY d.id SEPARATOR ' | ') AS foreign_sport_disciplines
     FROM event e
@@ -3911,10 +3919,13 @@ SELECT
 -- Listing the superseded ids instead would need editing on the day either catalogue gains a
 -- discipline, which is the day nobody remembers.
 --
--- **Only the sport's own disciplines are read.** `d.sportFK = tt.sportFK` is the whole of the
--- scope, and it matters: an event pointing at another sport's catalogue is a different defect
--- with a different repair, and `GLOBAL-DQ-015 EVENT_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN`
--- owns it. Measured 2026-09-07, Para-Swimming holds both at once - 146 events on its own
+-- **Only the disciplines the sport may read are read.** `d.sportFK IN (DISCIPLINE_SPORT_ID_LIST)`
+-- is the whole of the scope, and for most sports that list is the sport's own id; it matters,
+-- because an event pointing at a catalogue outside that list is a different defect with a
+-- different repair, and `GLOBAL-DQ-015 EVENT_SETTINGS_DISCIPLINE_MISSING_UNRESOLVED_OR_FOREIGN`
+-- owns it. The list exists because Para Athletics files its events under the catalogue of
+-- Athletics (sport 4) and keeps two ids for three of its distances there; with `= tt.sportFK`
+-- the statement read nothing of that sport at all, 2026-09-11. Measured 2026-09-07, Para-Swimming holds both at once - 146 events on its own
 -- superseded spelling and 788 on Swimming's catalogue - and folding them into one number would
 -- have hidden the larger of the two behind the smaller.
 --
@@ -3953,7 +3964,7 @@ FROM (
     JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
     WHERE od.del = 'no'
       AND od.object_typeFK = 5
-      AND d.sportFK = tt.sportFK
+      AND d.sportFK IN ({{DISCIPLINE_SPORT_ID_LIST}})
           AND tt.sportFK = {{SPORT_ID}}
           AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
           AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
@@ -3982,7 +3993,7 @@ JOIN (
         JOIN tournament_template tt2 ON tt2.id = t2.tournament_templateFK AND tt2.del = 'no'
         WHERE od2.del = 'no'
           AND od2.object_typeFK = 5
-          AND d2.sportFK = tt2.sportFK
+          AND d2.sportFK IN ({{DISCIPLINE_SPORT_ID_LIST}})
           AND tt2.sportFK = {{SPORT_ID}}
           AND t2.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
           AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t2.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
@@ -4010,7 +4021,7 @@ JOIN tournament t3 ON t3.id = ts3.tournamentFK AND t3.del = 'no'
 JOIN tournament_template tt3 ON tt3.id = t3.tournament_templateFK AND tt3.del = 'no'
 WHERE od3.del = 'no'
   AND od3.object_typeFK = 5
-  AND d3.sportFK = tt3.sportFK
+  AND d3.sportFK IN ({{DISCIPLINE_SPORT_ID_LIST}})
           AND tt3.sportFK = {{SPORT_ID}}
           AND t3.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
           AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t3.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}

@@ -32,6 +32,7 @@ mechanisms from `DATABASE.md`.
 | 45 | Shooting | Listing (individual and team) | `SPORTS/Shooting.md` | Awaiting Comp.Rank | 2026-09-05 | Shooting |
 | 135 | Para-Swimming | Listing (individual and team) | `SPORTS/Para-Swimming.md` | Awaiting Comp.Rank | 2026-09-07 | Para Swimming |
 
+| 112 | Para-Athletics | Listing (individual and team) | `SPORTS/Para-Athletics.md` | Awaiting Comp.Rank | 2026-09-11 | Para Athletics |
 <!-- MANUAL PASTE ZONE: SPORT INDEX — insert approved additions immediately before this marker; do not move or delete it. -->
 
 ## New-sport rule
