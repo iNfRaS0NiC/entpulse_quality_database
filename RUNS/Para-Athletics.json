@@ -1911,6 +1911,58 @@
                                                                   "checkBy":  ""
                                                               }
                                 }
+                 },
+                 {
+                     "runId":  "11.09.2026 20-01-48",
+                     "startedUtc":  "2026-09-11T18:01:48Z",
+                     "output":  "",
+                     "commit":  "318c40acfb11+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Para-Athletics-DQ-002",
+                                        "runKey":  "Para-Athletics-DQ-002",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_MISSING_AGE_CLASS",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  13,
+                                        "findings":  12,
+                                        "eligible":  94,
+                                        "seconds":  0.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "b512430a588e"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  24.7,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  7.3,
+                                                  "planning the changes":  5,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  5.8,
+                                                  "writing values":  4,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Para-Athletics-DQ-002":  {
+                                                                  "status":  "Not reviewed",
+                                                                  "checkBy":  ""
+                                                              }
+                                }
                  }
              ],
     "sheetId":  "1WFnWLWrcNMrsHowlOQssFkprbBfmqKyrU1n9JdXkYNc"

@@ -25,11 +25,12 @@ correction is required.
   `GLOBAL-DISCOVERY-029 STATISTIC_DATA_VALUE_PATTERNS_DETAIL`,
   `GLOBAL-DISCOVERY-030 STATISTIC_DATA_TYPE_CATALOG`,
   `GLOBAL-DISCOVERY-031 STATISTIC_DATA_TYPE_DECLARED_VS_USED` and
-  `GLOBAL-DISCOVERY-033 PARTICIPANT_DUPLICATE_CANDIDATES_BY_NAME` were therefore not run, and
-  every statistics area below is `Not checked` rather than `Not applicable`. The runner's own
-  parameter discovery reported "the sport has no statistics" on 2026-09-11; that is a heuristic
-  printed by a run and not a reading of the layer, and it is recorded here only so that the
-  reader who opens the layer knows what to expect rather than as a finding.
+  `GLOBAL-DISCOVERY-033 PARTICIPANT_DUPLICATE_CANDIDATES_BY_NAME` were therefore not run as part
+  of the opening, and every statistics area below is `Not checked` rather than `Not applicable`.
+  `GLOBAL-DISCOVERY-015` was nevertheless executed twice on 2026-09-11 - by the runner's own
+  parameter discovery, which is what printed "the sport has no statistics", and by hand the
+  same evening - and returned no row both times. Statistics says what that does and does not
+  settle.
 - The rest of the catalogue was run whole on 2026-09-11, 58 statements with none failing, and
   the drill-downs were taken as far as the user decided: `GLOBAL-DISCOVERY-019
   EVENT_ROUND_TYPE_USAGE_DETAIL` for eight of nine round types, the ninth being `89 1` with a
@@ -342,9 +343,19 @@ rather than a class. `Para-Athletics-DQ-074` reports both states, 113 and 4, as 
 under the pause of 2026-08-26, and nothing in this section was read. The omission is recorded
 in `SPORTS/params.json` under `_deferredLayers`, which is what keeps the 49 `COMP.RANK_*`
 templates from being demanded of the sport until the layer is opened; it is `Not checked` and
-never `Not applicable`, because the pause is expected to lift. The runner's discovery printed
-"the sport has no statistics" on 2026-09-11 and that line is a heuristic, not this section's
-evidence.
+never `Not applicable`, because the pause is expected to lift.
+
+**What opening the layer will meet.** `GLOBAL-DISCOVERY-015 STATISTIC_TYPES_AND_OWNERS`, which
+reads every statistic type over every owner path the sport reaches, returned no row for sport
+112 on 2026-09-11. The runner resolves `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID` and
+`SHARD_ID` from that statement, so while it returns nothing, opening the layer resolves none of
+them: `GLOBAL-DISCOVERY-024 STATISTIC_NAME_PATTERNS_SUMMARY` and `GLOBAL-DISCOVERY-033
+PARTICIPANT_DUPLICATE_CANDIDATES_BY_NAME` stay `SKIPPED` with the rest of the statistics
+catalogue. The second audits the sport registry and reads Comp.Rank only as one of the three
+paths by which a person's appearances are counted, so it is blocked by a parameter that would
+contribute nothing here; left so by the user's decision of 2026-09-11, until the Comp.Rank layer
+is decided. None of this makes the layer `Not used` or any check `Not applicable`: a sport with
+no statistic today is a data state, and the day one arrives the statement returns it.
 
 <!-- MANUAL PASTE ZONE: 112 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 

@@ -4,7 +4,7 @@
         "SPORT_ID": 112,
         "DISCIPLINE_SPORT_ID_LIST": "4, 112",
         "_deferredLayers": {
-            "Comp.Rank": "Opened without the Comp.Rank layer on 2026-09-11 under the pause of 2026-08-26; SPORTS/Para-Athletics.md Statistics says the layer is deliberately unread. The runner's discovery printed 'the sport has no statistics' on the same day, which is a heuristic and not a reading; delete this entry when the layer is opened."
+            "Comp.Rank": "Opened without the Comp.Rank layer on 2026-09-11 under the pause of 2026-08-26; SPORTS/Para-Athletics.md Statistics says the layer is deliberately unread. GLOBAL-DISCOVERY-015 STATISTIC_TYPES_AND_OWNERS returned no row for the sport the same day, so opening the layer resolves no statistic parameter while that holds (SPORTS/Para-Athletics.md Statistics); delete this entry when the layer is opened."
         },
         "CLIENT_FROM_SEASON": 2004,
         "OUT_OF_SCOPE_TEMPLATE_ID_LIST": "0",
@@ -55,7 +55,7 @@
         "_checkSignal": {
             "GLOBAL-DQ-009": {
                 "signal": "Blocked",
-                "reason": "The template reads three participation paths and the third is Comp.Rank, so it needs STATISTIC_TYPE_ID and SHARD_ID, which this sport does not record while the layer is deferred under _deferredLayers; the runner's discovery found no statistics for the sport at all on 2026-09-11, so the day the layer is opened may close this as Not applicable instead. Lifts with the Comp.Rank pause, on the same principle as Shooting and Para Swimming. Decided 2026-09-11."
+                "reason": "The template reads three participation paths and the third is Comp.Rank, so it needs STATISTIC_TYPE_ID and SHARD_ID, which this sport does not record while the layer is deferred under _deferredLayers; GLOBAL-DISCOVERY-015 STATISTIC_TYPES_AND_OWNERS returned no row for the sport on 2026-09-11, so opening the layer alone will not resolve those parameters. Lifts with the Comp.Rank pause, on the same principle as Shooting and Para Swimming. Decided 2026-09-11."
             },
             "GLOBAL-DQ-019": {
                 "signal": "Not applicable",

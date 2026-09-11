@@ -12,7 +12,7 @@ correction is required.
 ## Identity and evidence
 
 - First discovery date: 2026-09-07
-- Latest evidence date: 2026-09-07
+- Latest evidence date: 2026-09-11
 - Verification boundary: the sport was opened **without the Comp.Rank layer**, by the standing
   decision of 2026-08-26 that a sport is documented from its event results first and its
   ranking afterwards, because the ranking is generated from those results.
@@ -340,6 +340,18 @@ the Comp.Rank layer itself turns out to hold.
 
 | statistic_typeFK | Owner type | Participant shard | Data shard | Fields/config | Evidence |
 |---:|---:|---:|---:|---|---|
+
+**What opening the layer will meet.** `GLOBAL-DISCOVERY-015 STATISTIC_TYPES_AND_OWNERS`, which
+reads every statistic type over every owner path the sport reaches, returned no row for sport
+135 on 2026-09-11. The runner resolves `STATISTIC_TYPE_ID`, `STATISTIC_OWNER_TYPE_ID` and
+`SHARD_ID` from that statement, so while it returns nothing, opening the layer resolves none of
+them: `GLOBAL-DISCOVERY-024 STATISTIC_NAME_PATTERNS_SUMMARY` and `GLOBAL-DISCOVERY-033
+PARTICIPANT_DUPLICATE_CANDIDATES_BY_NAME` stay `SKIPPED` with the rest of the statistics
+catalogue. The second audits the sport registry and reads Comp.Rank only as one of the three
+paths by which a person's appearances are counted, so it is blocked by a parameter that would
+contribute nothing here. None of this makes the layer `Not used` or any check `Not
+applicable`: a sport with no statistic today is a data state, and the day one arrives the
+statement returns it.
 
 <!-- MANUAL PASTE ZONE: 135 STATISTICS — insert approved additions immediately before this marker; do not move or delete it. -->
 

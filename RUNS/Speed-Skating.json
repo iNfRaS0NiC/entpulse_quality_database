@@ -36567,6 +36567,568 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "11.09.2026 19-40-40",
+                     "startedUtc":  "2026-09-11T17:40:40Z",
+                     "output":  "",
+                     "commit":  "318c40acfb11",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-072",
+                                        "runKey":  "Speed-Skating-DQ-072",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_DISCIPLINE_NOT_CONTESTED_IN_TOURNAMENT",
+                                        "category":  "WRONG_DISCIPLINE",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  183,
+                                        "findings":  182,
+                                        "eligible":  4088,
+                                        "seconds":  1.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "d51e967353f1"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  57.5,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  19.8,
+                                                  "planning the changes":  14.8,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.7,
+                                                  "clearing stale rows":  10.9,
+                                                  "writing values":  7.3,
+                                                  "confirming the rows arrived":  0.8,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.9,
+                                                  "declaring the result tables":  0.6
+                                              }
+                               },
+                     "review":  {
+                                    "Speed-Skating-DQ-072":  {
+                                                                 "status":  "Completed",
+                                                                 "checkBy":  "Zlati"
+                                                             }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 19-43-18",
+                     "startedUtc":  "2026-09-11T17:43:18Z",
+                     "output":  "",
+                     "commit":  "318c40acfb11+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-057",
+                                        "runKey":  "Speed-Skating-DQ-057",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_DUPLICATE_ROWS",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  4087,
+                                        "seconds":  17.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "e37b86947ddf"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  55.7,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  20.5,
+                                                  "planning the changes":  14.8,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  10.8,
+                                                  "writing values":  7,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Speed-Skating-DQ-057":  {
+                                                                 "status":  "Completed",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 19-53-20",
+                     "startedUtc":  "2026-09-11T17:53:20Z",
+                     "output":  "",
+                     "commit":  "318c40acfb11+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-057",
+                                        "runKey":  "Speed-Skating-DQ-057",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_DUPLICATE_ROWS",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Resolved",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  4087,
+                                        "seconds":  17.6,
+                                        "status":  "OK",
+                                        "sqlHash":  "e37b86947ddf"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  60,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  21.2,
+                                                  "planning the changes":  15.1,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  11.8,
+                                                  "writing values":  8.7,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.9,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Speed-Skating-DQ-057":  {
+                                                                 "status":  "Reopened",
+                                                                 "checkBy":  "Zlati"
+                                                             }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 19-54-44",
+                     "startedUtc":  "2026-09-11T17:54:44Z",
+                     "output":  "",
+                     "commit":  "318c40acfb11+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-060",
+                                        "runKey":  "Speed-Skating-DQ-060",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_ATHLETE_COUNT_UNEVEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1429 Team",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  174,
+                                        "findings":  173,
+                                        "eligible":  447,
+                                        "seconds":  14.6,
+                                        "status":  "OK",
+                                        "sqlHash":  "794e996477a5"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  56.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  20.5,
+                                                  "planning the changes":  15.5,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  11.4,
+                                                  "writing values":  6.4,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Speed-Skating-DQ-060":  {
+                                                                 "status":  "Completed",
+                                                                 "checkBy":  "Zlati"
+                                                             }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 19-59-09",
+                     "startedUtc":  "2026-09-11T17:59:09Z",
+                     "output":  "",
+                     "commit":  "318c40acfb11+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-060",
+                                        "runKey":  "Speed-Skating-DQ-060",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_TEAM_ATHLETE_COUNT_UNEVEN",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1429 Team",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  174,
+                                        "findings":  173,
+                                        "eligible":  447,
+                                        "seconds":  14.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "794e996477a5"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  56.6,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  20.4,
+                                                  "planning the changes":  15.4,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1.3,
+                                                  "clearing stale rows":  11.2,
+                                                  "writing values":  6.5,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Speed-Skating-DQ-060":  {
+                                                                 "status":  "Reopened",
+                                                                 "checkBy":  "Zlati"
+                                                             }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 20-00-27",
+                     "startedUtc":  "2026-09-11T18:00:27Z",
+                     "output":  "",
+                     "commit":  "318c40acfb11+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-057",
+                                        "runKey":  "Speed-Skating-DQ-057",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_DUPLICATE_ROWS",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  4087,
+                                        "seconds":  17.3,
+                                        "status":  "OK",
+                                        "sqlHash":  "e37b86947ddf"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  56,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  20.3,
+                                                  "planning the changes":  14.7,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  10.9,
+                                                  "writing values":  7.1,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.9,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.3,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Speed-Skating-DQ-057":  {
+                                                                 "status":  "Completed",
+                                                                 "checkBy":  "Zlati"
+                                                             }
+                                }
+                 },
+                 {
+                     "runId":  "Speed-Skating 11.09.2026 20-25-44",
+                     "startedUtc":  "2026-09-11T18:25:43Z",
+                     "output":  "D:\\SQL\u0027s Output\\Speed-Skating 11.09.2026 20-25-44",
+                     "commit":  "318c40acfb11+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-076",
+                                        "runKey":  "Speed-Skating-DQ-076",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 101 Duration, 102 Points, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  4248,
+                                        "seconds":  3.8,
+                                        "status":  "OK",
+                                        "sqlHash":  "df4ab03b8821"
+                                    },
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-077",
+                                        "runKey":  "Speed-Skating-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1272 Duration, 1426 Time, 1427 Time Difference",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  36,
+                                        "findings":  35,
+                                        "eligible":  3901,
+                                        "seconds":  16.1,
+                                        "status":  "OK",
+                                        "sqlHash":  "01484017f03d"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  26,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  9.4,
+                                                  "planning the changes":  4.5,
+                                                  "adding and sizing tabs":  0.5,
+                                                  "hiding columns and colouring Rows":  0.6,
+                                                  "clearing stale rows":  2.1,
+                                                  "writing values":  6.1,
+                                                  "confirming the rows arrived":  0.8,
+                                                  "colouring the trend":  0.6,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.9,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Speed-Skating-DQ-076":  {
+                                                                 "status":  "Completed",
+                                                                 "checkBy":  "Zlati"
+                                                             },
+                                    "Speed-Skating-DQ-077":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
+                 },
+                 {
+                     "runId":  "Speed-Skating 11.09.2026 20-47-56",
+                     "startedUtc":  "2026-09-11T18:47:55Z",
+                     "output":  "D:\\SQL\u0027s Output\\Speed-Skating 11.09.2026 20-47-56",
+                     "commit":  "318c40acfb11+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-076",
+                                        "runKey":  "Speed-Skating-DQ-076",
+                                        "parameters":  "",
+                                        "name":  "EVENT_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Result: 101 Duration, 102 Points, 557 Full-time duration",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  4248,
+                                        "seconds":  4.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "c5d323a3d161"
+                                    },
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-077",
+                                        "runKey":  "Speed-Skating-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_NUMERIC_WRITTEN_FORM_INCONSISTENT",
+                                        "category":  "WRONG_RESULTS",
+                                        "dataTypes":  "Comp.Rank: 1272 Duration, 1426 Time, 1427 Time Difference",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  35,
+                                        "findings":  34,
+                                        "eligible":  3901,
+                                        "seconds":  16.2,
+                                        "status":  "OK",
+                                        "sqlHash":  "fbbb3dce6dcb"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  27.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  8.7,
+                                                  "planning the changes":  4,
+                                                  "adding and sizing tabs":  1,
+                                                  "hiding columns and colouring Rows":  1.1,
+                                                  "clearing stale rows":  3.5,
+                                                  "writing values":  8,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.6,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Speed-Skating-DQ-076":  {
+                                                                 "status":  "Completed",
+                                                                 "checkBy":  "Zlati"
+                                                             },
+                                    "Speed-Skating-DQ-077":  {
+                                                                 "status":  "Not reviewed",
+                                                                 "checkBy":  ""
+                                                             }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 21-50-54",
+                     "startedUtc":  "2026-09-11T19:50:54Z",
+                     "output":  "",
+                     "commit":  "318c40acfb11+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-018",
+                                        "runKey":  "Speed-Skating-DQ-018",
+                                        "parameters":  "",
+                                        "name":  "EVENT_FINAL_WITHOUT_COMP.RANK",
+                                        "category":  "NO_RELATED_RECORDS",
+                                        "dataTypes":  "Setting: 1471 Event id",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Scope moved",
+                                        "rows":  55,
+                                        "findings":  54,
+                                        "eligible":  3502,
+                                        "seconds":  0.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "d7f88a1590ca"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  26,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  10.2,
+                                                  "planning the changes":  4.2,
+                                                  "adding and sizing tabs":  0.5,
+                                                  "hiding columns and colouring Rows":  0.7,
+                                                  "clearing stale rows":  1.9,
+                                                  "writing values":  6.7,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.8,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Speed-Skating-DQ-018":  {
+                                                                 "status":  "On Hold",
+                                                                 "checkBy":  "Zlati"
+                                                             }
+                                }
+                 },
+                 {
+                     "runId":  "11.09.2026 21-51-35",
+                     "startedUtc":  "2026-09-11T19:51:35Z",
+                     "output":  "",
+                     "commit":  "318c40acfb11+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Speed-Skating-DQ-096",
+                                        "runKey":  "Speed-Skating-DQ-096",
+                                        "parameters":  "",
+                                        "name":  "COMP.RANK_RESULTS_MISSING_PHASE",
+                                        "category":  "MISSING_VALUES",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  18,
+                                        "findings":  17,
+                                        "eligible":  4087,
+                                        "seconds":  15,
+                                        "status":  "OK",
+                                        "sqlHash":  "869a15cb5d8d"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  57.6,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  20.9,
+                                                  "planning the changes":  15.6,
+                                                  "adding and sizing tabs":  0.1,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  11,
+                                                  "writing values":  7.1,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.4,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Speed-Skating-DQ-096":  {
+                                                                 "status":  "Completed",
+                                                                 "checkBy":  "Zlati"
+                                                             }
+                                }
                  }
              ],
     "sheetId":  "1CNFGr9KzNTGUtKJMn8vALWxHkL3x97JRtABs541iDPM"

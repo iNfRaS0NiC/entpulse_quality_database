@@ -17265,6 +17265,58 @@
                                                             "checkBy":  ""
                                                         }
                                 }
+                 },
+                 {
+                     "runId":  "11.09.2026 20-51-06",
+                     "startedUtc":  "2026-09-11T18:51:06Z",
+                     "output":  "",
+                     "commit":  "318c40acfb11+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Handball-DQ-125",
+                                        "runKey":  "Handball-DQ-125",
+                                        "parameters":  "",
+                                        "name":  "TOURNAMENT_STAGE_DATE_RANGE_DISAGREES_WITH_ITS_EVENTS",
+                                        "category":  "DATE_RANGE_MISMATCH",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Improved",
+                                        "rows":  102,
+                                        "findings":  101,
+                                        "eligible":  1917,
+                                        "seconds":  0.4,
+                                        "status":  "OK",
+                                        "sqlHash":  "eeb112d88fbd"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  42.5,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  11.9,
+                                                  "planning the changes":  11.3,
+                                                  "adding and sizing tabs":  0.7,
+                                                  "hiding columns and colouring Rows":  1,
+                                                  "clearing stale rows":  9.1,
+                                                  "writing values":  6.6,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.6,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               },
+                     "review":  {
+                                    "Handball-DQ-125":  {
+                                                            "status":  "Not reviewed",
+                                                            "checkBy":  "PK"
+                                                        }
+                                }
                  }
              ],
     "sheetId":  "1AUVNbf1U-OZO6V2VZZ9QbMBBaxMtzdWjsACfML_9sQI"

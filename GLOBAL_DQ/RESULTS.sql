@@ -4317,22 +4317,118 @@ SELECT
     y.event_startdate,
     y.template_name,
     y.tournament_name,
-    y.affected_result_types,
+    -- The field named, with its id beside it - `Duration (101)`, not `101` - as GLOBAL-DQ-127
+    -- does: a reader repairing the field has to know which field it is. Named and not numbered
+    -- from 2026-09-11, with GLOBAL-DQ-121; it was `affected_result_types` until then.
+    y.affected_result_types_names,
     y.decimal_places_seen,
     y.worst_shape_count,
+    -- Who holds a written form other than the field's own, in the shape GLOBAL-DQ-121 gives it
+    -- and by its rules: the form most participants hold is named with its count, every other
+    -- form is listed with its holders, two forms held equally keep the longer fraction and list
+    -- the shorter, and a comma-written form is always listed. Added 2026-09-11 at the user's
+    -- asking. A reading aid and not the finding; the row still asserts one event, and the list
+    -- stops at 1000 characters.
+    y.participants_by_shape,
     NULL AS eligible_count
 FROM (
+    SELECT
+        z.event_id,
+        z.event_name,
+        z.event_startdate,
+        z.template_name,
+        z.tournament_name,
+        GROUP_CONCAT(DISTINCT CONCAT(COALESCE(z.result_type_name, 'unnamed type'), ' (', z.result_typeFK, ')')
+            ORDER BY z.result_typeFK SEPARATOR ', ') AS affected_result_types_names,
+        GROUP_CONCAT(DISTINCT z.places_seen SEPARATOR ' | ') AS decimal_places_seen,
+        MAX(z.shape_count) AS worst_shape_count,
+        SUBSTRING(GROUP_CONCAT(CONCAT(COALESCE(z.result_type_name, 'unnamed type'), ': ', z.shapes)
+            ORDER BY z.result_typeFK SEPARATOR ' || '), 1, 1000) AS participants_by_shape,
+        SUM(CASE WHEN z.has_integer = 1 THEN 1 ELSE 0 END) AS types_with_integer,
+        SUM(CASE WHEN z.has_comma = 1 THEN 1 ELSE 0 END) AS types_with_comma
+    FROM (
+    -- One row per flagged event and field, with its forms spelled out.
+    SELECT
+        w.event_id,
+        w.event_name,
+        w.event_startdate,
+        w.template_name,
+        w.tournament_name,
+        w.result_typeFK,
+        w.result_type_name,
+        w.shape_count,
+        w.has_integer,
+        w.has_comma,
+        w.places_seen,
+        CONCAT(
+            IF(SUM(CASE WHEN w.is_comma = 0 AND w.holders = w.top_holders THEN 1 ELSE 0 END) > 1,
+               'tie, longer kept ', 'most '),
+            MAX(CASE WHEN w.form_rank = 1
+                THEN CONCAT(w.places, 'dp', IF(w.is_comma = 1, ' comma', ''), ' x', w.holders) END),
+            COALESCE(CONCAT(' | ', GROUP_CONCAT(
+                CASE WHEN w.form_rank > 1 OR w.is_comma = 1
+                    THEN CONCAT(w.places, 'dp', IF(w.is_comma = 1, ' comma', ''), ' x', w.holders, ': ', w.names) END
+                ORDER BY w.holders, w.places, w.is_comma SEPARATOR ' | ')), '')) AS shapes
+    FROM (
+    -- Each form ranked within its field: a dot before a comma, then the most holders, then the
+    -- longer fraction, so the first is the field's own form.
+    SELECT
+        f.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY f.event_id, f.result_typeFK
+            ORDER BY f.is_comma, f.holders DESC, f.places DESC) AS form_rank,
+        MAX(CASE WHEN f.is_comma = 0 THEN f.holders END) OVER (
+            PARTITION BY f.event_id, f.result_typeFK) AS top_holders
+    FROM (
+    -- One row per written form of one flagged field. A comma-written value is a form of its own
+    -- even at the same number of places, because it is a different repair.
+    SELECT
+        v.event_id,
+        v.event_name,
+        v.event_startdate,
+        v.template_name,
+        v.tournament_name,
+        v.result_typeFK,
+        v.result_type_name,
+        v.shape_count,
+        v.has_integer,
+        v.has_comma,
+        v.places_seen,
+        v.places,
+        v.is_comma,
+        COUNT(*) AS holders,
+        CONCAT(GROUP_CONCAT(CASE WHEN v.rn <= 25 THEN CONCAT(v.participant_name, ' = ', v.value) END
+            ORDER BY v.rn SEPARATOR ', '), IF(COUNT(*) > 25, ', ...', '')) AS names
+    FROM (
+    SELECT
+        b.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY b.event_id, b.result_typeFK, b.places, b.is_comma
+            ORDER BY b.participant_name, b.event_participants_id) AS rn
+    FROM (
+    -- The values behind each flagged field, read a second time and for those events only. The
+    -- pass below decides what is a finding exactly as it did before the names existed; this
+    -- one only spells it out. Reading the names in the same pass would number every value in
+    -- the sport's scope to name a few hundred, and the event layer is where that costs.
     SELECT
         x.event_id,
         x.event_name,
         x.event_startdate,
         x.template_name,
         x.tournament_name,
-        GROUP_CONCAT(DISTINCT x.result_typeFK) AS affected_result_types,
-        GROUP_CONCAT(DISTINCT x.places_seen SEPARATOR ' | ') AS decimal_places_seen,
-        MAX(x.shape_count) AS worst_shape_count,
-        SUM(CASE WHEN x.has_integer = 1 THEN 1 ELSE 0 END) AS types_with_integer,
-        SUM(CASE WHEN x.has_comma = 1 THEN 1 ELSE 0 END) AS types_with_comma
+        x.result_typeFK,
+        rtn.name AS result_type_name,
+        x.shape_count,
+        x.has_integer,
+        x.has_comma,
+        x.places_seen,
+        ep2.id AS event_participants_id,
+        COALESCE(p2.name, CONCAT('participant ', ep2.participantFK)) AS participant_name,
+        TRIM(r2.value) AS value,
+        CASE WHEN REPLACE(r2.value, ',', '.') LIKE '%.%'
+            THEN LENGTH(SUBSTRING_INDEX(REPLACE(r2.value, ',', '.'), '.', -1))
+            ELSE 0 END AS places,
+        CASE WHEN r2.value LIKE '%,%' THEN 1 ELSE 0 END AS is_comma
     FROM (
         SELECT
             e.id AS event_id,
@@ -4388,14 +4484,32 @@ FROM (
         -- the finding the field exists to catch.
         HAVING shape_count > 1 OR has_comma = 1
     ) x
-    GROUP BY x.event_id, x.event_name, x.event_startdate, x.template_name, x.tournament_name
+    JOIN event_participants ep2 ON ep2.eventFK = x.event_id AND ep2.del = 'no'
+    JOIN result r2 ON r2.event_participantsFK = ep2.id AND r2.del = 'no'
+     AND r2.result_typeFK = x.result_typeFK
+     -- The admission filter of the pass above, so the names describe the values it counted.
+     AND r2.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.,][0-9]+)?$'
+    LEFT JOIN participant p2 ON p2.id = ep2.participantFK
+    LEFT JOIN result_type rtn ON rtn.id = x.result_typeFK
+    ) b
+    ) v
+    GROUP BY v.event_id, v.event_name, v.event_startdate, v.template_name, v.tournament_name,
+             v.result_typeFK, v.result_type_name, v.shape_count, v.has_integer, v.has_comma,
+             v.places_seen, v.places, v.is_comma
+    ) f
+    ) w
+    GROUP BY w.event_id, w.event_name, w.event_startdate, w.template_name, w.tournament_name,
+             w.result_typeFK, w.result_type_name, w.shape_count, w.has_integer, w.has_comma,
+             w.places_seen
+    ) z
+    GROUP BY z.event_id, z.event_name, z.event_startdate, z.template_name, z.tournament_name
 ) y
 
 UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT e.id) AS eligible_count
 FROM event e
 JOIN tournament_stage ts ON ts.id = e.tournament_stageFK AND ts.del = 'no'

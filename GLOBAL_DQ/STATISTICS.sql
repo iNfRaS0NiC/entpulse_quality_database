@@ -1567,6 +1567,12 @@ FROM (
     WHERE e.del = 'no'
       AND tt.sportFK = {{SPORT_ID}}
       AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
+      -- Only a final that was contested owes a ranking: a Comp.Rank is built from results, and
+      -- a final cancelled, postponed or not yet started has none to build it from. Until
+      -- 2026-09-11 every status was read, and on Speed Skating 199 of 253 findings were such
+      -- finals - 187 cancelled, 12 not started - reported as missing a ranking they could not
+      -- have. Narrowed by the user's decision that day, in this branch and in COVERAGE alike.
+      AND e.status_type = 'finished'
       AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
       AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
       AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
@@ -1588,6 +1594,7 @@ JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
 WHERE e.del = 'no'
   AND tt.sportFK = {{SPORT_ID}}
   AND e.round_typeFK IN ({{FINAL_ROUND_TYPE_LIST}})
+  AND e.status_type = 'finished'
   AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
   AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
   AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
@@ -4307,9 +4314,24 @@ SELECT
     y.statistic_name,
     y.template_name,
     y.tournament_name,
-    y.affected_data_types,
+    -- The field named, with its id beside it - `Time (1426)`, not `1426` - as GLOBAL-DQ-127
+    -- does on the event layer: a reader repairing the field has to know which field it is, and
+    -- a bare id sends them to the catalogue. Named and not numbered from 2026-09-11, on Speed
+    -- Skating's reading; it was `affected_data_types` until then.
+    y.affected_data_types_names,
     y.decimal_places_seen,
     y.worst_shape_count,
+    -- Who holds a written form other than the field's own, so the value to repair can be found
+    -- without opening the statistic: `Time: most 2dp x9 | 3dp x2: A = 0.000, B = 0.000`. The
+    -- field's own form is the one most participants hold, named with its count and no names;
+    -- every other form is listed with its holders, rarest first, at most 25 names a form. Two
+    -- forms held equally keep the longer fraction and list the shorter, marked `tie`, by the
+    -- user's decision of 2026-09-11. A comma-written form is always listed, because the comma is
+    -- the defect whatever its count. Added 2026-09-11 at the user's asking on
+    -- Speed-Skating-DQ-077, listing every form at first and narrowed the same day to the ones
+    -- that differ. A reading aid and not the finding: the row still asserts one statistic, and
+    -- the list stops at 1000 characters.
+    y.participants_by_shape,
     NULL AS eligible_count
 FROM (
     SELECT
@@ -4317,51 +4339,118 @@ FROM (
         x.statistic_name,
         x.template_name,
         x.tournament_name,
-        GROUP_CONCAT(DISTINCT x.statistic_data_typeFK) AS affected_data_types,
+        GROUP_CONCAT(DISTINCT CONCAT(COALESCE(x.data_type_name, 'unnamed type'), ' (', x.statistic_data_typeFK, ')')
+            ORDER BY x.statistic_data_typeFK SEPARATOR ', ') AS affected_data_types_names,
         GROUP_CONCAT(DISTINCT x.places_seen SEPARATOR ' | ') AS decimal_places_seen,
         MAX(x.shape_count) AS worst_shape_count,
+        SUBSTRING(GROUP_CONCAT(CONCAT(COALESCE(x.data_type_name, 'unnamed type'), ': ', x.shapes)
+            ORDER BY x.statistic_data_typeFK SEPARATOR ' || '), 1, 1000) AS participants_by_shape,
         SUM(CASE WHEN x.has_integer = 1 THEN 1 ELSE 0 END) AS types_with_integer,
         SUM(CASE WHEN x.has_comma = 1 THEN 1 ELSE 0 END) AS types_with_comma
     FROM (
+        -- One row per statistic and field, which is the grain the invariant is read at.
         SELECT
-            s.id AS statistic_id,
-            s.name AS statistic_name,
-            tt.name AS template_name,
-            t.name AS tournament_name,
-            sd.statistic_data_typeFK,
-            -- The written form, not the value. The event-layer twin is GLOBAL-DQ-120 and
-            -- reads the same invariant one layer down, separator normalisation included:
-            -- counted against the dot alone a comma-written value reads as zero places and
-            -- files itself under the wrong repair.
-            COUNT(DISTINCT CASE WHEN REPLACE(sd.value, ',', '.') LIKE '%.%'
-                    THEN LENGTH(SUBSTRING_INDEX(REPLACE(sd.value, ',', '.'), '.', -1))
-                    ELSE 0 END) AS shape_count,
-            MAX(CASE WHEN REPLACE(sd.value, ',', '.') LIKE '%.%' THEN 0 ELSE 1 END) AS has_integer,
-            MAX(CASE WHEN sd.value LIKE '%,%' THEN 1 ELSE 0 END) AS has_comma,
-            GROUP_CONCAT(DISTINCT CASE WHEN REPLACE(sd.value, ',', '.') LIKE '%.%'
-                    THEN LENGTH(SUBSTRING_INDEX(REPLACE(sd.value, ',', '.'), '.', -1))
-                    ELSE 0 END) AS places_seen
-        FROM statistic s
-        JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
-        JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
-        JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
-        JOIN statistic_data{{SHARD_ID}} sd
-          ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
-         AND sd.del = 'no'
-         AND sd.statistic_data_typeFK IN ({{PRECISION_DATA_TYPE_LIST}})
-         -- The comma is admitted from 2026-08-26, in this branch and in COVERAGE alike, so
-         -- that a comma-written field reads as a defect rather than as a smaller population.
-         AND sd.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.,][0-9]+)?$'
-        WHERE s.del = 'no'
-          AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
-          AND s.object_typeFK = 3
-          AND tt.sportFK = {{SPORT_ID}}
-          AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
-          AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
-          AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
-          -- AND t.tournament_templateFK = <tournament_template_id>
-          -- AND EXISTS (SELECT 1 FROM object_discipline dsc_s WHERE dsc_s.object_typeFK = 83 AND dsc_s.objectFK = s.id AND dsc_s.disciplineFK IN (<discipline_ids>) AND dsc_s.del = 'no')
-        GROUP BY s.id, s.name, tt.name, t.name, sd.statistic_data_typeFK
+            w.statistic_id,
+            w.statistic_name,
+            w.template_name,
+            w.tournament_name,
+            w.statistic_data_typeFK,
+            w.data_type_name,
+            COUNT(DISTINCT w.places) AS shape_count,
+            MAX(CASE WHEN w.places = 0 THEN 1 ELSE 0 END) AS has_integer,
+            MAX(w.is_comma) AS has_comma,
+            GROUP_CONCAT(DISTINCT w.places ORDER BY w.places) AS places_seen,
+            -- The field's own form, then every form that is not it. See participants_by_shape
+            -- above for which form is the field's own and why a comma is always listed.
+            CONCAT(
+                IF(SUM(CASE WHEN w.is_comma = 0 AND w.holders = w.top_holders THEN 1 ELSE 0 END) > 1,
+                   'tie, longer kept ', 'most '),
+                MAX(CASE WHEN w.form_rank = 1
+                    THEN CONCAT(w.places, 'dp', IF(w.is_comma = 1, ' comma', ''), ' x', w.holders) END),
+                COALESCE(CONCAT(' | ', GROUP_CONCAT(
+                    CASE WHEN w.form_rank > 1 OR w.is_comma = 1
+                        THEN CONCAT(w.places, 'dp', IF(w.is_comma = 1, ' comma', ''), ' x', w.holders, ': ', w.names) END
+                    ORDER BY w.holders, w.places, w.is_comma SEPARATOR ' | ')), '')) AS shapes
+        FROM (
+            -- Each form ranked within its field: a dot before a comma, then the most holders,
+            -- then the longer fraction, so the first is the field's own form.
+            SELECT
+                f.*,
+                ROW_NUMBER() OVER (
+                    PARTITION BY f.statistic_id, f.statistic_data_typeFK
+                    ORDER BY f.is_comma, f.holders DESC, f.places DESC) AS form_rank,
+                MAX(CASE WHEN f.is_comma = 0 THEN f.holders END) OVER (
+                    PARTITION BY f.statistic_id, f.statistic_data_typeFK) AS top_holders
+            FROM (
+            -- One row per written form of one field. A comma-written value is a form of its
+            -- own even at the same number of places, because it is a different repair.
+            SELECT
+                v.statistic_id,
+                v.statistic_name,
+                v.template_name,
+                v.tournament_name,
+                v.statistic_data_typeFK,
+                v.data_type_name,
+                v.places,
+                v.is_comma,
+                COUNT(*) AS holders,
+                CONCAT(GROUP_CONCAT(CASE WHEN v.rn <= 25 THEN CONCAT(v.participant_name, ' = ', v.value) END
+                    ORDER BY v.rn SEPARATOR ', '), IF(COUNT(*) > 25, ', ...', '')) AS names
+            FROM (
+                SELECT
+                    b.*,
+                    ROW_NUMBER() OVER (
+                        PARTITION BY b.statistic_id, b.statistic_data_typeFK, b.places, b.is_comma
+                        ORDER BY b.participant_name, b.statistic_participants_id) AS rn
+                FROM (
+                    SELECT
+                        s.id AS statistic_id,
+                        s.name AS statistic_name,
+                        tt.name AS template_name,
+                        t.name AS tournament_name,
+                        sp.id AS statistic_participants_id,
+                        COALESCE(p.name, CONCAT('participant ', sp.participantFK)) AS participant_name,
+                        sd.statistic_data_typeFK,
+                        sdt.name AS data_type_name,
+                        TRIM(sd.value) AS value,
+                        -- The written form, not the value. The event-layer twin is GLOBAL-DQ-120 and
+                        -- reads the same invariant one layer down, separator normalisation included:
+                        -- counted against the dot alone a comma-written value reads as zero places and
+                        -- files itself under the wrong repair.
+                        CASE WHEN REPLACE(sd.value, ',', '.') LIKE '%.%'
+                            THEN LENGTH(SUBSTRING_INDEX(REPLACE(sd.value, ',', '.'), '.', -1))
+                            ELSE 0 END AS places,
+                        CASE WHEN sd.value LIKE '%,%' THEN 1 ELSE 0 END AS is_comma
+                    FROM statistic s
+                    JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
+                    JOIN tournament_template tt ON tt.id = t.tournament_templateFK AND tt.del = 'no'
+                    JOIN statistic_participants{{SHARD_ID}} sp ON sp.statisticFK = s.id AND sp.del = 'no'
+                    JOIN statistic_data{{SHARD_ID}} sd
+                      ON sd.statistic_participants{{SHARD_ID}}FK = sp.id
+                     AND sd.del = 'no'
+                     AND sd.statistic_data_typeFK IN ({{PRECISION_DATA_TYPE_LIST}})
+                     -- The comma is admitted from 2026-08-26, in this branch and in COVERAGE alike, so
+                     -- that a comma-written field reads as a defect rather than as a smaller population.
+                     AND sd.value REGEXP '^[0-9]+(:[0-9]{1,2})*([.,][0-9]+)?$'
+                    LEFT JOIN statistic_data_type sdt ON sdt.id = sd.statistic_data_typeFK
+                    LEFT JOIN participant p ON p.id = sp.participantFK
+                    WHERE s.del = 'no'
+                      AND s.statistic_typeFK = {{STATISTIC_TYPE_ID}}
+                      AND s.object_typeFK = 3
+                      AND tt.sportFK = {{SPORT_ID}}
+                      AND (tt.name IS NULL OR tt.name NOT LIKE '%(IOC)%')
+                      AND t.tournament_templateFK NOT IN ({{OUT_OF_SCOPE_TEMPLATE_ID_LIST}})
+                      AND CAST(COALESCE(NULLIF(REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 2), ''), REGEXP_SUBSTR(t.name, '(19|20)[0-9]{2}', 1, 1)) AS UNSIGNED) >= {{CLIENT_FROM_SEASON}}
+                      -- AND t.tournament_templateFK = <tournament_template_id>
+                      -- AND EXISTS (SELECT 1 FROM object_discipline dsc_s WHERE dsc_s.object_typeFK = 83 AND dsc_s.objectFK = s.id AND dsc_s.disciplineFK IN (<discipline_ids>) AND dsc_s.del = 'no')
+                ) b
+            ) v
+            GROUP BY v.statistic_id, v.statistic_name, v.template_name, v.tournament_name,
+                     v.statistic_data_typeFK, v.data_type_name, v.places, v.is_comma
+            ) f
+        ) w
+        GROUP BY w.statistic_id, w.statistic_name, w.template_name, w.tournament_name,
+                 w.statistic_data_typeFK, w.data_type_name
         -- A comma qualifies on its own, as in GLOBAL-DQ-120: a field written entirely to one
         -- scale with the wrong separator has a shape_count of 1 and would otherwise drop.
         HAVING shape_count > 1 OR has_comma = 1
@@ -4373,7 +4462,7 @@ UNION ALL
 
 SELECT
     'COVERAGE' AS check_type,
-    NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+    NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
     COUNT(DISTINCT s.id) AS eligible_count
 FROM statistic s
 JOIN tournament t ON t.id = s.objectFK AND t.del = 'no'
