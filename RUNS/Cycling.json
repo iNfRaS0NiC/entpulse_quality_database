@@ -38236,6 +38236,52 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "10.09.2026 20-32-40",
+                     "startedUtc":  "2026-09-10T18:32:40Z",
+                     "output":  "",
+                     "commit":  "56ed3c309082+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Cycling-DQ-123",
+                                        "runKey":  "Cycling-DQ-123",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE",
+                                        "category":  "WRONG_ROUND",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  10503,
+                                        "seconds":  0.8,
+                                        "status":  "OK",
+                                        "sqlHash":  "179245b173dc"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  68.8,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  19,
+                                                  "planning the changes":  17.2,
+                                                  "adding and sizing tabs":  3.6,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  19.4,
+                                                  "writing values":  6.9,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               }
                  }
              ],
     "sheetId":  "1dL0qy1M_reL904lQWeK2151xRXleCYlXPmDXN3hBbUs"

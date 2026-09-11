@@ -31241,6 +31241,53 @@
                                                           "checkBy":  ""
                                                       }
                                 }
+                 },
+                 {
+                     "runId":  "10.09.2026 20-31-49",
+                     "startedUtc":  "2026-09-10T18:31:49Z",
+                     "output":  "",
+                     "commit":  "56ed3c309082+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Biathlon-DQ-138",
+                                        "runKey":  "Biathlon-DQ-138",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE",
+                                        "category":  "WRONG_ROUND",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  21,
+                                        "findings":  20,
+                                        "eligible":  2526,
+                                        "seconds":  0.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "45e3b44c5ffc"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  47,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  2,
+                                   "phases":  {
+                                                  "reading the document":  12.4,
+                                                  "planning the changes":  11.6,
+                                                  "adding and sizing tabs":  2.3,
+                                                  "putting the board tabs in front":  0.5,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  12.1,
+                                                  "writing values":  5.9,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               }
                  }
              ],
     "sheetId":  "1eQNoYSY_1jbTh0hzFa6CiSXkCuTo4ceolGt8qDxKUr4"

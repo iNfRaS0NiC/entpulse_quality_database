@@ -3017,6 +3017,52 @@
                                                   "declaring the result tables":  0.4
                                               }
                                }
+                 },
+                 {
+                     "runId":  "10.09.2026 20-35-39",
+                     "startedUtc":  "2026-09-10T18:35:39Z",
+                     "output":  "",
+                     "commit":  "56ed3c309082+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Shooting-DQ-077",
+                                        "runKey":  "Shooting-DQ-077",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE",
+                                        "category":  "WRONG_ROUND",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  40,
+                                        "findings":  39,
+                                        "eligible":  9212,
+                                        "seconds":  0.9,
+                                        "status":  "OK",
+                                        "sqlHash":  "8fa999b56620"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  25.9,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  9,
+                                                  "planning the changes":  4.1,
+                                                  "adding and sizing tabs":  2.1,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  4.3,
+                                                  "writing values":  3.8,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.8,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               }
                  }
              ],
     "sheetId":  "1E1x9Q3tL2a45lwJ_QCNc9pzXzp8zW3M16R9W5tk4Rp8"

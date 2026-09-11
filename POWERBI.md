@@ -641,6 +641,41 @@ unchanged: a template is not permission to check a sport.
 A check stays sport-authored when its condition cannot be expressed through declared
 parameters. `GLOBAL_DQ/README.md` owns the qualification rule and the promotion sequence.
 
+### The event-name pair is owed to every Listing sport, and is written per sport
+
+Two checks belong together on every sport whose event names a renaming cron rewrites:
+
+- `EVENT_NAME_DOES_NOT_FOLLOW_THE_SPORT_PATTERN` — the event's name is not the name the cron's
+  form would build from that event's own settings.
+- `EVENT_NAME_CARRIES_A_WORD_THE_RENAMING_PATTERN_WILL_DROP` — the name carries a word the form
+  has no slot for, so correcting the name deletes it and nothing recovers it afterwards.
+
+Three sports have them as of 2026-09-10: `Artistic-Gymnastics-DQ-126` and `-129`,
+`BMX-Racing-DQ-118` and `-121`, `Triathlon-DQ-124` and `-127`. **Eleven Listing sports have
+neither** — Biathlon, Speed-Skating, Cycling, Equestrian, Modern-Pentathlon, Shooting, Swimming,
+Track-Cycling, Mountain-Bike, Para-Swimming and BMX-Freestyle — and each of them is owed the
+pair. Recorded here at the user's request on 2026-09-11 as the standing reminder.
+
+**They are deliberately not a GLOBAL template, and the rule above is why.** The expected name is
+the cron's form for that sport, and the form differs in more than values. BMX-Racing writes the
+discipline as literals keyed on the id — `429` is `Racing`, `776` is `Time Trial` — because those
+are the words the cron writes, not `discipline.name`; Triathlon reads `discipline.name` straight
+from the table and builds two alternative forms rather than one. BMX-Racing has `Run` and `Heat`
+slots filled from properties; Triathlon has neither. The number of parts, their order and the
+source of each all change, which is a different operation rather than a different parameter.
+
+**The order they are written in is fixed**, because the second is built on the first. The pattern
+check is the only thing that establishes the expected name; the word-drop check takes that same
+expression, breaks the actual name into words and asks which of them the form has nowhere to put.
+A sport without the first has nothing for the second to read. So: profile how the cron names in
+that sport — which parts, in what order, from where — then write and have the pattern check
+approved, then write the word-drop check on top of it, over the identical eligible population.
+
+`GLOBAL-DQ-163 EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE` is the one in this area that **is**
+global, and the contrast is the test: it reads two stored fields that mean the same thing
+everywhere, so it takes parameters. Anything that has to read a round out of a name takes the
+sport's own convention and cannot.
+
 ## Query-file contract
 
 - Store all active approved sport-authored checks for one sport in

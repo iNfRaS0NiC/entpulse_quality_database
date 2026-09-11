@@ -49177,6 +49177,142 @@
                                                   "declaring the result tables":  0.5
                                               }
                                }
+                 },
+                 {
+                     "runId":  "Triathlon 10.09.2026 20-41-13",
+                     "startedUtc":  "2026-09-10T18:41:11Z",
+                     "output":  "D:\\SQL\u0027s Output\\Triathlon 10.09.2026 20-41-13",
+                     "commit":  "56ed3c309082+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-126",
+                                        "runKey":  "Triathlon-DQ-126",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE",
+                                        "category":  "WRONG_ROUND",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3762,
+                                        "seconds":  0.6,
+                                        "status":  "OK",
+                                        "sqlHash":  "cac832bf8206"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-127",
+                                        "runKey":  "Triathlon-DQ-127",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_CARRIES_A_WORD_THE_RENAMING_PATTERN_WILL_DROP",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  3762,
+                                        "seconds":  0.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "652906e5a359"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  31.9,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  10.8,
+                                                  "planning the changes":  4.3,
+                                                  "adding and sizing tabs":  2.7,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  2.7,
+                                                  "writing values":  9,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.6,
+                                                  "declaring the result tables":  0.6
+                                              }
+                               }
+                 },
+                 {
+                     "runId":  "Triathlon 10.09.2026 20-42-00",
+                     "startedUtc":  "2026-09-10T18:41:59Z",
+                     "output":  "D:\\SQL\u0027s Output\\Triathlon 10.09.2026 20-42-00",
+                     "commit":  "56ed3c309082+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Triathlon-DQ-126",
+                                        "runKey":  "Triathlon-DQ-126",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE",
+                                        "category":  "WRONG_ROUND",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  3762,
+                                        "seconds":  0.5,
+                                        "status":  "OK",
+                                        "sqlHash":  "cac832bf8206"
+                                    },
+                                    {
+                                        "checkId":  "Triathlon-DQ-127",
+                                        "runKey":  "Triathlon-DQ-127",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_CARRIES_A_WORD_THE_RENAMING_PATTERN_WILL_DROP",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Unchanged",
+                                        "rows":  2,
+                                        "findings":  1,
+                                        "eligible":  3762,
+                                        "seconds":  0.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "652906e5a359"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  26.2,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  8.5,
+                                                  "planning the changes":  3.7,
+                                                  "adding and sizing tabs":  0,
+                                                  "hiding columns and colouring Rows":  0.8,
+                                                  "clearing stale rows":  2.5,
+                                                  "writing values":  8.9,
+                                                  "confirming the rows arrived":  0.4,
+                                                  "colouring the trend":  0.5,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               },
+                     "review":  {
+                                    "Triathlon-DQ-126":  {
+                                                             "status":  "Clean",
+                                                             "checkBy":  ""
+                                                         },
+                                    "Triathlon-DQ-127":  {
+                                                             "status":  "Not reviewed",
+                                                             "checkBy":  ""
+                                                         }
+                                }
                  }
              ],
     "sheetId":  "1xykO4ZbkfMHe6taJKtHtNky0NMOFdeucFB_2Md-ZVy0"

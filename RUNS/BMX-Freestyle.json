@@ -2074,6 +2074,52 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "10.09.2026 20-31-10",
+                     "startedUtc":  "2026-09-10T18:31:10Z",
+                     "output":  "",
+                     "commit":  "56ed3c309082+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "BMX-Freestyle-DQ-112",
+                                        "runKey":  "BMX-Freestyle-DQ-112",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE",
+                                        "category":  "WRONG_ROUND",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  272,
+                                        "seconds":  0.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "ffe8fee14e69"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  35.8,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  8.7,
+                                                  "planning the changes":  10.1,
+                                                  "adding and sizing tabs":  2.3,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  7.6,
+                                                  "writing values":  4.7,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.6
+                                              }
+                               }
                  }
              ],
     "sheetId":  "1hdz_Kjs0xsPBAaPL_r0HkAAFT_C7x9pAJTWZXBCvOvg"

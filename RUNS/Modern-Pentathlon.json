@@ -32516,6 +32516,52 @@
                                                                      "checkBy":  ""
                                                                  }
                                 }
+                 },
+                 {
+                     "runId":  "10.09.2026 20-34-36",
+                     "startedUtc":  "2026-09-10T18:34:36Z",
+                     "output":  "",
+                     "commit":  "56ed3c309082+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Modern-Pentathlon-DQ-125",
+                                        "runKey":  "Modern-Pentathlon-DQ-125",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE",
+                                        "category":  "WRONG_ROUND",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "Clean",
+                                        "rows":  1,
+                                        "findings":  0,
+                                        "eligible":  10295,
+                                        "seconds":  0.8,
+                                        "status":  "OK",
+                                        "sqlHash":  "318ef2a32e1e"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  28.6,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  8.2,
+                                                  "planning the changes":  6,
+                                                  "adding and sizing tabs":  2.8,
+                                                  "hiding columns and colouring Rows":  0.7,
+                                                  "clearing stale rows":  3.6,
+                                                  "writing values":  6,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.5,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               }
                  }
              ],
     "sheetId":  "1kWKqdBc2ZD1AYcMEzGUmZHzgjfEgnLyf8AfbCvkxuKs"

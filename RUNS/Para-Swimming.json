@@ -4065,6 +4065,52 @@
                                                                  "checkBy":  ""
                                                              }
                                 }
+                 },
+                 {
+                     "runId":  "10.09.2026 20-35-08",
+                     "startedUtc":  "2026-09-10T18:35:08Z",
+                     "output":  "",
+                     "commit":  "56ed3c309082+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Para-Swimming-DQ-090",
+                                        "runKey":  "Para-Swimming-DQ-090",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE",
+                                        "category":  "WRONG_ROUND",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  66,
+                                        "findings":  65,
+                                        "eligible":  8296,
+                                        "seconds":  0.7,
+                                        "status":  "OK",
+                                        "sqlHash":  "9f8b80b132c6"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  27.1,
+                                   "valueRequests":  4,
+                                   "tabsConfirmed":  1,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  6.3,
+                                                  "planning the changes":  2.8,
+                                                  "adding and sizing tabs":  2.2,
+                                                  "hiding columns and colouring Rows":  0.9,
+                                                  "clearing stale rows":  9.7,
+                                                  "writing values":  3.9,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.4
+                                              }
+                               }
                  }
              ],
     "sheetId":  "1aaeUmPXvdsFrDv8TieQ0543bSA6pWEhVpyXt3bzQ1tY"

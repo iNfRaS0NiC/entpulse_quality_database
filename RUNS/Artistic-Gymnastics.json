@@ -48602,6 +48602,69 @@
                                                   "declaring the result tables":  1
                                               }
                                }
+                 },
+                 {
+                     "runId":  "Artistic-Gymnastics 10.09.2026 20-38-29",
+                     "startedUtc":  "2026-09-10T18:38:28Z",
+                     "output":  "D:\\SQL\u0027s Output\\Artistic-Gymnastics 10.09.2026 20-38-29",
+                     "commit":  "56ed3c309082+",
+                     "checks":  [
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-128",
+                                        "runKey":  "Artistic-Gymnastics-DQ-128",
+                                        "parameters":  "",
+                                        "name":  "EVENT_ROUND_PROPERTY_CONTRADICTS_ROUND_TYPE",
+                                        "category":  "WRONG_ROUND",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  70,
+                                        "findings":  69,
+                                        "eligible":  7941,
+                                        "seconds":  1,
+                                        "status":  "OK",
+                                        "sqlHash":  "03853f7e69e3"
+                                    },
+                                    {
+                                        "checkId":  "Artistic-Gymnastics-DQ-129",
+                                        "runKey":  "Artistic-Gymnastics-DQ-129",
+                                        "parameters":  "",
+                                        "name":  "EVENT_NAME_CARRIES_A_WORD_THE_RENAMING_PATTERN_WILL_DROP",
+                                        "category":  "MALFORMED_NAME",
+                                        "dataTypes":  "",
+                                        "signal":  "Actionable",
+                                        "expected":  "Zero",
+                                        "verdict":  "New",
+                                        "rows":  50,
+                                        "findings":  49,
+                                        "eligible":  7941,
+                                        "seconds":  1,
+                                        "status":  "OK",
+                                        "sqlHash":  "cc931525142b"
+                                    }
+                                ],
+                     "sheet":  {
+                                   "updated":  true,
+                                   "seconds":  63.3,
+                                   "valueRequests":  5,
+                                   "tabsConfirmed":  2,
+                                   "rowsReaddressed":  0,
+                                   "tabsMoved":  0,
+                                   "phases":  {
+                                                  "reading the document":  21.4,
+                                                  "planning the changes":  13.8,
+                                                  "adding and sizing tabs":  2.4,
+                                                  "hiding columns and colouring Rows":  1.2,
+                                                  "clearing stale rows":  16.1,
+                                                  "writing values":  7,
+                                                  "confirming the rows arrived":  0.3,
+                                                  "colouring the trend":  0,
+                                                  "removing withdrawn rows":  0,
+                                                  "sorting the board":  0.4,
+                                                  "declaring the result tables":  0.5
+                                              }
+                               }
                  }
              ],
     "sheetId":  "1qyzjTW2KRjJtE6PiPkVEjOLKbFq3jKHkrv5JnMxuris"
